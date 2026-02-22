@@ -102,6 +102,7 @@ async function init() {
         }
 
         bindEvents();
+        initYouTubePreview();
 
     } catch (err) {
         console.error("Signal Interpretation Failure:", err);
@@ -574,3 +575,50 @@ function initEasterEggs() {
 
 // Start
 init();
+
+// --- YOUTUBE PREVIEW SYSTEM ---
+let ytPlayer = null;
+
+function initYouTubePreview() {
+    const trigger = document.getElementById('preview-trigger');
+    const drawer = document.getElementById('video-drawer');
+    if (!trigger || !drawer) return;
+
+    // Load YT API
+    const tag = document.createElement('script');
+    tag.src = "https://www.youtube.com/iframe_api";
+    const firstScriptTag = document.getElementsByTagName('script')[0];
+    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+    window.onYouTubeIframeAPIReady = () => {
+        ytPlayer = new YT.Player('yt-player', {
+            height: '100%',
+            width: '100%',
+            videoId: '99rThEvTqig',
+            playerVars: {
+                'playsinline': 1,
+                'rel': 0,
+                'modestbranding': 1
+            },
+            events: {
+                'onStateChange': (event) => {
+                    if (event.data === YT.PlayerState.ENDED) {
+                        drawer.classList.remove('is-active');
+                        trigger.innerText = 'INITIATE PREVIEW';
+                    }
+                }
+            }
+        });
+    };
+
+    trigger.onclick = () => {
+        const isActive = drawer.classList.toggle('is-active');
+        trigger.innerText = isActive ? 'CLOSE PREVIEW' : 'INITIATE PREVIEW';
+
+        if (isActive && ytPlayer && ytPlayer.playVideo) {
+            ytPlayer.playVideo();
+        } else if (!isActive && ytPlayer && ytPlayer.pauseVideo) {
+            ytPlayer.pauseVideo();
+        }
+    };
+}

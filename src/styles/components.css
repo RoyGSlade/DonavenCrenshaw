@@ -615,3 +615,69 @@ footer {
     padding: 1rem;
     background: linear-gradient(135deg, rgba(210, 177, 111, 0.07), rgba(8, 13, 22, 0.88));
 }
+
+/* Video Embeds */
+
+.video-drawer {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.6s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s ease, margin 0.4s ease;
+    opacity: 0;
+    margin: 0;
+}
+
+.video-drawer.is-active {
+    max-height: 800px;
+    opacity: 1;
+    margin-bottom: 1rem;
+}
+
+
+.video-frame {
+    margin: 1.5rem 0 2rem;
+    max-width: 800px;
+    border: 1px solid var(--stone-light);
+    background: var(--bg-panel);
+    padding: 0.5rem;
+    clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
+    box-shadow: var(--shadow-low);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.video-frame:hover {
+    border-color: var(--line-rune);
+    box-shadow: var(--ring-glow);
+}
+
+.video-container {
+    position: relative;
+    width: 100%;
+    padding-bottom: 56.25%;
+    /* 16:9 Aspect Ratio */
+    height: 0;
+    overflow: hidden;
+    background: #000;
+}
+
+.video-container iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    filter: grayscale(0.2) contrast(1.1);
+    transition: filter 0.3s ease;
+}
+
+.video-frame:hover iframe {
+    filter: grayscale(0) contrast(1);
+}
+
+.video-meta {
+    margin-top: 0.6rem;
+    font-size: 0.62rem;
+    color: var(--text-muted);
+    letter-spacing: 0.12rem;
+    padding: 0 0.4rem;
+}

@@ -7,10 +7,21 @@ layout: "home"
 <div class="hero-content">
 <div class="pre-title mono">// TRANSMISSION INCOMING...</div>
 <h1>BETTERFINGERS DECLASSIFIED</h1>
+
 <div class="tagline">
 <p class="reading-text" style="margin-bottom: 0.6rem;">
 <strong class="status-chip" data-lore="RECORD LOCATED: PROTOCOL X-1 INITIATED.">ARTIFACT UNSEALED.</strong> The Voice-to-Will invocation layer is now live.
+<button id="preview-trigger" class="btn btn-primary mono" style="padding: 0.2rem 0.6rem; font-size: 0.65rem; margin-left: 0.5rem; display: inline-flex;">INITIATE PREVIEW</button>
 </p>
+
+<div id="video-drawer" class="video-drawer">
+    <div class="video-frame" style="max-width: 100%; margin: 0.5rem 0 1rem;">
+        <div class="video-container">
+            <div id="yt-player"></div>
+        </div>
+        <div class="mono video-meta">// INTEL_STREAM: PROTOCOL X-1</div>
+    </div>
+</div>
 <p>
 Stop renting your productivity. BetterFingers is a local-first, private AI workflow for your voice. Runs on your machine. No subscription. No cloud dependency.
 </p>
