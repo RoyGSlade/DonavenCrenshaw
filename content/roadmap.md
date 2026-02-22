@@ -37,8 +37,7 @@ layout: "roadmap"
 </div>
 
 <div class="dossier-actions" style="display:flex; justify-content: center; gap: 0.8rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
-    <button class="btn btn-primary" onclick="window.location.href='https://github.com/sourcearcanum/voicesource/issues'">VIEW ROADMAP DETAILS</button>
-    <button class="btn btn-primary" onclick="window.location.href='https://github.com/sourcearcanum/voicesource/milestones'">VIEW PROJECT MILESTONES</button>
+    <button class="btn btn-primary" onclick="window.location.href='https://github.com/RoyGSlade/VoiceSource'">VIEW GITHUB REPOSITORY</button>
 </div>
 
 <div id="rm-dots" class="dots-container" style="display:none;"></div>
