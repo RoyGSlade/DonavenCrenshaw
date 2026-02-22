@@ -117,25 +117,3 @@ main {
     margin: 2.5rem 0;
     background: linear-gradient(90deg, var(--accent-dim), transparent);
 }
-
-@media (max-width: 980px) {
-    body {
-        display: block;
-    }
-
-    .content-wrapper {
-        grid-column: auto;
-    }
-
-    main {
-        padding-top: 1.5rem;
-    }
-
-    .section-header {
-        grid-template-columns: 1fr;
-    }
-
-    .section-subtitle {
-        justify-self: start;
-    }
-}

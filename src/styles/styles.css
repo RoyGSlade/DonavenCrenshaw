@@ -8,6 +8,7 @@
 @import url('./layout.css');
 @import url('./components.css');
 @import url('./accordion.css');
+@import url('./responsive.css');
 
 /* --- PAGE SPECIFIC OVERRIDES --- */
 
@@ -246,26 +247,7 @@
     background: repeating-linear-gradient(transparent, transparent 2px, rgba(255, 157, 95, 0.08) 2px, rgba(255, 157, 95, 0.08) 4px) !important;
 }
 
-/* MOBILE OVERRIDES */
-@media (max-width: 980px) {
-    .hero h1 {
-        font-size: clamp(2.4rem, 12vw, 3.5rem);
-        max-width: 100%;
-    }
 
-    .hero::before {
-        right: -120px;
-        top: 28px;
-    }
-
-    .home-explore-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .stack-gap-lg {
-        margin-bottom: 5rem;
-    }
-}
 
 @keyframes heroRise {
     from {

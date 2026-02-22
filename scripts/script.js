@@ -53,6 +53,18 @@ async function init() {
     initEasterEggs();
     markActiveRoute();
 
+    // Hamburger nav toggle (mobile)
+    const navToggle = document.querySelector('.nav-toggle');
+    const navShell = document.querySelector('.nav-shell');
+    if (navToggle && navShell) {
+        navToggle.addEventListener('click', () => {
+            navShell.classList.toggle('nav-open');
+            const isOpen = navShell.classList.contains('nav-open');
+            navToggle.setAttribute('aria-expanded', isOpen);
+            navToggle.innerHTML = isOpen ? '&#10005;' : '&#9776;';
+        });
+    }
+
     try {
         const [projectsRes, postsRes, fundingRes, patronsRes] = await Promise.all([
             fetch(`${API_BASE}projects.json`),

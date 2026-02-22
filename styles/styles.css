@@ -733,31 +733,67 @@ nav {
             rgba(0, 255, 204, 0.05) 4px);
 }
 
+/* --- HAMBURGER TOGGLE (hidden on desktop) --- */
+.nav-toggle {
+    display: none;
+    background: transparent;
+    border: 1px solid var(--stone-light);
+    color: var(--text-main);
+    width: 44px;
+    height: 44px;
+    cursor: pointer;
+    font-size: 1.35rem;
+    line-height: 1;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.nav-toggle:hover {
+    border-color: var(--tech-cyan);
+    color: var(--tech-cyan);
+}
+
+/* --- TABLET (≤ 900px) --- */
 @media (max-width: 900px) {
     body {
         padding-left: 0;
     }
 
     nav {
-        position: relative;
+        position: sticky;
+        top: 0;
         width: 100%;
         height: auto;
         border-right: none;
         border-bottom: 1px solid var(--stone-dark);
-        padding: 1rem;
+        padding: 0.9rem 1rem;
     }
 
     .nav-inner {
         flex-direction: row;
+        flex-wrap: wrap;
         justify-content: space-between;
         align-items: center;
-        gap: 1rem;
+        gap: 0.8rem;
     }
 
     .nav-links {
         flex-direction: row;
         flex-wrap: wrap;
-        gap: 1rem;
+        gap: 0.6rem;
+        width: 100%;
+    }
+
+    .nav-links a {
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+    }
+
+    .dossier {
+        width: 95vw;
+        height: 90vh;
     }
 
     .dossier-body {
@@ -769,10 +805,135 @@ nav {
     }
 
     .hero h1 {
-        font-size: 4rem;
+        font-size: clamp(2.4rem, 10vw, 4rem);
     }
 
     .manifesto-grid {
         grid-template-columns: 1fr;
+    }
+
+    .project-grid {
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    }
+
+    .log-entry {
+        grid-template-columns: 1fr;
+        padding-left: 1.1rem;
+    }
+
+    .section-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+
+    .section-title {
+        font-size: clamp(2rem, 7vw, 3rem);
+    }
+}
+
+/* --- PHONE (≤ 480px) --- */
+@media (max-width: 480px) {
+
+    .nav-toggle {
+        display: flex;
+    }
+
+    nav {
+        padding: 0.7rem 0.9rem;
+    }
+
+    .nav-inner {
+        flex-wrap: wrap;
+    }
+
+    .nav-links,
+    .nav-inner> :not(.brand):not(.nav-toggle) {
+        display: none;
+    }
+
+    nav.nav-open .nav-links {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        gap: 0.35rem;
+        padding-top: 0.6rem;
+        border-top: 1px solid var(--stone-dark);
+    }
+
+    .nav-links a {
+        min-height: 48px;
+        padding: 0.8rem 0.5rem;
+        font-size: 0.85rem;
+    }
+
+    .hero h1 {
+        font-size: clamp(1.8rem, 10vw, 2.8rem);
+    }
+
+    .tagline {
+        font-size: 1.1rem;
+        padding-left: 1rem;
+    }
+
+    .container {
+        padding: 0 0.9rem;
+    }
+
+    .section-title {
+        font-size: clamp(1.5rem, 8vw, 2.2rem);
+    }
+
+    .project-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .project-card {
+        min-height: 200px;
+        padding: 1.5rem 1.2rem;
+    }
+
+    .project-card h3 {
+        font-size: 1.4rem;
+    }
+
+    .dossier {
+        width: 100vw;
+        height: 100vh;
+        border: none;
+    }
+
+    .dossier-header {
+        padding: 1rem;
+    }
+
+    .dossier-main {
+        padding: 1.5rem;
+    }
+
+    .log-entry {
+        padding: 0.9rem 0.8rem 0.9rem 1rem;
+    }
+
+    .manifesto-point p {
+        font-size: 1.1rem;
+    }
+
+    .funding-card {
+        padding: 1.2rem;
+    }
+
+    .btn-primary {
+        min-height: 44px;
+        padding: 0.75rem 1.2rem;
+    }
+
+    .sort-toggle {
+        min-height: 44px;
+    }
+
+    .reading-text {
+        font-size: 1.2rem;
     }
 }

@@ -1,0 +1,446 @@
+/* =============================================
+   RESPONSIVE STYLES — SOURCE ARCANUM
+   Breakpoints: Phone ≤480px · Tablet 481–980px
+   ============================================= */
+
+/* --- HAMBURGER TOGGLE (hidden on desktop) --- */
+.nav-toggle {
+    display: none;
+    background: transparent;
+    border: 1px solid var(--stone-light);
+    border-radius: var(--radius-soft);
+    color: var(--text-main);
+    width: 44px;
+    height: 44px;
+    cursor: pointer;
+    font-size: 1.35rem;
+    line-height: 1;
+    align-items: center;
+    justify-content: center;
+    transition: border-color 0.25s ease, color 0.25s ease;
+    flex-shrink: 0;
+}
+
+.nav-toggle:hover,
+.nav-toggle:focus-visible {
+    border-color: var(--tech-cyan);
+    color: var(--tech-cyan);
+    box-shadow: 0 0 12px rgba(101, 230, 217, 0.2);
+}
+
+/* ==========================================
+   TABLET  (481px – 980px)
+   ========================================== */
+@media (max-width: 980px) {
+
+    /* --- Layout --- */
+    body {
+        display: block;
+    }
+
+    .content-wrapper {
+        grid-column: auto;
+    }
+
+    main {
+        padding-top: 1.5rem;
+    }
+
+    /* --- Nav becomes sticky top bar --- */
+    .site-nav {
+        position: sticky;
+        inset: 0;
+        width: 100%;
+        z-index: 150;
+    }
+
+    .nav-shell {
+        height: auto;
+        padding: 0.9rem 1rem;
+        border-right: none;
+        border-bottom: 1px solid var(--stone-dark);
+        gap: 0.8rem;
+    }
+
+    .nav-shell::before {
+        display: none;
+    }
+
+    .nav-brand {
+        margin: 0;
+    }
+
+    .nav-links {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.5rem;
+    }
+
+    .nav-links a {
+        min-height: 44px;
+        align-items: center;
+    }
+
+    .nav-footer {
+        margin-top: 0.2rem;
+    }
+
+    /* --- Section headers --- */
+    .section-header {
+        grid-template-columns: 1fr;
+    }
+
+    .section-subtitle {
+        justify-self: start;
+    }
+
+    /* --- Dossier modal --- */
+    .dossier {
+        width: 95vw;
+        height: 90vh;
+    }
+
+    .dossier-body {
+        grid-template-columns: 1fr;
+    }
+
+    .dossier-sidebar {
+        display: none;
+    }
+
+    /* --- Footer --- */
+    .footer-content {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+
+    /* --- Grids --- */
+    .manifesto-grid,
+    .support-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .project-grid {
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    }
+
+    /* --- Chronicles --- */
+    .log-entry {
+        grid-template-columns: 1fr;
+        padding-left: 1.1rem;
+    }
+
+    .log-entry::before {
+        top: 1rem;
+    }
+
+    /* --- Hero --- */
+    .hero h1 {
+        font-size: clamp(2.4rem, 12vw, 3.5rem);
+        max-width: 100%;
+    }
+
+    .hero::before {
+        right: -120px;
+        top: 28px;
+    }
+
+    /* --- Home explore grid --- */
+    .home-explore-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .stack-gap-lg {
+        margin-bottom: 5rem;
+    }
+
+    /* --- Roadmap --- */
+    .roadmap-shell {
+        display: flex;
+        flex-direction: column;
+        padding: 0 1rem;
+        gap: 3rem;
+    }
+
+    .roadmap-gutter {
+        display: none;
+    }
+
+    .roadmap-rail {
+        max-height: none;
+        overflow-y: visible;
+        position: static;
+        width: 100%;
+    }
+
+    .roadmap-stage {
+        order: 1;
+    }
+
+    .roadmap-rail.left {
+        order: 2;
+    }
+
+    .roadmap-rail.right {
+        order: 3;
+    }
+
+    .split-panel {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+    }
+
+    .kanban-board {
+        grid-template-columns: 1fr;
+        padding: 1.5rem;
+        gap: 2rem;
+    }
+}
+
+/* ==========================================
+   PHONE  (≤ 480px)
+   ========================================== */
+@media (max-width: 480px) {
+
+    /* --- Nav: Hamburger mode --- */
+    .nav-toggle {
+        display: flex;
+    }
+
+    .nav-shell {
+        padding: 0.7rem 0.9rem;
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .nav-brand {
+        flex: 1;
+        min-width: 0;
+    }
+
+    /* Hide links + footer by default, show on toggle */
+    .nav-links,
+    .nav-footer {
+        display: none;
+        width: 100%;
+    }
+
+    .nav-shell.nav-open .nav-links,
+    .nav-shell.nav-open .nav-footer {
+        display: flex;
+    }
+
+    .nav-shell.nav-open .nav-links {
+        flex-direction: column;
+        gap: 0.35rem;
+        padding-top: 0.6rem;
+        border-top: 1px solid var(--stone-dark);
+    }
+
+    .nav-links a {
+        min-height: 48px;
+        padding: 0.85rem 0.9rem;
+        font-size: 0.78rem;
+    }
+
+    .nav-shell.nav-open .nav-footer {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        padding-top: 0.6rem;
+        border-top: 1px solid var(--stone-dark);
+        margin-top: 0.4rem;
+    }
+
+    /* --- Typography --- */
+    .hero h1 {
+        font-size: clamp(1.8rem, 10vw, 2.8rem);
+    }
+
+    .tagline {
+        padding: 0.9rem 1rem;
+        font-size: 0.95rem;
+    }
+
+    .section-title {
+        font-size: clamp(1.5rem, 8vw, 2.2rem);
+    }
+
+    .reading-text {
+        font-size: 1rem;
+        line-height: 1.7;
+    }
+
+    /* --- Container --- */
+    .container {
+        padding: 0 0.9rem;
+    }
+
+    .page-shell,
+    .page-header {
+        padding-top: 2rem;
+        padding-bottom: 3rem;
+    }
+
+    /* --- Project Cards --- */
+    .project-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .project-card {
+        min-height: 200px;
+        padding: clamp(1.1rem, 3vw, 1.5rem);
+    }
+
+    .project-card h3 {
+        font-size: clamp(1.2rem, 5vw, 1.5rem);
+    }
+
+    .project-card p {
+        font-size: 0.92rem;
+    }
+
+    .click-prompt {
+        margin-top: 0.8rem;
+    }
+
+    /* --- Dossier: fullscreen --- */
+    .dossier {
+        width: 100vw;
+        height: 100vh;
+        border: none;
+        border-radius: 0;
+    }
+
+    .dossier-header {
+        padding: 1rem;
+    }
+
+    .dossier-main {
+        padding: 1.2rem;
+    }
+
+    /* --- Chronicle entries --- */
+    .log-entry {
+        padding: 0.9rem 0.8rem 0.9rem 1rem;
+    }
+
+    .log-title {
+        font-size: 1.1rem;
+    }
+
+    .log-excerpt {
+        font-size: 0.9rem;
+    }
+
+    /* --- Manifesto --- */
+    .manifesto-point {
+        padding: 1rem;
+    }
+
+    .manifesto-point p {
+        font-size: 0.95rem;
+    }
+
+    /* --- Roadmap Carousel --- */
+    .carousel-container {
+        padding: 2rem 1rem;
+        min-height: 200px;
+    }
+
+    .project-title {
+        font-size: 2rem;
+    }
+
+    .focus-summary {
+        padding: 0.6rem 1rem;
+        font-size: 0.85rem;
+    }
+
+    .carousel-nav-btn {
+        width: 36px;
+        height: 36px;
+        font-size: 1.1rem;
+    }
+
+    .prev-btn {
+        left: 0.5rem;
+    }
+
+    .next-btn {
+        right: 0.5rem;
+    }
+
+    /* --- Kanban --- */
+    .kanban-board {
+        padding: 1rem;
+        gap: 1.5rem;
+    }
+
+    /* --- Footer --- */
+    .footer-content {
+        gap: 0.8rem;
+    }
+
+    .footer-links {
+        gap: 0.5rem;
+    }
+
+    .footer-links a {
+        padding: 0.5rem 0.7rem;
+        font-size: 0.7rem;
+    }
+
+    /* --- Buttons: touch targets --- */
+    .btn-primary {
+        min-height: 44px;
+        padding: 0.75rem 1.2rem;
+    }
+
+    .sort-toggle {
+        min-height: 44px;
+        padding: 0.5rem 0.8rem;
+    }
+
+    /* --- Section spacing --- */
+    .section-block,
+    .section-stack {
+        margin-bottom: 4rem;
+    }
+
+    .stack-gap-lg {
+        margin-bottom: 3rem;
+    }
+
+    /* --- Funding & Support --- */
+    .funding-card {
+        padding: 1rem;
+    }
+
+    .patron-card {
+        padding: 0.8rem;
+    }
+
+    #immortals-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .trust-anchor-list li {
+        padding: 0.75rem;
+        font-size: 0.92rem;
+    }
+}
+
+/* --- ACCESSIBILITY: reduced motion --- */
+@media (prefers-reduced-motion: reduce) {
+
+    .nav-shell,
+    .nav-links,
+    .nav-footer {
+        transition: none !important;
+    }
+}
