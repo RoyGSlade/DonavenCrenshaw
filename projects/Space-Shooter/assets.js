@@ -6,7 +6,7 @@
  */
 
 // Resolve the base path to the sprites directory relative to this file
-const SPRITE_BASE = '../assets/Images/sprites';
+const SPRITE_BASE = '../../assets/Images/sprites';
 
 // This helper function simplifies loading a single image
 function loadImage(src) {

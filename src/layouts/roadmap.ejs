@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <!-- Include the base head content -->
+    <%- components.head.replace('</head>', '') %>
+
+        <!-- Roadmap specific CSS injection -->
+        <link rel="stylesheet" href="<%= siteRoot %>styles/roadmap.css">
+</head>
+
+<body>
+    <%- components.nav %>
+
+        <div class="content-wrapper">
+            <main class="container page-header roadmap-page">
+                <% if (frontmatter.title) { %>
+                    <h1 class="section-title">
+                        <%= frontmatter.title %>
+                    </h1>
+                    <% } %>
+
+                        <%- content %>
+            </main>
+
+            <%- components.footer %>
+        </div>
+
+        <!-- Base scripts -->
+        <script src="<%= siteRoot %>scripts/script.js"></script>
+        <!-- Roadmap specific logic -->
+        <script src="<%= siteRoot %>scripts/roadmap.js"></script>
+</body>
+
+</html>

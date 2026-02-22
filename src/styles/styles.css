@@ -1,0 +1,307 @@
+/* 
+    Source Arcanum Global Stylesheet
+    Architecture: Modular Imports
+*/
+
+@import url('./tokens.css');
+@import url('./base.css');
+@import url('./layout.css');
+@import url('./components.css');
+@import url('./accordion.css');
+
+/* --- PAGE SPECIFIC OVERRIDES --- */
+
+/* HERO */
+.hero {
+    position: relative;
+    min-height: 72vh;
+    display: grid;
+    align-content: center;
+    padding-block: clamp(3rem, 8vh, 6.5rem);
+    isolation: isolate;
+}
+
+.hero::before {
+    content: "";
+    position: absolute;
+    width: clamp(220px, 45vw, 520px);
+    aspect-ratio: 1;
+    right: clamp(-90px, -9vw, -30px);
+    top: clamp(10px, 4vh, 60px);
+    border: 1px solid rgba(101, 230, 217, 0.25);
+    border-radius: 50%;
+    box-shadow: 0 0 70px rgba(101, 230, 217, 0.16), inset 0 0 36px rgba(210, 177, 111, 0.16);
+    opacity: 0.6;
+    animation: haloDrift 16s ease-in-out infinite;
+    pointer-events: none;
+    z-index: -1;
+}
+
+.hero-content {
+    max-width: min(920px, 100%);
+    display: grid;
+    gap: 1rem;
+    animation: heroRise 0.9s ease both;
+}
+
+.pre-title {
+    color: var(--accent-gold);
+    font-size: 0.68rem;
+    letter-spacing: 0.18em;
+    animation: signalBlink 2.8s steps(1, end) infinite;
+}
+
+.hero h1 {
+    font-size: clamp(2.8rem, 7vw, 5.8rem);
+    line-height: 0.9;
+    max-width: 14ch;
+    text-wrap: balance;
+    text-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+}
+
+.tagline {
+    max-width: 70ch;
+    padding: 1.2rem 1.3rem;
+    border: 1px solid rgba(47, 66, 95, 0.85);
+    border-left: 3px solid var(--accent-gold);
+    background: linear-gradient(125deg, rgba(12, 18, 30, 0.8), rgba(8, 12, 20, 0.92));
+}
+
+.hero-meta {
+    margin-top: 1rem;
+    padding-top: 0.9rem;
+    border-top: 1px dashed rgba(47, 66, 95, 0.8);
+    display: grid;
+    gap: 0.35rem;
+    color: var(--text-muted);
+    font-size: 0.66rem;
+}
+
+.hero-actions {
+    margin-top: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    flex-wrap: wrap;
+}
+
+.hero-link {
+    color: var(--text-muted);
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+    border-bottom: 1px dotted var(--text-muted);
+    padding-bottom: 0.12rem;
+}
+
+.hero-link:hover {
+    color: var(--tech-cyan);
+    border-color: var(--tech-cyan);
+}
+
+.status-chip {
+    color: var(--tech-cyan);
+}
+
+.stack-gap-lg {
+    margin-bottom: 8rem;
+}
+
+.home-explore-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+}
+
+.directory-tile {
+    min-height: 200px;
+    justify-content: center;
+}
+
+.directory-tile .folder-tag {
+    font-size: 0.67rem;
+    margin-bottom: 0.4rem;
+}
+
+.chronicle-manifesto {
+    margin-bottom: 2.1rem;
+    padding: 1.3rem;
+    border: 1px solid rgba(47, 66, 95, 0.78);
+    background: linear-gradient(145deg, rgba(210, 177, 111, 0.08), rgba(8, 13, 22, 0.88));
+}
+
+.chronicle-manifesto h3 {
+    margin-bottom: 0.75rem;
+    color: var(--accent-gold);
+    font-size: 0.9rem;
+}
+
+/* HUB / SUPPORT */
+.hub-intro {
+    margin-top: 1.4rem;
+    max-width: 60ch;
+    color: var(--text-muted);
+    border-left: 2px solid var(--stone-light);
+    padding-left: 1rem;
+}
+
+.support-channel-row {
+    margin-top: 2rem;
+}
+
+.sort-row {
+    margin-bottom: 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    flex-wrap: wrap;
+}
+
+.ledger-note {
+    margin-top: 1.5rem;
+    padding: 0.95rem 1rem;
+    border: 1px solid rgba(47, 66, 95, 0.75);
+    background: rgba(12, 18, 30, 0.7);
+    font-size: 0.74rem;
+    color: var(--text-muted);
+}
+
+.steering-note {
+    margin-top: 1rem;
+    font-style: italic;
+    color: var(--text-muted);
+    font-size: 0.93rem;
+}
+
+.steering-note strong {
+    color: var(--text-main);
+    font-style: normal;
+}
+
+#hall-of-immortals {
+    margin-bottom: 8rem;
+    border-top: 1px solid var(--stone-dark);
+    padding-top: 3rem;
+}
+
+#immortals-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 0.9rem;
+}
+
+/* UTILITIES FOR MARKDOWN-COMPILED PAGES */
+.page-sector {
+    margin-top: 0.8rem;
+    color: var(--tech-cyan);
+}
+
+.page-main-section {
+    margin-bottom: 8rem;
+    padding-top: 3rem;
+}
+
+.boxed-note {
+    border: 1px dashed rgba(47, 66, 95, 0.9);
+    padding: 1.3rem;
+    text-align: center;
+    background: rgba(8, 12, 20, 0.84);
+}
+
+.boxed-note .mono {
+    color: var(--accent-gold);
+    font-size: 0.72rem;
+    margin-bottom: 0.5rem;
+}
+
+/* EASTER EGGS */
+.glitch-rune {
+    transition: all 0.2s ease;
+}
+
+.glitch-rune:hover {
+    transform: translateY(-1px);
+}
+
+.system-override {
+    --bg-void: #0b1112 !important;
+    --bg-rift: #0e1518 !important;
+    --text-main: #9ffff2 !important;
+    --accent-gold: #75f7ea !important;
+    --tech-cyan: #ff9d5f !important;
+    animation: matrixShift 0.45s ease;
+}
+
+@keyframes matrixShift {
+    0% {
+        filter: invert(1) hue-rotate(160deg);
+    }
+
+    100% {
+        filter: invert(0) hue-rotate(0deg);
+    }
+}
+
+.system-override::before {
+    background-image: none !important;
+    background: repeating-linear-gradient(transparent, transparent 2px, rgba(255, 157, 95, 0.08) 2px, rgba(255, 157, 95, 0.08) 4px) !important;
+}
+
+/* MOBILE OVERRIDES */
+@media (max-width: 980px) {
+    .hero h1 {
+        font-size: clamp(2.4rem, 12vw, 3.5rem);
+        max-width: 100%;
+    }
+
+    .hero::before {
+        right: -120px;
+        top: 28px;
+    }
+
+    .home-explore-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .stack-gap-lg {
+        margin-bottom: 5rem;
+    }
+}
+
+@keyframes heroRise {
+    from {
+        opacity: 0;
+        transform: translateY(16px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes haloDrift {
+    0% {
+        transform: translateY(0) scale(1);
+    }
+
+    50% {
+        transform: translateY(12px) scale(1.03);
+    }
+
+    100% {
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes signalBlink {
+
+    0%,
+    49% {
+        opacity: 0.7;
+    }
+
+    50%,
+    100% {
+        opacity: 1;
+    }
+}

@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stardust Demo | Source Arcanum</title>
+    <style>
+        :root {
+            --bg: #04070d;
+            --panel: rgba(8, 14, 24, 0.92);
+            --line: rgba(88, 124, 173, 0.55);
+            --gold: #d2b16f;
+            --cyan: #65e6d9;
+            --text: #ede4d4;
+            --muted: #9aa8bf;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: radial-gradient(circle at 20% 0%, rgba(101, 230, 217, 0.12), transparent 40%), var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+            overflow: hidden;
+        }
+
+        #starmap-canvas {
+            position: fixed;
+            inset: 0;
+            width: 100vw;
+            height: 100vh;
+            display: block;
+            background: #000;
+        }
+
+        .overlay-panel {
+            position: fixed;
+            inset: 0;
+            display: grid;
+            place-items: center;
+            background: rgba(0, 0, 0, 0.58);
+            backdrop-filter: blur(3px);
+            z-index: 20;
+            padding: 1rem;
+        }
+
+        .panel {
+            width: min(640px, 92vw);
+            background: var(--panel);
+            border: 1px solid var(--line);
+            padding: 1.25rem;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .panel h1,
+        .panel h2 {
+            color: var(--gold);
+            margin-bottom: 0.7rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            font-size: 1.2rem;
+        }
+
+        .panel p {
+            color: var(--muted);
+            line-height: 1.55;
+            margin-bottom: 0.6rem;
+        }
+
+        .mono {
+            font-family: Consolas, "Courier New", monospace;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            font-size: 0.72rem;
+        }
+
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.55rem;
+            margin-top: 1rem;
+        }
+
+        button,
+        .link-btn {
+            border: 1px solid var(--line);
+            background: rgba(12, 20, 32, 0.95);
+            color: var(--text);
+            padding: 0.55rem 0.9rem;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            font-size: 0.7rem;
+            text-decoration: none;
+        }
+
+        button:hover,
+        .link-btn:hover {
+            border-color: var(--cyan);
+            color: var(--cyan);
+        }
+
+        .setting-row {
+            display: grid;
+            gap: 0.4rem;
+            margin-bottom: 0.8rem;
+            color: var(--muted);
+            font-size: 0.92rem;
+        }
+
+        .setting-row input[type="range"] {
+            width: 100%;
+        }
+
+        .hud-tag {
+            position: fixed;
+            top: 0.9rem;
+            left: 0.9rem;
+            z-index: 10;
+            color: var(--cyan);
+            font-family: Consolas, "Courier New", monospace;
+            font-size: 0.72rem;
+            padding: 0.4rem 0.6rem;
+            background: rgba(0, 0, 0, 0.45);
+            border: 1px solid rgba(101, 230, 217, 0.35);
+        }
+
+        .toast {
+            position: fixed;
+            left: 50%;
+            bottom: 1rem;
+            transform: translateX(-50%);
+            z-index: 30;
+            background: rgba(0, 0, 0, 0.7);
+            border: 1px solid var(--line);
+            color: var(--text);
+            padding: 0.45rem 0.7rem;
+            font-family: Consolas, "Courier New", monospace;
+            font-size: 0.68rem;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            pointer-events: none;
+        }
+
+        #starmap-touch-controls {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 25;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="starmap-canvas" aria-label="Stardust game canvas"></canvas>
+
+    <div id="mission-tracker" class="hud-tag">Data Shards: 0/5</div>
+    <div id="fuel-bar-container" class="hidden"></div>
+    <div id="roadmap-toast" class="toast"></div>
+    <div id="starmap-touch-controls" class="hidden"></div>
+
+    <div id="starmap-start" class="overlay-panel">
+        <div class="panel">
+            <h1>Stardust Demo</h1>
+            <p>Collect data shards, traverse the gate network, and survive the arena cycle.</p>
+            <p class="mono">Controls: WASD / Arrows, Space Launch, Shift Boost, Ctrl Shoot.</p>
+            <div class="actions">
+                <button id="starmap-start-btn">Launch Run</button>
+                <button id="starmap-settings-btn-start">Settings</button>
+                <a class="link-btn" href="../../games/index.html">Back To Games</a>
+            </div>
+        </div>
+    </div>
+
+    <div id="starmap-pause" class="overlay-panel hidden">
+        <div class="panel">
+            <h2>Run Paused</h2>
+            <div class="actions">
+                <button id="starmap-resume-btn">Resume</button>
+                <button id="starmap-retry-btn">Retry</button>
+                <button id="starmap-settings-btn-pause">Settings</button>
+                <button id="starmap-quit-btn">Quit</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="starmap-end" class="overlay-panel hidden">
+        <div class="panel">
+            <h2 id="starmap-end-title">Run Complete</h2>
+            <div class="actions">
+                <button id="starmap-again-btn">Run Again</button>
+                <a class="link-btn" href="../../games/index.html">Exit</a>
+            </div>
+        </div>
+    </div>
+
+    <div id="starmap-settings" class="overlay-panel hidden">
+        <div class="panel">
+            <h2>Settings</h2>
+            <label class="setting-row">
+                Music Volume <span id="setting-music-val">100%</span>
+                <input id="setting-music-vol" type="range" min="0" max="1" step="0.01" value="1">
+            </label>
+            <label class="setting-row">
+                SFX Volume <span id="setting-sfx-val">100%</span>
+                <input id="setting-sfx-vol" type="range" min="0" max="1" step="0.01" value="1">
+            </label>
+            <label class="setting-row">
+                <input id="setting-invert-thrust" type="checkbox">
+                Invert thrust axis
+            </label>
+            <label class="setting-row">
+                <input id="starmap-tilt-toggle" type="checkbox">
+                Enable tilt controls
+            </label>
+            <div class="actions">
+                <button id="settings-save-btn">Save</button>
+                <button id="settings-cancel-btn">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="starmap-victory" class="overlay-panel hidden">
+        <div class="panel">
+            <h2 id="victory-title">Victory</h2>
+            <p id="victory-message">Gate secured.</p>
+            <div class="actions">
+                <button id="victory-continue-btn">Continue</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="starmap-defeat" class="overlay-panel hidden">
+        <div class="panel">
+            <h2>Defeat</h2>
+            <p id="defeat-message">You were defeated.</p>
+            <p id="defeat-countdown" class="mono"></p>
+            <div class="actions">
+                <button id="defeat-close-btn">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initAudioUnlock } from './audio.js';
+        import { initStarmap } from './index.js';
+
+        const canvas = document.getElementById('starmap-canvas');
+        initAudioUnlock();
+        initStarmap(canvas);
+    </script>
+</body>
+
+</html>

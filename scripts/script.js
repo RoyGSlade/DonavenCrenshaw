@@ -1,48 +1,92 @@
 // --- CONFIG ---
-const API_BASE = (window.SITE_ROOT || '') + 'data/';
+const SITE_ROOT = window.SITE_ROOT || './';
+const API_BASE = `${SITE_ROOT}data/`;
 
 // --- STATE ---
 let PROJECTS = [];
 let POSTS = [];
 let FUNDING = {};
+let PATRONS = [];
 let MANIFESTO = [
     { title: "VOICE IS DATA", text: "Your voice is a biometric identifier. We process it locally. We do not send it to the cloud to be trained on." },
-    { title: "LOCAL-FIRST = OWNERSHIP", text: "If it doesn’t run offline, you don’t truly own it. We build tools that still work when the cloud goes dark." },
-    { title: "FREE FOREVER = TRUST", text: "No subscriptions. No paywalls. No “free until we pivot.” If it’s on this site, it stays free." },
-    { title: "DONATIONS ARE VOTES", text: "You don’t pay for features. You fund the direction. Donations steer priority, not access." },
-    { title: "NO ADS. NO SPONSORS. NO HANDLERS.", text: "I don’t sell your attention. I don’t trade your creativity for corporate approval." },
-    { title: "DISCOMFORT BUILDS CAPABILITY", text: "This isn’t comfort-software. The goal is courage, competence, and action. Tools that make you stronger." },
-    { title: "BUILD TO GIVE", text: "The point isn’t “win capitalism.” It’s to reduce exploitation and decentralize capability, one useful tool at a time." }
+    { title: "LOCAL-FIRST = OWNERSHIP", text: "If it does not run offline, you do not truly own it. We build tools that still work when the cloud goes dark." },
+    { title: "FREE FOREVER = TRUST", text: "No subscriptions. No paywalls. No free-until-we-pivot trap. If it is on this site, it stays free." },
+    { title: "DONATIONS ARE VOTES", text: "You do not pay for features. You fund the direction. Donations steer priority, not access." },
+    { title: "NO ADS. NO SPONSORS. NO HANDLERS.", text: "I do not sell your attention. I do not trade your creativity for corporate approval." },
+    { title: "DISCOMFORT BUILDS CAPABILITY", text: "This is not comfort software. The goal is courage, competence, and action. Tools that make you stronger." },
+    { title: "BUILD TO GIVE", text: "The point is not to win capitalism. It is to reduce exploitation and decentralize capability, one useful tool at a time." }
 ];
+
+
+function isExternalUrl(url) {
+    return /^https?:\/\//i.test(url) || url.startsWith('mailto:') || url.startsWith('tel:');
+}
+
+function resolveSiteUrl(url) {
+    if (!url) return '';
+    if (isExternalUrl(url) || url.startsWith('#')) return url;
+    if (url.startsWith('../')) return url;
+    const normalized = url.replace(/^\.?\//, '');
+    return SITE_ROOT + normalized;
+}
+
+function getCurrentRoute(path = window.location.pathname.toLowerCase()) {
+    if (path.includes('productivity')) return 'productivity';
+    if (path.includes('games')) return 'games';
+    if (path.includes('financial')) return 'financial';
+    if (path.includes('roadmap')) return 'roadmap';
+    if (path.includes('chronicles')) return 'chronicles';
+    if (path.includes('treasury')) return 'treasury';
+    return 'home';
+}
+
+function markActiveRoute() {
+    const route = getCurrentRoute();
+    const links = document.querySelectorAll('.nav-links a[data-route]');
+    links.forEach((link) => {
+        link.classList.toggle('is-active', link.dataset.route === route);
+    });
+}
 
 // --- INIT ---
 async function init() {
-    injectLayout();
+    initEasterEggs();
+    markActiveRoute();
 
     try {
-        const [projectsRes, postsRes, fundingRes] = await Promise.all([
+        const [projectsRes, postsRes, fundingRes, patronsRes] = await Promise.all([
             fetch(`${API_BASE}projects.json`),
             fetch(`${API_BASE}posts.json`),
-            fetch(`${API_BASE}funding.json`)
+            fetch(`${API_BASE}funding.json`),
+            fetch(`${API_BASE}patrons.json`)
         ]);
 
         if (projectsRes.ok) PROJECTS = await projectsRes.json();
         if (postsRes.ok) POSTS = await postsRes.json();
         if (fundingRes.ok) FUNDING = await fundingRes.json();
-
+        if (patronsRes.ok) PATRONS = await patronsRes.json();
         // Router
-        const page = window.location.pathname.split('/').pop().toLowerCase();
+        const route = getCurrentRoute();
 
-        if (page === 'index.html' || page === '' || window.location.pathname.endsWith('/')) {
-            renderHome();
-        } else if (page.includes('productivity')) {
+        if (route === 'productivity') {
             renderCategory('productivity');
-        } else if (page.includes('games')) {
+        } else if (route === 'games') {
             renderCategory('games');
-        } else if (page.includes('finance')) {
+        } else if (route === 'financial') {
             renderCategory('finance');
-        } else if (page.includes('support')) {
+        } else if (route === 'treasury') {
             renderSupport();
+        } else if (route === 'chronicles') {
+            const pathMatch = window.location.pathname.toLowerCase();
+            // Check if it is the root chronicles index or a sub-page
+            if (pathMatch.endsWith('chronicles/index.html') || pathMatch.endsWith('/chronicles/') || pathMatch.endsWith('/chronicles')) {
+                renderChroniclesFeed();
+            } else {
+                // Do nothing on deep chronicle post pages, just let HTML render
+            }
+        } else {
+            // Default to Home if root or unhandled (like root index.html)
+            renderHome();
         }
 
         bindEvents();
@@ -52,51 +96,7 @@ async function init() {
     }
 }
 
-// --- LAYOUT INJECTION ---
-function injectLayout() {
-    // Inject Nav
-    const navContainer = document.querySelector('nav');
-    if (navContainer) {
-        navContainer.innerHTML = `
-        <div class="container nav-inner">
-            <div class="brand">
-                <a href="index.html" style="display:flex; align-items:center; gap:15px; text-decoration:none; color:var(--accent-gold);">
-                    <div class="brand-sigil"></div>
-                    SOURCE ARCANUM
-                </a>
-            </div>
-            <div class="nav-links">
-                <a href="index.html">HOME</a>
-                <a href="productivity.html">PRODUCTIVITY</a>
-                <a href="games.html">GAMES</a>
-                <a href="finance.html">FINANCIAL</a>
-                <a href="roadmap.html">ROADMAP</a>
-                <a href="support.html">SUPPORT</a>
-            </div>
-        </div>`;
-
-        // Highlight active link
-        const current = window.location.pathname.split('/').pop() || 'index.html';
-        const links = navContainer.querySelectorAll('.nav-links a');
-        links.forEach(l => {
-            if (l.getAttribute('href') === current) {
-                l.style.color = 'var(--accent-gold)';
-                l.style.textShadow = '0 0 8px var(--accent-dim)';
-            }
-        });
-    }
-
-    // Inject Footer
-    const footerContainer = document.querySelector('footer');
-    if (footerContainer) {
-        footerContainer.innerHTML = `
-        <div class="container" style="padding: 4rem 0; border-top: 1px solid var(--stone-dark); margin-top: 4rem; text-align: center;">
-            <div class="brand-sigil" style="margin: 0 auto 2rem auto;"></div>
-            <p class="mono" style="color: var(--text-muted); font-size: 0.9rem;">SOURCE ARCANUM // EST. 2026</p>
-            <p class="mono" style="color: var(--tech-cyan); font-size: 0.8rem; margin-top: 1rem;">LOCAL-FIRST. FREE FOREVER. <a href="https://ko-fi.com/democratizegm" target="_blank" style="color: var(--accent-gold); text-decoration: none; border-bottom: 1px dotted var(--accent-gold);">DONATION-STEERED</a>. NO TELEMETRY.</p>
-        </div>`;
-    }
-}
+// Layout injection removed - handled by static builder
 
 // --- RENDERERS ---
 
@@ -126,12 +126,33 @@ function renderChronicles() {
     const latest = POSTS.slice(0, 3);
 
     container.innerHTML = latest.map(p => `
-        <div class="log-entry" onclick="window.location.href='${p.url}'" style="cursor: pointer; margin-bottom: 2rem;">
+        <div class="log-entry" onclick="window.location.href='${resolveSiteUrl(p.url)}'" style="cursor: pointer; margin-bottom: 2rem;">
             <div class="log-date mono">${p.dateISO}</div>
             <div>
                 <h3 class="log-title">${p.title}</h3>
                 <p class="log-excerpt">${p.excerpt}</p>
                 <div class="mono" style="margin-top: 1rem; color: var(--accent-gold); font-size: 0.8rem;">READ ENTRY &rarr;</div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function renderChroniclesFeed() {
+    const container = document.getElementById('chronicles-feed');
+    if (!container) return;
+
+    if (POSTS.length === 0) {
+        container.innerHTML = `<div class="mono" style="color: var(--text-muted);">// NO LOGS FOUND</div>`;
+        return;
+    }
+
+    container.innerHTML = POSTS.map(p => `
+        <div class="log-entry" onclick="window.location.href='${resolveSiteUrl(p.url)}'" style="cursor: pointer; margin-bottom: 2rem; border-bottom: 1px dotted var(--stone-light); padding-bottom: 2rem;">
+            <div class="log-date mono" style="color: var(--tech-cyan);">${p.dateISO}</div>
+            <div>
+                <h3 class="log-title" style="color: var(--text-main); font-size: 1.4rem;">${p.title}</h3>
+                <p class="log-excerpt" style="color: var(--text-muted); margin-top: 1rem;">${p.excerpt}</p>
+                <div class="mono" style="margin-top: 1rem; color: var(--tech-cyan); font-size: 0.8rem;">> ACCESS ARCHIVE</div>
             </div>
         </div>
     `).join('');
@@ -144,7 +165,10 @@ function renderCategory(category) {
 
 function renderSupport(sortBy = 'priority') {
     const fundingDiv = document.getElementById('funding-grid');
-    if (!fundingDiv || !FUNDING.buckets) return;
+    if (!fundingDiv || !FUNDING.buckets) {
+        renderImmortals();
+        return;
+    }
 
     let buckets = [...FUNDING.buckets];
 
@@ -184,9 +208,9 @@ function renderSupport(sortBy = 'priority') {
 
             <!-- Links -->
             <div style="margin-top: 1.5rem; display: flex; gap: 1rem; flex-wrap: wrap;">
-                ${b.links.map(l => `
-                    <a href="${l.url}" target="_blank" class="btn btn-primary" style="padding: 0.3rem 0.8rem; font-size: 0.7rem;">${l.label}</a>
-                `).join('')}
+                ${b.raisedUSD > 0 ? b.links.map(l => `
+                    <a href="${resolveSiteUrl(l.url)}" target="_blank" class="btn btn-primary" style="padding: 0.3rem 0.8rem; font-size: 0.7rem;">${l.label}</a>
+                `).join('') : '<span class="mono" style="color:var(--text-muted); font-size: 0.8rem;">// STATUS: COMING SOON</span>'}
             </div>
         </div>`;
     }).join('');
@@ -202,6 +226,28 @@ function renderSupport(sortBy = 'priority') {
             renderSupport(btn.dataset.sort);
         };
     });
+
+    renderImmortals();
+}
+
+function renderImmortals() {
+    const grid = document.getElementById('immortals-grid');
+    if (!grid) return;
+
+    if (PATRONS.length === 0) {
+        grid.innerHTML = `<div class="mono" style="color: var(--text-muted);">// HALL IS EMPTY.</div>`;
+        return;
+    }
+
+    // Sort by amount, then date
+    const sorted = [...PATRONS].sort((a, b) => b.amount - a.amount || new Date(b.date) - new Date(a.date));
+
+    grid.innerHTML = sorted.map(p => `
+        <div class="patron-card" style="border: 1px solid var(--stone-light); padding: 1rem; background: rgba(212, 175, 55, 0.02);">
+            <div class="mono" style="color: var(--accent-gold); font-size: 1.1rem; margin-bottom: 0.5rem;">> ${p.name.toUpperCase()}</div>
+            <div class="mono" style="color: var(--tech-cyan); font-size: 0.8rem;">INITIATION: ${p.date.split('T')[0]}</div>
+        </div>
+    `).join('');
 }
 
 function renderGrid(items, containerId) {
@@ -215,12 +261,10 @@ function renderGrid(items, containerId) {
 
     grid.innerHTML = items.map(p => {
         // Safe check for stats/version if needed, though mostly in modal now
-        const version = p.stats && p.stats.Version ? p.stats.Version : null;
-
         // Check for a demo link
         const demoLink = p.links ? p.links.find(l => l.type === 'demo' && l.url) : null;
         const demoBtnHtml = demoLink
-            ? `<a href="${demoLink.url}" class="btn btn-primary" onclick="event.stopPropagation();" style="display:inline-block; margin-top:1rem; padding:0.6rem 1.5rem; font-size:0.75rem; text-align:center;">▶ ${demoLink.label.toUpperCase()}</a>`
+            ? `<a href="${resolveSiteUrl(demoLink.url)}" class="btn btn-primary" onclick="event.stopPropagation();" style="display:inline-block; margin-top:1rem; padding:0.6rem 1.5rem; font-size:0.75rem; text-align:center;">PLAY ${demoLink.label.toUpperCase()}</a>`
             : '';
 
         return `
@@ -269,6 +313,22 @@ function bindEvents() {
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') closeModal();
         if (e.key === 'Tab') handleTab(e);
+    });
+
+    // Accordion Logic
+    const accordions = document.querySelectorAll('.accordion-header');
+    accordions.forEach(acc => {
+        acc.addEventListener('click', function () {
+            this.classList.toggle('active');
+            const content = this.nextElementSibling;
+            if (content.style.maxHeight) {
+                content.style.maxHeight = null;
+                content.classList.remove('expanded');
+            } else {
+                content.style.maxHeight = content.scrollHeight + "px";
+                content.classList.add('expanded');
+            }
+        });
     });
 
     const overlay = document.getElementById('overlay');
@@ -386,7 +446,7 @@ function openModal(projectId) {
     if (linksEl) {
         linksEl.innerHTML = project.links.length > 0
             ? project.links.filter(l => l.url).map(l => `
-                <a href="${l.url}" target="_blank" class="btn btn-primary" style="text-align:center; font-size: 0.8rem;">${l.label.toUpperCase()}</a>
+                <a href="${resolveSiteUrl(l.url)}" target="_blank" class="btn btn-primary" style="text-align:center; font-size: 0.8rem;">${l.label.toUpperCase()}</a>
             `).join('')
             : `<div class="mono" style="color: var(--text-muted); font-size: 0.8rem;">// ACCESS RESTRICTED</div>`;
     }
@@ -441,6 +501,63 @@ function closeModal() {
 function setText(id, text) {
     const el = document.getElementById(id);
     if (el) el.innerText = text;
+}
+
+// --- GLITCH SYSTEM ---
+function triggerOverride() {
+    console.log("%c[!] SYSTEM OVERRIDE INITIATED. ARCANUM PROTOCOLS UNSEALED.", "color: #b366ff; font-weight: bold; font-size: 1.2rem;");
+    document.body.classList.toggle('system-override');
+}
+
+function initEasterEggs() {
+    // 1. Console Whisper
+    console.log("%c// SECURE CONNECTION ESTABLISHED", "color: #00e5ff; font-family: monospace;");
+    console.log("%cThere are no secrets here. Only things you haven't figured out how to compile yet.", "color: #888; font-style: italic;");
+
+    // 2. Lore Tooltips
+    const loreNodes = document.querySelectorAll('[data-lore]');
+    loreNodes.forEach(node => {
+        node.style.borderBottom = "1px dotted var(--tech-purple)";
+        node.style.cursor = "help";
+
+        node.addEventListener('mouseenter', (e) => {
+            let tooltip = document.getElementById('lore-tooltip');
+            if (!tooltip) {
+                tooltip = document.createElement('div');
+                tooltip.id = 'lore-tooltip';
+                tooltip.style.position = 'absolute';
+                tooltip.style.background = 'var(--bg-panel)';
+                tooltip.style.border = '1px solid var(--tech-purple)';
+                tooltip.style.padding = '0.5rem 1rem';
+                tooltip.style.color = 'var(--text-main)';
+                tooltip.style.fontFamily = 'var(--font-mono)';
+                tooltip.style.fontSize = '0.8rem';
+                tooltip.style.pointerEvents = 'none';
+                tooltip.style.zIndex = '9999';
+                tooltip.style.boxShadow = '0 0 10px rgba(179, 102, 255, 0.2)';
+                document.body.appendChild(tooltip);
+            }
+            tooltip.innerText = node.getAttribute('data-lore');
+            tooltip.style.display = 'block';
+
+            // Initial position before mousemove catches it
+            tooltip.style.left = (e.pageX + 15) + 'px';
+            tooltip.style.top = (e.pageY + 15) + 'px';
+        });
+
+        node.addEventListener('mousemove', (e) => {
+            const tooltip = document.getElementById('lore-tooltip');
+            if (tooltip) {
+                tooltip.style.left = (e.pageX + 15) + 'px';
+                tooltip.style.top = (e.pageY + 15) + 'px';
+            }
+        });
+
+        node.addEventListener('mouseleave', () => {
+            const tooltip = document.getElementById('lore-tooltip');
+            if (tooltip) tooltip.style.display = 'none';
+        });
+    });
 }
 
 // Start

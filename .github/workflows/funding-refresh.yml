@@ -1,9 +1,6 @@
-name: Funding Refresh
+name: Funding Refresh (Manual Only)
 
 on:
-  schedule:
-    # Run at 00:00 on Monday
-    - cron: '0 0 * * 1'
   workflow_dispatch:
 
 permissions:

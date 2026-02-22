@@ -2,10 +2,10 @@
 <html lang="en">
 
 <head>
-    <link rel='icon' type='image/png' sizes='32x32' href='../assets/favicon/favicon-32x32.png'>
-    <link rel='icon' type='image/png' sizes='16x16' href='../assets/favicon/favicon-16x16.png'>
-    <link rel='apple-touch-icon' sizes='180x180' href='../assets/favicon/apple-touch-icon.png'>
-    <link rel='manifest' href='../assets/favicon/site.webmanifest'>
+    <link rel='icon' type='image/png' sizes='32x32' href='assets/favicon/favicon-32x32.png'>
+    <link rel='icon' type='image/png' sizes='16x16' href='assets/favicon/favicon-16x16.png'>
+    <link rel='apple-touch-icon' sizes='180x180' href='assets/favicon/apple-touch-icon.png'>
+    <link rel='manifest' href='assets/favicon/site.webmanifest'>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dream Tool | SOURCE ARCANUM</title>
@@ -50,97 +50,105 @@
 
     <nav>
         <div class="container nav-inner">
-            <div class="brand">
-                <a href="../index.html"
-                    style="display:flex; align-items:center; gap:15px; text-decoration:none; color:var(--accent-gold);">
-                    <div class="brand-sigil"></div>
-                    SOURCE ARCANUM
-                </a>
-            </div>
-            <div class="nav-links">
-                <a href="../index.html">HOME</a>
-                <a href="../productivity.html">PRODUCTIVITY</a>
-                <a href="../games.html">GAMES</a>
-                <a href="../finance.html">FINANCIAL</a>
-                <a href="../support.html">SUPPORT</a>
-            </div>
-        </div>
+    <div class="brand">
+        <a href="../index.html"
+            style="display:flex; align-items:center; gap:15px; text-decoration:none; color:var(--accent-gold);">
+            <div class="brand-sigil"></div>
+            SOURCE ARCANUM
+        </a>
+    </div>
+    <div class="nav-links">
+        <a href="../index.html">HOME</a>
+        <a href="../productivity/index.html">PRODUCTIVITY</a>
+        <a href="../games/index.html">GAMES</a>
+        <a href="../financial/index.html">FINANCIAL</a>
+        <a class="chronicles-link" href="../chronicles/index.html">CHRONICLES</a>
+        <a href="../treasury/index.html">THE TREASURY</a>
+        <div class="mono glitch-rune" style="margin-top: 2rem; font-size: 1.5rem;" onclick="triggerOverride()">⍼</div>
+    </div>
+</div>
     </nav>
 
-    <header class="container hero"
-        style="min-height: 50vh; justify-content: center; display: flex; flex-direction: column;">
-        <div class="hero-content">
-            <div class="pre-title mono" style="color: var(--accent-gold);">DREAMING</div>
-            <h1 style="font-size: 3.5rem; margin-bottom: 1rem;">Oneiromancy</h1>
-            <h2 class="mono" style="font-size: 1.2rem; color: var(--text-muted); margin-top: 0;">REAL NAME:
-                Dream Tool</h2>
+    <div class="content-wrapper">
+        <header class="container hero"
+            style="min-height: 50vh; justify-content: center; display: flex; flex-direction: column;">
+            <div class="hero-content">
+                <div class="pre-title mono" style="color: var(--accent-gold);">DREAMING</div>
+                <h1 style="font-size: 3.5rem; margin-bottom: 1rem;">Oneiromancy</h1>
+                <h2 class="mono" style="font-size: 1.2rem; color: var(--text-muted); margin-top: 0;">REAL NAME:
+                    Dream Tool</h2>
 
-            <div class="tagline" style="border-left: 3px solid var(--accent-gold); padding-left: 2rem;">
-                <p style="font-size: 1.4rem; color: var(--text-main);">Lucid Dreaming Assistant and Whiteboard.</p>
-                <p class="mono" style="color: var(--text-muted); font-size: 0.9rem; margin-top: 1rem;">//
-                    A digital staff for the modern wizard, summoning order from the chaos of the mind and manifesting thoughts into reality through the weave of code and image.</p>
-            </div>
-        </div>
-    </header>
-
-    <main class="container" style="margin-bottom: 8rem;">
-
-        <!-- Description -->
-        <section style="margin-bottom: 6rem;">
-            <div class="reading-text" style="font-size: 1.1rem; column-count: 2; column-gap: 4rem;">
-                <p>Dream Tool is a "one-stop shop" for organizing thoughts and building *anything*—from a simple email to an entire ecosystem. It functions as a mind map, text editor, and whiteboard, but leverages open-source AI to act as a "commander" for your dreams. It doesn't just store ideas; it actively helps you plan, research, and execute them.</p><p>The tool features a hierarchy leveling system that adapts to the scale of your project. For quick tasks, it offers a rapid, low-level planning stage. For complex endeavors, it scales up to help you build universes, research continuously using local and web resources, and visualize concepts with image generation. It is the bridge between the ethereal thought and the concrete action.</p>
-            </div>
-        </section>
-
-        <!-- Features -->
-        <section style="margin-bottom: 6rem;">
-            <div class="section-header">
-                <h2 class="section-title">CAPABILITIES</h2>
-                <span class="section-subtitle mono">// SPECS</span>
-            </div>
-            <div class="feature-grid">
-                <div class="feature-card"><p>AI-Driven Project Planning & hierarchy API</p></div><div class="feature-card"><p>Infinite Whiteboard for Visualization</p></div><div class="feature-card"><p>Integrated Web & Local Research Agent</p></div><div class="feature-card"><p>Adaptive Project Scoping (Micro to Macro)</p></div><div class="feature-card"><p>Image Generation for Inspiration</p></div><div class="feature-card"><p>Text Editor & To-Do List Integration</p></div><div class="feature-card"><p>Mind Mapping & Data Charting</p></div><div class="feature-card"><p>Actionable Step Generation</p></div>
-            </div>
-        </section>
-
-        <!-- Roadmap -->
-        <section style="margin-bottom: 6rem;">
-            <div class="section-header">
-                <h2 class="section-title">TRAJECTORY</h2>
-                <span class="section-subtitle mono">// FUTURE</span>
-            </div>
-            <div style="max-width: 800px;">
-                <div class="roadmap-item"><div class="roadmap-phase">NEAR-TERM</div><div style="flex-grow:1;">Core Whiteboard Implementation</div></div><div class="roadmap-item"><div class="roadmap-phase">NEAR-TERM</div><div style="flex-grow:1;">Basic Local LLM Integration</div></div><div class="roadmap-item"><div class="roadmap-phase">NEAR-TERM</div><div style="flex-grow:1;">Task List Generation Logic</div></div><div class="roadmap-item"><div class="roadmap-phase">MID-TERM</div><div style="flex-grow:1;">Web Research Agent Capabilities</div></div><div class="roadmap-item"><div class="roadmap-phase">MID-TERM</div><div style="flex-grow:1;">Image Generation Integration</div></div><div class="roadmap-item"><div class="roadmap-phase">MID-TERM</div><div style="flex-grow:1;">Project Hierarchy Scaling System</div></div><div class="roadmap-item"><div class="roadmap-phase">LONG-TERM</div><div style="flex-grow:1;">The ultimate vision is to create a tool that feels like "pixie dust" for creation—removing all friction between having an idea and executing it. It will evolve into a fully autonomous partner that can not only plan but assist in the actual creation of assets, code, and content, effectively becoming a second brain that works while you sleep.</div></div>
-            </div>
-        </section>
-
-        <!-- Trust & Download -->
-        <section style="display: grid; grid-template-columns: 1fr 1fr; gap: 4rem;">
-            <div style="background: var(--bg-void); padding: 2rem; border: 1px solid var(--stone-light);">
-                <h3 class="mono" style="color: var(--text-muted); margin-bottom: 1.5rem;">// TRUST PROTOCOLS</h3>
-                <ul class="mono" style="list-style: none; padding: 0; color: var(--text-main); line-height: 2;">
-                    <li><span style="color:var(--text-muted);">Runs offline:</span> Yes (Core features)</li><li><span style="color:var(--text-muted);">Requires internet:</span> For Web Research & Updates</li><li><span style="color:var(--text-muted);">Telemetry:</span> None</li><li><span style="color:var(--text-muted);">Accounts:</span> None</li><li><span style="color:var(--text-muted);">Data stored where:</span> Local device only</li>
-                </ul>
-            </div>
-            <div style="background: var(--bg-void); padding: 2rem; border: 1px solid var(--accent-gold);">
-                <h3 class="mono" style="color: var(--accent-gold); margin-bottom: 1.5rem;">// ACQUIRE</h3>
-                <div style="display: flex; flex-direction: column; gap: 1rem;">
-                    <div class="mono" style="color:var(--text-muted);">// NO ARTIFACTS AVAILABLE</div>
+                <div class="tagline" style="border-left: 3px solid var(--accent-gold); padding-left: 2rem;">
+                    <p style="font-size: 1.4rem; color: var(--text-main);">Lucid Dreaming Assistant and Whiteboard.</p>
+                    <p class="mono" style="color: var(--text-muted); font-size: 0.9rem; margin-top: 1rem;">//
+                        A digital staff for the modern wizard, summoning order from the chaos of the mind and manifesting thoughts into reality through the weave of code and image.</p>
                 </div>
             </div>
-        </section>
+        </header>
 
-    </main>
+        <main class="container" style="margin-bottom: 8rem;">
 
-    <footer>
-        <div class="container"
-            style="padding: 4rem 0; border-top: 1px solid var(--stone-dark); margin-top: 4rem; text-align: center;">
-            <div class="brand-sigil" style="margin: 0 auto 2rem auto;"></div>
-            <p class="mono" style="color: var(--text-muted); font-size: 0.9rem;">SOURCE ARCANUM // EST. 2025</p>
-            <p class="mono" style="color: var(--tech-cyan); font-size: 0.8rem; margin-top: 1rem;">LOCAL-FIRST. FREE
-                FOREVER. DONATION-STEERED. NO TELEMETRY.</p>
-        </div>
-    </footer>
+            <!-- Description -->
+            <section style="margin-bottom: 6rem;">
+                <div class="reading-text" style="font-size: 1.1rem; column-count: 2; column-gap: 4rem;">
+                    <p>No description available.</p>
+                </div>
+            </section>
+
+            <!-- Features -->
+            <section style="margin-bottom: 6rem;">
+                <div class="section-header">
+                    <h2 class="section-title">CAPABILITIES</h2>
+                    <span class="section-subtitle mono">// SPECS</span>
+                </div>
+                <div class="feature-grid">
+                    
+                </div>
+            </section>
+
+            <!-- Roadmap -->
+            <section style="margin-bottom: 6rem;">
+                <div class="section-header">
+                    <h2 class="section-title">TRAJECTORY</h2>
+                    <span class="section-subtitle mono">// FUTURE</span>
+                </div>
+                <div style="max-width: 800px;">
+                    <div class="roadmap-item"><div class="roadmap-phase">NEAR-TERM</div><div style="flex-grow:1;">Core Whiteboard Implementation</div></div><div class="roadmap-item"><div class="roadmap-phase">NEAR-TERM</div><div style="flex-grow:1;">Basic Local LLM Integration</div></div><div class="roadmap-item"><div class="roadmap-phase">NEAR-TERM</div><div style="flex-grow:1;">Task List Generation Logic</div></div><div class="roadmap-item"><div class="roadmap-phase">MID-TERM</div><div style="flex-grow:1;">Web Research Agent Capabilities</div></div><div class="roadmap-item"><div class="roadmap-phase">MID-TERM</div><div style="flex-grow:1;">Image Generation Integration</div></div><div class="roadmap-item"><div class="roadmap-phase">MID-TERM</div><div style="flex-grow:1;">Project Hierarchy Scaling System</div></div><div class="roadmap-item"><div class="roadmap-phase">LONG-TERM</div><div style="flex-grow:1;">The ultimate vision is to create a tool that feels like "pixie dust" for creation—removing all friction between having an idea and executing it. It will evolve into a fully autonomous partner that can not only plan but assist in the actual creation of assets, code, and content, effectively becoming a second brain that works while you sleep.</div></div>
+                </div>
+            </section>
+
+            <!-- Trust & Download -->
+            <section style="display: grid; grid-template-columns: 1fr 1fr; gap: 4rem;">
+                <div style="background: var(--bg-void); padding: 2rem; border: 1px solid var(--stone-light);">
+                    <h3 class="mono" style="color: var(--text-muted); margin-bottom: 1.5rem;">// TRUST PROTOCOLS</h3>
+                    <ul class="mono" style="list-style: none; padding: 0; color: var(--text-main); line-height: 2;">
+                        <li><span style="color:var(--text-muted);">Runs offline:</span> Yes (Core features)</li><li><span style="color:var(--text-muted);">Requires internet:</span> For Web Research & Updates</li><li><span style="color:var(--text-muted);">Telemetry:</span> None</li><li><span style="color:var(--text-muted);">Accounts:</span> None</li><li><span style="color:var(--text-muted);">Data stored where:</span> Local device only</li>
+                    </ul>
+                </div>
+                <div style="background: var(--bg-void); padding: 2rem; border: 1px solid var(--accent-gold);">
+                    <h3 class="mono" style="color: var(--accent-gold); margin-bottom: 1.5rem;">// ACQUIRE</h3>
+                    <div style="display: flex; flex-direction: column; gap: 1rem;">
+                        <a href="" class="btn btn-primary">GitHub</a><a href="" class="btn btn-primary">Releases</a><a href="" class="btn btn-primary">Docs</a><a href="" class="btn btn-primary">Demo</a>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+        <footer>
+            <div class="container"
+    style="padding: 4rem 0; border-top: 1px solid var(--stone-dark); margin-top: 4rem; text-align: center;">
+    <div class="brand-sigil" style="margin: 0 auto 2rem auto;"></div>
+    <p class="mono" style="color: var(--text-muted); font-size: 0.9rem;">SOURCE ARCANUM // EST. 2026</p>
+    <p class="mono" style="color: var(--tech-cyan); font-size: 0.8rem; margin-top: 1rem;">
+        LOCAL-FIRST. FREE FOREVER.
+        <a href="https://ko-fi.com/democratizegm" target="_blank"
+            style="color: var(--accent-gold); text-decoration: none; border-bottom: 1px dotted var(--accent-gold);">DONATION-STEERED</a>.
+        NO TELEMETRY.
+    </p>
+</div>
+        </footer>
+    </div> <!-- END CONTENT WRAPPER -->
 
     <script src="../scripts/script.js"></script>
 

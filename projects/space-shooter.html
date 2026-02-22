@@ -2,268 +2,45 @@
 <html lang="en">
 
 <head>
-    <link rel='icon' type='image/png' sizes='32x32' href='../assets/favicon/favicon-32x32.png'>
-    <link rel='icon' type='image/png' sizes='16x16' href='../assets/favicon/favicon-16x16.png'>
-    <link rel='apple-touch-icon' sizes='180x180' href='../assets/favicon/apple-touch-icon.png'>
-    <link rel='manifest' href='../assets/favicon/site.webmanifest'>
+    <link rel='icon' type='image/png' sizes='32x32' href='assets/favicon/favicon-32x32.png'>
+    <link rel='icon' type='image/png' sizes='16x16' href='assets/favicon/favicon-16x16.png'>
+    <link rel='apple-touch-icon' sizes='180x180' href='assets/favicon/apple-touch-icon.png'>
+    <link rel='manifest' href='assets/favicon/site.webmanifest'>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stardust Demo | SOURCE ARCANUM</title>
-    <meta name="description"
-        content="Play Stardust — a physics-based space shooter demo with a secret boss battle. Part of Source Arcanum.">
+    <title>Stardust | SOURCE ARCANUM</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
         href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,400&family=Fira+Code:wght@300;500&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="../styles/styles.css">
+    <script>window.SITE_ROOT = '../';</script>
     <style>
-        /* ---- GAME CANVAS ---- */
-        #starmap-canvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            z-index: 0;
-            background: #050406;
-            display: block;
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
         }
 
-        /* ---- OVERLAY BASE ---- */
-        .game-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 50;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: rgba(5, 4, 6, 0.92);
-            backdrop-filter: blur(12px);
-            opacity: 1;
-            transition: opacity 0.4s ease;
-        }
-
-        .game-overlay.hidden {
-            display: none;
-            opacity: 0;
-        }
-
-        .overlay-box {
+        .feature-card {
             background: var(--bg-panel);
             border: 1px solid var(--stone-light);
-            padding: 3rem 4rem;
-            max-width: 560px;
-            width: 90%;
-            text-align: center;
-            box-shadow: 0 0 80px rgba(0, 0, 0, 0.7);
-            position: relative;
+            padding: 1.5rem;
         }
 
-        .overlay-box::before {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 2px;
-            background: linear-gradient(90deg, transparent, var(--accent-gold), transparent);
-        }
-
-        .overlay-box h2 {
-            font-family: 'Cinzel', serif;
-            font-size: 2.2rem;
-            color: var(--text-main);
-            margin-bottom: 1rem;
-            letter-spacing: 0.1em;
-        }
-
-        .overlay-box p {
-            font-family: 'Cormorant Garamond', serif;
-            font-size: 1.2rem;
-            color: var(--text-muted);
-            margin-bottom: 2rem;
-            line-height: 1.6;
-        }
-
-        .overlay-box .mono-label {
-            font-family: 'Fira Code', monospace;
-            font-size: 0.75rem;
-            color: var(--tech-cyan);
-            letter-spacing: 1px;
-            margin-bottom: 0.5rem;
-        }
-
-        /* ---- BUTTONS ---- */
-        .game-btn {
-            cursor: pointer;
-            border: 1px solid var(--accent-gold);
-            background: transparent;
-            color: var(--accent-gold);
-            font-family: 'Cinzel', serif;
-            font-size: 1rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 3px;
-            padding: 1rem 2.5rem;
-            margin: 0.5rem;
-            transition: all 0.3s ease;
-        }
-
-        .game-btn:hover {
-            background: var(--accent-gold);
-            color: var(--bg-void);
-            box-shadow: 0 0 25px var(--accent-dim);
-        }
-
-        .game-btn.secondary {
-            border-color: var(--stone-light);
-            color: var(--text-muted);
-        }
-
-        .game-btn.secondary:hover {
-            border-color: var(--text-muted);
-            color: var(--text-main);
-            background: rgba(255, 255, 255, 0.05);
-            box-shadow: none;
-        }
-
-        /* ---- SETTINGS ---- */
-        .settings-row {
+        .roadmap-item {
             display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 1.2rem;
-            font-family: 'Fira Code', monospace;
-            font-size: 0.85rem;
-            color: var(--text-main);
-        }
-
-        .settings-row label {
-            color: var(--text-muted);
-            min-width: 140px;
-            text-align: left;
-        }
-
-        .settings-row input[type="range"] {
-            flex: 1;
-            margin: 0 1rem;
-            accent-color: var(--accent-gold);
-        }
-
-        .settings-row .val {
-            min-width: 40px;
-            text-align: right;
-            color: var(--tech-cyan);
-        }
-
-        .settings-row input[type="checkbox"] {
-            accent-color: var(--accent-gold);
-            width: 18px;
-            height: 18px;
-        }
-
-        /* ---- NAV OVERLAY ---- */
-        .game-nav {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            z-index: 100;
-            background: rgba(5, 4, 6, 0.85);
-            backdrop-filter: blur(10px);
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1.5rem;
             border-bottom: 1px solid var(--stone-dark);
-            padding: 1rem 0;
         }
 
-        .game-nav .nav-inner {
-            max-width: 1100px;
-            margin: 0 auto;
-            padding: 0 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .game-nav .brand {
+        .roadmap-phase {
+            min-width: 120px;
             font-family: 'Cinzel', serif;
-            font-size: 1.2rem;
-            color: var(--accent-gold);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .game-nav .brand-sigil {
-            width: 6px;
-            height: 6px;
-            background: var(--accent-gold);
-            transform: rotate(45deg);
-            box-shadow: 0 0 8px var(--accent-gold);
-        }
-
-        .game-nav a {
-            color: var(--text-muted);
-            font-family: 'Fira Code', monospace;
-            font-size: 0.75rem;
-            transition: color 0.3s;
-            text-decoration: none;
-        }
-
-        .game-nav a:hover {
-            color: var(--accent-gold);
-        }
-
-        /* ---- TOUCH CONTROLS ---- */
-        #starmap-touch-controls {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 140px;
-            z-index: 40;
-            display: none;
-            pointer-events: none;
-        }
-
-        #starmap-touch-controls .touch-btn {
-            pointer-events: auto;
-            background: rgba(212, 175, 55, 0.15);
-            border: 1px solid rgba(212, 175, 55, 0.3);
-            color: var(--accent-gold);
-            font-size: 1.5rem;
-            width: 50px;
-            height: 50px;
-            border-radius: 8px;
-        }
-
-        /* ---- TILT TOGGLE ---- */
-        .tilt-row {
-            display: flex;
-            align-items: center;
-            gap: 0.8rem;
-            margin-top: 1rem;
-            font-family: 'Fira Code', monospace;
-            font-size: 0.8rem;
-            color: var(--text-muted);
-        }
-
-        /* ---- CONTROLS HINT ---- */
-        .controls-hint {
-            margin-top: 2rem;
-            font-family: 'Fira Code', monospace;
-            font-size: 0.7rem;
-            color: var(--text-muted);
-            line-height: 1.8;
-            text-align: left;
-            border-top: 1px solid var(--stone-dark);
-            padding-top: 1rem;
-        }
-
-        .controls-hint span {
             color: var(--accent-gold);
         }
     </style>
@@ -271,142 +48,111 @@
 
 <body>
 
-    <!-- NAV -->
-    <nav class="game-nav" id="game-nav">
-        <div class="nav-inner">
-            <div class="brand">
-                <a href="../index.html"
-                    style="display:flex; align-items:center; gap:10px; text-decoration:none; color:var(--accent-gold);">
-                    <div class="brand-sigil"></div>
-                    SOURCE ARCANUM
-                </a>
-            </div>
-            <div>
-                <a href="../index.html">HOME</a>
-            </div>
-        </div>
+    <nav>
+        <div class="container nav-inner">
+    <div class="brand">
+        <a href="../index.html"
+            style="display:flex; align-items:center; gap:15px; text-decoration:none; color:var(--accent-gold);">
+            <div class="brand-sigil"></div>
+            SOURCE ARCANUM
+        </a>
+    </div>
+    <div class="nav-links">
+        <a href="../index.html">HOME</a>
+        <a href="../productivity/index.html">PRODUCTIVITY</a>
+        <a href="../games/index.html">GAMES</a>
+        <a href="../financial/index.html">FINANCIAL</a>
+        <a class="chronicles-link" href="../chronicles/index.html">CHRONICLES</a>
+        <a href="../treasury/index.html">THE TREASURY</a>
+        <div class="mono glitch-rune" style="margin-top: 2rem; font-size: 1.5rem;" onclick="triggerOverride()">⍼</div>
+    </div>
+</div>
     </nav>
 
-    <!-- GAME CANVAS -->
-    <canvas id="starmap-canvas"></canvas>
+    <div class="content-wrapper">
+        <header class="container hero"
+            style="min-height: 50vh; justify-content: center; display: flex; flex-direction: column;">
+            <div class="hero-content">
+                <div class="pre-title mono" style="color: var(--accent-gold);">DRIFTING</div>
+                <h1 style="font-size: 3.5rem; margin-bottom: 1rem;">Stardust</h1>
+                <h2 class="mono" style="font-size: 1.2rem; color: var(--text-muted); margin-top: 0;">REAL NAME:
+                    Stardust</h2>
 
-    <!-- TOUCH CONTROLS CONTAINER (mobile) -->
-    <div id="starmap-touch-controls"></div>
-
-    <!-- ============= OVERLAYS ============= -->
-
-    <!-- START OVERLAY -->
-    <div id="starmap-start" class="game-overlay">
-        <div class="overlay-box">
-            <div class="mono-label">// SYSTEM READY</div>
-            <h2>Stardust</h2>
-            <p>Navigate the void. Collect the shards. Master the drift.<br>
-                <em style="color: var(--tech-cyan); font-size: 0.9rem;">A secret awaits those who are
-                    thorough...</em>
-            </p>
-            <button id="starmap-start-btn" class="game-btn">Launch</button>
-            <button id="starmap-settings-btn-start" class="game-btn secondary">Settings</button>
-            <div class="controls-hint">
-                <span>WASD / Arrows</span> — Move &nbsp;|&nbsp;
-                <span>Q / E</span> — Strafe &nbsp;|&nbsp;
-                <span>Shift</span> — Boost<br>
-                <span>Space</span> — Launch &nbsp;|&nbsp;
-                <span>Ctrl / Click</span> — Shoot &nbsp;|&nbsp;
-                <span>M</span> — Minimap &nbsp;|&nbsp;
-                <span>F</span> — Fullscreen
+                <div class="tagline" style="border-left: 3px solid var(--accent-gold); padding-left: 2rem;">
+                    <p style="font-size: 1.4rem; color: var(--text-main);">Physics-based space racing and crystal collection demo.</p>
+                    <p class="mono" style="color: var(--text-muted); font-size: 0.9rem; margin-top: 1rem;">//
+                        Dance through the void on the edge of drift, harvesting the crystallized light of dead stars before the darkness catches up.</p>
+                </div>
             </div>
-        </div>
-    </div>
+        </header>
 
-    <!-- PAUSE OVERLAY -->
-    <div id="starmap-pause" class="game-overlay hidden">
-        <div class="overlay-box">
-            <div class="mono-label">// PAUSED</div>
-            <h2>Paused</h2>
-            <p>Take a breath. The void will wait.</p>
-            <button id="starmap-resume-btn" class="game-btn">Resume</button>
-            <button id="starmap-retry-btn" class="game-btn secondary">Retry</button>
-            <button id="starmap-quit-btn" class="game-btn secondary">Quit</button>
-            <button id="starmap-settings-btn-pause" class="game-btn secondary">Settings</button>
-        </div>
-    </div>
+        <main class="container" style="margin-bottom: 8rem;">
 
-    <!-- END OVERLAY (run complete) -->
-    <div id="starmap-end" class="game-overlay hidden">
-        <div class="overlay-box">
-            <div class="mono-label">// TRANSMISSION COMPLETE</div>
-            <h2 id="starmap-end-title">Run Complete!</h2>
-            <p>All levels traversed. Your time has been recorded locally.</p>
-            <button id="starmap-again-btn" class="game-btn">Play Again</button>
-        </div>
-    </div>
+            <!-- Description -->
+            <section style="margin-bottom: 6rem;">
+                <div class="reading-text" style="font-size: 1.1rem; column-count: 2; column-gap: 4rem;">
+                    <p>No description available.</p>
+                </div>
+            </section>
 
-    <!-- VICTORY OVERLAY (boss defeated) -->
-    <div id="starmap-victory" class="game-overlay hidden">
-        <div class="overlay-box">
-            <div class="mono-label">// SIGNAL ACQUIRED</div>
-            <h2 id="victory-title">Victory</h2>
-            <p id="victory-message">You defeated the Warden.</p>
-            <button id="victory-continue-btn" class="game-btn">Continue</button>
-        </div>
-    </div>
+            <!-- Features -->
+            <section style="margin-bottom: 6rem;">
+                <div class="section-header">
+                    <h2 class="section-title">CAPABILITIES</h2>
+                    <span class="section-subtitle mono">// SPECS</span>
+                </div>
+                <div class="feature-grid">
+                    
+                </div>
+            </section>
 
-    <!-- DEFEAT OVERLAY (boss killed you) -->
-    <div id="starmap-defeat" class="game-overlay hidden">
-        <div class="overlay-box">
-            <div class="mono-label">// CONNECTION LOST</div>
-            <h2>Defeated</h2>
-            <p id="defeat-message">You were defeated. Try again anytime.</p>
-            <p id="defeat-countdown" style="color: var(--tech-cyan);"></p>
-            <button id="defeat-close-btn" class="game-btn">Return</button>
-        </div>
-    </div>
+            <!-- Roadmap -->
+            <section style="margin-bottom: 6rem;">
+                <div class="section-header">
+                    <h2 class="section-title">TRAJECTORY</h2>
+                    <span class="section-subtitle mono">// FUTURE</span>
+                </div>
+                <div style="max-width: 800px;">
+                    <div class="roadmap-item"><div class="roadmap-phase">NEAR-TERM</div><div style="flex-grow:1;">Leaderboard Integration (if server available)</div></div><div class="roadmap-item"><div class="roadmap-phase">NEAR-TERM</div><div style="flex-grow:1;">Basic Ship Customization (Visuals)</div></div><div class="roadmap-item"><div class="roadmap-phase">NEAR-TERM</div><div style="flex-grow:1;">Enhanced Level Design</div></div><div class="roadmap-item"><div class="roadmap-phase">MID-TERM</div><div style="flex-grow:1;">Multiplayer Port Forwarding Support</div></div><div class="roadmap-item"><div class="roadmap-phase">MID-TERM</div><div style="flex-grow:1;">"Tag-Team" 2v2 Mode Prototype</div></div><div class="roadmap-item"><div class="roadmap-phase">MID-TERM</div><div style="flex-grow:1;">5-Level Campaign Structure</div></div><div class="roadmap-item"><div class="roadmap-phase">LONG-TERM</div><div style="flex-grow:1;">The ultimate vision is a 2v2 tactical arena shooter. Teams of two share a single ship: one player pilots, managing the physics and evasion, while the other acts as Gunner/Engineer, managing shields, weapons, and repairs. Teams fight through PVE levels to reach a final PVP arena, testing their coordination and communication in a high-stakes dogfight.</div></div>
+                </div>
+            </section>
 
-    <!-- SETTINGS OVERLAY -->
-    <div id="starmap-settings" class="game-overlay hidden">
-        <div class="overlay-box">
-            <div class="mono-label">// CONFIGURATION</div>
-            <h2>Settings</h2>
+            <!-- Trust & Download -->
+            <section style="display: grid; grid-template-columns: 1fr 1fr; gap: 4rem;">
+                <div style="background: var(--bg-void); padding: 2rem; border: 1px solid var(--stone-light);">
+                    <h3 class="mono" style="color: var(--text-muted); margin-bottom: 1.5rem;">// TRUST PROTOCOLS</h3>
+                    <ul class="mono" style="list-style: none; padding: 0; color: var(--text-main); line-height: 2;">
+                        <li><span style="color:var(--text-muted);">Runs offline:</span> Yes</li><li><span style="color:var(--text-muted);">Requires internet:</span> No (Leaderboards would require it)</li><li><span style="color:var(--text-muted);">Telemetry:</span> None</li><li><span style="color:var(--text-muted);">Accounts:</span> None</li><li><span style="color:var(--text-muted);">Data stored where:</span> Local device only</li>
+                    </ul>
+                </div>
+                <div style="background: var(--bg-void); padding: 2rem; border: 1px solid var(--accent-gold);">
+                    <h3 class="mono" style="color: var(--accent-gold); margin-bottom: 1.5rem;">// ACQUIRE</h3>
+                    <div style="display: flex; flex-direction: column; gap: 1rem;">
+                        <a href="" class="btn btn-primary">GitHub</a><a href="" class="btn btn-primary">Releases</a><a href="" class="btn btn-primary">Docs</a><a href="Space-Shooter/index.html" class="btn btn-primary">Play Demo</a>
+                    </div>
+                </div>
+            </section>
 
-            <div class="settings-row">
-                <label>Music</label>
-                <input type="range" id="setting-music-vol" min="0" max="1" step="0.01" value="0.5">
-                <span class="val" id="setting-music-val">50%</span>
-            </div>
-            <div class="settings-row">
-                <label>SFX</label>
-                <input type="range" id="setting-sfx-vol" min="0" max="1" step="0.01" value="0.5">
-                <span class="val" id="setting-sfx-val">50%</span>
-            </div>
-            <div class="settings-row">
-                <label>Invert Thrust</label>
-                <input type="checkbox" id="setting-invert-thrust">
-            </div>
-            <div class="tilt-row">
-                <input type="checkbox" id="starmap-tilt-toggle">
-                <label for="starmap-tilt-toggle">Tilt Controls (mobile)</label>
-            </div>
+        </main>
 
-            <div style="margin-top: 2rem;">
-                <button id="settings-save-btn" class="game-btn">Save</button>
-                <button id="settings-cancel-btn" class="game-btn secondary">Cancel</button>
-            </div>
-        </div>
-    </div>
+        <footer>
+            <div class="container"
+    style="padding: 4rem 0; border-top: 1px solid var(--stone-dark); margin-top: 4rem; text-align: center;">
+    <div class="brand-sigil" style="margin: 0 auto 2rem auto;"></div>
+    <p class="mono" style="color: var(--text-muted); font-size: 0.9rem;">SOURCE ARCANUM // EST. 2026</p>
+    <p class="mono" style="color: var(--tech-cyan); font-size: 0.8rem; margin-top: 1rem;">
+        LOCAL-FIRST. FREE FOREVER.
+        <a href="https://ko-fi.com/democratizegm" target="_blank"
+            style="color: var(--accent-gold); text-decoration: none; border-bottom: 1px dotted var(--accent-gold);">DONATION-STEERED</a>.
+        NO TELEMETRY.
+    </p>
+</div>
+        </footer>
+    </div> <!-- END CONTENT WRAPPER -->
 
-    <!-- ============= BOOTSTRAP ============= -->
-    <script type="module">
-        import { initStarmap } from './Space-Shooter/index.js';
-        import { initAudioUnlock } from './Space-Shooter/audio.js';
-
-        const canvas = document.getElementById('starmap-canvas');
-
-        initAudioUnlock();
-        initStarmap(canvas).catch(err => {
-            console.error('Failed to initialize Stardust:', err);
-        });
-    </script>
+    <script src="../scripts/script.js"></script>
 
 </body>
 
 </html>
+

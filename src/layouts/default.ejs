@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<%- components.head %>
+
+    <body>
+        <%- components.nav %>
+
+            <div class="content-wrapper">
+                <main class="container page-shell">
+                    <% if (frontmatter.title) { %>
+                        <h1 class="section-title">
+                            <%= frontmatter.title %>
+                        </h1>
+                        <% } %>
+
+                            <% if (frontmatter.date || frontmatter.status) { %>
+                                <div class="mono page-meta">
+                                    <% if (frontmatter.date) { %><span>// DATE: <span style="color: var(--tech-cyan)">
+                                                <%= frontmatter.date %>
+                                            </span></span>
+                                        <% } %>
+                                            <% if (frontmatter.status) { %><span>// STATUS: <span
+                                                        style="color: var(--accent-gold)">
+                                                        <%= frontmatter.status.toUpperCase() %>
+                                                    </span></span>
+                                                <% } %>
+                                </div>
+                                <% } %>
+
+                                    <div class="reading-text">
+                                        <%- content %>
+                                    </div>
+                </main>
+
+                <%- components.footer %>
+            </div>
+
+            <%- components.modal %>
+                <script src="<%= siteRoot %>scripts/script.js"></script>
+    </body>
+
+</html>

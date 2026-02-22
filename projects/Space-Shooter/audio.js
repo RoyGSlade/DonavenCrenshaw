@@ -4,7 +4,7 @@
  */
 import { state } from './state.js';
 
-const AUDIO_BASE = '../assets/audio';
+const AUDIO_BASE = '../../assets/audio';
 
 let backgroundMusic = null;
 let masterMusicVolume = 1.0;

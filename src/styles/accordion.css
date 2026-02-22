@@ -1,0 +1,50 @@
+/* --- ACCORDIONS --- */
+.accordion {
+    margin-top: 2rem;
+    border: 1px solid var(--stone-dark);
+    border-radius: 4px;
+    background: var(--bg-panel);
+}
+
+.accordion-header {
+    width: 100%;
+    text-align: left;
+    background: transparent;
+    border: none;
+    padding: 1rem 1.5rem;
+    font-family: var(--font-mono);
+    color: var(--accent-gold);
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background 0.3s;
+}
+
+.accordion-header:hover {
+    background: rgba(212, 175, 55, 0.05);
+    /* very faint gold */
+}
+
+.accordion-header .indicator {
+    transition: transform 0.3s ease;
+    display: inline-block;
+}
+
+.accordion-header.active .indicator {
+    transform: rotate(90deg);
+}
+
+.accordion-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s ease-out;
+    padding: 0 1.5rem;
+}
+
+.accordion-content.expanded {
+    max-height: 2000px;
+    /* Arbitrary large number to allow full expansion */
+    padding: 1.5rem;
+    border-top: 1px dashed var(--stone-dark);
+}

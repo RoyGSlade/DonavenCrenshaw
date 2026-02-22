@@ -3,9 +3,9 @@
 /* 5-Column Grid Layout */
 .roadmap-shell {
     max-width: clamp(1100px, 92vw, 1400px);
-    margin: auto 140px auto;
+    margin: 2rem auto 0;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) clamp(12.5%, 20vw, 18.5%) minmax(70%, 1fr) clamp(12.5%, 20vw, 18.5%) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) clamp(250px, 20vw, 300px) minmax(60%, 1fr) clamp(250px, 20vw, 300px) minmax(0, 1fr);
     gap: clamp(16px, 2vw, 32px);
     align-items: start;
 }
@@ -17,8 +17,8 @@
 
 /* --- RAILS (SIDEBARS) --- */
 .roadmap-rail {
-    background: var(--bg-panel);
-    border: 1px solid var(--stone-dark);
+    background: linear-gradient(160deg, rgba(12, 18, 30, 0.9), rgba(7, 12, 20, 0.96));
+    border: 1px solid rgba(47, 66, 95, 0.75);
     padding: 1.5rem;
     /* Increased padding */
     max-height: calc(100vh - 220px);
@@ -44,6 +44,11 @@
     margin-bottom: 1.5rem;
 }
 
+/* Spacer for stacked headers in the same rail */
+.sidebar-header:not(:first-child) {
+    margin-top: 3rem;
+}
+
 .sidebar-list {
     display: flex;
     flex-direction: column;
@@ -54,8 +59,8 @@
 /* Queue Item (Left Rail) */
 .queue-item {
     padding: 1rem;
-    border: 1px solid var(--stone-dark);
-    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(47, 66, 95, 0.75);
+    background: rgba(255, 255, 255, 0.015);
     transition: all 0.3s;
 }
 
@@ -141,8 +146,8 @@
 
 /* Stage: Carousel */
 .carousel-container {
-    background: var(--bg-panel);
-    border: 1px solid var(--stone-light);
+    background: linear-gradient(160deg, rgba(12, 18, 30, 0.9), rgba(7, 12, 20, 0.95));
+    border: 1px solid rgba(47, 66, 95, 0.8);
     padding: 3rem 2rem;
     text-align: center;
     position: relative;

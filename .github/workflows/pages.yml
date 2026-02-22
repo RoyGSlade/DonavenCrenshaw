@@ -27,8 +27,14 @@ jobs:
         with:
           node-version: "20"
 
+      - name: Install Dependencies
+        run: npm ci
+
       - name: Validate Data
         run: node scripts/validateData.js
+
+      - name: Build Site
+        run: npm run build
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
@@ -36,8 +42,8 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # Upload entire repository
-          path: '.'
+          # Upload static build output
+          path: './public'
 
   # Deploy job
   deploy:

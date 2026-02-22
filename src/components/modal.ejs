@@ -1,0 +1,27 @@
+<!-- SHARED MODAL -->
+<div id="overlay" class="overlay">
+    <div class="dossier">
+        <div class="dossier-header">
+            <div>
+                <h2 id="modal-title" style="margin:0; font-size: 2rem; color: var(--accent-gold);">ARTIFACT NAME</h2>
+                <span id="modal-status" class="mono" style="color: var(--text-muted);">STATUS: UNSEALED</span>
+            </div>
+            <button class="close-btn" onclick="closeModal()" aria-label="Close dossier">&times;</button>
+        </div>
+        <div class="dossier-body">
+            <div class="dossier-sidebar">
+                <h4 class="uppercase mono" style="margin-bottom: 1.5rem; color: var(--accent-gold);">Construct Data</h4>
+                <div id="modal-stats"></div>
+                <h4 class="uppercase mono" style="margin-top: 3rem; margin-bottom: 1.5rem; color: var(--accent-gold);">
+                    Access Points</h4>
+                <div id="modal-links" style="display: flex; flex-direction: column; gap: 0.8rem;"></div>
+            </div>
+            <div class="dossier-main">
+                <p id="modal-desc" class="reading-text"></p>
+                <div class="divider"></div>
+                <h3 class="mono" style="margin-bottom: 1.5rem; color: var(--text-muted);">EVOLUTION PATH</h3>
+                <div id="modal-roadmap"></div>
+            </div>
+        </div>
+    </div>
+</div>

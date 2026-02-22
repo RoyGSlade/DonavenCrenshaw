@@ -1,18 +1,21 @@
 {
     "carouselOrder": [
-        "betterfingers",
-        "infinite-ages-genesis",
-        "pdf-editor"
+        "voicesource"
     ],
     "nextFocusQueue": [
         {
-            "projectId": "pdf-editor",
-            "note": "Updates coming soon...",
+            "projectId": "infinite-ages",
+            "note": "Character Sheet & Builder",
             "etaLabel": "Soon"
         },
         {
+            "projectId": "pdf-editor",
+            "note": "Local PDF Editor",
+            "etaLabel": "Later"
+        },
+        {
             "projectId": "the-account",
-            "note": "Updates coming soon...",
+            "note": "Local Wealth Tracker",
             "etaLabel": "Later"
         }
     ],
@@ -20,131 +23,185 @@
         {
             "dateISO": "2026-02",
             "projectId": "betterfingers",
-            "summary": "Updates coming soon...",
-            "state": "Logged"
+            "summary": "BetterFingers V1.0.0 Released",
+            "state": "Live"
         },
         {
             "dateISO": "2026-02",
-            "projectId": "infinite-ages-genesis",
-            "summary": "Updates coming soon...",
-            "state": "Logged"
-        },
-        {
-            "dateISO": "2026-01",
-            "projectId": "pdf-editor",
-            "summary": "Updates coming soon...",
-            "state": "Logged"
+            "projectId": "infinite-ages",
+            "summary": "Infinite Ages Genesis TTRPG",
+            "state": "Live"
         }
     ],
     "projects": {
-        "betterfingers": {
-            "name": "BetterFingers",
+        "voicesource": {
+            "name": "VOICESOURCE",
             "focus": {
-                "summary": "Detailed roadmap updates are currently being compiled. Please check back soon.",
-                "focusLine": "Active Development...",
+                "summary": "STATUS: Foundation built. Currently focused on security, mobile stability, and release preparation.",
+                "focusLine": "PREPARING FOR PUBLIC RELEASE",
                 "objective": "TBD",
                 "successCriteria": [],
-                "readinessPercent": 50,
-                "readinessLabel": "In Progress"
+                "readinessPercent": 75,
+                "readinessLabel": "Hardening"
             },
             "updatePlans": [
                 {
-                    "title": "Roadmap Sync",
-                    "desc": "Detailed plans will be populated shortly.",
-                    "impact": "TBD",
-                    "effort": "TBD",
-                    "confidence": "TBD",
+                    "title": "PACKAGING",
+                    "desc": "replace waivers with clean-machine macOS/Linux evidence",
+                    "impact": "High",
+                    "effort": "Med",
+                    "confidence": "High",
                     "targetWindow": "Soon",
                     "tags": [
-                        "Pending"
+                        "High Priority"
                     ]
-                }
-            ],
-            "scopeChanges": [],
-            "kanban": {
-                "todo": [
-                    {
-                        "title": "Features TBD",
-                        "note": "Processing backlog...",
-                        "tags": [
-                            "Pending"
-                        ]
-                    }
-                ],
-                "done": []
-            }
-        },
-        "infinite-ages-genesis": {
-            "name": "Infinite Ages: Genesis",
-            "focus": {
-                "summary": "Detailed roadmap updates are currently being compiled. Please check back soon.",
-                "focusLine": "Active Development...",
-                "objective": "TBD",
-                "successCriteria": [],
-                "readinessPercent": 40,
-                "readinessLabel": "Refining"
-            },
-            "updatePlans": [
+                },
                 {
-                    "title": "Roadmap Sync",
-                    "desc": "Detailed plans will be populated shortly.",
-                    "impact": "TBD",
-                    "effort": "TBD",
-                    "confidence": "TBD",
+                    "title": "ANDROID",
+                    "desc": "multi-hour runtime soak testing on mobile",
+                    "impact": "High",
+                    "effort": "High",
+                    "confidence": "High",
                     "targetWindow": "Soon",
                     "tags": [
-                        "Pending"
+                        "High Priority"
                     ]
-                }
-            ],
-            "scopeChanges": [],
-            "kanban": {
-                "todo": [
-                    {
-                        "title": "Features TBD",
-                        "note": "Processing backlog...",
-                        "tags": [
-                            "Pending"
-                        ]
-                    }
-                ],
-                "done": []
-            }
-        },
-        "pdf-editor": {
-            "name": "PDF Editor",
-            "focus": {
-                "summary": "Detailed roadmap updates are currently being compiled. Please check back soon.",
-                "focusLine": "Planning Phase...",
-                "objective": "TBD",
-                "successCriteria": [],
-                "readinessPercent": 20,
-                "readinessLabel": "Exploration"
-            },
-            "updatePlans": [
+                },
                 {
-                    "title": "Roadmap Sync",
-                    "desc": "Detailed plans will be populated shortly.",
-                    "impact": "TBD",
-                    "effort": "TBD",
-                    "confidence": "TBD",
+                    "title": "SCOUT",
+                    "desc": "finish internal cross-platform bindings",
+                    "impact": "Critical",
+                    "effort": "High",
+                    "confidence": "Med",
+                    "targetWindow": "Soon",
+                    "tags": [
+                        "High Priority"
+                    ]
+                },
+                {
+                    "title": "SECURITY",
+                    "desc": "conduct final security reviews and capture test results",
+                    "impact": "Critical",
+                    "effort": "Med",
+                    "confidence": "High",
                     "targetWindow": "Later",
                     "tags": [
-                        "Pending"
+                        "High Priority"
+                    ]
+                },
+                {
+                    "title": "MILESTONES",
+                    "desc": "verify all release flows and final sign-off",
+                    "impact": "Critical",
+                    "effort": "Low",
+                    "confidence": "High",
+                    "targetWindow": "Soon",
+                    "tags": [
+                        "High Priority"
                     ]
                 }
             ],
-            "scopeChanges": [],
+            "scopeChanges": [
+                {
+                    "dateISO": "2026-03-31",
+                    "change": "REQUIREMENTS UPDATED",
+                    "reason": "transitioning to strict requirement validation"
+                }
+            ],
             "kanban": {
                 "todo": [
                     {
-                        "title": "Features TBD",
+                        "title": "QR ticket flow end-to-end",
+                        "note": "testing phase",
+                        "tags": [
+                            "Pending"
+                        ]
+                    },
+                    {
+                        "title": "PAKE + certificates end-to-end",
+                        "note": "testing phase",
+                        "tags": [
+                            "Pending"
+                        ]
+                    },
+                    {
+                        "title": "Final security review",
+                        "note": "packet + traffic analysis",
+                        "tags": [
+                            "Pending"
+                        ]
+                    },
+                    {
+                        "title": "Android stability testing",
+                        "note": "in progress",
+                        "tags": [
+                            "Pending"
+                        ]
+                    },
+                    {
+                        "title": "Final release sign-off",
+                        "note": "pending",
                         "tags": [
                             "Pending"
                         ]
                     }
                 ],
-                "done": []
+                "done": [
+                    {
+                        "title": "Core foundation complete",
+                        "tags": [
+                            "Done"
+                        ]
+                    },
+                    {
+                        "title": "Citadel platform complete",
+                        "tags": [
+                            "Done"
+                        ]
+                    },
+                    {
+                        "title": "Packaging pipeline exists",
+                        "note": "validation tools created",
+                        "tags": [
+                            "Done"
+                        ]
+                    },
+                    {
+                        "title": "Local validation tools",
+                        "note": "completed foundation",
+                        "tags": [
+                            "Done"
+                        ]
+                    },
+                    {
+                        "title": "Silent-port logic",
+                        "note": "background execution",
+                        "tags": [
+                            "Done"
+                        ]
+                    },
+                    {
+                        "title": "Security review tooling",
+                        "note": "infrastructure ready",
+                        "tags": [
+                            "Done"
+                        ]
+                    },
+                    {
+                        "title": "Product hardening baseline",
+                        "note": "metrics established",
+                        "tags": [
+                            "Done"
+                        ]
+                    },
+                    {
+                        "title": "I2P relay-only",
+                        "note": "fail-closed surface implemented",
+                        "tags": [
+                            "Done"
+                        ]
+                    }
+                ]
             }
         }
     }

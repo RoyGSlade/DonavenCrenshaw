@@ -8,7 +8,8 @@ document.addEventListener('DOMContentLoaded', initRoadmap);
 
 async function initRoadmap() {
     try {
-        const res = await fetch('./data/roadmap.json');
+        const root = window.SITE_ROOT || '';
+        const res = await fetch(`${root}data/roadmap.json`);
         if (!res.ok) throw new Error("Failed to load roadmap data");
         RM_DATA = await res.json();
 
@@ -25,7 +26,7 @@ async function initRoadmap() {
 
     } catch (err) {
         console.error(err);
-        showError("// SYNC FAILURE: UNABLE TO LOAD ROADMAP PROTOCOLS");
+        showError("ERROR: Unable to load roadmap data. Please try again later.");
     }
 }
 
@@ -36,10 +37,10 @@ function renderSidebarQueue() {
     list.innerHTML = RM_DATA.nextFocusQueue.map(item => `
         <div class="queue-item">
             <div class="item-meta">
-                <span>ID: ${item.projectId.toUpperCase()}</span>
+                <span>${getProjectName(item.projectId)}</span>
                 <span style="color: var(--accent-gold);">${item.etaLabel || ''}</span>
             </div>
-            <div class="item-title">${getProjectName(item.projectId)}</div>
+            <div class="item-title">${item.projectId.toUpperCase()}</div>
             <div class="item-note">${item.note}</div>
         </div>
     `).join('');
@@ -54,13 +55,17 @@ function renderSidebarFeed() {
 
     list.innerHTML = feed.map(item => {
         let stateClass = item.state ? item.state.toLowerCase() : '';
+        let route = '#';
+        if (item.projectId === 'betterfingers') route = '../productivity/index.html';
+        if (item.projectId === 'infinite-ages') route = '../games/index.html';
+
         return `
-        <div class="feed-item">
+        <div class="feed-item" style="cursor: pointer; transition: 0.2s;" onclick="window.location.href='${route}'" onmouseover="this.style.opacity=0.8" onmouseout="this.style.opacity=1">
             <div class="item-meta">
                 <span style="color: var(--tech-cyan);">${item.dateISO}</span>
                 <span class="state-tag ${stateClass}">${item.state || 'LOGGED'}</span>
             </div>
-            <div class="item-title">${getProjectName(item.projectId)}</div>
+            <div class="item-title" style="color: var(--accent-gold);">${getProjectName(item.projectId)}</div>
             <div class="item-note">${item.summary}</div>
         </div>
     `}).join('');
@@ -77,44 +82,50 @@ function renderCarousel(index) {
     if (!project) return;
 
     // 1. Update Header
-    document.getElementById('rm-project-title').innerText = project.name.toUpperCase();
-    document.getElementById('rm-focus-summary').innerText = `// FOCUS: ${project.focus.focusLine}`;
+    const titleEl = document.getElementById('rm-project-title');
+    const summaryEl = document.getElementById('rm-focus-summary');
+    const statusEl = document.getElementById('rm-status-summary');
+
+    if (titleEl) titleEl.innerText = project.name.toUpperCase();
+    if (summaryEl) summaryEl.innerText = `FOCUS: ${project.focus.focusLine}`;
+    if (statusEl) statusEl.innerText = project.focus.summary;
 
     // 2. Update Dots
     const dotsContainer = document.getElementById('rm-dots');
-    dotsContainer.innerHTML = carouselOrder.map((pid, idx) => `
-        <div class="dot ${idx === index ? 'active' : ''}" onclick="renderCarousel(${idx})"></div>
-    `).join('');
-
-    // 3. Update Panels
-    const updateList = document.getElementById('rm-updates');
-    if (project.updatePlans.length === 0) {
-        updateList.innerHTML = `<div class="mono" style="color:var(--text-muted)">// NO PENDING UPDATES</div>`;
-    } else {
-        updateList.innerHTML = project.updatePlans.map(plan => `
-            <div class="plan-card">
-                <div class="plan-title">${plan.title}</div>
-                <div class="plan-meta">
-                    <span>IMPACT: ${plan.impact}</span>
-                    <span>EFFORT: ${plan.effort}</span>
-                    <span>WINDOW: ${plan.targetWindow}</span>
-                </div>
-                <div class="item-note">${plan.desc}</div>
-            </div>
+    if (dotsContainer) {
+        dotsContainer.innerHTML = carouselOrder.map((pid, idx) => `
+            <div class="dot ${idx === index ? 'active' : ''}" onclick="renderCarousel(${idx})"></div>
         `).join('');
     }
 
+    // 3. Update Panels
+    const updateList = document.getElementById('rm-updates');
+    if (updateList) {
+        if (project.updatePlans.length === 0) {
+            updateList.innerHTML = `<div class="mono" style="color:var(--text-muted)">No pending updates</div>`;
+        } else {
+            updateList.innerHTML = project.updatePlans.map(plan => `
+                <div class="plan-card">
+                    <div class="plan-title">${plan.title}</div>
+                    <div class="item-note">${plan.desc}</div>
+                </div>
+            `).join('');
+        }
+    }
+
     const scopeList = document.getElementById('rm-scope');
-    if (project.scopeChanges.length === 0) {
-        scopeList.innerHTML = `<div class="mono" style="color:var(--text-muted)">// SCOPE NOMINAL</div>`;
-    } else {
-        scopeList.innerHTML = project.scopeChanges.map(scope => `
-            <div class="scope-card">
-                <div class="item-meta" style="color:var(--accent-gold)">${scope.dateISO}</div>
-                <div class="plan-title">${scope.change}</div>
-                <div class="item-note" style="font-size: 0.9rem;">REASON: ${scope.reason}</div>
-            </div>
-        `).join('');
+    if (scopeList) {
+        if (project.scopeChanges.length === 0) {
+            scopeList.innerHTML = `<div class="mono" style="color:var(--text-muted)">No recent changes</div>`;
+        } else {
+            scopeList.innerHTML = project.scopeChanges.map(scope => `
+                <div class="scope-card">
+                    <div class="item-meta" style="color:var(--accent-gold)">${scope.dateISO}</div>
+                    <div class="plan-title">${scope.change}</div>
+                    <div class="item-note" style="font-size: 0.9rem;">TARGET: ${scope.reason}</div>
+                </div>
+            `).join('');
+        }
     }
 
     // 4. Update Kanban
@@ -124,6 +135,8 @@ function renderCarousel(index) {
 function renderKanban(kb) {
     const todoCol = document.getElementById('kb-todo');
     const doneCol = document.getElementById('kb-done');
+
+    if (!todoCol || !doneCol) return;
 
     if (!kb) {
         todoCol.innerHTML = '';
@@ -135,9 +148,6 @@ function renderKanban(kb) {
         <div class="kb-card">
             <h5>${card.title}</h5>
             ${card.note ? `<div class="item-note" style="font-size:0.9rem">${card.note}</div>` : ''}
-            <div class="tags">
-                ${(card.tags || []).map(t => `<span class="tag">${t}</span>`).join('')}
-            </div>
         </div>
     `;
 

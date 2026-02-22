@@ -1,0 +1,45 @@
+/* --- THEME ENGINE: DIGITAL HERMETICISM --- */
+:root {
+    /* Core Surfaces */
+    --bg-void: #04070d;
+    --bg-rift: #0a111d;
+    --bg-panel: rgba(12, 18, 30, 0.85);
+    --bg-panel-strong: #0f1726;
+    --bg-overlay: rgba(3, 6, 11, 0.9);
+
+    /* Structural Materials */
+    --stone-dark: #1b273b;
+    --stone-light: #2f425f;
+    --line-rune: rgba(101, 230, 217, 0.28);
+
+    /* Accent Energies */
+    --accent-gold: #d2b16f;
+    --accent-dim: #86632a;
+    --tech-cyan: #65e6d9;
+    --tech-purple: #7fa8ff;
+    --tech-crimson: #b96f5e;
+
+    /* Text */
+    --text-main: #ede4d4;
+    --text-muted: #97a2b8;
+    --text-soft: #c8c0b1;
+    --text-secondary: #aab4c6;
+
+    /* Typography */
+    --font-header: 'Cinzel', serif;
+    --font-display: 'Marcellus SC', serif;
+    --font-body: 'Alegreya', serif;
+    --font-mono: 'Space Mono', monospace;
+
+    /* Effects */
+    --scanline: rgba(210, 177, 111, 0.035);
+    --shadow-low: 0 12px 28px rgba(2, 5, 10, 0.45);
+    --shadow-high: 0 24px 60px rgba(2, 4, 10, 0.65);
+    --ring-glow: 0 0 0 1px rgba(101, 230, 217, 0.35), 0 0 24px rgba(101, 230, 217, 0.18);
+    --radius-cut: 14px;
+    --radius-soft: 8px;
+
+    /* Layout */
+    --nav-width: 284px;
+    --container-max: 1180px;
+}
