@@ -11,12 +11,12 @@ const PUBLIC_DIR = path.resolve('public');
 const COMPONENTS_DIR = path.join(SRC_DIR, 'components');
 const LAYOUTS_DIR = path.join(SRC_DIR, 'layouts');
 
-// Legacy V1 URLs kept alive as redirect stubs so inbound links do not 404.
-// See MIGRATION.md "Compatibility Warning".
 // Absolute base path the site is served from. GitHub Pages project sites live
 // under /<repo>/; override with SITE_BASE=/ for a user/apex domain.
 const SITE_BASE = process.env.SITE_BASE || '/SourceArcanum/';
 
+// Legacy V1 URLs kept alive as redirect stubs so inbound links do not 404.
+// See MIGRATION.md "Compatibility Warning".
 const LEGACY_REDIRECTS = {
     'chronicles.html': 'chronicles/index.html',
     'docs.html': 'chronicles/index.html',
@@ -145,12 +145,12 @@ async function buildAllContent(dirPath, subDir = '', components, postsData = [])
 
 // Project dossier pages, generated from data/projects.json.
 //
-// V1 built these from project_cards/*.md via scripts/build.js; the V2 migration
-// ported the content-page builder but not this one, so the nine pages under
-// projects/ became hand-maintained orphans that drifted from the JSON the site
-// actually serves. They are regenerated here from the single source of truth,
-// which also gives every project a shareable URL -- the card grid only ever
-// opened a modal, so there was no way to link anyone to one project.
+// V1 built these from project_cards/*.md via a since-removed scripts/build.js;
+// the V2 migration ported the content-page builder but not this one, so the
+// nine pages under projects/ became hand-maintained orphans that drifted from
+// the JSON the site serves. They are regenerated from the single source of
+// truth, which also gives every project a shareable URL -- the card grid only
+// ever opened a modal, so there was no way to link anyone to one project.
 //
 // Must run AFTER initPublicDir(), which copies projects/ wholesale (that is how
 // the playable projects/Space-Shooter/ game ships).
