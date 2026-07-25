@@ -70,6 +70,110 @@
     ]
   },
   {
+    "id": "getfast",
+    "featured": false,
+    "realName": "GetFast",
+    "codename": "Twin Current",
+    "category": "productivity",
+    "status": "announced",
+    "statusLabel": "IMMINENT",
+    "tagline": "Two networks pulling one file.",
+    "plainDescription": "A local service that splits a download across every network link you already own — Ethernet, Wi-Fi, a tethered phone — and reassembles the pieces on your machine.",
+    "flavorDescription": "It braids two separate currents into a single channel, drawing from every road at once and weaving the fragments back into one whole.",
+    "fullDescription": [
+      "Most machines sit beside more than one route to the internet and use exactly one of them. GetFast splits a range-capable download into chunks, pulls those chunks over several interfaces at the same time, verifies each one, and reassembles the file in order. A failed chunk is retried on a different path; a cancelled or interrupted download resumes from its parts rather than starting over.",
+      "The design constraint is that it must never strand your network. GetFast snapshots your routing state before it touches anything, owns a narrow reserved band of policy tables, and restores that snapshot on completion, cancellation, watchdog action, shutdown, or crash. Metered and mobile links are excluded until you explicitly permit them. The daemon itself runs unprivileged — only a small, separate helper is ever elevated."
+    ],
+    "features": [
+      "Segmented downloads across multiple interfaces",
+      "Per-chunk verification and in-order reassembly",
+      "Automatic retry of failed chunks on another path",
+      "Resume from partial parts after cancel or crash",
+      "Live per-interface throughput reporting",
+      "Metered and mobile links excluded by default",
+      "Snapshot-and-restore of all routing changes",
+      "Desktop tray dashboard with a local-only daemon"
+    ],
+    "flagshipFeatures": [
+      "Link Aggregation:: Splits one file across Ethernet, Wi-Fi, and tether simultaneously instead of leaving spare links idle.",
+      "Fail-Safe By Construction:: Never rewrites your main route table, owns only a reserved band, and restores its snapshot on every terminal outcome including a crash.",
+      "Nothing Leaves The Machine:: A local daemon over a private socket. No account, no telemetry, no remote coordination server."
+    ],
+    "roadmap": {
+      "nearTerm": [
+        "Physical multi-interface hardware validation",
+        "Windows support (interface binding and named-pipe IPC)",
+        "Signed builds for both platforms"
+      ],
+      "midTerm": [
+        "In-process transfer engine replacing external tooling",
+        "Browser download handoff",
+        "Continuous integration across Linux and Windows"
+      ],
+      "longTerm": "The aim is an accelerator that is boring and trustworthy: it uses the links you already pay for, it explains exactly what it is doing, and it puts your network back the way it found it every single time."
+    },
+    "trustFacts": {
+      "runsOffline": false,
+      "requiresInternet": "Yes — it is a downloader",
+      "telemetry": "None",
+      "accounts": "None",
+      "dataStoredWhere": "Local device only"
+    },
+    "links": []
+  },
+  {
+    "id": "infinite-stacks",
+    "featured": false,
+    "realName": "Infinite Stacks",
+    "codename": "The Lost Meaning",
+    "category": "games",
+    "status": "announced",
+    "statusLabel": "IMMINENT",
+    "tagline": "A LAN dungeon crawl that leaves no trace.",
+    "plainDescription": "A browser-played party dungeon game hosted from one machine on your home network — character creation, exploration, puzzles, combat, and shops, with nothing written to disk.",
+    "flavorDescription": "A hall that assembles itself when the party gathers and forgets everything the moment the last torch goes out.",
+    "fullDescription": [
+      "One person on the network starts the server and shares a room code. Everyone else joins from a browser — no installs on the guests' machines, no accounts, no launcher. The run covers character creation, exploration, puzzles, shops, and combat with live reactions.",
+      "Nothing is persisted. When the server stops, the run is over: no save files, no logs, no history. The server binds to loopback unless you explicitly ask for LAN access, generates a high-entropy access code at startup, and allowlists Host and Origin headers to the machine's own addresses. Nothing typed in the game is saved or leaves the network."
+    ],
+    "features": [
+      "Browser-based play — guests install nothing",
+      "Hosted from one machine on your own LAN",
+      "Character creation and party rooms via room code",
+      "Exploration, puzzles, shops, and combat",
+      "Live combat reactions",
+      "Loopback-only until LAN is explicitly enabled",
+      "High-entropy access code generated per session",
+      "Authored content packs, no generation required"
+    ],
+    "flagshipFeatures": [
+      "Zero Persistence:: When the server stops, the run is gone. No save files, no logs, no account holding your history.",
+      "Your Network, Your Rules:: Binds to loopback by default; LAN exposure is an explicit flag guarded by a per-session access code and header allowlisting.",
+      "No Client Install:: Everyone at the table joins from a browser with a room code. One machine hosts, nobody else sets anything up."
+    ],
+    "roadmap": {
+      "nearTerm": [
+        "First public release",
+        "Playtest feedback pass",
+        "Additional authored content packs"
+      ],
+      "midTerm": [
+        "Expanded ability and card systems",
+        "Optional local narration via a localhost API",
+        "Broader browser and device testing"
+      ],
+      "longTerm": "The goal is a game you can host for friends in under a minute, that asks nothing of them but a browser, and that keeps no record of anyone once the night is over."
+    },
+    "trustFacts": {
+      "runsOffline": true,
+      "requiresInternet": "None — local network only",
+      "telemetry": "None",
+      "accounts": "None",
+      "dataStoredWhere": "Nothing is persisted"
+    },
+    "links": []
+  },
+  {
     "id": "dream-tool",
     "featured": false,
     "realName": "Dream Tool",

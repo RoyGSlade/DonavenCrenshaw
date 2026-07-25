@@ -12,6 +12,11 @@ body {
     flex-direction: column;
     position: relative;
     z-index: 1;
+    /* Decorative halos (.hero::before) are deliberately positioned past the
+       right edge, which gave the page ~35px of horizontal scroll on phones.
+       `clip` suppresses that without creating a scroll container, so sticky
+       and fixed descendants keep working (which `overflow-x: hidden` breaks). */
+    overflow-x: clip;
 }
 
 main {

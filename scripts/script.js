@@ -114,9 +114,10 @@ async function init() {
 // --- RENDERERS ---
 
 function renderHome() {
-    // 1. Featured Projects Carousel (BetterFingers, PDF Manager, Infinite Ages)
-    const featuredIds = ['betterfingers', 'pdf-manager', 'infinite-ages'];
-    const featured = PROJECTS.filter(p => featuredIds.includes(p.id));
+    // 1. Featured Projects Carousel. Driven by the `featured` flag in
+    //    projects.json (which validateData.js already enforces) rather than a
+    //    second hardcoded list that has to be kept in sync by hand.
+    const featured = PROJECTS.filter(p => p.featured);
     renderGrid(featured, 'featured-grid');
 
     // 2. Chronicles
@@ -457,9 +458,13 @@ function openModal(projectId) {
     // Links (Sidebar)
     const linksEl = document.getElementById('modal-links');
     if (linksEl) {
-        linksEl.innerHTML = project.links.length > 0
-            ? project.links.filter(l => l.url).map(l => `
-                <a href="${resolveSiteUrl(l.url)}" target="_blank" class="btn btn-primary" style="text-align:center; font-size: 0.8rem;">${l.label.toUpperCase()}</a>
+        // Filter before the length check: several projects carry placeholder link
+        // entries with an empty url, which otherwise rendered an empty panel
+        // instead of falling back to the ACCESS RESTRICTED notice.
+        const usableLinks = project.links.filter(l => l.url);
+        linksEl.innerHTML = usableLinks.length > 0
+            ? usableLinks.map(l => `
+                <a href="${resolveSiteUrl(l.url)}" target="_blank" rel="noopener noreferrer" class="btn btn-primary" style="text-align:center; font-size: 0.8rem;">${l.label.toUpperCase()}</a>
             `).join('')
             : `<div class="mono" style="color: var(--text-muted); font-size: 0.8rem;">// ACCESS RESTRICTED</div>`;
     }
@@ -576,49 +581,65 @@ function initEasterEggs() {
 // Start
 init();
 
-// --- YOUTUBE PREVIEW SYSTEM ---
-let ytPlayer = null;
+// --- VIDEO PREVIEW SYSTEM ---
+//
+// Privacy facade. The previous version injected YouTube's iframe_api on page
+// load, so every visitor to the manifesto page handed YouTube a request and a
+// set of cookies before deciding to watch anything. That is precisely what this
+// site tells people not to accept.
+//
+// Nothing third-party is requested until the visitor clicks, the click is an
+// explicit consent step with the destination named, and the embed then uses
+// youtube-nocookie.com.
+
+const PREVIEW_VIDEO_ID = '99rThEvTqig';
 
 function initYouTubePreview() {
     const trigger = document.getElementById('preview-trigger');
     const drawer = document.getElementById('video-drawer');
-    if (!trigger || !drawer) return;
+    const mount = document.getElementById('yt-player');
+    if (!trigger || !drawer || !mount) return;
 
-    // Load YT API
-    const tag = document.createElement('script');
-    tag.src = "https://www.youtube.com/iframe_api";
-    const firstScriptTag = document.getElementsByTagName('script')[0];
-    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+    let loaded = false;
 
-    window.onYouTubeIframeAPIReady = () => {
-        ytPlayer = new YT.Player('yt-player', {
-            height: '100%',
-            width: '100%',
-            videoId: '99rThEvTqig',
-            playerVars: {
-                'playsinline': 1,
-                'rel': 0,
-                'modestbranding': 1
-            },
-            events: {
-                'onStateChange': (event) => {
-                    if (event.data === YT.PlayerState.ENDED) {
-                        drawer.classList.remove('is-active');
-                        trigger.innerText = 'INITIATE PREVIEW';
-                    }
-                }
-            }
-        });
+    const showConsent = () => {
+        loaded = false;
+        mount.innerHTML = `
+        <div class="video-consent mono">
+            <p>// EXTERNAL TRANSMISSION</p>
+            <p class="video-consent-body">
+                This preview is hosted on YouTube. Loading it contacts
+                <strong>youtube-nocookie.com</strong>, outside this site's control.
+                Nothing has been requested yet.
+            </p>
+            <button type="button" id="preview-consent" class="btn btn-primary">LOAD PREVIEW</button>
+        </div>`;
+        mount.querySelector('#preview-consent').addEventListener('click', loadEmbed);
     };
+
+    const loadEmbed = () => {
+        if (loaded) return;
+        loaded = true;
+        const frame = document.createElement('iframe');
+        frame.width = '100%';
+        frame.height = '100%';
+        frame.src = `https://www.youtube-nocookie.com/embed/${PREVIEW_VIDEO_ID}?autoplay=1&rel=0&modestbranding=1&playsinline=1`;
+        frame.title = 'BetterFingers preview';
+        frame.loading = 'lazy';
+        frame.allow = 'accelerometer; autoplay; encrypted-media; picture-in-picture';
+        frame.referrerPolicy = 'strict-origin-when-cross-origin';
+        frame.allowFullscreen = true;
+        frame.style.border = '0';
+        mount.replaceChildren(frame);
+    };
+
+    showConsent();
 
     trigger.onclick = () => {
         const isActive = drawer.classList.toggle('is-active');
         trigger.innerText = isActive ? 'CLOSE PREVIEW' : 'INITIATE PREVIEW';
-
-        if (isActive && ytPlayer && ytPlayer.playVideo) {
-            ytPlayer.playVideo();
-        } else if (!isActive && ytPlayer && ytPlayer.pauseVideo) {
-            ytPlayer.pauseVideo();
-        }
+        // Closing the drawer tears the iframe down so it cannot keep running,
+        // and restores the consent gate for the next open.
+        if (!isActive && loaded) showConsent();
     };
 }

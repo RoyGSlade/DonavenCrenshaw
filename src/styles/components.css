@@ -681,3 +681,36 @@ footer {
     letter-spacing: 0.12rem;
     padding: 0 0.4rem;
 }
+/* Consent gate shown in place of a third-party video embed until the visitor
+   explicitly asks for it. See initYouTubePreview() in scripts/script.js. */
+.video-consent {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    height: 100%;
+    padding: 1.5rem;
+    text-align: center;
+    border: 1px dashed var(--stone-light);
+    background: rgba(0, 0, 0, 0.35);
+}
+
+.video-consent p {
+    margin: 0;
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    color: var(--accent-gold);
+}
+
+.video-consent .video-consent-body {
+    max-width: 46ch;
+    font-size: 0.78rem;
+    letter-spacing: normal;
+    line-height: 1.5;
+    color: var(--text-muted);
+}
+
+.video-consent strong {
+    color: var(--tech-cyan);
+}

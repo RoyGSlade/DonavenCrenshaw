@@ -41,8 +41,21 @@
 .hero-content {
     max-width: min(920px, 100%);
     display: grid;
+    /* Grid items default to min-width:auto, so a long unbreakable headline
+       ("BETTERFINGERS DECLASSIFIED") widened this track past its own max-width
+       and pushed the whole page into horizontal scroll on narrow screens. */
+    min-width: 0;
+    grid-template-columns: minmax(0, 1fr);
     gap: 1rem;
     animation: heroRise 0.9s ease both;
+}
+
+.hero-content>* {
+    min-width: 0;
+}
+
+.hero h1 {
+    overflow-wrap: break-word;
 }
 
 .pre-title {
