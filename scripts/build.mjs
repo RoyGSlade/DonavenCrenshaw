@@ -143,6 +143,82 @@ async function buildAllContent(dirPath, subDir = '', components, postsData = [])
     return postsData;
 }
 
+// Project dossier pages, generated from data/projects.json.
+//
+// V1 built these from project_cards/*.md via scripts/build.js; the V2 migration
+// ported the content-page builder but not this one, so the nine pages under
+// projects/ became hand-maintained orphans that drifted from the JSON the site
+// actually serves. They are regenerated here from the single source of truth,
+// which also gives every project a shareable URL -- the card grid only ever
+// opened a modal, so there was no way to link anyone to one project.
+//
+// Must run AFTER initPublicDir(), which copies projects/ wholesale (that is how
+// the playable projects/Space-Shooter/ game ships).
+async function buildProjectPages(components) {
+    const dataPath = path.resolve('data/projects.json');
+    if (!fs.existsSync(dataPath)) return;
+
+    const projects = await fs.readJson(dataPath);
+    const layoutEjs = await fs.readFile(path.join(LAYOUTS_DIR, 'project.ejs'), 'utf-8');
+    const outDir = path.join(PUBLIC_DIR, 'projects');
+    await fs.ensureDir(outDir);
+
+    const siteRoot = '../';
+
+    for (const project of projects) {
+        // flagshipFeatures encode "Title:: body" -- the same split openModal()
+        // performs in scripts/script.js.
+        const flagship = (project.flagshipFeatures || []).map((entry) => {
+            const [title, ...rest] = entry.split('::');
+            return { title: title.trim(), text: rest.join('::').trim() };
+        });
+
+        const roadmap = project.roadmap || {};
+        const trajectory = [
+            ...(roadmap.nearTerm || []).map((text) => ({ phase: 'NEAR-TERM', text })),
+            ...(roadmap.midTerm || []).map((text) => ({ phase: 'MID-TERM', text })),
+            ...(roadmap.longTerm ? [{ phase: 'LONG-TERM', text: roadmap.longTerm }] : [])
+        ];
+
+        const tf = project.trustFacts || {};
+        const trustFacts = [
+            ['Runs offline', typeof tf.runsOffline === 'boolean' ? (tf.runsOffline ? 'Yes' : 'No') : tf.runsOffline],
+            ['Requires internet', tf.requiresInternet],
+            ['Telemetry', tf.telemetry],
+            ['Accounts', tf.accounts],
+            ['Data stored where', tf.dataStoredWhere]
+        ].filter(([, value]) => value !== undefined && value !== null && value !== '')
+            .map(([label, value]) => ({ label, value }));
+
+        const frontmatter = { title: project.realName };
+        const renderedComponents = {
+            nav: ejs.render(components.nav, { siteRoot, frontmatter }),
+            footer: ejs.render(components.footer, { siteRoot, frontmatter }),
+            head: ejs.render(components.head, { siteRoot, frontmatter }),
+            modal: ejs.render(components.modal, { siteRoot, frontmatter })
+        };
+
+        const finalHtml = ejs.render(layoutEjs, {
+            project,
+            frontmatter,
+            siteRoot,
+            components: renderedComponents,
+            fullDescription: project.fullDescription || [],
+            features: project.features || [],
+            flagship,
+            trajectory,
+            trustFacts,
+            integrity: tf.integrity ? { file: tf.installer || 'Unknown', sha256: tf.integrity } : null,
+            // Placeholder link entries carry an empty url; drop them so the
+            // panel falls back to ACCESS RESTRICTED instead of rendering blanks.
+            links: (project.links || []).filter((link) => link.url)
+        }, { views: [COMPONENTS_DIR] });
+
+        await fs.writeFile(path.join(outDir, `${project.id}.html`), finalHtml);
+        console.log(`[PROJECT] projects/${project.id}.html`);
+    }
+}
+
 // GitHub Pages serves /404.html for any unmatched path, including nested ones
 // like /games/nope. Depth-relative asset paths would break there, so this page
 // is rendered once against the absolute SITE_BASE.
@@ -208,6 +284,7 @@ async function main() {
     await fs.writeFile(path.join(PUBLIC_DIR, 'data', 'posts.json'), JSON.stringify(postsData, null, 2));
     console.log(`[DATA CACHE] /data/posts.json -> ${postsData.length} entries`);
 
+    await buildProjectPages(components);
     await buildNotFound(components);
     await buildLegacyRedirects();
 

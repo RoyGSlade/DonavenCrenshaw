@@ -101,10 +101,13 @@ function renderCarousel(index) {
     // 3. Update Panels
     const updateList = document.getElementById('rm-updates');
     if (updateList) {
-        if (project.updatePlans.length === 0) {
+        // Optional arrays: a roadmap entry without them should degrade to the
+        // empty-state message, not throw and blank the whole carousel.
+        const updatePlans = project.updatePlans || [];
+        if (updatePlans.length === 0) {
             updateList.innerHTML = `<div class="mono" style="color:var(--text-muted)">No pending updates</div>`;
         } else {
-            updateList.innerHTML = project.updatePlans.map(plan => `
+            updateList.innerHTML = updatePlans.map(plan => `
                 <div class="plan-card">
                     <div class="plan-title">${plan.title}</div>
                     <div class="item-note">${plan.desc}</div>
@@ -115,10 +118,11 @@ function renderCarousel(index) {
 
     const scopeList = document.getElementById('rm-scope');
     if (scopeList) {
-        if (project.scopeChanges.length === 0) {
+        const scopeChanges = project.scopeChanges || [];
+        if (scopeChanges.length === 0) {
             scopeList.innerHTML = `<div class="mono" style="color:var(--text-muted)">No recent changes</div>`;
         } else {
-            scopeList.innerHTML = project.scopeChanges.map(scope => `
+            scopeList.innerHTML = scopeChanges.map(scope => `
                 <div class="scope-card">
                     <div class="item-meta" style="color:var(--accent-gold)">${scope.dateISO}</div>
                     <div class="plan-title">${scope.change}</div>

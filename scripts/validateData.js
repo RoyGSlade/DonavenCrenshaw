@@ -134,11 +134,28 @@ function validateRoadmap(roadmap, projectIds) {
     (roadmap.nextFocusQueue || []).forEach((item, i) => check(item.projectId, `nextFocusQueue[${i}]`));
     (roadmap.recentlyShippedFeed || []).forEach((item, i) => check(item.projectId, `recentlyShippedFeed[${i}]`));
 
-    // The carousel renders focus/updatePlans straight off roadmap.projects, so
-    // a carousel entry without that block breaks the page rather than degrading.
+    // The carousel renders straight off roadmap.projects, so a carousel entry
+    // without that block breaks the page rather than degrading.
     (roadmap.carouselOrder || []).forEach((id) => {
         if (id && !roadmapProjects[id]) {
             console.error(`  carouselOrder: '${id}' has no entry under 'projects'`);
+            errors += 1;
+        }
+    });
+
+    // renderCarousel() dereferences these directly. A partial entry blanked the
+    // whole carousel with a TypeError until roadmap.js gained its guards; keep
+    // the data honest as well so the page renders fully, not just safely.
+    const REQUIRED = ['name', 'focus', 'updatePlans', 'scopeChanges', 'kanban'];
+    Object.entries(roadmapProjects).forEach(([id, project]) => {
+        REQUIRED.forEach((key) => {
+            if (project[key] === undefined) {
+                console.error(`  projects.${id}: missing '${key}', which the roadmap carousel renders`);
+                errors += 1;
+            }
+        });
+        if (project.focus && !project.focus.focusLine) {
+            console.error(`  projects.${id}: focus is missing 'focusLine'`);
             errors += 1;
         }
     });

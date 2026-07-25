@@ -299,9 +299,11 @@ function renderGrid(items, containerId) {
                 
                 ${demoBtnHtml}
                 
-                <div class="click-prompt" style="margin-top: auto;">
+                <a class="click-prompt" style="margin-top: auto; display:block; text-decoration:none; color:inherit;"
+                   href="${resolveSiteUrl('projects/' + p.id + '.html')}"
+                   onclick="event.preventDefault(); event.stopPropagation(); windowModal('${p.id}');">
                     [ ACCESS DOSSIER ] &rarr;
-                </div>
+                </a>
             </div>
         </div>
     `;

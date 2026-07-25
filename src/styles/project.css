@@ -1,0 +1,100 @@
+/*
+    Project dossier pages (/projects/<id>.html).
+
+    Injected by src/layouts/project.ejs rather than imported into styles.css,
+    matching how roadmap.css is scoped to the roadmap page. These rules were
+    previously duplicated as an inline <style> block in each of the nine
+    hand-written project pages.
+*/
+
+.feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 2rem;
+    margin-top: 3rem;
+}
+
+.feature-card {
+    background: var(--bg-panel);
+    border: 1px solid var(--stone-light);
+    padding: 1.5rem;
+}
+
+.feature-card h4 {
+    color: var(--tech-cyan);
+    margin: 0 0 0.6rem;
+}
+
+.feature-card p {
+    margin: 0;
+    color: var(--text-muted);
+}
+
+.trajectory-item {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--stone-dark);
+}
+
+.trajectory-phase {
+    min-width: 120px;
+    font-family: var(--font-header);
+    color: var(--accent-gold);
+}
+
+.project-panels {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4rem;
+}
+
+.project-panel {
+    background: var(--bg-void);
+    padding: 2rem;
+    border: 1px solid var(--stone-light);
+}
+
+.project-panel.is-acquire {
+    border-color: var(--accent-gold);
+}
+
+.project-panel ul {
+    list-style: none;
+    padding: 0;
+    color: var(--text-main);
+    line-height: 2;
+}
+
+.project-panel .panel-label {
+    color: var(--text-muted);
+}
+
+.acquire-links {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.project-description {
+    font-size: 1.1rem;
+    column-count: 2;
+    column-gap: 4rem;
+}
+
+@media (max-width: 900px) {
+    .project-panels {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+    }
+
+    .project-description {
+        column-count: 1;
+    }
+
+    .trajectory-item {
+        flex-direction: column;
+        gap: 0.4rem;
+    }
+}

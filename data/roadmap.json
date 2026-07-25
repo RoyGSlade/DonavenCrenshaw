@@ -262,7 +262,74 @@
           "targetWindow": "Soon",
           "tags": []
         }
-      ]
+      ],
+      "scopeChanges": [
+        {
+          "dateISO": "2026-07-25",
+          "change": "SOFT ANNOUNCE",
+          "reason": "listed publicly ahead of release"
+        },
+        {
+          "dateISO": "2026-06-30",
+          "change": "SCOPE NARROWED TO LINUX FIRST",
+          "reason": "prove the routing model before porting to Windows"
+        }
+      ],
+      "kanban": {
+        "todo": [
+          {
+            "title": "Multi-interface hardware validation",
+            "note": "real Ethernet + Wi-Fi, independent gateways",
+            "tags": [
+              "Blocking"
+            ]
+          },
+          {
+            "title": "Windows interface binding",
+            "note": "IP_UNICAST_IF per socket",
+            "tags": [
+              "Pending"
+            ]
+          },
+          {
+            "title": "Named-pipe IPC for Windows",
+            "note": "replaces the unix socket",
+            "tags": [
+              "Pending"
+            ]
+          },
+          {
+            "title": "Signed builds",
+            "note": "both platforms",
+            "tags": [
+              "Pending"
+            ]
+          }
+        ],
+        "done": [
+          {
+            "title": "Segmented downloader",
+            "note": "chunk planning, retry, resume",
+            "tags": [
+              "Done"
+            ]
+          },
+          {
+            "title": "Snapshot and rollback safety",
+            "note": "restores on every terminal outcome",
+            "tags": [
+              "Done"
+            ]
+          },
+          {
+            "title": "Desktop tray dashboard",
+            "note": "live throughput and per-chunk state",
+            "tags": [
+              "Done"
+            ]
+          }
+        ]
+      }
     },
     "infinite-stacks": {
       "name": "INFINITE STACKS",
@@ -310,7 +377,67 @@
           "targetWindow": "Soon",
           "tags": []
         }
-      ]
+      ],
+      "scopeChanges": [
+        {
+          "dateISO": "2026-07-25",
+          "change": "SOFT ANNOUNCE",
+          "reason": "listed publicly ahead of release"
+        },
+        {
+          "dateISO": "2026-07-24",
+          "change": "EXTRACTED TO ITS OWN PROJECT",
+          "reason": "no runtime dependency on BetterFingers"
+        }
+      ],
+      "kanban": {
+        "todo": [
+          {
+            "title": "First public release",
+            "note": "tag and publish the package",
+            "tags": [
+              "Blocking"
+            ]
+          },
+          {
+            "title": "Playtest feedback pass",
+            "note": "pacing and combat reactions",
+            "tags": [
+              "Pending"
+            ]
+          },
+          {
+            "title": "Additional content packs",
+            "note": "beyond the launch set",
+            "tags": [
+              "Pending"
+            ]
+          }
+        ],
+        "done": [
+          {
+            "title": "Standalone extraction",
+            "note": "own package and infrastructure",
+            "tags": [
+              "Done"
+            ]
+          },
+          {
+            "title": "Room codes and access gating",
+            "note": "loopback default, LAN behind a flag",
+            "tags": [
+              "Done"
+            ]
+          },
+          {
+            "title": "Ritual Spire client UI",
+            "note": "browser client restyle",
+            "tags": [
+              "Done"
+            ]
+          }
+        ]
+      }
     }
   }
 }
