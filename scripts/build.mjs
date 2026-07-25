@@ -11,6 +11,22 @@ const PUBLIC_DIR = path.resolve('public');
 const COMPONENTS_DIR = path.join(SRC_DIR, 'components');
 const LAYOUTS_DIR = path.join(SRC_DIR, 'layouts');
 
+// Legacy V1 URLs kept alive as redirect stubs so inbound links do not 404.
+// See MIGRATION.md "Compatibility Warning".
+// Absolute base path the site is served from. GitHub Pages project sites live
+// under /<repo>/; override with SITE_BASE=/ for a user/apex domain.
+const SITE_BASE = process.env.SITE_BASE || '/SourceArcanum/';
+
+const LEGACY_REDIRECTS = {
+    'chronicles.html': 'chronicles/index.html',
+    'docs.html': 'chronicles/index.html',
+    'finance.html': 'financial/index.html',
+    'games.html': 'games/index.html',
+    'productivity.html': 'productivity/index.html',
+    'roadmap.html': 'roadmap/index.html',
+    'support.html': 'treasury/index.html'
+};
+
 // Ensure output directory exists and is clean
 async function initPublicDir() {
     await fs.remove(PUBLIC_DIR);
@@ -40,6 +56,10 @@ async function initPublicDir() {
             await fs.copy(path.resolve('scripts/roadmap.js'), path.join(PUBLIC_DIR, 'scripts/roadmap.js'));
         }
     }
+    // Copy locally vendored dependencies (webfonts). No external CDNs.
+    if (fs.existsSync(path.resolve('vendor'))) {
+        await fs.copy(path.resolve('vendor'), path.join(PUBLIC_DIR, 'vendor'));
+    }
     // Copy project demo pages and runtime modules (e.g. Stardust)
     if (fs.existsSync(path.resolve('projects'))) {
         await fs.copy(path.resolve('projects'), path.join(PUBLIC_DIR, 'projects'));
@@ -64,6 +84,9 @@ async function buildAllContent(dirPath, subDir = '', components, postsData = [])
         const fullPath = path.join(dirPath, entry.name);
         if (entry.isDirectory()) {
             await buildAllContent(fullPath, path.posix.join(subDir, entry.name), components, postsData);
+        } else if (entry.name === '404.md' && subDir === '') {
+            // Built separately: it needs absolute asset paths, not depth-relative ones.
+            continue;
         } else if (entry.name.endsWith('.md')) {
             const rawContent = await fs.readFile(fullPath, 'utf-8');
             const { data: frontmatter, content } = matter(rawContent);
@@ -120,6 +143,56 @@ async function buildAllContent(dirPath, subDir = '', components, postsData = [])
     return postsData;
 }
 
+// GitHub Pages serves /404.html for any unmatched path, including nested ones
+// like /games/nope. Depth-relative asset paths would break there, so this page
+// is rendered once against the absolute SITE_BASE.
+async function buildNotFound(components) {
+    const sourcePath = path.join(CONTENT_DIR, '404.md');
+    if (!fs.existsSync(sourcePath)) return;
+
+    const { data: frontmatter, content } = matter(await fs.readFile(sourcePath, 'utf-8'));
+    const htmlContent = marked.parse(content).replaceAll('{{SITE_BASE}}', SITE_BASE);
+    const layoutEjs = await fs.readFile(path.join(LAYOUTS_DIR, `${frontmatter.layout || 'default'}.ejs`), 'utf-8');
+    const siteRoot = SITE_BASE;
+
+    const renderedComponents = {
+        nav: ejs.render(components.nav, { siteRoot, frontmatter }),
+        footer: ejs.render(components.footer, { siteRoot, frontmatter }),
+        head: ejs.render(components.head, { siteRoot, frontmatter }),
+        modal: ejs.render(components.modal, { siteRoot, frontmatter })
+    };
+
+    const finalHtml = ejs.render(layoutEjs, {
+        frontmatter, content: htmlContent, siteRoot, components: renderedComponents
+    }, { views: [COMPONENTS_DIR] });
+
+    await fs.writeFile(path.join(PUBLIC_DIR, '404.html'), finalHtml);
+    console.log('[GENERATED] 404.html');
+}
+
+// Emit a redirect stub for every deprecated V1 URL so inbound links survive.
+async function buildLegacyRedirects() {
+    for (const [from, to] of Object.entries(LEGACY_REDIRECTS)) {
+        const target = SITE_BASE + to;
+        const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="refresh" content="0; url=${target}">
+<link rel="canonical" href="${target}">
+<title>Redirecting…</title>
+</head>
+<body>
+<p>This page has moved to <a href="${target}">${target}</a>.</p>
+<script>window.location.replace(${JSON.stringify(target)});</script>
+</body>
+</html>
+`;
+        await fs.writeFile(path.join(PUBLIC_DIR, from), html);
+        console.log(`[REDIRECT] ${from} -> ${to}`);
+    }
+}
+
 async function main() {
     console.log('--- STARTING ARCHITECURE BUILD ---');
     await initPublicDir();
@@ -134,6 +207,9 @@ async function main() {
     await fs.ensureDir(path.join(PUBLIC_DIR, 'data'));
     await fs.writeFile(path.join(PUBLIC_DIR, 'data', 'posts.json'), JSON.stringify(postsData, null, 2));
     console.log(`[DATA CACHE] /data/posts.json -> ${postsData.length} entries`);
+
+    await buildNotFound(components);
+    await buildLegacyRedirects();
 
     console.log('--- BUILD COMPLETE ---');
 }

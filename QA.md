@@ -22,4 +22,12 @@ Checklist of manual verification steps pre-launch:
 - [x] The Home Page typing effect (`BETTERFINGERS DECLASSIFIED`) renders glitch-free.
 
 ## 4. Backwards Compatibility
-- [x] Test old link mapping: Does clicking Legacy "Support" redirect to the new "Treasury"? (If we added redirects).
+- [x] Test old link mapping: Does clicking Legacy "Support" redirect to the new "Treasury"?
+      (`build.mjs` emits stubs for `support`, `finance`, `games`, `productivity`, `roadmap`,
+      `chronicles`, and `docs`; verify each in `/public` after a build.)
+- [x] Verify `/public/404.html` is generated and its asset paths are absolute, so a nested
+      miss like `/games/nope` still renders with styles and nav.
+
+## 5. Third-Party Requests
+- [x] `grep -r "fonts.googleapis\|fonts.gstatic" public/` returns nothing.
+- [x] Webfonts load from `/vendor/fonts/` (regenerate with `node scripts/fetch-fonts.mjs`).
