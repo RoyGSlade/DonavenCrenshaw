@@ -31,10 +31,15 @@ jobs:
         run: npm ci
 
       - name: Validate Data
-        run: node scripts/validateData.js
+        run: npm run validate
 
       - name: Build Site
         run: npm run build
+
+      # Must run after the build: the YouTube embed URL was assembled in JS and
+      # was invisible to a source scan. In built output the literal is present.
+      - name: Check For Third-Party Requests
+        run: npm run check:privacy
 
       - name: Setup Pages
         uses: actions/configure-pages@v4

@@ -6,9 +6,13 @@ Source Arcanum has transitioned from a manual HTML/JSON hybrid system to a fully
 The repository structure has been refactored to prioritize readability, maintainability, and clean separation of concerns.
 
 **New Structure:**
-- `/content` -> All data lives here. Chronicles, Roadmap items, and Project cards are purely `.md` files equipped with YAML Frontmatter blocks.
+- `/content` -> Prose pages. Each section page and each Chronicles entry is a
+  `.md` file with a YAML frontmatter block.
+- `/data` -> Structured data, authored by hand and read at runtime by
+  `scripts/script.js`. `projects.json` drives the project cards, dossier
+  modals, and generated project pages; `roadmap.json` drives the roadmap.
 - `/src` -> The engine room. Contains raw templates, global components, and the CSS Design System (`/styles/tokens.css`, `base.css`, etc.)
-- `/public` -> The deterministic output directory. The build system pulls from `/src` and `/content`, injecting them together into this heavily cacheable folder.
+- `/public` -> The deterministic output directory. The build system pulls from `/src`, `/content`, and `/data`, injecting them together into this heavily cacheable folder.
 - `/vendor` -> Local, offline-ready dependencies. No external CDNs are permitted.
 
 ---
@@ -34,18 +38,37 @@ summary: "A brief 1-2 sentence excerpt for the feed."
 4. Run the build script to generate the HTML.
 
 ### 2. Update the Roadmap
-The roadmap no longer uses `roadmap.json`.
-1. Navigate to `/content/roadmap/`.
-2. Locate the corresponding markdown file for the feature (or create a new one).
-3. Update its frontmatter `status` to move it between queues (e.g., "Current Focus", "Next Focus", "Recently Shipped").
-4. Add or resolve checklist items within the body of the markdown document.
+The roadmap is driven by `data/roadmap.json`.
+
+1. `carouselOrder` sets which projects appear in the centre carousel, in order.
+2. `nextFocusQueue` and `recentlyShippedFeed` fill the side rails.
+3. `projects.<id>` holds the detail block. The carousel renders `name`,
+   `focus`, `updatePlans`, `scopeChanges`, and `kanban` — all five are
+   required, and `npm run validate` fails if any is missing.
+
+Project ids must resolve in either `roadmap.json`'s own `projects` map or
+`data/projects.json`. An id that resolves in neither renders as a raw slug. A
+roadmap-only project (one with no card, such as `voicesource`) is fine.
 
 ### 3. Add or Edit a Project Card
-Artifacts shown in Productivity, Games, or Finance are handled identically:
-1. Navigate to `/content/projects/`.
-2. Open the relevant `[project-id].md`.
-3. Update the frontmatter data to change the title, tagline, status, or download links.
-4. Modify the `## Features` or `## Limitations` sections in the markdown body.
+Artifacts shown in Productivity, Games, or Finance all come from
+`data/projects.json`. It is authored by hand and is the single source of truth:
+`scripts/script.js` fetches it at runtime for the card grid and dossier modal,
+and `buildProjectPages()` in `scripts/build.mjs` generates `/projects/<id>.html`
+from the same entries.
+
+1. Open `data/projects.json`.
+2. Add or edit the object for the project. `id`, `realName`, `status` and a
+   boolean `featured` are required; `npm run validate` enforces them.
+3. Leave `links` as `[]` while a project is unreleased — the dossier then shows
+   `// ACCESS RESTRICTED` instead of empty buttons.
+4. Run `npm run build`. The project page regenerates automatically; there is no
+   HTML to edit.
+
+> The V1 pipeline generated this file *from* `project_cards/*.md`. That chain
+> was retired on 2026-07-25, because the markdown had drifted from the JSON the
+> site actually served. The old worksheets are archived, unread, under
+> `docs/project-briefs/`.
 
 ---
 
