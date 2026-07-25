@@ -107,16 +107,57 @@ function validateFunding(funding) {
     return errors;
 }
 
+// The roadmap references projects by id in three places and nothing checked
+// them, so a stale id (`pdf-editor` for `pdf-manager`) shipped and rendered a
+// raw slug on the roadmap card instead of a project name.
+//
+// getProjectName() in scripts/roadmap.js resolves against roadmap.json's own
+// `projects` map and falls back to the raw id, so a roadmap-only project such
+// as `voicesource` (which has a content page but no project card) is valid.
+// The real failure is an id that resolves in NEITHER source.
+function validateRoadmap(roadmap, projectIds) {
+    console.log('[CHECK] Validating roadmap...');
+    let errors = 0;
+    const roadmapProjects = roadmap.projects || {};
+
+    const check = (id, where) => {
+        if (!id) {
+            console.error(`  ${where}: entry missing 'projectId'`);
+            errors += 1;
+        } else if (!roadmapProjects[id] && !projectIds.has(id)) {
+            console.error(`  ${where}: '${id}' is in neither roadmap.projects nor projects.json; it would render as a raw slug`);
+            errors += 1;
+        }
+    };
+
+    (roadmap.carouselOrder || []).forEach((id, i) => check(id, `carouselOrder[${i}]`));
+    (roadmap.nextFocusQueue || []).forEach((item, i) => check(item.projectId, `nextFocusQueue[${i}]`));
+    (roadmap.recentlyShippedFeed || []).forEach((item, i) => check(item.projectId, `recentlyShippedFeed[${i}]`));
+
+    // The carousel renders focus/updatePlans straight off roadmap.projects, so
+    // a carousel entry without that block breaks the page rather than degrading.
+    (roadmap.carouselOrder || []).forEach((id) => {
+        if (id && !roadmapProjects[id]) {
+            console.error(`  carouselOrder: '${id}' has no entry under 'projects'`);
+            errors += 1;
+        }
+    });
+
+    return errors;
+}
+
 console.log('--- STARTING VALIDATION ---');
 const projects = loadJSON('projects.json');
 const posts = loadJSON('posts.json');
 const funding = loadJSON('funding.json');
+const roadmap = loadJSON('roadmap.json');
 
 const projResult = validateProjects(projects);
 const postErrors = validatePosts(posts, projResult.ids);
 const fundErrors = validateFunding(funding);
+const roadmapErrors = validateRoadmap(roadmap, projResult.ids);
 
-const totalErrors = projResult.errors + postErrors + fundErrors;
+const totalErrors = projResult.errors + postErrors + fundErrors + roadmapErrors;
 
 if (totalErrors > 0) {
     console.error(`\n[FAIL] Validation failed with ${totalErrors} errors.`);

@@ -55,5 +55,5 @@ jobs:
             git commit -m "chore(data): refresh funding stats"
             git push
           else
-            console.log("No changes to commit.");
+            echo "No changes to commit."
           fi
