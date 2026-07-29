@@ -1,4 +1,14 @@
-# MIGRATION: Source Arcanum V2 Architecture
+# MIGRATION: Donaven Crenshaw personal site
+
+The public domain now represents **Donaven Crenshaw**. Source Arcanum remains the independent software lab and project umbrella.
+
+The static Markdown/EJS architecture is preserved. Global identity is centralized in `data/site.json`; generated pages receive it through the builder. New primary routes are `/projects/`, `/betterfingers/`, `/writing/`, `/about/`, `/source-arcanum/`, and `/contact/`.
+
+Preserved routes: Chronicle URLs, generated project/demo paths, BetterFingers release/download URLs, and the old `/chronicles/` page. Old `/productivity/`, `/games/`, and `/financial/` pages redirect to `/projects/`; `/treasury/` redirects to `/source-arcanum/`.
+
+For future contributors: change public identity values in `data/site.json`, not shared templates.
+
+## Earlier architecture notes
 
 ## What Changed
 Source Arcanum has transitioned from a manual HTML/JSON hybrid system to a fully static, Markdown-driven pipeline. 

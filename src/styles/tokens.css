@@ -26,10 +26,10 @@
     --text-secondary: #aab4c6;
 
     /* Typography */
-    --font-header: 'Cinzel', serif;
-    --font-display: 'Marcellus SC', serif;
-    --font-body: 'Alegreya', serif;
-    --font-mono: 'Space Mono', monospace;
+    --font-header: Georgia, 'Times New Roman', serif;
+    --font-display: Georgia, 'Times New Roman', serif;
+    --font-body: Georgia, 'Times New Roman', serif;
+    --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
 
     /* Effects */
     --scanline: rgba(210, 177, 111, 0.035);

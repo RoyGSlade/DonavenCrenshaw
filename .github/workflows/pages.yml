@@ -35,6 +35,8 @@ jobs:
 
       - name: Build Site
         run: npm run build
+        env:
+          SITE_BASE: /
 
       - name: Setup Pages
         uses: actions/configure-pages@v4

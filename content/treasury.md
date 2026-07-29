@@ -1,6 +1,7 @@
 ---
-title: "THE HUB"
+title: "Source Arcanum"
 layout: "default"
+redirect: "source-arcanum/index.html"
 ---
 
 <p class="section-desc">Steer the ship. Fuel the engine.</p>
@@ -73,11 +74,11 @@ You can support the project on Ko-fi or GitHub Sponsors while I build a more sec
 <h2 class="section-title" style="font-size: 2.4rem; color: var(--accent-gold);">HALL OF IMMORTALS</h2>
 <p class="section-desc">The early believers. The signal boosters.</p>
 </div>
-<span class="mono" style="color: var(--tech-cyan);">// VERIFIED</span>
+<span class="mono" style="color: var(--text-muted);">// OPEN SLOT</span>
 </div>
 
 <p class="reading-text" style="font-size: 1.05rem; margin-bottom: 2rem; max-width: none;">
-These are the individuals who funded the initial spark. Their names remain hardcoded into the architecture of this project as early patrons who recognized the signal through the noise.
+This is where the earliest supporters get listed — hardcoded into the project, not a rotating widget. Nobody's here yet. First patron gets the top spot.
 </p>
 
 <div id="immortals-grid">

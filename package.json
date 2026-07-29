@@ -4,8 +4,10 @@
     "description": "Static site for Source Arcanum",
     "type": "module",
     "scripts": {
-        "dev": "node scripts/dev.mjs",
-        "build": "node scripts/build.mjs",
+    "dev": "node scripts/dev.mjs",
+    "build": "node scripts/build.mjs",
+    "validate": "node scripts/validateData.js",
+    "check:privacy": "! rg -n -i '(google-analytics|googletagmanager|segment\\.io|mixpanel|plausible\\.io|hotjar)' src content scripts data .github",
         "security-scan": "grep -rnE \"(api_key|ghp_|sk-|secret|password)\" src/ scripts/ content/ --exclude-dir=node_modules || exit 0"
     },
     "keywords": [],

@@ -1,10 +1,10 @@
 <nav class="site-nav">
         <div class="nav-shell">
-                <a class="nav-brand" href="<%= siteRoot %>" data-route="home" aria-label="Source Arcanum Home">
+                <a class="nav-brand" href="<%= siteRoot %>" data-route="home" aria-label="<%= site.name %> home">
                         <span class="nav-sigil" aria-hidden="true"></span>
                         <span class="nav-brand-copy">
-                                <span class="nav-brand-title">SOURCE ARCANUM</span>
-                                <span class="nav-brand-sub mono">LOCAL-FIRST ARCHIVE</span>
+                                <span class="nav-brand-title">DONAVEN CRENSHAW</span>
+                                <span class="nav-brand-sub mono">SOFTWARE · SYSTEMS · CREATION</span>
                         </span>
                 </a>
 
@@ -15,33 +15,29 @@
                 <ul class="nav-links" id="nav-links-list">
                         <li><a href="<%= siteRoot %>" data-route="home"><span class="nav-index mono">00</span><span
                                                 class="nav-label">Home</span></a></li>
-                        <li><a href="<%= siteRoot %>games/index.html" data-route="games"><span
-                                                class="nav-index mono">01</span><span class="nav-label">Games</span></a>
+                        <li><a href="<%= siteRoot %>projects/index.html" data-route="projects"><span
+                                                class="nav-index mono">01</span><span class="nav-label">Projects</span></a>
                         </li>
-                        <li><a href="<%= siteRoot %>productivity/index.html" data-route="productivity"><span
+                        <li><a href="<%= siteRoot %>betterfingers/index.html" data-route="betterfingers"><span
                                                 class="nav-index mono">02</span><span
-                                                class="nav-label">Productivity</span></a>
+                                                class="nav-label">BetterFingers</span></a>
                         </li>
-                        <li><a href="<%= siteRoot %>financial/index.html" data-route="financial"><span
+                        <li><a href="<%= siteRoot %>writing/index.html" data-route="writing"><span
                                                 class="nav-index mono">03</span><span
-                                                class="nav-label">Financial</span></a>
+                                                class="nav-label">Writing</span></a>
                         </li>
-                        <li><a href="<%= siteRoot %>roadmap/index.html" data-route="roadmap"><span
+                        <li><a href="<%= siteRoot %>about/index.html" data-route="about"><span
                                                 class="nav-index mono">04</span><span
-                                                class="nav-label">Roadmap</span></a>
+                                                class="nav-label">About</span></a>
                         </li>
-                        <li><a href="<%= siteRoot %>chronicles/index.html" data-route="chronicles"><span
+                        <li><a href="<%= siteRoot %>contact/index.html" data-route="contact"><span
                                                 class="nav-index mono">05</span><span
-                                                class="nav-label">Chronicles</span></a>
-                        </li>
-                        <li><a href="<%= siteRoot %>treasury/index.html" data-route="treasury"><span
-                                                class="nav-index mono">99</span><span class="nav-label">The
-                                                Treasury</span></a>
+                                                class="nav-label">Contact</span></a>
                         </li>
                 </ul>
 
                 <div class="nav-footer">
-                        <div class="nav-pulse mono">SIGNAL: STABLE</div>
+                        <div class="nav-pulse mono"><%= site.studio.name %> · LAB</div>
                         <button class="glitch-rune mono" type="button" onclick="triggerOverride()"
                                 aria-label="Toggle system override">
                                 &#968;

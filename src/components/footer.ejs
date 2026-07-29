@@ -1,13 +1,15 @@
 <footer>
     <div class="footer-content">
         <div class="footer-brand">
-            <h3 class="mono" style="color: var(--accent-gold); margin-bottom: 0.5rem;">SOURCE_ARCANUM</h3>
-            <p style="color: var(--text-muted); font-size: 0.9rem;">Building sovereign tools for a local-first future.
-            </p>
+            <h3 class="mono" style="color: var(--accent-gold); margin-bottom: 0.35rem;"><%= site.name.toUpperCase() %></h3>
+            <p style="color: var(--text-muted); font-size: 0.9rem;">Building practical, private, and creative software.</p>
+            <p class="mono" style="color: var(--tech-cyan); font-size: 0.68rem; margin-top: 0.7rem;"><%= site.studio.name %> · Independent local-first software lab.</p>
         </div>
         <div class="footer-links">
-            <a href="https://github.com/RoyGSlade/SourceArcanum" target="_blank" class="mono">GITHUB</a>
-            <a href="<%= siteRoot %>treasury/index.html" class="mono">SUPPORT_THE_PACT</a>
+            <a href="<%= site.social.github %>" target="_blank" rel="noopener noreferrer" class="mono">GITHUB</a>
+            <a href="<%= siteRoot %>projects/index.html" class="mono">PROJECTS</a>
+            <a href="<%= siteRoot %>betterfingers/index.html" class="mono">BETTERFINGERS</a>
+            <a href="<%= siteRoot %>contact/index.html" class="mono">CONTACT</a>
         </div>
     </div>
 </footer>

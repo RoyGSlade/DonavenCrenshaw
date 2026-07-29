@@ -102,10 +102,17 @@
 
     .dossier-body {
         grid-template-columns: 1fr;
+        overflow-y: auto;
     }
 
     .dossier-sidebar {
-        display: none;
+        border-right: none;
+        border-bottom: 1px solid var(--stone-dark);
+        overflow-y: visible;
+    }
+
+    .dossier-main {
+        overflow-y: visible;
     }
 
     /* --- Footer --- */
@@ -117,12 +124,44 @@
 
     /* --- Grids --- */
     .manifesto-grid,
-    .support-grid {
+    .support-grid,
+    .bf-roadmap-cols {
         grid-template-columns: 1fr;
+    }
+
+    .bf-spotlight {
+        grid-template-columns: 1fr;
+        text-align: center;
+    }
+
+    .bf-spotlight-media img {
+        max-width: 160px;
+        margin: 0 auto;
+    }
+
+    .bf-spotlight-list li {
+        text-align: left;
     }
 
     .project-grid {
         grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    }
+
+    /* --- BetterFingers hardware table --- */
+    .bf-hw-head {
+        display: none;
+    }
+
+    .bf-hw-row {
+        grid-template-columns: 1fr;
+        gap: 0.2rem;
+    }
+
+    .bf-hw-row span::before {
+        content: attr(data-label) ": ";
+        color: var(--accent-gold);
+        font-family: var(--font-mono);
+        font-size: 0.72rem;
     }
 
     /* --- Chronicles --- */
