@@ -31,6 +31,12 @@ function resolveSiteUrl(url) {
 }
 
 function getCurrentRoute(path = window.location.pathname.toLowerCase()) {
+    if (path.includes('betterfingers')) return 'betterfingers';
+    if (path.includes('projects')) return 'projects';
+    if (path.includes('writing')) return 'writing';
+    if (path.includes('about')) return 'about';
+    if (path.includes('contact')) return 'contact';
+    if (path.includes('source-arcanum')) return 'source-arcanum';
     if (path.includes('productivity')) return 'productivity';
     if (path.includes('games')) return 'games';
     if (path.includes('financial')) return 'financial';
@@ -80,7 +86,9 @@ async function init() {
         // Router
         const route = getCurrentRoute();
 
-        if (route === 'productivity') {
+        if (route === 'projects') {
+            renderProjectDirectory();
+        } else if (route === 'productivity') {
             renderCategory('productivity');
         } else if (route === 'games') {
             renderCategory('games');
@@ -88,10 +96,10 @@ async function init() {
             renderCategory('finance');
         } else if (route === 'treasury') {
             renderSupport();
-        } else if (route === 'chronicles') {
+        } else if (route === 'chronicles' || route === 'writing') {
             const pathMatch = window.location.pathname.toLowerCase();
             // Check if it is the root chronicles index or a sub-page
-            if (pathMatch.endsWith('chronicles/index.html') || pathMatch.endsWith('/chronicles/') || pathMatch.endsWith('/chronicles')) {
+            if (route === 'writing' || pathMatch.endsWith('chronicles/index.html') || pathMatch.endsWith('/chronicles/') || pathMatch.endsWith('/chronicles')) {
                 renderChroniclesFeed();
             } else {
                 // Do nothing on deep chronicle post pages, just let HTML render
@@ -114,9 +122,7 @@ async function init() {
 // --- RENDERERS ---
 
 function renderHome() {
-    // 1. Featured Projects Carousel (BetterFingers, PDF Manager, Infinite Ages)
-    const featuredIds = ['betterfingers', 'pdf-manager', 'infinite-ages'];
-    const featured = PROJECTS.filter(p => featuredIds.includes(p.id));
+    const featured = PROJECTS.filter(p => p.portfolioFeatured).slice(0, 5);
     renderGrid(featured, 'featured-grid');
 
     // 2. Chronicles
@@ -124,6 +130,10 @@ function renderHome() {
 
     // 3. Manifesto Preview (All 6 points)
     renderManifesto(6);
+}
+
+function renderProjectDirectory() {
+    renderGrid(PROJECTS, 'project-grid', { showCategory: true });
 }
 
 function renderChronicles() {
@@ -263,7 +273,7 @@ function renderImmortals() {
     `).join('');
 }
 
-function renderGrid(items, containerId) {
+function renderGrid(items, containerId, options = {}) {
     const grid = document.getElementById(containerId);
     if (!grid) return;
 
@@ -288,18 +298,16 @@ function renderGrid(items, containerId) {
              onkeydown="if(event.key === 'Enter' || event.key === ' ') { event.preventDefault(); windowModal('${p.id}'); }">
             <div style="height: 100%; display: flex; flex-direction: column;">
                 <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 1rem;">
-                    <div class="project-status">${p.statusLabel || p.status.toUpperCase()}</div>
+                    <div class="project-status">${p.maturity || p.status || 'concept'}${options.showCategory ? ` · ${p.category || 'other'}` : ''}</div>
                 </div>
                 
-                <h3 style="margin: 0; font-size: 1.4rem; line-height: 1.2; color: var(--text-main);">${p.realName}</h3>
-                <div class="mono" style="font-size: 0.8rem; color: var(--accent-gold); margin-bottom: 1rem;">(Codename: ${p.codename})</div>
-                
-                <p style="margin-bottom: 1.5rem; flex-grow: 1;">${p.plainDescription}</p>
-                
+                <h3 style="margin: 0 0 0.5rem; font-size: 1.4rem; line-height: 1.2; color: var(--text-main);">${p.realName}</h3>
+                <p style="margin-bottom: 1rem; flex-grow: 1;">${p.plainDescription || p.oneLiner || 'Project details are in development.'}</p>
+
                 ${demoBtnHtml}
                 
                 <div class="click-prompt" style="margin-top: auto;">
-                    [ ACCESS DOSSIER ] &rarr;
+                    [ VIEW DETAILS ] &rarr;
                 </div>
             </div>
         </div>
@@ -385,7 +393,7 @@ function openModal(projectId) {
 
     // Populate Headers
     setText('modal-title', project.realName);
-    setText('modal-status', `STATUS: ${project.statusLabel}`);
+    setText('modal-status', `STATUS: ${project.statusLabel} (${project.status.toUpperCase()})`);
 
     // Populate Body
     const descEl = document.getElementById('modal-desc');
@@ -393,7 +401,7 @@ function openModal(projectId) {
         let html = `
             <div style="margin-bottom: 2rem;">
                 <p class="reading-text" style="font-weight: 500; font-size: 1.1rem; color: var(--text-main); margin-bottom: 0.5rem;">
-                    ${project.plainDescription}
+                    ${project.oneLiner || project.plainDescription}
                 </p>
                 <p class="mono" style="color: var(--text-muted); font-style: italic; font-size: 0.9rem; border-left: 2px solid var(--accent-gold); padding-left: 1rem;">
                     "${project.flavorDescription}"
@@ -407,7 +415,7 @@ function openModal(projectId) {
             </div>
 
             <div style="margin-bottom: 2rem;">
-                <h4 class="mono" style="color: var(--accent-gold); margin-bottom: 1rem;">// FLAGSHIP CAPABILITIES</h4>
+                <h4 class="mono" style="color: var(--accent-gold); margin-bottom: 1rem;">// KEY FEATURES</h4>
                 <ul style="list-style: none; padding: 0;">
                     ${project.flagshipFeatures.map(f => {
             const parts = f.split('::');
@@ -422,7 +430,7 @@ function openModal(projectId) {
             </div>
 
             <div style="margin-bottom: 2rem;">
-                 <h4 class="mono" style="color: var(--text-muted); margin-bottom: 1rem;">// STANDARD FEATURES</h4>
+                 <h4 class="mono" style="color: var(--text-muted); margin-bottom: 1rem;">// ALSO INCLUDES</h4>
                  <ul style="padding-left: 1.5rem; color: var(--text-main);">
                      ${project.features.map(f => `<li>${f}</li>`).join('')}
                  </ul>
@@ -444,11 +452,23 @@ function openModal(projectId) {
             <div class="d-stat-row"><span class="d-stat-label">DATA LOC</span><span class="d-stat-val">${tf.dataStoredWhere}</span></div>
             ${tf.integrity ? `
             <div style="margin-top: 1.5rem; border-top: 1px dotted var(--stone-light); padding-top: 1rem;">
-                <div class="d-stat-label" style="color: var(--accent-gold); margin-bottom: 0.5rem;">// INTEGRITY CHECK</div>
+                <div class="d-stat-label" style="color: var(--accent-gold); margin-bottom: 0.5rem;">// VERIFY DOWNLOAD</div>
                 <div class="mono" style="font-size: 0.7rem; color: var(--text-muted); word-break: break-all;">
                     FILE: ${tf.installer || 'Unknown'}<br>
                     SHA256: <span style="color: var(--tech-cyan);">${tf.integrity}</span>
                 </div>
+                <details class="verify-details">
+                    <summary class="mono">How do I check this?</summary>
+                    <div class="mono verify-steps">
+                        Windows (PowerShell):<br>
+                        <code>certutil -hashfile ${tf.installer || 'the file'} SHA256</code>
+                        <br><br>
+                        Mac / Linux:<br>
+                        <code>shasum -a 256 ${tf.installer || 'the file'}</code>
+                        <br><br>
+                        Compare the output to the SHA256 above. If they don't match exactly, don't run the file — re-download it or report it.
+                    </div>
+                </details>
             </div>
             ` : ''}
         `;
@@ -457,11 +477,12 @@ function openModal(projectId) {
     // Links (Sidebar)
     const linksEl = document.getElementById('modal-links');
     if (linksEl) {
-        linksEl.innerHTML = project.links.length > 0
-            ? project.links.filter(l => l.url).map(l => `
+        const liveLinks = project.links.filter(l => l.url);
+        linksEl.innerHTML = liveLinks.length > 0
+            ? liveLinks.map(l => `
                 <a href="${resolveSiteUrl(l.url)}" target="_blank" class="btn btn-primary" style="text-align:center; font-size: 0.8rem;">${l.label.toUpperCase()}</a>
             `).join('')
-            : `<div class="mono" style="color: var(--text-muted); font-size: 0.8rem;">// ACCESS RESTRICTED</div>`;
+            : `<div class="mono" style="color: var(--text-muted); font-size: 0.8rem;">// COMING SOON</div>`;
     }
 
     // Roadmap
@@ -604,7 +625,7 @@ function initYouTubePreview() {
                 'onStateChange': (event) => {
                     if (event.data === YT.PlayerState.ENDED) {
                         drawer.classList.remove('is-active');
-                        trigger.innerText = 'INITIATE PREVIEW';
+                        trigger.innerText = 'WATCH PREVIEW';
                     }
                 }
             }
@@ -613,7 +634,7 @@ function initYouTubePreview() {
 
     trigger.onclick = () => {
         const isActive = drawer.classList.toggle('is-active');
-        trigger.innerText = isActive ? 'CLOSE PREVIEW' : 'INITIATE PREVIEW';
+        trigger.innerText = isActive ? 'CLOSE PREVIEW' : 'WATCH PREVIEW';
 
         if (isActive && ytPlayer && ytPlayer.playVideo) {
             ytPlayer.playVideo();

@@ -6,16 +6,25 @@
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>
-        <%= frontmatter.title ? frontmatter.title + ' | SOURCE ARCANUM' : 'SOURCE ARCANUM' %>
-    </title>
-
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,400;0,500;1,400&family=Cinzel:wght@400;600;700&family=Marcellus+SC&family=Space+Mono:wght@400;700&display=swap"
-        rel="stylesheet">
+    <% const isHome = !frontmatter.title || frontmatter.layout === 'home'; %>
+    <% const pageTitle = isHome ? `${site.name} | Software, Systems, and Creative Technology` : `${frontmatter.title} | ${site.name}`; %>
+    <% const description = frontmatter.description || site.description; %>
+    <% const image = frontmatter.ogImage ? new URL(frontmatter.ogImage, site.domain).href : new URL('assets/betterfingers/app-icon.png', `${site.domain}/`).href; %>
+    <title><%= pageTitle %></title>
+    <meta name="description" content="<%= description %>">
+    <link rel="canonical" href="<%= pageUrl %>">
+    <meta property="og:title" content="<%= pageTitle %>">
+    <meta property="og:description" content="<%= description %>">
+    <meta property="og:type" content="<%= frontmatter.ogType || 'website' %>">
+    <meta property="og:url" content="<%= pageUrl %>">
+    <meta property="og:image" content="<%= image %>">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="<%= pageTitle %>">
+    <meta name="twitter:description" content="<%= description %>">
+    <meta name="twitter:image" content="<%= image %>">
+    <meta name="theme-color" content="#04070d">
+    <script type="application/ld+json"><%- JSON.stringify({ '@context': 'https://schema.org', '@type': 'Person', name: site.name, url: site.domain, description: site.description, homeLocation: { '@type': 'Place', name: site.location }, sameAs: [site.social.github] }) %></script>
     <link rel="stylesheet" href="<%= siteRoot %>styles/styles.css">
 
-    <script>window.SITE_ROOT = '<%= siteRoot %>';</script>
+    <script>window.SITE_ROOT = '<%= siteRoot %>'; window.SITE_BASE = '<%= site.basePath %>';</script>
 </head>

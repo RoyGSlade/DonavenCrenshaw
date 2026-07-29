@@ -1,0 +1,14 @@
+{
+  "name": "Donaven Crenshaw",
+  "shortName": "DC",
+  "domain": "https://donavencrenshaw.com",
+  "description": "Software builder focused on local AI, private tools, creative systems, and practical operational problems.",
+  "location": "Northern Nevada",
+  "studio": {
+    "name": "Source Arcanum",
+    "description": "An independent software lab focused on local-first, privacy-respecting, and user-owned technology."
+  },
+  "social": {
+    "github": "https://github.com/RoyGSlade"
+  }
+}

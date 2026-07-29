@@ -2,13 +2,23 @@
   {
     "id": "betterfingers",
     "featured": true,
+    "portfolioFeatured": true,
+    "maturity": "released",
     "realName": "BetterFingers",
     "codename": "Sigil Script",
     "category": "productivity",
     "status": "released",
     "statusLabel": "DECLASSIFIED",
     "tagline": "Voice-to-Will invocation layer.",
+    "oneLiner": "Turns your spoken words into clean typed text and commands, for anyone who'd rather talk than type.",
     "plainDescription": "A private-first voice workflow that refines spoken thought into polished text. No cloud lock-in.",
+    "technologies": ["Whisper", "local LLM", "Windows"],
+    "screenshots": ["assets/betterfingers/tray-active.png", "assets/betterfingers/tray-inactive.png"],
+    "caseStudy": {
+      "problem": "Typing and communicating across applications can be difficult or disruptive.",
+      "approach": "Capture speech locally and use a review-first drafting workflow.",
+      "result": "A released Windows workflow with local processing and explicit limitations."
+    },
     "flavorDescription": "It intercepts spoken incantations and transmutes them into precise macro sequences or raw code, serving as a bridge between voice and the machine spirit.",
     "fullDescription": [
       "BetterFingers is a private-first voice-to-text pipeline that runs locally on your machine. It offers a no-subscription, no-cloud-dependency workflow built for speed under pressure. With one-key capture and review-first mode, it ensures you are always in control of your output.",
@@ -78,6 +88,7 @@
     "status": "prototype",
     "statusLabel": "DREAMING",
     "tagline": "Lucid Dreaming Assistant and Whiteboard.",
+    "oneLiner": "Turns a messy pile of ideas into a step-by-step plan, for creators who think faster than they can organize.",
     "plainDescription": "An AI-powered thought organizer, whiteboard, and project commander that structures chaos into actionable steps for any creation.",
     "flavorDescription": "A digital staff for the modern wizard, summoning order from the chaos of the mind and manifesting thoughts into reality through the weave of code and image.",
     "fullDescription": [
@@ -151,6 +162,7 @@
     "status": "concept",
     "statusLabel": "UNMINED",
     "tagline": "Automated 2D top-down map creator for worlds.",
+    "oneLiner": "Generates ready-to-use, multi-floor 2D maps, for game masters and devs who don't want to hand-draw every tile.",
     "plainDescription": "A tool for rapidly generating coherent, multi-layered 2D top-down maps for TTRPGs and video games.",
     "flavorDescription": "Prompt worlds to play in—a forge for imagining at a higher level and manifesting your dreamscapes into playable realities.",
     "fullDescription": [
@@ -224,6 +236,7 @@
     "status": "concept",
     "statusLabel": "ALCHEMY",
     "tagline": "Turning personal passions into sovereign income streams.",
+    "oneLiner": "Turns a hobby you already love into a realistic income plan, for anyone who wants to monetize it without guesswork.",
     "plainDescription": "A personal growth and financial planning app that helps you identify, map, and monetize your existing hobbies and interests.",
     "flavorDescription": "The Alchemist’s guide to transmuting the lead of leisure into the gold of freedom, revealing the hidden value in what you already love.",
     "fullDescription": [
@@ -291,12 +304,15 @@
   {
     "id": "infinite-ages",
     "featured": true,
+    "portfolioFeatured": true,
+    "maturity": "beta",
     "realName": "Infinite Ages Genesis",
     "codename": "Aether Bound",
     "category": "games",
     "status": "beta",
     "statusLabel": "AWAKENING",
     "tagline": "Explore infinite worlds across infinite ages.",
+    "oneLiner": "Runs any tabletop campaign under one rulebook, for game masters tired of learning a new system per genre.",
     "plainDescription": "A classless, narrative-driven TTRPG engine built for simulating any world—from medieval fantasy to sci-fi piracy—under a unified system.",
     "flavorDescription": "The architecture of the multiverse laid bare, granting you the power to weave destiny across stars and centuries without the chains of class or era.",
     "fullDescription": [
@@ -365,12 +381,15 @@
   {
     "id": "pdf-manager",
     "featured": true,
+    "portfolioFeatured": true,
+    "maturity": "alpha",
     "realName": "PDF Editor/Manager",
     "codename": "Codex Forge",
     "category": "productivity",
     "status": "alpha",
     "statusLabel": "FORGING",
     "tagline": "Sovereign document manipulation.",
+    "oneLiner": "Edits, signs, and reads PDFs aloud, for anyone who doesn't want a monthly PDF subscription.",
     "plainDescription": "A local PDF editor and manager offering OCR, text-to-speech conversion, and document signing without subscriptions.",
     "flavorDescription": "A tool for the scribes of the new age, unsealing the locked scrolls of the old world and giving voice to the silent text within.",
     "fullDescription": [
@@ -444,6 +463,7 @@
     "status": "prototype",
     "statusLabel": "DESCENDING",
     "tagline": "A turn-based LLM-driven dungeon crawl demo.",
+    "oneLiner": "Plays a short, LLM-narrated dungeon crawl in your browser, for anyone curious what the other tools can build.",
     "plainDescription": "A one-shot, static page demo game showcasing the *Infinite Ages* rules and *Deep Stone* map generation, driven by a local LLM storyteller.",
     "flavorDescription": "A descent into a never-ending dark, where the world remembers your bones even as your new soul takes its first breath.",
     "fullDescription": [
@@ -516,6 +536,7 @@
     "status": "archived",
     "statusLabel": "DRIFTING",
     "tagline": "Physics-based space racing and crystal collection demo.",
+    "oneLiner": "A quick physics-based flying and crystal-collecting demo, for anyone who wants a two-minute arcade break.",
     "plainDescription": "A speed-running tech demo where you pilot a ship with real physics to collect crystals and race against the clock.",
     "flavorDescription": "Dance through the void on the edge of drift, harvesting the crystallized light of dead stars before the darkness catches up.",
     "fullDescription": [
@@ -587,6 +608,7 @@
     "status": "concept",
     "statusLabel": "ZEROING",
     "tagline": "Private wealth tracking and financial freedom simulation.",
+    "oneLiner": "Tracks income, spending, and debt payoff entirely offline, for anyone who doesn't want their bank data in someone else's cloud.",
     "plainDescription": "An offline-first ledger app that organizes income, analyzes spending via OCR, and runs local AI simulations to plan your path to debt freedom.",
     "flavorDescription": "A digital companion for your financial journey, illuminating the path from debt to sovereignty without ever whispering your secrets to the cloud.",
     "fullDescription": [

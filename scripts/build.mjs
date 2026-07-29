@@ -10,6 +10,17 @@ const CONTENT_DIR = path.resolve('content');
 const PUBLIC_DIR = path.resolve('public');
 const COMPONENTS_DIR = path.join(SRC_DIR, 'components');
 const LAYOUTS_DIR = path.join(SRC_DIR, 'layouts');
+const SITE_BASE = process.env.SITE_BASE || '/SourceArcanum/';
+
+function normaliseBase(base) {
+    const withLeadingSlash = base.startsWith('/') ? base : `/${base}`;
+    return withLeadingSlash.endsWith('/') ? withLeadingSlash : `${withLeadingSlash}/`;
+}
+
+function routeUrl(site, route) {
+    const cleanRoute = route.replace(/^\/+|\/index\.html$/g, '');
+    return new URL(cleanRoute ? `${cleanRoute}/` : '/', site.domain).href;
+}
 
 // Ensure output directory exists and is clean
 async function initPublicDir() {
@@ -56,14 +67,14 @@ async function loadComponents() {
     };
 }
 
-async function buildAllContent(dirPath, subDir = '', components, postsData = []) {
+async function buildAllContent(dirPath, subDir = '', components, site, postsData = []) {
     if (!fs.existsSync(dirPath)) return postsData;
 
     const entries = await fs.readdir(dirPath, { withFileTypes: true });
     for (let entry of entries) {
         const fullPath = path.join(dirPath, entry.name);
         if (entry.isDirectory()) {
-            await buildAllContent(fullPath, path.posix.join(subDir, entry.name), components, postsData);
+            await buildAllContent(fullPath, path.posix.join(subDir, entry.name), components, site, postsData);
         } else if (entry.name.endsWith('.md')) {
             const rawContent = await fs.readFile(fullPath, 'utf-8');
             const { data: frontmatter, content } = matter(rawContent);
@@ -80,19 +91,24 @@ async function buildAllContent(dirPath, subDir = '', components, postsData = [])
             const relativeOutStr = path.relative(PUBLIC_DIR, outDir);
             const depth = isRootIndex || relativeOutStr === '' ? 0 : relativeOutStr.split(path.sep).length;
             const siteRoot = depth > 0 ? '../'.repeat(depth) : './';
+            const route = isRootIndex ? '' : path.posix.join(subDir, fileName !== 'index' ? fileName : '');
+            const pageUrl = routeUrl(site, route);
 
             // Pre-render components with the current context
             const renderedComponents = {
-                nav: ejs.render(components.nav, { siteRoot, frontmatter }),
-                footer: ejs.render(components.footer, { siteRoot, frontmatter }),
-                head: ejs.render(components.head, { siteRoot, frontmatter }),
+                nav: ejs.render(components.nav, { siteRoot, frontmatter, site }),
+                footer: ejs.render(components.footer, { siteRoot, frontmatter, site }),
+                head: ejs.render(components.head, { siteRoot, frontmatter, site, pageUrl }),
                 modal: ejs.render(components.modal, { siteRoot, frontmatter })
             };
 
-            const finalHtml = ejs.render(layoutEjs, {
+            const finalHtml = frontmatter.redirect
+                ? `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta http-equiv="refresh" content="0; url=${siteRoot}${frontmatter.redirect}"><link rel="canonical" href="${routeUrl(site, frontmatter.redirect)}"><title>Moved | ${site.name}</title></head><body><p>This page has moved to <a href="${siteRoot}${frontmatter.redirect}">its new location</a>.</p></body></html>`
+                : ejs.render(layoutEjs, {
                 frontmatter,
                 content: htmlContent,
                 siteRoot,
+                site,
                 components: renderedComponents
             }, {
                 views: [COMPONENTS_DIR]
@@ -120,19 +136,55 @@ async function buildAllContent(dirPath, subDir = '', components, postsData = [])
     return postsData;
 }
 
+async function build404(components, site) {
+    const siteRoot = './';
+    const frontmatter = { title: 'Page not found', description: 'The page you requested could not be found.' };
+    const renderedComponents = {
+        nav: ejs.render(components.nav, { siteRoot, frontmatter, site }),
+        footer: ejs.render(components.footer, { siteRoot, frontmatter, site }),
+        head: ejs.render(components.head, { siteRoot, frontmatter, site, pageUrl: routeUrl(site, '404') }),
+        modal: ejs.render(components.modal, { siteRoot, frontmatter })
+    };
+    const layout = await fs.readFile(path.join(LAYOUTS_DIR, 'default.ejs'), 'utf-8');
+    const content = '<p class="section-desc">The page you requested has moved, been archived, or does not exist.</p><p><a class="btn btn-primary" href="./">Return home</a></p>';
+    await fs.writeFile(path.join(PUBLIC_DIR, '404.html'), ejs.render(layout, { frontmatter, content, siteRoot, site, components: renderedComponents }));
+}
+
+async function refreshLegacyProjectPages(site) {
+    const projectsDir = path.join(PUBLIC_DIR, 'projects');
+    if (!fs.existsSync(projectsDir)) return;
+
+    const entries = await fs.readdir(projectsDir);
+    await Promise.all(entries.filter((entry) => entry.endsWith('.html')).map(async (entry) => {
+        const filePath = path.join(projectsDir, entry);
+        let html = await fs.readFile(filePath, 'utf-8');
+        html = html
+            .replace(/\s*<link rel="preconnect" href="https:\/\/fonts\.googleapis\.com">/g, '')
+            .replace(/\s*<link rel="preconnect" href="https:\/\/fonts\.gstatic\.com" crossorigin>/g, '')
+            .replace(/\s*<link\s+href="https:\/\/fonts\.googleapis\.com[\s\S]*?rel="stylesheet">/g, '')
+            .replace(/ \| SOURCE ARCANUM/g, ` | ${site.name}`)
+            .replace(/SOURCE ARCANUM/g, site.name);
+        await fs.writeFile(filePath, html);
+    }));
+}
+
 async function main() {
     console.log('--- STARTING ARCHITECURE BUILD ---');
     await initPublicDir();
     const components = await loadComponents();
+    const site = await fs.readJson(path.resolve('data/site.json'));
+    site.basePath = normaliseBase(SITE_BASE);
 
     // Process top-level pages, specific collections, and gather post data
-    const postsData = await buildAllContent(CONTENT_DIR, '', components);
+    const postsData = await buildAllContent(CONTENT_DIR, '', components, site);
 
     // Write aggregated posts data for the script.js pipeline
     // Sort descending by date
     postsData.sort((a, b) => new Date(b.dateISO) - new Date(a.dateISO));
     await fs.ensureDir(path.join(PUBLIC_DIR, 'data'));
     await fs.writeFile(path.join(PUBLIC_DIR, 'data', 'posts.json'), JSON.stringify(postsData, null, 2));
+    await build404(components, site);
+    await refreshLegacyProjectPages(site);
     console.log(`[DATA CACHE] /data/posts.json -> ${postsData.length} entries`);
 
     console.log('--- BUILD COMPLETE ---');

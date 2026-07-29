@@ -318,8 +318,8 @@
     padding: 0.5rem 0;
     border-bottom: 1px dashed rgba(47, 66, 95, 0.7);
     font-family: var(--font-mono);
-    font-size: 0.64rem;
-    letter-spacing: 0.09em;
+    font-size: 0.78rem;
+    letter-spacing: 0.06em;
 }
 
 .d-stat-label {
@@ -329,6 +329,47 @@
 .d-stat-val {
     color: var(--text-main);
     text-align: right;
+}
+
+.verify-details {
+    margin-top: 0.9rem;
+}
+
+.verify-details summary {
+    font-size: 0.78rem;
+    color: var(--tech-cyan);
+    cursor: pointer;
+    list-style: none;
+}
+
+.verify-details summary::-webkit-details-marker {
+    display: none;
+}
+
+.verify-details summary::before {
+    content: "▸ ";
+}
+
+.verify-details[open] summary::before {
+    content: "▾ ";
+}
+
+.verify-steps {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    line-height: 1.7;
+    margin-top: 0.6rem;
+    padding: 0.7rem 0.8rem;
+    border-left: 2px solid var(--stone-light);
+    background: rgba(4, 7, 13, 0.5);
+}
+
+.verify-steps code {
+    color: var(--tech-cyan);
+    background: rgba(101, 230, 217, 0.08);
+    padding: 0.1rem 0.4rem;
+    border-radius: 3px;
+    word-break: break-all;
 }
 
 #modal-links .btn {
@@ -455,6 +496,11 @@ footer {
     letter-spacing: 0.18em;
     color: var(--tech-cyan);
     margin-bottom: 0.7rem;
+}
+
+.project-status-plain {
+    color: var(--text-muted);
+    letter-spacing: 0.06em;
 }
 
 .project-card h3 {
@@ -680,4 +726,149 @@ footer {
     color: var(--text-muted);
     letter-spacing: 0.12rem;
     padding: 0 0.4rem;
+}
+
+/* BETTERFINGERS PAGE */
+.bf-media-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1.2rem;
+    margin-bottom: 1rem;
+}
+
+.bf-media-item {
+    border: 1px solid var(--stone-light);
+    background: var(--bg-panel);
+    padding: 0.9rem;
+    text-align: center;
+    margin: 0;
+}
+
+.bf-media-item img {
+    max-width: 100%;
+    height: 160px;
+    object-fit: contain;
+}
+
+.bf-media-item figcaption {
+    margin-top: 0.6rem;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.bf-media-pending {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 194px;
+    border-style: dashed;
+}
+
+.bf-media-placeholder {
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    line-height: 1.9;
+}
+
+.bf-media-placeholder span {
+    color: var(--accent-gold);
+}
+
+.bf-download-panel {
+    border: 1px solid rgba(47, 66, 95, 0.8);
+    background: linear-gradient(150deg, rgba(101, 230, 217, 0.06), rgba(8, 13, 22, 0.92));
+    padding: 1.6rem;
+}
+
+.bf-download-actions {
+    display: flex;
+    gap: 0.8rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.4rem;
+}
+
+.bf-checksum {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    word-break: break-all;
+    padding-top: 1rem;
+    border-top: 1px dotted var(--stone-light);
+}
+
+.bf-hash {
+    color: var(--tech-cyan);
+}
+
+.bf-hw-table {
+    border: 1px solid var(--stone-dark);
+    margin-top: 1.5rem;
+    overflow-x: auto;
+}
+
+.bf-hw-row {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 0.6rem;
+    padding: 0.8rem 1rem;
+    border-bottom: 1px solid var(--stone-dark);
+    font-size: 0.85rem;
+}
+
+.bf-hw-row:last-child {
+    border-bottom: none;
+}
+
+.bf-hw-head {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--accent-gold);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    background: rgba(210, 177, 111, 0.05);
+}
+
+.bf-roadmap-cols {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1.5rem;
+}
+
+.bf-spotlight {
+    display: grid;
+    grid-template-columns: minmax(160px, 240px) minmax(0, 1fr);
+    gap: clamp(1.5rem, 3vw, 3rem);
+    align-items: center;
+    border: 1px solid rgba(47, 66, 95, 0.8);
+    background: linear-gradient(150deg, rgba(210, 177, 111, 0.06), rgba(8, 13, 22, 0.92));
+    padding: clamp(1.5rem, 3vw, 2.5rem);
+}
+
+.bf-spotlight-media img {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1;
+    object-fit: contain;
+    border-radius: var(--radius-soft);
+}
+
+.bf-spotlight-list {
+    list-style: none;
+    padding: 0;
+    display: grid;
+    gap: 0.6rem;
+}
+
+.bf-spotlight-list li {
+    color: var(--text-soft);
+    padding-left: 1.2rem;
+    position: relative;
+}
+
+.bf-spotlight-list li::before {
+    content: "//";
+    position: absolute;
+    left: 0;
+    color: var(--tech-cyan);
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
 }
