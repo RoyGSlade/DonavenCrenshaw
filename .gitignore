@@ -21,3 +21,6 @@ Thumbs.db
 
 # Local Claude workspace state
 .claude/
+
+# Local Playwright CLI session state
+.playwright-cli/
