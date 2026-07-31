@@ -26,3 +26,4 @@ This is a one-person project, so response times are best-effort, not contractual
 ## Verifying What You Download
 
 Every BetterFingers installer ships with a published SHA256 hash on its [release page](https://github.com/RoyGSlade/SourceArcanum/releases) and in its dossier on this site. If the hash you compute locally doesn't match, stop, don't run the installer, and report it — that mismatch is exactly what this policy exists to catch.
+asset

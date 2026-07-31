@@ -24,3 +24,6 @@ Thumbs.db
 
 # Local Playwright CLI session state
 .playwright-cli/
+
+# Local shared-worker reports
+.collab-reports/

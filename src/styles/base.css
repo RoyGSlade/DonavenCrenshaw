@@ -1,95 +1,76 @@
-/* --- GLOBAL RESET & ATMOSPHERE --- */
+/* Accessible base layer: clear hierarchy, no decorative layer required for meaning. */
 *,
 *::before,
 *::after {
     box-sizing: border-box;
-    margin: 0;
-    padding: 0;
 }
 
 html {
     scroll-behavior: smooth;
+    background: var(--bg-void);
 }
 
 body {
+    min-width: 18rem;
     min-height: 100vh;
+    margin: 0;
     color: var(--text-main);
+    background: var(--bg-void);
     font-family: var(--font-body);
-    font-size: clamp(1.1rem, 1.05rem + 0.25vw, 1.28rem);
+    font-size: clamp(1rem, 0.96rem + 0.16vw, 1.1rem);
     line-height: 1.65;
-    letter-spacing: 0.01em;
     overflow-x: hidden;
-    background:
-        radial-gradient(circle at 12% -12%, rgba(101, 230, 217, 0.12), transparent 38%),
-        radial-gradient(circle at 84% 0%, rgba(210, 177, 111, 0.13), transparent 34%),
-        linear-gradient(165deg, var(--bg-rift) 0%, var(--bg-void) 52%, #03060c 100%);
-    position: relative;
 }
 
-body::before {
-    content: "";
+.skip-link {
     position: fixed;
-    inset: 0;
-    background-image:
-        radial-gradient(circle at center, rgba(255, 255, 255, 0.045) 1px, transparent 1px),
-        radial-gradient(circle at center, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
-        url("data:image/svg+xml,%3Csvg viewBox='0 0 240 240' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.86' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.22'/%3E%3C/svg%3E");
-    background-size: 220px 220px, 310px 310px, 240px 240px;
-    background-position: 0 0, 90px 40px, 0 0;
-    mix-blend-mode: screen;
-    opacity: 0.16;
-    pointer-events: none;
-    z-index: -2;
+    top: 0.75rem;
+    left: 0.75rem;
+    z-index: 300;
+    padding: 0.65rem 0.9rem;
+    border: 1px solid var(--tech-cyan);
+    border-radius: var(--radius-soft);
+    background: var(--bg-panel);
+    color: var(--text-main);
+    transform: translateY(-180%);
 }
 
-body::after {
-    content: "";
-    position: fixed;
-    inset: 0;
-    background:
-        repeating-linear-gradient(180deg, transparent 0 2px, var(--scanline) 2px 3px),
-        radial-gradient(circle at 50% 40%, transparent 10%, rgba(3, 6, 11, 0.86) 100%);
-    opacity: 0.74;
-    pointer-events: none;
-    z-index: -1;
+.skip-link:focus {
+    transform: translateY(0);
 }
 
 ::selection {
-    background: rgba(101, 230, 217, 0.3);
-    color: #f8fff7;
+    color: var(--bg-void);
+    background: var(--tech-cyan);
 }
 
 a {
-    color: inherit;
-    cursor: pointer;
-    text-decoration: none;
-    transition: color 0.25s ease, text-shadow 0.25s ease, border-color 0.25s ease, opacity 0.25s ease;
+    color: var(--tech-cyan);
+    text-decoration-thickness: 0.08em;
+    text-underline-offset: 0.18em;
+    transition: color 160ms ease, background-color 160ms ease, border-color 160ms ease;
 }
 
 a:hover {
-    color: var(--tech-cyan);
-    text-shadow: 0 0 18px rgba(101, 230, 217, 0.36);
+    color: var(--text-main);
 }
 
 a:focus-visible,
-button:focus-visible {
-    outline: 1px solid var(--tech-cyan);
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+summary:focus-visible,
+[tabindex]:focus-visible {
+    outline: 3px solid var(--tech-cyan);
     outline-offset: 3px;
 }
 
 img,
 svg,
 video {
-    max-width: 100%;
     display: block;
-}
-
-ul {
-    list-style: none;
-}
-
-p {
-    color: var(--text-soft);
+    max-width: 100%;
 }
 
 button,
@@ -99,53 +80,81 @@ select {
     font: inherit;
 }
 
-em,
-i {
-    letter-spacing: 0.03em;
+button {
+    color: inherit;
 }
 
-.mono {
-    font-family: var(--font-mono);
-    font-size: 0.84rem;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
+ul,
+ol {
+    padding-left: 1.35rem;
 }
 
-.uppercase {
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
+p,
+ul,
+ol {
+    margin: 0 0 1rem;
 }
 
-/* --- TYPOGRAPHY --- */
+p {
+    color: var(--text-soft);
+}
+
 h1,
 h2,
 h3,
 h4,
 h5,
 h6 {
-    font-family: var(--font-header);
-    font-weight: 600;
+    margin: 0;
     color: var(--text-main);
-    line-height: 1.1;
-    letter-spacing: 0.04em;
+    font-family: var(--font-header);
+    font-weight: 680;
+    line-height: 1.14;
+    letter-spacing: -0.02em;
+}
+
+h1 {
+    font-size: clamp(2.25rem, 5vw, 4.8rem);
+}
+
+h2 {
+    font-size: clamp(1.75rem, 3.2vw, 3rem);
+}
+
+h3 {
+    font-size: clamp(1.25rem, 2vw, 1.7rem);
+}
+
+.mono {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.uppercase {
+    text-transform: uppercase;
+    letter-spacing: 0.11em;
 }
 
 .reading-text {
-    font-family: var(--font-body);
-    font-size: clamp(1.03rem, 1rem + 0.3vw, 1.22rem);
-    line-height: 1.78;
+    max-width: var(--measure);
     color: var(--text-main);
-    max-width: 68ch;
+    font-size: clamp(1rem, 0.98rem + 0.2vw, 1.14rem);
+    line-height: 1.78;
+}
+
+.reading-text p {
+    color: inherit;
 }
 
 @media (prefers-reduced-motion: reduce) {
-
     *,
     *::before,
     *::after {
         animation-duration: 0.01ms !important;
         animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
         scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
     }
 }

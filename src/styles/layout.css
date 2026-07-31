@@ -1,53 +1,48 @@
-/* --- LAYOUT STRUCTURE --- */
+/* Shared layout geometry. Components decide their surface; layouts decide flow. */
 body {
     display: grid;
     grid-template-columns: var(--nav-width) minmax(0, 1fr);
-    grid-template-rows: 1fr;
 }
 
 .content-wrapper {
-    grid-column: 2 / 3;
+    grid-column: 2;
     min-height: 100vh;
     display: flex;
     flex-direction: column;
-    position: relative;
-    z-index: 1;
 }
 
 main {
     flex: 1;
-    padding: clamp(2.2rem, 4vw, 3.5rem) 0 1.2rem;
+    padding: clamp(2rem, 5vw, 5rem) 0 2rem;
 }
 
 .container {
     width: min(100%, var(--container-max));
     margin: 0 auto;
-    padding: 0 clamp(1.25rem, 2.6vw, 3rem);
+    padding: 0 clamp(1rem, 3vw, 3rem);
 }
 
 .page-shell,
 .page-header {
-    width: min(900px, 96vw);
+    width: min(100%, 940px);
     margin: 0 auto;
-    padding-top: clamp(3rem, 7vh, 5rem);
-    padding-bottom: clamp(5rem, 9vh, 8rem);
+    padding-top: clamp(2rem, 5vw, 4.5rem);
+    padding-bottom: clamp(4rem, 9vw, 8rem);
 }
 
 .roadmap-page {
     width: 100%;
-    max-width: 100%;
-    margin: 0;
+    max-width: none;
 }
 
 .page-meta {
-    margin-top: 1rem;
-    margin-bottom: 2.8rem;
-    color: var(--text-muted);
-    border-bottom: 1px solid var(--stone-dark);
-    padding-bottom: 1rem;
     display: flex;
-    gap: 1rem;
     flex-wrap: wrap;
+    gap: 0.6rem 1.2rem;
+    margin: 1rem 0 2.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--stone-dark);
+    color: var(--text-muted);
 }
 
 .page-meta span span {
@@ -55,65 +50,50 @@ main {
 }
 
 .section-header {
-    position: relative;
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     gap: 1rem;
     align-items: end;
-    padding-bottom: 1.3rem;
-    margin-bottom: 2.8rem;
-}
-
-.section-header::after {
-    content: "";
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    height: 1px;
-    background: linear-gradient(90deg, var(--line-rune), var(--stone-light), transparent);
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--stone-dark);
 }
 
 .section-title {
+    max-width: 20ch;
     font-family: var(--font-display);
-    font-size: clamp(2rem, 4vw, 3.3rem);
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    text-wrap: balance;
+    font-size: clamp(2rem, 5vw, 4rem);
+    letter-spacing: -0.04em;
 }
 
 .section-desc {
-    margin-top: 0.6rem;
-    color: var(--text-muted);
-    font-style: italic;
     max-width: 60ch;
+    margin-top: 0.65rem;
+    color: var(--text-muted);
 }
 
 .section-subtitle {
-    color: var(--accent-gold);
-    opacity: 0.82;
-    letter-spacing: 0.16em;
-    font-size: 0.75rem;
-    padding: 0.34rem 0.6rem;
-    border: 1px solid rgba(210, 177, 111, 0.35);
-    border-radius: var(--radius-soft);
-    background: rgba(12, 18, 30, 0.55);
     align-self: end;
+    padding: 0.35rem 0.6rem;
+    border: 1px solid var(--stone-light);
+    border-radius: 999px;
+    color: var(--text-muted);
 }
 
 .section-block,
 .section-stack {
-    margin-bottom: clamp(5rem, 8vh, 8rem);
+    margin-bottom: clamp(3.5rem, 8vw, 7rem);
 }
 
 .section-intro {
+    max-width: var(--measure);
     margin-top: 1rem;
     color: var(--text-muted);
 }
 
 .divider {
-    width: clamp(90px, 16vw, 140px);
+    width: min(8rem, 30%);
     height: 1px;
-    margin: 2.5rem 0;
-    background: linear-gradient(90deg, var(--accent-dim), transparent);
+    margin: 2rem 0;
+    background: var(--stone-light);
 }

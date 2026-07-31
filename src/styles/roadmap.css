@@ -1,385 +1,191 @@
-/* --- ROADMAP LAYOUT REDESIGN [RAILS + STAGE] --- */
-
-/* 5-Column Grid Layout */
+/* Roadmap surfaces use a calm diagram-like grid instead of a terminal dashboard. */
 .roadmap-shell {
-    max-width: clamp(1100px, 92vw, 1400px);
-    margin: 2rem auto 0;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) clamp(250px, 20vw, 300px) minmax(60%, 1fr) clamp(250px, 20vw, 300px) minmax(0, 1fr);
-    gap: clamp(16px, 2vw, 32px);
-    align-items: start;
+    max-width: 78rem;
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.4fr) minmax(0, 0.8fr);
+    gap: 1rem;
+    margin: 1.5rem auto 0;
 }
 
-/* Gutters are empty but structural */
-.roadmap-gutter {
-    /* visible mostly implies they take up space; content is empty */
+.roadmap-rail,
+.roadmap-stage,
+.carousel-container,
+.kanban-board {
+    min-width: 0;
+    padding: 1.25rem;
+    border: 1px solid var(--stone-dark);
+    border-radius: var(--radius-soft);
+    background: var(--bg-panel);
 }
 
-/* --- RAILS (SIDEBARS) --- */
 .roadmap-rail {
-    background: linear-gradient(160deg, rgba(12, 18, 30, 0.9), rgba(7, 12, 20, 0.96));
-    border: 1px solid rgba(47, 66, 95, 0.75);
-    padding: 1.5rem;
-    /* Increased padding */
-    max-height: calc(100vh - 220px);
-    overflow-y: auto;
-    scrollbar-width: thin;
-    scrollbar-color: var(--stone-dark) var(--bg-panel);
     position: sticky;
-    top: 6rem;
-    /* stick below header */
+    top: 1rem;
+    max-height: calc(100vh - 2rem);
+    overflow-y: auto;
 }
 
-.roadmap-rail h4,
-.sidebar-title {
-    font-family: var(--font-header);
-    font-size: 1.2rem;
-    color: var(--accent-gold);
-    margin-bottom: 0.2rem;
+.roadmap-stage {
+    display: grid;
+    gap: 1rem;
+    align-content: start;
+}
+
+.roadmap-gutter {
+    display: none;
 }
 
 .sidebar-header {
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
     border-bottom: 1px solid var(--stone-dark);
-    padding-bottom: 1rem;
-    margin-bottom: 1.5rem;
 }
 
-/* Spacer for stacked headers in the same rail */
 .sidebar-header:not(:first-child) {
-    margin-top: 3rem;
+    margin-top: 2rem;
+}
+
+.sidebar-title,
+.roadmap-rail h4 {
+    color: var(--accent-gold);
 }
 
 .sidebar-list {
-    display: flex;
-    flex-direction: column;
-    gap: 2rem;
-    /* Increased gap */
+    display: grid;
+    gap: 0.75rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
 }
 
-/* Queue Item (Left Rail) */
 .queue-item {
-    padding: 1rem;
-    border: 1px solid rgba(47, 66, 95, 0.75);
-    background: rgba(255, 255, 255, 0.015);
-    transition: all 0.3s;
+    box-shadow: none;
 }
 
-.queue-item:hover {
+.queue-item:hover,
+.queue-item:focus-within {
     border-color: var(--tech-cyan);
-    box-shadow: -4px 0 0 var(--tech-cyan);
 }
 
-.item-meta {
-    font-family: var(--font-mono);
-    font-size: 0.75rem;
-    color: var(--text-muted);
-    margin-bottom: 0.5rem;
+.item-meta,
+.plan-meta {
     display: flex;
     justify-content: space-between;
-}
-
-.item-title {
-    font-family: var(--font-header);
-    color: var(--text-main);
-    font-size: 1.1rem;
-    margin-bottom: 0.5rem;
-    font-weight: 600;
-    line-height: 1.3;
-}
-
-.item-note {
-    font-family: var(--font-body);
-    font-size: 1.05rem;
+    gap: 0.5rem;
+    margin-bottom: 0.45rem;
     color: var(--text-muted);
-    line-height: 1.5;
+    font-size: 0.76rem;
 }
 
-/* Recently Shipped (Right Rail) */
-.feed-item {
-    margin-bottom: 0;
-    padding-bottom: 1.5rem;
-    border-bottom: 1px solid var(--stone-dark);
-}
-
-.feed-item:last-child {
-    border-bottom: none;
-}
-
-.feed-item .item-title {
+.item-title,
+.plan-title {
     color: var(--text-main);
-    font-size: 1rem;
-}
-
-/* State Badges */
-.state-tag {
-    font-family: var(--font-mono);
-    font-size: 0.7rem;
-    padding: 0.1rem 0.4rem;
-    border: 1px solid var(--stone-dark);
-    border-radius: 4px;
-    color: var(--text-muted);
-    text-transform: uppercase;
-}
-
-.state-tag.cooling {
-    color: var(--tech-cyan);
-    border-color: var(--tech-cyan);
+    font-weight: 700;
 }
 
 .state-tag.stable {
-    color: var(--accent-gold);
-    border-color: var(--accent-gold);
+    color: var(--tech-cyan);
 }
 
 .state-tag.paused {
     color: var(--text-muted);
-    border-color: var(--stone-light);
 }
 
-
-/* --- STAGE (CENTER) --- */
-.roadmap-stage {
-    display: flex;
-    flex-direction: column;
-    gap: 2.5rem;
-}
-
-/* Stage: Carousel */
 .carousel-container {
-    background: linear-gradient(160deg, rgba(12, 18, 30, 0.9), rgba(7, 12, 20, 0.95));
-    border: 1px solid rgba(47, 66, 95, 0.8);
-    padding: 3rem 2rem;
-    text-align: center;
     position: relative;
-    min-height: 250px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 1rem;
+    display: grid;
+    min-height: 14rem;
+    place-items: center;
+    text-align: center;
 }
 
 .carousel-nav-btn {
     position: absolute;
     top: 50%;
-    transform: translateY(-50%);
-    background: transparent;
-    border: 1px solid var(--stone-dark);
-    color: var(--text-muted);
-    width: 44px;
-    height: 44px;
+    width: 2.75rem;
+    height: 2.75rem;
+    border: 1px solid var(--stone-light);
     border-radius: 50%;
+    background: var(--bg-panel);
+    color: var(--text-main);
     cursor: pointer;
-    font-size: 1.4rem;
-    transition: all 0.2s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    transform: translateY(-50%);
 }
 
-.carousel-nav-btn:hover {
-    border-color: var(--accent-gold);
-    color: var(--accent-gold);
+.carousel-nav-btn:hover,
+.carousel-nav-btn:focus-visible {
+    border-color: var(--tech-cyan);
 }
 
 .prev-btn {
-    left: 1.5rem;
+    left: 1rem;
 }
 
 .next-btn {
-    right: 1.5rem;
+    right: 1rem;
 }
 
 .project-title {
-    font-size: 3.5rem;
-    margin-bottom: 0.5rem;
-    color: var(--text-main);
+    font-size: clamp(2rem, 5vw, 3.5rem);
 }
 
 .focus-summary {
-    font-family: var(--font-mono);
-    color: var(--accent-gold);
-    font-size: 1rem;
+    margin: 1rem 2.5rem;
+    padding: 0.75rem;
     border-top: 1px solid var(--stone-dark);
     border-bottom: 1px solid var(--stone-dark);
-    padding: 0.8rem 2.5rem;
-    margin-bottom: 2rem;
-    background: rgba(0, 0, 0, 0.3);
+    color: var(--accent-gold);
 }
 
 .dots-container {
     display: flex;
-    gap: 0.6rem;
+    gap: 0.5rem;
     justify-content: center;
-    margin-top: 1.5rem;
 }
 
 .dot {
-    width: 8px;
-    height: 8px;
-    background: var(--stone-dark);
+    width: 0.65rem;
+    height: 0.65rem;
+    border: 1px solid var(--stone-light);
     border-radius: 50%;
+    background: transparent;
     cursor: pointer;
-    transition: 0.3s;
 }
 
-.dot.active {
-    background: var(--accent-gold);
-    box-shadow: 0 0 6px var(--accent-dim);
+.dot.active,
+.dot:hover,
+.dot:focus-visible {
+    background: var(--tech-cyan);
 }
 
-/* Stage: Split Panels (Plans / Scope) */
 .split-panel {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 2.5rem;
-}
-
-.panel-header {
-    font-family: var(--font-mono);
-    color: var(--accent-gold);
-    font-size: 0.9rem;
-    margin-bottom: 1rem;
-    border-bottom: 1px solid var(--stone-dark);
-    padding-bottom: 0.5rem;
-    letter-spacing: 1px;
+    margin-top: 1rem;
 }
 
 .plan-card,
 .scope-card {
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid var(--stone-dark);
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
+    margin-bottom: 0.75rem;
+    box-shadow: none;
 }
 
-.plan-title {
-    font-family: var(--font-header);
-    color: var(--text-main);
-    font-size: 1.2rem;
-    margin-bottom: 0.5rem;
-}
-
-.plan-meta {
-    display: flex;
-    gap: 1rem;
-    margin-bottom: 0.8rem;
-    font-family: var(--font-mono);
-    font-size: 0.75rem;
-    color: var(--tech-cyan);
-    text-transform: uppercase;
-}
-
-/* Stage: Kanban */
-.kanban-board {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 3rem;
-    background: var(--bg-panel);
-    border: 1px solid var(--stone-light);
-    padding: 3rem;
-}
-
-.kb-col-header {
-    font-family: var(--font-mono);
-    color: var(--text-muted);
-    margin-bottom: 2rem;
-    text-align: center;
+.panel-header {
     padding-bottom: 0.5rem;
     border-bottom: 1px solid var(--stone-dark);
 }
 
+.kanban-board {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem;
+}
+
+.kb-col-header {
+    margin-bottom: 0.75rem;
+    color: var(--accent-gold);
+    font-weight: 700;
+}
+
 .kb-card {
-    background: var(--bg-void);
-    border: 1px solid var(--stone-dark);
-    padding: 1.2rem;
-    margin-bottom: 1rem;
-    position: relative;
-    transition: transform 0.2s;
-}
-
-.kb-card:hover {
-    transform: translateX(4px);
-    border-color: var(--stone-light);
-}
-
-.kb-card::before {
-    content: "";
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 3px;
-    background: var(--stone-light);
-}
-
-.kb-card h5 {
-    font-family: var(--font-body);
-    font-size: 1.15rem;
-    margin-bottom: 0.5rem;
-    color: var(--text-main);
-}
-
-.tags {
-    display: flex;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-    margin-top: 0.8rem;
-}
-
-.tag {
-    font-family: var(--font-mono);
-    font-size: 0.65rem;
-    color: var(--text-muted);
-    border: 1px solid var(--stone-dark);
-    padding: 0.1rem 0.4rem;
-}
-
-
-/* --- RESPONSIVE BEHAVIOR --- */
-@media (max-width: 980px) {
-    .roadmap-shell {
-        /* Collapse to single column */
-        display: flex;
-        flex-direction: column;
-        padding: 0 1rem;
-        gap: 3rem;
-    }
-
-    .roadmap-gutter {
-        display: none;
-    }
-
-    .roadmap-rail {
-        max-height: none;
-        overflow-y: visible;
-        position: static;
-        width: 100%;
-        border-right: 1px solid var(--stone-dark);
-        border-left: 1px solid var(--stone-dark);
-    }
-
-    /* Order: Stage first, then queues */
-    .roadmap-stage {
-        order: 1;
-    }
-
-    .roadmap-rail.left {
-        order: 2;
-    }
-
-    .roadmap-rail.right {
-        order: 3;
-    }
-
-    .split-panel {
-        grid-template-columns: 1fr;
-        gap: 2rem;
-    }
-
-    .kanban-board {
-        grid-template-columns: 1fr;
-        padding: 1.5rem;
-        gap: 2rem;
-    }
+    margin-bottom: 0.75rem;
+    box-shadow: none;
 }

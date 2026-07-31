@@ -1,15 +1,18 @@
-<footer>
+<footer class="site-footer">
     <div class="footer-content">
         <div class="footer-brand">
-            <h3 class="mono" style="color: var(--accent-gold); margin-bottom: 0.35rem;"><%= site.name.toUpperCase() %></h3>
-            <p style="color: var(--text-muted); font-size: 0.9rem;">Building practical, private, and creative software.</p>
-            <p class="mono" style="color: var(--tech-cyan); font-size: 0.68rem; margin-top: 0.7rem;"><%= site.studio.name %> · Independent local-first software lab.</p>
+            <p class="footer-name"><%= site.name %></p>
+            <p class="footer-description"><%= site.description %></p>
+            <p class="footer-attribution">Created by <%= site.name %>.</p>
         </div>
-        <div class="footer-links">
-            <a href="<%= site.social.github %>" target="_blank" rel="noopener noreferrer" class="mono">GITHUB</a>
-            <a href="<%= siteRoot %>projects/index.html" class="mono">PROJECTS</a>
-            <a href="<%= siteRoot %>betterfingers/index.html" class="mono">BETTERFINGERS</a>
-            <a href="<%= siteRoot %>contact/index.html" class="mono">CONTACT</a>
-        </div>
+        <nav class="footer-links" aria-label="Footer navigation">
+            <a href="<%= siteLink('projects') %>">Projects</a>
+            <a href="<%= siteLink('support') %>">Support</a>
+            <a href="<%= siteLink('about') %>">About</a>
+            <a href="<%= siteLink('contact') %>">Contact</a>
+            <a href="<%= siteLink('privacy') %>">Privacy</a>
+            <a href="<%= siteLink('licenses') %>">Licenses</a>
+            <% if (site.social && site.social.github) { %><a href="<%= site.social.github %>" target="_blank" rel="noopener noreferrer">GitHub</a><% } %>
+        </nav>
     </div>
 </footer>

@@ -1,20 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
 <%- components.head %>
-
-    <body>
-        <%- components.nav %>
-
-            <div class="content-wrapper">
-                <main>
-                    <%- content %>
-                </main>
-
-                <%- components.footer %>
-            </div>
-
-            <%- components.modal %>
-                <script src="<%= siteRoot %>scripts/script.js"></script>
-    </body>
-
+<body class="site-shell skin-<%= page.skin %>" data-branch="<%= page.branch %>">
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+    <%- components.nav %>
+    <div class="content-wrapper">
+        <main id="main-content" tabindex="-1"><%- content %></main>
+        <%- components.footer %>
+    </div>
+    <script src="<%= siteRoot %>scripts/script.js"></script>
+</body>
 </html>

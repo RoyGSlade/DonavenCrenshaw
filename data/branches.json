@@ -1,0 +1,81 @@
+[
+  {
+    "id": "underplain",
+    "name": "underplain",
+    "descriptor": "Free software by Donaven Crenshaw.",
+    "type": "free-software-publisher",
+    "owner": "donaven-crenshaw",
+    "status": "active",
+    "publicationStatus": "published",
+    "reviewedAt": "2026-07-31",
+    "route": "/underplain/",
+    "mission": "Underplain releases practical software freely under the MIT license.",
+    "license": "MIT",
+    "products": ["betterfingers", "getfast", "pdfmanager"],
+    "supportChannelIds": ["github-sponsors", "ko-fi"],
+    "links": {
+      "site": "/underplain/",
+      "source": null,
+      "download": null,
+      "demo": null,
+      "support": "/support/"
+    }
+  },
+  {
+    "id": "crenshaw-systems",
+    "name": "Crenshaw Systems",
+    "descriptor": "Root-cause analysis, practical software, and complete implementation.",
+    "formalName": "Donaven Crenshaw Systems Consulting",
+    "type": "systems-consulting",
+    "owner": "donaven-crenshaw",
+    "status": "active",
+    "publicationStatus": "published",
+    "reviewedAt": "2026-07-31",
+    "route": "/crenshaw-systems/",
+    "audience": "Overloaded small businesses.",
+    "serviceOrder": ["Systems diagnosis", "Root-cause analysis", "Solution design", "Implementation planning", "Software development when appropriate", "Integration", "Documentation", "Training", "Aftercare"],
+    "intake": {
+      "worksheet": null,
+      "email": "dcworks@donavencrenshaw.com",
+      "process": "Donaven checks fit before an approved lead receives a discovery invitation."
+    },
+    "pricing": {
+      "initialDiscoveryUSD": 100,
+      "initialDiscoveryDuration": "Up to two hours",
+      "otherServices": null
+    },
+    "subscriptionDependency": "Crenshaw Systems does not accept solutions dependent on ongoing third-party subscriptions.",
+    "links": {
+      "site": "/crenshaw-systems/",
+      "source": null,
+      "download": null,
+      "demo": null,
+      "support": "/contact/"
+    }
+  },
+  {
+    "id": "infinite-ages",
+    "name": "Infinite Ages Software",
+    "descriptor": "TTRPG, VTT, storytelling, games, and entertainment.",
+    "type": "creative-software",
+    "owner": "donaven-crenshaw",
+    "status": "active",
+    "publicationStatus": "published",
+    "reviewedAt": "2026-07-31",
+    "route": "/infinite-ages/",
+    "flagshipProductId": "infinite-ages-ttrpg",
+    "mission": "A separate home for the Infinite Ages TTRPG, virtual tabletop work, storytelling systems, games, and entertainment projects.",
+    "distribution": "Intended to be free, donation supported, community driven, and directly downloadable when a real artifact exists.",
+    "community": {
+      "name": "Discord",
+      "url": null
+    },
+    "links": {
+      "site": "/infinite-ages/",
+      "source": null,
+      "download": null,
+      "demo": null,
+      "support": "/support/"
+    }
+  }
+]

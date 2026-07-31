@@ -1,17 +1,34 @@
-# Custom-domain setup
+# DonavenCrenshaw.com domain setup
 
-This repository builds the website for `https://donavencrenshaw.com`. DNS is configured outside this repository.
+The production site is GitHub Pages with the verified custom domain `donavencrenshaw.com`.
 
-1. In the DNS provider, create four `A` records for the apex (`@`):
+## DNS and Pages settings
+
+1. Configure the apex `A` records:
    - `185.199.108.153`
    - `185.199.109.153`
    - `185.199.110.153`
    - `185.199.111.153`
-2. Create the `www` record as `CNAME`, host `www`, value `RoyGSlade.github.io`.
-3. In GitHub, complete custom-domain verification for `donavencrenshaw.com` if GitHub requests it.
-4. Open repository **Settings → Pages → Custom domain**, enter `donavencrenshaw.com`, and save.
-5. Once DNS has resolved, enable **Enforce HTTPS** in the same Pages settings.
+2. Configure `www` as a `CNAME` to `RoyGSlade.github.io`.
+3. In repository **Settings → Pages**, select GitHub Actions as the build source.
+4. Set the custom domain to `donavencrenshaw.com`.
+5. Keep **Enforce HTTPS** enabled after DNS and the certificate are ready.
 
-Before enabling the domain, remove or correct conflicting parking, forwarding, or old `A`/`CNAME` records. Do not use wildcard DNS records for this setup. Allow DNS propagation time, then verify both the apex and `www` resolve to the GitHub Pages site.
+Avoid wildcard and conflicting parking/forwarding records. The Actions deployment preserves the custom-domain setting through the Pages API; this build does not require a tracked `CNAME` file.
 
-No `CNAME` file is required by the current GitHub Actions deployment.
+## Verified current remote state
+
+Read-only inspection on 2026-07-31 reported:
+
+- Pages status `built`;
+- custom domain `donavencrenshaw.com`;
+- domain state `verified`;
+- HTTPS certificate `approved`;
+- HTTPS enforcement enabled;
+- last observed successful `pages.yml` run at commit `a36feef085ce7bd5cc04fb84df6f97606a150caf`.
+
+The live homepage still served the old Source Arcanum experience at inspection time. The rebuilt local artifact in this checkout has **not** been pushed or deployed by this work.
+
+## Release check
+
+Run `npm run verify`, follow [docs/rebuild/DEPLOYMENT_AND_ROLLBACK.md](docs/rebuild/DEPLOYMENT_AND_ROLLBACK.md), then verify both apex and `www`, HTTPS, the 404 page, canonical tags, and several legacy redirects against production.

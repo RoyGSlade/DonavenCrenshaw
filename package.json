@@ -1,39 +1,30 @@
 {
-    "name": "source-arcanum-site",
+    "name": "donaven-crenshaw-site",
     "version": "1.0.0",
-    "description": "Static site for Source Arcanum",
+    "description": "Donaven Crenshaw's static public workspace for software, systems work, and Infinite Ages.",
     "type": "module",
     "scripts": {
-    "dev": "node scripts/dev.mjs",
-    "build": "node scripts/build.mjs",
-    "validate": "node scripts/validateData.js",
-    "check:privacy": "! rg -n -i '(google-analytics|googletagmanager|segment\\.io|mixpanel|plausible\\.io|hotjar)' src content scripts data .github",
-        "security-scan": "grep -rnE \"(api_key|ghp_|sk-|secret|password)\" src/ scripts/ content/ --exclude-dir=node_modules || exit 0"
+        "dev": "node scripts/dev.mjs",
+        "build": "node scripts/build.mjs",
+        "validate": "node scripts/validateData.js",
+        "verify:site": "node scripts/verifySite.mjs",
+        "verify": "npm run validate && SITE_BASE=/ npm run build && npm run verify:site && npm run check:privacy && npm run security-scan",
+        "check:privacy": "! rg -n -i '(google-analytics|googletagmanager|segment\\.io|mixpanel|plausible\\.io|hotjar)' src content scripts data .github",
+        "security-scan": "! rg -n -i '(api[_-]?key\\s*[:=]|ghp_[a-z0-9]+|sk-[a-z0-9]+|password\\s*[:=])' src content scripts data .github"
     },
     "keywords": [],
-    "author": "",
-    "license": "ISC",
-    "devDependencies": {
-        "gray-matter": "^4.0.3",
-        "marked": "^17.0.3"
-    },
+    "author": "Donaven Crenshaw",
+    "license": "MIT",
     "main": "index.js",
     "directories": {
         "doc": "docs"
     },
     "dependencies": {
-        "argparse": "^1.0.10",
         "chokidar": "^5.0.0",
-        "ejs": "^4.0.1",
-        "esprima": "^4.0.1",
-        "extend-shallow": "^2.0.1",
-        "fs-extra": "^11.3.3",
-        "is-extendable": "^0.1.1",
-        "js-yaml": "^3.14.2",
-        "kind-of": "^6.0.3",
-        "section-matter": "^1.0.0",
-        "sprintf-js": "^1.0.3",
-        "strip-bom-string": "^1.0.0"
+        "ejs": "^6.0.1",
+        "fs-extra": "^11.4.0",
+        "gray-matter": "^4.0.3",
+        "marked": "^17.0.3"
     },
     "repository": {
         "type": "git",

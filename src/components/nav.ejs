@@ -1,47 +1,31 @@
-<nav class="site-nav">
+<header class="site-header">
+    <nav class="site-nav" aria-label="Primary navigation">
         <div class="nav-shell">
-                <a class="nav-brand" href="<%= siteRoot %>" data-route="home" aria-label="<%= site.name %> home">
-                        <span class="nav-sigil" aria-hidden="true"></span>
-                        <span class="nav-brand-copy">
-                                <span class="nav-brand-title">DONAVEN CRENSHAW</span>
-                                <span class="nav-brand-sub mono">SOFTWARE · SYSTEMS · CREATION</span>
-                        </span>
-                </a>
+            <a class="nav-brand" href="<%= siteLink('') %>" data-route="home" aria-label="<%= site.name %> home">
+                <span class="nav-sigil" aria-hidden="true"></span>
+                <span class="nav-brand-copy">
+                    <span class="nav-brand-title"><%= site.name %></span>
+                    <span class="nav-brand-sub mono">SOFTWARE · SYSTEMS · CREATION</span>
+                </span>
+            </a>
 
-                <button class="nav-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false">
-                        &#9776;
-                </button>
+            <button class="nav-toggle" type="button" aria-label="Open navigation" aria-controls="nav-links-list" aria-expanded="false">&#9776;</button>
 
-                <ul class="nav-links" id="nav-links-list">
-                        <li><a href="<%= siteRoot %>" data-route="home"><span class="nav-index mono">00</span><span
-                                                class="nav-label">Home</span></a></li>
-                        <li><a href="<%= siteRoot %>projects/index.html" data-route="projects"><span
-                                                class="nav-index mono">01</span><span class="nav-label">Projects</span></a>
-                        </li>
-                        <li><a href="<%= siteRoot %>betterfingers/index.html" data-route="betterfingers"><span
-                                                class="nav-index mono">02</span><span
-                                                class="nav-label">BetterFingers</span></a>
-                        </li>
-                        <li><a href="<%= siteRoot %>writing/index.html" data-route="writing"><span
-                                                class="nav-index mono">03</span><span
-                                                class="nav-label">Writing</span></a>
-                        </li>
-                        <li><a href="<%= siteRoot %>about/index.html" data-route="about"><span
-                                                class="nav-index mono">04</span><span
-                                                class="nav-label">About</span></a>
-                        </li>
-                        <li><a href="<%= siteRoot %>contact/index.html" data-route="contact"><span
-                                                class="nav-index mono">05</span><span
-                                                class="nav-label">Contact</span></a>
-                        </li>
-                </ul>
+            <ul class="nav-links" id="nav-links-list">
+                <li><a href="<%= siteLink('now') %>" data-route="now">Now</a></li>
+                <li><a href="<%= siteLink('projects') %>" data-route="projects">Projects</a></li>
+                <li><a href="<%= siteLink('underplain') %>" data-route="underplain">underplain</a></li>
+                <li><a href="<%= siteLink('crenshaw-systems') %>" data-route="crenshaw-systems">Crenshaw Systems</a></li>
+                <li><a href="<%= siteLink('infinite-ages') %>" data-route="infinite-ages">Infinite Ages</a></li>
+                <li><a href="<%= siteLink('build-log') %>" data-route="build-log">Build Log</a></li>
+                <li><a href="<%= siteLink('about') %>" data-route="about">About</a></li>
+                <li><a href="<%= siteLink('contact') %>" data-route="contact">Contact</a></li>
+            </ul>
 
-                <div class="nav-footer">
-                        <div class="nav-pulse mono"><%= site.studio.name %> · LAB</div>
-                        <button class="glitch-rune mono" type="button" onclick="triggerOverride()"
-                                aria-label="Toggle system override">
-                                &#968;
-                        </button>
-                </div>
+            <div class="nav-footer">
+                <a class="nav-support-link mono" href="<%= siteLink('support') %>">Support</a>
+                <% if (site.social && site.social.github) { %><a class="nav-social-link mono" href="<%= site.social.github %>" target="_blank" rel="noopener noreferrer">GitHub</a><% } %>
+            </div>
         </div>
-</nav>
+    </nav>
+</header>

@@ -1,14 +1,51 @@
 {
+  "schemaVersion": 1,
+  "id": "donaven-crenshaw",
   "name": "Donaven Crenshaw",
   "shortName": "DC",
   "domain": "https://donavencrenshaw.com",
-  "description": "Software builder focused on local AI, private tools, creative systems, and practical operational problems.",
+  "description": "I build quiet, capable systems that make tedious work disappear, then use that work to create useful software for free.",
   "location": "Northern Nevada",
-  "studio": {
-    "name": "Source Arcanum",
-    "description": "An independent software lab focused on local-first, privacy-respecting, and user-owned technology."
+  "owner": "donaven-crenshaw",
+  "reviewedAt": "2026-07-31",
+  "publicationStatus": "published",
+  "voice": "I",
+  "founder": {
+    "id": "donaven-crenshaw",
+    "name": "Donaven Crenshaw",
+    "state": {
+      "activeWork": [
+        {
+          "projectId": "betterfingers",
+          "state": "Feature locked for public alpha; cleaning and polishing.",
+          "reviewedAt": "2026-07-31"
+        }
+      ],
+      "win": "BetterFingers' feature set is locked for public alpha.",
+      "difficulty": "Cleaning and polishing remain before the alpha is ready.",
+      "nextStep": "Finish the preparation and publish the proof needed for a careful alpha release.",
+      "lastUpdateId": "2026-07-31-betterfingers-alpha-preparation",
+      "lastUpdatedAt": "2026-07-31"
+    }
   },
+  "mission": "Create a subscriptionless open world that gives people the tools they need to build, connect, share, evolve, and enjoy life.",
+  "studio": {
+    "name": "underplain",
+    "description": "Free software by Donaven Crenshaw.",
+    "status": "active"
+  },
+  "branches": ["underplain", "crenshaw-systems", "infinite-ages"],
   "social": {
     "github": "https://github.com/RoyGSlade"
+  },
+  "contact": {
+    "businessEmail": "dcworks@donavencrenshaw.com"
+  },
+  "legacy": {
+    "sourceArcanum": {
+      "name": "Source Arcanum",
+      "status": "retired",
+      "replacedBy": ["underplain", "crenshaw-systems", "infinite-ages"]
+    }
   }
 }

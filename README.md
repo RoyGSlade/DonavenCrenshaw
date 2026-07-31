@@ -1,36 +1,48 @@
-# Donaven Crenshaw · Source Arcanum
+# DonavenCrenshaw.com
 
-This is the official website of Donaven Crenshaw. **Source Arcanum** is the independent software lab behind local-first tools, creative systems, and build notes.
+This repository builds Donaven Crenshaw's public workspace: current work, free software under the lowercase **underplain** branch, commercial diagnosis and implementation through **Crenshaw Systems**, and creative work through **Infinite Ages Software**.
 
-The site is a static EJS and Markdown build: no frontend framework, analytics, external font CDN, or tracking is used.
+Source Arcanum is retired from the public identity. Its old source files remain in the repository only as migration evidence; generated legacy URLs are noindex redirects.
 
-## Local development
+## Run locally
+
+Requirements: Node.js 20 or newer and `rg` (ripgrep) for the privacy and credential scans.
 
 ```bash
 npm ci
-npm run validate
-npm run build
+npm run verify
 npm run dev
 ```
 
-The development server serves the generated `public/` directory at `http://localhost:3000`.
+`npm run dev` serves `public/` at `http://localhost:3000`. The full verification command validates structured data, performs a clean root-domain build, checks all required routes and redirects, rejects broken internal links and banned public claims, and runs privacy and credential-pattern scans.
 
-## Content and configuration
+For a repository-path preview:
 
-- `data/site.json` is the single source of truth for the public identity, domain, studio, and public GitHub URL.
-- `content/` contains Markdown pages and Chronicle entries. Frontmatter controls titles, descriptions, layouts, and redirects.
-- `data/projects.json` is the project directory. Use `plainDescription` for visitor-facing language; `maturity` and `portfolioFeatured` improve card presentation.
-- `src/components/` holds shared head, navigation, footer, and modal templates.
-- `src/layouts/` wraps page content; `scripts/build.mjs` generates `public/`.
+```bash
+SITE_BASE=/SourceArcanum/ npm run build
+SITE_BASE=/SourceArcanum/ npm run verify:site
+```
 
-When branding changes, update `data/site.json` first rather than duplicating names across templates.
+Rebuild with `SITE_BASE=/` before reviewing the custom-domain artifact.
 
-## Deployment and domain
+## Source of truth
 
-GitHub Pages runs the build with `SITE_BASE=/` for the custom domain. The builder keeps a `/SourceArcanum/` fallback configuration for repository-path deployments, while relative asset paths keep generated pages portable.
+- `data/site.json` — founder identity and dated state.
+- `data/branches.json` — the three branch boundaries.
+- `data/products.json` — promoted product status and evidence links.
+- `data/support.json` — support channels and tier labels.
+- `data/updates.json` — publishable and draft updates.
+- `data/redirects.json` — the single authoritative legacy URL map.
+- `content/` — first-person page copy and redirect frontmatter.
+- `src/components/` and `src/layouts/` — shared semantic structure.
+- `src/styles/` — local design system; no external font or analytics dependency.
+- `scripts/build.mjs` — deterministic static build into ignored `public/`.
+- `scripts/verifySite.mjs` — built-artifact contract checks.
 
-See [DOMAIN_SETUP.md](DOMAIN_SETUP.md) for the manual GitHub and DNS steps. Preserve the BetterFingers release URLs and legacy page routes; redirects are generated for the former category pages.
+Legacy `data/projects.json`, funding/media JSON, raw HTML, and old Chronicle prose are not copied into `public/` and are not public truth sources.
 
-## Privacy and claims
+## Delivery
 
-Do not add analytics, telemetry, advertising, external font CDNs, private contact information, employer-sensitive details, or healthcare data. Describe prototypes and experiments by their documented status; do not imply completion or professional credentials that the repository cannot support.
+GitHub Actions runs `npm ci` and `npm run verify`, uploads exactly `public/`, and deploys through GitHub Pages. See [docs/rebuild/](docs/rebuild/) for the audit, architecture, evidence register, verification record, and launch/rollback runbook.
+
+Do not publish a product release, performance claim, customer result, license scope, community destination, or support benefit unless its evidence is present and linked. Keep `SECURITY.md` changes separate unless they are deliberately reviewed; the current checkout contained a pre-existing user edit.

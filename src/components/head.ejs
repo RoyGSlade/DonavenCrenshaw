@@ -1,30 +1,27 @@
 <head>
-    <link rel='icon' type='image/png' sizes='32x32' href='<%= siteRoot %>assets/favicon/favicon-32x32.png'>
-    <link rel='icon' type='image/png' sizes='16x16' href='<%= siteRoot %>assets/favicon/favicon-16x16.png'>
-    <link rel='apple-touch-icon' sizes='180x180' href='<%= siteRoot %>assets/favicon/apple-touch-icon.png'>
-    <link rel='manifest' href='<%= siteRoot %>assets/favicon/site.webmanifest'>
-
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <% const isHome = !frontmatter.title || frontmatter.layout === 'home'; %>
-    <% const pageTitle = isHome ? `${site.name} | Software, Systems, and Creative Technology` : `${frontmatter.title} | ${site.name}`; %>
-    <% const description = frontmatter.description || site.description; %>
-    <% const image = frontmatter.ogImage ? new URL(frontmatter.ogImage, site.domain).href : new URL('assets/betterfingers/app-icon.png', `${site.domain}/`).href; %>
+    <% const pageTitle = page.title === site.name ? site.name : `${page.title} | ${site.name}`; %>
+    <% const description = page.description || site.description; %>
+    <% const image = frontmatter.ogImage ? assetUrl(frontmatter.ogImage) : null; %>
     <title><%= pageTitle %></title>
-    <meta name="description" content="<%= description %>">
-    <link rel="canonical" href="<%= pageUrl %>">
+    <% if (description) { %><meta name="description" content="<%= description %>"><% } %>
+    <% if (frontmatter.noindex) { %><meta name="robots" content="noindex, follow"><% } %>
+    <% if (page.url && !frontmatter.noindex) { %><link rel="canonical" href="<%= page.url %>"><% } %>
+    <% if (image) { %><meta property="og:image" content="<%= image %>"><meta name="twitter:image" content="<%= image %>"><% } %>
     <meta property="og:title" content="<%= pageTitle %>">
     <meta property="og:description" content="<%= description %>">
     <meta property="og:type" content="<%= frontmatter.ogType || 'website' %>">
-    <meta property="og:url" content="<%= pageUrl %>">
-    <meta property="og:image" content="<%= image %>">
-    <meta name="twitter:card" content="summary_large_image">
+    <% if (page.url && !frontmatter.noindex) { %><meta property="og:url" content="<%= page.url %>"><% } %>
+    <meta name="twitter:card" content="<%= image ? 'summary_large_image' : 'summary' %>">
     <meta name="twitter:title" content="<%= pageTitle %>">
     <meta name="twitter:description" content="<%= description %>">
-    <meta name="twitter:image" content="<%= image %>">
     <meta name="theme-color" content="#04070d">
-    <script type="application/ld+json"><%- JSON.stringify({ '@context': 'https://schema.org', '@type': 'Person', name: site.name, url: site.domain, description: site.description, homeLocation: { '@type': 'Place', name: site.location }, sameAs: [site.social.github] }) %></script>
+    <link rel="icon" type="image/png" sizes="32x32" href="<%= siteRoot %>assets/favicon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="<%= siteRoot %>assets/favicon/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="<%= siteRoot %>assets/favicon/apple-touch-icon.png">
+    <link rel="manifest" href="<%= siteRoot %>assets/favicon/site.webmanifest">
+    <script type="application/ld+json"><%- JSON.stringify(jsonLd) %></script>
     <link rel="stylesheet" href="<%= siteRoot %>styles/styles.css">
-
-    <script>window.SITE_ROOT = '<%= siteRoot %>'; window.SITE_BASE = '<%= site.basePath %>';</script>
+    <script>window.SITE_ROOT = <%- JSON.stringify(siteRoot) %>; window.SITE_BASE = <%- JSON.stringify(site.basePath) %>;</script>
 </head>

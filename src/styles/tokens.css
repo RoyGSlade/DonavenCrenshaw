@@ -1,45 +1,114 @@
-/* --- THEME ENGINE: DIGITAL HERMETICISM --- */
+/* Shared structural tokens. Branch classes below opt into distinct, restrained skins. */
 :root {
-    /* Core Surfaces */
-    --bg-void: #04070d;
-    --bg-rift: #0a111d;
-    --bg-panel: rgba(12, 18, 30, 0.85);
-    --bg-panel-strong: #0f1726;
-    --bg-overlay: rgba(3, 6, 11, 0.9);
-
-    /* Structural Materials */
-    --stone-dark: #1b273b;
-    --stone-light: #2f425f;
-    --line-rune: rgba(101, 230, 217, 0.28);
-
-    /* Accent Energies */
-    --accent-gold: #d2b16f;
-    --accent-dim: #86632a;
-    --tech-cyan: #65e6d9;
-    --tech-purple: #7fa8ff;
-    --tech-crimson: #b96f5e;
-
-    /* Text */
-    --text-main: #ede4d4;
-    --text-muted: #97a2b8;
-    --text-soft: #c8c0b1;
-    --text-secondary: #aab4c6;
-
-    /* Typography */
-    --font-header: Georgia, 'Times New Roman', serif;
-    --font-display: Georgia, 'Times New Roman', serif;
-    --font-body: Georgia, 'Times New Roman', serif;
-    --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
-
-    /* Effects */
-    --scanline: rgba(210, 177, 111, 0.035);
-    --shadow-low: 0 12px 28px rgba(2, 5, 10, 0.45);
-    --shadow-high: 0 24px 60px rgba(2, 4, 10, 0.65);
-    --ring-glow: 0 0 0 1px rgba(101, 230, 217, 0.35), 0 0 24px rgba(101, 230, 217, 0.18);
-    --radius-cut: 14px;
-    --radius-soft: 8px;
-
-    /* Layout */
-    --nav-width: 284px;
+    color-scheme: light;
+    --bg-void: #f4f6f5;
+    --bg-rift: #eef1f0;
+    --bg-panel: #ffffff;
+    --bg-panel-strong: #ffffff;
+    --bg-overlay: rgba(18, 27, 31, 0.68);
+    --stone-dark: #cfd7d9;
+    --stone-light: #aebbc0;
+    --line-rune: #8da0a7;
+    --accent-gold: #40535a;
+    --accent-dim: #66777d;
+    --tech-cyan: #1f5e6c;
+    --tech-purple: #52627c;
+    --tech-crimson: #7b4e54;
+    --text-main: #18242a;
+    --text-muted: #53636a;
+    --text-soft: #3e4e55;
+    --text-secondary: #65757c;
+    --font-header: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --font-display: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --font-body: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+    --shadow-low: 0 8px 24px rgba(18, 33, 38, 0.08);
+    --shadow-high: 0 18px 48px rgba(18, 33, 38, 0.14);
+    --ring-glow: 0 0 0 3px rgba(31, 94, 108, 0.22);
+    --radius-cut: 16px;
+    --radius-soft: 10px;
+    --nav-width: 264px;
     --container-max: 1180px;
+    --measure: 68ch;
+    --space-1: 0.25rem;
+    --space-2: 0.5rem;
+    --space-3: 0.75rem;
+    --space-4: 1rem;
+    --space-5: 1.5rem;
+    --space-6: 2rem;
+    --space-7: 3rem;
+    --space-8: 4rem;
+    --space-9: 6rem;
+}
+
+/* These hooks let content choose a branch without changing component markup. */
+[data-skin="underplain"],
+.skin-underplain {
+    color-scheme: dark;
+    --bg-void: #111618;
+    --bg-rift: #1a2022;
+    --bg-panel: #20282a;
+    --bg-panel-strong: #273133;
+    --bg-overlay: rgba(7, 11, 12, 0.78);
+    --stone-dark: #394548;
+    --stone-light: #5b696c;
+    --line-rune: #778387;
+    --accent-gold: #c0c8c7;
+    --accent-dim: #899695;
+    --tech-cyan: #a5c5c5;
+    --tech-purple: #aeb6c4;
+    --tech-crimson: #c28e91;
+    --text-main: #edf2f0;
+    --text-muted: #b0bdbc;
+    --text-soft: #d0d8d6;
+    --text-secondary: #9ba9a8;
+    --shadow-low: 0 8px 24px rgba(0, 0, 0, 0.2);
+    --shadow-high: 0 18px 48px rgba(0, 0, 0, 0.34);
+    --ring-glow: 0 0 0 3px rgba(165, 197, 197, 0.28);
+}
+
+[data-skin="crenshaw"],
+.skin-crenshaw,
+[data-skin="crenshaw-systems"],
+.skin-crenshaw-systems {
+    --bg-void: #f2f5f6;
+    --bg-rift: #e8edef;
+    --bg-panel: #ffffff;
+    --stone-dark: #cad4d8;
+    --stone-light: #91a2a9;
+    --line-rune: #70868f;
+    --accent-gold: #344f5b;
+    --accent-dim: #5f7882;
+    --tech-cyan: #2d6474;
+    --tech-purple: #53687a;
+    --text-main: #1b2a31;
+    --text-muted: #52656e;
+    --text-soft: #3f535b;
+    --shadow-low: 0 8px 24px rgba(30, 55, 65, 0.08);
+    --shadow-high: 0 18px 48px rgba(30, 55, 65, 0.14);
+}
+
+[data-skin="infinite-ages"],
+.skin-infinite-ages {
+    color-scheme: dark;
+    --bg-void: #17191f;
+    --bg-rift: #22242d;
+    --bg-panel: #2a2c35;
+    --bg-panel-strong: #323541;
+    --bg-overlay: rgba(11, 12, 17, 0.8);
+    --stone-dark: #454854;
+    --stone-light: #676b78;
+    --line-rune: #838692;
+    --accent-gold: #d0d1cc;
+    --accent-dim: #a6a9a8;
+    --tech-cyan: #b4c4c1;
+    --tech-purple: #c0bac9;
+    --tech-crimson: #d0a5a3;
+    --text-main: #f1f1ed;
+    --text-muted: #c0c3c2;
+    --text-soft: #d8dad5;
+    --text-secondary: #aeb3b3;
+    --shadow-low: 0 8px 24px rgba(0, 0, 0, 0.2);
+    --shadow-high: 0 18px 48px rgba(0, 0, 0, 0.36);
+    --ring-glow: 0 0 0 3px rgba(180, 196, 193, 0.28);
 }

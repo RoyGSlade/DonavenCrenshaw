@@ -1,0 +1,143 @@
+[
+  {
+    "id": "betterfingers",
+    "name": "BetterFingers",
+    "branchId": "underplain",
+    "owner": "donaven-crenshaw",
+    "publicationStatus": "published",
+    "status": "private-alpha",
+    "statusLabel": "Private alpha",
+    "statusAsOf": "2026-07-31",
+    "statusNote": "Feature locked for the public-alpha release; cleaning and polishing. Approximately one or two weeks from public alpha as of July 31, 2026.",
+    "reviewedAt": "2026-07-31",
+    "lastUpdateId": null,
+    "nextProof": {
+      "summary": "Capture a stranger-friendly installation and first-dictation demonstration before public-alpha promotion.",
+      "owner": "donaven-crenshaw",
+      "dueAt": null,
+      "publicationStatus": "draft"
+    },
+    "version": null,
+    "platforms": {
+      "supported": ["Windows"],
+      "tested": ["Windows"],
+      "planned": ["Linux"],
+      "notes": "Linux support remains investigational; Windows is the only tested platform in the current repository content."
+    },
+    "license": "MIT",
+    "freeOfCharge": true,
+    "links": {
+      "source": "https://github.com/RoyGSlade/BetterFingers",
+      "download": null,
+      "demo": null,
+      "docs": null,
+      "issues": null,
+      "support": "/support/"
+    },
+    "limitations": [
+      "Performance depends on hardware and selected local models.",
+      "Voice blending and some persona/style editor polish remain incomplete.",
+      "TTS loudness normalization and crossfade behavior are not tuned yet.",
+      "Linux support is investigational only."
+    ],
+    "supportChannelIds": ["github-sponsors", "ko-fi"],
+    "implementedScope": ["Local speech-to-text with a review-first draft workflow", "Optional local cleanup", "Global hotkeys and controller support", "Local review text-to-speech"],
+    "intendedScope": null,
+    "hashes": []
+  },
+  {
+    "id": "getfast",
+    "name": "GetFast",
+    "branchId": "underplain",
+    "owner": "donaven-crenshaw",
+    "publicationStatus": "draft",
+    "status": "concept",
+    "statusLabel": "Concept",
+    "statusAsOf": "2026-07-31",
+    "statusNote": "The intent is documented; implementation, compatibility, and performance evidence are not yet available.",
+    "reviewedAt": "2026-07-31",
+    "lastUpdateId": null,
+    "nextProof": {
+      "summary": "Define the technical implementation, first platform target, privacy behavior, and realistic bandwidth limits.",
+      "owner": "donaven-crenshaw",
+      "dueAt": null,
+      "publicationStatus": "draft"
+    },
+    "version": null,
+    "platforms": {"supported": null, "tested": [], "planned": null, "notes": null},
+    "license": "MIT",
+    "freeOfCharge": true,
+    "links": {"source": null, "download": null, "demo": null, "docs": null, "issues": null, "support": "/support/"},
+    "limitations": [
+      "Technical implementation is not documented.",
+      "Supported platforms, protocol limits, privacy behavior, logging, failure handling, compatibility, and performance are not established.",
+      "Steam and browser downloads are intended targets, not demonstrated compatibility."
+    ],
+    "supportChannelIds": ["github-sponsors", "ko-fi"],
+    "implementedScope": null,
+    "intendedScope": ["Assist large downloads by combining multiple available network paths when technically possible", "Activate intelligently when needed and avoid remaining active unnecessarily", "Target Steam and browser downloads"],
+    "hashes": []
+  },
+  {
+    "id": "pdfmanager",
+    "name": "PDFManager",
+    "branchId": "underplain",
+    "owner": "donaven-crenshaw",
+    "publicationStatus": "draft",
+    "status": "concept",
+    "statusLabel": "Concept",
+    "statusAsOf": "2026-07-31",
+    "statusNote": "The intended scope is documented; the implemented scope and release status are not established.",
+    "reviewedAt": "2026-07-31",
+    "lastUpdateId": null,
+    "nextProof": {
+      "summary": "Document the implemented PDF workflow, supported platforms, privacy behavior, limitations, and release status.",
+      "owner": "donaven-crenshaw",
+      "dueAt": null,
+      "publicationStatus": "draft"
+    },
+    "version": null,
+    "platforms": {"supported": null, "tested": [], "planned": null, "notes": null},
+    "license": "MIT",
+    "freeOfCharge": true,
+    "links": {"source": null, "download": null, "demo": null, "docs": null, "issues": null, "support": "/support/"},
+    "limitations": [
+      "The current implemented feature set is unknown.",
+      "Supported platforms, privacy behavior, cloud behavior, test documents, and release status are not established.",
+      "Intended features must not be presented as available functionality."
+    ],
+    "supportChannelIds": ["github-sponsors", "ko-fi"],
+    "implementedScope": null,
+    "intendedScope": ["Combine, split, reorder, rotate, and delete pages", "Compression and format conversion", "Forms, signatures, and redaction", "OCR and text-to-speech"],
+    "hashes": []
+  },
+  {
+    "id": "infinite-ages-ttrpg",
+    "name": "Infinite Ages TTRPG",
+    "branchId": "infinite-ages",
+    "owner": "donaven-crenshaw",
+    "publicationStatus": "published",
+    "status": "prototype",
+    "statusLabel": "Prototype",
+    "statusAsOf": "2026-07-31",
+    "statusNote": "A repository PDF artifact exists. The current release process and content-use terms remain unresolved.",
+    "reviewedAt": "2026-07-31",
+    "lastUpdateId": null,
+    "nextProof": {
+      "summary": "Document the release status, license, and content-use terms before broader promotion.",
+      "owner": "donaven-crenshaw",
+      "dueAt": null,
+      "publicationStatus": "draft"
+    },
+    "version": null,
+    "platforms": null,
+    "license": null,
+    "freeOfCharge": null,
+    "links": {"source": null, "download": "/assets/InfiniteAgesGenesis.pdf", "demo": null, "docs": null, "issues": null, "support": "/support/"},
+    "limitations": ["The final license and content-use terms are unresolved.", "No version, hash, or release process is documented in the current data."],
+    "supportChannelIds": ["github-sponsors", "ko-fi"],
+    "implementedScope": ["A downloadable TTRPG PDF artifact"],
+    "intendedScope": ["TTRPG, virtual tabletop, storytelling, games, and entertainment"],
+    "hashes": []
+  }
+]

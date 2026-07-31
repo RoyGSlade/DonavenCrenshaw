@@ -1,35 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
-
-<head>
-    <!-- Include the base head content -->
-    <%- components.head.replace('</head>', '') %>
-
-        <!-- Roadmap specific CSS injection -->
-        <link rel="stylesheet" href="<%= siteRoot %>styles/roadmap.css">
-</head>
-
-<body>
+<%- components.head %>
+<body class="site-shell skin-<%= page.skin %>" data-branch="<%= page.branch %>">
+    <a class="skip-link" href="#main-content">Skip to main content</a>
     <%- components.nav %>
-
-        <div class="content-wrapper">
-            <main class="container page-header roadmap-page">
-                <% if (frontmatter.title) { %>
-                    <h1 class="section-title">
-                        <%= frontmatter.title %>
-                    </h1>
-                    <% } %>
-
-                        <%- content %>
-            </main>
-
-            <%- components.footer %>
-        </div>
-
-        <!-- Base scripts -->
-        <script src="<%= siteRoot %>scripts/script.js"></script>
-        <!-- Roadmap specific logic -->
-        <script src="<%= siteRoot %>scripts/roadmap.js"></script>
+    <div class="content-wrapper">
+        <main id="main-content" class="container page-header roadmap-page" tabindex="-1">
+            <% if (frontmatter.title) { %><h1 class="section-title"><%= frontmatter.title %></h1><% } %>
+            <%- content %>
+        </main>
+        <%- components.footer %>
+    </div>
+    <script src="<%= siteRoot %>scripts/script.js"></script>
+    <script src="<%= siteRoot %>scripts/roadmap.js"></script>
 </body>
-
 </html>

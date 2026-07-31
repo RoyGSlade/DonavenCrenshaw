@@ -1,4 +1,4 @@
-name: Deploy to GitHub Pages
+name: Verify and deploy DonavenCrenshaw.com
 
 on:
   push:
@@ -30,13 +30,8 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
-      - name: Validate Data
-        run: node scripts/validateData.js
-
-      - name: Build Site
-        run: npm run build
-        env:
-          SITE_BASE: /
+      - name: Verify data, build, routes, links, privacy, and secrets
+        run: npm run verify
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
@@ -44,7 +39,6 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # Upload static build output
           path: './public'
 
   # Deploy job
