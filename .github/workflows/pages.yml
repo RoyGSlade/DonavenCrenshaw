@@ -33,6 +33,11 @@ jobs:
       - name: Verify data, build, routes, links, privacy, and secrets
         run: npm run verify
 
+      # Must run after the build: the YouTube embed URL was assembled in JS and
+      # was invisible to a source scan. In built output the literal is present.
+      - name: Check For Third-Party Requests
+        run: npm run check:privacy
+
       - name: Setup Pages
         uses: actions/configure-pages@v4
 

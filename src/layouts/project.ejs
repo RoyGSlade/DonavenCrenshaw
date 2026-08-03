@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <%- components.head.replace('</head>', '') %>
+        <link rel="stylesheet" href="<%= siteRoot %>styles/project.css">
+</head>
+
+<body>
+    <%- components.nav %>
+
+        <div class="content-wrapper">
+            <header class="container hero" style="min-height: 50vh; justify-content: center; display: flex; flex-direction: column;">
+                <div class="hero-content">
+                    <div class="pre-title mono" style="color: var(--accent-gold);"><%= project.statusLabel || project.status.toUpperCase() %></div>
+                    <h1><%= project.codename || project.realName %></h1>
+                    <% if (project.codename) { %>
+                        <h2 class="mono" style="font-size: 1.2rem; color: var(--text-muted); margin-top: 0;">REAL NAME: <%= project.realName %></h2>
+                    <% } %>
+
+                    <div class="tagline" style="border-left: 3px solid var(--accent-gold); padding-left: 2rem;">
+                        <p style="font-size: 1.4rem; color: var(--text-main);"><%= project.tagline %></p>
+                        <% if (project.flavorDescription) { %>
+                            <p class="mono" style="color: var(--text-muted); font-size: 0.9rem; margin-top: 1rem;">// <%= project.flavorDescription %></p>
+                        <% } %>
+                    </div>
+                </div>
+            </header>
+
+            <main class="container" style="margin-bottom: 8rem;">
+
+                <% if (fullDescription.length) { %>
+                    <section style="margin-bottom: 6rem;">
+                        <div class="reading-text project-description">
+                            <% fullDescription.forEach(function (para) { %><p><%= para %></p><% }); %>
+                        </div>
+                    </section>
+                <% } %>
+
+                <% if (flagship.length || features.length) { %>
+                    <section style="margin-bottom: 6rem;">
+                        <div class="section-header">
+                            <h2 class="section-title">CAPABILITIES</h2>
+                            <span class="section-subtitle mono">// SPECS</span>
+                        </div>
+
+                        <% if (flagship.length) { %>
+                            <div class="feature-grid">
+                                <% flagship.forEach(function (item) { %>
+                                    <div class="feature-card">
+                                        <h4 class="mono"><%= item.title %></h4>
+                                        <% if (item.text) { %><p><%= item.text %></p><% } %>
+                                    </div>
+                                <% }); %>
+                            </div>
+                        <% } %>
+
+                        <% if (features.length) { %>
+                            <ul class="reading-text" style="margin-top: 3rem; padding-left: 1.5rem;">
+                                <% features.forEach(function (f) { %><li><%= f %></li><% }); %>
+                            </ul>
+                        <% } %>
+                    </section>
+                <% } %>
+
+                <% if (trajectory.length) { %>
+                    <section style="margin-bottom: 6rem;">
+                        <div class="section-header">
+                            <h2 class="section-title">TRAJECTORY</h2>
+                            <span class="section-subtitle mono">// FUTURE</span>
+                        </div>
+                        <div style="max-width: 800px;">
+                            <% trajectory.forEach(function (item) { %>
+                                <div class="trajectory-item">
+                                    <div class="trajectory-phase mono"><%= item.phase %></div>
+                                    <div style="flex-grow: 1;"><%= item.text %></div>
+                                </div>
+                            <% }); %>
+                        </div>
+                    </section>
+                <% } %>
+
+                <section class="project-panels">
+                    <div class="project-panel">
+                        <h3 class="mono" style="color: var(--text-muted); margin-bottom: 1.5rem;">// TRUST PROTOCOLS</h3>
+                        <ul class="mono">
+                            <% trustFacts.forEach(function (fact) { %>
+                                <li><span class="panel-label"><%= fact.label %>:</span> <%= fact.value %></li>
+                            <% }); %>
+                        </ul>
+                        <% if (integrity) { %>
+                            <div style="margin-top: 1.5rem; border-top: 1px dotted var(--stone-light); padding-top: 1rem;">
+                                <div class="mono" style="color: var(--accent-gold); font-size: 0.7rem; margin-bottom: 0.5rem;">// INTEGRITY CHECK</div>
+                                <div class="mono" style="font-size: 0.7rem; color: var(--text-muted); word-break: break-all;">
+                                    FILE: <%= integrity.file %><br>
+                                    SHA256: <span style="color: var(--tech-cyan);"><%= integrity.sha256 %></span>
+                                </div>
+                            </div>
+                        <% } %>
+                    </div>
+
+                    <div class="project-panel is-acquire">
+                        <h3 class="mono" style="color: var(--accent-gold); margin-bottom: 1.5rem;">// ACQUIRE</h3>
+                        <div class="acquire-links">
+                            <% if (links.length) { %>
+                                <% links.forEach(function (link) { %>
+                                    <a href="<%= link.url %>" class="btn btn-primary" rel="noopener noreferrer"><%= link.label.toUpperCase() %></a>
+                                <% }); %>
+                            <% } else { %>
+                                <div class="mono" style="color: var(--text-muted); font-size: 0.8rem;">// ACCESS RESTRICTED</div>
+                            <% } %>
+                        </div>
+                    </div>
+                </section>
+
+            </main>
+
+            <%- components.footer %>
+        </div>
+
+        <%- components.modal %>
+            <script src="<%= siteRoot %>scripts/script.js"></script>
+</body>
+
+</html>

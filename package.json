@@ -9,7 +9,7 @@
         "validate": "node scripts/validateData.js",
         "verify:site": "node scripts/verifySite.mjs",
         "verify": "npm run validate && SITE_BASE=/ npm run build && npm run verify:site && npm run check:privacy && npm run security-scan",
-        "check:privacy": "! rg -n -i '(google-analytics|googletagmanager|segment\\.io|mixpanel|plausible\\.io|hotjar)' src content scripts data .github",
+        "check:privacy": "node scripts/checkPrivacy.mjs",
         "security-scan": "! rg -n -i '(api[_-]?key\\s*[:=]|ghp_[a-z0-9]+|\\bsk-[a-z0-9]{8,}|password\\s*[:=])' src content scripts data .github"
     },
     "keywords": [],

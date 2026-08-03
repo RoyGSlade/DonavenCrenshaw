@@ -1,208 +1,443 @@
 {
-    "carouselOrder": [
-        "voicesource"
-    ],
-    "nextFocusQueue": [
-        {
-            "projectId": "infinite-ages",
-            "note": "Character Sheet & Builder",
-            "etaLabel": "Soon"
-        },
-        {
-            "projectId": "pdf-editor",
-            "note": "Local PDF Editor",
-            "etaLabel": "Later"
-        },
-        {
-            "projectId": "the-account",
-            "note": "Local Wealth Tracker",
-            "etaLabel": "Later"
-        }
-    ],
-    "recentlyShippedFeed": [
-        {
-            "dateISO": "2026-02",
-            "projectId": "betterfingers",
-            "summary": "BetterFingers V1.0.0 Released",
-            "state": "Live"
-        },
-        {
-            "dateISO": "2026-02",
-            "projectId": "infinite-ages",
-            "summary": "Infinite Ages Genesis TTRPG",
-            "state": "Live"
-        }
-    ],
-    "projects": {
-        "voicesource": {
-            "name": "VOICESOURCE",
-            "focus": {
-                "summary": "STATUS: Foundation built. Currently focused on security, mobile stability, and release preparation.",
-                "focusLine": "PREPARING FOR PUBLIC RELEASE",
-                "objective": "TBD",
-                "successCriteria": [],
-                "readinessPercent": 75,
-                "readinessLabel": "Hardening"
-            },
-            "updatePlans": [
-                {
-                    "title": "PACKAGING",
-                    "desc": "replace waivers with clean-machine macOS/Linux evidence",
-                    "impact": "High",
-                    "effort": "Med",
-                    "confidence": "High",
-                    "targetWindow": "Soon",
-                    "tags": [
-                        "High Priority"
-                    ]
-                },
-                {
-                    "title": "ANDROID",
-                    "desc": "multi-hour runtime soak testing on mobile",
-                    "impact": "High",
-                    "effort": "High",
-                    "confidence": "High",
-                    "targetWindow": "Soon",
-                    "tags": [
-                        "High Priority"
-                    ]
-                },
-                {
-                    "title": "SCOUT",
-                    "desc": "finish internal cross-platform bindings",
-                    "impact": "Critical",
-                    "effort": "High",
-                    "confidence": "Med",
-                    "targetWindow": "Soon",
-                    "tags": [
-                        "High Priority"
-                    ]
-                },
-                {
-                    "title": "SECURITY",
-                    "desc": "conduct final security reviews and capture test results",
-                    "impact": "Critical",
-                    "effort": "Med",
-                    "confidence": "High",
-                    "targetWindow": "Later",
-                    "tags": [
-                        "High Priority"
-                    ]
-                },
-                {
-                    "title": "MILESTONES",
-                    "desc": "verify all release flows and final sign-off",
-                    "impact": "Critical",
-                    "effort": "Low",
-                    "confidence": "High",
-                    "targetWindow": "Soon",
-                    "tags": [
-                        "High Priority"
-                    ]
-                }
-            ],
-            "scopeChanges": [
-                {
-                    "dateISO": "2026-03-31",
-                    "change": "REQUIREMENTS UPDATED",
-                    "reason": "transitioning to strict requirement validation"
-                }
-            ],
-            "kanban": {
-                "todo": [
-                    {
-                        "title": "QR ticket flow end-to-end",
-                        "note": "testing phase",
-                        "tags": [
-                            "Pending"
-                        ]
-                    },
-                    {
-                        "title": "PAKE + certificates end-to-end",
-                        "note": "testing phase",
-                        "tags": [
-                            "Pending"
-                        ]
-                    },
-                    {
-                        "title": "Final security review",
-                        "note": "packet + traffic analysis",
-                        "tags": [
-                            "Pending"
-                        ]
-                    },
-                    {
-                        "title": "Android stability testing",
-                        "note": "in progress",
-                        "tags": [
-                            "Pending"
-                        ]
-                    },
-                    {
-                        "title": "Final release sign-off",
-                        "note": "pending",
-                        "tags": [
-                            "Pending"
-                        ]
-                    }
-                ],
-                "done": [
-                    {
-                        "title": "Core foundation complete",
-                        "tags": [
-                            "Done"
-                        ]
-                    },
-                    {
-                        "title": "Citadel platform complete",
-                        "tags": [
-                            "Done"
-                        ]
-                    },
-                    {
-                        "title": "Packaging pipeline exists",
-                        "note": "validation tools created",
-                        "tags": [
-                            "Done"
-                        ]
-                    },
-                    {
-                        "title": "Local validation tools",
-                        "note": "completed foundation",
-                        "tags": [
-                            "Done"
-                        ]
-                    },
-                    {
-                        "title": "Silent-port logic",
-                        "note": "background execution",
-                        "tags": [
-                            "Done"
-                        ]
-                    },
-                    {
-                        "title": "Security review tooling",
-                        "note": "infrastructure ready",
-                        "tags": [
-                            "Done"
-                        ]
-                    },
-                    {
-                        "title": "Product hardening baseline",
-                        "note": "metrics established",
-                        "tags": [
-                            "Done"
-                        ]
-                    },
-                    {
-                        "title": "I2P relay-only",
-                        "note": "fail-closed surface implemented",
-                        "tags": [
-                            "Done"
-                        ]
-                    }
-                ]
-            }
-        }
+  "carouselOrder": [
+    "getfast",
+    "infinite-stacks",
+    "voicesource"
+  ],
+  "nextFocusQueue": [
+    {
+      "projectId": "getfast",
+      "note": "Multi-Network Downloader",
+      "etaLabel": "Days"
+    },
+    {
+      "projectId": "infinite-stacks",
+      "note": "LAN Dungeon Crawl",
+      "etaLabel": "Days"
+    },
+    {
+      "projectId": "infinite-ages",
+      "note": "Character Sheet & Builder",
+      "etaLabel": "Soon"
+    },
+    {
+      "projectId": "pdf-manager",
+      "note": "Local PDF Editor",
+      "etaLabel": "Later"
+    },
+    {
+      "projectId": "the-account",
+      "note": "Local Wealth Tracker",
+      "etaLabel": "Later"
     }
+  ],
+  "recentlyShippedFeed": [
+    {
+      "dateISO": "2026-02",
+      "projectId": "betterfingers",
+      "summary": "BetterFingers V1.0.0 Released",
+      "state": "Live"
+    },
+    {
+      "dateISO": "2026-02",
+      "projectId": "infinite-ages",
+      "summary": "Infinite Ages Genesis TTRPG",
+      "state": "Live"
+    }
+  ],
+  "projects": {
+    "voicesource": {
+      "name": "VOICESOURCE",
+      "focus": {
+        "summary": "STATUS: Foundation built. Currently focused on security, mobile stability, and release preparation.",
+        "focusLine": "PREPARING FOR PUBLIC RELEASE",
+        "objective": "TBD",
+        "successCriteria": [],
+        "readinessPercent": 75,
+        "readinessLabel": "Hardening"
+      },
+      "updatePlans": [
+        {
+          "title": "PACKAGING",
+          "desc": "replace waivers with clean-machine macOS/Linux evidence",
+          "impact": "High",
+          "effort": "Med",
+          "confidence": "High",
+          "targetWindow": "Soon",
+          "tags": [
+            "High Priority"
+          ]
+        },
+        {
+          "title": "ANDROID",
+          "desc": "multi-hour runtime soak testing on mobile",
+          "impact": "High",
+          "effort": "High",
+          "confidence": "High",
+          "targetWindow": "Soon",
+          "tags": [
+            "High Priority"
+          ]
+        },
+        {
+          "title": "SCOUT",
+          "desc": "finish internal cross-platform bindings",
+          "impact": "Critical",
+          "effort": "High",
+          "confidence": "Med",
+          "targetWindow": "Soon",
+          "tags": [
+            "High Priority"
+          ]
+        },
+        {
+          "title": "SECURITY",
+          "desc": "conduct final security reviews and capture test results",
+          "impact": "Critical",
+          "effort": "Med",
+          "confidence": "High",
+          "targetWindow": "Later",
+          "tags": [
+            "High Priority"
+          ]
+        },
+        {
+          "title": "MILESTONES",
+          "desc": "verify all release flows and final sign-off",
+          "impact": "Critical",
+          "effort": "Low",
+          "confidence": "High",
+          "targetWindow": "Soon",
+          "tags": [
+            "High Priority"
+          ]
+        }
+      ],
+      "scopeChanges": [
+        {
+          "dateISO": "2026-03-31",
+          "change": "REQUIREMENTS UPDATED",
+          "reason": "transitioning to strict requirement validation"
+        }
+      ],
+      "kanban": {
+        "todo": [
+          {
+            "title": "QR ticket flow end-to-end",
+            "note": "testing phase",
+            "tags": [
+              "Pending"
+            ]
+          },
+          {
+            "title": "PAKE + certificates end-to-end",
+            "note": "testing phase",
+            "tags": [
+              "Pending"
+            ]
+          },
+          {
+            "title": "Final security review",
+            "note": "packet + traffic analysis",
+            "tags": [
+              "Pending"
+            ]
+          },
+          {
+            "title": "Android stability testing",
+            "note": "in progress",
+            "tags": [
+              "Pending"
+            ]
+          },
+          {
+            "title": "Final release sign-off",
+            "note": "pending",
+            "tags": [
+              "Pending"
+            ]
+          }
+        ],
+        "done": [
+          {
+            "title": "Core foundation complete",
+            "tags": [
+              "Done"
+            ]
+          },
+          {
+            "title": "Citadel platform complete",
+            "tags": [
+              "Done"
+            ]
+          },
+          {
+            "title": "Packaging pipeline exists",
+            "note": "validation tools created",
+            "tags": [
+              "Done"
+            ]
+          },
+          {
+            "title": "Local validation tools",
+            "note": "completed foundation",
+            "tags": [
+              "Done"
+            ]
+          },
+          {
+            "title": "Silent-port logic",
+            "note": "background execution",
+            "tags": [
+              "Done"
+            ]
+          },
+          {
+            "title": "Security review tooling",
+            "note": "infrastructure ready",
+            "tags": [
+              "Done"
+            ]
+          },
+          {
+            "title": "Product hardening baseline",
+            "note": "metrics established",
+            "tags": [
+              "Done"
+            ]
+          },
+          {
+            "title": "I2P relay-only",
+            "note": "fail-closed surface implemented",
+            "tags": [
+              "Done"
+            ]
+          }
+        ]
+      }
+    },
+    "getfast": {
+      "name": "GETFAST",
+      "focus": {
+        "summary": "STATUS: Download engine, safety/rollback, and desktop shell built and unit-tested on Linux. Remaining work is validation on real multi-interface hardware and the Windows build.",
+        "focusLine": "SOFT ANNOUNCE - RELEASE IMMINENT",
+        "objective": "Prove multi-path aggregation on physical hardware, then ship Linux and Windows together.",
+        "successCriteria": [
+          "Two independent links measurably contribute to one download",
+          "Routing state restored on every terminal outcome including crash",
+          "Windows build reaches parity for downloads"
+        ],
+        "readinessPercent": 70,
+        "readinessLabel": "Hardening"
+      },
+      "updatePlans": [
+        {
+          "title": "HARDWARE PROOF",
+          "desc": "validate aggregation on real Ethernet + Wi-Fi + tether with independent gateways",
+          "impact": "Critical",
+          "effort": "Med",
+          "confidence": "Med",
+          "targetWindow": "Now",
+          "tags": [
+            "High Priority"
+          ]
+        },
+        {
+          "title": "WINDOWS",
+          "desc": "per-socket interface binding and named-pipe IPC for parity with Linux",
+          "impact": "High",
+          "effort": "High",
+          "confidence": "Med",
+          "targetWindow": "Soon",
+          "tags": [
+            "High Priority"
+          ]
+        },
+        {
+          "title": "SIGNING",
+          "desc": "signed artifacts for both platforms so installs are not flagged",
+          "impact": "High",
+          "effort": "Med",
+          "confidence": "High",
+          "targetWindow": "Soon",
+          "tags": []
+        }
+      ],
+      "scopeChanges": [
+        {
+          "dateISO": "2026-07-25",
+          "change": "SOFT ANNOUNCE",
+          "reason": "listed publicly ahead of release"
+        },
+        {
+          "dateISO": "2026-06-30",
+          "change": "SCOPE NARROWED TO LINUX FIRST",
+          "reason": "prove the routing model before porting to Windows"
+        }
+      ],
+      "kanban": {
+        "todo": [
+          {
+            "title": "Multi-interface hardware validation",
+            "note": "real Ethernet + Wi-Fi, independent gateways",
+            "tags": [
+              "Blocking"
+            ]
+          },
+          {
+            "title": "Windows interface binding",
+            "note": "IP_UNICAST_IF per socket",
+            "tags": [
+              "Pending"
+            ]
+          },
+          {
+            "title": "Named-pipe IPC for Windows",
+            "note": "replaces the unix socket",
+            "tags": [
+              "Pending"
+            ]
+          },
+          {
+            "title": "Signed builds",
+            "note": "both platforms",
+            "tags": [
+              "Pending"
+            ]
+          }
+        ],
+        "done": [
+          {
+            "title": "Segmented downloader",
+            "note": "chunk planning, retry, resume",
+            "tags": [
+              "Done"
+            ]
+          },
+          {
+            "title": "Snapshot and rollback safety",
+            "note": "restores on every terminal outcome",
+            "tags": [
+              "Done"
+            ]
+          },
+          {
+            "title": "Desktop tray dashboard",
+            "note": "live throughput and per-chunk state",
+            "tags": [
+              "Done"
+            ]
+          }
+        ]
+      }
+    },
+    "infinite-stacks": {
+      "name": "INFINITE STACKS",
+      "focus": {
+        "summary": "STATUS: Standalone since 24 July 2026. Character creation, exploration, puzzles, shops, and combat are playable; the server persists nothing.",
+        "focusLine": "SOFT ANNOUNCE - RELEASE IMMINENT",
+        "objective": "Ship a LAN dungeon crawl that guests join from a browser with nothing to install.",
+        "successCriteria": [
+          "Host starts a room and shares a code in under a minute",
+          "Loopback by default, LAN only behind an explicit flag and access code",
+          "Nothing written to disk for any session"
+        ],
+        "readinessPercent": 80,
+        "readinessLabel": "Playtest"
+      },
+      "updatePlans": [
+        {
+          "title": "FIRST RELEASE",
+          "desc": "tag and publish the standalone package",
+          "impact": "Critical",
+          "effort": "Low",
+          "confidence": "High",
+          "targetWindow": "Now",
+          "tags": [
+            "High Priority"
+          ]
+        },
+        {
+          "title": "PLAYTEST PASS",
+          "desc": "fold party feedback into pacing and combat reactions",
+          "impact": "High",
+          "effort": "Med",
+          "confidence": "High",
+          "targetWindow": "Soon",
+          "tags": [
+            "High Priority"
+          ]
+        },
+        {
+          "title": "CONTENT PACKS",
+          "desc": "expand the authored YAML packs beyond the launch set",
+          "impact": "Med",
+          "effort": "Med",
+          "confidence": "High",
+          "targetWindow": "Soon",
+          "tags": []
+        }
+      ],
+      "scopeChanges": [
+        {
+          "dateISO": "2026-07-25",
+          "change": "SOFT ANNOUNCE",
+          "reason": "listed publicly ahead of release"
+        },
+        {
+          "dateISO": "2026-07-24",
+          "change": "EXTRACTED TO ITS OWN PROJECT",
+          "reason": "no runtime dependency on BetterFingers"
+        }
+      ],
+      "kanban": {
+        "todo": [
+          {
+            "title": "First public release",
+            "note": "tag and publish the package",
+            "tags": [
+              "Blocking"
+            ]
+          },
+          {
+            "title": "Playtest feedback pass",
+            "note": "pacing and combat reactions",
+            "tags": [
+              "Pending"
+            ]
+          },
+          {
+            "title": "Additional content packs",
+            "note": "beyond the launch set",
+            "tags": [
+              "Pending"
+            ]
+          }
+        ],
+        "done": [
+          {
+            "title": "Standalone extraction",
+            "note": "own package and infrastructure",
+            "tags": [
+              "Done"
+            ]
+          },
+          {
+            "title": "Room codes and access gating",
+            "note": "loopback default, LAN behind a flag",
+            "tags": [
+              "Done"
+            ]
+          },
+          {
+            "title": "Ritual Spire client UI",
+            "note": "browser client restyle",
+            "tags": [
+              "Done"
+            ]
+          }
+        ]
+      }
+    }
+  }
 }

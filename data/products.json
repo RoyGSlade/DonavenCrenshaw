@@ -133,7 +133,7 @@
     "platforms": null,
     "license": null,
     "freeOfCharge": null,
-    "links": {"source": null, "download": "/assets/InfiniteAgesGenesis.pdf", "demo": null, "docs": null, "issues": null, "support": "/support/"},
+    "links": {"source": null, "download": "https://github.com/RoyGSlade/SourceArcanum/releases/download/InfiniteAgesGenesis-v1/InfiniteAgesGenesis.pdf", "demo": null, "docs": null, "issues": null, "support": "/support/"},
     "limitations": ["The final license and content-use terms are unresolved.", "No version, hash, or release process is documented in the current data."],
     "supportChannelIds": ["github-sponsors", "ko-fi"],
     "implementedScope": ["A downloadable TTRPG PDF artifact"],
