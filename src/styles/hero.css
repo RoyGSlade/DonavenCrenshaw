@@ -1,0 +1,170 @@
+/* Full-bleed noir scene for pages with hero_title frontmatter. */
+.noir-hero {
+    position: relative;
+    isolation: isolate;
+    display: grid;
+    min-height: clamp(320px, 42vh, 470px);
+    overflow: hidden;
+}
+
+.hero-scene {
+    position: absolute;
+    z-index: var(--z-scene);
+    inset: 0 0 0 auto;
+    width: min(60%, 820px);
+    height: 100%;
+    background-position: center right;
+    background-repeat: no-repeat;
+    background-size: cover;
+    pointer-events: none;
+    -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 22%), linear-gradient(180deg, #000 70%, transparent);
+    mask-image: linear-gradient(90deg, transparent 0, #000 22%), linear-gradient(180deg, #000 70%, transparent);
+}
+
+.noir-hero[data-scene="desk"] .hero-scene {
+    background-image: url("../assets/noir/hero-desk.jpg");
+}
+
+.noir-hero[data-scene="lamp"] .hero-scene {
+    background-image: url("../assets/noir/hero-lamp.jpg");
+}
+
+.noir-hero[data-scene="book"] .hero-scene {
+    background-image: url("../assets/noir/hero-book.jpg");
+}
+
+.hero-light {
+    top: 35%;
+    right: 28%;
+    z-index: var(--z-light);
+    width: min(34rem, 52vw);
+    --glow-a: 0.62;
+}
+
+.hero-circuit {
+    position: absolute;
+    z-index: var(--z-scene);
+    top: 0;
+    right: 8%;
+    width: min(320px, 34%);
+    height: 60%;
+    overflow: visible;
+    pointer-events: none;
+}
+
+.hero-circuit .circuit-trace {
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.35);
+    stroke-width: 1.5;
+    stroke-linecap: square;
+    stroke-linejoin: miter;
+    stroke-dasharray: 240;
+    stroke-dashoffset: 240;
+    animation: hero-circuit-draw 3s ease-out forwards, hero-circuit-shimmer 9s ease-in-out 3s infinite;
+}
+
+.hero-circuit .circuit-node {
+    fill: var(--noir-1);
+    stroke: rgba(255, 255, 255, 0.62);
+    stroke-width: 1.5;
+    opacity: 0;
+    animation: hero-node-in 3s ease-out forwards, hero-circuit-shimmer 9s ease-in-out 3s infinite;
+}
+
+.hero-copy {
+    position: relative;
+    z-index: var(--z-content);
+    align-self: center;
+    max-width: 56ch;
+    padding: clamp(4rem, 11vh, 7rem) clamp(1rem, 3vw, 3rem);
+}
+
+.hero-copy h1 {
+    max-width: 100%;
+    font-size: clamp(2.6rem, 6.5vw, 4.6rem);
+}
+
+.hero-kicker {
+    margin-top: 0.9rem;
+}
+
+.hero-sub {
+    max-width: 52ch;
+    margin-top: 0.8rem;
+    color: var(--text-soft);
+}
+
+.hero-baseline {
+    position: absolute;
+    z-index: var(--z-content);
+    right: 0;
+    bottom: 0;
+    left: 0;
+}
+
+.noir-hero[data-scene="none"] .hero-scene,
+.noir-hero[data-scene="none"] .hero-circuit {
+    display: none;
+}
+
+@keyframes hero-circuit-draw {
+    to {
+        stroke-dashoffset: 0;
+    }
+}
+
+@keyframes hero-node-in {
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes hero-circuit-shimmer {
+    0%,
+    100% {
+        opacity: 0.5;
+    }
+
+    50% {
+        opacity: 1;
+    }
+}
+
+@media (max-width: 48rem) {
+    .hero-scene {
+        width: 100%;
+        opacity: 0.45;
+        -webkit-mask-image: linear-gradient(180deg, #000 0, #000 62%, transparent 100%);
+        mask-image: linear-gradient(180deg, #000 0, #000 62%, transparent 100%);
+    }
+
+    .hero-circuit {
+        right: 3%;
+        width: 70%;
+        opacity: 0.5;
+    }
+
+    .hero-light {
+        top: 35%;
+        right: 50%;
+        width: min(34rem, 90vw);
+    }
+
+    .hero-copy {
+        width: 100%;
+        max-width: none;
+        padding-block: clamp(4.5rem, 15vh, 7rem);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .hero-circuit .circuit-trace {
+        animation: none;
+        stroke-dashoffset: 0;
+    }
+
+    .hero-circuit .circuit-node {
+        animation: none;
+        opacity: 1;
+    }
+}

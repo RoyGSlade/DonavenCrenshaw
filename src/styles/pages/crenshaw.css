@@ -1,0 +1,140 @@
+/* Crenshaw Systems composition: truth-derived lead, service cards, and sequence. */
+.crenshaw-page {
+    display: grid;
+    gap: clamp(3rem, 7vw, 6rem);
+}
+
+.crenshaw-page .section-block {
+    margin-bottom: 0;
+}
+
+.crenshaw-lead {
+    display: grid;
+    gap: 1.25rem;
+    padding: clamp(1.35rem, 3vw, 2.25rem);
+}
+
+.crenshaw-lead-heading {
+    max-width: 64ch;
+}
+
+.crenshaw-lead-heading .section-desc {
+    margin-bottom: 0;
+}
+
+.crenshaw-lead .reading-text,
+.crenshaw-copy-card {
+    max-width: none;
+}
+
+.crenshaw-lead .reading-text p:last-child,
+.crenshaw-copy-card p:last-child {
+    margin-bottom: 0;
+}
+
+.crenshaw-service-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem;
+}
+
+.crenshaw-service-card {
+    display: flex;
+    min-height: 7rem;
+    align-items: center;
+    padding: 1.25rem;
+}
+
+.crenshaw-service-card h3,
+.crenshaw-process-step h3 {
+    margin: 0;
+    color: var(--text-main);
+    font-family: var(--font-display);
+    font-size: clamp(1.05rem, 1.5vw, 1.35rem);
+    line-height: 1.25;
+}
+
+.crenshaw-copy-card {
+    padding: clamp(1.25rem, 3vw, 2rem);
+}
+
+.crenshaw-process-row {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.crenshaw-process-step {
+    position: relative;
+    min-width: 0;
+}
+
+.crenshaw-process-step .noir-card {
+    display: grid;
+    min-height: 9rem;
+    align-content: start;
+    gap: 0.85rem;
+    height: 100%;
+    padding: 1.25rem;
+}
+
+.crenshaw-step-number {
+    color: var(--text-muted);
+}
+
+.crenshaw-step-arrow {
+    position: absolute;
+    top: 50%;
+    right: -0.72rem;
+    z-index: 2;
+    color: var(--text-main);
+    font-family: var(--font-mono);
+    font-size: 1.25rem;
+    line-height: 1;
+    transform: translateY(-50%);
+}
+
+.crenshaw-process-step:nth-child(3n) .crenshaw-step-arrow,
+.crenshaw-process-step:last-child .crenshaw-step-arrow {
+    display: none;
+}
+
+@media (max-width: 900px) {
+    .crenshaw-service-grid,
+    .crenshaw-process-row {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .crenshaw-process-step:nth-child(3n) .crenshaw-step-arrow {
+        display: block;
+    }
+
+    .crenshaw-process-step:nth-child(2n) .crenshaw-step-arrow,
+    .crenshaw-process-step:last-child .crenshaw-step-arrow {
+        display: none;
+    }
+}
+
+@media (max-width: 620px) {
+    .crenshaw-service-grid,
+    .crenshaw-process-row {
+        grid-template-columns: 1fr;
+    }
+
+    .crenshaw-step-arrow,
+    .crenshaw-process-step:nth-child(2n) .crenshaw-step-arrow,
+    .crenshaw-process-step:nth-child(3n) .crenshaw-step-arrow {
+        top: auto;
+        right: 50%;
+        bottom: -0.7rem;
+        display: block;
+        transform: translateX(50%) rotate(90deg);
+    }
+
+    .crenshaw-process-step:last-child .crenshaw-step-arrow {
+        display: none;
+    }
+}

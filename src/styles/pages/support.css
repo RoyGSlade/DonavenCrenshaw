@@ -1,0 +1,106 @@
+/* -------------------------------------------------------------------------
+   Support page composition
+   ------------------------------------------------------------------------- */
+
+.support-channels,
+.support-levels {
+    margin-bottom: clamp(2.5rem, 6vw, 4rem);
+}
+
+.support-channels .section-header,
+.support-levels .section-header {
+    margin-bottom: 1rem;
+}
+
+.support-channel-grid,
+.support-tier-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1.25rem;
+}
+
+.support-channel-card,
+.support-tier-card {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: clamp(1.25rem, 3vw, 2rem);
+}
+
+.support-channel-card p,
+.support-tier-card p,
+.support-channel-card h3 {
+    margin: 0;
+}
+
+.support-channel-card h3 {
+    font-size: 1.15rem;
+    text-transform: uppercase;
+}
+
+.support-channel-card p {
+    color: var(--text-soft);
+}
+
+.support-tier-card {
+    justify-content: flex-start;
+}
+
+.support-tier-list {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.support-tier-list li {
+    padding-top: 0.85rem;
+    border-top: 1px solid var(--line-hair);
+    color: var(--text-soft);
+}
+
+.support-tier-list strong {
+    display: block;
+    margin-bottom: 0.35rem;
+    color: var(--text-main);
+    font-family: var(--font-mono);
+    font-size: 0.86rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.support-boundaries {
+    max-width: 62rem;
+    margin: 1.25rem auto 0;
+    padding: 1.25rem clamp(1.25rem, 3vw, 2rem);
+}
+
+.support-boundaries p,
+.support-pledge p {
+    margin: 0;
+}
+
+.support-boundaries p {
+    color: var(--text-soft);
+}
+
+.support-pledge {
+    max-width: 40rem;
+    margin: 0 auto;
+    padding: 1.25rem clamp(1.25rem, 3vw, 2rem);
+    border-color: var(--line-bright);
+    text-align: center;
+}
+
+.support-pledge p {
+    color: var(--text-main);
+}
+
+@media (max-width: 52rem) {
+    .support-channel-grid,
+    .support-tier-grid {
+        grid-template-columns: 1fr;
+    }
+}

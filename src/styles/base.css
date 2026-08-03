@@ -1,4 +1,4 @@
-/* Accessible base layer: clear hierarchy, no decorative layer required for meaning. */
+/* Accessible base layer plus the shared noir room backdrop. */
 *,
 *::before,
 *::after {
@@ -11,6 +11,8 @@ html {
 }
 
 body {
+    position: relative;
+    isolation: isolate;
     min-width: 18rem;
     min-height: 100vh;
     margin: 0;
@@ -22,15 +24,45 @@ body {
     overflow-x: hidden;
 }
 
+body::before,
+body::after {
+    position: fixed;
+    pointer-events: none;
+    content: "";
+}
+
+body::before {
+    inset: 0;
+    z-index: var(--z-void);
+    background:
+        radial-gradient(ellipse at center, transparent 22%, rgba(0, 0, 0, 0.58) 100%),
+        radial-gradient(1200px 600px at 78% 0%, rgba(255, 255, 255, 0.05), transparent 72%),
+        repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.018) 0 1px, transparent 1px 5px),
+        repeating-conic-gradient(from 90deg at 20% 20%, transparent 0 8deg, rgba(255, 255, 255, 0.014) 8deg 9deg, transparent 9deg 22deg);
+}
+
+body::after {
+    top: 0;
+    right: 0;
+    bottom: 0;
+    z-index: var(--z-void);
+    width: 292px;
+    background: url("../assets/noir/wall-graffiti.jpg") center / cover no-repeat;
+    opacity: 0.18;
+    mix-blend-mode: screen;
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 40%);
+    mask-image: linear-gradient(90deg, transparent, #000 40%);
+}
+
 .skip-link {
     position: fixed;
     top: 0.75rem;
     left: 0.75rem;
-    z-index: 300;
+    z-index: var(--z-top);
     padding: 0.65rem 0.9rem;
-    border: 1px solid var(--tech-cyan);
+    border: 1px solid var(--line-bright);
     border-radius: var(--radius-soft);
-    background: var(--bg-panel);
+    background: var(--bg-panel-strong);
     color: var(--text-main);
     transform: translateY(-180%);
 }
@@ -41,18 +73,20 @@ body {
 
 ::selection {
     color: var(--bg-void);
-    background: var(--tech-cyan);
+    background: var(--neon);
 }
 
 a {
-    color: var(--tech-cyan);
+    color: var(--text-main);
     text-decoration-thickness: 0.08em;
+    text-decoration-color: rgba(255, 255, 255, 0.3);
     text-underline-offset: 0.18em;
-    transition: color 160ms ease, background-color 160ms ease, border-color 160ms ease;
+    transition: color 160ms ease, background-color 160ms ease, border-color 160ms ease, text-shadow 160ms ease;
 }
 
 a:hover {
-    color: var(--text-main);
+    color: var(--neon);
+    text-shadow: 0 0 12px rgba(255, 255, 255, 0.24);
 }
 
 a:focus-visible,
@@ -62,7 +96,7 @@ textarea:focus-visible,
 select:focus-visible,
 summary:focus-visible,
 [tabindex]:focus-visible {
-    outline: 3px solid var(--tech-cyan);
+    outline: 3px solid var(--neon);
     outline-offset: 3px;
 }
 
@@ -108,13 +142,14 @@ h6 {
     margin: 0;
     color: var(--text-main);
     font-family: var(--font-header);
-    font-weight: 680;
+    font-weight: 800;
     line-height: 1.14;
-    letter-spacing: -0.02em;
 }
 
 h1 {
     font-size: clamp(2.25rem, 5vw, 4.8rem);
+    text-transform: uppercase;
+    letter-spacing: -0.01em;
 }
 
 h2 {
@@ -123,6 +158,29 @@ h2 {
 
 h3 {
     font-size: clamp(1.25rem, 2vw, 1.7rem);
+}
+
+.metal-text {
+    background: var(--metal);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+@supports not (background-clip: text) {
+    .metal-text {
+        color: #d9d9dc;
+    }
+}
+
+.section-label {
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 400;
+    letter-spacing: 0.18em;
+    line-height: 1.4;
+    text-transform: uppercase;
 }
 
 .mono {

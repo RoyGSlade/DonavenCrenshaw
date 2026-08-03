@@ -133,7 +133,8 @@ for (const file of htmlFiles) {
 
 const home = fs.existsSync(routeFile('/')) ? fs.readFileSync(routeFile('/'), 'utf8') : '';
 for (const label of ['Now', 'Projects', 'underplain', 'Crenshaw Systems', 'Infinite Ages', 'Build Log', 'About', 'Contact']) {
-    if (!home.includes(`>${label}</a>`)) failures.push(`primary navigation is missing ${label}`);
+    // Nav labels may be bare (>Label</a>) or wrapped (<span class="nav-label">Label</span></a>).
+    if (!home.includes(`>${label}</a>`) && !home.includes(`>${label}</span>`)) failures.push(`primary navigation is missing ${label}`);
 }
 
 if (failures.length) {

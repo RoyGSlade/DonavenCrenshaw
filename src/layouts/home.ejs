@@ -2,12 +2,18 @@
 <html lang="en">
 <%- components.head %>
 <body class="site-shell skin-<%= page.skin %>" data-branch="<%= page.branch %>">
+    <div class="page-light light-source parallax" aria-hidden="true"></div>
     <a class="skip-link" href="#main-content">Skip to main content</a>
     <%- components.nav %>
     <div class="content-wrapper">
-        <main id="main-content" tabindex="-1"><%- content %></main>
+        <main id="main-content" tabindex="-1">
+            <% if (frontmatter.hero_title) { %><%- include('hero', { frontmatter }) %><% } %>
+            <%- content %>
+        </main>
         <%- components.footer %>
     </div>
     <script src="<%= siteRoot %>scripts/script.js"></script>
+    <script src="<%= siteRoot %>scripts/light-engine.js"></script>
+    <script src="<%= siteRoot %>scripts/smoke.js"></script>
 </body>
 </html>

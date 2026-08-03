@@ -1,0 +1,135 @@
+/* About page noir composition. Shared card and typography contracts live in
+   components.css; these rules only arrange this page's founder and mission. */
+.about-page {
+    display: grid;
+    gap: clamp(3rem, 7vw, 6rem);
+}
+
+.about-intro {
+    display: grid;
+    grid-template-columns: minmax(16rem, 0.84fr) minmax(0, 1.16fr);
+    gap: 1rem;
+    align-items: stretch;
+}
+
+.about-founder,
+.about-mission {
+    min-width: 0;
+    padding: clamp(1.25rem, 3vw, 2rem);
+}
+
+.about-founder {
+    display: grid;
+    grid-template-columns: minmax(8rem, 0.68fr) minmax(0, 1.32fr);
+    gap: clamp(1rem, 3vw, 2rem);
+    align-items: center;
+}
+
+.about-portrait {
+    position: relative;
+    display: grid;
+    min-height: 12rem;
+    place-items: center;
+    overflow: hidden;
+    border: 1px solid var(--line-hair);
+    border-radius: var(--radius-soft);
+    background: radial-gradient(circle at 50% 35%, rgba(255, 255, 255, 0.1), transparent 45%), var(--noir-1);
+}
+
+.about-portrait::before {
+    position: absolute;
+    inset: 12%;
+    border-radius: 50%;
+    content: "";
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.14), transparent 66%);
+    filter: blur(1px);
+}
+
+.about-portrait-ring {
+    position: absolute;
+    width: 7.25rem;
+    height: 7.25rem;
+    border: 1px solid rgba(255, 255, 255, 0.72);
+    border-radius: 50%;
+    box-shadow: 0 0 16px rgba(255, 255, 255, 0.38), 0 0 34px rgba(255, 255, 255, 0.14);
+}
+
+.about-portrait-silhouette {
+    position: relative;
+    width: 5.25rem;
+    height: 7.25rem;
+    border-radius: 48% 48% 34% 34%;
+    background: radial-gradient(circle at 50% 24%, #25252a 0 19%, transparent 20%), radial-gradient(ellipse at 50% 82%, #16161a 0 42%, transparent 43%), #0a0a0c;
+    box-shadow: 0 0 22px rgba(0, 0, 0, 0.9);
+}
+
+.about-founder-copy {
+    min-width: 0;
+}
+
+.about-founder-copy .section-label,
+.about-mission > .section-label {
+    margin-bottom: 0.65rem;
+}
+
+.about-founder-copy h2 {
+    margin-bottom: 1rem;
+    font-size: clamp(1.45rem, 3vw, 2.35rem);
+}
+
+.about-founder-copy p:last-child,
+.about-mission .reading-text p:last-child {
+    margin-bottom: 0;
+}
+
+.about-mission {
+    align-content: center;
+}
+
+.about-mission .reading-text {
+    max-width: none;
+}
+
+.about-principles {
+    margin-bottom: 0;
+}
+
+.about-principles .section-header {
+    margin-bottom: 1.35rem;
+}
+
+.about-principles .section-title {
+    margin-top: 0.45rem;
+}
+
+.about-principles .stat-tile {
+    align-content: start;
+    min-height: 100%;
+}
+
+.about-principles .stat-number {
+    font-size: clamp(1.15rem, 1.8vw, 1.55rem);
+    line-height: 1.2;
+    text-transform: uppercase;
+}
+
+.about-principles .stat-tile p {
+    margin: 0;
+    color: var(--text-soft);
+}
+
+@media (max-width: 60rem) {
+    .about-intro {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 36rem) {
+    .about-founder {
+        grid-template-columns: 1fr;
+    }
+
+    .about-portrait {
+        min-height: 10rem;
+    }
+}

@@ -1,10 +1,11 @@
 <header class="site-header">
     <nav class="site-nav" aria-label="Primary navigation">
         <div class="nav-shell">
-            <a class="nav-brand" href="<%= siteLink('') %>" data-route="home" aria-label="<%= site.name %> home">
+            <div class="nav-light light-source" aria-hidden="true"></div>
+            <a class="nav-brand noir-card lit-edge" href="<%= siteLink('') %>" data-route="home" aria-label="<%= site.name %> home">
                 <span class="nav-sigil" aria-hidden="true"></span>
                 <span class="nav-brand-copy">
-                    <span class="nav-brand-title"><%= site.name %></span>
+                    <span class="nav-brand-title">DONAVEN CRENSHAW</span>
                     <span class="nav-brand-sub mono">SOFTWARE · SYSTEMS · CREATION</span>
                 </span>
             </a>
@@ -12,19 +13,19 @@
             <button class="nav-toggle" type="button" aria-label="Open navigation" aria-controls="nav-links-list" aria-expanded="false">&#9776;</button>
 
             <ul class="nav-links" id="nav-links-list">
-                <li><a href="<%= siteLink('now') %>" data-route="now">Now</a></li>
-                <li><a href="<%= siteLink('projects') %>" data-route="projects">Projects</a></li>
-                <li><a href="<%= siteLink('underplain') %>" data-route="underplain">underplain</a></li>
-                <li><a href="<%= siteLink('crenshaw-systems') %>" data-route="crenshaw-systems">Crenshaw Systems</a></li>
-                <li><a href="<%= siteLink('infinite-ages') %>" data-route="infinite-ages">Infinite Ages</a></li>
-                <li><a href="<%= siteLink('build-log') %>" data-route="build-log">Build Log</a></li>
-                <li><a href="<%= siteLink('about') %>" data-route="about">About</a></li>
-                <li><a href="<%= siteLink('contact') %>" data-route="contact">Contact</a></li>
+                <li><a href="<%= siteLink('now') %>" data-route="now"><svg aria-hidden="true" viewBox="0 0 16 16"><path d="m2 7 6-5 6 5v6H9v-3H7v3H2Z"/></svg><span class="nav-label">Now</span></a></li>
+                <li><a href="<%= siteLink('projects') %>" data-route="projects"><svg aria-hidden="true" viewBox="0 0 16 16"><path d="M1.5 4.5h4l1.4 1.7h7.6v6.9H1.5z"/></svg><span class="nav-label">Projects</span></a></li>
+                <li><a href="<%= siteLink('underplain') %>" data-route="underplain"><svg aria-hidden="true" viewBox="0 0 16 16"><path d="m5.5 3-3 5 3 5M10.5 3l3 5-3 5M9 2.5 7 13.5"/></svg><span class="nav-label">underplain</span></a></li>
+                <li><a href="<%= siteLink('crenshaw-systems') %>" data-route="crenshaw-systems"><svg aria-hidden="true" viewBox="0 0 16 16"><path d="m8 1.5 5.5 3.1v6.8L8 14.5l-5.5-3.1V4.6zM2.5 4.6 8 7.8l5.5-3.2M8 7.8v6.7"/></svg><span class="nav-label">Crenshaw Systems</span></a></li>
+                <li><a href="<%= siteLink('infinite-ages') %>" data-route="infinite-ages"><svg aria-hidden="true" viewBox="0 0 16 16"><path d="M8 8c-1.5-3.4-4-4.4-5.4-2.7-1.5 1.8.1 5 2.8 5 1.4 0 2.5-1 2.6-2.3M8 8c1.5 3.4 4 4.4 5.4 2.7 1.5-1.8-.1-5-2.8-5-1.4 0-2.5 1-2.6 2.3"/></svg><span class="nav-label">Infinite Ages</span></a></li>
+                <li><a href="<%= siteLink('build-log') %>" data-route="build-log"><svg aria-hidden="true" viewBox="0 0 16 16"><path d="M1.5 12.5 5 8.8l2.6 1.8 5.4-6.1M10.5 4.5H13v2.7"/></svg><span class="nav-label">Build Log</span></a></li>
+                <li><a href="<%= siteLink('about') %>" data-route="about"><svg aria-hidden="true" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.3"/><path d="M8 7.1v4M8 4.7v.2"/></svg><span class="nav-label">About</span></a></li>
+                <li><a href="<%= siteLink('contact') %>" data-route="contact"><svg aria-hidden="true" viewBox="0 0 16 16"><rect x="1.5" y="3" width="13" height="10" rx="1"/><path d="m2 4 6 4.3L14 4"/></svg><span class="nav-label">Contact</span></a></li>
             </ul>
 
             <div class="nav-footer">
-                <a class="nav-support-link mono" href="<%= siteLink('support') %>">Support</a>
-                <% if (site.social && site.social.github) { %><a class="nav-social-link mono" href="<%= site.social.github %>" target="_blank" rel="noopener noreferrer">GitHub</a><% } %>
+                <a class="nav-support-link mono" href="<%= siteLink('support') %>"><svg aria-hidden="true" viewBox="0 0 16 16"><circle cx="6" cy="5" r="2.2"/><circle cx="11.5" cy="6" r="1.6"/><path d="M1.8 12.8c.4-2.1 1.8-3.2 4.2-3.2s3.8 1.1 4.2 3.2M10 10c2.4-.2 3.8.7 4.2 2.8"/></svg><span>Support</span></a>
+                <% if (site.social && site.social.github) { %><a class="nav-social-link mono" href="<%= site.social.github %>" target="_blank" rel="noopener noreferrer"><svg aria-hidden="true" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.3"/><path d="M5.5 12V9.3c-1.7-.4-2.1-3.2-.8-4.1 1.4-1 2.7-.5 3.3-.1.6-.4 1.9-.9 3.3.1 1.3.9.9 3.7-.8 4.1V12M5 10.4c.6.4 1.3.5 2 .5h2c.7 0 1.4-.1 2-.5"/></svg><span>GitHub</span></a><% } %>
             </div>
         </div>
     </nav>

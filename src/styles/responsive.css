@@ -1,52 +1,141 @@
-/* Mobile-first breakpoints: phone, tablet, laptop, desktop. */
+/* The shell becomes a compact top bar and a full-width drawer below 960px. */
 .nav-toggle {
     display: none;
     width: 2.75rem;
     height: 2.75rem;
     align-items: center;
     justify-content: center;
-    border: 1px solid var(--stone-light);
-    border-radius: 50%;
-    background: transparent;
+    border: 1px solid var(--line-bright);
+    border-radius: var(--radius-soft);
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--text-main);
     cursor: pointer;
 }
 
-@media (max-width: 72rem) {
-    body {
-        display: block;
-    }
-
+@media (max-width: 59.99rem) {
+    .site-header,
     .site-nav {
+        position: relative;
+        inset: auto;
         width: 100%;
         height: auto;
     }
 
-    .nav-shell {
-        height: auto;
+    .site-nav .nav-shell {
         min-height: 4.5rem;
+        height: auto;
         flex-direction: row;
         align-items: center;
+        gap: 0.75rem;
+        overflow: visible;
+        padding: 0.7rem clamp(0.85rem, 3vw, 1.5rem);
         border-right: 0;
-        border-bottom: 1px solid var(--stone-dark);
+        border-bottom: 1px solid var(--line-bright);
     }
 
-    .nav-brand {
-        flex: 1;
+    .site-nav .nav-shell::after {
+        inset: auto 0 0;
+        width: auto;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.34), transparent);
+    }
+
+    .site-nav .nav-light {
+        display: none;
+    }
+
+    .site-nav .nav-brand {
+        display: flex;
         min-width: 0;
+        flex: 1;
+        align-items: center;
+        justify-items: initial;
+        gap: 0.7rem;
+        padding: 0.35rem 0.5rem;
+        border: 0;
+        border-top: 0;
+        background: transparent;
+        box-shadow: none;
     }
 
-    .nav-links {
+    .site-nav .nav-sigil {
+        width: 2.55rem;
+        height: 2.55rem;
+        flex: 0 0 auto;
+        border-width: 2px;
+    }
+
+    .site-nav .nav-sigil::after {
+        inset: 0.42rem;
+    }
+
+    .site-nav .nav-brand-copy {
+        min-width: 0;
+        justify-items: start;
+        text-align: left;
+    }
+
+    .site-nav .nav-brand-title {
+        overflow: hidden;
+        font-size: clamp(0.7rem, 2.3vw, 0.84rem);
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .site-nav .nav-brand-sub {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .nav-toggle {
+        display: inline-flex;
+        flex: 0 0 auto;
+    }
+
+    .site-nav .nav-links {
+        position: absolute;
+        top: 100%;
+        right: 0;
+        left: 0;
+        z-index: var(--z-nav);
+        display: none;
+        width: 100%;
+        max-height: calc(100vh - 4.5rem);
+        gap: 0.2rem;
+        overflow-y: auto;
+        padding: 0.75rem clamp(0.85rem, 3vw, 1.5rem) 1rem;
+        border-right: 1px solid var(--line-hair);
+        border-bottom: 1px solid var(--line-bright);
+        background: var(--noir-2);
+        box-shadow: var(--shadow-high);
+    }
+
+    .site-nav .nav-shell.nav-open .nav-links {
         display: grid;
-        width: min(100%, 42rem);
-        grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 
-    .nav-footer {
+    .site-nav .nav-links a {
+        min-height: 2.8rem;
+        padding-inline: 0.75rem;
+    }
+
+    .site-nav .nav-footer {
         display: none;
     }
 
     .content-wrapper {
         min-height: auto;
+        margin-left: 0;
+    }
+
+    .page-light {
+        width: min(42rem, 125vw);
+        opacity: 0.38;
+    }
+
+    main {
+        padding-top: 1.75rem;
     }
 
     .roadmap-shell {
@@ -65,20 +154,11 @@
 
     .dossier-sidebar {
         border-right: 0;
-        border-bottom: 1px solid var(--stone-dark);
+        border-bottom: 1px solid var(--line-hair);
     }
 }
 
 @media (max-width: 56rem) {
-    .nav-shell {
-        flex-wrap: wrap;
-    }
-
-    .nav-links {
-        width: 100%;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
     .section-header,
     .split-panel,
     .bf-roadmap-cols {
@@ -90,13 +170,11 @@
     }
 
     .footer-content {
+        align-items: flex-start;
         flex-direction: column;
     }
 
-    .log-entry {
-        grid-template-columns: 1fr;
-    }
-
+    .log-entry,
     .bf-spotlight {
         grid-template-columns: 1fr;
     }
@@ -116,36 +194,30 @@
         padding-top: 1.25rem;
     }
 
-    .nav-shell {
-        padding: 0.7rem 0.85rem;
+    .site-nav .nav-shell {
+        padding-inline: 0.6rem;
     }
 
-    .js .nav-toggle {
-        display: inline-flex;
+    .site-nav .nav-brand {
+        gap: 0.55rem;
     }
 
-    .nav-links {
-        display: grid;
-        grid-template-columns: 1fr;
-        width: 100%;
+    .site-nav .nav-sigil {
+        width: 2.25rem;
+        height: 2.25rem;
     }
 
-    .js .nav-links {
-        display: none;
+    .site-nav .nav-brand-sub {
+        font-size: 0.5rem;
     }
 
-    .js .nav-shell.nav-open .nav-links {
-        display: grid;
+    .nav-toggle {
+        width: 2.5rem;
+        height: 2.5rem;
     }
 
-    .nav-links a {
-        min-height: 2.75rem;
-    }
-
-    .nav-brand-sub {
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+    .container {
+        padding-inline: 1rem;
     }
 
     .hero h1 {
@@ -178,7 +250,7 @@
 
     .bf-hw-row span::before {
         content: attr(data-label) ": ";
-        color: var(--accent-gold);
+        color: var(--text-main);
         font-family: var(--font-mono);
         font-size: 0.72rem;
     }

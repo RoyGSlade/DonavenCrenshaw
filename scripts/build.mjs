@@ -186,7 +186,7 @@ async function initPublicDir() {
     await copyIfPresent(path.join(SRC_DIR, 'styles'), path.join(PUBLIC_DIR, 'styles'));
     if (fs.existsSync(path.join(ROOT_DIR, 'scripts'))) {
         await fs.ensureDir(path.join(PUBLIC_DIR, 'scripts'));
-        for (const filename of ['script.js']) {
+        for (const filename of ['script.js', 'smoke.js', 'light-engine.js']) {
             await copyIfPresent(path.join(ROOT_DIR, 'scripts', filename), path.join(PUBLIC_DIR, 'scripts', filename));
         }
     }

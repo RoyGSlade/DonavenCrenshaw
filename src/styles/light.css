@@ -1,0 +1,163 @@
+/* The light source lives below page content so occluders can hide its centre. */
+.light-source {
+    position: absolute;
+    z-index: var(--z-light, 1);
+    width: min(56rem, 80vw);
+    aspect-ratio: 1;
+    border-radius: 50%;
+    pointer-events: none;
+    background: radial-gradient(
+        closest-side,
+        rgba(255, 255, 255, var(--glow-a, 0.55)),
+        transparent 70%
+    );
+    filter: blur(8px);
+    opacity: var(--light-opacity, 1);
+    transform: translate3d(
+        calc(-50% + var(--parallax-x, 0px)),
+        calc(-50% + var(--parallax-y, 0px)),
+        0
+    );
+}
+
+.shadow-caster {
+    position: relative;
+    z-index: var(--z-occluder, 2);
+}
+
+/* Directional shadows: custom properties inherit ALREADY-substituted, so the
+   :root shadow tokens can never see a per-element --shadow-dx. Re-declaring
+   the tokens here, on the driven elements themselves, makes substitution
+   happen per element — any rule that says box-shadow: var(--shadow-low)
+   then becomes light-driven for free, whatever its specificity. */
+.shadow-caster,
+.noir-card,
+.stat-tile {
+    --shadow-low: calc(var(--shadow-dx, 0px)) calc(var(--shadow-dy, 8px)) 24px rgba(0, 0, 0, 0.5);
+    --shadow-high: calc(var(--shadow-dx, 0px) * 1.8) calc(var(--shadow-dy, 8px) * 2.2) 64px rgba(0, 0, 0, 0.65);
+}
+
+.shadow-caster {
+    box-shadow: var(--shadow-low);
+}
+
+.lit-edge {
+    border-top: 1px solid rgba(255, 255, 255, var(--edge-a, 0.22));
+    background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent 30%);
+}
+
+@property --hot {
+    syntax: "<percentage>";
+    inherits: false;
+    initial-value: 30%;
+}
+
+.divider-lit {
+    display: block;
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.7) var(--hot, 30%),
+        transparent
+    );
+    animation: divider-hotspot 8s ease-in-out infinite;
+}
+
+.sheen {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+}
+
+.sheen::after {
+    position: absolute;
+    z-index: 1;
+    inset: -75% auto -75% -40%;
+    width: 22%;
+    content: "";
+    pointer-events: none;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.55) 48%,
+        transparent
+    );
+    opacity: 0;
+    transform: skewX(-18deg) translateX(-250%);
+    animation: sheen-sweep 9s ease-in-out infinite;
+}
+
+.sheen:hover::after,
+.sheen:focus-visible::after {
+    animation: sheen-sweep-hover 1.15s ease-out 1;
+}
+
+.glow-pulse {
+    animation: glow-pulse 6s ease-in-out infinite;
+}
+
+@keyframes divider-hotspot {
+    0%,
+    100% {
+        --hot: 26%;
+    }
+
+    50% {
+        --hot: 74%;
+    }
+}
+
+@keyframes sheen-sweep {
+    0%,
+    72%,
+    100% {
+        opacity: 0;
+        transform: skewX(-18deg) translateX(-250%);
+    }
+
+    82% {
+        opacity: 0.8;
+    }
+
+    94% {
+        opacity: 0;
+        transform: skewX(-18deg) translateX(720%);
+    }
+}
+
+@keyframes sheen-sweep-hover {
+    0% {
+        opacity: 0;
+        transform: skewX(-18deg) translateX(-250%);
+    }
+
+    20% {
+        opacity: 0.8;
+    }
+
+    100% {
+        opacity: 0;
+        transform: skewX(-18deg) translateX(720%);
+    }
+}
+
+@keyframes glow-pulse {
+    0%,
+    100% {
+        opacity: 0.85;
+    }
+
+    50% {
+        opacity: 1;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .divider-lit,
+    .glow-pulse,
+    .sheen::after {
+        animation: none !important;
+    }
+}

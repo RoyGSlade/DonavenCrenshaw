@@ -1,0 +1,83 @@
+/* Infinite Ages page composition. Shared noir cards and controls do the visual work. */
+.ages-page {
+    width: 100%;
+}
+
+.ages-intro-card,
+.ages-limits-card {
+    padding: clamp(1.25rem, 3vw, 2rem);
+}
+
+.ages-download-card {
+    display: grid;
+    grid-template-columns: minmax(8rem, 0.3fr) minmax(0, 1fr);
+    gap: clamp(1.25rem, 4vw, 3rem);
+    align-items: center;
+    padding: clamp(1.25rem, 3vw, 2rem);
+}
+
+.ages-download-status {
+    display: grid;
+    gap: 0.45rem;
+}
+
+.ages-download-status .section-label {
+    margin: 0;
+}
+
+.ages-status {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: clamp(1.35rem, 3vw, 2rem);
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.ages-download-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.ages-limits-card {
+    display: grid;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.ages-limits-card p {
+    margin: 0;
+}
+
+.ages-expansion-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+    gap: 1rem;
+}
+
+.ages-expansion-card {
+    display: grid;
+    min-height: 12rem;
+    align-content: start;
+    gap: 1rem;
+    padding: 1.25rem;
+}
+
+.ages-expansion-card h3 {
+    margin: 0;
+    color: var(--text-main);
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    text-transform: uppercase;
+}
+
+@media (max-width: 640px) {
+    .ages-download-card {
+        grid-template-columns: 1fr;
+    }
+
+    .ages-download-links,
+    .ages-download-links .btn-noir {
+        width: 100%;
+    }
+}

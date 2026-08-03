@@ -676,3 +676,505 @@ textarea {
 .folder-tag {
     color: var(--text-muted);
 }
+
+/* -------------------------------------------------------------------------
+   Noir component contract
+   ------------------------------------------------------------------------- */
+
+/* Glass surfaces are occluders in the light system: their shadows fall away
+   from the computed key-light vector when light-engine.js supplies the vars. */
+.noir-card {
+    position: relative;
+    z-index: var(--z-occluder, 2);
+    overflow: hidden;
+    border: 1px solid var(--line-hair);
+    border-top: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: var(--radius-cut);
+    background-color: var(--bg-panel);
+    background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent 30%);
+    box-shadow: var(--shadow-low);
+    box-shadow: calc(var(--shadow-dx, 0px)) calc(var(--shadow-dy, 8px)) 28px rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(6px);
+}
+
+.noir-card--lit::after {
+    position: absolute;
+    right: 20%;
+    bottom: 0;
+    left: 20%;
+    height: 1px;
+    content: "";
+    pointer-events: none;
+    background: linear-gradient(90deg, transparent, #fff 50%, transparent);
+    box-shadow: 0 0 12px rgba(255, 255, 255, 0.5);
+    filter: blur(0.4px);
+}
+
+.stat-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.stat-tile {
+    display: grid;
+    min-width: 0;
+    gap: 0.7rem;
+    padding: 1.25rem;
+}
+
+.stat-number {
+    color: var(--text-main);
+    font-family: var(--font-mono);
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.stat-number.metal-text {
+    color: transparent;
+}
+
+.stat-tile > .mono,
+.stat-tile > .section-label {
+    margin: 0;
+    color: var(--text-muted);
+}
+
+.icon-ring {
+    position: relative;
+    display: inline-grid;
+    width: 56px;
+    height: 56px;
+    place-items: center;
+    flex: 0 0 auto;
+    border: 1px solid var(--line-bright);
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.12), transparent 68%);
+    color: var(--text-main);
+}
+
+.icon-ring::after {
+    position: absolute;
+    inset: 4px;
+    border: 1px solid var(--line-hair);
+    border-radius: inherit;
+    content: "";
+    pointer-events: none;
+}
+
+.icon-ring svg {
+    position: relative;
+    z-index: 1;
+    width: 1.45rem;
+    height: 1.45rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.5;
+}
+
+.icon-ring:hover,
+.icon-ring:focus-within {
+    border-color: var(--neon);
+    box-shadow: 0 0 16px rgba(255, 255, 255, 0.24);
+}
+
+.progress-bar {
+    position: relative;
+    display: block;
+    width: 100%;
+    height: 4px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.progress-bar::before {
+    display: block;
+    width: clamp(0%, var(--p, 0%), 100%);
+    height: 100%;
+    content: "";
+    border-radius: inherit;
+    background: linear-gradient(90deg, #8e8e94, #fff);
+    box-shadow: 0 0 12px rgba(255, 255, 255, 0.5);
+}
+
+.data-table {
+    width: 100%;
+    min-width: 38rem;
+    border-collapse: collapse;
+    color: var(--text-soft);
+}
+
+.data-table th,
+.data-table td {
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid var(--line-hair);
+    text-align: left;
+    vertical-align: top;
+}
+
+.data-table th {
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 400;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.data-table tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.data-table td:first-child {
+    color: var(--text-main);
+    font-weight: 700;
+}
+
+.data-table-wrap,
+.noir-card:has(> .data-table) {
+    overflow-x: auto;
+}
+
+.tag-chip {
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    padding: 0.2rem 0.6rem;
+    border: 1px solid var(--line-hair);
+    border-radius: 6px;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    line-height: 1.4;
+    text-transform: uppercase;
+}
+
+.timeline {
+    position: relative;
+    display: grid;
+    gap: 1.25rem;
+    padding-left: 1.75rem;
+}
+
+.timeline::before {
+    position: absolute;
+    top: 0.25rem;
+    bottom: 0.25rem;
+    left: 0.42rem;
+    width: 1px;
+    content: "";
+    background: var(--line-bright);
+}
+
+.timeline-item,
+.timeline-entry {
+    position: relative;
+}
+
+.timeline-item::before,
+.timeline-entry::before,
+.timeline-node {
+    position: absolute;
+    top: 1.25rem;
+    left: -1.75rem;
+    width: 0.65rem;
+    height: 0.65rem;
+    border: 1px solid var(--line-bright);
+    border-radius: 50%;
+    background: var(--noir-1);
+    content: "";
+}
+
+.timeline-item.is-current::before,
+.timeline-entry.is-current::before,
+.timeline-node.is-current {
+    border-color: var(--neon);
+    background: var(--neon);
+    box-shadow: 0 0 12px rgba(255, 255, 255, 0.65);
+}
+
+.timeline .noir-card {
+    padding: 1.1rem 1.25rem;
+}
+
+.btn-noir,
+.btn,
+.btn-primary {
+    display: inline-flex;
+    min-height: 2.75rem;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.7rem 1.4rem;
+    border: 1px solid var(--line-hair);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text-main);
+    cursor: pointer;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    line-height: 1.3;
+    text-align: center;
+    text-decoration: none;
+    text-transform: uppercase;
+}
+
+.btn-noir.sheen,
+.btn.sheen,
+.btn-primary.sheen {
+    overflow: hidden;
+}
+
+.btn-noir:hover,
+.btn-noir:focus-visible,
+.btn:hover,
+.btn:focus-visible,
+.btn-primary:hover,
+.btn-primary:focus-visible {
+    border-color: var(--line-bright);
+    background: var(--bg-panel);
+    color: var(--neon);
+    box-shadow: 0 0 16px rgba(255, 255, 255, 0.12);
+}
+
+.btn-noir--solid,
+.btn-primary {
+    border-color: var(--line-bright);
+    background: var(--noir-3);
+}
+
+.btn-noir--solid:hover,
+.btn-noir--solid:focus-visible,
+.btn-primary:hover,
+.btn-primary:focus-visible {
+    background: var(--noir-2);
+}
+
+.btn:disabled,
+.btn-noir:disabled,
+.btn-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.quote-block {
+    position: relative;
+    margin: 2rem auto;
+    padding: 2.5rem 1.5rem 1.5rem;
+    border-block: 1px solid var(--line-hair);
+    color: var(--text-main);
+    text-align: center;
+}
+
+.quote-block::before {
+    position: absolute;
+    top: 0.4rem;
+    left: 50%;
+    color: var(--text-main);
+    content: "\201C";
+    font-family: Georgia, serif;
+    font-size: 4rem;
+    line-height: 1;
+    transform: translateX(-50%);
+}
+
+.quote-block blockquote,
+.quote-block p {
+    margin: 0;
+    color: inherit;
+}
+
+.quote-block figcaption,
+.quote-block cite {
+    display: block;
+    margin-top: 1rem;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+/* Existing content remains valid, but all legacy surfaces now read as glass
+   panels on the same dark room. */
+.project-card,
+.manifesto-point,
+.funding-card,
+.patron-card,
+.queue-item,
+.plan-card,
+.scope-card,
+.kb-card,
+.chronicle-manifesto,
+.boxed-note,
+.trust-anchor-list li,
+.bf-download-panel,
+.bf-spotlight,
+.bf-media-item,
+.directory-tile,
+.log-entry,
+.ledger-note,
+.video-frame,
+.bf-hw-table {
+    border-color: var(--line-hair);
+    border-top-color: var(--line-bright);
+    background-color: var(--bg-panel);
+    background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 32%);
+    box-shadow: var(--shadow-low);
+}
+
+.project-card:hover,
+.project-card:focus-visible,
+.project-card:focus-within,
+.queue-item:hover,
+.queue-item:focus-within {
+    border-color: var(--line-bright);
+    box-shadow: 0 0 18px rgba(255, 255, 255, 0.1), var(--shadow-low);
+}
+
+.manifesto-grid,
+.home-explore-grid,
+.project-grid,
+.support-grid,
+#immortals-grid {
+    gap: 1.25rem;
+}
+
+.manifesto-point h3,
+.manifesto-point h4,
+.chronicle-manifesto h3,
+.panel-header,
+.sidebar-title,
+.kb-col-header {
+    color: var(--text-main);
+}
+
+.project-status,
+.project-status-plain,
+.status-chip,
+.state-tag,
+.folder-tag,
+.tag,
+.tags {
+    color: var(--text-muted);
+}
+
+.section-block,
+.section-stack,
+.page-main-section {
+    position: relative;
+}
+
+.section-title,
+.project-title {
+    color: var(--text-main);
+}
+
+.section-desc,
+.section-intro,
+.tagline,
+.reading-text,
+.page-meta {
+    color: var(--text-soft);
+}
+
+.hero-actions,
+.bf-download-actions,
+.sort-row {
+    gap: 0.75rem;
+}
+
+.nav-shell,
+.dossier-sidebar,
+footer {
+    background-color: var(--bg-rift);
+    background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.025), transparent 32%);
+}
+
+.site-nav {
+    z-index: var(--z-nav, 50);
+}
+
+.nav-brand,
+.nav-links a:hover,
+.nav-links a.is-active {
+    border-color: var(--line-hair);
+    background-color: var(--bg-panel);
+}
+
+.nav-links a:hover,
+.nav-links a.is-active,
+.nav-footer a:hover,
+.nav-footer a:focus-visible,
+.footer-links a:hover,
+.footer-links a:focus-visible {
+    color: var(--neon);
+}
+
+.footer-links a,
+.close-btn,
+.sort-toggle,
+.carousel-nav-btn {
+    border-color: var(--line-hair);
+    background: transparent;
+}
+
+.overlay {
+    z-index: var(--z-top, 100);
+}
+
+.dossier {
+    border-color: var(--line-bright);
+    background-color: var(--noir-2);
+    background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 30%);
+}
+
+.d-stat-row,
+.verify-steps,
+.section-header,
+.page-meta,
+.panel-header,
+.bf-checksum {
+    border-color: var(--line-hair);
+}
+
+label {
+    color: var(--text-main);
+}
+
+input,
+textarea,
+select {
+    border: 1px solid var(--line-hair);
+    border-radius: 8px;
+    background: var(--noir-1);
+    color: var(--text-main);
+    caret-color: var(--neon);
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+    border-color: var(--line-bright);
+    outline: 0;
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1), 0 0 16px rgba(255, 255, 255, 0.1);
+}
+
+::placeholder {
+    color: var(--text-secondary);
+}
+
+@media (max-width: 40rem) {
+    .stat-row {
+        grid-template-columns: 1fr;
+    }
+
+    .data-table {
+        min-width: 34rem;
+    }
+}

@@ -1,0 +1,95 @@
+/* Home page noir composition. Shared surfaces and controls live in components.css. */
+.home-page-content {
+    display: grid;
+    gap: clamp(3rem, 7vw, 6rem);
+}
+
+.home-page-content .section-block {
+    margin-bottom: 0;
+}
+
+.home-page-content .section-header {
+    margin-bottom: 1.35rem;
+}
+
+.home-page-content .section-title.section-label {
+    max-width: none;
+    color: var(--text-main);
+    font-family: var(--font-mono);
+    font-size: clamp(0.78rem, 1.4vw, 0.95rem);
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    line-height: 1.4;
+}
+
+.home-page-content .section-desc {
+    max-width: 64ch;
+}
+
+.home-page-content .noir-card.section-desc {
+    margin-top: 1.25rem;
+    padding: 1rem 1.25rem;
+}
+
+.home-page-content .noir-card.section-desc {
+    color: var(--text-soft);
+}
+
+.home-page-content .stat-tile {
+    align-content: start;
+}
+
+.home-page-content .stat-tile .icon-ring {
+    margin-bottom: 0.35rem;
+}
+
+.home-page-content .stat-tile .stat-number {
+    margin: 0;
+    font-size: clamp(1.35rem, 2vw, 1.75rem);
+    line-height: 1.15;
+    text-transform: uppercase;
+}
+
+.home-page-content .stat-tile > p {
+    margin: 0;
+    color: var(--text-soft);
+}
+
+.home-page-content .reading-text.noir-card {
+    padding: clamp(1.25rem, 3vw, 2rem);
+}
+
+.home-page-content .project-card {
+    min-height: 16rem;
+}
+
+.home-page-content .manifesto-point {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+}
+
+.home-page-content .manifesto-point .icon-ring {
+    align-self: flex-start;
+}
+
+.home-page-content .manifesto-point h3,
+.home-page-content .manifesto-point p {
+    margin: 0;
+}
+
+.home-page-content .manifesto-point .hero-link {
+    margin-top: auto;
+    padding-top: 0.5rem;
+}
+
+@media (max-width: 48rem) {
+    .home-page-content .section-header {
+        grid-template-columns: 1fr;
+        align-items: start;
+    }
+
+    .home-page-content .section-subtitle {
+        justify-self: start;
+    }
+}

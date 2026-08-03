@@ -1,0 +1,122 @@
+/* Build Log page noir composition. Shared cards and timeline primitives live in
+   components.css; this file only sets the page's editorial geometry. */
+.buildlog-layout {
+    display: grid;
+    gap: clamp(2rem, 5vw, 4rem);
+}
+
+.buildlog-main {
+    min-width: 0;
+}
+
+.buildlog-current {
+    margin: 0;
+    padding: clamp(1.25rem, 3vw, 2.5rem);
+}
+
+.buildlog-current-meta {
+    display: grid;
+    grid-template-columns: minmax(9rem, auto) minmax(0, 1fr) auto;
+    gap: 1rem clamp(1rem, 3vw, 2.5rem);
+    align-items: end;
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid var(--line-hair);
+}
+
+.buildlog-date {
+    color: var(--text-main);
+    font-size: clamp(2rem, 5vw, 4.8rem);
+    font-weight: 700;
+    letter-spacing: -0.08em;
+    line-height: 0.95;
+}
+
+.buildlog-current-meta h2,
+.buildlog-current-meta p,
+.buildlog-current-meta .section-subtitle {
+    margin: 0;
+}
+
+.buildlog-current-meta h2 {
+    color: var(--text-main);
+}
+
+.buildlog-current-meta .section-desc {
+    margin-top: 0.6rem;
+}
+
+.buildlog-current-meta .section-subtitle {
+    justify-self: end;
+    color: var(--text-muted);
+}
+
+.buildlog-entry-copy {
+    max-width: 70ch;
+    padding-top: 1.25rem;
+}
+
+.buildlog-entry-copy p {
+    margin: 0;
+}
+
+.buildlog-entry-copy p + p {
+    margin-top: 1rem;
+}
+
+.buildlog-history {
+    margin: clamp(2rem, 5vw, 4rem) 0 0;
+}
+
+.buildlog-history-header {
+    margin-bottom: 1.25rem;
+}
+
+.buildlog-history-header h2,
+.buildlog-history-header p {
+    margin: 0;
+}
+
+.buildlog-history-header h2 {
+    color: var(--text-main);
+}
+
+.buildlog-history .timeline {
+    max-width: 70ch;
+}
+
+.buildlog-history .timeline-entry {
+    padding: 1.1rem 1.25rem;
+}
+
+.buildlog-history .timeline-entry .reading-text {
+    margin: 0;
+}
+
+@media (min-width: 68.75rem) {
+    .buildlog-layout:has(.buildlog-rail) {
+        grid-template-columns: minmax(0, 1fr) minmax(15rem, 21rem);
+        align-items: start;
+    }
+}
+
+@media (max-width: 54rem) {
+    .buildlog-current-meta {
+        grid-template-columns: minmax(7rem, auto) minmax(0, 1fr);
+        align-items: start;
+    }
+
+    .buildlog-current-meta .section-subtitle {
+        grid-column: 2;
+        justify-self: start;
+    }
+}
+
+@media (max-width: 36rem) {
+    .buildlog-current-meta {
+        grid-template-columns: 1fr;
+    }
+
+    .buildlog-current-meta .section-subtitle {
+        grid-column: auto;
+    }
+}

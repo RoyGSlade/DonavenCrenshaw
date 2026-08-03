@@ -1,18 +1,231 @@
-/* Shared layout geometry. Components decide their surface; layouts decide flow. */
+/* Noir shell geometry and chrome. The sidebar is an occluder; page light stays behind it. */
 body {
+    display: block;
+}
+
+.site-header,
+.site-nav {
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: var(--nav-width);
+    height: 100vh;
+    z-index: var(--z-nav);
+}
+
+.site-nav .nav-shell {
+    position: relative;
+    display: flex;
+    height: 100%;
+    flex-direction: column;
+    gap: 1.25rem;
+    overflow: hidden;
+    padding: 1.25rem 1rem;
+    border-right: 1px solid var(--line-bright);
+    background: var(--noir-1);
+    isolation: isolate;
+}
+
+.site-nav .nav-shell::after {
+    position: absolute;
+    inset: 0 0 0 auto;
+    width: 1px;
+    content: "";
+    pointer-events: none;
+    background: linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.35) 35%, transparent);
+    opacity: 0.7;
+}
+
+.site-nav .nav-light {
+    position: absolute;
+    top: 4rem;
+    left: 50%;
+    width: 18rem;
+    opacity: 0.28;
+    transform: translate(-50%, -50%);
+}
+
+.site-nav .nav-brand {
+    position: relative;
+    z-index: var(--z-occluder);
     display: grid;
-    grid-template-columns: var(--nav-width) minmax(0, 1fr);
+    justify-items: center;
+    gap: 0.75rem;
+    padding: 1.15rem 0.75rem 1.05rem;
+    border: 1px solid var(--line-hair);
+    border-top-color: var(--line-bright);
+    border-radius: var(--radius-cut);
+    background-color: rgba(16, 16, 19, 0.88);
+    box-shadow: var(--shadow-low);
+    color: var(--text-main);
+    text-decoration: none;
+}
+
+.site-nav .nav-sigil {
+    position: relative;
+    display: block;
+    width: 4rem;
+    height: 4rem;
+    border: 3px solid transparent;
+    border-radius: 50%;
+    background: linear-gradient(var(--noir-2), var(--noir-2)) padding-box,
+        conic-gradient(from 12deg, #55555c 0 26%, #fff 29% 38%, #8e8e94 42% 72%, #f2f2f4 76% 82%, #55555c 86% 100%) border-box;
+    box-shadow: var(--glow-strong);
+    isolation: isolate;
+    animation: nav-sigil-rotate 14s linear infinite;
+}
+
+.site-nav .nav-sigil::after {
+    position: absolute;
+    inset: 0.65rem;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    border-radius: 50%;
+    content: "";
+    box-shadow: inset 0 0 12px rgba(255, 255, 255, 0.18);
+}
+
+@keyframes nav-sigil-rotate {
+    to { transform: rotate(360deg); }
+}
+
+.site-nav .nav-brand-copy {
+    display: grid;
+    min-width: 0;
+    gap: 0.2rem;
+    justify-items: center;
+    text-align: center;
+}
+
+.site-nav .nav-brand-title {
+    color: var(--text-main);
+    font-family: var(--font-header);
+    font-size: 0.84rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    line-height: 1.2;
+    text-transform: uppercase;
+}
+
+.site-nav .nav-brand-sub {
+    color: var(--text-muted);
+    font-size: 0.56rem;
+    letter-spacing: 0.1em;
+    line-height: 1.35;
+}
+
+.site-nav .nav-links {
+    position: relative;
+    z-index: var(--z-occluder);
+    display: flex;
+    flex-direction: column;
+    gap: 0.18rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.site-nav .nav-links li {
+    list-style: none;
+}
+
+.site-nav .nav-links a {
+    display: flex;
+    min-height: 2.45rem;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.52rem 0.68rem;
+    border: 1px solid transparent;
+    border-radius: var(--radius-soft);
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+    text-decoration: none;
+    text-transform: uppercase;
+}
+
+.site-nav .nav-links a svg,
+.site-nav .nav-footer a svg {
+    width: 1rem;
+    height: 1rem;
+    flex: 0 0 1rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.5;
+}
+
+.site-nav .nav-links a:hover,
+.site-nav .nav-links a:focus-visible,
+.site-nav .nav-links a.is-active {
+    border-top-color: var(--line-bright);
+    background: rgba(255, 255, 255, 0.055);
+    color: var(--neon);
+    text-shadow: 0 0 12px rgba(255, 255, 255, 0.28);
+}
+
+.site-nav .nav-links a.is-active {
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.34);
+}
+
+.site-nav .nav-links a:hover svg,
+.site-nav .nav-links a:focus-visible svg,
+.site-nav .nav-links a.is-active svg {
+    filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.75));
+}
+
+.site-nav .nav-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.site-nav .nav-footer {
+    position: relative;
+    z-index: var(--z-occluder);
+    display: grid;
+    gap: 0.25rem;
+    margin-top: auto;
+    padding-top: 1rem;
+    border-top: 1px solid var(--line-hair);
+}
+
+.site-nav .nav-footer a {
+    display: flex;
+    width: fit-content;
+    align-items: center;
+    gap: 0.75rem;
+    min-height: 2.15rem;
+    color: var(--text-muted);
+    text-decoration: none;
+}
+
+.site-nav .nav-footer a:hover,
+.site-nav .nav-footer a:focus-visible {
+    color: var(--text-main);
 }
 
 .content-wrapper {
-    grid-column: 2;
+    position: relative;
+    z-index: var(--z-content);
     min-height: 100vh;
+    margin-left: var(--nav-width);
     display: flex;
     flex-direction: column;
 }
 
+.page-light {
+    position: fixed;
+    top: var(--light-y);
+    left: var(--light-x);
+    width: min(56rem, 80vw);
+    aspect-ratio: 1;
+    opacity: 0.5;
+}
+
 main {
     flex: 1;
+    min-width: 0;
     padding: clamp(2rem, 5vw, 5rem) 0 2rem;
 }
 
@@ -30,6 +243,15 @@ main {
     padding-bottom: clamp(4rem, 9vw, 8rem);
 }
 
+.page-shell > .section-title,
+.page-header > .section-title {
+    margin-bottom: 1.5rem;
+    background: var(--metal);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
 .roadmap-page {
     width: 100%;
     max-width: none;
@@ -41,12 +263,12 @@ main {
     gap: 0.6rem 1.2rem;
     margin: 1rem 0 2.5rem;
     padding-bottom: 1rem;
-    border-bottom: 1px solid var(--stone-dark);
+    border-bottom: 1px solid var(--line-hair);
     color: var(--text-muted);
 }
 
 .page-meta span span {
-    color: var(--tech-cyan);
+    color: var(--text-main);
 }
 
 .section-header {
@@ -56,7 +278,7 @@ main {
     align-items: end;
     margin-bottom: 2rem;
     padding-bottom: 1rem;
-    border-bottom: 1px solid var(--stone-dark);
+    border-bottom: 1px solid var(--line-hair);
 }
 
 .section-title {
@@ -66,7 +288,8 @@ main {
     letter-spacing: -0.04em;
 }
 
-.section-desc {
+.section-desc,
+.section-intro {
     max-width: 60ch;
     margin-top: 0.65rem;
     color: var(--text-muted);
@@ -75,7 +298,7 @@ main {
 .section-subtitle {
     align-self: end;
     padding: 0.35rem 0.6rem;
-    border: 1px solid var(--stone-light);
+    border: 1px solid var(--line-bright);
     border-radius: 999px;
     color: var(--text-muted);
 }
@@ -85,15 +308,52 @@ main {
     margin-bottom: clamp(3.5rem, 8vw, 7rem);
 }
 
-.section-intro {
-    max-width: var(--measure);
-    margin-top: 1rem;
-    color: var(--text-muted);
-}
-
 .divider {
     width: min(8rem, 30%);
     height: 1px;
     margin: 2rem 0;
-    background: var(--stone-light);
+    background: var(--line-bright);
+}
+
+.site-footer {
+    position: relative;
+    padding: 1.5rem clamp(1rem, 3vw, 3rem);
+    border-top: 1px solid var(--line-hair);
+    background: rgba(5, 5, 6, 0.48);
+}
+
+.footer-content {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem 2rem;
+    max-width: var(--container-max);
+    margin: 0 auto;
+}
+
+.footer-name {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.66rem;
+}
+
+.footer-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem 1rem;
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.66rem;
+}
+
+.footer-links a {
+    color: inherit;
+    text-decoration: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .nav-sigil {
+        animation: none;
+    }
 }

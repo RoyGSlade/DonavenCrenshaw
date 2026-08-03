@@ -1,0 +1,100 @@
+/* -------------------------------------------------------------------------
+   Now page composition
+   ------------------------------------------------------------------------- */
+
+.now-page {
+    display: grid;
+    gap: clamp(2.5rem, 6vw, 5rem);
+}
+
+.now-page .section-block {
+    margin-bottom: 0;
+}
+
+.now-lead-card {
+    display: grid;
+    grid-template-columns: minmax(11rem, 0.8fr) minmax(0, 1.2fr);
+    gap: clamp(1.5rem, 5vw, 4rem);
+    align-items: end;
+    width: 100%;
+    margin-bottom: 1.25rem;
+    padding: clamp(1.25rem, 3vw, 2.5rem);
+}
+
+.now-lead-card .section-label {
+    margin: 0 0 0.8rem;
+}
+
+.now-date {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: clamp(2.5rem, 7vw, 5.5rem);
+    font-weight: 700;
+    letter-spacing: -0.08em;
+    line-height: 0.95;
+}
+
+.now-lead-copy {
+    max-width: 42ch;
+}
+
+.now-lead-copy .section-desc {
+    margin: 0;
+}
+
+.now-lead-copy .section-desc + .section-desc {
+    margin-top: 0.75rem;
+}
+
+.now-page .manifesto-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: stretch;
+}
+
+.now-page .manifesto-point {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 1rem;
+    min-height: 100%;
+    padding: clamp(1.15rem, 2.5vw, 1.65rem);
+}
+
+.now-page .manifesto-point .icon-ring {
+    margin-bottom: 0.25rem;
+}
+
+.now-page .manifesto-point h3,
+.now-page .manifesto-point p {
+    margin: 0;
+}
+
+.now-page .manifesto-point h3 {
+    font-size: 1.2rem;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+}
+
+.now-page .manifesto-point p {
+    color: var(--text-soft);
+    font-size: 0.98rem;
+}
+
+.now-honest-state .section-header {
+    margin-bottom: 1.25rem;
+}
+
+.now-honest-state .reading-text {
+    max-width: 60ch;
+}
+
+@media (max-width: 50rem) {
+    .now-lead-card {
+        grid-template-columns: 1fr;
+        align-items: start;
+    }
+
+    .now-page .manifesto-grid {
+        grid-template-columns: 1fr;
+    }
+}

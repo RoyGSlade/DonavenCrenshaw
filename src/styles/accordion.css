@@ -1,9 +1,16 @@
 /* Native-button accordion: content remains discoverable and focusable by keyboard. */
 .accordion {
+    position: relative;
+    z-index: var(--z-occluder, 2);
     margin-top: 1.5rem;
-    border: 1px solid var(--stone-dark);
-    border-radius: var(--radius-soft);
-    background: var(--bg-panel);
+    overflow: hidden;
+    border: 1px solid var(--line-hair);
+    border-top-color: var(--line-bright);
+    border-radius: var(--radius-cut);
+    background-color: var(--bg-panel);
+    background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent 30%);
+    box-shadow: calc(var(--shadow-dx, 0px)) calc(var(--shadow-dy, 8px)) 28px rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(6px);
 }
 
 .accordion-header {
@@ -18,17 +25,22 @@
     background: transparent;
     color: var(--text-main);
     cursor: pointer;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    letter-spacing: 0.08em;
     text-align: left;
+    text-transform: uppercase;
 }
 
 .accordion-header:hover,
 .accordion-header:focus-visible,
 .accordion-header.active {
-    background: var(--bg-rift);
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--neon);
 }
 
 .accordion-header .indicator {
-    color: var(--tech-cyan);
+    color: var(--text-main);
     transition: transform 160ms ease;
 }
 
@@ -46,5 +58,10 @@
 .accordion-content.expanded {
     max-height: 80rem;
     padding: 0 1rem 1rem;
-    border-top: 1px solid var(--stone-dark);
+    border-top: 1px solid var(--line-hair);
+    color: var(--text-soft);
+}
+
+.accordion-content :where(p, li) {
+    color: inherit;
 }

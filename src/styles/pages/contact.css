@@ -1,0 +1,102 @@
+/* -------------------------------------------------------------------------
+   Contact page composition
+   ------------------------------------------------------------------------- */
+
+.contact-routes {
+    margin-bottom: clamp(2.5rem, 6vw, 4rem);
+}
+
+.contact-routes .section-header {
+    margin-bottom: 1rem;
+}
+
+.contact-route-grid {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.25rem;
+    padding-top: 1.5rem;
+}
+
+.contact-route-grid::before {
+    position: absolute;
+    top: 0;
+    right: 10%;
+    left: 10%;
+    height: 1px;
+    content: "";
+    background: linear-gradient(90deg, transparent, var(--line-bright), transparent);
+}
+
+.contact-route-card {
+    display: flex;
+    min-height: 16rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: clamp(1.25rem, 3vw, 2rem);
+    color: var(--text-main);
+    text-decoration: none;
+}
+
+.contact-route-card::before {
+    position: absolute;
+    top: -1.82rem;
+    left: 50%;
+    width: 0.55rem;
+    height: 0.55rem;
+    border: 1px solid var(--line-bright);
+    border-radius: 50%;
+    background: var(--noir-1);
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.18);
+    content: "";
+    transform: translateX(-50%);
+}
+
+.contact-route-card h3,
+.contact-route-card p {
+    margin: 0;
+}
+
+.contact-route-card h3 {
+    font-size: clamp(1.2rem, 2vw, 1.55rem);
+    text-transform: uppercase;
+}
+
+.contact-route-card p {
+    max-width: 34ch;
+    color: var(--text-soft);
+}
+
+.contact-route-card .btn-noir {
+    margin-top: auto;
+}
+
+.contact-direct-card {
+    max-width: 46rem;
+    margin: 0 auto;
+    padding: clamp(1.25rem, 3vw, 2rem);
+    text-align: center;
+}
+
+.contact-direct-card .reading-text {
+    max-width: none;
+}
+
+.contact-direct-card p {
+    margin-bottom: 1rem;
+}
+
+.contact-direct-card p:last-child {
+    margin-bottom: 0;
+}
+
+@media (max-width: 44rem) {
+    .contact-route-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .contact-route-card::before {
+        display: none;
+    }
+}

@@ -1,0 +1,24 @@
+<section class="noir-hero" data-scene="<%= frontmatter.hero_scene || 'desk' %>">
+  <div class="hero-light light-source glow-pulse" aria-hidden="true"></div>
+  <div class="hero-scene" aria-hidden="true"></div>
+  <svg class="hero-circuit" aria-hidden="true" focusable="false" viewBox="0 0 320 300" preserveAspectRatio="none">
+    <path class="circuit-trace" d="M 18 18 H 104 V 66 H 178" />
+    <path class="circuit-trace" d="M 124 0 V 38 H 226 V 112 H 286" />
+    <path class="circuit-trace" d="M 42 112 H 92 V 156 H 154 V 208 H 224" />
+    <path class="circuit-trace" d="M 194 74 H 252 V 42 H 310" />
+    <path class="circuit-trace" d="M 70 232 V 266 H 136 V 294" />
+    <path class="circuit-trace" d="M 270 152 V 198 H 304 V 246" />
+    <circle class="circuit-node" cx="178" cy="66" r="3" />
+    <circle class="circuit-node" cx="286" cy="112" r="3" />
+    <circle class="circuit-node" cx="224" cy="208" r="3" />
+    <circle class="circuit-node" cx="310" cy="42" r="3" />
+    <circle class="circuit-node" cx="136" cy="294" r="3" />
+    <circle class="circuit-node" cx="304" cy="246" r="3" />
+  </svg>
+  <div class="hero-copy">
+    <h1 class="metal-text"><%= frontmatter.hero_title %></h1>
+    <% if (frontmatter.hero_kicker) { %><p class="hero-kicker section-label"><%= frontmatter.hero_kicker %></p><% } %>
+    <% if (frontmatter.hero_sub) { %><p class="hero-sub"><%= frontmatter.hero_sub %></p><% } %>
+  </div>
+  <div class="hero-baseline divider-lit" aria-hidden="true"></div>
+</section>
