@@ -11,7 +11,7 @@
     "route": "/underplain/",
     "mission": "Underplain releases practical software freely under the MIT license.",
     "license": "MIT",
-    "products": ["betterfingers", "getfast", "pdfmanager"],
+    "products": ["getfast", "pdfmanager"],
     "supportChannelIds": ["github-sponsors", "ko-fi"],
     "links": {
       "site": "/underplain/",

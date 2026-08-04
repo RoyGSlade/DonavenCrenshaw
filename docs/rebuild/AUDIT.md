@@ -23,7 +23,7 @@ Therefore BetterFingers is presented as feature-locked private alpha / public-al
 - `public/` receives only current HTML, local styles/scripts, and assets. It does not receive source JSON, old `projects/`, or the legacy rendering system.
 - [scripts/verifySite.mjs](../../scripts/verifySite.mjs) enforces required routes, redirects, canonical/noindex behavior, internal link integrity, baseline document semantics, and banned public patterns.
 - [pages.yml](../../.github/workflows/pages.yml) is the one deployment workflow. Duplicate deployment and automated legacy funding-refresh workflows were removed.
-- Both `SITE_BASE=/` and `SITE_BASE=/SourceArcanum/` modes pass their built-site verifier.
+- Both `SITE_BASE=/` and `SITE_BASE=/DonavenCrenshaw/` modes pass their built-site verifier.
 - `npm audit` reports zero vulnerabilities.
 
 ## Content disposition

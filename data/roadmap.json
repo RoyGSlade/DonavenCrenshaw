@@ -34,12 +34,6 @@
   "recentlyShippedFeed": [
     {
       "dateISO": "2026-02",
-      "projectId": "betterfingers",
-      "summary": "BetterFingers V1.0.0 Released",
-      "state": "Live"
-    },
-    {
-      "dateISO": "2026-02",
       "projectId": "infinite-ages",
       "summary": "Infinite Ages Genesis TTRPG",
       "state": "Live"

@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "items": [
+    { "id": "fixture-added", "date": "2026-08-03", "title": "Fixture added", "summary": "The bundled fixture exercises the v1 source consumer and remains disabled in production.", "type": "milestone", "state": "published" },
+    { "id": "next-review", "date": "2026-08-04", "title": "Next review", "summary": "A draft update proves unpublished records do not enter the public feed.", "type": "progress", "state": "draft" }
+  ]
+}

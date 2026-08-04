@@ -13,7 +13,7 @@ Evidence date: 2026-07-31. Full details and screenshots are in [docs/rebuild/VER
 - [x] Generated output contains no public `data/` cache, retired identity, lore status, placeholder video, Google Fonts dependency, empty URL, or unsupported Crenshaw Systems catalog.
 - [x] Privacy and credential-pattern scans pass.
 - [x] `npm audit` reports zero vulnerabilities.
-- [x] `/SourceArcanum/` subpath build and verifier pass.
+- [x] `/DonavenCrenshaw/` subpath build and verifier pass.
 
 ## Browser gates
 

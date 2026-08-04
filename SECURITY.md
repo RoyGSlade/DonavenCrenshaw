@@ -1,29 +1,30 @@
 # Security Policy
 
-Source Arcanum ships small, local-first tools. There's no backend, no user database, and no telemetry to breach — but the release pipeline (installers, checksums, this site) is still real attack surface, and reports are taken seriously.
+DonavenCrenshaw.com is a static presentation site. Project implementations and
+their release artifacts remain in their owning repositories, so reports should
+be filed against the repository that contains the affected code.
 
-## Supported Projects & Versions
+## Supported scope
 
-| Project | Status | Security Updates |
-| --- | --- | --- |
-| Source Arcanum (this site) | Active | Latest `main` only |
-| [BetterFingers](https://github.com/RoyGSlade/BetterFingers) | Active (v1.0.x) | Latest release only |
-| Everything else in the archive (prototype / concept / alpha status) | Pre-release | Best-effort, no SLA |
+| Repository | Current public scope |
+| --- | --- |
+| [DonavenCrenshaw](https://github.com/RoyGSlade/DonavenCrenshaw) | The current `main` branch and its website build/import workflow |
+| [BetterFingers](https://github.com/RoyGSlade/BetterFingers) | Pre-release source on `main`; no tagged public release is claimed here |
 
-Older tagged releases are not patched retroactively. If a vulnerability affects a shipped installer, a new signed build supersedes it and the release notes say so explicitly.
+Other concepts and prototypes receive best-effort review. No response-time or
+remediation-time SLA is promised.
 
-## Reporting a Vulnerability
+## Reporting a vulnerability
 
-Please **do not open a public GitHub issue** for anything actively exploitable (RCE, credential exposure, supply-chain tampering, malicious file handling, etc.).
+Do not open a public issue for an actively exploitable vulnerability, credential
+exposure, or supply-chain concern. Use GitHub private vulnerability reporting
+from the affected repository's **Security** tab. A low-severity dependency or
+broken public link can be reported as a normal issue.
 
-Instead:
+## Downloads and checksums
 
-1. Use GitHub's private vulnerability reporting: open the **Security** tab on the affected repo — [SourceArcanum](https://github.com/RoyGSlade/SourceArcanum/security) or [BetterFingers](https://github.com/RoyGSlade/BetterFingers/security) — and click **"Report a vulnerability."** This opens a private draft advisory that only the maintainer can see.
-2. For low-severity, non-exploitable issues (a stale dependency, a broken link, an outdated hash on this site), a regular public issue is fine.
-
-This is a one-person project, so response times are best-effort, not contractual — expect an acknowledgement within a few days. Confirmed issues get a fix or mitigation before anything is disclosed publicly. Declined reports get an explanation of why.
-
-## Verifying What You Download
-
-Every BetterFingers installer ships with a published SHA256 hash on its [release page](https://github.com/RoyGSlade/SourceArcanum/releases) and in its dossier on this site. If the hash you compute locally doesn't match, stop, don't run the installer, and report it — that mismatch is exactly what this policy exists to catch.
-asset
+This site does not treat an old link, filename, screenshot, or historical hash
+as current release evidence. Follow only a release link supplied by the owning
+project's current `website/project.json`, then verify any checksum published on
+that same release. If the owning repository does not publish a current release
+and checksum, the website must not imply that one exists.

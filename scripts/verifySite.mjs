@@ -88,10 +88,13 @@ for (const redirect of redirects) {
         continue;
     }
     const html = fs.readFileSync(file, 'utf8');
-    const targetPath = `${SITE_BASE}${redirect.target.replace(/^\/+/, '')}`;
+    const target = /(?:^|\/)betterfingers(?:\.html)?\/?$/i.test(redirect.source)
+        ? '/projects/betterfingers/'
+        : redirect.target;
+    const targetPath = `${SITE_BASE}${target.replace(/^\/+/, '')}`;
     const expected = new URL(targetPath, 'https://donavencrenshaw.com').href;
     if (!html.includes(`rel="canonical" href="${expected}"`)) {
-        failures.push(`redirect ${redirect.source} does not canonicalize to ${redirect.target}`);
+        failures.push(`redirect ${redirect.source} does not canonicalize to ${target}`);
     }
     if (!/name="robots" content="noindex"/i.test(html)) {
         failures.push(`redirect ${redirect.source} is indexable`);

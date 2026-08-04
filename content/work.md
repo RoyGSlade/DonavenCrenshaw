@@ -10,8 +10,8 @@ page_kind: "proof-index"
 <p class="section-desc">I publish work in proportion to the evidence available. This page is not a customer-case-study page.</p>
 
 <section class="section-block" aria-labelledby="available-proof">
-  <div class="section-header"><div><h2 id="available-proof" class="section-title">Current proof</h2><p class="section-desc">BetterFingers is in public-alpha preparation.</p></div></div>
-  <div class="reading-text"><p>The feature set is locked, and the current work is cleaning and polishing. The next useful proof is an honest alpha-ready workflow with limitations, not a stronger marketing claim.</p><p><a class="btn btn-primary" href="projects/index.html#betterfingers">VIEW BETTERFINGERS STATUS</a></p></div>
+  <div class="section-header"><div><h2 id="available-proof" class="section-title">Current proof</h2><p class="section-desc">Project status comes from the repository that owns the work.</p></div></div>
+  <div class="reading-text"><p>The BetterFingers page is generated from its validated project source instead of a second status summary stored on this site.</p><p><a class="btn btn-primary" href="projects/betterfingers/">VIEW THE IMPORTED BETTERFINGERS PAGE</a></p></div>
 </section>
 
 <section class="section-block" aria-labelledby="business-proof">

@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schemas/project-sources-registry.schema.json",
+  "title": "Project source registry",
+  "description": "Local import registry for project-owned website source packages.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "sources"],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/source"
+      },
+      "uniqueItems": true
+    }
+  },
+  "$defs": {
+    "localPath": {
+      "type": "string",
+      "description": "Repo-relative POSIX directory; no absolute paths or traversal segments.",
+      "pattern": "^(?:[A-Za-z0-9_-]+/)*[A-Za-z0-9_-]+(?:\\.[A-Za-z0-9_-]+)*$",
+      "minLength": 1,
+      "maxLength": 240
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "localPath", "repository", "ref", "enabled", "required"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "localPath": {
+          "$ref": "#/$defs/localPath"
+        },
+        "repository": {
+          "description": "Optional source repository URL; null is valid for a bundled/local source.",
+          "anyOf": [
+            {"type": "null"},
+            {
+              "type": "string",
+              "pattern": "^https?://[^\\s]+$",
+              "format": "uri",
+              "maxLength": 2000
+            }
+          ]
+        },
+        "ref": {
+          "type": "string",
+          "description": "Ref to use when a repository is configured (branch, tag, or commit).",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._/-]*$",
+          "minLength": 1,
+          "maxLength": 240
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "required": {
+          "type": "boolean",
+          "description": "If true, an enabled source error fails the import rather than being skipped."
+        }
+      }
+    }
+  }
+}

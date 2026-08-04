@@ -47,7 +47,10 @@ body::after {
     bottom: 0;
     z-index: var(--z-void);
     width: 292px;
-    background: url("../assets/noir/wall-graffiti.jpg") center / cover no-repeat;
+    background:
+        radial-gradient(circle at 72% 18%, rgba(255, 255, 255, 0.1), transparent 34%),
+        repeating-linear-gradient(135deg, transparent 0 20px, rgba(255, 255, 255, 0.022) 20px 21px, transparent 21px 48px),
+        linear-gradient(120deg, transparent 0 40%, rgba(255, 255, 255, 0.045) 100%);
     opacity: 0.18;
     mix-blend-mode: screen;
     -webkit-mask-image: linear-gradient(90deg, transparent, #000 40%);

@@ -21,8 +21,8 @@ found 0 vulnerabilities
 Subpath mode also passed:
 
 ```text
-SITE_BASE=/SourceArcanum/ npm run build
-SITE_BASE=/SourceArcanum/ npm run verify:site
+SITE_BASE=/DonavenCrenshaw/ npm run build
+SITE_BASE=/DonavenCrenshaw/ npm run verify:site
 ```
 
 The final reviewed artifact was rebuilt with `SITE_BASE=/`.

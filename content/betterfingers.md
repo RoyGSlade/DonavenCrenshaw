@@ -1,5 +1,5 @@
 ---
 title: "BetterFingers"
 layout: "default"
-redirect: "underplain/betterfingers/index.html"
+redirect: "projects/betterfingers/index.html"
 ---

@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "example-project",
+  "name": "Example Project",
+  "summary": "A bundled contract fixture showing how a project can describe verified work without raster imagery.",
+  "status": "prototype",
+  "featured": true,
+  "links": [
+    { "label": "Repository", "url": "https://github.com/example/example-project", "type": "repository" }
+  ],
+  "features": [
+    { "id": "source-package", "title": "Source package", "summary": "A reviewable website package owned by the project repository.", "state": "available" },
+    { "id": "future-export", "title": "Future export", "summary": "An intentionally unshipped export path kept visible as planned work.", "state": "planned" }
+  ],
+  "screenshots": [],
+  "roadmap": [
+    { "id": "public-review", "title": "Public review", "summary": "Invite broader review after the prototype has been checked.", "state": "in-progress" },
+    { "id": "first-release", "title": "First release", "summary": "Package a stable release when the owner has verified it.", "state": "planned" }
+  ],
+  "updatedAt": "2026-08-03T00:00:00Z"
+}

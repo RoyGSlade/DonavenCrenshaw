@@ -14,18 +14,12 @@
     "id": "donaven-crenshaw",
     "name": "Donaven Crenshaw",
     "state": {
-      "activeWork": [
-        {
-          "projectId": "betterfingers",
-          "state": "Feature locked for public alpha; cleaning and polishing.",
-          "reviewedAt": "2026-07-31"
-        }
-      ],
-      "win": "BetterFingers' feature set is locked for public alpha.",
-      "difficulty": "Cleaning and polishing remain before the alpha is ready.",
-      "nextStep": "Finish the preparation and publish the proof needed for a careful alpha release.",
-      "lastUpdateId": "2026-07-31-betterfingers-alpha-preparation",
-      "lastUpdatedAt": "2026-07-31"
+      "activeWork": [],
+      "win": "Project facts now import from their owning repositories.",
+      "difficulty": "Migrate the remaining project repositories without duplicating their claims here.",
+      "nextStep": "Integrate the next project source after the BetterFingers pilot.",
+      "lastUpdateId": null,
+      "lastUpdatedAt": "2026-08-03"
     }
   },
   "mission": "Create a subscriptionless open world that gives people the tools they need to build, connect, share, evolve, and enjoy life.",

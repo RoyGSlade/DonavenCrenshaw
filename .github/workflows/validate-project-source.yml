@@ -1,0 +1,38 @@
+name: Validate project source
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout calling project
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Checkout the DonavenCrenshaw contract tools
+        uses: actions/checkout@v4
+        with:
+          repository: RoyGSlade/DonavenCrenshaw
+          ref: main
+          path: .donaven-site-contract
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: .donaven-site-contract/package-lock.json
+
+      - name: Install contract dependencies
+        working-directory: .donaven-site-contract
+        run: npm ci
+
+      - name: Validate the caller website package
+        run: node .donaven-site-contract/scripts/validateProjectSource.mjs --source "$GITHUB_WORKSPACE"

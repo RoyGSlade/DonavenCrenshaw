@@ -3,6 +3,10 @@
     margin-top: clamp(2.5rem, 6vw, 5rem);
 }
 
+.imported-project-directory {
+    margin: clamp(3rem, 7vw, 6rem) 0;
+}
+
 .projects-status > .section-label,
 .projects-branches > .section-label {
     display: block;
