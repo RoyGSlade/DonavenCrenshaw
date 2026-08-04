@@ -27,22 +27,22 @@ hero_scene: "desk"
         <span class="icon-ring" aria-hidden="true">
           <svg viewBox="0 0 24 24" focusable="false"><path d="m5 12 4 4L19 6" /></svg>
         </span>
-        <h3 class="stat-number metal-text">Win</h3>
-        <p>BetterFingers' feature set is locked for public alpha.</p>
+        <h3 class="stat-number metal-text">Signal</h3>
+        <p>Project updates now come from accepted project-owned source packages.</p>
       </article>
       <article class="noir-card stat-tile">
         <span class="icon-ring" aria-hidden="true">
           <svg viewBox="0 0 24 24" focusable="false"><path d="M12 4 21 20H3L12 4Z" /><path d="M12 9v5m0 3v.01" /></svg>
         </span>
         <h3 class="stat-number metal-text">Difficulty</h3>
-        <p>I am cleaning and polishing it before I call the alpha ready.</p>
+        <p>Each imported project keeps current capability separate from planned work.</p>
       </article>
       <article class="noir-card stat-tile">
         <span class="icon-ring" aria-hidden="true">
           <svg viewBox="0 0 24 24" focusable="false"><path d="M4 12h14" /><path d="m13 7 5 5-5 5" /></svg>
         </span>
         <h3 class="stat-number metal-text">Next step</h3>
-        <p>Finish that preparation and publish the proof needed for a careful alpha release. The current estimate is one or two weeks from alpha as of this update.</p>
+        <p>Review the latest source-owned updates and keep maturity claims visible.</p>
       </article>
     </div>
     <p class="noir-card section-desc">There is no current video evidence linked here yet. I will add a video and an accessible transcript when a real recording exists.</p>
@@ -53,15 +53,6 @@ hero_scene: "desk"
     <div class="noir-card reading-text">
       <p>I study the underlying problem before choosing a tool. The goal is practical software that helps people keep ownership of their work and focus on harder, more human problems.</p>
       <p>My paid systems work supports my time, equipment, compute, hosting, signing, and other resources. That stability makes it possible to keep developing free software; I do not claim a fixed donated percentage.</p>
-    </div>
-  </section>
-
-  <section class="section-block" aria-labelledby="active-projects">
-    <div class="section-header"><div><h2 id="active-projects" class="section-title section-label">Active projects</h2><p class="section-desc">What I can describe from current evidence.</p></div><a class="section-subtitle mono" href="projects/index.html">ALL PROJECTS →</a></div>
-    <div class="project-grid">
-      <article class="noir-card project-card"><div class="project-status">PUBLIC ALPHA PREPARATION</div><h3>BetterFingers</h3><p>A local-first voice workflow. The feature set is locked; cleaning and polishing remain before public alpha.</p><a class="hero-link mono" href="projects/index.html#betterfingers">PROJECT DETAILS →</a></article>
-      <article class="noir-card project-card"><div class="project-status">DEFINITION NEEDED</div><h3>GetFast</h3><p>An intended tool for intelligently using available network paths during large downloads. Compatibility and performance are not promised.</p><a class="hero-link mono" href="projects/index.html#getfast">PROJECT DETAILS →</a></article>
-      <article class="noir-card project-card"><div class="project-status">SCOPE EVIDENCE NEEDED</div><h3>PDFManager</h3><p>A planned local PDF utility. Intended features are documented separately from anything implemented.</p><a class="hero-link mono" href="projects/index.html#pdfmanager">PROJECT DETAILS →</a></article>
     </div>
   </section>
 

@@ -3,6 +3,9 @@ name: Verify and deploy DonavenCrenshaw.com
 on:
   push:
     branches: ["main"]
+  pull_request:
+  repository_dispatch:
+    types: [project-content-updated]
   workflow_dispatch:
 
 permissions:
@@ -11,43 +14,58 @@ permissions:
   id-token: write
 
 concurrency:
-  group: "pages"
+  group: "pages-${{ github.event_name == 'pull_request' && github.event.pull_request.number || 'production' }}"
   cancel-in-progress: false
 
 jobs:
-  # Build job
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout DonavenCrenshaw
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Checkout BetterFingers project source
+        uses: actions/checkout@v4
+        with:
+          repository: RoyGSlade/BetterFingers
+          ref: main
+          path: project-sources/BetterFingers
+          persist-credentials: false
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: "20"
+          cache: npm
 
-      - name: Install Dependencies
+      - name: Install dependencies
         run: npm ci
 
-      - name: Verify data, build, routes, links, privacy, and secrets
+      - name: Validate BetterFingers source directly
+        run: node scripts/validateProjectSource.mjs --source project-sources/BetterFingers
+
+      - name: Verify contracts, imported projects, site, privacy, and secrets
+        env:
+          PROJECT_SOURCE_ROOT: ${{ github.workspace }}/project-sources
         run: npm run verify
 
-      # Must run after the build: the YouTube embed URL was assembled in JS and
-      # was invisible to a source scan. In built output the literal is present.
-      - name: Check For Third-Party Requests
-        run: npm run check:privacy
+      - name: Require the BetterFingers page in the built artifact
+        run: test -f public/projects/betterfingers/index.html
 
       - name: Setup Pages
+        if: github.event_name != 'pull_request'
         uses: actions/configure-pages@v4
 
-      - name: Upload artifact
+      - name: Upload Pages artifact
+        if: github.event_name != 'pull_request'
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './public'
+          path: ./public
 
-  # Deploy job
   deploy:
+    if: github.event_name != 'pull_request'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

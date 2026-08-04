@@ -24,14 +24,14 @@ hero_scene: "desk"
 </section>
 
 <section class="noir-card lit-edge shadow-caster underplain-section underplain-tools">
-<h2 class="section-label">The first three tools</h2>
-<div class="data-table-wrap" role="region" aria-label="The first three tools" tabindex="0">
+<h2 class="section-label">Project sources and concepts</h2>
+<div class="data-table-wrap" role="region" aria-label="Project sources and concepts" tabindex="0">
 <table class="data-table">
 <thead>
 <tr><th>Product</th><th>Status</th><th>What is true today</th><th>Next proof</th></tr>
 </thead>
 <tbody>
-<tr><td><a href="./betterfingers/">BetterFingers</a></td><td><strong>Private alpha</strong></td><td>Feature-locked and polishing toward public alpha. It is not released.</td><td>Clean installation and complete voice-to-draft-to-review demonstration.</td></tr>
+<tr><td><a href="../projects/betterfingers/">BetterFingers</a></td><td><strong>Repository source</strong></td><td colspan="2">Current status, capabilities, updates, and roadmap are imported from the BetterFingers repository.</td></tr>
 <tr><td><a href="./getfast/">GetFast</a></td><td><strong>Concept</strong></td><td>The intent is documented; no public implementation, compatibility evidence, or download is published here.</td><td>Technical dossier and a real large-download demonstration.</td></tr>
 <tr><td><a href="./pdfmanager/">PDFManager</a></td><td><strong>Concept</strong></td><td>The intended scope is listed; the implemented subset, build, and compatibility are not proven here.</td><td>Product dossier, test documents, and an end-to-end demonstration.</td></tr>
 </tbody>

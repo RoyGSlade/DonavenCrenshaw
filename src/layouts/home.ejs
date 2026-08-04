@@ -9,6 +9,20 @@
         <main id="main-content" tabindex="-1">
             <% if (frontmatter.hero_title) { %><%- include('hero', { frontmatter }) %><% } %>
             <%- content %>
+            <% const featuredProjects = (data.importedProjects || []).filter((item) => item.project.featured); %>
+            <% const latestUpdates = (data.importedProjects || []).flatMap((item) => item.publishedUpdates || []).sort((a, b) => b.date.localeCompare(a.date) || a.id.localeCompare(b.id)).slice(0, 5); %>
+            <% if (featuredProjects.length) { %>
+                <section class="container imported-home-section" aria-labelledby="imported-projects-title">
+                    <div class="section-header"><div><h2 id="imported-projects-title" class="section-title section-label">FEATURED PROJECTS</h2><p class="section-desc">Project-owned source packages, imported with their current maturity visible.</p></div><a class="section-subtitle mono" href="<%= siteRoot %>projects/">ALL PROJECTS →</a></div>
+                    <div class="project-grid"><% featuredProjects.forEach((item) => { %><article class="noir-card project-card imported-project-card"><div class="project-status project-status--<%= item.project.status %>"><%= item.project.status.replace(/-/g, ' ').toUpperCase() %></div><h3><a href="<%= siteRoot %>projects/<%= item.id %>/"><%= item.project.name %></a></h3><p><%= item.project.summary %></p><span class="mono imported-maturity">Maturity: <%= item.project.status %></span><a class="hero-link mono" href="<%= siteRoot %>projects/<%= item.id %>/">PROJECT DETAILS →</a></article><% }); %></div>
+                </section>
+            <% } %>
+            <% if (latestUpdates.length) { %>
+                <section class="container imported-home-section" aria-labelledby="latest-updates-title">
+                    <div class="section-header"><div><h2 id="latest-updates-title" class="section-title section-label">LATEST PROJECT UPDATES</h2><p class="section-desc">Published updates from accepted project sources.</p></div></div>
+                    <div class="imported-updates"><% latestUpdates.forEach((update) => { %><article class="noir-card imported-update"><time class="mono" datetime="<%= update.date %>"><%= update.date %></time><h3><a href="<%= siteRoot %>projects/<%= update.projectId %>/"><%= update.title %></a></h3><p><%= update.summary %></p><span class="mono section-subtitle"><%= update.projectName %> · <%= update.type %></span></article><% }); %></div>
+                </section>
+            <% } %>
         </main>
         <%- components.footer %>
     </div>

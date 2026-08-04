@@ -1,51 +1,5 @@
 [
   {
-    "id": "betterfingers",
-    "name": "BetterFingers",
-    "branchId": "underplain",
-    "owner": "donaven-crenshaw",
-    "publicationStatus": "published",
-    "status": "private-alpha",
-    "statusLabel": "Private alpha",
-    "statusAsOf": "2026-07-31",
-    "statusNote": "Feature locked for the public-alpha release; cleaning and polishing. Approximately one or two weeks from public alpha as of July 31, 2026.",
-    "reviewedAt": "2026-07-31",
-    "lastUpdateId": null,
-    "nextProof": {
-      "summary": "Capture a stranger-friendly installation and first-dictation demonstration before public-alpha promotion.",
-      "owner": "donaven-crenshaw",
-      "dueAt": null,
-      "publicationStatus": "draft"
-    },
-    "version": null,
-    "platforms": {
-      "supported": ["Windows"],
-      "tested": ["Windows"],
-      "planned": ["Linux"],
-      "notes": "Linux support remains investigational; Windows is the only tested platform in the current repository content."
-    },
-    "license": "MIT",
-    "freeOfCharge": true,
-    "links": {
-      "source": "https://github.com/RoyGSlade/BetterFingers",
-      "download": null,
-      "demo": null,
-      "docs": null,
-      "issues": null,
-      "support": "/support/"
-    },
-    "limitations": [
-      "Performance depends on hardware and selected local models.",
-      "Voice blending and some persona/style editor polish remain incomplete.",
-      "TTS loudness normalization and crossfade behavior are not tuned yet.",
-      "Linux support is investigational only."
-    ],
-    "supportChannelIds": ["github-sponsors", "ko-fi"],
-    "implementedScope": ["Local speech-to-text with a review-first draft workflow", "Optional local cleanup", "Global hotkeys and controller support", "Local review text-to-speech"],
-    "intendedScope": null,
-    "hashes": []
-  },
-  {
     "id": "getfast",
     "name": "GetFast",
     "branchId": "underplain",
@@ -133,7 +87,7 @@
     "platforms": null,
     "license": null,
     "freeOfCharge": null,
-    "links": {"source": null, "download": "https://github.com/RoyGSlade/SourceArcanum/releases/download/InfiniteAgesGenesis-v1/InfiniteAgesGenesis.pdf", "demo": null, "docs": null, "issues": null, "support": "/support/"},
+    "links": {"source": null, "download": "https://github.com/RoyGSlade/DonavenCrenshaw/releases/download/InfiniteAgesGenesis-v1/InfiniteAgesGenesis.pdf", "demo": null, "docs": null, "issues": null, "support": "/support/"},
     "limitations": ["The final license and content-use terms are unresolved.", "No version, hash, or release process is documented in the current data."],
     "supportChannelIds": ["github-sponsors", "ko-fi"],
     "implementedScope": ["A downloadable TTRPG PDF artifact"],

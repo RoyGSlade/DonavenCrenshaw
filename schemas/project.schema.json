@@ -1,0 +1,198 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schemas/project.schema.json",
+  "title": "Project source manifest",
+  "description": "The v1 consumer contract for website/project.json.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "id",
+    "name",
+    "summary",
+    "status",
+    "featured",
+    "links",
+    "features",
+    "screenshots",
+    "roadmap",
+    "updatedAt"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1,
+      "description": "Contract version. The website must reject unsupported versions."
+    },
+    "id": {
+      "type": "string",
+      "description": "Stable project identifier; use lowercase POSIX slug syntax.",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "minLength": 1,
+      "maxLength": 80
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120
+    },
+    "summary": {
+      "type": "string",
+      "description": "Short, verified plain-language description; do not use this field for aspirations.",
+      "minLength": 1,
+      "maxLength": 280
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "concept",
+        "planned",
+        "prototype",
+        "private-alpha",
+        "public-alpha",
+        "beta",
+        "stable",
+        "maintenance",
+        "archived"
+      ]
+    },
+    "featured": {
+      "type": "boolean"
+    },
+    "links": {
+      "type": "array",
+      "description": "Verified destinations only. An empty array is valid.",
+      "items": {
+        "$ref": "#/$defs/link"
+      },
+      "uniqueItems": true
+    },
+    "features": {
+      "type": "array",
+      "description": "Verified capabilities and their current state. An empty array is valid.",
+      "items": {
+        "$ref": "#/$defs/feature"
+      },
+      "uniqueItems": true
+    },
+    "screenshots": {
+      "type": "array",
+      "description": "Accessible asset references; every path must resolve beneath website/assets/. An empty array is valid.",
+      "items": {
+        "$ref": "#/$defs/screenshot"
+      },
+      "uniqueItems": true
+    },
+    "roadmap": {
+      "type": "array",
+      "description": "Future or completed work, always labelled with an explicit state. An empty array is valid.",
+      "items": {
+        "$ref": "#/$defs/roadmapEntry"
+      },
+      "uniqueItems": true
+    },
+    "updatedAt": {
+      "type": "string",
+      "description": "RFC 3339 timestamp for the last fact review or source change.",
+      "format": "date-time",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?(?:Z|[+-]\\d{2}:\\d{2})$"
+    }
+  },
+  "$defs": {
+    "assetPath": {
+      "type": "string",
+      "description": "Repo-relative POSIX path with safe segments under website/assets/.",
+      "pattern": "^website/assets/(?:[A-Za-z0-9_-]+/)*[A-Za-z0-9_-]+(?:\\.[A-Za-z0-9_-]+)*$",
+      "minLength": 15,
+      "maxLength": 240
+    },
+    "screenshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "alt"],
+      "properties": {
+        "path": { "$ref": "#/$defs/assetPath" },
+        "alt": { "type": "string", "minLength": 1, "maxLength": 240 },
+        "caption": { "type": "string", "minLength": 1, "maxLength": 280 }
+      }
+    },
+    "link": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["label", "url", "type"],
+      "properties": {
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "url": {
+          "type": "string",
+          "description": "Use a verified HTTPS or HTTP destination.",
+          "pattern": "^https?://[^\\s]+$",
+          "format": "uri",
+          "maxLength": 2000
+        },
+        "type": {
+          "type": "string",
+          "enum": ["repository", "demo", "download", "documentation", "issue-tracker", "other"]
+        }
+      }
+    },
+    "entryId": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "minLength": 1,
+      "maxLength": 80
+    },
+    "feature": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title", "summary", "state"],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/entryId"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 280
+        },
+        "state": {
+          "type": "string",
+          "description": "Only available is a shipped capability; planned and in-progress must not render as shipped.",
+          "enum": ["planned", "in-progress", "available", "deprecated"]
+        }
+      }
+    },
+    "roadmapEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title", "summary", "state"],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/entryId"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 280
+        },
+        "state": {
+          "type": "string",
+          "description": "Roadmap state is explicit so planned work cannot be mistaken for shipped work.",
+          "enum": ["planned", "in-progress", "done", "cancelled"]
+        }
+      }
+    }
+  }
+}

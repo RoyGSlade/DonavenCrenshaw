@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "id": "betterfingers",
+      "localPath": "BetterFingers",
+      "repository": "https://github.com/RoyGSlade/BetterFingers",
+      "ref": "main",
+      "enabled": true,
+      "required": false
+    },
+    {
+      "id": "example-project",
+      "localPath": "fixtures/projects/example-project",
+      "repository": null,
+      "ref": "main",
+      "enabled": false,
+      "required": false
+    }
+  ]
+}

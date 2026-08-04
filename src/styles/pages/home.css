@@ -4,6 +4,11 @@
     gap: clamp(3rem, 7vw, 6rem);
 }
 
+.imported-home-section {
+    margin-top: clamp(3rem, 7vw, 6rem);
+    margin-bottom: clamp(3rem, 7vw, 6rem);
+}
+
 .home-page-content .section-block {
     margin-bottom: 0;
 }

@@ -3,6 +3,7 @@ import path from 'path';
 import { marked } from 'marked';
 import matter from 'gray-matter';
 import ejs from 'ejs';
+import { importProjectSources } from './projectSources.mjs';
 
 const ROOT_DIR = path.resolve('.');
 const SRC_DIR = path.join(ROOT_DIR, 'src');
@@ -11,7 +12,7 @@ const DATA_DIR = path.join(ROOT_DIR, 'data');
 const PUBLIC_DIR = path.join(ROOT_DIR, 'public');
 const COMPONENTS_DIR = path.join(SRC_DIR, 'components');
 const LAYOUTS_DIR = path.join(SRC_DIR, 'layouts');
-const SITE_BASE = process.env.SITE_BASE || '/SourceArcanum/';
+const SITE_BASE = process.env.SITE_BASE || '/DonavenCrenshaw/';
 
 function normaliseBase(base) {
     const value = String(base || '/').trim();
@@ -124,7 +125,8 @@ function normaliseRedirects(rawRedirects) {
         const from = requiredString(entry.from || entry.source, `redirects[${index}].from`);
         const to = requiredString(entry.to || entry.target, `redirects[${index}].to`);
         if (from.includes('..') || from.includes('\\')) throw new Error(`[DATA ERROR] redirects[${index}].from contains an unsafe path`);
-        return { from, to, status: entry.status || 301 };
+        const legacyBetterFingers = /(?:^|\/)betterfingers(?:\.html)?\/?$/i.test(from);
+        return { from, to: legacyBetterFingers ? 'projects/betterfingers/' : to, status: entry.status || 301 };
     });
 }
 
@@ -290,9 +292,11 @@ function rewriteInternalUrls(html, site, route) {
 
 function redirectHtml(site, source, target, title = 'Page moved') {
     const targetUrl = /^https?:\/\//i.test(target) ? target : routeUrl(site, target);
+    const navigationTarget = /^https?:\/\//i.test(target) ? target : sitePath(site, target);
     const safeTarget = escapeAttribute(targetUrl);
+    const safeNavigationTarget = escapeAttribute(navigationTarget);
     const safeTitle = escapeAttribute(title);
-    return `<!doctype html>\n<html lang="en"><head><meta charset="utf-8"><meta name="robots" content="noindex"><meta http-equiv="refresh" content="0; url=${safeTarget}"><link rel="canonical" href="${safeTarget}"><title>${safeTitle}</title></head><body><main><h1>${safeTitle}</h1><p>This page has moved. <a href="${safeTarget}">Continue to the current page</a>.</p></main></body></html>\n`;
+    return `<!doctype html>\n<html lang="en"><head><meta charset="utf-8"><meta name="robots" content="noindex"><meta http-equiv="refresh" content="0; url=${safeNavigationTarget}"><link rel="canonical" href="${safeTarget}"><title>${safeTitle}</title></head><body><main><h1>${safeTitle}</h1><p>This page has moved. <a href="${safeNavigationTarget}">Continue to the current page</a>.</p></main></body></html>\n`;
 }
 
 async function buildRedirectMap(site, rawRedirects, generatedPaths, redirectEntries) {
@@ -342,6 +346,30 @@ async function build404(components, site, data) {
     await fs.writeFile(path.join(PUBLIC_DIR, '404.html'), ejs.render(layout, { ...context, content, components: renderedComponents }));
 }
 
+function projectStatusLabel(project) {
+    return String(project.status || '').replace(/-/g, ' ').toUpperCase();
+}
+
+async function buildImportedProjects(site, components, data, generatedPaths) {
+    for (const imported of data.importedProjects || []) {
+        const route = path.posix.join('projects', imported.id);
+        const frontmatter = { title: imported.project.name, description: imported.project.summary, branch: 'parent', skin: 'parent', page_kind: 'imported-project' };
+        const context = renderContext(site, frontmatter, route, data);
+        const renderedComponents = {
+            nav: ejs.render(components.nav, context),
+            footer: ejs.render(components.footer, context),
+            head: ejs.render(components.head, context)
+        };
+        const layout = await fs.readFile(path.join(LAYOUTS_DIR, 'imported-project.ejs'), 'utf8');
+        const html = ejs.render(layout, { ...context, project: imported.project, imported, components: renderedComponents });
+        const outputPath = path.join(PUBLIC_DIR, route, 'index.html');
+        await fs.ensureDir(path.dirname(outputPath));
+        await fs.writeFile(outputPath, rewriteInternalUrls(html, site, route));
+        generatedPaths.push(path.relative(PUBLIC_DIR, outputPath).split(path.sep).join('/'));
+        console.log(`[GENERATED IMPORT] ${path.relative(PUBLIC_DIR, outputPath)} (${projectStatusLabel(imported.project)})`);
+    }
+}
+
 async function main() {
     console.log('--- STARTING STATIC SITE BUILD ---');
     const site = validateSite(await readJson('site.json', { required: true }));
@@ -350,14 +378,21 @@ async function main() {
     const support = validateSupport(await readJson('support.json', { required: true }));
     const updates = validateUpdates(await readJson('updates.json', { required: true }));
     const redirects = await readJson('redirects.json', { required: true });
-    const data = { branches, products, support, updates };
     const components = await loadComponents();
 
     await initPublicDir();
+    const projectImport = await importProjectSources({ root: ROOT_DIR, outputDir: PUBLIC_DIR });
+    const importedProjects = projectImport.sources.map((source) => ({
+        ...source,
+        publicUrl: sitePath(site, `projects/${source.id}`),
+        publishedUpdates: source.publishedUpdates.map((update) => ({ ...update, projectId: source.id, projectName: source.project.name }))
+    }));
+    const data = { branches, products, support, updates, importedProjects, importedWarnings: projectImport.warnings };
     const postsData = [];
     const generatedPaths = [];
     const redirectEntries = [];
     await buildAllContent(CONTENT_DIR, '', components, site, data, postsData, generatedPaths, redirectEntries);
+    await buildImportedProjects(site, components, data, generatedPaths);
     postsData.sort((a, b) => {
         if (!a.dateISO) return 1;
         if (!b.dateISO) return -1;

@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<%- components.head %>
+<body class="site-shell skin-<%= page.skin %>" data-branch="<%= page.branch %>">
+    <div class="page-light light-source parallax" aria-hidden="true"></div>
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+    <%- components.nav %>
+    <div class="content-wrapper">
+        <main id="main-content" class="container page-shell projects-page" tabindex="-1">
+            <% if (frontmatter.hero_title) { %><%- include('hero', { frontmatter }) %><% } else if (frontmatter.title) { %><h1 class="section-title"><%= frontmatter.title %></h1><% } %>
+            <div class="reading-text"><%- content %></div>
+            <% const projects = data.importedProjects || []; %>
+            <% if (projects.length) { %>
+                <section class="imported-project-directory" aria-labelledby="imported-directory-title">
+                    <div class="section-header"><div><h2 id="imported-directory-title" class="section-title section-label">IMPORTED PROJECTS</h2><p class="section-desc">Accepted source packages with status, maturity, and intent kept distinct.</p></div></div>
+                    <div class="project-grid"><% projects.forEach((item) => { %><article class="noir-card project-card imported-project-card"><div class="project-status project-status--<%= item.project.status %>"><%= item.project.status.replace(/-/g, ' ').toUpperCase() %></div><h3><a href="<%= siteRoot %>projects/<%= item.id %>/"><%= item.project.name %></a></h3><p><%= item.project.summary %></p><span class="mono imported-maturity">Maturity: <%= item.project.status %></span><a class="hero-link mono" href="<%= siteRoot %>projects/<%= item.id %>/">PROJECT DETAILS →</a></article><% }); %></div>
+                </section>
+            <% } else { %><p class="noir-card imported-empty">No enabled project source is currently accepted. Site-owned branch context above remains available.</p><% } %>
+        </main>
+        <%- components.footer %>
+    </div>
+    <script src="<%= siteRoot %>scripts/script.js"></script>
+    <script src="<%= siteRoot %>scripts/light-engine.js"></script>
+    <script src="<%= siteRoot %>scripts/smoke.js"></script>
+</body>
+</html>

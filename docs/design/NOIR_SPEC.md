@@ -1,4 +1,4 @@
-# NOIR_SPEC — SourceArcanum noir restyle (Wave: noir-restyle)
+# NOIR_SPEC — DonavenCrenshaw noir restyle (Wave: noir-restyle)
 
 Single source of truth for the monochrome-noir redesign. Concept references live in
 `docs/design/concepts/01..10-*.png` (workers cannot view them; this spec IS the design).

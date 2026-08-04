@@ -33,7 +33,7 @@ The director then reconciled route conflicts, removed legacy public-data/runtime
 - BetterFingers is not represented as released.
 - Crenshaw Systems has no unsupported software catalog or invented commercial terms.
 - Infinite Ages exposes only real artifacts and states its license gap.
-- The build works at both `/` and `/SourceArcanum/`.
+- The build works at both `/` and `/DonavenCrenshaw/`.
 - Browser navigation, responsive layouts, keyboard access, and reduced motion work.
 - Automated verification and zero-vulnerability audit pass before handoff.
 

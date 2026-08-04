@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schemas/updates.schema.json",
+  "title": "Project source updates",
+  "description": "The v1 consumer contract for website/updates.json.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "items"],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "items": {
+      "type": "array",
+      "description": "Updates in any state. The importer publishes only published items.",
+      "items": {
+        "$ref": "#/$defs/update"
+      },
+      "uniqueItems": true
+    }
+  },
+  "$defs": {
+    "updateId": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "minLength": 1,
+      "maxLength": 100
+    },
+    "update": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "date", "title", "summary", "type", "state"],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/updateId"
+        },
+        "date": {
+          "type": "string",
+          "description": "Publication or event date in calendar-date form.",
+          "format": "date",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "type": {
+          "type": "string",
+          "enum": ["release", "progress", "milestone", "announcement", "note", "incident"]
+        },
+        "state": {
+          "type": "string",
+          "description": "Draft is never public; archived is retained but not shown in the default feed.",
+          "enum": ["draft", "published", "archived"]
+        },
+        "url": {
+          "type": "string",
+          "description": "Optional verified HTTPS or HTTP destination.",
+          "pattern": "^https?://[^\\s]+$",
+          "format": "uri",
+          "maxLength": 2000
+        }
+      }
+    }
+  }
+}

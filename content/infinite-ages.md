@@ -37,7 +37,7 @@ hero_scene: "book"
         <p class="ages-status metal-text">Prototype</p>
       </div>
       <div class="ages-download-links">
-        <a class="btn-noir" href="https://github.com/RoyGSlade/SourceArcanum/releases/download/InfiniteAgesGenesis-v1/InfiniteAgesGenesis.pdf">Infinite Ages Genesis TTRPG PDF</a>
+        <a class="btn-noir" href="https://github.com/RoyGSlade/DonavenCrenshaw/releases/download/InfiniteAgesGenesis-v1/InfiniteAgesGenesis.pdf">Infinite Ages Genesis TTRPG PDF</a>
         <a class="btn-noir" href="../assets/InfinteAges/InfiniteAgesCharatersheet.pdf">Infinite Ages character sheet PDF</a>
       </div>
     </div>

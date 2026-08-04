@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "id": "example-project",
+  "name": "Example Project",
+  "summary": "Template only; replace this with a verified plain-language summary.",
+  "status": "concept",
+  "featured": false,
+  "links": [],
+  "features": [],
+  "screenshots": [],
+  "roadmap": [],
+  "updatedAt": "2026-01-01T00:00:00Z"
+}

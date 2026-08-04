@@ -22,15 +22,25 @@
 }
 
 .noir-hero[data-scene="desk"] .hero-scene {
-    background-image: url("../assets/noir/hero-desk.jpg");
+    background-image:
+        radial-gradient(circle at 68% 32%, rgba(255, 255, 255, 0.16) 0 0.18rem, transparent 0.24rem),
+        linear-gradient(135deg, transparent 0 35%, rgba(255, 255, 255, 0.08) 35% 36%, transparent 36% 100%),
+        repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.025) 0 1px, transparent 1px 10px),
+        linear-gradient(145deg, #17171d 0%, #09090d 62%, #1d1d23 100%);
 }
 
 .noir-hero[data-scene="lamp"] .hero-scene {
-    background-image: url("../assets/noir/hero-lamp.jpg");
+    background-image:
+        radial-gradient(circle at 68% 30%, rgba(255, 255, 255, 0.28) 0 0.22rem, rgba(255, 255, 255, 0.08) 0.25rem 3.5rem, transparent 10rem),
+        linear-gradient(90deg, transparent 0 56%, rgba(255, 255, 255, 0.07) 56% 57%, transparent 57%),
+        linear-gradient(160deg, #101015 0%, #08080b 54%, #24242a 100%);
 }
 
 .noir-hero[data-scene="book"] .hero-scene {
-    background-image: url("../assets/noir/hero-book.jpg");
+    background-image:
+        repeating-linear-gradient(167deg, transparent 0 16px, rgba(255, 255, 255, 0.05) 16px 17px, transparent 17px 25px),
+        radial-gradient(ellipse at 62% 74%, rgba(255, 255, 255, 0.13), transparent 48%),
+        linear-gradient(145deg, #1b1b21 0%, #09090d 64%, #25252b 100%);
 }
 
 .hero-light {
