@@ -6,19 +6,87 @@
     <a class="skip-link" href="#main-content">Skip to main content</a>
     <%- components.nav %>
     <div class="content-wrapper">
-        <main id="main-content" class="container page-shell" tabindex="-1">
+        <% const availableFeatures = project.features.filter((feature) => feature.state === 'available'); %>
+        <main id="main-content" class="page-shell imported-project-shell" tabindex="-1">
             <header class="imported-project-hero">
-                <p class="mono imported-kicker">PROJECT SOURCE · <%= project.status.replace(/-/g, ' ').toUpperCase() %></p>
-                <h1><%= project.name %></h1>
-                <p class="imported-summary"><%= project.summary %></p>
-                <p class="mono imported-maturity">Maturity: <%= project.status %> · Facts reviewed <time datetime="<%= project.updatedAt %>"><%= project.updatedAt.slice(0, 10) %></time></p>
-                <% if (project.links.length) { %><nav class="imported-links" aria-label="Project links"><% project.links.forEach((link) => { %><a class="btn btn-primary" href="<%= link.url %>" rel="noopener noreferrer"><%= link.label %></a><% }); %></nav><% } %>
+                <div class="imported-hero-copy">
+                    <p class="mono imported-kicker">PROJECT SOURCE · <%= project.status.replace(/-/g, ' ').toUpperCase() %></p>
+                    <h1><%= project.name %></h1>
+                    <p class="imported-summary"><%= project.summary %></p>
+                    <% if (project.links.length) { %><nav class="imported-links" aria-label="Project links"><% project.links.forEach((link) => { %><a class="btn btn-primary" href="<%= link.url %>" rel="noopener noreferrer"><%= link.label %></a><% }); %></nav><% } %>
+                </div>
+                <aside class="imported-source-pulse" aria-label="Project source snapshot">
+                    <span class="source-pulse-orbit" aria-hidden="true"></span>
+                    <p class="section-label">Source snapshot</p>
+                    <dl>
+                        <div><dt>Status</dt><dd><%= project.status.replace(/-/g, ' ') %></dd></div>
+                        <div><dt>Reviewed</dt><dd><time datetime="<%= project.updatedAt %>"><%= project.updatedAt.slice(0, 10) %></time></dd></div>
+                        <div><dt>Current features</dt><dd><%= availableFeatures.length %></dd></div>
+                        <div><dt>Next plans</dt><dd><%= project.roadmap.length %></dd></div>
+                    </dl>
+                </aside>
             </header>
-            <section class="imported-section imported-body" aria-labelledby="project-context-title"><h2 id="project-context-title">Project context</h2><div class="reading-text"><%- imported.pageHtml %></div></section>
-            <% if (project.features.length) { %><section class="imported-section" aria-labelledby="features-title"><h2 id="features-title">Features</h2><div class="imported-feature-grid"><% project.features.forEach((feature) => { %><article class="noir-card imported-feature imported-feature--<%= feature.state %>"><div class="mono imported-state"><%= feature.state %></div><h3><%= feature.title %></h3><p><%= feature.summary %></p></article><% }); %></div></section><% } %>
-            <% if (imported.screenshots.length) { %><section class="imported-section" aria-labelledby="screenshots-title"><h2 id="screenshots-title">Screenshots</h2><div class="imported-screenshots"><% imported.screenshots.forEach((shot) => { %><figure><img src="<%= siteRoot %><%= shot.publicPath %>" alt="<%= shot.alt %>"><% if (shot.caption) { %><figcaption><%= shot.caption %></figcaption><% } %></figure><% }); %></div></section><% } %>
-            <% if (imported.publishedUpdates.length) { %><section class="imported-section" aria-labelledby="updates-title"><h2 id="updates-title">Updates</h2><div class="imported-updates"><% imported.publishedUpdates.forEach((update) => { %><article class="noir-card imported-update"><time class="mono" datetime="<%= update.date %>"><%= update.date %></time><h3><%= update.title %></h3><p><%= update.summary %></p><span class="mono section-subtitle"><%= update.type %></span></article><% }); %></div></section><% } %>
-            <% if (project.roadmap.length) { %><section class="imported-section" aria-labelledby="roadmap-title"><h2 id="roadmap-title">Roadmap</h2><div class="imported-roadmap"><% project.roadmap.forEach((item) => { %><article class="noir-card imported-roadmap-item imported-roadmap--<%= item.state %>"><div class="mono imported-state"><%= item.state %></div><h3><%= item.title %></h3><p><%= item.summary %></p></article><% }); %></div></section><% } %>
+            <section class="imported-section imported-body" aria-labelledby="project-context-title">
+                <div class="imported-section-heading"><p class="section-label">Overview</p><h2 id="project-context-title">Project context</h2></div>
+                <div class="reading-text"><%- imported.pageHtml %></div>
+            </section>
+            <% if (availableFeatures.length) { %>
+                <section class="imported-section imported-feature-section" aria-labelledby="features-title">
+                    <div class="imported-section-heading"><p class="section-label">Capabilities</p><h2 id="features-title">What it does today</h2><p>Implemented capabilities from the project-owned source.</p></div>
+                    <div class="imported-feature-grid">
+                        <% availableFeatures.forEach((feature, index) => { %>
+                            <article class="noir-card imported-feature">
+                                <span class="imported-feature-number mono" aria-hidden="true"><%= String(index + 1).padStart(2, '0') %></span>
+                                <div><h3><%= feature.title %></h3><p><%= feature.summary %></p></div>
+                            </article>
+                        <% }); %>
+                    </div>
+                </section>
+            <% } %>
+            <% if (imported.screenshots.length) { %><section class="imported-section" aria-labelledby="screenshots-title"><div class="imported-section-heading"><p class="section-label">Interface</p><h2 id="screenshots-title">Screenshots</h2></div><div class="imported-screenshots"><% imported.screenshots.forEach((shot) => { %><figure><img src="<%= siteRoot %><%= shot.publicPath %>" alt="<%= shot.alt %>"><% if (shot.caption) { %><figcaption><%= shot.caption %></figcaption><% } %></figure><% }); %></div></section><% } %>
+            <% if (imported.publishedUpdates.length) { %>
+                <section class="imported-section imported-update-section" aria-labelledby="updates-title">
+                    <div class="imported-section-heading"><p class="section-label">Build log</p><h2 id="updates-title">Updates</h2><p>Open an entry for the complete note.</p></div>
+                    <div class="imported-updates">
+                        <% imported.publishedUpdates.forEach((update) => { %>
+                            <details class="imported-update">
+                                <summary>
+                                    <span class="imported-update-title"><span class="mono"><%= update.type %> · <time datetime="<%= update.date %>"><%= update.date %></time></span><strong><%= update.title %></strong></span>
+                                    <span class="imported-update-action mono" aria-hidden="true"><span class="update-action-label">Read update</span><span class="update-action-icon">+</span></span>
+                                </summary>
+                                <div class="imported-update-body reading-text">
+                                    <% if (update.bodyHtml) { %><%- update.bodyHtml %><% } else { %><p><%= update.summary %></p><% } %>
+                                    <% if (update.url) { %><p><a class="btn btn-primary" href="<%= update.url %>" rel="noopener noreferrer">View source</a></p><% } %>
+                                </div>
+                            </details>
+                        <% }); %>
+                    </div>
+                </section>
+            <% } %>
+            <% if (project.roadmap.length) { %>
+                <section class="imported-section imported-roadmap-section" aria-labelledby="roadmap-title">
+                    <div class="imported-section-heading"><p class="section-label">Next sequence</p><h2 id="roadmap-title">Roadmap workflow</h2><p>Select a node to inspect the plan without crowding the workflow.</p></div>
+                    <ol class="imported-roadmap" aria-label="Planned project workflow">
+                        <% project.roadmap.forEach((item, index) => { %>
+                            <li>
+                                <button class="roadmap-node roadmap-node--<%= item.state %>" type="button" data-roadmap-title="<%= item.title %>" data-roadmap-summary="<%= item.summary %>" data-roadmap-state="<%= item.state %>" data-roadmap-step="<%= index + 1 %>">
+                                    <span class="roadmap-node-number mono"><%= String(index + 1).padStart(2, '0') %></span>
+                                    <strong><%= item.title %></strong>
+                                    <span class="roadmap-node-open mono">Open node ↗</span>
+                                </button>
+                            </li>
+                        <% }); %>
+                    </ol>
+                </section>
+                <dialog class="roadmap-dialog" id="roadmap-dialog" aria-labelledby="roadmap-dialog-title">
+                    <div class="roadmap-dialog-rail" aria-hidden="true"><span></span></div>
+                    <form method="dialog"><button class="roadmap-dialog-close" value="cancel" aria-label="Close roadmap details">×</button></form>
+                    <p class="mono roadmap-dialog-step" id="roadmap-dialog-step"></p>
+                    <p class="mono roadmap-dialog-state" id="roadmap-dialog-state"></p>
+                    <h2 id="roadmap-dialog-title"></h2>
+                    <p id="roadmap-dialog-summary"></p>
+                </dialog>
+            <% } %>
         </main>
         <%- components.footer %>
     </div>

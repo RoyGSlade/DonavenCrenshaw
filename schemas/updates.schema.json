@@ -50,6 +50,12 @@
           "minLength": 1,
           "maxLength": 500
         },
+        "body": {
+          "type": "string",
+          "description": "Optional body-only Markdown for the expanded public update. Level-one headings and unsafe markup are rejected.",
+          "minLength": 1,
+          "maxLength": 20000
+        },
         "type": {
           "type": "string",
           "enum": ["release", "progress", "milestone", "announcement", "note", "incident"]

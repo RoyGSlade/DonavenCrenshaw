@@ -101,6 +101,11 @@ the same safe-path check before rendering it.
 The top-level object contains `schemaVersion` and an `items` array. Each item
 requires `id`, `date`, `title`, `summary`, `type`, and `state`; `url` is
 optional and, when present, follows the same HTTP(S) rule as manifest links.
+An optional `body` provides body-only Markdown for the expanded update view.
+It supports the same safe headings, paragraphs, lists, emphasis, blockquotes,
+code, and links as `page.md`; frontmatter, level-one headings, scripts, forms,
+and unsafe links are rejected. Use `summary` for the concise feed description
+and `body` when the full update needs richer structure.
 `type` is `release`, `progress`, `milestone`, `announcement`, `note`, or
 `incident`. `state` is `draft`, `published`, or `archived`.
 

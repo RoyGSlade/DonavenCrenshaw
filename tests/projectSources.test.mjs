@@ -12,6 +12,8 @@ test('valid bundled fixture is accepted and published updates are sorted', async
     assert.equal(result.id, 'example-project');
     assert.equal(result.publishedUpdates[0].id, 'fixture-added');
     assert.match(result.pageHtml, /bundled fixture/);
+    assert.match(result.publishedUpdates[0].bodyHtml, /<h2>What changed<\/h2>/);
+    assert.match(result.publishedUpdates[0].bodyHtml, /<li>Headings remain below the page title\.<\/li>/);
 });
 
 async function copyFixture() {
@@ -66,4 +68,13 @@ test('unsafe manifest links are rejected', async () => {
     project.links[0].url = 'javascript:alert(1)';
     await fs.writeFile(file, JSON.stringify(project));
     await assert.rejects(validateProjectSource(root, { sourceId: 'example-project' }), /schema error|scheme/);
+});
+
+test('unsafe links in an update body are rejected', async () => {
+    const root = await copyFixture();
+    const file = path.join(root, 'website', 'updates.json');
+    const updates = JSON.parse(await fs.readFile(file, 'utf8'));
+    updates.items[0].body = '## Bad link\n\n[Open](javascript:alert(1))';
+    await fs.writeFile(file, JSON.stringify(updates));
+    await assert.rejects(validateProjectSource(root, { sourceId: 'example-project' }), /scheme|unsafe/);
 });

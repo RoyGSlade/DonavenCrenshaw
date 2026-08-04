@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "items": [
-    { "id": "fixture-added", "date": "2026-08-03", "title": "Fixture added", "summary": "The bundled fixture exercises the v1 source consumer and remains disabled in production.", "type": "milestone", "state": "published" },
+    { "id": "fixture-added", "date": "2026-08-03", "title": "Fixture added", "summary": "The bundled fixture exercises the v1 source consumer and remains disabled in production.", "body": "## What changed\n\nThe fixture now proves that expanded updates accept safe body-only Markdown.\n\n- Headings remain below the page title.\n- Lists and emphasis remain available for longer notes.", "type": "milestone", "state": "published" },
     { "id": "next-review", "date": "2026-08-04", "title": "Next review", "summary": "A draft update proves unpublished records do not enter the public feed.", "type": "progress", "state": "draft" }
   ]
 }

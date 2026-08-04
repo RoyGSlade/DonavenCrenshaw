@@ -14,10 +14,35 @@
 
             <ul class="nav-links" id="nav-links-list">
                 <li><a href="<%= siteLink('now') %>" data-route="now"><svg aria-hidden="true" viewBox="0 0 16 16"><path d="m2 7 6-5 6 5v6H9v-3H7v3H2Z"/></svg><span class="nav-label">Now</span></a></li>
-                <li><a href="<%= siteLink('projects') %>" data-route="projects"><svg aria-hidden="true" viewBox="0 0 16 16"><path d="M1.5 4.5h4l1.4 1.7h7.6v6.9H1.5z"/></svg><span class="nav-label">Projects</span></a></li>
-                <li><a href="<%= siteLink('underplain') %>" data-route="underplain"><svg aria-hidden="true" viewBox="0 0 16 16"><path d="m5.5 3-3 5 3 5M10.5 3l3 5-3 5M9 2.5 7 13.5"/></svg><span class="nav-label">underplain</span></a></li>
-                <li><a href="<%= siteLink('crenshaw-systems') %>" data-route="crenshaw-systems"><svg aria-hidden="true" viewBox="0 0 16 16"><path d="m8 1.5 5.5 3.1v6.8L8 14.5l-5.5-3.1V4.6zM2.5 4.6 8 7.8l5.5-3.2M8 7.8v6.7"/></svg><span class="nav-label">Crenshaw Systems</span></a></li>
-                <li><a href="<%= siteLink('infinite-ages') %>" data-route="infinite-ages"><svg aria-hidden="true" viewBox="0 0 16 16"><path d="M8 8c-1.5-3.4-4-4.4-5.4-2.7-1.5 1.8.1 5 2.8 5 1.4 0 2.5-1 2.6-2.3M8 8c1.5 3.4 4 4.4 5.4 2.7 1.5-1.8-.1-5-2.8-5-1.4 0-2.5 1-2.6 2.3"/></svg><span class="nav-label">Infinite Ages</span></a></li>
+                <li class="nav-group" data-nav-group="underplain">
+                    <div class="nav-branch-row">
+                        <a href="<%= siteLink('underplain') %>" data-route="underplain"><svg aria-hidden="true" viewBox="0 0 16 16"><path d="m5.5 3-3 5 3 5M10.5 3l3 5-3 5M9 2.5 7 13.5"/></svg><span class="nav-label">underplain</span></a>
+                        <button class="nav-submenu-toggle" type="button" aria-label="Toggle underplain projects" aria-controls="nav-underplain-projects" aria-expanded="false"><span aria-hidden="true">⌄</span></button>
+                    </div>
+                    <ul class="nav-submenu" id="nav-underplain-projects">
+                        <li><a href="<%= siteLink('projects/betterfingers') %>" data-nav-path="projects/betterfingers">BetterFingers</a></li>
+                        <li><a href="<%= siteLink('underplain/getfast') %>" data-nav-path="underplain/getfast">GetFast</a></li>
+                        <li><a href="<%= siteLink('underplain/pdfmanager') %>" data-nav-path="underplain/pdfmanager">PDFManager</a></li>
+                    </ul>
+                </li>
+                <li class="nav-group" data-nav-group="crenshaw-systems">
+                    <div class="nav-branch-row">
+                        <a href="<%= siteLink('crenshaw-systems') %>" data-route="crenshaw-systems"><svg aria-hidden="true" viewBox="0 0 16 16"><path d="m8 1.5 5.5 3.1v6.8L8 14.5l-5.5-3.1V4.6zM2.5 4.6 8 7.8l5.5-3.2M8 7.8v6.7"/></svg><span class="nav-label">Crenshaw Systems</span></a>
+                        <button class="nav-submenu-toggle" type="button" aria-label="Toggle Crenshaw Systems pages" aria-controls="nav-crenshaw-projects" aria-expanded="false"><span aria-hidden="true">⌄</span></button>
+                    </div>
+                    <ul class="nav-submenu" id="nav-crenshaw-projects">
+                        <li><a href="<%= siteLink('crenshaw-systems/process') %>" data-nav-path="crenshaw-systems/process">Service process</a></li>
+                    </ul>
+                </li>
+                <li class="nav-group" data-nav-group="infinite-ages">
+                    <div class="nav-branch-row">
+                        <a href="<%= siteLink('infinite-ages') %>" data-route="infinite-ages"><svg aria-hidden="true" viewBox="0 0 16 16"><path d="M8 8c-1.5-3.4-4-4.4-5.4-2.7-1.5 1.8.1 5 2.8 5 1.4 0 2.5-1 2.6-2.3M8 8c1.5 3.4 4 4.4 5.4 2.7 1.5-1.8-.1-5-2.8-5-1.4 0-2.5 1-2.6 2.3"/></svg><span class="nav-label">Infinite Ages</span></a>
+                        <button class="nav-submenu-toggle" type="button" aria-label="Toggle Infinite Ages projects" aria-controls="nav-infinite-projects" aria-expanded="false"><span aria-hidden="true">⌄</span></button>
+                    </div>
+                    <ul class="nav-submenu" id="nav-infinite-projects">
+                        <li><a href="<%= siteLink('infinite-ages') %>#ages-download-title">Infinite Ages TTRPG</a></li>
+                    </ul>
+                </li>
                 <li><a href="<%= siteLink('build-log') %>" data-route="build-log"><svg aria-hidden="true" viewBox="0 0 16 16"><path d="M1.5 12.5 5 8.8l2.6 1.8 5.4-6.1M10.5 4.5H13v2.7"/></svg><span class="nav-label">Build Log</span></a></li>
                 <li><a href="<%= siteLink('about') %>" data-route="about"><svg aria-hidden="true" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.3"/><path d="M8 7.1v4M8 4.7v.2"/></svg><span class="nav-label">About</span></a></li>
                 <li><a href="<%= siteLink('contact') %>" data-route="contact"><svg aria-hidden="true" viewBox="0 0 16 16"><rect x="1.5" y="3" width="13" height="10" rx="1"/><path d="m2 4 6 4.3L14 4"/></svg><span class="nav-label">Contact</span></a></li>

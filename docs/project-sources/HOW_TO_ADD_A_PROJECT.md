@@ -137,6 +137,7 @@ remain out of the default public feed.
       "date": "2026-08-03",
       "title": "Project package added",
       "summary": "The repository now provides validated website source files.",
+      "body": "## What changed\n\nThe project now owns its reviewed website source.\n\n- The central validator accepts the package.\n- The public page reads from this repository.",
       "type": "milestone",
       "state": "published",
       "url": "https://github.com/RoyGSlade/my-project"
@@ -146,7 +147,10 @@ remain out of the default public feed.
 ```
 
 Each update ID must be unique and stable. The importer sorts published updates
-by date, so their order in the JSON file is not significant.
+by date, so their order in the JSON file is not significant. `body` is optional
+body-only Markdown for the update's expandable long-form view. It supports
+headings beginning at `##`, paragraphs, lists, emphasis, blockquotes, code,
+and safe links. Omit it when the summary is the complete update.
 
 ## 5. Validate the project locally
 
@@ -200,9 +204,11 @@ In the browser, verify:
 
 - `/projects/<id>/` exists and uses the manifest name, summary, and status;
 - a featured project appears on the intended listing or homepage;
-- available, planned, and in-progress work remain visibly distinct;
+- only available capabilities appear as current features, while future work
+  remains in the roadmap workflow;
 - screenshots load from the project's namespaced asset path;
-- published updates appear, while draft and archived updates do not;
+- published updates expand to their summary or formatted Markdown body, while
+  draft and archived updates do not appear;
 - repository, demo, documentation, and download links go only to verified
   destinations; and
 - the browser console has no errors or missing-asset requests.

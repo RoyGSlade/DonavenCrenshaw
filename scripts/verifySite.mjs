@@ -135,10 +135,12 @@ for (const file of htmlFiles) {
 }
 
 const home = fs.existsSync(routeFile('/')) ? fs.readFileSync(routeFile('/'), 'utf8') : '';
-for (const label of ['Now', 'Projects', 'underplain', 'Crenshaw Systems', 'Infinite Ages', 'Build Log', 'About', 'Contact']) {
+const primaryNav = home.match(/<nav class="site-nav"[\s\S]*?<\/nav>/i)?.[0] || '';
+for (const label of ['Now', 'underplain', 'BetterFingers', 'GetFast', 'PDFManager', 'Crenshaw Systems', 'Service process', 'Infinite Ages', 'Infinite Ages TTRPG', 'Build Log', 'About', 'Contact']) {
     // Nav labels may be bare (>Label</a>) or wrapped (<span class="nav-label">Label</span></a>).
-    if (!home.includes(`>${label}</a>`) && !home.includes(`>${label}</span>`)) failures.push(`primary navigation is missing ${label}`);
+    if (!primaryNav.includes(`>${label}</a>`) && !primaryNav.includes(`>${label}</span>`)) failures.push(`primary navigation is missing ${label}`);
 }
+if (primaryNav.includes('data-route="projects"')) failures.push('primary navigation still contains the retired Projects item');
 
 if (failures.length) {
     console.error(`\n[FAIL] Built-site verification found ${failures.length} issue(s):`);

@@ -71,21 +71,21 @@ function safeRelativeUrl(value, label) {
     if (parts.includes('..')) throw new Error(`${label}: traversal link`);
 }
 
-function validateMarkdownLinks(markdown, sourceLabel) {
+function validateMarkdownLinks(markdown, sourceLabel, documentName) {
     const links = [...markdown.matchAll(/(?:\]\(|href\s*=\s*["'])([^)"']+)/gi)];
-    links.forEach((match) => safeRelativeUrl(match[1], `${sourceLabel}: page.md link`));
+    links.forEach((match) => safeRelativeUrl(match[1], `${sourceLabel}: ${documentName} link`));
 }
 
-function sanitizeMarkdown(markdown, sourceLabel) {
+function sanitizeMarkdown(markdown, sourceLabel, { documentName = 'page.md' } = {}) {
     const trimmed = markdown.replace(/^\uFEFF/, '').trimStart();
     if (trimmed.startsWith('---') || trimmed.startsWith('+++')) {
-        throw new Error(`${sourceLabel}: page.md frontmatter is not allowed`);
+        throw new Error(`${sourceLabel}: ${documentName} frontmatter is not allowed`);
     }
     const tokens = marked.lexer(markdown);
     if (tokens.some((token) => token.type === 'heading' && token.depth === 1)) {
-        throw new Error(`${sourceLabel}: page.md must not contain an h1; the website layout owns the project title`);
+        throw new Error(`${sourceLabel}: ${documentName} must not contain an h1; the website layout owns the title`);
     }
-    validateMarkdownLinks(markdown, sourceLabel);
+    validateMarkdownLinks(markdown, sourceLabel, documentName);
     const rendered = marked.parse(markdown, { async: false });
     return sanitizeHtml(rendered, {
         allowedTags: ['a', 'blockquote', 'br', 'code', 'em', 'h2', 'h3', 'h4', 'h5', 'h6', 'hr', 'li', 'ol', 'p', 'pre', 'strong', 'ul'],
@@ -140,7 +140,13 @@ export async function validateProjectSource(sourceRoot, { sourceId = path.basena
     try { pageMarkdown = await fs.readFile(pagePath, 'utf8'); } catch (error) { throw new Error(`${sourceLabel}: missing page.md (${error.message})`); }
     const pageHtml = sanitizeMarkdown(pageMarkdown, sourceLabel);
     for (const screenshot of project.screenshots) await assertAssetExists(root, screenshot.path, `${sourceLabel}: project.json screenshots`);
-    const publishedUpdates = updates.items.filter((item) => item.state === 'published').sort((a, b) => b.date.localeCompare(a.date) || a.id.localeCompare(b.id));
+    const updatesWithHtml = updates.items.map((item) => ({
+        ...item,
+        bodyHtml: item.body
+            ? sanitizeMarkdown(item.body, sourceLabel, { documentName: `updates.json item ${item.id} body` })
+            : null
+    }));
+    const publishedUpdates = updatesWithHtml.filter((item) => item.state === 'published').sort((a, b) => b.date.localeCompare(a.date) || a.id.localeCompare(b.id));
     return {
         id: project.id,
         sourceId,
