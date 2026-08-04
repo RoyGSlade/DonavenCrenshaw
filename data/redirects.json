@@ -10,6 +10,7 @@
   {"source":"/roadmap/","target":"/build-log/","owner":"donaven-crenshaw","reviewedAt":"2026-07-31","status":"published"},
   {"source":"/betterfingers/","target":"/underplain/betterfingers/","owner":"donaven-crenshaw","reviewedAt":"2026-07-31","status":"published"},
   {"source":"/projects/betterfingers.html","target":"/underplain/betterfingers/","owner":"donaven-crenshaw","reviewedAt":"2026-07-31","status":"published"},
+  {"source":"/underplain/getfast/","target":"/projects/getfast/","owner":"donaven-crenshaw","reviewedAt":"2026-08-04","status":"published"},
   {"source":"/projects/pdf-manager.html","target":"/underplain/pdfmanager/","owner":"donaven-crenshaw","reviewedAt":"2026-07-31","status":"published"},
   {"source":"/projects/infinite-ages.html","target":"/infinite-ages/","owner":"donaven-crenshaw","reviewedAt":"2026-07-31","status":"published"},
   {"source":"/projects/roguelike-crawler.html","target":"/infinite-ages/","owner":"donaven-crenshaw","reviewedAt":"2026-07-31","status":"published"},

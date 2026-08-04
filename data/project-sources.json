@@ -18,6 +18,14 @@
       "required": false
     },
     {
+      "id": "getfast",
+      "localPath": "GetFast",
+      "repository": "https://github.com/RoyGSlade/GetFast",
+      "ref": "main",
+      "enabled": true,
+      "required": false
+    },
+    {
       "id": "example-project",
       "localPath": "fixtures/projects/example-project",
       "repository": null,

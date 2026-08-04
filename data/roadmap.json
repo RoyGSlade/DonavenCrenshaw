@@ -213,9 +213,9 @@
     "getfast": {
       "name": "GETFAST",
       "focus": {
-        "summary": "STATUS: Download engine, safety/rollback, and desktop shell built and unit-tested on Linux. Remaining work is validation on real multi-interface hardware and the Windows build.",
-        "focusLine": "SOFT ANNOUNCE - RELEASE IMMINENT",
-        "objective": "Prove multi-path aggregation on physical hardware, then ship Linux and Windows together.",
+        "summary": "STATUS: Linux download engine, desktop shell, safety controls, and two-path hardware aggregation are proven. Three-path, remaining failure recovery, Windows, and public packaging remain.",
+        "focusLine": "LINUX PROTOTYPE - HARDENING",
+        "objective": "Complete the remaining hardware qualification and Windows port before a public release.",
         "successCriteria": [
           "Two independent links measurably contribute to one download",
           "Routing state restored on every terminal outcome including crash",

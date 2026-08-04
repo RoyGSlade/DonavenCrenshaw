@@ -43,6 +43,15 @@ jobs:
           persist-credentials: false
           token: ${{ secrets.PROJECT_SOURCE_TOKEN }}
 
+      - name: Checkout GetFast project source
+        uses: actions/checkout@v4
+        with:
+          repository: RoyGSlade/GetFast
+          ref: main
+          path: project-sources/GetFast
+          persist-credentials: false
+          token: ${{ secrets.PROJECT_SOURCE_TOKEN }}
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -58,6 +67,9 @@ jobs:
       - name: Validate Infinite Ages Evolved source directly
         run: node scripts/validateProjectSource.mjs --source project-sources/InfiniteAgesEvolved
 
+      - name: Validate GetFast source directly
+        run: node scripts/validateProjectSource.mjs --source project-sources/GetFast
+
       - name: Verify contracts, imported projects, site, privacy, and secrets
         env:
           PROJECT_SOURCE_ROOT: ${{ github.workspace }}/project-sources
@@ -68,6 +80,9 @@ jobs:
 
       - name: Require the Infinite Ages Evolved page in the built artifact
         run: test -f public/projects/infinite-ages-evolved/index.html
+
+      - name: Require the GetFast page in the built artifact
+        run: test -f public/projects/getfast/index.html
 
       - name: Setup Pages
         if: github.event_name != 'pull_request'

@@ -12,6 +12,7 @@ const requiredRoutes = [
     '/',
     '/now/',
     '/projects/',
+    '/projects/getfast/',
     '/underplain/',
     '/underplain/betterfingers/',
     '/underplain/getfast/',
