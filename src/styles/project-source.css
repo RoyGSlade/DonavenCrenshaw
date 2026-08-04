@@ -922,6 +922,11 @@
     .showcase-slide--split .showcase-media-frame,
     .showcase-slide--triptych .showcase-media-frame { min-height: min(72vh, 30rem); }
 
+    .showcase-media--contain .showcase-media-frame {
+        min-height: 0;
+        aspect-ratio: 4 / 3;
+    }
+
     .project-showcase--workflow .showcase-media:not(:last-child)::after {
         top: auto;
         right: 50%;
