@@ -20,47 +20,7 @@
 
 .about-founder {
     display: grid;
-    grid-template-columns: minmax(8rem, 0.68fr) minmax(0, 1.32fr);
-    gap: clamp(1rem, 3vw, 2rem);
-    align-items: center;
-}
-
-.about-portrait {
-    position: relative;
-    display: grid;
-    min-height: 12rem;
-    place-items: center;
-    overflow: hidden;
-    border: 1px solid var(--line-hair);
-    border-radius: var(--radius-soft);
-    background: radial-gradient(circle at 50% 35%, rgba(255, 255, 255, 0.1), transparent 45%), var(--noir-1);
-}
-
-.about-portrait::before {
-    position: absolute;
-    inset: 12%;
-    border-radius: 50%;
-    content: "";
-    background: radial-gradient(circle, rgba(255, 255, 255, 0.14), transparent 66%);
-    filter: blur(1px);
-}
-
-.about-portrait-ring {
-    position: absolute;
-    width: 7.25rem;
-    height: 7.25rem;
-    border: 1px solid rgba(255, 255, 255, 0.72);
-    border-radius: 50%;
-    box-shadow: 0 0 16px rgba(255, 255, 255, 0.38), 0 0 34px rgba(255, 255, 255, 0.14);
-}
-
-.about-portrait-silhouette {
-    position: relative;
-    width: 5.25rem;
-    height: 7.25rem;
-    border-radius: 48% 48% 34% 34%;
-    background: radial-gradient(circle at 50% 24%, #25252a 0 19%, transparent 20%), radial-gradient(ellipse at 50% 82%, #16161a 0 42%, transparent 43%), #0a0a0c;
-    box-shadow: 0 0 22px rgba(0, 0, 0, 0.9);
+    align-content: center;
 }
 
 .about-founder-copy {
@@ -121,15 +81,5 @@
 @media (max-width: 60rem) {
     .about-intro {
         grid-template-columns: 1fr;
-    }
-}
-
-@media (max-width: 36rem) {
-    .about-founder {
-        grid-template-columns: 1fr;
-    }
-
-    .about-portrait {
-        min-height: 10rem;
     }
 }

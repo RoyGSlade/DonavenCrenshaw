@@ -50,7 +50,10 @@ To prove the BetterFingers import from sibling checkouts:
 PROJECT_SOURCE_ROOT=.. SITE_BASE=/ npm run verify
 ```
 
-See [the project-source contract](docs/project-sources/README.md) for the files every project supplies and [the automation guide](docs/project-sources/AUTOMATION.md) for GitHub setup.
+See [the project-source contract](docs/project-sources/README.md) for the files
+every project supplies, [the optional showcase guide](docs/project-sources/SHOWCASES.md)
+for project-owned image/video carousels and development labels, and
+[the automation guide](docs/project-sources/AUTOMATION.md) for GitHub setup.
 
 ## Delivery
 

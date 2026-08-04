@@ -123,7 +123,70 @@ function bindRoadmapDialog() {
     });
 }
 
+function bindProjectShowcases() {
+    document.querySelectorAll('[data-project-showcase]').forEach((showcase) => {
+        const slides = [...showcase.querySelectorAll('[data-showcase-slide]')];
+        if (slides.length < 2) return;
+
+        const dots = [...showcase.querySelectorAll('[data-showcase-dot]')];
+        const previous = showcase.querySelector('[data-showcase-previous]');
+        const next = showcase.querySelector('[data-showcase-next]');
+        const current = showcase.querySelector('[data-showcase-current]');
+        const shouldLoop = showcase.dataset.loop !== 'false';
+        let activeIndex = 0;
+
+        function showSlide(index, focusDot = false) {
+            const lastIndex = slides.length - 1;
+            activeIndex = shouldLoop
+                ? (index + slides.length) % slides.length
+                : Math.min(Math.max(index, 0), lastIndex);
+
+            slides.forEach((slide, slideIndex) => {
+                const isActive = slideIndex === activeIndex;
+                slide.classList.toggle('is-active', isActive);
+                slide.setAttribute('aria-hidden', String(!isActive));
+                if (!isActive) slide.querySelectorAll('video').forEach((video) => video.pause());
+            });
+
+            dots.forEach((dot, dotIndex) => {
+                const isActive = dotIndex === activeIndex;
+                dot.classList.toggle('is-active', isActive);
+                dot.setAttribute('aria-pressed', String(isActive));
+            });
+
+            if (current) current.textContent = String(activeIndex + 1).padStart(2, '0');
+            if (!shouldLoop) {
+                previous.disabled = activeIndex === 0;
+                next.disabled = activeIndex === lastIndex;
+            }
+            if (focusDot) dots[activeIndex]?.focus();
+        }
+
+        previous?.addEventListener('click', () => showSlide(activeIndex - 1));
+        next?.addEventListener('click', () => showSlide(activeIndex + 1));
+        dots.forEach((dot, index) => dot.addEventListener('click', () => showSlide(index)));
+        showcase.addEventListener('keydown', (event) => {
+            if (event.key === 'ArrowLeft') {
+                event.preventDefault();
+                showSlide(activeIndex - 1, event.target.matches('[data-showcase-dot]'));
+            } else if (event.key === 'ArrowRight') {
+                event.preventDefault();
+                showSlide(activeIndex + 1, event.target.matches('[data-showcase-dot]'));
+            } else if (event.key === 'Home') {
+                event.preventDefault();
+                showSlide(0, event.target.matches('[data-showcase-dot]'));
+            } else if (event.key === 'End') {
+                event.preventDefault();
+                showSlide(slides.length - 1, event.target.matches('[data-showcase-dot]'));
+            }
+        });
+
+        showSlide(0);
+    });
+}
+
 markActiveNavigation();
 bindBranchNavigation();
 bindNavigation();
 bindRoadmapDialog();
+bindProjectShowcases();

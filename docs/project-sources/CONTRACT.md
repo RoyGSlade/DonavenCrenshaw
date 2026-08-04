@@ -50,6 +50,15 @@ The required top-level properties are `schemaVersion`, `id`, `name`,
 The status is descriptive, not inferred from a link, screenshot, or roadmap.
 `featured` is editorial placement only and is not evidence of maturity.
 
+`developmentLabel` is an optional plain-text presentation label for unfinished
+work. It is not a maturity override and must not contradict `status`.
+`showcase` is an optional project-owned carousel. Its absence is valid and the
+consumer must not render an empty container or invent placeholder media. See
+[SHOWCASES.md](SHOWCASES.md) for the authoring workflow. A showcase contains
+one to twelve uniquely identified slides; each slide uses a `single`, `split`,
+or `triptych` layout and contains one to three image or video records. The
+presentation variant is `gallery`, `workflow`, or `cinematic`.
+
 `features` is an array of `{id, title, summary, state}` records. Feature
 `state` is `available`, `planned`, `in-progress`, or `deprecated`. Only
 `available` may be rendered as a current/shipped capability; the other states
@@ -76,6 +85,10 @@ The manifest is the allowlist: an unreferenced file may remain in the source
 package, but it is not copied or published. A missing referenced file is an
 error. Keep media small enough for the website's normal performance budget;
 the contract does not pretend an unreviewed binary is evidence of a feature.
+Screenshots and showcase images accept AVIF, GIF, JPEG, PNG, and WebP.
+Showcase videos accept MP4, OGG/OGV, and WebM. A video poster follows the image
+rules. Media `type` and extension must agree. All accepted media and posters
+are copied into the same project-namespaced public asset boundary.
 
 ## `page.md` and HTML
 

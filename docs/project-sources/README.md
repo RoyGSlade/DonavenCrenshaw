@@ -15,6 +15,8 @@ Start with [HOW_TO_ADD_A_PROJECT.md](HOW_TO_ADD_A_PROJECT.md) for the complete
 copy, edit, validate, register, review, and automation sequence.
 
 Read [CONTRACT.md](CONTRACT.md) for normative field and rendering rules,
+[SHOWCASES.md](SHOWCASES.md) for the optional project-owned image/video
+carousel and development watermark,
 [ADOPTION.md](ADOPTION.md) for contributor and operator workflows, and
 [AUTOMATION.md](AUTOMATION.md) for the GitHub validation/dispatch/deploy flow.
 The registry at [`data/project-sources.json`](../../data/project-sources.json)

@@ -12,6 +12,8 @@ export const ROOT_DIR = path.resolve(HERE, '..');
 const SCHEMA_DIR = path.join(ROOT_DIR, 'schemas');
 const SAFE_SEGMENT = /^[A-Za-z0-9_-]+(?:\.[A-Za-z0-9_-]+)*$/;
 const SAFE_ASSET = /^website\/assets\/(?:[A-Za-z0-9_-]+\/)*[A-Za-z0-9_-]+(?:\.[A-Za-z0-9_-]+)*$/;
+const IMAGE_EXTENSIONS = new Set(['.avif', '.gif', '.jpeg', '.jpg', '.png', '.webp']);
+const VIDEO_EXTENSIONS = new Set(['.mp4', '.ogg', '.ogv', '.webm']);
 
 export const STATUS_LABELS = {
     concept: 'Concept', planned: 'Planned', prototype: 'Prototype',
@@ -118,6 +120,21 @@ async function assertAssetExists(sourceRoot, assetPath, sourceLabel) {
     }
 }
 
+function assertMediaExtension(assetPath, mediaType, sourceLabel) {
+    const extension = path.extname(assetPath).toLowerCase();
+    const allowed = mediaType === 'video' ? VIDEO_EXTENSIONS : IMAGE_EXTENSIONS;
+    if (!allowed.has(extension)) {
+        throw new Error(`${sourceLabel}: ${mediaType} asset must use a supported extension (${[...allowed].join(', ')})`);
+    }
+}
+
+function projectAsset(projectId, assetPath) {
+    return {
+        sourcePath: assetPath,
+        publicPath: `assets/projects/${projectId}/${assetPath.slice('website/assets/'.length)}`
+    };
+}
+
 export async function validateProjectSource(sourceRoot, { sourceId = path.basename(sourceRoot) } = {}) {
     const sourceLabel = `source ${sourceId}`;
     const root = path.resolve(sourceRoot);
@@ -132,6 +149,7 @@ export async function validateProjectSource(sourceRoot, { sourceId = path.basena
     if (project.id !== sourceId) throw new Error(`${sourceLabel}: registry/manifest ID agreement failed (${sourceId} !== ${project.id})`);
     assertUnique(project.features.map((item) => item.id), 'feature');
     assertUnique(project.roadmap.map((item) => item.id), 'roadmap');
+    if (project.showcase) assertUnique(project.showcase.slides.map((item) => item.id), 'showcase slide');
     assertUnique(updates.items.map((item) => item.id), 'update');
     project.links.forEach((link, index) => safeUrl(link.url, `${sourceLabel}: project.json links[${index}]`));
     updates.items.forEach((item, index) => { if (item.url) safeUrl(item.url, `${sourceLabel}: updates.json items[${index}]`); });
@@ -139,7 +157,45 @@ export async function validateProjectSource(sourceRoot, { sourceId = path.basena
     let pageMarkdown;
     try { pageMarkdown = await fs.readFile(pagePath, 'utf8'); } catch (error) { throw new Error(`${sourceLabel}: missing page.md (${error.message})`); }
     const pageHtml = sanitizeMarkdown(pageMarkdown, sourceLabel);
-    for (const screenshot of project.screenshots) await assertAssetExists(root, screenshot.path, `${sourceLabel}: project.json screenshots`);
+    const assetCopies = new Map();
+    const registerAsset = (assetPath) => {
+        const asset = projectAsset(project.id, assetPath);
+        assetCopies.set(asset.sourcePath, asset);
+        return asset;
+    };
+    const screenshots = [];
+    for (const screenshot of project.screenshots) {
+        await assertAssetExists(root, screenshot.path, `${sourceLabel}: project.json screenshots`);
+        assertMediaExtension(screenshot.path, 'image', `${sourceLabel}: project.json screenshots`);
+        screenshots.push({ ...screenshot, ...registerAsset(screenshot.path) });
+    }
+    let showcase = null;
+    if (project.showcase) {
+        const slides = [];
+        for (const slide of project.showcase.slides) {
+            const media = [];
+            for (const item of slide.media) {
+                const itemLabel = `${sourceLabel}: showcase slide ${slide.id}`;
+                await assertAssetExists(root, item.path, itemLabel);
+                assertMediaExtension(item.path, item.type, itemLabel);
+                const publicAsset = registerAsset(item.path);
+                let posterPublicPath = null;
+                if (item.poster) {
+                    await assertAssetExists(root, item.poster, `${itemLabel} poster`);
+                    assertMediaExtension(item.poster, 'image', `${itemLabel} poster`);
+                    posterPublicPath = registerAsset(item.poster).publicPath;
+                }
+                media.push({ ...item, ...publicAsset, posterPublicPath });
+            }
+            slides.push({ ...slide, media });
+        }
+        showcase = {
+            ...project.showcase,
+            variant: project.showcase.variant || 'gallery',
+            loop: project.showcase.loop !== false,
+            slides
+        };
+    }
     const updatesWithHtml = updates.items.map((item) => ({
         ...item,
         bodyHtml: item.body
@@ -156,7 +212,9 @@ export async function validateProjectSource(sourceRoot, { sourceId = path.basena
         publishedUpdates,
         pageMarkdown,
         pageHtml,
-        screenshots: project.screenshots.map((shot) => ({ ...shot, sourcePath: shot.path, publicPath: `assets/projects/${project.id}/${shot.path.slice('website/assets/'.length)}` }))
+        screenshots,
+        showcase,
+        assetCopies: [...assetCopies.values()]
     };
 }
 
@@ -193,9 +251,9 @@ export async function importProjectSources({ root = ROOT_DIR, outputDir = path.j
     await fs.mkdir(staging, { recursive: true });
     try {
         for (const source of accepted) {
-            for (const screenshot of source.screenshots) {
-                const from = path.join(source.root, screenshot.sourcePath);
-                const destination = path.join(staging, screenshot.publicPath);
+            for (const asset of source.assetCopies) {
+                const from = path.join(source.root, asset.sourcePath);
+                const destination = path.join(staging, asset.publicPath);
                 await fs.mkdir(path.dirname(destination), { recursive: true });
                 await fs.copyFile(from, destination);
             }

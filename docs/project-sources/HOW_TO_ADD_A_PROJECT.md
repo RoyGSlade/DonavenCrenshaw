@@ -95,6 +95,11 @@ Keep these rules in mind:
   `download`, `documentation`, `issue-tracker`, and `other`.
 - Put screenshots under `website/assets/`. Use `screenshots: []` when there are
   no real project-owned images; never add placeholder artwork.
+- For an optional multi-image/video carousel, follow
+  [SHOWCASES.md](SHOWCASES.md). Omit `showcase` until real media is ready; it
+  is never required for a valid project source.
+- Use the optional `developmentLabel` for a truthful unfinished-product
+  watermark. It works with or without a showcase.
 - Empty arrays are valid. Do not invent links, screenshots, features, dates,
   readiness, users, pricing, or performance claims to fill the page.
 - Update `updatedAt` whenever the project facts are reviewed or changed.
@@ -207,6 +212,8 @@ In the browser, verify:
 - only available capabilities appear as current features, while future work
   remains in the roadmap workflow;
 - screenshots load from the project's namespaced asset path;
+- an optional showcase changes slides with its buttons, dots, and keyboard
+  arrows; images and videos load without blocking projects that omit it;
 - published updates expand to their summary or formatted Markdown body, while
   draft and archived updates do not appear;
 - repository, demo, documentation, and download links go only to verified

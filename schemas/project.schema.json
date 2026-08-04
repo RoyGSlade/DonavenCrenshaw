@@ -58,6 +58,15 @@
     "featured": {
       "type": "boolean"
     },
+    "developmentLabel": {
+      "type": "string",
+      "description": "Optional truthful development watermark shown on unfinished project presentation surfaces.",
+      "minLength": 1,
+      "maxLength": 80
+    },
+    "showcase": {
+      "$ref": "#/$defs/showcase"
+    },
     "links": {
       "type": "array",
       "description": "Verified destinations only. An empty array is valid.",
@@ -113,6 +122,57 @@
         "path": { "$ref": "#/$defs/assetPath" },
         "alt": { "type": "string", "minLength": 1, "maxLength": 240 },
         "caption": { "type": "string", "minLength": 1, "maxLength": 280 }
+      }
+    },
+    "showcase": {
+      "type": "object",
+      "description": "Optional project-owned carousel. Omit the entire property when no reviewed media is ready.",
+      "additionalProperties": false,
+      "required": ["title", "slides"],
+      "properties": {
+        "title": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "summary": { "type": "string", "minLength": 1, "maxLength": 360 },
+        "variant": { "type": "string", "enum": ["gallery", "workflow", "cinematic"] },
+        "loop": { "type": "boolean" },
+        "slides": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 12,
+          "items": { "$ref": "#/$defs/showcaseSlide" }
+        }
+      }
+    },
+    "showcaseSlide": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title", "layout", "media"],
+      "properties": {
+        "id": { "$ref": "#/$defs/entryId" },
+        "title": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "summary": { "type": "string", "minLength": 1, "maxLength": 360 },
+        "layout": { "type": "string", "enum": ["single", "split", "triptych"] },
+        "media": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 3,
+          "items": { "$ref": "#/$defs/showcaseMedia" }
+        }
+      }
+    },
+    "showcaseMedia": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "path", "alt"],
+      "properties": {
+        "type": { "type": "string", "enum": ["image", "video"] },
+        "path": { "$ref": "#/$defs/assetPath" },
+        "alt": { "type": "string", "minLength": 1, "maxLength": 240 },
+        "title": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "caption": { "type": "string", "minLength": 1, "maxLength": 360 },
+        "poster": { "$ref": "#/$defs/assetPath" },
+        "fit": { "type": "string", "enum": ["contain", "cover"] },
+        "muted": { "type": "boolean" },
+        "loop": { "type": "boolean" }
       }
     },
     "link": {

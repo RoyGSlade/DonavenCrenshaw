@@ -9,6 +9,9 @@
         <% const availableFeatures = project.features.filter((feature) => feature.state === 'available'); %>
         <main id="main-content" class="page-shell imported-project-shell" tabindex="-1">
             <header class="imported-project-hero">
+                <% if (project.developmentLabel) { %>
+                    <p class="project-development-stamp" aria-label="Project status: <%= project.developmentLabel %>"><span><%= project.developmentLabel %></span></p>
+                <% } %>
                 <div class="imported-hero-copy">
                     <p class="mono imported-kicker">PROJECT SOURCE · <%= project.status.replace(/-/g, ' ').toUpperCase() %></p>
                     <h1><%= project.name %></h1>
@@ -30,6 +33,60 @@
                 <div class="imported-section-heading"><p class="section-label">Overview</p><h2 id="project-context-title">Project context</h2></div>
                 <div class="reading-text"><%- imported.pageHtml %></div>
             </section>
+            <% if (imported.showcase) { %>
+                <section class="imported-section project-showcase project-showcase--<%= imported.showcase.variant %>" aria-labelledby="project-showcase-title" data-project-showcase data-loop="<%= imported.showcase.loop %>">
+                    <div class="imported-section-heading project-showcase-heading">
+                        <p class="section-label">Product showcase</p>
+                        <h2 id="project-showcase-title"><%= imported.showcase.title %></h2>
+                        <% if (imported.showcase.summary) { %><p><%= imported.showcase.summary %></p><% } %>
+                    </div>
+                    <div class="project-showcase-stage">
+                        <div class="project-showcase-track" aria-live="polite">
+                            <% imported.showcase.slides.forEach((slide, slideIndex) => { %>
+                                <article class="showcase-slide showcase-slide--<%= slide.layout %><%= slideIndex === 0 ? ' is-active' : '' %>" data-showcase-slide aria-hidden="<%= slideIndex === 0 ? 'false' : 'true' %>">
+                                    <header class="showcase-slide-heading">
+                                        <p class="mono">Scene <%= String(slideIndex + 1).padStart(2, '0') %></p>
+                                        <h3><%= slide.title %></h3>
+                                        <% if (slide.summary) { %><p><%= slide.summary %></p><% } %>
+                                    </header>
+                                    <div class="showcase-media-grid">
+                                        <% slide.media.forEach((item) => { %>
+                                            <figure class="showcase-media showcase-media--<%= item.type %> showcase-media--<%= item.fit || 'cover' %>">
+                                                <div class="showcase-media-frame">
+                                                    <% if (item.type === 'video') { %>
+                                                        <video controls playsinline preload="metadata" aria-label="<%= item.alt %>"<% if (item.posterPublicPath) { %> poster="<%= siteRoot %><%= item.posterPublicPath %>"<% } %><% if (item.muted) { %> muted<% } %><% if (item.loop) { %> loop<% } %>>
+                                                            <source src="<%= siteRoot %><%= item.publicPath %>">
+                                                            Your browser does not support embedded video.
+                                                        </video>
+                                                    <% } else { %>
+                                                        <img src="<%= siteRoot %><%= item.publicPath %>" alt="<%= item.alt %>" loading="lazy">
+                                                    <% } %>
+                                                    <% if (project.developmentLabel) { %><span class="showcase-development-mark mono" aria-hidden="true"><%= project.developmentLabel %></span><% } %>
+                                                </div>
+                                                <% if (item.title || item.caption) { %>
+                                                    <figcaption><% if (item.title) { %><strong><%= item.title %></strong><% } %><% if (item.caption) { %><span><%= item.caption %></span><% } %></figcaption>
+                                                <% } %>
+                                            </figure>
+                                        <% }); %>
+                                    </div>
+                                </article>
+                            <% }); %>
+                        </div>
+                        <% if (imported.showcase.slides.length > 1) { %>
+                            <div class="project-showcase-controls">
+                                <button class="showcase-arrow showcase-arrow--previous" type="button" data-showcase-previous aria-label="Show previous scene">←</button>
+                                <div class="showcase-pagination">
+                                    <p class="showcase-counter mono" aria-label="Current showcase scene"><span data-showcase-current>01</span> / <span><%= String(imported.showcase.slides.length).padStart(2, '0') %></span></p>
+                                    <div class="showcase-dots" role="group" aria-label="Choose a showcase scene">
+                                        <% imported.showcase.slides.forEach((slide, slideIndex) => { %><button class="showcase-dot<%= slideIndex === 0 ? ' is-active' : '' %>" type="button" data-showcase-dot="<%= slideIndex %>" aria-label="Show <%= slide.title %>" aria-pressed="<%= slideIndex === 0 ? 'true' : 'false' %>"></button><% }); %>
+                                    </div>
+                                </div>
+                                <button class="showcase-arrow showcase-arrow--next" type="button" data-showcase-next aria-label="Show next scene">→</button>
+                            </div>
+                        <% } %>
+                    </div>
+                </section>
+            <% } %>
             <% if (availableFeatures.length) { %>
                 <section class="imported-section imported-feature-section" aria-labelledby="features-title">
                     <div class="imported-section-heading"><p class="section-label">Capabilities</p><h2 id="features-title">What it does today</h2><p>Implemented capabilities from the project-owned source.</p></div>

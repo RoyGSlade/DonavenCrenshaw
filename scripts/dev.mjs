@@ -31,7 +31,15 @@ function serveStatic(req, res) {
         case '.json': contentType = 'application/json'; break;
         case '.png': contentType = 'image/png'; break;
         case '.jpg': contentType = 'image/jpg'; break;
+        case '.jpeg': contentType = 'image/jpeg'; break;
+        case '.gif': contentType = 'image/gif'; break;
+        case '.avif': contentType = 'image/avif'; break;
+        case '.webp': contentType = 'image/webp'; break;
         case '.svg': contentType = 'image/svg+xml'; break;
+        case '.mp4': contentType = 'video/mp4'; break;
+        case '.webm': contentType = 'video/webm'; break;
+        case '.ogg':
+        case '.ogv': contentType = 'video/ogg'; break;
         case '.webmanifest': contentType = 'application/manifest+json'; break;
     }
 

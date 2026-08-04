@@ -13,10 +13,6 @@ hero_scene: "desk"
 <div class="about-page">
   <section class="about-intro" aria-label="Founder and mission">
     <article class="noir-card about-founder">
-      <div class="about-portrait" aria-hidden="true">
-        <span class="about-portrait-ring"></span>
-        <span class="about-portrait-silhouette"></span>
-      </div>
       <div class="about-founder-copy">
         <p class="section-label">FOUNDER</p>
         <h2>Donaven Crenshaw</h2>

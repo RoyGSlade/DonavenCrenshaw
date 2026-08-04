@@ -235,15 +235,50 @@ main {
     padding: 0 clamp(1rem, 3vw, 3rem);
 }
 
-.page-shell,
+.page-shell {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding-top: clamp(2rem, 5vw, 5rem);
+    padding-bottom: clamp(4rem, 9vw, 8rem);
+}
+
 .page-header {
-    width: min(100%, 940px);
+    width: min(100%, var(--container-max));
     margin: 0 auto;
     padding-top: clamp(2rem, 5vw, 4.5rem);
     padding-bottom: clamp(4rem, 9vw, 8rem);
 }
 
-.page-shell > .section-title,
+.page-content {
+    width: min(100%, var(--container-max));
+    padding-top: clamp(2rem, 5vw, 4rem);
+}
+
+.page-copy {
+    width: 100%;
+    min-width: 0;
+}
+
+.page-copy > :where(p, ul, ol, blockquote, pre) {
+    max-width: var(--measure);
+}
+
+.page-content .section-header {
+    margin-bottom: 1.35rem;
+}
+
+.page-content .section-title.section-label {
+    max-width: none;
+    color: var(--text-main);
+    font-family: var(--font-mono);
+    font-size: clamp(0.78rem, 1.4vw, 0.95rem);
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    line-height: 1.4;
+}
+
+.page-content > .section-title,
 .page-header > .section-title {
     margin-bottom: 1.5rem;
     background: var(--metal);

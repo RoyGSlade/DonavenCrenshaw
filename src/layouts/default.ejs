@@ -6,15 +6,18 @@
     <a class="skip-link" href="#main-content">Skip to main content</a>
     <%- components.nav %>
     <div class="content-wrapper">
-        <main id="main-content" class="container page-shell" tabindex="-1">
-            <% if (frontmatter.hero_title) { %><%- include('hero', { frontmatter }) %><% } else if (frontmatter.title) { %><h1 class="section-title"><%= frontmatter.title %></h1><% } %>
-            <% if (frontmatter.date || frontmatter.status) { %>
-                <div class="mono page-meta">
-                    <% if (frontmatter.date) { %><span>Updated <%= frontmatter.date %></span><% } %>
-                    <% if (frontmatter.status) { %><span>Status: <%= frontmatter.status %></span><% } %>
-                </div>
-            <% } %>
-            <div class="reading-text"><%- content %></div>
+        <main id="main-content" class="page-shell" tabindex="-1">
+            <% if (frontmatter.hero_title) { %><%- include('hero', { frontmatter }) %><% } %>
+            <div class="container page-content">
+                <% if (!frontmatter.hero_title && frontmatter.title) { %><h1 class="section-title"><%= frontmatter.title %></h1><% } %>
+                <% if (frontmatter.date || frontmatter.status) { %>
+                    <div class="mono page-meta">
+                        <% if (frontmatter.date) { %><span>Updated <%= frontmatter.date %></span><% } %>
+                        <% if (frontmatter.status) { %><span>Status: <%= frontmatter.status %></span><% } %>
+                    </div>
+                <% } %>
+                <div class="page-copy"><%- content %></div>
+            </div>
         </main>
         <%- components.footer %>
     </div>
