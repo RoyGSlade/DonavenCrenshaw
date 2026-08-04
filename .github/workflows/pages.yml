@@ -34,6 +34,14 @@ jobs:
           path: project-sources/BetterFingers
           persist-credentials: false
 
+      - name: Checkout Infinite Ages Evolved project source
+        uses: actions/checkout@v4
+        with:
+          repository: RoyGSlade/InfiniteAgesEvolved
+          ref: main
+          path: project-sources/InfiniteAgesEvolved
+          persist-credentials: false
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -46,6 +54,9 @@ jobs:
       - name: Validate BetterFingers source directly
         run: node scripts/validateProjectSource.mjs --source project-sources/BetterFingers
 
+      - name: Validate Infinite Ages Evolved source directly
+        run: node scripts/validateProjectSource.mjs --source project-sources/InfiniteAgesEvolved
+
       - name: Verify contracts, imported projects, site, privacy, and secrets
         env:
           PROJECT_SOURCE_ROOT: ${{ github.workspace }}/project-sources
@@ -53,6 +64,9 @@ jobs:
 
       - name: Require the BetterFingers page in the built artifact
         run: test -f public/projects/betterfingers/index.html
+
+      - name: Require the Infinite Ages Evolved page in the built artifact
+        run: test -f public/projects/infinite-ages-evolved/index.html
 
       - name: Setup Pages
         if: github.event_name != 'pull_request'

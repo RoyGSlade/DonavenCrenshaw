@@ -10,6 +10,14 @@
       "required": false
     },
     {
+      "id": "infinite-ages-evolved",
+      "localPath": "InfiniteAgesEvolved",
+      "repository": "https://github.com/RoyGSlade/InfiniteAgesEvolved",
+      "ref": "main",
+      "enabled": true,
+      "required": false
+    },
+    {
       "id": "example-project",
       "localPath": "fixtures/projects/example-project",
       "repository": null,

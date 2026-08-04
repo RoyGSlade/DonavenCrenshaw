@@ -136,7 +136,7 @@ for (const file of htmlFiles) {
 
 const home = fs.existsSync(routeFile('/')) ? fs.readFileSync(routeFile('/'), 'utf8') : '';
 const primaryNav = home.match(/<nav class="site-nav"[\s\S]*?<\/nav>/i)?.[0] || '';
-for (const label of ['Now', 'underplain', 'BetterFingers', 'GetFast', 'PDFManager', 'Crenshaw Systems', 'Service process', 'Infinite Ages', 'Infinite Ages TTRPG', 'Build Log', 'About', 'Contact']) {
+for (const label of ['Now', 'underplain', 'BetterFingers', 'GetFast', 'PDFManager', 'Crenshaw Systems', 'Service process', 'Infinite Ages', 'Infinite Ages TTRPG', 'Infinite Ages Evolved', 'Build Log', 'About', 'Contact']) {
     // Nav labels may be bare (>Label</a>) or wrapped (<span class="nav-label">Label</span></a>).
     if (!primaryNav.includes(`>${label}</a>`) && !primaryNav.includes(`>${label}</span>`)) failures.push(`primary navigation is missing ${label}`);
 }
