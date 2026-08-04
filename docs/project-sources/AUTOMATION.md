@@ -30,9 +30,14 @@ ignores fact payloads and reads the checked-out project repository.
 3. Store the credential in each project as the Actions secret
    `DONAVEN_SITE_TOKEN`. The template deliberately skips dispatch with a visible
    warning when the secret is absent; validation still runs.
-4. Copy `templates/project-source/.github/workflows/website-content.yml` into
+4. For private project repositories, create a separate fine-grained token with
+   read-only Contents access to the approved private source repositories. Store
+   it only in DonavenCrenshaw as the Actions secret `PROJECT_SOURCE_TOKEN`, and
+   pass it to each private `actions/checkout` step. Public project checkouts can
+   continue to use the workflow's default token.
+5. Copy `templates/project-source/.github/workflows/website-content.yml` into
    the project and replace `replace-with-project-id` with the exact manifest ID.
-5. Add the project to `data/project-sources.json` and add an explicit checkout
+6. Add the project to `data/project-sources.json` and add an explicit checkout
    step in `.github/workflows/pages.yml`. Use the registry `ref` in that step.
 
 ## Rollout order
@@ -52,6 +57,8 @@ Use this order so a project never calls tooling that is not available yet:
 - A pull request validates but never dispatches or deploys.
 - A missing dispatch secret warns and exits successfully; content remains
   unannounced until the secret is configured.
+- A private project checkout fails closed when `PROJECT_SOURCE_TOKEN` is
+  missing or lacks read access; the previous deployed site remains live.
 - A required central source failure stops the build. An optional source failure
   is skipped with a visible warning and contributes no partial content.
 - Invalid Markdown, unsupported schema versions, duplicate IDs, unsafe links,

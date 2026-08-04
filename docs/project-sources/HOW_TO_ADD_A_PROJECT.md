@@ -240,6 +240,18 @@ the workflow's `project-sources` root:
     persist-credentials: false
 ```
 
+For a private project repository, create a separate fine-grained token with
+read-only Contents access to the approved private source repositories, store it
+in DonavenCrenshaw as `PROJECT_SOURCE_TOKEN`, and add this checkout input:
+
+```yaml
+    token: ${{ secrets.PROJECT_SOURCE_TOKEN }}
+```
+
+Do not broaden `DONAVEN_SITE_TOKEN` across private project repositories. It is
+the project-to-site dispatch credential; the read-only source token is a
+separate trust boundary.
+
 Optionally add a direct validation step and a final `test -f` assertion for
 the generated page, following the BetterFingers pilot already in that file.
 
@@ -319,7 +331,8 @@ other experiments.
 | Project page not generated | Confirm the source is enabled, valid, and located at the registered path. |
 | Reusable workflow cannot be found | Publish `.github/workflows/validate-project-source.yml` in DonavenCrenshaw before publishing the project caller. |
 | Dispatch skipped | Add `DONAVEN_SITE_TOKEN`; validation deliberately succeeds without dispatch when it is absent. |
-| Central CI cannot find the project | Add the explicit checkout to `pages.yml` and make its `path` match the registry `localPath`. |
+| Central CI cannot find a public project | Add the explicit checkout to `pages.yml` and make its `path` match the registry `localPath`. |
+| Private checkout returns 403 or repository not found | Add or repair the central `PROJECT_SOURCE_TOKEN` with read-only Contents access to that private repository. |
 
 For exact field semantics, see [CONTRACT.md](CONTRACT.md). For importer failure
 rules, see [ADOPTION.md](ADOPTION.md). For credential and dispatch details, see
