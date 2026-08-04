@@ -78,8 +78,14 @@ has no showcase yet. Omit it for finished work or when no label is appropriate.
 - `variant: "cinematic"` favors a 16:9 presentation.
 - `layout: "single"`, `"split"`, or `"triptych"` controls one, two, or three
   pieces in a scene. A slide accepts one to three pieces.
+- Frame sizes are preset so media does not inherit unpredictable viewport-based
+  heights: single scenes use 16:10, desktop split/triptych pieces use 4:3, and
+  stacked mobile pieces use a compact 16:10 frame. The cinematic variant keeps
+  its 16:9 frame.
 - `loop: false` stops at the first and last slide. The default is `true`.
-- `fit: "contain"` preserves the whole interface; `"cover"` fills the frame.
+- `fit: "contain"` preserves the whole interface, centers it, and only shrinks
+  oversized images into the preset frame. `"cover"` fills the preset frame and
+  may crop the media at its centered edges.
 
 Every image needs useful `alt` text. Every video needs an `alt` description;
 add a poster image when a representative still is available. Titles and
