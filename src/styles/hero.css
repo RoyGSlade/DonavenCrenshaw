@@ -70,7 +70,7 @@
     padding: clamp(4rem, 11vh, 7rem) clamp(1rem, 3vw, 3rem);
 }
 
-.skin-underplain .hero-title {
+.skin-underplain .noir-hero h1 {
     text-transform: none;
 }
 
