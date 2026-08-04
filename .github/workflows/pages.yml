@@ -41,6 +41,7 @@ jobs:
           ref: main
           path: project-sources/InfiniteAgesEvolved
           persist-credentials: false
+          token: ${{ secrets.DONAVEN_SITE_TOKEN }}
 
       - name: Setup Node
         uses: actions/setup-node@v4
