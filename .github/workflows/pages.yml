@@ -30,8 +30,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: RoyGSlade/BetterFingers
-          # Bootstrap reference: switch to main after the pilot package merges.
-          ref: agent/project-source-pilot
+          ref: main
           path: project-sources/BetterFingers
           persist-credentials: false
 
