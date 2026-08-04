@@ -5,7 +5,7 @@
       "id": "betterfingers",
       "localPath": "BetterFingers",
       "repository": "https://github.com/RoyGSlade/BetterFingers",
-      "ref": "main",
+      "ref": "agent/project-source-pilot",
       "enabled": true,
       "required": false
     },
