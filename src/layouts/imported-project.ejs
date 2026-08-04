@@ -15,7 +15,6 @@
                 <div class="imported-hero-copy">
                     <p class="mono imported-kicker">PROJECT SOURCE · <%= project.status.replace(/-/g, ' ').toUpperCase() %></p>
                     <h1><%= project.name %></h1>
-                    <p class="imported-summary"><%= project.summary %></p>
                     <% if (project.links.length) { %><nav class="imported-links" aria-label="Project links"><% project.links.forEach((link) => { %><a class="btn btn-primary" href="<%= link.url %>" rel="noopener noreferrer"><%= link.label %></a><% }); %></nav><% } %>
                 </div>
                 <aside class="imported-source-pulse" aria-label="Project source snapshot">
@@ -29,10 +28,6 @@
                     </dl>
                 </aside>
             </header>
-            <section class="imported-section imported-body" aria-labelledby="project-context-title">
-                <div class="imported-section-heading"><p class="section-label">Overview</p><h2 id="project-context-title">Project context</h2></div>
-                <div class="reading-text"><%- imported.pageHtml %></div>
-            </section>
             <% if (imported.showcase) { %>
                 <section class="imported-section project-showcase project-showcase--<%= imported.showcase.variant %>" aria-labelledby="project-showcase-title" data-project-showcase data-loop="<%= imported.showcase.loop %>">
                     <div class="imported-section-heading project-showcase-heading">
@@ -87,6 +82,13 @@
                     </div>
                 </section>
             <% } %>
+            <section class="imported-section imported-project-summary" aria-labelledby="project-summary-title">
+                <div class="imported-section-heading">
+                    <p class="section-label">At a glance</p>
+                    <h2 id="project-summary-title">What it is</h2>
+                    <p class="imported-summary"><%= project.summary %></p>
+                </div>
+            </section>
             <% if (availableFeatures.length) { %>
                 <section class="imported-section imported-feature-section" aria-labelledby="features-title">
                     <div class="imported-section-heading"><p class="section-label">Capabilities</p><h2 id="features-title">What it does today</h2><p>Implemented capabilities from the project-owned source.</p></div>
@@ -100,6 +102,10 @@
                     </div>
                 </section>
             <% } %>
+            <section class="imported-section imported-body" aria-labelledby="project-context-title">
+                <div class="imported-section-heading"><p class="section-label">In detail</p><h2 id="project-context-title">Detailed project context</h2></div>
+                <div class="reading-text"><%- imported.pageHtml %></div>
+            </section>
             <% if (imported.screenshots.length) { %><section class="imported-section" aria-labelledby="screenshots-title"><div class="imported-section-heading"><p class="section-label">Interface</p><h2 id="screenshots-title">Screenshots</h2></div><div class="imported-screenshots"><% imported.screenshots.forEach((shot) => { %><figure><img src="<%= siteRoot %><%= shot.publicPath %>" alt="<%= shot.alt %>"><% if (shot.caption) { %><figcaption><%= shot.caption %></figcaption><% } %></figure><% }); %></div></section><% } %>
             <% if (imported.publishedUpdates.length) { %>
                 <section class="imported-section imported-update-section" aria-labelledby="updates-title">

@@ -296,6 +296,23 @@
     font-size: 1.05rem;
 }
 
+.imported-project-summary {
+    padding: clamp(2rem, 5vw, 4.5rem);
+    border-block: 1px solid var(--line-hair);
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.045), transparent 68%);
+}
+
+.imported-project-summary .imported-section-heading {
+    max-width: 72rem;
+    margin-bottom: 0;
+}
+
+.imported-project-summary .imported-summary {
+    max-width: 64ch;
+    color: var(--text-soft);
+    font-size: clamp(1.15rem, 2vw, 1.6rem);
+}
+
 .imported-body {
     padding: clamp(1.5rem, 4vw, 4rem);
     border: 1px solid var(--line-hair);
