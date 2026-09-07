@@ -18,6 +18,7 @@
     <h1 class="metal-text"><%= frontmatter.hero_title %></h1>
     <% if (frontmatter.hero_kicker) { %><p class="hero-kicker section-label"><%= frontmatter.hero_kicker %></p><% } %>
     <% if (frontmatter.hero_sub) { %><p class="hero-sub"><%= frontmatter.hero_sub %></p><% } %>
+    <% if (frontmatter.hero_cta_url && frontmatter.hero_cta_label) { %><p><a class="btn-noir" href="<%= frontmatter.hero_cta_url %>"><%= frontmatter.hero_cta_label %></a></p><% } %>
   </div>
   <div class="hero-baseline divider-lit" aria-hidden="true"></div>
 </section>

@@ -24,6 +24,14 @@ hero_scene: "book"
     </div>
   </section>
 
+  <section class="section-block" aria-labelledby="caravans-link-title">
+    <div class="noir-card reading-text">
+      <h2 id="caravans-link-title" class="section-title section-label">Kingdoms &amp; Caravans</h2>
+      <p>An early, unfinished Windows friend playtest for a small survival RTS prototype.</p>
+      <p><a class="btn-noir" href="../kingdoms-caravans/index.html">VIEW KINGDOMS &amp; CARAVANS</a></p>
+    </div>
+  </section>
+
   <section class="section-block ages-download" aria-labelledby="ages-download-title">
     <div class="section-header">
       <div>
@@ -42,7 +50,7 @@ hero_scene: "book"
       </div>
     </div>
     <div class="noir-card reading-text ages-limits-card">
-      <p>No VTT, game build, storefront, or community service is implied by this doorway.</p>
+      <p>The tabletop materials above are separate from the Kingdoms &amp; Caravans game playtest linked on this page.</p>
       <p>The branch is currently shown as <strong>Prototype</strong>: a real TTRPG artifact exists, while the broader product and publishing system is not fully documented here. The page does not claim a complete VTT, active online service, compatibility guarantees, release cadence, or community access.</p>
       <p>The license for the TTRPG PDFs and character sheet is not stated on this page. See the <a href="../licenses/">licenses overview</a> and the artifact's accompanying source or release records before reusing them. No additional license terms are invented here.</p>
     </div>

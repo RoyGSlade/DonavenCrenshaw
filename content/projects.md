@@ -26,5 +26,11 @@ hero_scene: "desk"
       <p class="section-desc">TTRPG, VTT, storytelling, games, and entertainment.</p>
       <div class="reading-text"><p>Infinite Ages TTRPG is the flagship. Direct downloads, release status, and license terms appear only when a real artifact and supporting evidence are available.</p><p><a class="btn btn-primary" href="infinite-ages/index.html">VIEW INFINITE AGES</a></p></div>
     </article>
+    <article id="kingdoms-caravans-project" class="noir-card noir-card--lit project-branch-card">
+      <div class="icon-ring" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M4 18h16M6 18V9l6-4 6 4v9M9 18v-5h6v5" /></svg></div>
+      <div class="project-branch-heading"><h2><a href="kingdoms-caravans/index.html">Kingdoms &amp; Caravans</a></h2><span class="section-subtitle mono">EARLY FRIEND PLAYTEST</span></div>
+      <p class="section-desc">An unfinished, unsigned Windows x64 survival RTS prototype about building a city, moving resources, and surviving two raider waves.</p>
+      <p><a class="btn btn-primary" href="kingdoms-caravans/index.html">VIEW PLAYTEST</a></p>
+    </article>
   </div>
 </section>
