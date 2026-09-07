@@ -21,6 +21,7 @@
 @import url('./pages/about.css');
 @import url('./pages/contact.css');
 @import url('./pages/support.css');
+@import url('./pages/kingdoms.css');
 
 .hero {
     position: relative;

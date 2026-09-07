@@ -8,6 +8,7 @@ function currentSection(pathname = window.location.pathname) {
         'underplain',
         'crenshaw-systems',
         'infinite-ages',
+        'kingdoms-caravans',
         'build-log',
         'about',
         'contact',

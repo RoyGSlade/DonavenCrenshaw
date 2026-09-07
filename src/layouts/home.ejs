@@ -30,6 +30,17 @@
                     </div>
                 </section>
             <% } %>
+            <section class="container game-spotlight" aria-labelledby="kingdoms-caravans-spotlight-title">
+                <a class="game-spotlight-visual" href="<%= siteRoot %>kingdoms-caravans/" aria-label="Explore Kingdoms and Caravans">
+                    <img src="<%= siteRoot %>assets/kingdoms-caravans/city.png" alt="Kingdoms and Caravans city preview with buildings, workers, and surrounding landscape" loading="lazy">
+                </a>
+                <div class="game-spotlight-copy">
+                    <p class="section-label">PLAYABLE NOW · EARLY GAME BUILD</p>
+                    <h2 id="kingdoms-caravans-spotlight-title">Kingdoms &amp; Caravans</h2>
+                    <p class="section-desc">Build a growing city, move logs into planks, and keep food in reserve while two raider waves approach. It is an unfinished, unsigned Windows friend playtest focused on city supply, housing, and defense.</p>
+                    <p><a class="btn btn-primary" href="<%= siteRoot %>kingdoms-caravans/">EXPLORE THE PLAYTEST</a> <a class="btn-noir" href="https://github.com/RoyGSlade/KingdomsAndCaravans/releases/tag/v0.2.1" rel="noopener noreferrer">RELEASE NOTES</a></p>
+                </div>
+            </section>
             <%- content %>
             <% const featuredProjects = importedProjects.filter((item) => item.project.featured && item.id !== 'betterfingers'); %>
             <% const latestUpdates = importedProjects.flatMap((item) => item.publishedUpdates || []).sort((a, b) => b.date.localeCompare(a.date) || a.id.localeCompare(b.id)).slice(0, 5); %>
