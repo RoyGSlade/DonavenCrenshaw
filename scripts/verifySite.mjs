@@ -21,6 +21,7 @@ const requiredRoutes = [
     '/crenshaw-systems/process/',
     '/work/',
     '/infinite-ages/',
+    '/kingdoms-caravans/',
     '/build-log/',
     '/support/',
     '/about/',
@@ -142,16 +143,30 @@ for (const label of ['Now', 'underplain', 'BetterFingers', 'GetFast', 'PDFManage
     if (!primaryNav.includes(`>${label}</a>`) && !primaryNav.includes(`>${label}</span>`)) failures.push(`primary navigation is missing ${label}`);
 }
 if (primaryNav.includes('data-route="projects"')) failures.push('primary navigation still contains the retired Projects item');
+if (![...primaryNav.matchAll(/<a\b[^>]*>/gi)].some(([tag]) => /data-route="kingdoms-caravans"/i.test(tag) && /href="[^\"]*kingdoms-caravans\//i.test(tag))) failures.push('primary navigation is missing a direct Kingdoms & Caravans link');
 if (/Crenshaw Systems|Service process|data-nav-group="crenshaw-systems"/i.test(primaryNav)) failures.push('primary navigation still promotes the hidden business branch');
 if (!/UNDERPLAIN · FREE SOFTWARE BY DONAVEN CRENSHAW/i.test(home)) failures.push('homepage does not lead with underplain');
 if (!/home-betterfingers-spotlight/i.test(home) || !/assets\/projects\/betterfingers\/showcase\/complete-workflow\.png/i.test(home)) failures.push('homepage is missing the BetterFingers visual spotlight');
 if (!/href="\/projects\/betterfingers\/"/i.test(home)) failures.push('homepage spotlight does not link to BetterFingers');
+if (!/<section\b[^>]*class="[^"]*game-spotlight[^"]*"[\s\S]*href="[^\"]*kingdoms-caravans\//i.test(home)) failures.push('homepage is missing the Kingdoms & Caravans game spotlight/link');
 if (!/datetime="2026-08-26"/i.test(home)) failures.push('homepage current-state date is stale');
 if (/BRING ME A BUSINESS PROBLEM|Crenshaw Systems/i.test(home)) failures.push('homepage still promotes the hidden business branch');
 
 const betterFingersPage = fs.existsSync(routeFile('/projects/betterfingers/')) ? fs.readFileSync(routeFile('/projects/betterfingers/'), 'utf8') : '';
 if (!/Signed alpha · Windows 11 x64/i.test(betterFingersPage)) failures.push('BetterFingers download card does not identify the signed Windows alpha');
 if (/Unsigned alpha · Windows 11 x64/i.test(betterFingersPage)) failures.push('BetterFingers download card still contradicts the signed release');
+
+const kingdomsCaravansPage = fs.existsSync(routeFile('/kingdoms-caravans/')) ? fs.readFileSync(routeFile('/kingdoms-caravans/'), 'utf8') : '';
+const caravansZip = 'https://github.com/RoyGSlade/KingdomsAndCaravans/releases/download/v0.2.1/KingdomsAndCaravans-windows.zip';
+if (!kingdomsCaravansPage.includes(caravansZip)) failures.push('Kingdoms & Caravans page is missing the direct v0.2.1 Windows ZIP link');
+if (!/early[\s-]*(?:friend|windows)[\s-]*playtest/i.test(kingdomsCaravansPage)) failures.push('Kingdoms & Caravans page is missing early playtest wording');
+if (!/<meta\b[^>]*property="og:image"[^>]*content="[^"]*kingdoms-caravans[^\"]*"/i.test(kingdomsCaravansPage) && !/<meta\b[^>]*content="[^"]*kingdoms-caravans[^\"]*"[^>]*property="og:image"/i.test(kingdomsCaravansPage)) failures.push('Kingdoms & Caravans page is missing an og:image social card');
+if (!/<meta\b[^>]*name="twitter:card"[^>]*content="summary_large_image"/i.test(kingdomsCaravansPage) && !/<meta\b[^>]*content="summary_large_image"[^>]*name="twitter:card"/i.test(kingdomsCaravansPage)) failures.push('Kingdoms & Caravans page is missing a large social card declaration');
+for (const image of ['construction.png', 'supply.png', 'city.png', 'defense.png']) {
+    const asset = path.join(PUBLIC, 'assets', 'kingdoms-caravans', image);
+    if (!fs.existsSync(asset)) failures.push(`missing Kingdoms & Caravans showcase asset ${image}`);
+    if (!new RegExp(`assets/kingdoms-caravans/${image}`, 'i').test(kingdomsCaravansPage)) failures.push(`Kingdoms & Caravans page does not reference showcase asset ${image}`);
+}
 
 for (const route of ['/projects/', '/about/', '/contact/']) {
     const publicSurface = fs.existsSync(routeFile(route)) ? fs.readFileSync(routeFile(route), 'utf8') : '';
