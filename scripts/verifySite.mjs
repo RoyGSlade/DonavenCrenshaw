@@ -157,8 +157,8 @@ if (!/Signed alpha · Windows 11 x64/i.test(betterFingersPage)) failures.push('B
 if (/Unsigned alpha · Windows 11 x64/i.test(betterFingersPage)) failures.push('BetterFingers download card still contradicts the signed release');
 
 const kingdomsCaravansPage = fs.existsSync(routeFile('/kingdoms-caravans/')) ? fs.readFileSync(routeFile('/kingdoms-caravans/'), 'utf8') : '';
-const caravansZip = 'https://github.com/RoyGSlade/KingdomsAndCaravans/releases/download/v0.2.1/KingdomsAndCaravans-windows.zip';
-if (!kingdomsCaravansPage.includes(caravansZip)) failures.push('Kingdoms & Caravans page is missing the direct v0.2.1 Windows ZIP link');
+const caravansZip = 'https://github.com/RoyGSlade/KingdomsAndCaravans/releases/download/v0.3.0/KingdomsAndCaravans-windows.zip';
+if (!kingdomsCaravansPage.includes(caravansZip)) failures.push('Kingdoms & Caravans page is missing the direct v0.3.0 Windows ZIP link');
 if (!/early[\s-]*(?:friend|windows)[\s-]*playtest/i.test(kingdomsCaravansPage)) failures.push('Kingdoms & Caravans page is missing early playtest wording');
 if (!/<meta\b[^>]*property="og:image"[^>]*content="[^"]*kingdoms-caravans[^\"]*"/i.test(kingdomsCaravansPage) && !/<meta\b[^>]*content="[^"]*kingdoms-caravans[^\"]*"[^>]*property="og:image"/i.test(kingdomsCaravansPage)) failures.push('Kingdoms & Caravans page is missing an og:image social card');
 if (!/<meta\b[^>]*name="twitter:card"[^>]*content="summary_large_image"/i.test(kingdomsCaravansPage) && !/<meta\b[^>]*content="summary_large_image"[^>]*name="twitter:card"/i.test(kingdomsCaravansPage)) failures.push('Kingdoms & Caravans page is missing a large social card declaration');

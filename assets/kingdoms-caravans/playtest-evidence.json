@@ -1,47 +1,46 @@
 {
-  "build": "0.2.1",
-  "reviewed": "2026-09-06",
-  "release": "https://github.com/RoyGSlade/KingdomsAndCaravans/releases/tag/v0.2.1",
-  "zip_sha256": "376b771b256c5203f97fb8ae4c510da76bbbfd5cbe4d396a9febad109301c04c",
-  "zip_bytes": 39610451,
+  "build": "0.3.0",
+  "reviewed": "2026-09-07",
+  "release": "https://github.com/RoyGSlade/KingdomsAndCaravans/releases/tag/v0.3.0",
+  "zip_sha256": "ec7ee72669d443b78d82d5a4bbab877df45296dd66b5faa289d7a4d610e7d1bf",
+  "zip_bytes": 163498497,
   "verification": {
-    "simulation_checks_passed": 130,
-    "gameplay_ui_checks_passed": 41,
-    "updater_package_checks_passed": 38,
+    "focused_simulation_checks_passed": 45,
+    "focused_native_ui_checks_passed": 29,
+    "updater_package_checks_passed": 40,
     "updater_ui_checks_passed": 12,
-    "live_update_download_install_and_launch": "passed on development laptop",
+    "full_build_script": "passed",
+    "actual_zip_installation": "passed",
+    "packaged_runtime_legacy_0_2_1_save": "passed on development laptop",
+    "packaged_runtime_developed_city_save": "passed on development laptop",
+    "paid_economy_playthrough": "passed: 35 planned structures, two raids, equipment production, armored recruitment, housing expansion and save restoration",
+    "legacy_updater": "0.2.1 rejects downloads over100MB; one-time manual download required",
+    "independent_hardware_coverage": "not established",
+    "live_update_download_install_and_launch": "passed using0.3.0 updater code with an older-version comparison; GitHub package downloaded, hash verified, installed and launched",
     "existing_save_hash": "unchanged after live update download and installation",
-    "independent_hardware_coverage": "not established"
+    "downloaded_runtime_legacy_save": "passed in installed public executable"
   },
-  "capture_method": "In-engine automated playthroughs using ordinary commands and original starting supplies; no injected resources or troops. Camera and selection adjusted for inspection. Captures are not a human playtest or proof of universal performance.",
+  "capture_method": "In-engine gameplay and interface captures. Developed settlement from an automated paid-economy playthrough without injected supplies; individual inspector views demonstrate controls and may use test fixtures. Images resized to1280x720.",
   "captures": [
     {
       "image": "construction.png",
-      "sha256": "15601daa8f1c2f7d323cf85d9b017c2c9778cb6329b6d4e6e42ad38df13ecdde",
-      "simulation_seconds": 27.2,
-      "outcome": "playing",
-      "capture_context": "fresh new_game; placed farm at (35,23), assigned 3 teamsters, reached 7.3/24.0s build progress with delivered materials; live partial construction state"
+      "sha256": "1d8a1d55addba5fe8b1a20796c883f982d8db76e98696ecca4a71400c0de562f",
+      "capture_context": "Selected vegetable farm construction site and assigned builders."
     },
     {
       "image": "supply.png",
-      "sha256": "ca64cdde428273727bebfe0eddff6cbb55a41adc8aa7c43bb9563d900e7176e5",
-      "simulation_seconds": 300.1,
-      "outcome": "playing",
-      "capture_context": "restored ordinary-command snapshot at 300.1s; sawmill selected; 70 delivered planks and active workers"
+      "sha256": "7df3d0b9342abcde8a66c7ae7de56a0bb4659ab9f319730e4cf952db1ae4317a",
+      "capture_context": "Sawmill inspector in a loaded city; operating workers and supply status."
     },
     {
       "image": "city.png",
-      "sha256": "77d758b6cb68c74988805b9e94d936191c088c90ecab4d0d6e5120248f6492a6",
-      "simulation_seconds": 325.1,
-      "outcome": "playing",
-      "capture_context": "same saved city advanced 25s with no injected state; house selected after a genuine resident-arrival interval"
+      "sha256": "c52525c3e7bb579e35b46a7b52a301c75128914ce17e0c7ef15abbbac08cc600",
+      "capture_context": "Completed paid-economy playthrough, expanded city and post-victory settlement mode; current compact building controls."
     },
     {
       "image": "defense.png",
-      "sha256": "04fa43d93d28960bf4631b30f558031a53418d951689f55bd06fe80e768e8965",
-      "simulation_seconds": 456.1,
-      "outcome": "playing",
-      "capture_context": "advanced genuine city to 456.1s; moved existing trained troops west, then attacked first spawned second-wave raider"
+      "sha256": "e291eec824033dd59836deb36070fc50fcbfe6bfd14e3599fff367e346a8256f",
+      "capture_context": "Interface fixture showing Defenses category and small garrison description/costs; not a battle capture."
     }
   ]
 }
