@@ -20,7 +20,7 @@ hero_scene: "lamp"
       </div>
       <div class="now-lead-copy">
         <p class="section-desc">A dated snapshot, not a promise that the work is finished.</p>
-        <p class="section-desc">BetterFingers Alpha 3 is published; Kingdoms &amp; Caravans 0.3.0 is the current very early preview for friend playtesting.</p>
+        <p class="section-desc">BetterFingers Alpha 3 is published; Kingdoms &amp; Caravans 0.3.2 is the current very early preview for friend playtesting.</p>
       </div>
     </div>
     <div class="manifesto-grid">
@@ -44,6 +44,6 @@ hero_scene: "lamp"
 
   <section class="section-block now-honest-state" aria-labelledby="honest-state">
     <div class="section-header"><div><h2 id="honest-state" class="section-title">Try the current builds</h2><p class="section-desc">Downloads, screenshots, and release status in one place.</p></div></div>
-    <div class="reading-text"><p><a href="../projects/betterfingers/">BetterFingers Alpha 3</a> includes its signed Windows download and product tour. <a href="../kingdoms-caravans/">Kingdoms &amp; Caravans 0.3.0</a> includes real gameplay screenshots, an opening guide, and the Windows playtest. Both remain early builds; broader reliability and usability need more real-world use.</p></div>
+    <div class="reading-text"><p><a href="../projects/betterfingers/">BetterFingers Alpha 3</a> includes its signed Windows download and product tour. <a href="../kingdoms-caravans/">Kingdoms &amp; Caravans 0.3.2</a> includes real gameplay screenshots, an opening guide, and the Windows playtest. Both remain early builds; broader reliability and usability need more real-world use.</p></div>
   </section>
 </div>

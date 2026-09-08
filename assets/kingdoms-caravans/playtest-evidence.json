@@ -1,9 +1,9 @@
 {
-  "build": "0.3.0",
+  "build": "0.3.2",
   "reviewed": "2026-09-07",
-  "release": "https://github.com/RoyGSlade/KingdomsAndCaravans/releases/tag/v0.3.0",
-  "zip_sha256": "ec7ee72669d443b78d82d5a4bbab877df45296dd66b5faa289d7a4d610e7d1bf",
-  "zip_bytes": 163498497,
+  "release": "https://github.com/RoyGSlade/KingdomsAndCaravans/releases/tag/v0.3.2",
+  "zip_sha256": "b495752f77955198e651fb996edfc401b7822687acfb02c9278e508e993d6434",
+  "zip_bytes": 38063805,
   "verification": {
     "focused_simulation_checks_passed": 45,
     "focused_native_ui_checks_passed": 29,
@@ -14,11 +14,14 @@
     "packaged_runtime_legacy_0_2_1_save": "passed on development laptop",
     "packaged_runtime_developed_city_save": "passed on development laptop",
     "paid_economy_playthrough": "passed: 35 planned structures, two raids, equipment production, armored recruitment, housing expansion and save restoration",
-    "legacy_updater": "0.2.1 rejects downloads over100MB; one-time manual download required",
+    "legacy_updater": "published0.2.1 code checked live manifest, downloaded, verified, installed and launched0.3.2",
     "independent_hardware_coverage": "not established",
-    "live_update_download_install_and_launch": "passed using0.3.0 updater code with an older-version comparison; GitHub package downloaded, hash verified, installed and launched",
-    "existing_save_hash": "unchanged after live update download and installation",
-    "downloaded_runtime_legacy_save": "passed in installed public executable"
+    "live_update_download_install_and_launch": "passed: small installer downloads and verifies pinned full game; old-client Restart with update launches it",
+    "existing_save_hash": "saved kingdom and backup remained byte-identical in an isolated old-version profile",
+    "downloaded_runtime_legacy_save": "passed in installed public executable",
+    "installer_checks_passed": 15,
+    "original_0_2_1_shortcut": "native executable forwarded to verified0.3.2 game",
+    "retry_and_corruption_recovery": "passed"
   },
   "capture_method": "In-engine gameplay and interface captures. Developed settlement from an automated paid-economy playthrough without injected supplies; individual inspector views demonstrate controls and may use test fixtures. Images resized to1280x720.",
   "captures": [
@@ -42,5 +45,8 @@
       "sha256": "e291eec824033dd59836deb36070fc50fcbfe6bfd14e3599fff367e346a8256f",
       "capture_context": "Interface fixture showing Defenses category and small garrison description/costs; not a battle capture."
     }
-  ]
+  ],
+  "full_game_sha256": "76a2b59698186c595836d60c21c1793716c93da4a6bd84ba2ec5afb70ea9d0b5",
+  "full_game_bytes": 164903664,
+  "capture_build": "0.3.0 gameplay;0.3.2 changes installation only"
 }
