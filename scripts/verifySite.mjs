@@ -22,6 +22,8 @@ const requiredRoutes = [
     '/work/',
     '/infinite-ages/',
     '/kingdoms-caravans/',
+    '/stardust/',
+    '/account/',
     '/build-log/',
     '/support/',
     '/about/',

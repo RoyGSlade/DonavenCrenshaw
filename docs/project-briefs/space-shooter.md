@@ -5,7 +5,7 @@
 **Category:** Games
 **Status (Machine):** prototype
 **Status Label (Display):** Early build
-**Page:** `/infinite-ages/stardust/` · **Game:** `/games/stardust/` · **Code:** `projects/Space-Shooter/`
+**Page:** `/stardust/` · **Game:** `/games/stardust/` · **Code:** `projects/Space-Shooter/`
 
 ## One-liners
 

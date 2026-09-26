@@ -57,7 +57,7 @@ for project-owned image/video carousels and development labels, and
 
 The Stardust game's source is `projects/Space-Shooter/` ([handoff](docs/stardust/README.md)).
 The site build publishes it as plain ES modules at `/games/stardust/`, with its
-landing page at `/infinite-ages/stardust/`. [docs/game/HUB_CONTRACT.md](docs/game/HUB_CONTRACT.md)
+landing page at `/stardust/`. [docs/game/HUB_CONTRACT.md](docs/game/HUB_CONTRACT.md)
 describes what it sends to the hub and the rules its physics follow so runs can be checked.
 
 ## Delivery

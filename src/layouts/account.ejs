@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<%- components.head %>
+<body class="site-shell skin-<%= page.skin %> account-page" data-branch="<%= page.branch %>">
+    <div class="page-light light-source parallax" aria-hidden="true"></div>
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+    <%- components.nav %>
+    <div class="content-wrapper">
+        <main id="main-content" class="page-shell" tabindex="-1">
+            <div class="container page-content acct" data-account-app data-view="loading">
+                <header class="acct-head">
+                    <p class="acct-eyebrow mono">Account · api.donavencrenshaw.com</p>
+                    <h1 class="section-title acct-title" data-acct-title>Your account</h1>
+                    <p class="acct-lede" data-acct-lede>One account for the games and tools on this site. It keeps your name on the Stardust boards when saved runs arrive.</p>
+                </header>
+
+                <noscript><div class="noir-card acct-card"><p>Accounts need JavaScript. Everything else on this site works without it.</p></div></noscript>
+
+                <div class="acct-state noir-card" data-view-only="loading" role="status"><span class="acct-pulse" aria-hidden="true"></span><p class="mono">Checking your session…</p></div>
+
+                <div class="acct-state noir-card" data-view-only="offline" role="status" hidden>
+                    <h2>The hub is resting</h2>
+                    <p>Accounts run on a small server at home, and it isn't answering right now. Nothing is lost; try again in a few minutes.</p>
+                    <button class="btn-noir" type="button" data-acct-retry>Try again</button>
+                </div>
+
+                <!-- Signed out -->
+                <div class="acct-guest" data-view-only="guest" hidden>
+                    <section class="noir-card noir-card--lit acct-card acct-auth" aria-labelledby="acct-auth-title">
+                        <h2 id="acct-auth-title" class="visually-hidden">Sign in or create an account</h2>
+                        <div class="acct-tabs mono" role="tablist" aria-label="Account">
+                            <button type="button" role="tab" id="acct-tab-signin" aria-controls="acct-signin" aria-selected="true" data-acct-tab="signin">Sign in</button>
+                            <button type="button" role="tab" id="acct-tab-signup" aria-controls="acct-signup" aria-selected="false" tabindex="-1" data-acct-tab="signup">Create account</button>
+                        </div>
+
+                        <form id="acct-signin" class="acct-form" role="tabpanel" aria-labelledby="acct-tab-signin" data-acct-form="signin" novalidate>
+                            <label>Email<input name="email" type="email" autocomplete="email" required maxlength="254"></label>
+                            <label>Password<input name="password" type="password" autocomplete="current-password" required maxlength="200"></label>
+                            <p class="acct-status" role="alert" data-acct-status></p>
+                            <button class="btn-noir btn-noir--solid" type="submit">Sign in</button>
+                            <p class="acct-fine">Forgot your password? There's no reset email yet. <a href="contact/">Get in touch</a> and it can be reset by hand.</p>
+                        </form>
+
+                        <form id="acct-signup" class="acct-form" role="tabpanel" aria-labelledby="acct-tab-signup" data-acct-form="signup" novalidate hidden>
+                            <label>Email<input name="email" type="email" autocomplete="email" required maxlength="254"></label>
+                            <label>Username<input name="username" type="text" autocomplete="username" required minlength="3" maxlength="20" pattern="[A-Za-z0-9_\-]{3,20}" spellcheck="false" aria-describedby="acct-username-hint"></label>
+                            <p class="acct-hint" id="acct-username-hint">3–20 letters, numbers, - or _. Shown on leaderboards.</p>
+                            <label>Password<input name="password" type="password" autocomplete="new-password" required minlength="10" maxlength="200" aria-describedby="acct-password-hint"></label>
+                            <p class="acct-hint" id="acct-password-hint">At least 10 characters, with a letter and a number.</p>
+                            <p class="acct-status" role="alert" data-acct-status></p>
+                            <button class="btn-noir btn-noir--solid" type="submit">Create account</button>
+                            <p class="acct-fine">By creating an account you agree to the <a href="privacy/">privacy notice</a>. No newsletters, no tracking.</p>
+                        </form>
+                    </section>
+
+                    <aside class="acct-aside" aria-label="About accounts">
+                        <div class="noir-card acct-card">
+                            <h2 class="acct-card-title mono">What it's for</h2>
+                            <ul class="acct-list">
+                                <li><strong>Your name on the boards.</strong> Stardust keeps saved times per circuit once saved runs ship.</li>
+                                <li><strong>The Platinum 10.</strong> Ten places, earned in the game. Only accounts can hold one.</li>
+                                <li><strong>A profile.</strong> A display name and a short bio, nothing more.</li>
+                            </ul>
+                        </div>
+                        <div class="noir-card acct-card">
+                            <h2 class="acct-card-title mono">What's kept</h2>
+                            <p>Your email, username, a salted password hash and anything you add to your profile, on a server in Northern Nevada. Delete the account and it's gone. <a href="privacy/#accounts">Details</a>.</p>
+                        </div>
+                    </aside>
+                </div>
+
+                <!-- Signed in -->
+                <div class="acct-member" data-view-only="member" hidden>
+                    <section class="noir-card noir-card--lit acct-card acct-id" aria-label="Profile">
+                        <span class="acct-monogram" aria-hidden="true" data-acct-monogram></span>
+                        <div class="acct-id-copy">
+                            <p class="acct-id-name" data-acct-name></p>
+                            <p class="acct-id-meta mono"><span data-acct-username></span> · <span data-acct-since></span></p>
+                            <p class="acct-id-bio" data-acct-bio></p>
+                        </div>
+                        <div class="acct-id-actions">
+                            <button class="btn-noir" type="button" data-acct-signout>Sign out</button>
+                        </div>
+                    </section>
+
+                    <div class="acct-grid">
+                        <section class="noir-card acct-card acct-stardust" aria-labelledby="acct-sd-title">
+                            <div class="acct-card-head"><h2 id="acct-sd-title" class="acct-card-title mono">Stardust</h2><a class="acct-link mono" href="stardust/">Game page →</a></div>
+                            <p class="acct-platinum" data-acct-platinum hidden></p>
+                            <ol class="acct-bests" data-acct-bests></ol>
+                            <p class="acct-empty" data-acct-bests-empty>No saved times yet. Saved runs arrive in a later build; this is where they'll show.</p>
+                        </section>
+
+                        <form class="noir-card acct-card acct-form" data-acct-form="profile" aria-labelledby="acct-profile-title" novalidate>
+                            <h2 id="acct-profile-title" class="acct-card-title mono">Profile</h2>
+                            <label>Display name<input name="displayName" type="text" maxlength="32" autocomplete="nickname" aria-describedby="acct-dn-hint"></label>
+                            <p class="acct-hint" id="acct-dn-hint">Shown instead of your username where there's room. Up to 32 characters.</p>
+                            <label>Bio<textarea name="bio" maxlength="280" rows="3" data-acct-count="acct-bio-count"></textarea></label>
+                            <p class="acct-hint" id="acct-bio-count" aria-live="polite">0 / 280</p>
+                            <label><span>Discord username <span class="acct-optional">optional</span></span><input name="discordUsername" type="text" maxlength="37" spellcheck="false"></label>
+                            <p class="acct-status" role="status" data-acct-status></p>
+                            <button class="btn-noir btn-noir--solid" type="submit">Save profile</button>
+                        </form>
+
+                        <form class="noir-card acct-card acct-form" data-acct-form="email" aria-labelledby="acct-email-title" novalidate>
+                            <h2 id="acct-email-title" class="acct-card-title mono">Sign-in email</h2>
+                            <label>Email<input name="email" type="email" autocomplete="email" required maxlength="254"></label>
+                            <label>Current password<input name="currentPassword" type="password" autocomplete="current-password" required></label>
+                            <p class="acct-status" role="status" data-acct-status></p>
+                            <button class="btn-noir" type="submit">Change email</button>
+                        </form>
+
+                        <form class="noir-card acct-card acct-form" data-acct-form="password" aria-labelledby="acct-password-title" novalidate>
+                            <h2 id="acct-password-title" class="acct-card-title mono">Password</h2>
+                            <label>Current password<input name="currentPassword" type="password" autocomplete="current-password" required></label>
+                            <label>New password<input name="newPassword" type="password" autocomplete="new-password" required minlength="10" maxlength="200"></label>
+                            <label>Repeat new password<input name="confirmPassword" type="password" autocomplete="new-password" required></label>
+                            <p class="acct-hint">Changing it signs out every other device.</p>
+                            <p class="acct-status" role="status" data-acct-status></p>
+                            <button class="btn-noir" type="submit">Change password</button>
+                        </form>
+
+                        <section class="noir-card acct-card" aria-labelledby="acct-sessions-title">
+                            <h2 id="acct-sessions-title" class="acct-card-title mono">Sessions</h2>
+                            <p>Sign-ins last 30 days on each device. Lost a phone, or signed in somewhere you shouldn't have? End every session at once.</p>
+                            <p class="acct-status" role="status" data-acct-status="sessions"></p>
+                            <button class="btn-noir" type="button" data-acct-signout-all>Sign out everywhere</button>
+                        </section>
+
+                        <form class="noir-card acct-card acct-form acct-danger" data-acct-form="delete" aria-labelledby="acct-delete-title" novalidate>
+                            <h2 id="acct-delete-title" class="acct-card-title mono">Delete account</h2>
+                            <p>This removes your profile, times, saves and any Platinum 10 place, straight away. It can't be undone.</p>
+                            <label>Type your username to confirm<input name="confirmUsername" type="text" autocomplete="off" spellcheck="false" required></label>
+                            <label>Password<input name="password" type="password" autocomplete="current-password" required></label>
+                            <p class="acct-status" role="alert" data-acct-status></p>
+                            <button class="btn-noir acct-danger-btn" type="submit">Delete my account</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </main>
+        <%- components.footer %>
+    </div>
+    <script src="<%= siteRoot %>scripts/script.js"></script>
+    <script src="<%= siteRoot %>scripts/light-engine.js"></script>
+</body>
+</html>

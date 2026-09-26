@@ -15,7 +15,7 @@
   };
   const day = (iso) => (iso ? String(iso).slice(0, 10) : '');
 %>
-<body class="site-shell stardust-page" data-branch="infinite-ages">
+<body class="site-shell stardust-page" data-branch="stardust">
     <a class="skip-link" href="#main-content">Skip to main content</a>
     <%- components.nav %>
     <div class="content-wrapper">
@@ -33,7 +33,7 @@
                     <% }) %>
                 </ol>
                 <% } else { %>
-                <p class="sd-empty">No recorded runs yet. Every run is a guest run for now, and guest runs aren't saved.</p>
+                <p class="sd-empty">No recorded runs yet. Saved runs arrive in a later build, for players with an <a href="account/">account</a>.</p>
                 <% } %>
             </section>
 

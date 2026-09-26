@@ -6,7 +6,7 @@ These items are excluded or qualified in public copy. Resolve them with real evi
 
 Items marked *planned* are not live. Public copy must not present them as available until they ship.
 
-- The space game returns as **Stardust**, keeping its original name, a free browser game under Infinite Ages at `/infinite-ages/stardust/`. The first release is guest play only, and nothing is saved. Its art is being redone separately.
+- The space game returns as **Stardust**, keeping its original name, a free browser game with its own section at `/stardust/` (it started under Infinite Ages at `/infinite-ages/stardust/`, which now redirects). The first release is guest play only, and nothing is saved. Its art is being redone separately.
 - Public recognition for the game is a **Platinum 10** hall on the Stardust page. The site deliberately does not explain how to get into it.
 - *Planned:* sign-in with Google or Discord. Signed-out visitors can still play as guests. Saved times and anything past the guest game need an account.
 - *Planned:* feature voting gives each signed-in account one vote per month, independent of any payment. This is not sponsor voting.
