@@ -6,7 +6,8 @@
  */
 
 // Resolve the base path to the sprites directory relative to this file
-const SPRITE_BASE = '../../assets/Images/sprites';
+// Resolved from this module's own URL so it works under any page path and site base.
+const SPRITE_BASE = new URL('../../assets/Images/sprites', import.meta.url).href;
 
 // This helper function simplifies loading a single image
 function loadImage(src) {

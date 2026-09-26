@@ -1,35 +1,31 @@
-// src/roadmap/engine/api.js
-// LOCAL-ONLY stubs — no server calls. All game logic runs client-side.
-import { state } from '../state.js';
+// Connection between Driftglass and the hub at api.donavencrenshaw.com.
+//
+// For now every run is a guest run and nothing leaves the browser. Saved times,
+// the arena and what follows it need a signed-in player, which comes with
+// accounts. Until then this module only decides what a guest is told.
 import { toast } from '../ui/hud.js';
-import { enterArena } from './modeManager.js';
-import { pauseTimer } from './modes/roadmap.js';
 
-/** Local arena entry — no server prereq check. */
+export const HUB_ORIGIN = 'https://api.donavencrenshaw.com';
+
+export function isSignedIn() {
+  return false;
+}
+
+let lastNudgeAt = 0;
+
+/** Called while the player is somewhere only signed-in players may pass. */
 export async function requestArenaEnterFromBack() {
-  if (state.mode === 'arena') return;
-  pauseTimer();
-  state.ui.showMinimap = false;
-  toast('The Secret Altar accepts your challenge...', 3000);
-  enterArena();
+  if (isSignedIn()) return;
+  const now = performance.now();
+  if (now - lastNudgeAt < 4000) return;
+  lastNudgeAt = now;
+  toast('Something answers, but not to guests.', 3600);
 }
 
-/** Local stub — victory is recorded in-memory only. */
 export async function recordArenaVictory() {
-  return { ok: true };
+  return { ok: false, reason: 'guest' };
 }
 
-/** Local stub — no lockout timer. */
 export async function recordArenaDefeat() {
-  return { ok: true, locked: false };
-}
-
-/** Local stub — no encrypted shard system in demo. */
-export async function fetchLatestEncryptedShard() {
-  return { ok: false };
-}
-
-/** Local stub — no shard decryption in demo. */
-export async function decryptShard(id, answer) {
-  return { ok: false };
+  return { ok: false, reason: 'guest', locked: false };
 }

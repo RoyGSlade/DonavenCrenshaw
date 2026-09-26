@@ -1,5 +1,6 @@
 // src/roadmap/engine/systems/camera.js
-// Ship-aligned camera with smoothing, forward bias, aim look-ahead, and cinematic pans
+// Ship-aligned camera with smoothing, forward bias, aim look-ahead, and cinematic pans.
+// The arena uses a fixed whole-arena frame instead (frameWholeArena).
 import { state, config } from '../../state.js';
 
 const CAM = {
@@ -62,8 +63,29 @@ export function clearCameraPan() {
   cam._hold = null;
 }
 
+// Arena: one fixed frame on the whole arena, so the fight reads at a glance
+// instead of the camera chasing the ship. Recomputed every frame, so window
+// resizes and fullscreen changes keep the arena fitted.
+function frameWholeArena(cam) {
+  const canvas = state.gfx?.canvas;
+  const W = canvas?.clientWidth || 16;
+  const H = canvas?.clientHeight || 9;
+  const size = config.ARENA_SIZE;
+  const span = size + (config.ARENA_FRAME_MARGIN ?? 3);
+  // At zoom 1 the view shows GRID_H cells vertically and GRID_H * W/H across.
+  const fitHeight = config.GRID_H / span;
+  const fitWidth = (config.GRID_H * (W / H)) / span;
+  cam._pan = null;
+  cam._hold = null;
+  cam.x = size / 2;
+  cam.y = size / 2;
+  cam.zoom = Math.min(fitHeight, fitWidth);
+  return cam;
+}
+
 export function updateCamera(dt, player) {
   const cam = ensureCamera();
+  if (state.mode === 'arena' && state.arena) return frameWholeArena(cam);
   if (!player) return cam;
 
   // If we are in a cinematic pan, drive position solely by pan until finished

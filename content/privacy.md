@@ -11,6 +11,8 @@ date: "2026-07-31"
 
 This is a static website published from the repository. It does not provide user accounts or a site-owned application backend. The site does not intentionally add invasive analytics or advertising trackers.
 
+The Driftglass browser game keeps your sound and control settings in your browser's local storage. They never leave your device, and clearing site data removes them.
+
 When you follow an external link—such as GitHub, GitHub Sponsors, Ko-fi, or a product repository—you are using that service under its own privacy practices. This page does not extend this site's promises to those services.
 
 ## underplain products

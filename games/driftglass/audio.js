@@ -4,7 +4,8 @@
  */
 import { state } from './state.js';
 
-const AUDIO_BASE = '../../assets/audio';
+// Resolved from this module's own URL so it works under any page path and site base.
+const AUDIO_BASE = new URL('../../assets/audio', import.meta.url).href;
 
 let backgroundMusic = null;
 let masterMusicVolume = 1.0;

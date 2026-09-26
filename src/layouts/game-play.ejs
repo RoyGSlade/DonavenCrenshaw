@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<%- components.head %>
+<body class="driftglass-play">
+    <a class="skip-link" href="#starmap-start-btn">Skip to the start button</a>
+    <main id="main-content" class="dg-play">
+        <canvas id="starmap-canvas" aria-label="Driftglass game field"></canvas>
+
+        <div id="mission-tracker" class="dg-hud-tag">Shards 0/5</div>
+        <div id="fuel-bar-container" class="hidden"></div>
+        <div id="roadmap-toast" class="dg-toast" role="status" aria-live="polite"></div>
+        <div id="starmap-touch-controls" class="hidden"></div>
+
+        <section id="starmap-start" class="dg-overlay" aria-labelledby="dg-play-title">
+            <div class="dg-panel">
+                <p class="dg-label">Guest run</p>
+                <h1 id="dg-play-title">Driftglass</h1>
+                <p>Collect every shard in a field, then reach its gate. There are five fields. The clock starts when you leave the pad.</p>
+                <p class="dg-note">Guest runs aren't saved.</p>
+                <dl class="dg-keys">
+                    <div><dt>Turn</dt><dd>A D · ← →</dd></div>
+                    <div><dt>Thrust</dt><dd>W · ↑</dd></div>
+                    <div><dt>Reverse</dt><dd>S · ↓</dd></div>
+                    <div><dt>Strafe</dt><dd>Q E</dd></div>
+                    <div><dt>Launch</dt><dd>Space</dd></div>
+                    <div><dt>Boost</dt><dd>Shift</dd></div>
+                    <div><dt>Pause · Map · Full screen</dt><dd>Esc · M · F</dd></div>
+                </dl>
+                <div class="dg-actions">
+                    <button id="starmap-start-btn" class="dg-btn dg-btn--solid" type="button">Start run</button>
+                    <button id="starmap-settings-btn-start" class="dg-btn" type="button">Settings</button>
+                    <a class="dg-btn" href="infinite-ages/driftglass/">Back to the page</a>
+                </div>
+            </div>
+        </section>
+
+        <section id="starmap-pause" class="dg-overlay hidden" aria-labelledby="dg-pause-title">
+            <div class="dg-panel">
+                <h2 id="dg-pause-title">Paused</h2>
+                <div class="dg-actions">
+                    <button id="starmap-resume-btn" class="dg-btn dg-btn--solid" type="button">Resume</button>
+                    <button id="starmap-retry-btn" class="dg-btn" type="button">Restart run</button>
+                    <button id="starmap-settings-btn-pause" class="dg-btn" type="button">Settings</button>
+                    <button id="starmap-quit-btn" class="dg-btn" type="button">Quit</button>
+                </div>
+            </div>
+        </section>
+
+        <section id="starmap-end" class="dg-overlay hidden" aria-labelledby="starmap-end-title">
+            <div class="dg-panel">
+                <h2 id="starmap-end-title">Run complete</h2>
+                <p class="dg-note">Guest runs aren't saved.</p>
+                <div class="dg-actions">
+                    <button id="starmap-again-btn" class="dg-btn dg-btn--solid" type="button">Run again</button>
+                    <a class="dg-btn" href="infinite-ages/driftglass/">Back to the page</a>
+                </div>
+            </div>
+        </section>
+
+        <section id="starmap-settings" class="dg-overlay hidden" aria-labelledby="dg-settings-title">
+            <div class="dg-panel">
+                <h2 id="dg-settings-title">Settings</h2>
+                <label class="dg-setting">Music volume <span id="setting-music-val">100%</span>
+                    <input id="setting-music-vol" type="range" min="0" max="1" step="0.01" value="1">
+                </label>
+                <label class="dg-setting">Sound effects volume <span id="setting-sfx-val">100%</span>
+                    <input id="setting-sfx-vol" type="range" min="0" max="1" step="0.01" value="1">
+                </label>
+                <label class="dg-setting dg-setting--check"><input id="setting-invert-thrust" type="checkbox"> Invert thrust axis</label>
+                <label class="dg-setting dg-setting--check"><input id="starmap-tilt-toggle" type="checkbox"> Tilt to steer on phones</label>
+                <div class="dg-actions">
+                    <button id="settings-save-btn" class="dg-btn dg-btn--solid" type="button">Save</button>
+                    <button id="settings-cancel-btn" class="dg-btn" type="button">Cancel</button>
+                </div>
+            </div>
+        </section>
+
+        <section id="starmap-victory" class="dg-overlay hidden" aria-labelledby="victory-title">
+            <div class="dg-panel">
+                <h2 id="victory-title">Victory</h2>
+                <p id="victory-message"></p>
+                <div class="dg-actions"><button id="victory-continue-btn" class="dg-btn dg-btn--solid" type="button">Continue</button></div>
+            </div>
+        </section>
+
+        <section id="starmap-defeat" class="dg-overlay hidden" aria-labelledby="dg-defeat-title">
+            <div class="dg-panel">
+                <h2 id="dg-defeat-title">Defeated</h2>
+                <p id="defeat-message"></p>
+                <p id="defeat-countdown" class="dg-note"></p>
+                <div class="dg-actions"><button id="defeat-close-btn" class="dg-btn dg-btn--solid" type="button">Close</button></div>
+            </div>
+        </section>
+
+        <noscript><p class="dg-noscript">Driftglass needs JavaScript to run. <a href="infinite-ages/driftglass/">Back to the page</a></p></noscript>
+    </main>
+    <script type="module" src="<%= siteRoot %>games/driftglass/main.js"></script>
+</body>
+</html>

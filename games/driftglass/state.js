@@ -3,7 +3,8 @@
  * @fileoverview Centralized state and configuration for the Starmap game.
  */
 
-import movementConfig from './engine/systems/movement-config.json' with { type: 'json' };
+// Inlined: JSON module imports are not supported in every browser the site targets.
+const movementConfig = { ROTATION_SCALE: 0.35 };
 
 export const MAX_LEVEL = 5;
 export const SHARDS_PER_LEVEL = 5;
@@ -50,7 +51,8 @@ export const config = {
 
   // Camera base zoom level
   CAMERA_BASE_ZOOM: 1.85,         // Higher number = more zoomed in
-  ARENA_CAMERA_ZOOM: 1.25,        // Custom zoom for arena (smaller number = further out)
+  ARENA_CAMERA_ZOOM: 1.25,        // Initial arena zoom; replaced each frame by the whole-arena frame
+  ARENA_FRAME_MARGIN: 3,          // Cells of space kept around the arena in the fixed frame
   CAMERA_FOLLOW_SPEED: 0.9,      // Speed at which the camera follows the player
   CAMERA_PAN_SPEED: 0.8,         // Speed at which the camera pans to a new position
 

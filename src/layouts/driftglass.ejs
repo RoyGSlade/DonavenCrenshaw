@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<%- components.head %>
+<%
+  // Results come from data/hub-snapshot.json, committed by the hub. Without it the
+  // sections render honest empty states, so the page never depends on the hub.
+  const snap = data.hubSnapshot;
+  const board = snap ? snap.leaderboard.slice(0, 10) : [];
+  const platinum = snap ? snap.platinum : [];
+  const asOf = snap && snap.generatedAt ? snap.generatedAt.slice(0, 10) : null;
+  const two = (n) => String(n).padStart(2, '0');
+  const clock = (ms) => {
+    const t = Math.max(0, Math.round(Number(ms) || 0));
+    return `${Math.floor(t / 60000)}:${two(Math.floor(t / 1000) % 60)}.${two(Math.floor((t % 1000) / 10))}`;
+  };
+  const day = (iso) => (iso ? String(iso).slice(0, 10) : '');
+%>
+<body class="site-shell driftglass-page" data-branch="infinite-ages">
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+    <%- components.nav %>
+    <div class="content-wrapper">
+        <main id="main-content" class="dg-page" tabindex="-1">
+<%- content %>
+            <section class="dg-section" id="fastest-runs" aria-labelledby="dg-runs-title">
+                <div class="dg-section-head">
+                    <h2 id="dg-runs-title">Fastest runs</h2>
+                    <% if (asOf) { %><p class="dg-meta">As of <time datetime="<%= snap.generatedAt %>"><%= asOf %></time></p><% } %>
+                </div>
+                <% if (board.length) { %>
+                <ol class="dg-board">
+                    <% board.forEach((row) => { %>
+                    <li><span class="dg-rank"><%= two(row.rank) %></span><span class="dg-name"><%= row.name %></span><span class="dg-time"><%= clock(row.timeMs) %></span><span class="dg-date"><%= day(row.setAt) %></span></li>
+                    <% }) %>
+                </ol>
+                <% } else { %>
+                <p class="dg-empty">No recorded runs yet. Every run is a guest run for now, and guest runs aren't saved.</p>
+                <% } %>
+            </section>
+
+            <section class="dg-section dg-platinum" id="platinum-10" aria-labelledby="dg-platinum-title">
+                <div class="dg-section-head">
+                    <h2 id="dg-platinum-title">Platinum 10</h2>
+                    <p class="dg-meta"><%= platinum.length %> of 10 claimed</p>
+                </div>
+                <ol class="dg-platinum-list">
+                    <% for (let i = 1; i <= 10; i++) { const entry = platinum.find((e) => Number(e.rank) === i); %>
+                    <li class="<%= entry ? 'is-claimed' : 'is-open' %>">
+                        <span class="dg-rank"><%= two(i) %></span>
+                        <% if (entry) { %><span class="dg-name"><%= entry.name %></span><span class="dg-badge"><%= entry.badge || '' %></span><span class="dg-date"><%= day(entry.obtainedAt) %></span><% } else { %><span class="dg-name">Unclaimed</span><% } %>
+                    </li>
+                    <% } %>
+                </ol>
+            </section>
+
+            <section class="dg-section dg-credits" id="credits" aria-labelledby="dg-credits-title">
+                <h2 id="dg-credits-title">Credits</h2>
+                <ul>
+                    <li>Music: Dono and Danihadani via <a href="https://artlist.io/">Artlist</a>, Anastasia Chubarova and AllWorldMusic via <a href="https://pixabay.com/music/">Pixabay</a>.</li>
+                    <li>Sound effects: freesound_community and DRAGON-STUDIO via <a href="https://pixabay.com/sound-effects/">Pixabay</a>.</li>
+                    <li>Ship art: TheRealFusion. Spaceship effects: Raphael Hatencia.</li>
+                    <li>The Warden's voice line was generated with Gemini 2.5 Pro.</li>
+                </ul>
+            </section>
+        </main>
+        <%- components.footer %>
+    </div>
+    <script src="<%= siteRoot %>scripts/script.js"></script>
+</body>
+</html>

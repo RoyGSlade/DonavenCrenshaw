@@ -146,13 +146,14 @@ async function bindTouchControls() {
       { id: 'touch-right', label: '▶', action: 'right', container: 'dpad', area: 'dpad-right' },
       { id: 'touch-up', label: '▲', action: 'thrust', container: 'dpad', area: 'dpad-up' },
       { id: 'touch-down', label: '▼', action: 'thrustBack', container: 'dpad', area: 'dpad-down' },
-      { id: 'touch-boost', label: '⚡', action: 'boost', container: 'main', area: 'action-boost' },
-      { id: 'touch-pause', label: '⏸', action: 'pause', container: 'main', area: 'action-pause' },
-      { id: 'touch-map', label: '🗺', action: 'minimap', container: 'main', area: 'action-map' },
+      { id: 'touch-boost', label: 'Boost', action: 'boost', container: 'main', area: 'action-boost' },
+      { id: 'touch-pause', label: 'Pause', action: 'pause', container: 'main', area: 'action-pause' },
+      { id: 'touch-map', label: 'Map', action: 'minimap', container: 'main', area: 'action-map' },
     ]
   };
 
-  const handleStart = (action) => () => { kb[action] = true; };
+  // Touch has no Space key, so Boost also launches from the pad.
+  const handleStart = (action) => () => { kb[action] = true; if (action === 'boost') kb._launchEdge = true; };
   const handleEnd = (action) => () => { kb[action] = false; };
 
   const dpad = document.createElement('div');

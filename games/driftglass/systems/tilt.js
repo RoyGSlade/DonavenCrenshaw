@@ -3,7 +3,7 @@
  * Applies a deadzone and exponential curve for finer control.
  */
 
-import tiltConfig from './tilt-config.json' with { type: 'json' };
+const tiltConfig = { DEADZONE_DEG: 4, EXPONENT: 2 };
 import { state } from '../state.js';
 
 let orientationHandler = null;

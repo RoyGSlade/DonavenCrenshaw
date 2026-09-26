@@ -6,7 +6,7 @@ import { playMusic, setMusicVolume, setSfxVolume } from '../audio.js';
 import { state } from '../state.js';
 import { startNewRun, retryRun, quitRun } from '../engine/index.js';
 import { toast } from './hud.js';
-import { enterFullscreen, exitFullscreen } from './graphics.js';
+import { exitFullscreen } from './graphics.js';
 import { enableTiltControls, disableTiltControls } from '../systems/tilt.js';
 import { isMobileViewport } from '../utils/view.js';
 
@@ -55,13 +55,14 @@ let overlaysInitialized = false;
 
 function enableTouchControls() {
   const container = getEl('starmap-touch-controls');
-  if (container) container.style.display = 'flex';
+  // The container ships with the "hidden" class, which wins over inline styles.
+  if (container) container.classList.remove('hidden');
   state.input.touch.active = true;
 }
 
 function disableTouchControls() {
   const container = getEl('starmap-touch-controls');
-  if (container) container.style.display = 'none';
+  if (container) container.classList.add('hidden');
   state.input.touch.active = false;
 }
 
@@ -92,8 +93,8 @@ export function initOverlays() {
 
   // Main game flow buttons
   startBtn?.addEventListener('click', () => {
-    enterFullscreen();
-
+    // Full screen the whole page, not just the canvas, so the HUD text and
+    // messages drawn in the page stay visible.
     requestFullscreenAndOrientation();
     if (isMobileViewport()) {
       sessionStorage.setItem('mobileMode', '1');
@@ -212,7 +213,7 @@ export function closePauseOverlay() {
 export function openEndOverlay(formattedTime) {
   // Do not show roadmap end overlay if currently in arena mode
   if (state.mode === 'arena') return;
-  if (endTitle) endTitle.textContent = `Run Complete! Time: ${formattedTime}`;
+  if (endTitle) endTitle.textContent = `Run complete in ${formattedTime}`;
   if (endOverlay) endOverlay.classList.remove('hidden');
   state.ui.showEndOverlay = true;
   state.ui.paused = true;
@@ -297,7 +298,7 @@ function applySettings(settings) {
 export function openDefeatOverlay(data) {
   if (!defeatOverlay) return;
   // Local-only: no lockout timer
-  if (defeatMsg) defeatMsg.textContent = 'You were defeated. Try again anytime.';
+  if (defeatMsg) defeatMsg.textContent = 'The Warden holds.';
   if (defeatCountdown) defeatCountdown.textContent = '';
   defeatOverlay.classList.remove('hidden');
 }

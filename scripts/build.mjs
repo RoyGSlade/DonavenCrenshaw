@@ -186,6 +186,8 @@ async function initPublicDir() {
     };
     await copyIfPresent(path.join(ROOT_DIR, 'assets'), path.join(PUBLIC_DIR, 'assets'));
     await copyIfPresent(path.join(SRC_DIR, 'styles'), path.join(PUBLIC_DIR, 'styles'));
+    // Browser games are plain ES modules; publish them as-is under /games/<id>/.
+    await copyIfPresent(path.join(ROOT_DIR, 'games'), path.join(PUBLIC_DIR, 'games'));
     if (fs.existsSync(path.join(ROOT_DIR, 'scripts'))) {
         await fs.ensureDir(path.join(PUBLIC_DIR, 'scripts'));
         for (const filename of ['script.js', 'smoke.js', 'light-engine.js']) {
@@ -200,6 +202,24 @@ async function loadComponents() {
         name,
         await fs.readFile(path.join(COMPONENTS_DIR, `${name}.ejs`), 'utf-8')
     ])));
+}
+
+// data/hub-snapshot.json is committed by the hub on the laptop (see the private
+// DonavenCrenshaw-Hub repo). It is optional: pages render an empty state without it.
+function validateHubSnapshot(snapshot) {
+    if (!snapshot) return null;
+    if (snapshot.schemaVersion !== 1) throw new Error('[DATA ERROR] data/hub-snapshot.json: unsupported schemaVersion');
+    const list = (value, label) => {
+        if (value === undefined) return [];
+        if (!Array.isArray(value)) throw new Error(`[DATA ERROR] data/hub-snapshot.json: ${label} must be an array`);
+        return value;
+    };
+    return {
+        generatedAt: typeof snapshot.generatedAt === 'string' ? snapshot.generatedAt : null,
+        leaderboard: list(snapshot.stardust?.leaderboard, 'stardust.leaderboard'),
+        platinum: list(snapshot.platinum10 ?? snapshot.golden100, 'platinum10').slice(0, 10),
+        features: list(snapshot.votes?.features, 'votes.features')
+    };
 }
 
 function renderContext(site, frontmatter, route, data) {
@@ -378,6 +398,7 @@ async function main() {
     const support = validateSupport(await readJson('support.json', { required: true }));
     const updates = validateUpdates(await readJson('updates.json', { required: true }));
     const redirects = await readJson('redirects.json', { required: true });
+    const hubSnapshot = validateHubSnapshot(await readJson('hub-snapshot.json'));
     const components = await loadComponents();
 
     await initPublicDir();
@@ -387,7 +408,7 @@ async function main() {
         publicUrl: sitePath(site, `projects/${source.id}`),
         publishedUpdates: source.publishedUpdates.map((update) => ({ ...update, projectId: source.id, projectName: source.project.name }))
     }));
-    const data = { branches, products, support, updates, importedProjects, importedWarnings: projectImport.warnings };
+    const data = { branches, products, support, updates, hubSnapshot, importedProjects, importedWarnings: projectImport.warnings };
     const postsData = [];
     const generatedPaths = [];
     const redirectEntries = [];
