@@ -1,4 +1,4 @@
-// Driftglass entry point, loaded as a module by /infinite-ages/driftglass/play/.
+// Stardust entry point, loaded as a module by /infinite-ages/stardust/play/.
 import { initAudioUnlock } from './audio.js';
 import { initStarmap } from './index.js';
 

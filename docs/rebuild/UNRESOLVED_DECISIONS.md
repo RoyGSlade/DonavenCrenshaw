@@ -6,8 +6,8 @@ These items are excluded or qualified in public copy. Resolve them with real evi
 
 Items marked *planned* are not live. Public copy must not present them as available until they ship.
 
-- The space game returns as **Driftglass** (working title, formerly Stardust), a free browser game under Infinite Ages at `/infinite-ages/driftglass/`. The first release is guest play only, and nothing is saved. Its art is being redone separately.
-- Public recognition for the game is a **Platinum 10** hall on the Driftglass page. The site deliberately does not explain how to get into it.
+- The space game returns as **Stardust**, keeping its original name, a free browser game under Infinite Ages at `/infinite-ages/stardust/`. The first release is guest play only, and nothing is saved. Its art is being redone separately.
+- Public recognition for the game is a **Platinum 10** hall on the Stardust page. The site deliberately does not explain how to get into it.
 - *Planned:* sign-in with Google or Discord. Signed-out visitors can still play as guests. Saved times and anything past the guest game need an account.
 - *Planned:* feature voting gives each signed-in account one vote per month, independent of any payment. This is not sponsor voting.
 - *Planned:* supporters get badges with levels.
@@ -41,7 +41,7 @@ Items marked *planned* are not live. Public copy must not present them as availa
 - Whether to correct the stable misspelling `assets/InfinteAges/` and add a redirect/compatibility copy.
 - Final free/donation-supported/sold/mixed publishing model.
 - Storefront, Discord/community destination, VTT status, and broader game catalog.
-- Final name for Driftglass, and whether the old sprites under `assets/Images/sprites` are removed once the new art lands.
+- Whether the old sprites under `assets/Images/sprites` are removed once the new art lands.
 - Licence check for the two music tracks credited to Artlist: confirm the licence covers a free public web game.
 
 ## Support and community

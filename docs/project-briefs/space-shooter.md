@@ -1,11 +1,11 @@
 # Project Identity
 
-**Real Name:** Driftglass (working title, formerly Stardust)
+**Real Name:** Stardust (Driftglass was tried as a working title and dropped)
 **Codename:** Stardust
 **Category:** Games
 **Status (Machine):** prototype
 **Status Label (Display):** Early build
-**Page:** `/infinite-ages/driftglass/` · **Code:** `games/driftglass/`
+**Page:** `/infinite-ages/stardust/` · **Code:** `games/stardust/`
 
 ## One-liners
 

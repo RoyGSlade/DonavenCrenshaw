@@ -55,7 +55,7 @@ every project supplies, [the optional showcase guide](docs/project-sources/SHOWC
 for project-owned image/video carousels and development labels, and
 [the automation guide](docs/project-sources/AUTOMATION.md) for GitHub setup.
 
-The Driftglass game lives in `games/driftglass/` and is published as plain ES
+The Stardust game lives in `games/stardust/` and is published as plain ES
 modules. [docs/game/HUB_CONTRACT.md](docs/game/HUB_CONTRACT.md) describes what it
 sends to the hub and the rules its physics follow so runs can be checked.
 

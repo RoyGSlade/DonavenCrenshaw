@@ -1,4 +1,4 @@
-// Connection between Driftglass and the hub at api.donavencrenshaw.com.
+// Connection between Stardust and the hub at api.donavencrenshaw.com.
 //
 // For now every run is a guest run and nothing leaves the browser. Saved times,
 // the arena and what follows it need a signed-in player, which comes with
