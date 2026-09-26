@@ -43,7 +43,7 @@ content/*.md + current data/*.json + EJS components/layouts
              public/ GitHub Pages artifact
 ```
 
-`public/` is deterministic and disposable. Legacy JSON/HTML stays outside the artifact. Browser JavaScript only marks current navigation and controls the accessible mobile menu.
+`public/` is deterministic and disposable. Legacy JSON/HTML stays outside the artifact. Browser JavaScript only marks current navigation and controls the accessible mobile menu. The exception is a browser game, published as plain ES modules under `/games/<id>/` and loaded only on its own play page.
 
 ## Component and data model
 

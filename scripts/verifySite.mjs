@@ -119,8 +119,11 @@ for (const file of htmlFiles) {
     if (!redirect) {
         const h1Count = (html.match(/<h1\b/gi) || []).length;
         if (h1Count !== 1) failures.push(`${relative}: expected one h1, found ${h1Count}`);
-        if (!/<main\b/i.test(html)) failures.push(`${relative}: missing main landmark`);
-        if (!/class="skip-link"/i.test(html)) failures.push(`${relative}: missing skip link`);
+        // Full-screen browser games under games/ are one canvas with overlays; the
+        // landmark and skip-link rules apply to their landing pages instead.
+        const fullScreenGame = relative.split(path.sep)[0] === 'games';
+        if (!fullScreenGame && !/<main\b/i.test(html)) failures.push(`${relative}: missing main landmark`);
+        if (!fullScreenGame && !/class="skip-link"/i.test(html)) failures.push(`${relative}: missing skip link`);
         if (!/<meta\s+name="description"/i.test(html)) failures.push(`${relative}: missing description`);
     }
 

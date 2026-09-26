@@ -21,7 +21,7 @@ Before launch, submit or refresh the site's search-engine property only after pr
 - Images require an `alt` attribute.
 - Native links/lists/tables are used instead of click-only cards.
 - Visible focus states and reduced-motion overrides are in CSS.
-- Text remains readable with JavaScript disabled; JS only enhances the menu/current state.
+- Text remains readable with JavaScript disabled; JS only enhances the menu/current state. The one exception is a browser game itself, such as `/games/stardust/`, which needs JavaScript and says so. The game's landing page stays static and readable.
 
 Launch review should still include a screen reader pass, 200% and 400% zoom, Windows high-contrast mode, and manual color-contrast measurement for every branch skin.
 
