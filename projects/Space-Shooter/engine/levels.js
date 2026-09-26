@@ -4,8 +4,7 @@ import { createTrack, pointOnTrack } from "./track.js";
 export const LEVELS = [
   {
     title: "Alpha Relay",
-    inspiration: "Laguna Seca",
-    landmark: "The Corkscrew Relay",
+    landmark: "The Coil Relay",
     width: 6.4,
     lesson: "One lap. Brake for the hairpin; unwind through the switchback.",
     rumor:
@@ -30,7 +29,6 @@ export const LEVELS = [
   },
   {
     title: "Beacon Prime",
-    inspiration: "Silverstone",
     landmark: "The Orbital Esses",
     width: 6.4,
     lesson:
@@ -59,7 +57,6 @@ export const LEVELS = [
   },
   {
     title: "Dustfall Station",
-    inspiration: "Monza",
     landmark: "The Foundry Straight",
     width: 6.4,
     lesson: "Build speed on the straight; shed it before the chicanes.",
@@ -87,7 +84,6 @@ export const LEVELS = [
   },
   {
     title: "Nether Crossing",
-    inspiration: "Monaco",
     landmark: "The Harbour Needle",
     width: 5.8,
     lesson:
@@ -122,8 +118,7 @@ export const LEVELS = [
   },
   {
     title: "Iron Veil",
-    inspiration: "Spa-Francorchamps",
-    landmark: "The Raidillon Veil",
+    landmark: "The Veil Sweep",
     width: 6.4,
     lesson:
       "Commit through the sweeping bends, then return to the portal you launched from.",
@@ -174,7 +169,7 @@ function asteroidScale(level, index) {
 export function createLevelLayout(level) {
   const source = LEVELS[level - 1];
   if (!source) throw new RangeError(`Unknown level: ${level}`);
-  const track = createTrack(source.points, source.width, source.inspiration);
+  const track = createTrack(source.points, source.width, source.title);
   const colors = ["blue", "green", "purple", "pink", "blue"];
   const apexes = source.apexes.map((index) => ({
     ...apexPosition(track, index),
@@ -267,7 +262,6 @@ export function createLevelLayout(level) {
   safeRoute.push({ ...track.portal });
   return {
     title: source.title,
-    inspiration: source.inspiration,
     landmark: source.landmark,
     lesson: source.lesson,
     rumor: source.rumor,

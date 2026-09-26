@@ -2,7 +2,7 @@
 
 ## NOW — circuits and Dogfight V1
 
-The active racing slice is five one-lap circuits: Alpha Relay, Beacon Prime, Dustfall Station, Nether Crossing, and Iron Veil. They take broad inspiration from Laguna Seca, Silverstone, Monza, Monaco, and Spa, respectively; they are original Stardust routes, not reproductions. Each lap starts and finishes at the same portal. Apex shards reward a racing line, hazards remain readable, ship/shards use 66% scale, and asteroid variants use 75–125% scale.
+The active racing slice is five one-lap circuits: Alpha Relay, Beacon Prime, Dustfall Station, Nether Crossing, and Iron Veil. These are the game names in the menu, HUD and runtime metadata. Each lap starts and finishes at the same portal. Apex shards reward a racing line, hazards remain readable, ship/shards use 66% scale, and asteroid variants use 75–125% scale. The [README remaining-work plan](README.md#remaining-work) is the priority list; this document explains the multiplayer direction.
 
 Dogfight V1 is implemented for private casual 1v1 arena play. The host browser runs fixed-step movement, bullets and damage; a room-bound WebSocket relay forwards guest controls and host snapshots, with a strict two-player room capacity. Root independently verified both pilots winning, keyboard turning/thrust, repeated rematches and disconnect handling through a live local relay. This is a friend-match authority model, not a trusted source for public rankings. Internet play still requires public WSS configuration and separate-network testing; nothing has been deployed.
 

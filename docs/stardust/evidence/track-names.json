@@ -1,0 +1,44 @@
+{
+  "at": "2026-09-26T13:51:53.472Z",
+  "names": [
+    "Alpha Relay",
+    "Beacon Prime",
+    "Dustfall Station",
+    "Nether Crossing",
+    "Iron Veil"
+  ],
+  "gameplayDataUnchanged": true,
+  "builtRuntimeFilesScanned": 54,
+  "oldCircuitNamesInRuntime": false,
+  "layouts": [
+    {
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "menuNames": [
+        "Alpha Relay",
+        "Beacon Prime",
+        "Dustfall Station",
+        "Nether Crossing",
+        "Iron Veil"
+      ],
+      "noHorizontalOverflow": true
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "menuNames": [
+        "Alpha Relay",
+        "Beacon Prime",
+        "Dustfall Station",
+        "Nether Crossing",
+        "Iron Veil"
+      ],
+      "noHorizontalOverflow": true
+    }
+  ],
+  "errors": []
+}

@@ -64,3 +64,5 @@ Do not publish a product release, performance claim, customer result, license sc
 ## Stardust game overhaul (local standalone preview)
 
 The game under `projects/Space-Shooter/` now has a separate review build. Run `npm run dev:stardust` and open `http://127.0.0.1:4173/projects/Space-Shooter/`. `npm run test:stardust` runs the focused game tests; `npm run build:stardust` creates `dist/stardust/` without changing the website build or its legacy redirects. See [the current scope, controls, evidence and handoff](docs/stardust/README.md).
+
+The [remaining-work plan](docs/stardust/README.md#remaining-work) separates release/playtest work, Hub integration and discovery handling, and later content/2v2 ideas. The five circuit names are **Alpha Relay, Beacon Prime, Dustfall Station, Nether Crossing, and Iron Veil**. Next priority: prove Hub launch, a friend match and one verified discovery across the actual hosted services before expanding content. Current local discoveries and browser-hosted match results are not trusted account rewards or rankings.

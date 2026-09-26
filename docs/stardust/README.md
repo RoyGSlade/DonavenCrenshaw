@@ -2,6 +2,8 @@
 
 The integrated overhaul is on `codex/stardust-overhaul`, based on GitHub `RoyGSlade/DonavenCrenshaw` main at `03da619`, for pull-request review. This change packages the playable game and Hub handoff; it does not change the production route or deploy the game. The existing website redirects the old game URL, and the standalone build keeps this game review separate from that website.
 
+[PR #5](https://github.com/RoyGSlade/DonavenCrenshaw/pull/5) is the shared code handoff. The current milestone is a playable base for integration testing. The [remaining-work plan](#remaining-work) below is the authoritative priority list; design notes record ideas, not commitments to implement all of them.
+
 ## Run and build
 
 The current slice adds five one-lap circuits with a shared start/finish portal, smaller ships/shards, variable asteroid sizes, and private browser-hosted Dogfight 1v1. Crew 2v2 follows Dogfight. Hub rankings have a separate [future product note](HUB-DOGFIGHT-RANKING-NOTE.md).
@@ -24,9 +26,9 @@ node scripts/preview-stardust.mjs --dist
 
 The preview binds only to loopback. Set `PORT` to use another local port. The artifact is `dist/stardust`; its root index leads to `projects/Space-Shooter/`. The builder validates its fixed output path and rejects symlink output before rebuilding only that generated directory. The dedicated `Verify Stardust` workflow runs the Node suite and standalone build on relevant pull requests and main-branch pushes. Hardware/LAN and optional browser checks remain separate from that CI run.
 
-## NOW — implemented and verified
+## Implemented base
 
-- Five authored circuits, inspired in order by Laguna Seca, Silverstone, Monza, Monaco and Spa-Francorchamps. Launch on the portal, cross each corner checkpoint in order, collect apex shards, then finish at that same portal. Solid corridor rails block infield shortcuts; Monaco has a rounded hairpin. Sector identities, music and story remain. See [track geometry and lap evidence](TRACKS.md).
+- Five authored circuits named **Alpha Relay, Beacon Prime, Dustfall Station, Nether Crossing and Iron Veil**. These names now match the menu, HUD and `track.name` runtime metadata. Launch on the portal, cross each corner checkpoint in order, collect apex shards, then finish at that same portal. Solid corridor rails block infield shortcuts; Nether Crossing has a rounded hairpin. See [track geometry, naming and lap evidence](TRACKS.md).
 - Gameplay ship and shard visuals/colliders are 66% of the previous size. Asteroids vary deterministically from 75% to 125%, match their collision sizes, and can be cleared with two direct shots. The normal camera scale is preserved despite the larger world.
 - Dogfight V1 provides private 1v1 rooms, a symmetric arena with cover, guest controls relayed to the host's fixed-step simulation, hull damage, a winner/draw, mutual rematches and explicit interrupted/disconnected states. Locally verified with two browsers; public internet play still needs a configured secure relay and external testing. Results remain casual and unranked. See [Dogfight setup and limits](DOGFIGHT.md).
 - Solid hazards, repeating moving debris, gravity cores/fields, fixed predictive enemy telegraphs, shooting and projectile momentum. Flux rewards controlled movement; boost spends Flux before charge pips; X spends Flux to brake.
@@ -54,20 +56,67 @@ Phone controls now use left GAS/REVERSE and right FIRE/BRAKE/BOOST, with BOOST l
 
 Run `node scripts/test-stardust-audio-browser.mjs` with the same browser environment for full-file decoding, playhead/slider checks and runtime/source hash comparison. This additional script reads the checked-in audio inspection ledger and creates `evidence/audio-browser.json`.
 
-## NEXT
+## Remaining work
 
-1. Human playtest of the five circuits, especially Monaco's hairpin and Spa's secret approach; then a local Dogfight duel. Check handling, readability, difficulty, mobile/gamepad hardware and timing feel. The automated pilot proves a route exists; it does not prove first-time players will enjoy the tuning.
-   Phone controls are ready on the LAN link. The phone models and an existing trusted HTTPS game address were requested; no answer has arrived yet. Physical tilt verification depends on that HTTPS address. No public tunnel, certificate installation or browser security bypass was created for this change.
-2. Listen to the integrated soundtrack in play: tune cue balance and author musical loop cuts if needed. All ten tracks are imported and wired, with the owner's paid-plan attestation recorded; source account receipts were not independently inspected. Existing legacy credit records are preserved in the UI; their underlying commercial-license receipts have not been independently verified in this work.
-3. Publish the static game as an unlisted, noindex main-site page in a follow-up change; the existing website workflow currently uploads only `public/` and preserves the old game redirect. Coordinate the home-laptop backend work using the handoff contract. Configure the Dogfight relay's public WSS address and explicit allowed site origin, then test two separate networks before inviting friends broadly. Add authenticated, server-validated achievements/rankings only after the real service exists; a healthy tunnel alone is not result validation.
+**Recommended next milestone:** launch Stardust from the Hub, complete a casual friend match across two networks, and save one independently verified discovery to the right account. A second device must read that same result, and an unavailable service must leave local play usable. Finish that slice before adding another mode or a large batch of levels.
 
-## LATER
+The following items describe work still to do. The naming change above is complete; these tables do not claim the Hub or public services exist.
 
-Pilot/engineer 2v2 networking, component damage, reactor routing, tethers, wake riding, cargo mass, volatile cargo, silent running, additional enemy archetypes, deeper boss phases and unique wreck/damage sprite sets remain design backlog. This build delivers the connected five-sector/secret-loop foundation, not every brainstorm in the reference notes.
+### NOW — make the current base dependable
+
+| ID | Work and current gap | Done when |
+| --- | --- | --- |
+| ST-01 | **Publish the game route.** The website build uploads `public/` and still redirects the old game URL. Include the reviewed runtime in an unlisted, noindex HTTPS page, keep it out of navigation/listings, and label the build. Unlisted is publicly accessible by URL. | The intended live URL serves this build and its assets, has noindex metadata, and is absent from normal site navigation. A rollback to the previous artifact is documented. |
+| ST-02 | **Connect the public relay.** Coordinate the game origin, WSS address and exact origin allowlist with the Cloudflare/Hub owner. Define laptop sleep/restart behavior and basic health/error monitoring. See [backend handoff](BACKEND-HANDOFF.md) and [Dogfight setup](DOGFIGHT.md). | Two players on different networks create/join, finish and rematch; host loss, relay restart and slow connections produce clear recoverable states. No loopback/LAN address is offered to a public client. |
+| ST-03 | **Physical phone and controller acceptance.** Multi-touch and sensor simulation pass; actual tilt, sensor permissions, fullscreen/Home Screen behavior, notches, rotation, thermal performance and battery impact still need device testing. | Supported iPhone/Android and gamepad sessions verify steering direction, comfortable sensitivity, recenter, simultaneous gas/fire, brake/reverse, pause/resume and no stuck input. Denied motion retains button steering. Record devices, browsers, frame-time observations and defects. |
+| ST-04 | **Human balance and onboarding.** The automated pilot proves all laps and the secret route are possible. It does not establish that a new player understands them or that Dogfight is balanced. | New players learn launch, coasting, Flux/brake, lap checkpoints and retry without coaching; finish all five tracks with reasonable failures; and play both Dogfight seats. Tune Nether Crossing's hairpin and Iron Veil's secret timing from those sessions. |
+| ST-05 | **Sound, art and naming release pass.** Music plays correctly but uses whole-track repeats; some enemies/generators reuse silhouettes. | Review audible loop seams and cue/SFX balance, low-end phone readability, credit/provenance records and the intended release names. Track/landmark branding uses Stardust names throughout current runtime and marketing. No comprehensive name/rights clearance is claimed by this rename. |
+
+### NEXT — integrate the Hub and handle discoveries properly
+
+| ID | Hub/game contract still needed | Done when |
+| --- | --- | --- |
+| ST-06 | **Launch/session/version contract.** Agree game URL/build ID, Hub launch/return links, identity/session exchange, sign-out and service-unavailable states. The current backend adapter only checks health. | Two accounts remain separate; expired sessions recover clearly; client/service version mismatch is handled; normal solo play remains available during an outage. No credentials are compiled into the game or passed in URLs. |
+| ST-07 | **Verified discoveries and account persistence.** Current discoveries live in editable browser storage. Define stable event IDs, ruleset versions, independent completion validation, idempotent writes and reconciliation. | The Hub confirms an eligible discovery once, rejects forged/replayed claims, shows it on another device and handles failed sync. Existing local discoveries may be retained as local history; they are never silently promoted to verified rewards. |
+| ST-08 | **Future secrets and spoiler policy.** Decide which clues are shared, which are per player/run and which unlock through Hub progress. Put undisclosed future answer tables and validation rules in the private service/repository; send only the clues/assets needed at the unlocked stage. | One new accessible clue chain works end to end with server-held answers, account/session-bound challenges and replay protection. Normal game bundles and public developer docs do not disclose that future answer. The player can retry and solve without audio or color alone. |
+| ST-09 | **Friend challenges and match records.** Add Hub launch/join links, invite expiry and confirmed match summaries. Decide reconnect grace versus a clean rematch before implementing it; V1 currently closes a room on peer loss. | Friends reach the same match from the Hub, expired invites explain themselves, and every disconnect/forfeit/no-contest state has a defined outcome. Casual browser-hosted results remain clearly unranked. |
+| ST-10 | **Ranking prerequisite, then ranking UI.** A player-controlled host can modify the simulation. Choose trusted server authority or independently verified replay before any public rating. Then decide placements, Elo/rank bands, draws, resets and abuse handling. See [Hub ranking proposal](HUB-DOGFIGHT-RANKING-NOTE.md). | A modified host or replayed result cannot award rating; disconnects and no-contests are consistent; eligible results update the right players once. Only then expose rating, history and standings in the Hub. |
+| ST-11 | **Versioned delivery and recovery.** Coordinate save/content migration, feature rollout, minimal operational logs, backups and account-data retention with the Hub owner. | A frontend/backend update can be rolled back without corrupting confirmed discoveries or matches. Logs diagnose failures without exposing session credentials or future puzzle answers. |
+
+### Secrets: what is already public
+
+The current secret entrance conditions, puzzle answer and local completion logic are inspectable in the shipped JavaScript, tests and public Git history. [The riddle reference](RIDDLE-DESIGN.md) also contains spoilers. Removing visible hints, changing filenames, minifying code or removing a current README paragraph cannot make that released puzzle unknown again. Treat it as an existing discovery and author new secrets under ST-08 when the service contract is ready.
+
+Gameplay mystery and result integrity are separate requirements. The game still needs fair in-world clues; sensitive future answers can stay on the server, but players can share discoveries after solving them. A health endpoint, a hidden link or a client `solved` flag cannot establish a legitimate reward. Keep unreleased solution documents and future answer data out of this public repository; do not rewrite project history merely to conceal already published puzzle text.
+
+### LATER — choose expansions after the Hub slice works
+
+These are parked design directions from the [original notes](DESIGN-NOTES.md), not a promise to implement everything. Select one small playable addition at a time.
+
+| Direction | What remains beyond the current base |
+| --- | --- |
+| Crew Dogfight 2v2 | Two crews with pilot and engineer/gunner seats, shared-ship control ownership, role UI, four-player networking and defined crew-disconnect behavior. Prototype the engineer's actual decisions first. Keep any future rating separate from 1v1. |
+| Ship systems and builds | Directional shields, component damage/repair, reactor routing, overdrive tradeoffs and shard colors with distinct build effects. Current Flux, boost, braking and shard collection are only the foundation. |
+| Physics combat | Recoil weapons, harpoons/tethers, wake riding/EMP wakes, orbiting cargo, cargo mass/volatility and silent-running/heat-signature detection. Basic projectile momentum, gravity and moving debris already exist. |
+| Track variety and routes | Alternate risk/reward lines and shortcuts, more authored tracks, asteroid tunnels, rotating hazards, gravity gates, boost rings and enemy-held checkpoints. Current `fastRoute` duplicates `safeRoute`; a distinct fast path is not implemented. |
+| Environments | Solar storms, stronger gravity/black-hole encounters, nebula effects, asteroid currents, derelict stations and wormholes with readable gameplay rules. |
+| Enemy and boss depth | Interceptor, pursuer, sniper, mine-layer and rammer behaviors; deeper Warden encounters such as mirrored movement, gravity reversal and false gates. Current sentinel prediction, generators/shield and boss progression remain the shipped baseline. |
+| Discovery content | More secret entrances, meaningful optional rewards, captain/NPC rumors, shard journals, additional fair riddles and Hub-linked discovery chains. Establish spoiler and reward rules before authoring the next chain. |
+| Distinct art and animation | Unique enemy/generator silhouettes, wreck and damage states, more obstacle variants and bespoke encounter animation. Add them to a proven gameplay slice and inspect on real phones; present effects already animate the static source art. |
+
+### Naming policy
+
+The circuit names are now **Alpha Relay**, **Beacon Prime**, **Dustfall Station**, **Nether Crossing** and **Iron Veil**. Runtime metadata uses `track.name`; earlier `inspiration` labels were removed. The two recognizable corner references were also changed to **The Coil Relay** and **The Veil Sweep**. Layout coordinates, timing, progression IDs and soundtrack cues were preserved.
+
+This is an original-branding decision, not a legal finding that every shared name is infringement. In the US, names/titles are not protected by copyright, while trademark concerns can depend on confusing similarity and related goods/services. [US Copyright Office](https://www.copyright.gov/help/faq/faq-protect.html), [USPTO](https://www.uspto.gov/trademarks/search/likelihood-confusion). The new names and the overall game title have not received a comprehensive clearance search. ST-05 tracks that release review; changing names alone is not legal clearance of an entire game.
+
+Archived research and earlier screenshots may contain former inspiration labels. They remain historical evidence, not current game names. Keep future public descriptions, metadata and promotion aligned with the names above.
+
+Rename validation: 35 focused track/gameplay/integration checks passed with unchanged lap results; the standalone build passed. All five generated level layouts matched the prior gameplay data after removing display labels. A scan of 54 built runtime text files found none of the former circuit/corner names. Desktop and phone menu names/layouts were inspected; see [current naming evidence](evidence/track-names.json).
 
 ## Supervisor handoff
 
-The original wave used Sol for gameplay and art/VFX and Luna for Suno/riddle research. This circuit/Dogfight wave reused Sol for track physics and multiplayer, and Luna for the separate Hub ranking note and map review. Root owned scaling, rendering, HUD/menu/build integration, independent verification and follow-up fixes. Review tightened Monaco's hairpin and caught a browser-test timing bug: this runtime's `waitForFunction` needs synchronous conditions, with async imports completed beforehand.
+The original wave used Sol for gameplay and art/VFX and Luna for Suno/riddle research. This circuit/Dogfight wave reused Sol for track physics and multiplayer, and Luna for the separate Hub ranking note and map review. Root owned scaling, rendering, HUD/menu/build integration, independent verification and follow-up fixes. Review tightened Nether Crossing's hairpin and caught a browser-test timing bug: this runtime's `waitForFunction` needs synchronous conditions, with async imports completed beforehand.
 
 At the September 26 local handoff, the source preview was left running at `http://127.0.0.1:4173/projects/Space-Shooter/` and the combined game/Dogfight service at `http://192.168.1.15:4174/projects/Space-Shooter/` with loopback access preserved. The latter uses explicit LAN mode for the user's phone playtest. Temporary QA servers were stopped. These addresses describe that laptop session, not publicly hosted endpoints; use the restart instructions on another session or machine.
 

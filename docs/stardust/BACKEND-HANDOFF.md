@@ -1,5 +1,7 @@
 # Stardust backend handoff
 
+The [README remaining-work plan](README.md#remaining-work), especially ST-06 through ST-11, is the current integration priority list. It covers identity, verified discoveries, future server-held secrets, friend challenges, result authority and recovery. This document describes the existing service boundary, not a completed Hub integration.
+
 ## Current contract
 
 The frontend is static and playable without an account service. `projects/Space-Shooter/runtime-config.js` deliberately ships with an empty `backendBaseUrl`; this keeps all gameplay in local mode. `systems/backend.js` only performs an optional health probe. If configured, it requests `GET {backendBaseUrl}/v1/health` with credentials omitted, no-store caching, redirects rejected, and a bounded timeout. The expected body is exactly the useful subset `{ "ok": true, "service": "stardust", "version": 1 }`. Network errors or a mismatched response fall back to local play.

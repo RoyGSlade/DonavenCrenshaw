@@ -59,8 +59,8 @@ for (let level = 1; level <= 5; level++) {
     const scene = createLevelLayout(level),
       track = scene.track;
     assert.equal(
-      track.inspiration,
-      ["Laguna Seca", "Silverstone", "Monza", "Monaco", "Spa-Francorchamps"][
+      track.name,
+      ["Alpha Relay", "Beacon Prime", "Dustfall Station", "Nether Crossing", "Iron Veil"][
         level - 1
       ],
     );
@@ -337,10 +337,10 @@ for (let level = 1; level <= 5; level++)
     assert.ok(scene.player.hp > 0);
     assert.ok(time < 60);
     t.diagnostic(
-      `${scene.track.inspiration}: ${time.toFixed(2)}s, fuel ${scene.fuel.toFixed(1)}, hull ${scene.player.hp.toFixed(1)}, rail contacts ${scene.trackProgress.boundaryHits}`,
+      `${scene.track.name}: ${time.toFixed(2)}s, fuel ${scene.fuel.toFixed(1)}, hull ${scene.player.hp.toFixed(1)}, rail contacts ${scene.trackProgress.boundaryHits}`,
     );
   });
-test("Spa-inspired L5 genuine full lap permits an intentional under60 rear entry", (t) => {
+test("Iron Veil L5 genuine full lap permits an intentional under60 rear entry", (t) => {
   const { scene, time, finished } = flyLap(5, true);
   assert.ok(finished, `rear entry failed after ${time}s`);
   assert.ok(scene.player.hp > 0);

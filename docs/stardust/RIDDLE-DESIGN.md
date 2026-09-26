@@ -1,6 +1,6 @@
 # Stardust hidden seal riddle
 
-This is the proposed content contract for the post-Warden timed seal. It turns the existing shard lore / reverse-gate idea into a deterministic, fair sequence puzzle. The ordinary game remains finishable without discovering it. The actual sequence and all clue text are authored here; generated music may set mood but must never be the only source of an answer.
+**Developer reference: contains spoilers for the implemented post-Warden seal.** This document records the puzzle's design rationale and original proposed copy. The running clue text and validation live in `engine/levels.js`, `systems/progression.js` and `ui/overlays.js`; those files are the current implementation. The ordinary game remains finishable without this discovery. Generated music sets mood but is never the only source of an answer.
 
 ## Player-facing text
 
@@ -42,4 +42,4 @@ This is a memory/order puzzle with all needed evidence surfaced in the same run.
 
 ## Integration boundary
 
-The current arena has an encrypted shard and exit gate after Warden defeat, and the current victory overlay is local-only. This document defines the puzzle content and acceptance behavior; it does not add runtime UI, local persistence, or a remote achievements service. Keep success local until an actual service contract exists.
+The arena, encrypted shard, exit gate, seal UI and local discovery storage are implemented. Account achievements and private server-held answer validation are not. This puzzle's answer and trigger conditions are already public in source, tests and repository history. See [the README's secret policy and Hub work](README.md#remaining-work) before creating the next puzzle; do not put undisclosed future answer tables into this public reference. Keep existing success local until a service independently validates an eligible reward.

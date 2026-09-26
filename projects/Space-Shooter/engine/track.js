@@ -43,7 +43,7 @@ export function isInsideTrack(track, x, y, radius = 0) {
     nearestTrackPoint(track, x, y).distance <= track.width / 2 - radius + 1e-7
   );
 }
-export function createTrack(coordinates, width, inspiration) {
+export function createTrack(coordinates, width, name) {
   const points = coordinates.map(([x, y]) => ({ x, y }));
   let length = 0;
   const segments = points.map((p, index) => {
@@ -96,7 +96,7 @@ export function createTrack(coordinates, width, inspiration) {
     portal,
     width,
     length,
-    inspiration,
+    name,
     bounds: { minX: 0, minY: 0, maxX: 48, maxY: 32 },
   };
 }

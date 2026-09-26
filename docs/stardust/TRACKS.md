@@ -2,19 +2,19 @@
 
 Five original, widened 2D layouts replace the rectangular sectors. Each starts on its finish portal: launch in the arrow direction, fly one lap, collect the corner-apex signals, and return through the same portal. Original sector identities, music cues, lore and the fifth-sector secret remain.
 
-| Sector           | Inspiration       | Intended rhythm                                                    | Lane width |
-| ---------------- | ----------------- | ------------------------------------------------------------------ | ---------- |
-| Alpha Relay      | Laguna Seca       | Hairpin, changing-radius bends and a Corkscrew-inspired switchback | 6.4 cells  |
-| Beacon Prime     | Silverstone       | Broad sweepers and linked direction changes                        | 6.4 cells  |
-| Dustfall Station | Monza             | Long acceleration sections interrupted by chicanes                 | 6.4 cells  |
-| Nether Crossing  | Monaco            | Tight harbour-style corners and a distinct rounded hairpin         | 5.8 cells  |
-| Iron Veil        | Spa-Francorchamps | Sweeping climbs translated into a flat direction-change sequence   | 6.4 cells  |
+| Circuit name | Landmark | Intended rhythm | Lane width |
+| --- | --- | --- | --- |
+| Alpha Relay | The Coil Relay | Hairpin, changing-radius bends and a switchback | 6.4 cells |
+| Beacon Prime | The Orbital Esses | Broad sweepers and linked direction changes | 6.4 cells |
+| Dustfall Station | The Foundry Straight | Long acceleration sections interrupted by chicanes | 6.4 cells |
+| Nether Crossing | The Harbour Needle | Tight corners and a distinct rounded hairpin | 5.8 cells |
+| Iron Veil | The Veil Sweep | Sweeping bends and a linked direction-change sequence | 6.4 cells |
 
-These are freely authored game circuits inspired by racing rhythms, not scale recreations. The Monaco hairpin has opposing centerlines seven cells apart, leaving an actual infield strip between its 5.8-cell lanes. Elevation, real-world corner counts and circuit logos are not reproduced.
+These are freely authored game circuits inspired by racing rhythms, not scale recreations. The Nether Crossing hairpin has opposing centerlines seven cells apart, leaving an actual infield strip between its 5.8-cell lanes. Elevation, real-world corner counts and circuit logos are not reproduced. The names above are used in the hangar, HUD and runtime metadata; the renaming did not change coordinates, handling, timing or progression IDs.
 
-## Reference research
+## Archived reference research
 
-Official sources informed the circuit character and recognizable motifs. No map image or logo is bundled in the game.
+The following are historical research references, not names for the game circuits or claims of affiliation. No map image or logo is bundled in the game. Current branding follows the [README naming policy](README.md#naming-policy).
 
 - [Laguna Seca track information and Corkscrew](https://weathertechraceway.com/pages/track-information)
 - [Silverstone official event map](https://www.silverstone.co.uk/sites/default/files/pdf/Silverstone-F1-2021-Event-Map.pdf)
@@ -26,7 +26,7 @@ Official sources informed the circuit character and recognizable motifs. No map 
 
 `createLevelLayout(level)` in `engine/levels.js` returns the existing nodes, hazards, wells, drones and level copy, plus `track`. All positions are world-cell units in a 48 by 32 world. Nodes retain the existing half-cell origin convention; `track` coordinates are their actual world positions. `safeRoute` is an authored apex line used by the control-driven validation pilot; `fastRoute` currently duplicates that line.
 
-`track.points` is a closed centerline polyline (the last point connects to the first); `track.width` is the full driving width. `segments` supply cumulative distance, lengths and unit tangents. `checkpoints` supply position, tangent, index and along-track distance. `portal` supplies position, tangent `tx/ty`, normal `nx/ny` and initial ship `angle`. `bounds` supplies the world rectangle. The renderer uses the same geometry as collision detection.
+`track.name` is the circuit's Stardust display name. It replaces the former `inspiration` metadata; consumers should use `name` or the level's `title`. `track.points` is a closed centerline polyline (the last point connects to the first); `track.width` is the full driving width. `segments` supply cumulative distance, lengths and unit tangents. `checkpoints` supply position, tangent, index and along-track distance. `portal` supplies position, tangent `tx/ty`, normal `nx/ny` and initial ship `angle`. `bounds` supplies the world rectangle. The renderer uses the same geometry as collision detection.
 
 `trackProgress` contains `nextCheckpoint`, `passed`, `lapStarted`, `distance` and `boundaryHits`. Use exported `isLapReady(scene)` for completion readiness rather than checking the checkpoint count alone. `pointOnTrack`, `nearestTrackPoint`, `isInsideTrack`, `portalCoordinates`, `constrainToTrack` and `updateTrackProgress` are exported by `engine/track.js`.
 
@@ -48,12 +48,14 @@ The closed-loop validation pilot uses only turn and thrust inputs, with real phy
 
 | Circuit              | Normal lap | Fuel left | Hull left | Rail contacts |
 | -------------------- | ---------- | --------- | --------- | ------------- |
-| Laguna-inspired      | 40.73 s    | 73.4      | 100       | 0             |
-| Silverstone-inspired | 39.88 s    | 75.9      | 100       | 0             |
-| Monza-inspired       | 43.36 s    | 72.2      | 91.5      | 0             |
-| Monaco-inspired      | 53.01 s    | 67.9      | 100       | 2             |
-| Spa-inspired         | 43.23 s    | 71.4      | 90.4      | 0             |
+| Alpha Relay          | 40.73 s    | 73.4      | 100       | 0             |
+| Beacon Prime         | 39.88 s    | 75.9      | 100       | 0             |
+| Dustfall Station     | 43.36 s    | 72.2      | 91.5      | 0             |
+| Nether Crossing      | 53.01 s    | 67.9      | 100       | 2             |
+| Iron Veil            | 43.23 s    | 71.4      | 90.4      | 0             |
 
-The genuine Iron Veil lap plus deliberate portal bypass and rear entry takes 50.36 seconds, leaving 66.1 fuel and 90.4 hull. This proves mechanical attainability with roughly nine seconds of secret margin; it does not establish novice human difficulty. Monaco's two harmless rail contacts are retained in the evidence. The pilot does not need boost, shooting or station refuelling, leaving those options available to players.
+The genuine Iron Veil lap plus deliberate portal bypass and rear entry takes 50.36 seconds, leaving 66.1 fuel and 90.4 hull. This proves mechanical attainability with roughly nine seconds of secret margin; it does not establish novice human difficulty. Nether Crossing's two harmless rail contacts are retained in the evidence. The pilot does not need boost, shooting or station refuelling, leaving those options available to players.
+
+Earlier timestamped package/screenshot evidence retains its former research labels. Current naming is verified separately in `evidence/track-names.json` and the `track-names-*.png` screenshots; the old evidence was not rewritten to imply it captured a later build.
 
 Additional regressions cover exact asteroid size limits, deterministic retries, swept infield blocking, reverse/skipped/teleported checkpoints, rotated portal rules, the actual finish API rejecting missing lap proof, restart timer preservation, frame-rate stability, predictive enemy fire and the existing arena progression. Browser rendering and human control review remain separate from these Node simulations.
