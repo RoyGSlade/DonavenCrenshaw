@@ -176,3 +176,34 @@ test("explicit LAN server serves the phone link and shares rooms with loopback c
   assert.equal((await host.take("start")).round, 1);
   assert.equal((await guest.take("start")).round, 1);
 });
+test("sockets that never join a room are closed after the idle timeout", async (t) => {
+  const server = await createDogfightServer({ port: 0, idleTimeoutMs: 300 });
+  t.after(() => server.close());
+  const idle = await client(server);
+  const host = await client(server);
+  host.send({ type: "create" });
+  await host.take("room");
+  const closed = await new Promise((r) => idle.ws.once("close", (code) => r(code)));
+  assert.equal(closed, 1000);
+  await pause(500);
+  assert.equal(host.ws.readyState, WebSocket.OPEN);
+});
+test("a client address header gives each visitor their own connection limit", async (t) => {
+  const server = await createDogfightServer({ port: 0, clientIpHeader: "cf-connecting-ip" });
+  t.after(() => server.close());
+  const origin = `http://127.0.0.1:${server.port}`;
+  const open = (ip) => new Promise((resolve) => {
+    const ws = new WebSocket(`ws://127.0.0.1:${server.port}/relay`, { origin, headers: { "CF-Connecting-IP": ip } });
+    ws.once("open", () => resolve({ ws, status: 101 }));
+    ws.once("unexpected-response", (_req, res) => { res.resume(); ws.terminate(); resolve({ ws, status: res.statusCode }); });
+    ws.on("error", () => {});
+  });
+  const held = [];
+  for (let i = 0; i < 16; i++) held.push(await open("203.0.113.7"));
+  t.after(() => held.forEach(({ ws }) => ws.terminate()));
+  assert.ok(held.every(({ status }) => status === 101));
+  assert.equal((await open("203.0.113.7")).status, 403);
+  const other = await open("198.51.100.9");
+  assert.equal(other.status, 101);
+  other.ws.terminate();
+});

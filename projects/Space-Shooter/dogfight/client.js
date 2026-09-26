@@ -235,6 +235,10 @@ function receive(message) {
     return;
   }
   if (message.type === "closed") {
+    // The relay closes sockets that sit outside a room; let go of this one now.
+    const old = connection;
+    connection = null;
+    if (old) old.close();
     resetRoom(
       typeof message.reason === "string"
         ? message.reason.slice(0, 200)

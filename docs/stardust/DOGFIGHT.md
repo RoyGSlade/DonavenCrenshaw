@@ -12,7 +12,7 @@ npm run dev:dogfight
 
 Or run `node scripts/serve-stardust-dogfight.mjs` directly. Open [Dogfight](http://127.0.0.1:4174/projects/Space-Shooter/dogfight/) in two browser windows or profiles. One pilot selects **Create room**; the other enters the eight-character code and selects **Join friend**. Both use the same relay address. The server also serves the main Stardust page and its public sprite/audio assets, so the **Stardust** link works without a second preview server.
 
-The parent menu links to `./dogfight/`. A main-game preview on port 4173 uses `ws://127.0.0.1:4174/relay` by default. Connection settings are collapsed for local play and open when a published page has no configured relay. A chosen relay is saved only in that browser's local storage; it is not baked into the build.
+The parent menu links to `./dogfight/`. A main-game preview on port 4173 uses `ws://127.0.0.1:4174/relay` by default. Connection settings are collapsed for local play and open when a published page has no configured relay. On donavencrenshaw.com the default is the hub's public relay, `wss://relay.donavencrenshaw.com/relay`. Any other relay a player picks is saved only in that browser's local storage.
 
 Controls: **W / up** thrust; **A/D / left/right** rotate; **S / down** brake; **Space** fire; **R** reverse thrust; **Shift** boost. Phone controls put **GAS / REVERSE** on the left and **FIRE / BRAKE / BOOST** on the right. Small turn buttons remain available. The countdown prevents spawn movement/shooting. Hull starts at 100, weapons deal 20, and the round ends when a hull reaches zero or the three-minute clock expires. Equal hull at time expiry is a draw. Both pilots must press **Ready for rematch** to begin a fresh round.
 
@@ -30,13 +30,13 @@ The implementation is independent of single-player `state.js`, overlays, input, 
 
 - Strict two-player rooms; no global room list, player list, chat, account, or public match history.
 - Random eight-character invitation codes from cryptographic random bytes. Rooms live only in memory and are lost when the relay restarts.
-- Maximum 64 rooms, 128 WebSocket clients, and 16 successful WebSocket connections per source IP. Behind a local tunnel proxy, connections can share the proxy's IP and therefore that 16-connection cap.
+- Maximum 64 rooms, 128 WebSocket clients, and 16 successful WebSocket connections per source IP. Behind a proxy every connection shares the proxy's IP. Pass `clientIpHeader` (or set `DOGFIGHT_CLIENT_IP_HEADER`, e.g. `cf-connecting-ip` behind Cloudflare) so the cap applies per visitor; set it only when every connection arrives through that proxy.
 - Maximum incoming WebSocket payload 16 KiB. JSON text only. Per-connection token bucket: 60 messages/second with a 100-message burst. Room attempts limited to 12/minute per connection.
 - Input sequences must increase and match the current round. Unknown control fields and invalid values are rejected. Guest controls become neutral after 350 ms without an accepted input at the host.
 - Outbound transient messages are dropped above 16 KiB of buffered data; above 64 KiB the slow socket is closed. The host sends the latest state rather than building an application-level snapshot queue.
 - Disconnect closes the room, clears controls, ends the match, and returns the surviving pilot to the lobby. Rematch requires both connected pilots.
 - Hiding the host tab explicitly ends the round. A host frame gap greater than 500 ms also interrupts it. The relay independently interrupts a round after three seconds without an accepted host snapshot. There is no claim that a browser-hosted match keeps simulating reliably in the background.
-- Rooms expire after ten minutes without activity. WebSocket heartbeat detects dead connections.
+- Rooms expire after ten minutes without activity, and both pilots are told. Sockets outside a room are closed after 60 seconds (`idleTimeoutMs`), so idle connections cannot hold slots; the page closes its own socket when a room ends. WebSocket heartbeat detects dead connections.
 
 ## Local server and future internet connection
 

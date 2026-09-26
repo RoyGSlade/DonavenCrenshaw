@@ -34,7 +34,14 @@ export function relayAddress(value, location = globalThis.location) {
   if (url.pathname === "/") url.pathname = "/relay";
   return url.href;
 }
+// The public relay run by the hub for the published site.
+const PUBLIC_RELAYS = {
+  "donavencrenshaw.com": "wss://relay.donavencrenshaw.com/relay",
+  "www.donavencrenshaw.com": "wss://relay.donavencrenshaw.com/relay",
+};
 export function defaultRelay(location = globalThis.location) {
+  if (location.protocol === "https:" && PUBLIC_RELAYS[location.hostname])
+    return PUBLIC_RELAYS[location.hostname];
   if (location.protocol === "http:" && isPrivateIPv4(location.hostname))
     return `ws://${location.host}/relay`;
   if (!["localhost", "127.0.0.1", "[::1]"].includes(location.hostname))
