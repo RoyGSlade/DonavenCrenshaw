@@ -23,5 +23,6 @@
     <link rel="manifest" href="<%= siteRoot %>assets/favicon/site.webmanifest">
     <script type="application/ld+json"><%- JSON.stringify(jsonLd) %></script>
     <link rel="stylesheet" href="<%= siteRoot %>styles/styles.css">
+    <script type="module" src="<%= siteRoot %>scripts/account.js" data-hub="https://api.donavencrenshaw.com"></script>
     <script>window.SITE_ROOT = <%- JSON.stringify(siteRoot) %>; window.SITE_BASE = <%- JSON.stringify(site.basePath) %>;</script>
 </head>
