@@ -42,6 +42,27 @@ function paintEnd(content) {
   out.hidden = content == null;
 }
 
+async function paintBoard() {
+  const panel = byId('hangar-board');
+  const list = byId('hangar-board-list');
+  if (!panel || !list) return;
+  const rows = await recorder.board('full', 5);
+  if (!rows) return;
+  list.replaceChildren(...rows.map((row) => {
+    const li = document.createElement('li');
+    if (recorder.player && row.username === recorder.player.username) li.className = 'is-me';
+    for (const [cls, text] of [['rank', String(row.rank).padStart(2, '0')], ['name', row.displayName || row.username], ['time', clock(row.timeMs)]]) {
+      const span = document.createElement('span');
+      span.className = cls;
+      span.textContent = text;
+      li.append(span);
+    }
+    return li;
+  }));
+  byId('hangar-board-empty').hidden = rows.length > 0;
+  panel.hidden = false;
+}
+
 export async function initRunSaving() {
   if (!recorder.enabled) return;
   let reachable = false;
@@ -50,6 +71,7 @@ export async function initRunSaving() {
     // A session check that answers at all means the hub is up, even for guests.
     reachable = true;
     paintPlayer(reachable);
+    await paintBoard();
   };
   await refresh().catch(() => {});
   // Signing in happens on another page; pick it up when the player comes back.
@@ -80,6 +102,7 @@ export async function initRunSaving() {
     paintEnd('Saving your time…');
     const result = await recorder.finishRun(totalMs);
     if (!result) { paintEnd('This run started before you signed in, so it wasn’t saved. The next one will be.'); return; }
+    paintBoard().catch(() => {});
     if (result.status === 'accepted') {
       const rank = result.best?.rank ? `#${result.best.rank} on the full network` : 'Saved to the full-network board';
       paintEnd([`${result.personalBest ? 'New personal best. ' : 'Saved. '}${rank}. `, link('See the leaderboard', BOARDS_URL)]);

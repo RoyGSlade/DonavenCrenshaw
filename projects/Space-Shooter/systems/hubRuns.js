@@ -79,6 +79,12 @@ export function createRunRecorder({ config = runtimeConfig, fetchImpl = globalTh
   }
 
   return {
+    // Public leaderboard rows: [{ rank, displayName, username, timeMs, setAt }].
+    async board(board = 'full', limit = 5) {
+      if (!base) return null;
+      const res = await call(`${base}/boards/${encodeURIComponent(board)}?limit=${limit}`);
+      return res.ok && Array.isArray(res.data?.entries) ? res.data.entries : null;
+    },
     get player() { return player; },
     get enabled() { return Boolean(base); },
     connect,

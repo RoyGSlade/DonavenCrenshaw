@@ -1,4 +1,4 @@
-// Live Stardust leaderboards on /stardust/.
+// Live Stardust leaderboards on /stardust/, and the sign-in prompt before Play.
 //
 // The page is built with the hub's last snapshot of the full-network board, so
 // it reads fine with JavaScript off or the hub asleep. This swaps in live
@@ -29,6 +29,31 @@ async function getJson(url) {
     } finally {
         clearTimeout(timer);
     }
+}
+
+// Who is signed in. null means the hub didn't answer, which is different from
+// a guest ({ user: null }).
+const sessionPromise = getJson(`${HUB}/api/users/session`);
+
+// Guests who press Play are told their times won't be saved and offered sign-in
+// first. Signed-in pilots, and everyone while the hub is asleep, go straight in.
+const gate = document.querySelector('[data-sd-gate]');
+if (gate && typeof gate.showModal === 'function') {
+    for (const link of document.querySelectorAll('a[href$="/games/stardust/"]:not([data-sd-guest])')) {
+        link.addEventListener('click', async (event) => {
+            if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+            event.preventDefault();
+            const session = await sessionPromise;
+            if (!session || session.user) {
+                location.assign(link.href);
+                return;
+            }
+            gate.showModal();
+        });
+    }
+    gate.addEventListener('click', (event) => {
+        if (event.target === gate) gate.close();
+    });
 }
 
 if (root) {
@@ -118,7 +143,7 @@ if (root) {
         });
     });
 
-    const session = await getJson(`${HUB}/api/users/session`);
+    const session = await sessionPromise;
     me = session?.user || null;
     if (me) {
         note.replaceChildren(`Signed in as ${me.displayName || me.username}. Every circuit you finish in the game is saved here. `);

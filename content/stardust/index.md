@@ -14,7 +14,8 @@ ogImage: "assets/images/stardust/iron-veil.webp"
   <p class="sd-tagline">Find your line. Master the drift.</p>
   <p class="sd-lede">Five circuits through the debris. Launch from the portal, hunt the apex shards, and bring your ship home in one piece. Momentum carries you further than you mean it to.</p>
   <div class="sd-actions">
-    <a class="sd-cta" href="games/stardust/">Play now <span aria-hidden="true">→</span></a>
+    <a class="sd-cta" href="games/stardust/" data-sd-play>Play now <span aria-hidden="true">→</span></a>
+    <a class="sd-text-link" href="#fastest-runs">Leaderboard ↓</a>
     <a class="sd-text-link" href="#how-it-plays">How it plays ↓</a>
   </div>
   <p class="sd-small">Keyboard, gamepad, or touch · Nothing to install<br>Early build. Guests fly free; <a href="account/">signed-in pilots</a> go on the live leaderboard.</p>
@@ -26,6 +27,8 @@ ogImage: "assets/images/stardust/iron-veil.webp"
   <div><strong>Drift physics</strong><span>Thrust, turn, and let momentum work</span></div>
   <div><strong>Dogfight 1v1</strong><span>A private room for you and a friend</span></div>
 </div>
+
+<!-- sd-leaderboard -->
 
 <section class="sd-section sd-gallery" id="screens" aria-labelledby="sd-screens-title">
   <div class="sd-section-head"><h2 id="sd-screens-title">From the cockpit</h2><p class="sd-meta">Early build · 1200 × 750</p></div>
@@ -93,7 +96,7 @@ ogImage: "assets/images/stardust/iron-veil.webp"
 </section>
 
 <section class="sd-section sd-dogfight" id="dogfight" aria-labelledby="sd-dogfight-title">
-  <div class="sd-section-head"><h2 id="sd-dogfight-title">Dogfight 1v1</h2><p class="sd-meta">Unranked · Private rooms</p></div>
-  <p class="sd-copy">One of you creates a room and shares its eight-letter code; the other joins. Thrust, turn, brake and fire until one ship is left, then call a rematch. Rooms live only while you play, and nothing about a match is kept.</p>
+  <div class="sd-section-head"><h2 id="sd-dogfight-title">Dogfight 1v1</h2><p class="sd-meta">Private rooms · Wins count when both pilots are signed in</p></div>
+  <p class="sd-copy">One of you creates a room and shares its eight-letter code; the other joins. Thrust, turn, brake and fire until one ship is left, then call a rematch. If you're both signed in, each win counts on your account page; otherwise nothing about the match is kept.</p>
   <div class="sd-actions"><a class="sd-cta sd-cta--quiet" href="games/stardust/dogfight/">Open Dogfight <span aria-hidden="true">→</span></a></div>
 </section>

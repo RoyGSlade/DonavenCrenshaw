@@ -207,3 +207,45 @@ test("a client address header gives each visitor their own connection limit", as
   assert.equal(other.status, 101);
   other.ws.terminate();
 });
+async function finishedRound({ hostTicket, guestTicket, winner }) {
+  const results = [];
+  const tickets = { "ticket-ace": "user-ace", "ticket-rook": "user-rook", "ticket-ace-2": "user-ace" };
+  const server = await createDogfightServer({
+    port: 0,
+    verifyTicket: (ticket) => (tickets[ticket] ? { userId: tickets[ticket] } : null),
+    onResult: (result) => results.push(result),
+  });
+  const host = await client(server), guest = await client(server);
+  host.send({ type: "create", ...(hostTicket ? { ticket: hostTicket } : {}) });
+  const room = await host.take("room");
+  guest.send({ type: "join", code: room.code, ...(guestTicket ? { ticket: guestTicket } : {}) });
+  const joined = await guest.take("room");
+  const start = await host.take("start");
+  const m = createMatch(start.seed, start.round);
+  m.phase = "finished";
+  m.winner = winner;
+  m.reason = "hull";
+  m.ships[winner === 0 ? 1 : 0].hp = 0;
+  host.send({ type: "snapshot", state: snapshot(m) });
+  await guest.take("result");
+  await pause(30);
+  await server.close();
+  return { results, room, joined };
+}
+test("a round between two signed-in pilots reports the winner and loser", async () => {
+  const guestWins = await finishedRound({ hostTicket: "ticket-ace", guestTicket: "ticket-rook", winner: 1 });
+  assert.deepEqual(guestWins.results, [{ winnerId: "user-rook", loserId: "user-ace", reason: "hull" }]);
+  assert.equal(guestWins.room.counted, true);
+  assert.equal(guestWins.joined.counted, true);
+  assert.equal(guestWins.joined.opponentCounted, true);
+  const hostWins = await finishedRound({ hostTicket: "ticket-ace", guestTicket: "ticket-rook", winner: 0 });
+  assert.deepEqual(hostWins.results, [{ winnerId: "user-ace", loserId: "user-rook", reason: "hull" }]);
+});
+test("rounds with a guest, a bad ticket or the same account on both sides report nothing", async () => {
+  assert.deepEqual((await finishedRound({ hostTicket: "ticket-ace", winner: 0 })).results, []);
+  assert.deepEqual((await finishedRound({ hostTicket: "ticket-ace", guestTicket: "forged", winner: 0 })).results, []);
+  assert.deepEqual((await finishedRound({ hostTicket: "ticket-ace", guestTicket: "ticket-ace-2", winner: 0 })).results, []);
+  const guest = await finishedRound({ winner: 1 });
+  assert.deepEqual(guest.results, []);
+  assert.equal(guest.room.counted, false);
+});

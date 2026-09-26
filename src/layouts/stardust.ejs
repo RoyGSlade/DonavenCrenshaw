@@ -6,7 +6,6 @@
   // sections render honest empty states, so the page never depends on the hub.
   const snap = data.hubSnapshot;
   const board = snap ? snap.leaderboard.slice(0, 10) : [];
-  const platinum = snap ? snap.platinum : [];
   const asOf = snap && snap.generatedAt ? snap.generatedAt.slice(0, 10) : null;
   const two = (n) => String(n).padStart(2, '0');
   const clock = (ms) => {
@@ -20,10 +19,11 @@
     <%- components.nav %>
     <div class="content-wrapper">
         <main id="main-content" class="sd-page" tabindex="-1">
-<%- content %>
+<% const parts = content.split('<!-- sd-leaderboard -->'); %>
+<%- parts[0] %>
             <section class="sd-section sd-boards" id="fastest-runs" aria-labelledby="sd-runs-title" data-sd-boards>
                 <div class="sd-section-head">
-                    <h2 id="sd-runs-title">Fastest runs</h2>
+                    <h2 id="sd-runs-title">Leaderboard</h2>
                     <p class="sd-meta" data-sd-board-meta><% if (asOf) { %>Snapshot · <time datetime="<%= snap.generatedAt %>"><%= asOf %></time><% } else { %>Accounts only<% } %></p>
                 </div>
                 <div class="sd-board-tabs" role="tablist" aria-label="Leaderboard" data-sd-board-tabs hidden>
@@ -44,28 +44,18 @@
                 </div>
                 <p class="sd-board-note" data-sd-board-note>Only runs flown while signed in count. <a href="account/#create">Create an account</a> and your next finished circuit is on the board.</p>
             </section>
+<%- parts.slice(1).join('') %>
 
-            <section class="sd-section sd-platinum" id="platinum-10" aria-labelledby="sd-platinum-title">
-                <div class="sd-section-head">
-                    <h2 id="sd-platinum-title">Platinum 10</h2>
-                    <p class="sd-meta"><%= platinum.length %> of 10 claimed</p>
-                </div>
-                <ol class="sd-platinum-list">
-                    <% for (let i = 1; i <= 10; i++) { const entry = platinum.find((e) => Number(e.rank) === i); %>
-                    <li class="<%= entry ? 'is-claimed' : 'is-open' %>">
-                        <span class="sd-rank"><%= two(i) %></span>
-                        <% if (entry) { %><span class="sd-name"><%= entry.name %></span><span class="sd-badge"><%= entry.badge || '' %></span><span class="sd-date"><%= day(entry.obtainedAt) %></span><% } else { %><span class="sd-name">Unclaimed</span><% } %>
-                    </li>
-                    <% } %>
-                </ol>
-            </section>
+
+            <%# The Platinum 10 is hidden while the Warden fight is switched off. It
+                comes back with the fight; the section is in git history. %>
 
             <section class="sd-section sd-credits" id="credits" aria-labelledby="sd-credits-title">
                 <h2 id="sd-credits-title">Credits</h2>
                 <ul>
                     <li>Created by Donaven Crenshaw.</li>
                     <li>Soundtrack: ten original Stardust tracks by Donaven Crenshaw, made with Suno.</li>
-                    <li>New ship, Warden, relay gate, station and asteroid art generated for this project with OpenAI image generation.</li>
+                    <li>New ship, relay gate, station and asteroid art generated for this project with OpenAI image generation.</li>
                     <li>Carried over from the original game: sound effects by freesound_community and DRAGON-STUDIO via <a href="https://pixabay.com/sound-effects/">Pixabay</a>; ship art by TheRealFusion; spaceship effects by Raphael Hatencia.</li>
                     <li><a href="games/stardust/credits.html">Full credits</a></li>
                 </ul>
@@ -74,6 +64,17 @@
         <%- components.footer %>
     </div>
     <script src="<%= siteRoot %>scripts/script.js"></script>
+    <dialog class="sd-gate" data-sd-gate aria-labelledby="sd-gate-title">
+        <form method="dialog" class="sd-gate-close"><button type="submit" aria-label="Close">×</button></form>
+        <p class="sd-eyebrow">Before you launch</p>
+        <h2 id="sd-gate-title">Your times won't be saved</h2>
+        <p>Guests can fly every circuit, but only signed-in pilots go on the leaderboard. Sign in and you'll come straight back here to launch.</p>
+        <div class="sd-gate-actions">
+            <a class="sd-cta" href="account/?next=/games/stardust/">Sign in</a>
+            <a class="sd-cta sd-cta--quiet" href="account/?next=/games/stardust/#create">Create account</a>
+        </div>
+        <a class="sd-gate-guest" href="games/stardust/" data-sd-guest>Play as a guest →</a>
+    </dialog>
     <script type="module" src="<%= siteRoot %>scripts/stardust-boards.js"></script>
 </body>
 </html>
