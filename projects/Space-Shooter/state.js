@@ -10,17 +10,21 @@ export const SHARDS_PER_LEVEL = 5;
 
 // All values in grid cells or cells/second unless noted
 export const config = {
-  GRID_W: 32,
-  GRID_H: 18,
+  GRID_W: 48,
+  GRID_H: 32,
+  VIEW_CELLS_H: 18,             // Camera scale stays stable as circuit world bounds grow.
 
   // Player ship physics
   ROT_SPEED: Math.PI * 1.2,    // rad/s
   ROTATION_SCALE: movementConfig.ROTATION_SCALE ?? 0.35,
   THRUST_ACCEL: 5.0,           // cells/s^2
-  FRICTION: 0.7,               // multiplier per second (applied with pow(dt))
+  FRICTION: 0.92,               // multiplier per second (applied with pow(dt))
   MAX_SPEED: 15.0,             // cells/s
   LAUNCH_IMPULSE: 3.5,         // cells/s added on boost
-  SHIP_SCALE: 0.85,            // scale factor for ship graphics
+  SHIP_SCALE: 0.85 * 0.66,
+  SHIP_VISUAL_SCALE: 0.66,
+  SHARD_SCALE: 0.66,
+  PLAYER_RADIUS: 0.32 * 0.66,
   MAX_HP: 100,                 // default HP if player lacks stats
   PLAYER_INVULN_DURATION: 0.4, // seconds of invulnerability after a hit
 
@@ -37,7 +41,7 @@ export const config = {
   START_PAD_RADIUS: 0.9,        // distance to consider “on the pad”
 
   // Interaction radii (as fraction of cell size)
-  PLANET_RADIUS: 0.45,
+  PLANET_RADIUS: 0.45 * 0.66,
   STATION_RADIUS: 0.5,
   GATE_RADIUS: 0.9,
 
@@ -148,6 +152,7 @@ export const state = {
     countdownActive: false,
     showStartOverlay: true,
     showEndOverlay: false,
+    showDefeatOverlay: false,
     showSettingsOverlay: false, // new
     showMinimap: true,
     showTimer: true,
@@ -171,12 +176,14 @@ export const state = {
     thrustBack: false,
     launch: false,
     shoot: false,
+    brake: false,
+    boost: false,
     // --- NEW KEYS FOR STRAFING ---
     strafeLeft: false,
     strafeRight: false,
     // --- ANALOG STRENGTHS ---
     turnStrength: 0.0,
-    thrustStrength: 1.0,
+    thrustStrength: 0.0,
     strafeStrength: 1.0,
   },
 

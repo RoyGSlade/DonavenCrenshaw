@@ -1,0 +1,35 @@
+{
+  "initial": -23,
+  "dragged": 61,
+  "coast": 144.64,
+  "keyboard": true,
+  "reducedMotionStopsCoast": true,
+  "touchInitial": -23,
+  "touched": 30.92,
+  "mobileLayout": {
+    "width": 390,
+    "viewport": 390,
+    "launch": {
+      "x": 18,
+      "y": 398.890625,
+      "width": 182.453125,
+      "height": 43,
+      "top": 398.890625,
+      "right": 200.453125,
+      "bottom": 441.890625,
+      "left": 18
+    },
+    "ship": {
+      "x": 33.738739013671875,
+      "y": 441.4604797363281,
+      "width": 343.72564697265625,
+      "height": 322.2509460449219,
+      "top": 441.4604797363281,
+      "right": 377.4643859863281,
+      "bottom": 763.71142578125,
+      "left": 33.738739013671875
+    }
+  },
+  "hidingStopsCoast": true,
+  "errors": []
+}

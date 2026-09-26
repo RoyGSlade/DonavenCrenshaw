@@ -150,10 +150,11 @@ export function checkArenaCollisions() {
   const gens = A.generators ?? [];
   for (const g of gens) {
     const d2 = (player.x - g.x)**2 + (player.y - g.y)**2;
-    if (player.shardsCarried > 0 && d2 < (config.GENERATOR_DEPOSIT_RADIUS ?? 1.5)**2) {
-      g.shardsDeposited = Math.min(2, g.shardsDeposited + player.shardsCarried);
-      toast(`Deposited ${player.shardsCarried}. Gen ${g.id}: ${g.shardsDeposited}/2`);
-      player.shardsCarried = 0;
+    if (g.shardsDeposited < 2 && player.shardsCarried > 0 && d2 < (config.GENERATOR_DEPOSIT_RADIUS ?? 1.5)**2) {
+      const deposited = Math.min(2 - g.shardsDeposited, player.shardsCarried);
+      g.shardsDeposited += deposited;
+      player.shardsCarried -= deposited;
+      toast(`Deposited ${deposited}. Gen ${g.id}: ${g.shardsDeposited}/2`);
       playSoundEffect('shard_deposit');
       // Unshield when both gens reach 2/2
       const allReady = gens.length >= 2 && gens.every(gg => gg.shardsDeposited >= 2);

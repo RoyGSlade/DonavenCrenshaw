@@ -1,0 +1,25 @@
+{
+  "at": "2026-09-26T12:22:25.473Z",
+  "scope": "Two emulated touch clients accessed via actual LAN address on the laptop; physical phone reachability awaits user",
+  "automaticRelay": true,
+  "multitouchTurnAndThrust": {
+    "before": {
+      "id": 1,
+      "x": 34,
+      "y": 12,
+      "angle": 3.141592653589793,
+      "hp": 100,
+      "hit": 0
+    },
+    "after": {
+      "id": 1,
+      "x": 31.807663444574263,
+      "y": 13.464437763269789,
+      "angle": 1.7415926535897888,
+      "hp": 100,
+      "hit": 0
+    }
+  },
+  "disconnect": true,
+  "errors": []
+}

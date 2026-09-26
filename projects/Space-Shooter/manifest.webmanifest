@@ -1,0 +1,12 @@
+{
+  "id": "./",
+  "name": "Stardust",
+  "short_name": "Stardust",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#070d17",
+  "theme_color": "#070d17",
+  "icons": [{ "src": "./art/player-ship.png", "sizes": "1254x1254", "type": "image/png", "purpose": "any" }]
+}

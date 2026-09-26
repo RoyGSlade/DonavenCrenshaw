@@ -31,7 +31,12 @@ function angDelta(a,b){ let d=((b-a+Math.PI)%(2*Math.PI))-Math.PI; return d<-Mat
 export function ensureCamera() {
   const gfx = state.gfx || (state.gfx = {});
   if (!gfx.camera) gfx.camera = { x: 0, y: 0, rot: 0, zoom: config.CAMERA_BASE_ZOOM ?? 1 };
-  return gfx.camera;
+  // State initializes a partial camera; repair absent/non-finite fields before smoothing.
+  const camera = gfx.camera;
+  for (const [key, fallback] of Object.entries({ x: 0, y: 0, rot: 0, zoom: config.CAMERA_BASE_ZOOM })) {
+    if (!Number.isFinite(camera[key])) camera[key] = fallback;
+  }
+  return camera;
 }
 
 /** Begin a cinematic pan. While active, player following is ignored. */
@@ -132,6 +137,21 @@ export function updateCamera(dt, player) {
 
   const zoomAlpha = 1 - Math.pow(1 - CAM.ZOOM_FOLLOW, dt);
   cam.zoom = lerp(cam.zoom ?? baseZoom, targetZoom, zoomAlpha);
+
+  // A heading offset that fits a desktop can push the entire ship off a portrait screen.
+  // Keep ordinary follow inside the central half; cinematic pans retain their own framing.
+  if (!cam._pan?.active && !cam._hold) {
+    const gfx = state.gfx;
+    const pixelsPerCell = gfx.cellW * cam.zoom;
+    const width = gfx.canvas?.width / (gfx.dpr || 1);
+    const height = gfx.canvas?.height / (gfx.dpr || 1);
+    if (pixelsPerCell > 0 && Number.isFinite(width) && Number.isFinite(height)) {
+      const marginX = width / pixelsPerCell * 0.25;
+      const marginY = height / pixelsPerCell * 0.25;
+      cam.x = Math.max(player.x - marginX, Math.min(player.x + marginX, cam.x));
+      cam.y = Math.max(player.y - marginY, Math.min(player.y + marginY, cam.y));
+    }
+  }
 
   return cam;
 }

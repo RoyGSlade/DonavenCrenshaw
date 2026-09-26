@@ -4,9 +4,10 @@ import { playMusic, playSoundEffect } from '../../audio.js';
 import { resizeCanvas } from '../../ui/graphics.js';
 import { updateHUD, toast } from '../../ui/hud.js';
 import { clamp } from '../utils.js';
-import { exitArena, startCountdown } from '../modeManager.js';
+import { applyGravity } from '../systems/environment.js';
+import { exitArena } from '../modeManager.js';
 import { recordArenaVictory, recordArenaDefeat } from '../api.js';
-import { openVictoryOverlay, openDefeatOverlay, openStartOverlay } from '../../ui/overlays.js';
+import { openVictoryOverlay, openDefeatOverlay } from '../../ui/overlays.js';
 import { updateParticles } from '../systems/particles.js';
 import { handlePlayerMovement } from '../systems/movement.js';
 import { handleShooting, handleOverheat, updateProjectiles, spawnEnemyProjectile } from '../systems/projectiles.js';
@@ -16,16 +17,19 @@ import { beginCameraPanTo, clearCameraPan } from '../systems/camera.js';
 let _victoryHandled = false; // Gate victory trigger to once
 let _defeatHandled = false;  // Gate defeat trigger to once
 
-async function finishArenaWinToMenu() {
-  exitArena('win');
-  setTimeout(() => {
-    openStartOverlay();
-  }, 50);
+export function updateArena(dt) {
+  const arena = state.arena;
+  let remaining = Math.min(0.1, Math.max(0, dt));
+  while (remaining > 1e-8 && state.arena === arena && !arena?.victoryPresented) {
+    const step = Math.min(1 / 120, remaining);
+    updateArenaStep(step);
+    remaining -= step;
+  }
 }
 
-export function updateArena(dt) {
+function updateArenaStep(dt) {
   const A = state.arena;
-  if (!A) return;
+  if (!A || A.victoryPresented) return;
 
   // Lazy init cinematic holder
   if (!A.cine) A.cine = null;
@@ -78,7 +82,8 @@ export function updateArena(dt) {
         }
 
         // Pan to gate and then back
-        const g = A.exitGate;
+        A.gravityWells = [];
+      const g = A.exitGate;
         beginCameraPanTo(g.x, g.y, 0.9, true);
         A.cine.phase = 'gate';
         A.cine.t = 0;
@@ -119,6 +124,11 @@ export function updateArena(dt) {
       onLeavePad: () => { A.combatActive = true; }
     };
     if (!A.controlsLocked) {
+      if (A.combatActive && A.boss.state !== 'dead') {
+        const liveGenerators = A.generators.filter(g => g.shardsDeposited < 2).length;
+        A.gravityWells = liveGenerators ? [{ x: A.boss.x, y: A.boss.y, radius: 2, influence: 15, strength: liveGenerators * 5 }] : [];
+        applyGravity(A.player, A.gravityWells, dt);
+      }
       handlePlayerMovement(dt, A, A.player, movementEnv);
     } else {
       A.player.vx = 0; A.player.vy = 0;
@@ -139,15 +149,10 @@ export function updateArena(dt) {
 
   updateBoss(dt);
 
-  // Post-victory finish: if we have the encrypted shard and hit the gate, end the run
+  // Begin the seal after the cinematic and shard pickup, with no travel-time tax.
   if (A.hasEncryptedShard && A.exitGate && !_victoryHandled) {
-    const dx = A.player.x - A.exitGate.x;
-    const dy = A.player.y - A.exitGate.y;
-    if (dx * dx + dy * dy < (config.GATE_TRIGGER_RADIUS ?? 1.2) ** 2) {
-      _victoryHandled = true; // ensure overlay opens only once
-      completeArenaVictory();
-      return;
-    }
+    completeArenaVictory();
+    return;
   }
 
   updateHUD();
@@ -244,9 +249,12 @@ function updateBossDeadIdle(dt) {
 }
 
 export async function completeArenaVictory() {
-  // Local-only: show victory overlay and return to start
-  openVictoryOverlay({ message: 'You defeated the Warden.' });
+  const arena = state.arena;
+  if (!arena || arena.boss.state !== 'dead' || !arena.hasEncryptedShard || arena.victoryPresented) return;
+  arena.victoryPresented = true;
   _victoryHandled = true;
+  const result = await recordArenaVictory();
+  openVictoryOverlay(result);
 }
 
 export function buildArena() {
@@ -254,7 +262,9 @@ export function buildArena() {
   _victoryHandled = false;
   _defeatHandled = false;
   // Arena can use a different baseline if desired; default to config base zoom
-  state.gfx.camera.zoom = (config.ARENA_CAMERA_ZOOM || config.CAMERA_BASE_ZOOM || state.gfx.camera.zoom);
+  clearCameraPan();
+  state.gfx.camera.zoom = config.ARENA_CAMERA_ZOOM;
+  state.gfx.camera._baseZoom = config.ARENA_CAMERA_ZOOM;
   //... rest of the function is unchanged
   state.gfx.projectiles = [];
   resizeCanvas();
@@ -288,7 +298,7 @@ export function buildArena() {
     startPos: { x: center, y: center + 13.5 },
     lockedInStart: true, launched: false, combatActive: false,
     fuel: Number.POSITIVE_INFINITY, maxFuel: Number.POSITIVE_INFINITY,
-    boost: config.BOOST_MAX_PIPS,
+    boost: config.BOOST_MAX_PIPS, flux: 30, elapsed: 0,
 
     player: {
       x: center, y: center + 13.5, vx: 0, vy: 0, angle: -Math.PI / 2,
@@ -331,21 +341,11 @@ export function buildArena() {
   }
 }
 
-// This function is now deprecated in favor of finishArenaWinToMenu,
-// but kept for now to avoid breaking other parts of the code.
-// The new flow is driven by shard pickup.
-async function handleArenaVictory() {
-  // This function is now deprecated in favor of finishArenaWinToMenu,
-  // but kept for now to avoid breaking other parts of the code.
-  // The new flow is driven by shard pickup.
-  console.log("handleArenaVictory called, but should be deprecated.");
-}
-
-// ... updateBoss function is unchanged ...
 export function updateBoss(dt) {
   const arena = state.arena;
   const boss = arena.boss;
   const center = config.ARENA_SIZE / 2;
+  arena.elapsed = (arena.elapsed || 0) + dt;
 
   switch (boss.state) {
     case 'pre-entry':
@@ -364,8 +364,8 @@ export function updateBoss(dt) {
       break;
     case 'idle_shielded':
     case 'vulnerable':
-      boss.x = center + Math.sin(performance.now() / 4000) * 8;
-      boss.y = center - 4 + Math.cos(performance.now() / 5500) * 4;
+      boss.x = center + Math.sin(arena.elapsed / 4) * 8;
+      boss.y = center - 4 + Math.cos(arena.elapsed / 5.5) * 4;
       if (arena.combatActive) {
         boss.attackCooldown -= dt;
         if (boss.telegraphTimer > 0) boss.telegraphTimer -= dt;
@@ -387,6 +387,7 @@ export function updateBoss(dt) {
 
 async function handleArenaDefeat() {
   // Local-only: exit arena and show defeat overlay (no lockout)
+  await recordArenaDefeat();
   exitArena('loss');
   openDefeatOverlay({ locked: false });
 }

@@ -1,0 +1,19 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Stardust — Credits</title><link rel="stylesheet" href="./game.css"></head><body style="overflow:auto"><main class="panel" style="margin:40px auto"><p class="eyebrow">FLIGHT DIVISION / CREDITS</p><h1 style="font-size:44px">Stardust</h1><p>Created by Donaven Crenshaw. Built with Codex, with Sol and Luna development assistance.</p><p>New ship, Warden, relay gate, station and asteroid artwork generated for this project using OpenAI image generation. Engine effects, glyphs, HUD and authored levels are implemented in code.</p><h2>Legacy asset credits</h2><p>These contributor records are carried forward from the original game.</p><div id="contributors"></div><div class="actions"><a href="./index.html">← Return to hangar</a></div></main><script type="module">
+import { MUSIC_CUES } from './systems/music.js';
+const legacyHeading = document.querySelector('h2');
+const musicSection = document.createElement('section');
+const heading = document.createElement('h2'); heading.textContent = 'Soundtrack';
+const credit = document.createElement('p'); credit.textContent = 'Ten original Stardust tracks created by Donaven Crenshaw using Suno. Selected and supplied by the creator for this game.';
+const tracks = document.createElement('ul');
+for (const cue of Object.values(MUSIC_CUES)) { const item = document.createElement('li'); item.textContent = cue.title; tracks.append(item); }
+musicSection.append(heading, credit, tracks);
+legacyHeading.before(musicSection);
+const credits = await fetch('./credits.json').then(response => response.json());
+for (const contributor of credits.contributors || []) {
+  const row = document.createElement('p');
+  const name = document.createElement('strong'); name.textContent = contributor.name;
+  row.append(name, document.createTextNode(` — ${contributor.role}`));
+  if (contributor.link && /^https:\/\//.test(contributor.link)) { const link = document.createElement('a'); link.href=contributor.link; link.textContent=' · Source'; link.rel='noopener noreferrer'; row.append(link); }
+  document.getElementById('contributors').append(row);
+}
+</script></body></html>

@@ -4,7 +4,7 @@ import { playSoundEffectThrottled } from '../../audio.js';
 import { toast } from '../../ui/hud.js';
 
 export function handleShooting(dt, player) {
-    player.shootCooldown = Math.max(0, player.shootCooldown - dt);
+    player.shootCooldown = Math.max(0, (player.shootCooldown || 0) - dt);
 
     if (state.keys.shoot && player.shootCooldown <= 0 && !player.isOverheated) {
         spawnPlayerProjectile(player);
@@ -62,6 +62,7 @@ export function updateProjectiles(dt) {
     const projectiles = state.gfx.projectiles || [];
     for (let i = projectiles.length - 1; i >= 0; i--) {
         const p = projectiles[i];
+        p.prevX = p.x; p.prevY = p.y;
         p.x += p.vx * dt;
         p.y += p.vy * dt;
         p.life -= dt;

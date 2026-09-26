@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,viewport-fit=cover"
+    />
+    <meta name="color-scheme" content="dark" />
+    <link rel="manifest" href="../manifest.webmanifest" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Stardust" />
+    <link rel="apple-touch-icon" href="../art/player-ship.png" />
+    <title>Dogfight · Stardust</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath fill='%2381e6df' d='M16 1 30 30 16 23 2 30Z'/%3E%3C/svg%3E"
+    />
+    <link rel="stylesheet" href="./dogfight.css" />
+  </head>
+  <body>
+    <canvas
+      tabindex="0"
+      id="arena"
+      aria-label="Dogfight arena: cyan pilot against orange pilot"
+    ></canvas>
+    <header>
+      <a href="../" id="back">← STARDUST</a
+      ><strong>DOGFIGHT <span>/ 1v1</span></strong
+      ><button id="leave" hidden>Leave room</button>
+    </header>
+    <div id="match-hud" hidden>
+      <div class="pilot cyan">
+        CYAN <b id="hp0">100</b
+        ><progress id="bar0" max="100" value="100"></progress>
+      </div>
+      <div id="round-clock">03:00</div>
+      <div class="pilot orange">
+        ORANGE <b id="hp1">100</b
+        ><progress id="bar1" max="100" value="100"></progress>
+      </div>
+    </div>
+    <main id="lobby" class="panel">
+      <p class="eyebrow">FRIEND CHALLENGE / CASUAL PLAY</p>
+      <h1>One arena.<br />Two pilots.</h1>
+      <p class="intro">
+        A ship each. No upgrades. Use momentum and cover to break their line of
+        fire.
+      </p>
+      <details id="connection-settings">
+        <summary>Connection settings</summary>
+        <label for="relay-url">Relay address</label
+        ><input
+          id="relay-url"
+          type="url"
+          spellcheck="false"
+          autocomplete="off"
+          placeholder="wss://your-relay.example/relay"
+        />
+        <p id="relay-help" class="small"></p>
+      </details>
+      <div class="room-actions">
+        <button id="create" class="primary">Create room</button>
+        <div class="join">
+          <label for="room-code">Room code</label
+          ><input
+            id="room-code"
+            maxlength="8"
+            placeholder="8 characters"
+            spellcheck="false"
+            autocomplete="off"
+          /><button id="join">Join friend</button>
+        </div>
+      </div>
+      <div id="waiting" hidden>
+        <span class="small">YOUR ROOM CODE</span
+        ><strong id="share-code"></strong><button id="copy">Copy code</button>
+        <p>
+          Send this code and the relay address to your friend. Waiting for pilot
+          two…
+        </p>
+      </div>
+      <p id="status" role="status" aria-live="polite">
+        Create a private match or enter your friend’s code.
+      </p>
+      <div class="controls-note">
+        <b>W / ↑</b> thrust · <b>A D / ← →</b> rotate · <b>S / ↓</b> brake ·
+        <b>SPACE</b> fire · <b>R</b> reverse · <b>SHIFT</b> boost<br />Both
+        pilots must keep the match open. If the host tab hides or stalls, the
+        round ends.
+      </div>
+      <p class="small limits">Private, unranked matches.</p>
+    </main>
+    <div id="countdown" hidden role="status"></div>
+    <section id="result" class="panel" hidden aria-labelledby="result-title">
+      <p class="eyebrow">ROUND COMPLETE</p>
+      <h2 id="result-title"></h2>
+      <p id="result-detail"></p>
+      <button id="rematch" class="primary">Ready for rematch</button
+      ><button id="result-leave">Leave room</button>
+      <p id="rematch-status" role="status"></p>
+    </section>
+    <footer id="flight-footer" hidden>
+      <span id="role-label"></span
+      ><span
+        >W gas · R reverse · A/D turn · S brake · SPACE fire · SHIFT boost</span
+      ><span id="network-status">Relay connected</span>
+      <span id="portrait-hint">Rotate for a wider arena view</span>
+    </footer>
+    <aside id="mobile-utilities" aria-label="Display and steering settings">
+      <button id="fullscreen">Fullscreen</button>
+      <button id="enable-tilt">Enable tilt</button>
+      <button id="recenter-tilt" disabled>Recenter</button>
+      <span id="tilt-status" role="status">Tilt off · use turn buttons</span>
+    </aside>
+    <div id="touch-controls" hidden aria-label="Flight controls">
+      <div class="thumb-cluster left-thumb">
+        <button data-key="thrust" class="primary">GAS</button>
+        <button data-key="reverse">REVERSE</button>
+        <div class="turn-fallback" aria-label="Button steering">
+          <button data-key="left" aria-label="Rotate left">↶</button>
+          <button data-key="right" aria-label="Rotate right">↷</button>
+        </div>
+      </div>
+      <div class="thumb-cluster right-thumb">
+        <button data-key="fire" class="primary">FIRE</button>
+        <button data-key="brake">BRAKE</button>
+        <button data-key="boost" id="boost-button">
+          BOOST <small id="boost-state">READY</small>
+        </button>
+      </div>
+    </div>
+    <script type="module" src="./client.js"></script>
+  </body>
+</html>

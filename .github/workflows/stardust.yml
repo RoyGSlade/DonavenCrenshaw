@@ -1,0 +1,44 @@
+name: Verify Stardust
+
+on:
+  pull_request:
+    paths:
+      - 'projects/Space-Shooter/**'
+      - 'assets/audio/stardust/**'
+      - 'assets/Images/sprites/**'
+      - 'scripts/*stardust*'
+      - 'tests/stardust-*'
+      - 'package*.json'
+      - '.github/workflows/stardust.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'projects/Space-Shooter/**'
+      - 'assets/audio/stardust/**'
+      - 'assets/Images/sprites/**'
+      - 'scripts/*stardust*'
+      - 'tests/stardust-*'
+      - 'package*.json'
+      - '.github/workflows/stardust.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  game:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Verify game, input, progression, audio and relay
+        run: npm run test:stardust
+      - name: Build standalone game
+        run: npm run build:stardust

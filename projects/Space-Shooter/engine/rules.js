@@ -1,49 +1,65 @@
-// src/roadmap/engine/rules.js
-import { state, SHARDS_PER_LEVEL } from '../state.js';
-
-/** Finds the nearest uncollected shard or the gate if none remain. */
+import { state, config } from "../state.js";
+import { isLapReady, portalCoordinates } from "./track.js";
 export function findNearestShard() {
   const lv = state.run?.current;
   if (!lv) return;
-  let nearest = null;
-  let minDistSq = Infinity;
-  const uncollected = lv.nodes.filter(n => n.kind === 'planet' && !lv.shards.has(n.id));
-  if (uncollected.length === 0) {
-    lv.nearestShardTarget = lv.nodes.find(n => n.kind === 'gate') || null;
-    return;
-  }
-  for (const shard of uncollected) {
-    const dx = shard.x + 0.5 - lv.player.x;
-    const dy = shard.y + 0.5 - lv.player.y;
-    const d2 = dx * dx + dy * dy;
-    if (d2 < minDistSq) { minDistSq = d2; nearest = shard; }
-  }
-  lv.nearestShardTarget = nearest;
+  const remaining = lv.nodes.filter(
+    (n) => n.kind === "planet" && !lv.shards.has(n.id),
+  );
+  const checkpoint =
+    lv.track?.checkpoints[lv.trackProgress?.nextCheckpoint ?? 0];
+  const nextSignal = remaining[0];
+  // Guide around the circuit in authored order, never across the infield to a nearby later corner.
+  lv.nearestShardTarget =
+    checkpoint && (!nextSignal || checkpoint.index + 1 < nextSignal.corner)
+      ? {
+          kind: "checkpoint",
+          x: checkpoint.x - 0.5,
+          y: checkpoint.y - 0.5,
+          title: "Next checkpoint",
+        }
+      : nextSignal || lv.nodes.find((n) => n.kind === "gate") || null;
 }
-
-
-/** Adds a time penalty to the current run. */
 export function addPenalty(ms) {
-  const lv = state.run?.current;
-  if (!lv) return;
-  lv.activeMs += ms;
+  if (!state.run?.current) return;
+  state.run.current.activeMs += ms;
   state.run.totalActiveMs += ms;
 }
-
-
-/** True if player enters the gate from the backside on L5 with all required shards. */
-export function isBacksideArenaEntry(gateNode) {
-  const lv = state.run?.current;
-  if (!lv) return false;
-
-  const totalPlanets = lv.nodes.filter(n => n.kind === 'planet').length;
-  const required = Math.min(SHARDS_PER_LEVEL, totalPlanets);
-  const hasAllL5Shards = lv.level === 5 && lv.shards.size >= required;
-  if (!hasAllL5Shards) return false;
-
-  const px = lv.player.x, gx = gateNode.x + 0.5;
-  // Require a more decisive approach from the right/back to avoid accidental detection
-  const fromRight = px > (gx + 0.8); // tightened threshold
-  const facingLeft = Math.cos(lv.player.angle) < -0.2; // must be clearly facing left
-  return fromRight && facingLeft;
+export function levelElapsedMs(lv, now = performance.now()) {
+  return (
+    (lv?.activeMs || 0) + (lv?.timerRunning ? Math.max(0, now - lv.t0) : 0)
+  );
+}
+export function hasRequiredShards(lv) {
+  const ids =
+    lv?.nodes?.filter((n) => n.kind === "planet").map((n) => n.id) || [];
+  return ids.length > 0 && ids.every((id) => lv.shards.has(id));
+}
+export function secretEligible(lv, now = performance.now()) {
+  return (
+    !!lv &&
+    lv.level === 5 &&
+    lv.launched &&
+    !lv.completed &&
+    isLapReady(lv) &&
+    hasRequiredShards(lv) &&
+    lv.fuel >= 1 &&
+    levelElapsedMs(lv, now) < 60000
+  );
+}
+/** A real inward crossing of the rear half, rather than merely pointing backward. */
+export function isBacksideArenaEntry(
+  gateNode,
+  lv = state.run?.current,
+  now = performance.now(),
+) {
+  if (!gateNode || !secretEligible(lv, now)) return false;
+  const p = lv.player;
+  const relative = portalCoordinates(lv.track, p);
+  return (
+    relative.forward > 0.12 &&
+    Math.hypot(relative.forward, relative.lateral) <= config.GATE_RADIUS &&
+    relative.velocity < -0.15 &&
+    relative.facing < -0.2
+  );
 }
