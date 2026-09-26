@@ -218,6 +218,7 @@ export function tryFinishLevel() {
       state.run.levelIndex = lv.level + 1;
       buildLevel(lv.level + 1);
       startCountdown(config.COUNTDOWN_DURATION, state.run.current);
+      window.dispatchEvent(new CustomEvent("stardust:levelStart", { detail: { level: lv.level + 1 } }));
     }
   } else if ((lv._gateMessageAt || 0) < performance.now()) {
     lv._gateMessageAt = performance.now() + 1800;

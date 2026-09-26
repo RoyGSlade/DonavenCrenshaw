@@ -82,6 +82,20 @@
 .sd-cta--quiet:hover { background: rgba(169, 220, 255, .08); color: #fff; box-shadow: 0 0 0 1px var(--sd-frost); }
 .sd-page .sd-small a, .sd-page .sd-empty a { color: var(--sd-ice); text-underline-offset: 4px; }
 
+.sd-board-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 18px; }
+.sd-board-tabs button {
+  padding: 8px 12px; border: 1px solid var(--sd-line); border-radius: 3px; background: transparent; color: var(--sd-muted);
+  font: .68rem var(--font-mono); letter-spacing: .1em; text-transform: uppercase; cursor: pointer;
+}
+.sd-board-tabs button:hover { color: var(--sd-text); border-color: var(--sd-line-strong); }
+.sd-board-tabs button[aria-selected="true"] { color: #06121c; background: var(--sd-ice); border-color: var(--sd-ice); }
+.sd-board-tabs button:focus-visible { outline: 2px solid var(--sd-frost); outline-offset: 3px; }
+.sd-board li.is-me .sd-name { color: var(--sd-ice); }
+.sd-board li.is-me .sd-name::after { content: " · you"; font: .66rem var(--font-mono); letter-spacing: .1em; color: var(--sd-frost); }
+.sd-page .sd-board-note { margin: 16px 0 0; font-size: .8rem; }
+.sd-page .sd-board-note a { color: var(--sd-ice); text-underline-offset: 4px; }
+.sd-live-dot { display: inline-block; width: .45rem; height: .45rem; margin-right: .5rem; border-radius: 50%; background: #7ee2b8; box-shadow: 0 0 10px rgba(126, 226, 184, .7); vertical-align: middle; }
+
 .sd-credits h2 { margin-bottom: 14px; font-size: 1rem; }
 .sd-credits ul { margin: 0; padding-left: 1.1em; }
 .sd-credits li { font-size: .84rem; }
