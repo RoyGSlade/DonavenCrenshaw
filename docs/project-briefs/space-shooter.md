@@ -1,10 +1,11 @@
 # Project Identity
 
-**Real Name:** Stardust
+**Real Name:** Driftglass (working title, formerly Stardust)
 **Codename:** Stardust
 **Category:** Games
-**Status (Machine):** archived
-**Status Label (Display):** DRIFTING
+**Status (Machine):** prototype
+**Status Label (Display):** Early build
+**Page:** `/infinite-ages/driftglass/` · **Code:** `games/driftglass/`
 
 ## One-liners
 
@@ -58,11 +59,11 @@ The ultimate vision is a 2v2 tactical arena shooter. Teams of two share a single
 
 ## Trust Facts
 
-- **Runs offline:** Yes
-- **Requires internet:** No (Leaderboards would require it)
+- **Runs offline:** Yes, once the page has loaded
+- **Requires internet:** Only to load the page. Saved times will need the hub.
 - **Telemetry:** None
-- **Accounts:** None
-- **Data stored where:** Local device only
+- **Accounts:** None yet. Every run is a guest run.
+- **Data stored where:** Sound and control settings in the browser's local storage
 
 ## Downloads + Links
 

@@ -13,7 +13,7 @@
     {"id":"sustainer","name":"Sustainer","amountUSD":50,"cadence":"monthly","owner":"donaven-crenshaw","reviewedAt":"2026-07-31","publicationStatus":"published"}
   ],
   "goals": [],
-  "voting": {"status":"draft","enabled":null,"policy":null,"note":"Do not implement sponsor voting until quantities, tier powers, longevity rules, return behavior, and refunded-vote rules are defined."},
+  "voting": {"status":"draft","enabled":null,"policy":null,"note":"Decided, not live: one feature vote per signed-in account per month, independent of any payment. This is not sponsor voting. Do not describe it on public pages until accounts and voting ship."},
   "discord": {"status":"draft","url":null,"accessRules":null,"moderationRules":null},
   "merch": {"status":"backlogged","available":false,"note":"Merch is not part of the first redesign."},
   "fundingUse": ["Free-software polishing and releases", "Compute, hosting, signing, and testing", "Future server infrastructure", "Project-specific development needs"]
