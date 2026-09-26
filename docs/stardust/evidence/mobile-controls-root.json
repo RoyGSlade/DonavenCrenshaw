@@ -1,0 +1,49 @@
+{
+  "results": [
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "boostLaunched": true,
+      "layoutCorrect": true,
+      "minimapClear": true,
+      "simultaneousGasFire": true,
+      "wholeDocumentFullscreen": true,
+      "insecureTiltFallback": true
+    },
+    {
+      "viewport": {
+        "width": 844,
+        "height": 390
+      },
+      "boostLaunched": true,
+      "layoutCorrect": true,
+      "minimapClear": true,
+      "simultaneousGasFire": true,
+      "wholeDocumentFullscreen": true,
+      "insecureTiltFallback": true
+    },
+    {
+      "viewport": {
+        "width": 667,
+        "height": 320
+      },
+      "boostLaunched": true,
+      "layoutCorrect": true,
+      "minimapClear": true,
+      "simultaneousGasFire": true,
+      "wholeDocumentFullscreen": true,
+      "insecureTiltFallback": true
+    },
+    {
+      "secureContext": "localhost",
+      "simulatedSensor": true,
+      "turnsBothDirections": true,
+      "changesShipHeading": true,
+      "simultaneousGasFire": true,
+      "recenterAndStaleNeutral": true
+    }
+  ],
+  "errors": []
+}

@@ -1,35 +1,40 @@
-// src/roadmap/engine/api.js
-// LOCAL-ONLY stubs — no server calls. All game logic runs client-side.
 import { state } from '../state.js';
 import { toast } from '../ui/hud.js';
 import { enterArena } from './modeManager.js';
 import { pauseTimer } from './modes/roadmap.js';
+import { isBacksideArenaEntry } from './rules.js';
+import { createSeal, recordDiscovery, submitSeal } from '../systems/progression.js';
 
-/** Local arena entry — no server prereq check. */
+let activeSeal = null;
 export async function requestArenaEnterFromBack() {
-  if (state.mode === 'arena') return;
+  const gate = state.run?.current?.nodes.find(n => n.kind === 'gate');
+  if (state.mode === 'arena' || !gate || !isBacksideArenaEntry(gate)) return { ok: false };
+  activeSeal = null;
+  recordDiscovery('Where Gates Should Not Lead');
   pauseTimer();
   state.ui.showMinimap = false;
-  toast('The Secret Altar accepts your challenge...', 3000);
+  toast('Something answers from the other side.', 3000);
   enterArena();
+  return { ok: true, local: true };
 }
-
-/** Local stub — victory is recorded in-memory only. */
 export async function recordArenaVictory() {
-  return { ok: true };
+  const arena = state.arena;
+  if (!arena?.hasEncryptedShard || arena.boss?.state !== 'dead') return { ok: false };
+  recordDiscovery('The Warden Falls');
+  activeSeal ||= createSeal();
+  return { ok: true, local: true, seal: activeSeal };
 }
-
-/** Local stub — no lockout timer. */
 export async function recordArenaDefeat() {
-  return { ok: true, locked: false };
+  activeSeal = null;
+  return { ok: true, local: true, locked: false };
 }
-
-/** Local stub — no encrypted shard system in demo. */
 export async function fetchLatestEncryptedShard() {
-  return { ok: false };
+  return activeSeal ? { ok: true, local: true, seal: activeSeal } : { ok: false };
 }
-
-/** Local stub — no shard decryption in demo. */
 export async function decryptShard(id, answer) {
-  return { ok: false };
+  if (!activeSeal || activeSeal.id !== id) return { ok: false, reason: 'inactive' };
+  const result = submitSeal(activeSeal, answer);
+  if (result.ok) result.persisted = recordDiscovery(result.achievement);
+  return result;
 }
+export function abandonSeal() { activeSeal = null; }

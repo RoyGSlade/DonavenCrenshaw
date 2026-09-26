@@ -1,0 +1,48 @@
+{
+  "afterFlight": {
+    "launched": true,
+    "player": {
+      "x": 18.857032336115324,
+      "y": 25,
+      "vx": 8.495566109015696,
+      "vy": 0,
+      "angle": 0,
+      "hp": 100,
+      "maxHp": 100,
+      "invulnTimer": 0,
+      "heat": 0,
+      "maxHeat": 100,
+      "isOverheated": false,
+      "shootCooldown": 0,
+      "boundaryContact": 0,
+      "angVel": 0,
+      "_boostCd": 0
+    },
+    "level": 1
+  },
+  "pausedAfterSettings": true,
+  "entry": {
+    "ok": true,
+    "local": true
+  },
+  "sealOpened": "overlay-panel",
+  "cleanRestart": {
+    "mode": "roadmap",
+    "level": 1,
+    "arena": null
+  },
+  "defeatGuard": true,
+  "mobileControls": true,
+  "mobileLaunched": true,
+  "musicTransitions": {
+    "launch": "level1",
+    "secret": "secret",
+    "warden": "boss_theme",
+    "riddle": "riddle",
+    "victory": "victory",
+    "menu": "menu"
+  },
+  "musicMatches": true,
+  "errors": [],
+  "failures": []
+}

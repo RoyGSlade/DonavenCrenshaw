@@ -6,12 +6,14 @@ import { loadRoadmapData } from './data.js';
 import { state } from './state.js';
 import { resizeCanvas } from './ui/graphics.js';
 import { loadAssets } from './assets.js';
+import { initHangarShip } from './ui/hangarShip.js';
 
 
 let isInitialized = false;
 
 export async function initStarmap(canvas) {
   if (isInitialized) return;
+  initHangarShip();
 
   try {
     const [data] = await Promise.all([
@@ -21,7 +23,7 @@ export async function initStarmap(canvas) {
     state.data = data;
   } catch (e) {
     console.error('Failed to load assets or data', e);
-    return;
+    throw e;
   }
 
   initEngine(canvas);

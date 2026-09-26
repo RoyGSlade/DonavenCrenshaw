@@ -1,0 +1,19 @@
+{
+  "at": "2026-09-26T11:28:18.345Z",
+  "builtMenuDogfightBack": true,
+  "relayStandaloneBack": true,
+  "tracks": [
+    "Laguna Seca",
+    "Silverstone",
+    "Monza",
+    "Monaco",
+    "Spa-Francorchamps"
+  ],
+  "boundaries": {
+    "http://127.0.0.1:4175/projects/Space-Shooter/art/provenance.json": 404,
+    "http://127.0.0.1:4174/projects/Space-Shooter/art/asteroid-provenance.json": 404,
+    "http://127.0.0.1:4174/package.json": 404,
+    "http://127.0.0.1:4175/projects/Space-Shooter/%2e%2e%2fpackage.json": 404
+  },
+  "errors": []
+}

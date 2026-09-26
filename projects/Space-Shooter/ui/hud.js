@@ -8,6 +8,10 @@ import { state, config, MAX_LEVEL, SHARDS_PER_LEVEL } from '../state.js';
 // ---------------------------- DOM HUD --------------------------------
 const missionEl = document.getElementById('mission-tracker');
 const fuelDomContainer = document.getElementById('fuel-bar-container'); // hidden HUD
+const briefingEl = document.getElementById('flight-briefing');
+const lessonEl = document.getElementById('flight-lesson');
+const instructionEl = document.getElementById('flight-instruction');
+const controlsEl = document.getElementById('flight-controls');
 
 // Toast (DOM) — exported for engine.js
 const toastEl = document.getElementById('roadmap-toast');
@@ -24,6 +28,9 @@ export function toast(message, durationMs = 3000) {
 export function blinkFuel() {}
 
 export function updateHUD() {
+  const showFlight = !!state.run && !state.ui.showStartOverlay && !state.ui.showEndOverlay;
+  controlsEl?.classList.toggle('hidden', !showFlight || state.mode === 'arena');
+  briefingEl?.classList.toggle('hidden', !showFlight || state.mode === 'arena');
   // This function is for the DOM mission tracker, which is hidden in arena mode.
   if (state.mode === 'arena') {
       if (missionEl) missionEl.classList.add('hidden');
@@ -31,7 +38,7 @@ export function updateHUD() {
       return;
   }
 
-  if (missionEl) missionEl.classList.remove('hidden');
+  if (missionEl) missionEl.classList.toggle('hidden', !showFlight);
 
   const lv = state.run?.current;
   if (!lv) {
@@ -42,13 +49,16 @@ export function updateHUD() {
 
   const typeOf = (n) => n?.type ?? n?.kind; // tolerate both "type" and "kind"
   const totalPlanets = Array.isArray(lv.nodes) ? lv.nodes.filter(n => typeOf(n) === 'planet').length : 0;
-  const required = Math.min(SHARDS_PER_LEVEL, totalPlanets || SHARDS_PER_LEVEL);
+  const required = totalPlanets || SHARDS_PER_LEVEL;
 
   if (missionEl) {
     const got = lv.shards?.size ?? 0;
     const level = lv.level ?? (state.run?.levelIndex ?? 1);
-    missionEl.textContent = `Data Shards: ${got}/${required} — Level ${level}/${MAX_LEVEL}`;
+    const route = lv.track ? `\nLAP 1/1  ·  CORNERS ${lv.trackProgress?.passed || 0}/${lv.track.checkpoints.length}` : '';
+    missionEl.textContent = `${String(level).padStart(2, '0')} / ${MAX_LEVEL}  ${lv.levelInfo?.title || 'Gate network'}\nSHARDS ${got}/${required}  ·  FLUX ${Math.floor(lv.flux || 0)}%${route}`;
   }
+  if (lessonEl) lessonEl.textContent = lv.levelInfo?.lesson || '';
+  if (instructionEl) instructionEl.textContent = lv.lockedInStart ? (state.input.touch.active ? 'Tap BOOST after the countdown to launch. GAS accelerates; BRAKE spends Flux.' : 'Press Space after the countdown. Coast while you turn; use X to brake with Flux.') : lv.levelInfo?.briefing || '';
   if (fuelDomContainer) fuelDomContainer.classList.add('hidden');
 }
 
@@ -86,19 +96,22 @@ function drawGlobalTimerTopCenter(ctx, W, H) {
   let ms = run.totalActiveMs || 0;
   if (lv.timerRunning) ms += performance.now() - lv.t0;
 
-  const text = msToClock(ms);
+  const sectorMs = (lv.activeMs || 0) + (lv.timerRunning ? performance.now() - lv.t0 : 0);
+  const text = `SECTOR ${msToClock(sectorMs)}`;
   ctx.save();
-  ctx.font = '600 18px Saira, sans-serif';
-  const padX = 12, h = 30;
+  ctx.font = '14px Consolas, monospace';
+  const padX = 12, h = 47;
   const w = ctx.measureText(text).width + padX * 2;
-  const x = (W - w) / 2, y = 16;
+  const x = (W - w) / 2, y = W < 600 ? 90 : 16;
 
   roundedRectPath(ctx, x, y, w, h, 8);
   ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fill();
   ctx.strokeStyle = 'rgba(255,255,255,0.15)'; ctx.lineWidth = 1; ctx.stroke();
 
   ctx.fillStyle = '#fff'; ctx.textBaseline = 'middle';
-  ctx.fillText(text, x + padX, y + h / 2);
+  ctx.fillText(text, x + padX, y + 16);
+  ctx.fillStyle = '#8fa6b7'; ctx.font = '10px Consolas, monospace';
+  ctx.fillText(`RUN ${msToClock(ms)}`, x + padX, y + 34);
   ctx.restore();
 }
 
@@ -109,15 +122,18 @@ function drawResourcesTopRight(ctx, W, H, player, fuel, maxFuel) {
   const hpPct = maxHp ? hp / maxHp : 1;
   
   const margin = 16;
-  const w = Math.max(220, Math.min(320, W * 0.28));
-  const h = 18;
+  const w = Math.max(100, Math.min(250, W * 0.29));
+  const h = 14;
   let x = W - w - margin;
   let y = margin;
 
-  drawNeonBar(ctx, x, y, w, h, hpPct,   '#19ff8c', '#0b8f52', 'HP');
+  drawNeonBar(ctx, x, y, w, h, hpPct, '#73c8bd', '#285a60', 'HULL');
   
-  // Replace fuel bar with boost pips
-  y += h + 10;
+  if (Number.isFinite(fuel) && maxFuel > 0) {
+    y += h + 7;
+    drawNeonBar(ctx, x, y, w, h, fuel / maxFuel, '#b9bc88', '#575b40', 'FUEL');
+  }
+  y += h + 20;
   const boostVal = state.mode === 'arena'
     ? (state.arena?.boost ?? 0)
     : (state.run?.current?.boost ?? 0);
@@ -129,7 +145,7 @@ function drawOverheatMeter(ctx, W, H, player) {
     const heatPct = player.maxHeat ? clamp(player.heat / player.maxHeat, 0, 1) : 0;
     
     const margin = 16;
-    const w = Math.max(220, Math.min(320, W * 0.28));
+    const w = Math.max(100, Math.min(250, W * 0.29));
     const h = 18;
     let x = W - w - margin;
     let y = margin + (h + 10) * 2;
@@ -157,7 +173,7 @@ function drawNeonBar(ctx, x, y, w, h, pct, colorMain, colorBack, label, ticks=fa
     roundedRectPath(ctx, x + 1, y + 1, fw, h - 2, 7);
     ctx.fillStyle = grad; ctx.fill();
     // glow stroke over the fill
-    ctx.shadowColor = colorMain; ctx.shadowBlur = 12; ctx.globalAlpha = 0.25;
+    ctx.shadowColor = colorMain; ctx.shadowBlur = 2; ctx.globalAlpha = 0.25;
     ctx.strokeStyle = colorMain; ctx.stroke();
     ctx.globalAlpha = 1; ctx.shadowBlur = 0;
   }
@@ -172,7 +188,7 @@ function drawNeonBar(ctx, x, y, w, h, pct, colorMain, colorBack, label, ticks=fa
   }
 
   ctx.fillStyle = 'rgba(255,255,255,0.9)';
-  ctx.font = '600 12px Saira, sans-serif';
+  ctx.font = '10px Consolas, monospace';
   ctx.textBaseline = 'middle';
   ctx.fillText(label, x + 8, y + h / 2);
   const pctTxt = `${Math.round(pct * 100)}%`;
@@ -203,8 +219,8 @@ function drawBoostPips(ctx, x, y, w, h, boost) {
     if (pct > 0) {
       roundedRectPath(ctx, px + 1, y + 1, (pipW - 2) * pct, h - 2, 7);
       const grad = ctx.createLinearGradient(px, y, px + pipW, y);
-      grad.addColorStop(0, '#4dc3ff');
-      grad.addColorStop(1, '#1aa3ff');
+      grad.addColorStop(0, '#6cbbcd');
+      grad.addColorStop(1, '#30596d');
       ctx.fillStyle = grad; ctx.fill();
     }
   }
@@ -229,7 +245,7 @@ function drawBossHUD(ctx, W, H, boss) {
     const w = W * 0.6;
     const h = 24;
     const x = (W - w) / 2;
-    const y = 16;
+    const y = W < 600 ? 100 : 16;
 
     ctx.save();
     
@@ -329,15 +345,41 @@ export function drawMinimapBottomLeft(ctx, W, H) {
     return;
   }
 
-  const sx = r.w / config.GRID_W;
-  const sy = r.h / config.GRID_H;
-  const icon = Math.max(3, r.w * MM.ICON_BASE);
+  const sx = Math.min(r.w / config.GRID_W, r.h / config.GRID_H);
+  const sy = sx;
+  const insetX = (r.w - config.GRID_W * sx) / 2;
+  const insetY = (r.h - config.GRID_H * sy) / 2;
+  const icon = Math.max(3, r.w * 0.018);
 
   // world → minimap coords
   const toMini = (gx, gy) => ({
-    x: Math.floor(r.x + gx * sx),
-    y: Math.floor(r.y + gy * sy),
+    x: r.x + insetX + gx * sx,
+    y: r.y + insetY + gy * sy,
   });
+
+  if (lv.track?.points?.length) {
+    ctx.save(); ctx.lineJoin='round'; ctx.lineCap='round'; ctx.beginPath();
+    lv.track.points.forEach((point,index)=>{ const p=toMini(point.x,point.y); index ? ctx.lineTo(p.x,p.y) : ctx.moveTo(p.x,p.y); });
+    ctx.closePath(); ctx.strokeStyle='#567783'; ctx.lineWidth=(lv.track.width+.35)*sx; ctx.stroke();
+    ctx.strokeStyle='#1e3746'; ctx.lineWidth=lv.track.width*sx; ctx.stroke();
+    const checkpoint=lv.track.checkpoints?.[lv.trackProgress?.nextCheckpoint || 0];
+    if(checkpoint) { const p=toMini(checkpoint.x,checkpoint.y); ctx.fillStyle='#ffcf91'; ctx.beginPath(); ctx.arc(p.x,p.y,2.5,0,Math.PI*2); ctx.fill(); }
+    ctx.restore();
+  }
+
+  for (const rock of lv.hazards || []) {
+    if (rock.hp <= 0) continue;
+    const p = toMini(rock.x, rock.y);
+    ctx.fillStyle = '#4b5f6c'; ctx.beginPath(); ctx.arc(p.x, p.y, Math.max(1, rock.radius * sx), 0, Math.PI * 2); ctx.fill();
+  }
+  for (const well of lv.gravityWells || []) {
+    const p = toMini(well.x, well.y);
+    ctx.strokeStyle = '#6174b7'; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(p.x,p.y,well.influence*sx,0,Math.PI*2);ctx.stroke();
+  }
+  for (const drone of lv.drones || []) {
+    if (drone.hp <= 0) continue;
+    const p = toMini(drone.x,drone.y);ctx.fillStyle='#ffad72';ctx.fillRect(p.x-2,p.y-2,4,4);
+  }
 
   // Nodes (stations under, then planets, then gate on top)
   drawMinimapNodes(ctx, lv, toMini, icon);
@@ -364,29 +406,38 @@ export function getMinimapRect(W, H) {
   const margin = clampInt(shortSide * MM.MARGIN_PCT, 10, 24);
 
   // Slightly narrower & shorter (per your request); clamp against screen size + margin
-  let w = clampInt(W * MM.WIDTH_PCT, 200, W - 2 * margin);
-  let h = clampInt(w * MM.ASPECT,   120, H - 2 * margin);
+  let w = clampInt(W * 0.18, 140, W - 2 * margin);
+  let h = clampInt(w * MM.ASPECT, 85, H - 2 * margin);
 
   // If height hit its clamp, recompute width to preserve aspect
   if (h < w * MM.ASPECT) {
     w = Math.min(w, Math.floor((H - 2 * margin) / MM.ASPECT));
   }
 
+  // Short phone screens need the map between the mission text and left pedals.
+  // Raising a full-size map from the bottom can otherwise cover the mission.
+  if (state.input.touch.active && W > H && H <= 500) {
+    h = Math.min(h, Math.max(24, H - 277));
+    w = Math.floor(h / MM.ASPECT);
+    return { x: margin, y: 108, w, h: Math.floor(h) };
+  }
+
   // Bottom-left placement with a top clamp so it never runs off-screen
   const x = margin;
-  const y = Math.max(H - h - margin, margin);
+  const touchInset = state.input.touch.active ? 208 : 0;
+  const y = Math.max(H - h - margin - touchInset, margin);
 
   return { x: Math.floor(x), y: Math.floor(y), w: Math.floor(w), h: Math.floor(h) };
 }
 
 function drawMinimapPanel(ctx, r) {
   // Background
-  ctx.fillStyle = 'rgba(0,0,0,0.35)';
+  ctx.fillStyle = 'rgba(7,20,33,0.9)';
   ctx.fillRect(r.x, r.y, r.w, r.h);
 
   // Border
-  ctx.lineWidth = 2;
-  ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = '#365565';
   ctx.strokeRect(r.x + 0.5, r.y + 0.5, r.w - 1, r.h - 1);
 
   // Subtle inner grid (optional)
@@ -413,7 +464,7 @@ function drawMinimapNodes(ctx, lv, toMini, icon) {
   // Stations (squares)
   for (const n of nodes) {
     if (typeOf(n) !== 'station') continue;
-    const { x, y } = toMini(n.gridX ?? n.x ?? 0, n.gridY ?? n.y ?? 0);
+    const { x, y } = toMini(n.x + 0.5, n.y + 0.5);
     const s = icon * MM.STATION_SCALE;
     ctx.fillStyle = '#60a5fa';
     ctx.fillRect(Math.floor(x - s / 2), Math.floor(y - s / 2), Math.floor(s), Math.floor(s));
@@ -427,10 +478,10 @@ function drawMinimapNodes(ctx, lv, toMini, icon) {
     if (typeOf(n) !== 'planet') continue;
     const collected = lv.shards?.has?.(n.id) || n.collected;
     if (collected) continue;
-    const { x, y } = toMini(n.gridX ?? n.x ?? 0, n.gridY ?? n.y ?? 0);
+    const { x, y } = toMini(n.x + 0.5, n.y + 0.5);
     ctx.beginPath();
     ctx.arc(x, y, icon * MM.PLANET_SCALE, 0, Math.PI * 2);
-    ctx.fillStyle = '#a855f7';
+    ctx.fillStyle = {blue:'#79d7ed',green:'#83d6b1',pink:'#eea1c7',purple:'#b6a5eb'}[n.color] || '#81e6df';
     ctx.fill();
     ctx.lineWidth = 2;
     ctx.strokeStyle = 'rgba(0,0,0,0.5)';
@@ -440,9 +491,9 @@ function drawMinimapNodes(ctx, lv, toMini, icon) {
   // Gate (ring)
   for (const n of nodes) {
     if (typeOf(n) !== 'gate') continue;
-    const { x, y } = toMini(n.gridX ?? n.x ?? 0, n.gridY ?? n.y ?? 0);
+    const { x, y } = toMini(n.x + 0.5, n.y + 0.5);
     ctx.lineWidth = Math.max(1, icon * MM.GATE_THICKNESS);
-    ctx.strokeStyle = 'gold';
+    ctx.strokeStyle = lv.secretReady ? '#b6a5eb' : '#81e6df';
     ctx.beginPath();
     ctx.arc(x, y, icon * MM.GATE_RADIUS, 0, Math.PI * 2);
     ctx.stroke();
@@ -459,11 +510,7 @@ function drawCenteredText(ctx, r, text) {
 
 
 function getArenaMiniRect(W, H) {
-  const MM = config.MINIMAP;
-  const margin = Math.floor(Math.min(W, H) * MM.MARGIN_PCT);
-  const w = Math.floor(W * MM.WIDTH_PCT);
-  const h = Math.floor(w * MM.ASPECT);
-  return { x: margin, y: H - h - margin, w, h };
+  return getMinimapRect(W, H);
 }
 
 function drawArenaMinimapBottomLeft(ctx, W, H) {

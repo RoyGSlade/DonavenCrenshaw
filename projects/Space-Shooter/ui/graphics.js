@@ -9,7 +9,10 @@ import { withRun, hasRun } from '../engine/runGuard.js';
 import { makeSpriteSheet } from '../engine/sprites/spriteSheet.js';
 import { makeAnimator } from '../engine/sprites/animator.js';
 import { ensureCamera } from '../engine/systems/camera.js';
+import { toggleMobileFullscreen, isFullscreen } from '../systems/mobileControls.js';
 import { drawHUD } from './hud.js';
+import { isLapReady } from '../engine/track.js';
+import { drawCourier, drawRelayGate, drawShield, drawExplosion, drawFlightEnvironment, drawShard } from '../gfx/stardustVfx.js';
 
 // drawArena/drawRoadmap are defined locally below to avoid missing module imports.
 
@@ -72,7 +75,9 @@ function drawStaticBackgroundToBuffer() {
   const H = canvas.height / dpr;
 
   bufferCtx.clearRect(0, 0, W, H);
-  bufferCtx.fillStyle = '#000000';
+  const backdrop = bufferCtx.createLinearGradient(0, 0, W, H);
+  backdrop.addColorStop(0, '#060f1d'); backdrop.addColorStop(.55, '#0b1825'); backdrop.addColorStop(1, '#050a12');
+  bufferCtx.fillStyle = backdrop;
   bufferCtx.fillRect(0, 0, W, H);
 
   bufferCtx.setTransform(1, 0, 0, 1, 0, 0);
@@ -156,13 +161,14 @@ export function render() {
   const H = canvas.height / dpr;
 
   // Derive world cell size from height (square cells)
-  state.gfx.cellH = H / config.GRID_H;
+  state.gfx.cellH = H / (config.VIEW_CELLS_H || config.GRID_H);
   state.gfx.cellW = state.gfx.cellH;
   const { cellW, cellH } = state.gfx;
 
   // Anim tickers
   const dt = state.gfx.lastDt || 0;
   if (!state.gfx.anim) state.gfx.anim = { gate: 0, shard: 0 };
+  state.gfx.visualTime = (state.gfx.visualTime || 0) + (state.ui.paused || state.settings?.reducedMotion ? 0 : Math.min(dt, .1));
   state.gfx.anim.gate += (SPRITE.GATE_FPS / 60) * (dt * 60);
   state.gfx.anim.shard += (SPRITE.SHARD_FPS / 60) * (dt * 60);
 
@@ -172,6 +178,19 @@ export function render() {
   // Clear and draw static bg
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.drawImage(bufferCanvas, 0, 0);
+
+  // Optional starfield
+  if (config.STARFIELD?.ENABLED) {
+    const player = state.arena?.player || state.run?.current?.player || null;
+    let vxPx = 0, vyPx = 0;
+    if (player) {
+      vxPx = player.vx * cellW;
+      vyPx = player.vy * cellH;
+    }
+    ctx.save(); ctx.scale(dpr, dpr);
+    drawParallaxStars(ctx, W, H, vxPx, vyPx);
+    ctx.restore();
+  }
 
   // World-space
   ctx.save();
@@ -202,17 +221,6 @@ export function render() {
     drawCountdown(W, H, state.run?.current);
   } else if (mode === 'arena') {
     drawCountdown(W, H, state.arena);
-  }
-
-  // Optional starfield
-  if (config.STARFIELD?.ENABLED) {
-    const player = state.arena?.player || state.run?.current?.player || null;
-    let vxPx = 0, vyPx = 0;
-    if (player) {
-      vxPx = player.vx * cellW;
-      vyPx = player.vy * cellH;
-    }
-    drawParallaxStars(ctx, W, H, vxPx, vyPx);
   }
 
   // Startup hint if there’s no active run
@@ -256,12 +264,13 @@ function drawArenaEntities() {
     ctx.restore();
 
     ctx.save();
-    const img = assets.genA || assets.genB;
+    const img = assets.fuelStation || assets.genA || assets.genB;
     if (img) {
       const s = Math.min(cellW, cellH) * 1.8;
       ctx.shadowBlur = inRange ? 25 : 10;
       ctx.shadowColor = inRange ? '#ffff80' : '#66ccff';
-      ctx.drawImage(img, genX - s/2, genY - s/2, s, s);
+      const ratio = img.height / img.width;
+      ctx.drawImage(img, genX - s/2, genY - s*ratio/2, s, s*ratio);
     } else {
       ctx.fillStyle = '#223d59';
       ctx.strokeStyle = '#6bbcff';
@@ -273,146 +282,104 @@ function drawArenaEntities() {
     ctx.restore();
   }
 
-  // Exit gate render (reuse roadmap gate frames)
-  if (state.arena?.exitGate) {
-    const { gateBaseFrames: base, gateOverlayFrames: over } = assets;
-    if (base && over) {
-      const anim = state.gfx.anim || { gate: 0 };
-      const f = Math.floor(anim.gate) % Math.min(7, base.length);
-      const s = state.gfx.cellW * 3;
-      const gx = state.arena.exitGate.x * state.gfx.cellW;
-      const gy = state.arena.exitGate.y * state.gfx.cellH;
-      drawSheetFrame(ctx, base[f], base[f].width, base[f].height, 0, gx, gy, s, s, Math.PI / 2);
-      drawSheetFrame(ctx, over[f], over[f].width, over[f].height, 0, gx, gy, s, s, Math.PI / 2);
-    }
-  }
+  if (A.exitGate) drawRelayGate(ctx, A.exitGate.x*cellW, A.exitGate.y*cellH, cellW*3, assets.relayGate, state.gfx.visualTime || 0);
 
   // --- Boss ---
   if (boss && Number.isFinite(boss.x) && Number.isFinite(boss.y)) {
     const bossX = boss.x * cellW;
     const bossY = boss.y * cellH;
 
+    const clock = state.gfx.visualTime || 0;
     if (boss.state !== 'dead') {
-      // Boss ship
-      {
-        const s = Math.min(cellW, cellH) * (config.BOSS_DRAW_SCALE ?? 4.4);
-        const framesCount = (config.BOSS_SHIP_FRAMES ?? 1);
-        if (!boss._anim) boss._anim = makeAnimator({ frames: Math.max(1, framesCount), fps: 8, loop: true });
-        const idx = boss._anim.update(state.gfx?.lastDt || 0) | 0;
-
-        // Prefer sequence frames if provided; else fall back to sheet
-        const seq = state.gfx?.assets?.bossShipFrames || assets.bossShipFrames;
-        if (Array.isArray(seq) && seq.length) {
-          const img = seq[idx % seq.length];
-          ctx.drawImage(img, bossX - s/2, bossY - s/2, s, s);
-        } else if (assets.boss) {
-          const img = assets.boss; // spritesheet
-          const fw = Math.floor(img.width / Math.max(1, framesCount));
-          const fh = img.height;
-          drawSheetFrame(ctx, img, fw, fh, idx % framesCount, bossX, bossY, s, s, 0);
-        } else {
-          // Fallback debug rect if no art loaded
-          ctx.fillStyle = 'red';
-          ctx.fillRect(bossX - cellW * 2, bossY - cellH * 2, cellW * 4, cellH * 4);
-        }
-
-        // Shield effect (unchanged)
-        if (boss.shielded && assets.boss_shield) {
-          const shieldS = cellW * 5;
-          const shield_scroll = (performance.now() / 30) % assets.boss_shield.height;
-          ctx.save();
-          ctx.globalAlpha = 0.7;
-          ctx.beginPath();
-          ctx.arc(bossX, bossY, shieldS/2.2, 0, Math.PI * 2);
-          ctx.clip();
-          ctx.drawImage(assets.boss_shield, 0, shield_scroll, assets.boss_shield.width, assets.boss_shield.height, bossX - shieldS/2, bossY - shieldS/2, shieldS, shieldS);
-          ctx.drawImage(assets.boss_shield, 0, shield_scroll - assets.boss_shield.height, assets.boss_shield.width, assets.boss_shield.height, bossX - shieldS/2, bossY - shieldS/2, shieldS, shieldS);
-          ctx.restore();
-        }
-      }
-    } else {
-      // DEAD: do NOT draw the ship. Play the boom sequence.
-      const frames = assets.bossBoomFrames || null;
-      const t = Math.min(boss.deathTimer || 0, (config.BOSS_DEATH_DURATION ?? 2.0));
-      if (frames && frames.length) {
-        const fps = 12; // ~12fps looks good
-        const idx = Math.min(frames.length - 1, Math.floor(t * fps));
-        const img = frames[idx];
-        const s = Math.min(cellW, cellH) * 10; // nice big kaboom
-        drawSheetFrame(ctx, img, img.width, img.height, 0, bossX, bossY, s, s);
-      }
-
-      // Keep the expanding ring you already had
-      const alpha = Math.max(0, 1 - t / (config.BOSS_DEATH_DURATION ?? 2.0));
-      const r = (t * 6 + 2) * Math.min(cellW, cellH);
+      const size = Math.min(cellW, cellH) * (config.BOSS_DRAW_SCALE ?? 4.4);
       ctx.save();
-      ctx.globalAlpha = alpha;
-      ctx.strokeStyle = '#ffd580';
-      ctx.lineWidth = 3 / (camera.zoom || 1);
-      ctx.beginPath();
-      ctx.arc(bossX, bossY, r, 0, Math.PI * 2);
-      ctx.stroke();
+      ctx.shadowColor = '#c56832'; ctx.shadowBlur = cellW*.15;
+      if (assets.bossShip) ctx.drawImage(assets.bossShip, bossX-size/2, bossY-size/2,size,size);
       ctx.restore();
+      if (boss.shielded) drawShield(ctx,bossX,bossY,size*.58,clock);
+    } else {
+      drawExplosion(ctx,bossX,bossY,cellW,boss.deathTimer || 0,config.BOSS_DEATH_DURATION ?? 2, !!state.settings?.reducedMotion);
     }
   }
 
   const es = state.arena?.encryptedShard;
-  if (es && !es.picked) {
-    const sx = es.x * cellW, sy = es.y * cellH;
-    const rot = performance.now() / 500;
-    const s = cellW * 0.9;
-    ctx.save();
-    ctx.translate(sx, sy);
-    ctx.rotate(rot);
-    if (assets.shard_gold) {
-      ctx.drawImage(assets.shard_gold, -s/2, -s/2, s, s);
-    } else {
-      ctx.fillStyle = '#ffd700';
-      ctx.shadowColor = '#ffd700';
-      ctx.shadowBlur = 18;
-      roundedPath(ctx, -s/2, -s/2, s, s, 6/(camera.zoom||1));
-      ctx.fill();
-    }
-    ctx.restore();
-  }
-
+  if (es && !es.picked) drawShard(ctx,es.x*cellW,es.y*cellH,cellW*.95,'#ffdf8a',state.gfx.visualTime || 0,config.SHARD_SCALE);
   for (const shard of shards) {
     if (!shard || shard.collected) continue;
-    const sX = shard.x * cellW;
-    const sY = shard.y * cellH;
-    ctx.save();
-    ctx.translate(sX, sY);
-    ctx.rotate(performance.now() / 500);
-    const shardSize = cellW * 0.75;
-    if (assets.shard) {
-      ctx.drawImage(assets.shard, -shardSize/2, -shardSize/2, shardSize, shardSize);
-    } else {
-      ctx.fillStyle = '#ffdd00';
-      ctx.shadowColor = '#ffdd00';
-      ctx.shadowBlur = 20;
-      roundedPath(ctx, -shardSize/2, -shardSize/2, shardSize, shardSize, 6/(camera.zoom||1));
-      ctx.fill();
-    }
-    ctx.restore();
+    drawShard(ctx,shard.x*cellW,shard.y*cellH,cellW*.75,'#ffdf8a',state.gfx.visualTime || 0,config.SHARD_SCALE);
   }
 }
 
 function drawRoadmap(ctx) {
-  drawPlayfieldSlab();
-  drawGrid();
   const lv = state.run?.current;
+  if (lv?.track) drawCircuit(ctx, lv);
+  else { drawPlayfieldSlab(); drawGrid(); }
+  drawFlightEnvironment(ctx, {...lv,reducedMotion:state.settings?.reducedMotion}, state.gfx.cellW, state.gfx.visualTime || 0, assets);
   drawNodes();
-  drawShip(lv?.player);
+  drawProjectiles();
   drawParticles();
+  drawShip(lv?.player);
+}
+
+function drawCircuit(ctx, scene) {
+  const track = scene.track, unit = state.gfx.cellW;
+  if (!track?.points?.length) return;
+  const trace = () => {
+    ctx.beginPath();
+    track.points.forEach((point, i) => i ? ctx.lineTo(point.x * unit, point.y * unit) : ctx.moveTo(point.x * unit, point.y * unit));
+    ctx.closePath();
+  };
+  ctx.save();
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  // The visible racing ribbon shares the same round-segment corridor as collisions.
+  trace(); ctx.strokeStyle = '#142c3b'; ctx.lineWidth = (track.width + .7) * unit; ctx.stroke();
+  ctx.strokeStyle = '#527b88'; ctx.lineWidth = (track.width + .16) * unit; ctx.stroke();
+  ctx.setLineDash([.55 * unit, .55 * unit]); ctx.strokeStyle = '#97d7d0'; ctx.stroke();
+  ctx.setLineDash([]); ctx.lineWidth = track.width * unit; ctx.strokeStyle = '#10202e'; ctx.stroke();
+  trace(); ctx.strokeStyle = '#182c3b'; ctx.lineWidth = (track.width - .4) * unit; ctx.stroke();
+  // A faint broken guide gives speed and direction without covering apex pickups.
+  trace(); ctx.lineWidth = .025 * unit; ctx.setLineDash([.22 * unit, .55 * unit]); ctx.strokeStyle = '#6095a13a'; ctx.stroke(); ctx.setLineDash([]);
+  for (let i = 0; i < track.points.length; i++) {
+    const a = track.points[i], b = track.points[(i + 1) % track.points.length];
+    const length = Math.hypot(b.x - a.x, b.y - a.y);
+    const heading = Math.atan2(b.y - a.y, b.x - a.x);
+    for (let distance = 2; distance < length - 1; distance += 4) {
+      const t = distance / length;
+      ctx.save(); ctx.translate((a.x + (b.x - a.x) * t) * unit, (a.y + (b.y - a.y) * t) * unit); ctx.rotate(heading);
+      ctx.strokeStyle = '#8de5dc48'; ctx.lineWidth = .035 * unit;
+      ctx.beginPath(); ctx.moveTo(-.15 * unit, -.16 * unit); ctx.lineTo(.07 * unit, 0); ctx.lineTo(-.15 * unit, .16 * unit); ctx.stroke(); ctx.restore();
+    }
+  }
+  const next = track.checkpoints?.[scene.trackProgress?.nextCheckpoint || 0];
+  if (next && !scene.lockedInStart) {
+    const nx = -next.ty, ny = next.tx, half = track.width * .45;
+    ctx.strokeStyle = '#ffd39a66'; ctx.lineWidth = .045 * unit; ctx.setLineDash([.15 * unit, .15 * unit]);
+    ctx.beginPath(); ctx.moveTo((next.x + nx * half) * unit, (next.y + ny * half) * unit); ctx.lineTo((next.x - nx * half) * unit, (next.y - ny * half) * unit); ctx.stroke(); ctx.setLineDash([]);
+  }
+  const portal = track.portal;
+  if (portal) {
+    ctx.save(); ctx.translate(portal.x * unit, portal.y * unit); ctx.rotate(Math.atan2(portal.ty, portal.tx));
+    const squares = 12, across = track.width / squares;
+    for (let i = 0; i < squares; i++) for (let row = 0; row < 2; row++) {
+      ctx.fillStyle = (i + row) % 2 ? '#81ddd98a' : '#0a1b26';
+      ctx.fillRect((row - 1) * .13 * unit, (i * across - track.width / 2) * unit, .13 * unit, across * unit);
+    }
+    ctx.restore();
+  }
+  ctx.restore();
 }
 
 function drawArena(ctx) {
   drawArenaColliders(ctx);
+  for (const well of state.arena?.gravityWells || []) {
+    ctx.save(); ctx.strokeStyle='rgba(255,158,88,.1)'; ctx.lineWidth=1; ctx.setLineDash([5,12]);
+    ctx.beginPath(); ctx.arc(well.x*state.gfx.cellW,well.y*state.gfx.cellH,well.influence*state.gfx.cellW,0,Math.PI*2); ctx.stroke();ctx.restore();
+  }
   drawArenaEntities();
   drawProjectiles();
   const player = state.arena?.player;
-  drawShip(player);
   drawParticles();
+  drawShip(player);
   drawBossDeathCinematic(ctx); // new overlay effects drawn last
 }
 
@@ -446,19 +413,23 @@ function drawArenaColliders(ctx) {
   if (Array.isArray(A.cover) && A.cover.length) {
     ctx.save();
     ctx.lineWidth = lw;
-    ctx.fillStyle = 'rgba(147,197,253,0.18)';
-    ctx.strokeStyle = 'rgba(147,197,253,0.55)';
+    ctx.fillStyle = '#243340';
+    ctx.strokeStyle = '#627785';
     for (const c of A.cover) {
       const x = px(c.x - c.w / 2), y = py(c.y - c.h / 2);
       const w = px(c.w), h = py(c.h);
       ctx.fillRect(x, y, w, h);
       ctx.strokeRect(x, y, w, h);
+      ctx.fillStyle='#3a4c5a'; ctx.fillRect(x+2,y+2,Math.max(0,w-4),Math.min(5,h*.1));
+      ctx.fillStyle='#17232e'; ctx.fillRect(x+2,y+h-Math.min(5,h*.1)-2,Math.max(0,w-4),Math.min(5,h*.1));
+      ctx.fillStyle='#243340';
     }
     ctx.restore();
   }
 }
 
 function drawBossDeathCinematic(ctx) {
+  if (state.settings?.reducedMotion) return;
   const A = state.arena;
   if (!A || !A.cine) return;
   const C = A.cine;
@@ -494,7 +465,7 @@ function drawBossDeathCinematic(ctx) {
 function drawProjectiles() {
     const { ctx, cellW, cellH } = state.gfx;
     ctx.save();
-    for (const p of state.gfx.projectiles) {
+    for (const p of state.gfx.projectiles || []) {
         ctx.fillStyle = p.owner === 'player' ? '#00ffff' : '#ff8800';
         ctx.shadowColor = p.owner === 'player' ? '#00ffff' : '#ff8800';
         ctx.shadowBlur = 10;
@@ -529,8 +500,8 @@ function drawGrid() {
   const totalW = GRID_W * cellW;
   const totalH = GRID_H * cellH;
   const every = Math.max(2, GRID?.MAJOR_EVERY ?? 4);
-  const aMinor = GRID?.MINOR_ALPHA ?? 0.14;
-  const aMajor = GRID?.MAJOR_ALPHA ?? 0.28;
+  const aMinor = Math.min(GRID?.MINOR_ALPHA ?? 0.08, 0.055);
+  const aMajor = Math.min(GRID?.MAJOR_ALPHA ?? 0.14, 0.11);
   const minorPx = Math.max(1, GRID?.MINOR_PX ?? 1);
   const majorPx = Math.max(minorPx + 1, GRID?.MAJOR_PX ?? 2);
   ctx.save();
@@ -574,78 +545,47 @@ function drawGrid() {
 }
 
 function drawNodes() {
-  const lv = state.run?.current;
-  if (!lv || !Array.isArray(lv.nodes)) return;
-  const { ctx, cellW, cellH } = state.gfx;
-  const anim = state.gfx.anim || { gate: 0, shard: 0 };
-  for (const n of lv.nodes) {
-    const cx = (n.x + 0.5) * cellW;
-    const cy = (n.y + 0.5) * cellH;
-    switch (n.kind) {
-      case 'planet': {
-        const key = `shard${n.color.charAt(0).toUpperCase() + n.color.slice(1)}Frames`;
-        const frames = assets[key];
-        if (frames && frames.length && !lv.shards.has(n.id)) {
-          const idx = Math.floor(anim.shard) % frames.length;
-          const img = frames[idx];
-          drawSheetFrame(ctx, img, img.width, img.height, 0, cx, cy, cellW * 1.2, cellH * 1.2);
-        }
-        break;
-      }
-      case 'gate': {
-        const base = assets.gateBaseFrames;
-        const over = assets.gateOverlayFrames;
-        if (base && over) {
-          const f = Math.floor(anim.gate) % Math.min(7, base.length);
-          const s = cellW * 3;
-          drawSheetFrame(ctx, base[f], base[f].width, base[f].height, 0, cx, cy, s, s, Math.PI / 2);
-          drawSheetFrame(ctx, over[f], over[f].width, over[f].height, 0, cx, cy, s, s, Math.PI / 2);
-        }
-        break;
-      }
-      case 'station': {
-        if (assets.fuelStation) {
-          const img = assets.fuelStation;
-          const w = cellW * 1.2, h = w * (img.height / img.width);
-          drawSheetFrame(ctx, img, img.width, img.height, 0, cx, cy, w, h);
-        } else {
-          ctx.fillStyle = '#60a5fa';
-          ctx.fillRect(cx - cellW * 0.4, cy - cellH * 0.4, cellW * 0.8, cellH * 0.8);
-        }
-        break;
-      }
+  const lv=state.run?.current;
+  if(!lv || !Array.isArray(lv.nodes)) return;
+  const {ctx,cellW,cellH}=state.gfx, clock=state.gfx.visualTime || 0;
+  const colors={blue:'#73d9ff',green:'#99e9b2',pink:'#ffa4ca',purple:'#bca5ff'};
+  for(const n of lv.nodes) {
+    const x=(n.x+.5)*cellW,y=(n.y+.5)*cellH;
+    if(n.kind==='planet' && !lv.shards.has(n.id)) drawShard(ctx,x,y,cellW*.95,colors[n.color] || colors.blue,clock,config.SHARD_SCALE);
+    if(n.kind==='gate') {
+      const required=lv.nodes.filter(node=>node.kind==='planet').length;
+      const lapReady=!lv.track || isLapReady(lv);
+      const ready=lv.shards.size>=required && lapReady && lv.fuel >= config.GATE_MIN_FUEL;
+      const angle=lv.track?.portal ? Math.atan2(lv.track.portal.ty,lv.track.portal.tx) : 0;
+      ctx.save(); ctx.translate(x,y); ctx.rotate(angle);
+      drawRelayGate(ctx,0,0,cellW*3,assets.relayGate,clock,ready,!!lv.secretReady);
+      ctx.restore();
+    }
+    if(n.kind==='station' && assets.fuelStation) {
+      const size=cellW*2;
+      ctx.save();ctx.shadowColor='#6ed2e3';ctx.shadowBlur=cellW*.1;
+      const ratio=assets.fuelStation.height/assets.fuelStation.width;
+      ctx.drawImage(assets.fuelStation,x-size/2,y-size*ratio/2,size,size*ratio);ctx.restore();
     }
   }
 }
 
 function drawShip(player) {
-  if (!player) return;
-  const { ctx, cellW, cellH } = state.gfx;
-  const x = player.x * cellW;
-  const y = player.y * cellH;
-  const angle = player.angle + Math.PI / 2 + Math.PI;
-  ctx.save();
-  if (player.invulnTimer > 0) {
-    ctx.globalAlpha = (Math.sin(performance.now() / 50) + 1) / 2 * 0.7 + 0.3;
-  }
-  if (assets.playerShip) {
-    const frame = 49;
-    const w = cellW * (config.SHIP_SCALE ?? 1);
-    const h = w * (SPRITE.SHIP_FH / SPRITE.SHIP_FW);
-    drawSheetFrame(ctx, assets.playerShip, SPRITE.SHIP_FW, SPRITE.SHIP_FH, frame, x, y, w, h, angle);
-  }
-  ctx.restore();
+  if(!player) return;
+  const scene=state.mode==='arena'?state.arena:state.run?.current;
+  drawCourier(state.gfx.ctx,player,{...scene,paused:state.ui.paused || state.ui.countdownActive},state.keys,state.gfx.cellW,assets.playerShip,state.gfx.visualTime || 0,config.SHIP_VISUAL_SCALE);
 }
 
 function drawParticles() {
   const { ctx, cellW, cellH } = state.gfx;
+  if (state.settings?.reducedMotion) return;
   const particles = state.gfx.particles || [];
   for (const p of particles) {
     const px = p.x * cellW, py = p.y * cellH;
-    const size = p.size * Math.min(cellW, cellH);
-    const alpha = Math.max(0, Math.min(1, p.life / 0.5));
+    const size = Math.min(p.size, .12) * Math.min(cellW, cellH);
+    const alpha = Math.max(0, Math.min(.5, p.life / 0.5));
     ctx.fillStyle = `rgba(${p.color ?? '80, 180, 255'}, ${alpha})`;
-    ctx.fillRect(px - size / 2, py - size / 2, size, size);
+    ctx.beginPath(); ctx.arc(px, py, Math.max(.3, size / 2), 0, Math.PI*2); ctx.fill();
   }
 }
 
@@ -717,8 +657,8 @@ function ensureStars(W, H) {
 function drawParallaxStars(ctx, W, H, vxPx, vyPx) {
   ensureStars(W, H);
   const S = config.STARFIELD;
-  const camXpx = state.gfx.camera.x * state.gfx.cellW;
-  const camYpx = state.gfx.camera.y * state.gfx.cellH;
+  const camXpx = state.settings?.reducedMotion ? 0 : state.gfx.camera.x * state.gfx.cellW;
+  const camYpx = state.settings?.reducedMotion ? 0 : state.gfx.camera.y * state.gfx.cellH;
   ctx.save();
   ctx.globalAlpha = S.ALPHA ?? 0.25;
   ctx.lineCap = 'round';
@@ -727,7 +667,7 @@ function drawParallaxStars(ctx, W, H, vxPx, vyPx) {
       let x = (s.u * W + (camXpx * s.p)) % W; if (x < 0) x += W;
       let y = (s.v * H + (camYpx * s.p)) % H; if (y < 0) y += H;
       const speed = Math.hypot(vxPx, vyPx);
-      const streakLen = Math.min(14, speed * (S.STREAK_MULT ?? 0.018) * s.p);
+      const streakLen = state.settings?.reducedMotion ? 0 : Math.min(14, speed * (S.STREAK_MULT ?? 0.018) * s.p);
       if (streakLen > 0.5) {
         const ang = Math.atan2(vyPx, vxPx) + Math.PI;
         ctx.lineWidth = Math.max(1, s.size - 0.5);
@@ -750,74 +690,20 @@ export function resetCameraFullscreenState() {
   }
 }
 
-// iOS fallback state
-let iosScrollLocked = false;
-
-function lockIosScroll() {
-  iosScrollLocked = true;
-  document.documentElement.style.height = '100vh';
-  document.body.style.height = '100vh';
-  document.body.style.overflow = 'hidden';
-  window.scrollTo(0, 1);
-}
-
-function unlockIosScroll() {
-  if (!iosScrollLocked) return;
-  iosScrollLocked = false;
-  document.documentElement.style.height = '';
-  document.body.style.height = '';
-  document.body.style.overflow = '';
-}
-
 export async function enterFullscreen() {
-  const canvas = state.gfx.canvas;
-  if (!canvas) return;
-
+  if (isFullscreen()) return { ok: true, message: 'Fullscreen is already on.' };
   resetCameraFullscreenState();
-
-  if (canvas.requestFullscreen) {
-    try {
-      await canvas.requestFullscreen();
-    } catch (err) {
-      console.log('Could not enter fullscreen mode:', err);
-    }
-  } else {
-    lockIosScroll();
-  }
-
-  if (screen?.orientation?.lock) {
-    try {
-      await screen.orientation.lock('landscape');
-    } catch (err) {
-      console.log('Orientation lock failed:', err);
-    }
-  }
+  return toggleMobileFullscreen();
 }
 
 export async function exitFullscreen() {
-  if (document.fullscreenElement && document.exitFullscreen) {
-    try {
-      await document.exitFullscreen();
-    } catch (err) {
-      console.log('Could not exit fullscreen mode:', err);
-    }
-  }
-  if (screen?.orientation?.unlock) {
-    try {
-      screen.orientation.unlock();
-    } catch (err) {
-      console.log('Orientation unlock failed:', err);
-    }
-  }
-  unlockIosScroll();
+  if (!document.fullscreenElement && !document.webkitFullscreenElement)
+    return { ok: true, message: 'Fullscreen is off.' };
+  return toggleMobileFullscreen();
 }
 
 export function toggleFullscreen() {
-  if (document.fullscreenElement) {
-    exitFullscreen();
-  } else {
-    enterFullscreen();
-  }
+  return toggleMobileFullscreen();
 }
 
 window.addEventListener('keydown', (e) => {
@@ -833,45 +719,8 @@ function syncFullscreenUI() {
     document.msFullscreenElement;
 
   document.body.classList.toggle('is-fs', !!fsEl);
-
-  const cam = ensureCamera();
-  const canvas = state.gfx.canvas;
-  if (!canvas || !cam) return;
-
-  const rect = canvas.getBoundingClientRect();
-  const W = rect.width;
-  const H = rect.height;
-
-  // Entering fullscreen: apply once
-  if (fsEl) {
-    if (cam._fsApplied) return; // already handled this entry
-    cam._fsApplied = true;
-    cam._preFs = { x: cam.x, y: cam.y, zoom: cam.zoom ?? 1 };
-
-    // Fit the full GRID into the viewport. Height is the baseline (zoom=1 shows full height).
-    // Width fit factor:
-    const zoomToFitWidth = (W * config.GRID_H) / (H * config.GRID_W);
-    const targetZoom = Math.max(0.1, Math.min(1, zoomToFitWidth));
-
-    cam.zoom = targetZoom;
-    cam.x = config.GRID_W / 2;
-    cam.y = config.GRID_H / 2;
-
-    // Redraw static buffer at new size next frame
-    markBufferDirty();
-    return;
-  }
-
-  // Exiting fullscreen: restore once
-  if (cam._fsApplied) {
-    const pre = cam._preFs || { x: cam.x, y: cam.y, zoom: cam.zoom ?? 1 };
-    cam.x = pre.x;
-    cam.y = pre.y;
-    cam.zoom = pre.zoom;
-    cam._preFs = null;
-    cam._fsApplied = false;
-    markBufferDirty();
-  }
+  // Resize the view without snapping the flight camera to the entire circuit.
+  markBufferDirty();
 }
 
 // Event Listeners

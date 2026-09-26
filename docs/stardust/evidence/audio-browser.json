@@ -1,0 +1,375 @@
+{
+  "inspectedAt": "2026-09-26T10:37:01.722Z",
+  "browser": "154.0.4258.37",
+  "beforeGesture": {
+    "requested": "menu",
+    "unlocked": false,
+    "volume": 1,
+    "current": null,
+    "outgoing": null
+  },
+  "playback": [
+    {
+      "track": "menu",
+      "playing": true,
+      "starting": false,
+      "volume": 0.29516250000000005,
+      "time": 0.345631,
+      "readyState": 4,
+      "src": "http://127.0.0.1:4173/assets/audio/stardust/menu.mp3",
+      "loop": true
+    },
+    {
+      "track": "level1",
+      "playing": true,
+      "starting": false,
+      "volume": 0.4,
+      "time": 0.965236,
+      "readyState": 4,
+      "src": "http://127.0.0.1:4173/assets/audio/stardust/alpha-relay.mp3",
+      "loop": true
+    },
+    {
+      "track": "level2",
+      "playing": true,
+      "starting": false,
+      "volume": 0.4,
+      "time": 0.962944,
+      "readyState": 4,
+      "src": "http://127.0.0.1:4173/assets/audio/stardust/beacon-prime.mp3",
+      "loop": true
+    },
+    {
+      "track": "level3",
+      "playing": true,
+      "starting": false,
+      "volume": 0.4,
+      "time": 0.950543,
+      "readyState": 4,
+      "src": "http://127.0.0.1:4173/assets/audio/stardust/dustfall-station.mp3",
+      "loop": true
+    },
+    {
+      "track": "level4",
+      "playing": true,
+      "starting": false,
+      "volume": 0.4,
+      "time": 0.952751,
+      "readyState": 4,
+      "src": "http://127.0.0.1:4173/assets/audio/stardust/nether-crossing.mp3",
+      "loop": true
+    },
+    {
+      "track": "level5",
+      "playing": true,
+      "starting": false,
+      "volume": 0.4,
+      "time": 0.959955,
+      "readyState": 4,
+      "src": "http://127.0.0.1:4173/assets/audio/stardust/iron-veil.mp3",
+      "loop": true
+    },
+    {
+      "track": "secret",
+      "playing": true,
+      "starting": false,
+      "volume": 0.34,
+      "time": 0.955739,
+      "readyState": 4,
+      "src": "http://127.0.0.1:4173/assets/audio/stardust/reverse-gate.mp3",
+      "loop": true
+    },
+    {
+      "track": "boss_theme",
+      "playing": true,
+      "starting": false,
+      "volume": 0.4,
+      "time": 0.954848,
+      "readyState": 4,
+      "src": "http://127.0.0.1:4173/assets/audio/stardust/warden.mp3",
+      "loop": true
+    },
+    {
+      "track": "riddle",
+      "playing": true,
+      "starting": false,
+      "volume": 0.24,
+      "time": 0.947016,
+      "readyState": 4,
+      "src": "http://127.0.0.1:4173/assets/audio/stardust/seal-riddle.mp3",
+      "loop": true
+    },
+    {
+      "track": "victory",
+      "playing": true,
+      "starting": false,
+      "volume": 0.36,
+      "time": 0.958964,
+      "readyState": 4,
+      "src": "http://127.0.0.1:4173/assets/audio/stardust/victory.mp3",
+      "loop": false
+    }
+  ],
+  "decoding": [
+    {
+      "track": "menu",
+      "file": "menu.mp3",
+      "decoded": true,
+      "sampleRate": 48000,
+      "channels": 2,
+      "durationSeconds": 153.6,
+      "peak": 0.6314882636070251,
+      "peakDbfs": -3.9926943304571334,
+      "rmsDbfs": -15.7989547101423,
+      "nonFiniteSamples": 0,
+      "samplesOverFullScale": 0,
+      "leadingBelowThresholdSeconds": 0,
+      "trailingBelowThresholdSeconds": 0
+    },
+    {
+      "track": "level1",
+      "file": "alpha-relay.mp3",
+      "decoded": true,
+      "sampleRate": 48000,
+      "channels": 2,
+      "durationSeconds": 59.56,
+      "peak": 0.653683602809906,
+      "peakDbfs": -3.692648177337323,
+      "rmsDbfs": -16.47201825922849,
+      "nonFiniteSamples": 0,
+      "samplesOverFullScale": 0,
+      "leadingBelowThresholdSeconds": 0,
+      "trailingBelowThresholdSeconds": 0.5267708333333333
+    },
+    {
+      "track": "level2",
+      "file": "beacon-prime.mp3",
+      "decoded": true,
+      "sampleRate": 48000,
+      "channels": 2,
+      "durationSeconds": 68.96,
+      "peak": 0.70538330078125,
+      "peakDbfs": -3.031496520373725,
+      "rmsDbfs": -16.834632740742098,
+      "nonFiniteSamples": 0,
+      "samplesOverFullScale": 0,
+      "leadingBelowThresholdSeconds": 0,
+      "trailingBelowThresholdSeconds": 1.0320625
+    },
+    {
+      "track": "level3",
+      "file": "dustfall-station.mp3",
+      "decoded": true,
+      "sampleRate": 48000,
+      "channels": 2,
+      "durationSeconds": 89.4,
+      "peak": 0.5570113658905029,
+      "peakDbfs": -5.082718857991646,
+      "rmsDbfs": -17.0979391115918,
+      "nonFiniteSamples": 0,
+      "samplesOverFullScale": 0,
+      "leadingBelowThresholdSeconds": 0.000020833333333333333,
+      "trailingBelowThresholdSeconds": 0
+    },
+    {
+      "track": "level4",
+      "file": "nether-crossing.mp3",
+      "decoded": true,
+      "sampleRate": 48000,
+      "channels": 2,
+      "durationSeconds": 60,
+      "peak": 0.7312801480293274,
+      "peakDbfs": -2.7183243230736913,
+      "rmsDbfs": -16.920550599325285,
+      "nonFiniteSamples": 0,
+      "samplesOverFullScale": 0,
+      "leadingBelowThresholdSeconds": 0,
+      "trailingBelowThresholdSeconds": 0
+    },
+    {
+      "track": "level5",
+      "file": "iron-veil.mp3",
+      "decoded": true,
+      "sampleRate": 48000,
+      "channels": 2,
+      "durationSeconds": 61.12,
+      "peak": 0.4982858896255493,
+      "peakDbfs": -6.050428218630932,
+      "rmsDbfs": -18.399423480131514,
+      "nonFiniteSamples": 0,
+      "samplesOverFullScale": 0,
+      "leadingBelowThresholdSeconds": 0,
+      "trailingBelowThresholdSeconds": 0
+    },
+    {
+      "track": "secret",
+      "file": "reverse-gate.mp3",
+      "decoded": true,
+      "sampleRate": 48000,
+      "channels": 2,
+      "durationSeconds": 69.6,
+      "peak": 0.6696835160255432,
+      "peakDbfs": -3.4826078181183484,
+      "rmsDbfs": -19.883862214753265,
+      "nonFiniteSamples": 0,
+      "samplesOverFullScale": 0,
+      "leadingBelowThresholdSeconds": 0,
+      "trailingBelowThresholdSeconds": 0
+    },
+    {
+      "track": "boss_theme",
+      "file": "warden.mp3",
+      "decoded": true,
+      "sampleRate": 48000,
+      "channels": 2,
+      "durationSeconds": 59.96,
+      "peak": 0.577953577041626,
+      "peakDbfs": -4.762140880182467,
+      "rmsDbfs": -19.67921631707989,
+      "nonFiniteSamples": 0,
+      "samplesOverFullScale": 0,
+      "leadingBelowThresholdSeconds": 0.000020833333333333333,
+      "trailingBelowThresholdSeconds": 0.20625
+    },
+    {
+      "track": "riddle",
+      "file": "seal-riddle.mp3",
+      "decoded": true,
+      "sampleRate": 48000,
+      "channels": 2,
+      "durationSeconds": 74.4,
+      "peak": 0.6253397464752197,
+      "peakDbfs": -4.077679335349462,
+      "rmsDbfs": -18.428260377360726,
+      "nonFiniteSamples": 0,
+      "samplesOverFullScale": 0,
+      "leadingBelowThresholdSeconds": 0,
+      "trailingBelowThresholdSeconds": 0
+    },
+    {
+      "track": "victory",
+      "file": "victory.mp3",
+      "decoded": true,
+      "sampleRate": 48000,
+      "channels": 2,
+      "durationSeconds": 59.68,
+      "peak": 0.6773889064788818,
+      "peakDbfs": -3.3832384004902147,
+      "rmsDbfs": -18.36466099786002,
+      "nonFiniteSamples": 0,
+      "samplesOverFullScale": 0,
+      "leadingBelowThresholdSeconds": 0.000020833333333333333,
+      "trailingBelowThresholdSeconds": 0
+    }
+  ],
+  "integrity": [
+    {
+      "path": "assets/audio/stardust/menu.mp3",
+      "bytes": 3464631,
+      "sha256": "f4f1f309bb08dce2713044e150886b541dbe5b864c457b15539a300f54496435",
+      "matchesInspectedSource": true
+    },
+    {
+      "path": "assets/audio/stardust/alpha-relay.mp3",
+      "bytes": 1403226,
+      "sha256": "8783427a17c6a82a76f4e00a256618aedbf77546384e3b65a3cc32219aae0025",
+      "matchesInspectedSource": true
+    },
+    {
+      "path": "assets/audio/stardust/beacon-prime.mp3",
+      "bytes": 1655187,
+      "sha256": "c90f3fa0b7a1f8eee80716f4cf72daad1411ea290548009a4df24d873d55951d",
+      "matchesInspectedSource": true
+    },
+    {
+      "path": "assets/audio/stardust/dustfall-station.mp3",
+      "bytes": 2091519,
+      "sha256": "e4d9ded4c1518a08bb784d3b9c5db8ca359678cbc7f16745aa13b29e8cf398b8",
+      "matchesInspectedSource": true
+    },
+    {
+      "path": "assets/audio/stardust/nether-crossing.mp3",
+      "bytes": 1541129,
+      "sha256": "49e7b1aa8dfc43f001aca187fdc50f43b11d4cb094bbc68fbc78017aa6c5e886",
+      "matchesInspectedSource": true
+    },
+    {
+      "path": "assets/audio/stardust/iron-veil.mp3",
+      "bytes": 1457344,
+      "sha256": "0511705268c218c7b33f8f7953f00b873316df2ebe4e0e30a4a8b390872890f4",
+      "matchesInspectedSource": true
+    },
+    {
+      "path": "assets/audio/stardust/reverse-gate.mp3",
+      "bytes": 1530681,
+      "sha256": "d664e059e935bc1cbb5676f54d2681cff0c6bb096becc0966595cbd600484645",
+      "matchesInspectedSource": true
+    },
+    {
+      "path": "assets/audio/stardust/warden.mp3",
+      "bytes": 1447927,
+      "sha256": "50d51a723410e702f443287fe861068e5305e84fe1a0d652bd1e49a85176ac87",
+      "matchesInspectedSource": true
+    },
+    {
+      "path": "assets/audio/stardust/seal-riddle.mp3",
+      "bytes": 1606634,
+      "sha256": "e0c2aedbbb99931d371de2530dcf54778e3d18cd6974ebb58d7493e1574ee73a",
+      "matchesInspectedSource": true
+    },
+    {
+      "path": "assets/audio/stardust/victory.mp3",
+      "bytes": 1405331,
+      "sha256": "34e41ca8216d99679a71c05e4312903d72292395d19f9a26241cfd5b55cc8a62",
+      "matchesInspectedSource": true
+    }
+  ],
+  "muted": {
+    "requested": "level1",
+    "unlocked": true,
+    "volume": 0,
+    "current": {
+      "track": "level1",
+      "playing": true,
+      "starting": true,
+      "volume": 0,
+      "time": 0,
+      "readyState": 0,
+      "src": "http://127.0.0.1:4173/assets/audio/stardust/alpha-relay.mp3",
+      "loop": true
+    },
+    "outgoing": {
+      "track": "victory",
+      "playing": true,
+      "starting": false,
+      "volume": 0,
+      "time": 1.766271,
+      "readyState": 4,
+      "src": "http://127.0.0.1:4173/assets/audio/stardust/victory.mp3",
+      "loop": false
+    }
+  },
+  "restored": {
+    "requested": "menu",
+    "unlocked": true,
+    "volume": 1,
+    "current": {
+      "track": "menu",
+      "playing": true,
+      "starting": false,
+      "volume": 0.34,
+      "time": 0.768896,
+      "readyState": 4,
+      "src": "http://127.0.0.1:4173/assets/audio/stardust/menu.mp3",
+      "loop": true
+    },
+    "outgoing": null
+  },
+  "errors": [],
+  "failures": [],
+  "limitations": [
+    "Technical decoding/playhead/volume tests, not a listening review.",
+    "RMS is not LUFS; no normalization or loop editing was performed.",
+    "A -60 dBFS threshold describes near-silence; it does not establish a seamless musical loop."
+  ]
+}

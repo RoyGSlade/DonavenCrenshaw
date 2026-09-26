@@ -1,0 +1,107 @@
+{
+  "at": "2026-09-26T11:25:36.874Z",
+  "scope": "Root independent actual keyboard and live loopback relay. No match state mutation.",
+  "rounds": [
+    {
+      "host": {
+        "role": "host",
+        "roomCode": "PBHXCXBD",
+        "round": 1,
+        "phase": "finished",
+        "hull": [
+          100,
+          0
+        ],
+        "snapshotsReceived": 0,
+        "inputsSent": 0,
+        "bufferedAmount": 0
+      },
+      "guest": {
+        "role": "guest",
+        "roomCode": "PBHXCXBD",
+        "round": 1,
+        "phase": "finished",
+        "hull": [
+          100,
+          0
+        ],
+        "snapshotsReceived": 84,
+        "inputsSent": 149,
+        "bufferedAmount": 0
+      }
+    },
+    {
+      "host": {
+        "role": "host",
+        "roomCode": "PBHXCXBD",
+        "round": 2,
+        "phase": "finished",
+        "hull": [
+          0,
+          100
+        ],
+        "snapshotsReceived": 0,
+        "inputsSent": 0,
+        "bufferedAmount": 0
+      },
+      "guest": {
+        "role": "guest",
+        "roomCode": "PBHXCXBD",
+        "round": 2,
+        "phase": "finished",
+        "hull": [
+          0,
+          100
+        ],
+        "snapshotsReceived": 168,
+        "inputsSent": 284,
+        "bufferedAmount": 0
+      }
+    }
+  ],
+  "movement": [
+    {
+      "i": 0,
+      "before": {
+        "id": 0,
+        "x": 6,
+        "y": 12,
+        "angle": 0,
+        "hp": 100,
+        "hit": 0
+      },
+      "after": {
+        "id": 0,
+        "x": 8.266709901664516,
+        "y": 13.73511539058929,
+        "angle": 0.6533333333333331,
+        "hp": 100,
+        "hit": 0
+      }
+    },
+    {
+      "i": 1,
+      "before": {
+        "id": 1,
+        "x": 34,
+        "y": 12,
+        "angle": 3.141592653589793,
+        "hp": 100,
+        "hit": 0
+      },
+      "after": {
+        "id": 1,
+        "x": 31.79238260199512,
+        "y": 13.532017488622962,
+        "angle": 2.534925986923124,
+        "hp": 100,
+        "hit": 0
+      }
+    }
+  ],
+  "secondRematch": true,
+  "disconnect": true,
+  "mobileNoOverflow": true,
+  "errors": [],
+  "failed": []
+}

@@ -1,179 +1,279 @@
-// src/roadmap/engine/modes/roadmap.js
-import { state, config, MAX_LEVEL, SHARDS_PER_LEVEL } from '../../state.js';
-import { generateLevelNodes, formatMs } from '../../data.js';
-import { resizeCanvas } from '../../ui/graphics.js';
-import { updateHUD, toast, blinkFuel } from '../../ui/hud.js';
-import { openEndOverlay } from '../../ui/overlays.js';
-import { stopEngine } from '../core.js';
-import { handlePlayerMovement } from '../systems/movement.js';
-import { updateParticles } from '../systems/particles.js';
-import { checkCollisionsAndInteractions } from '../collisions/roadmap.js';
-import { startCountdown } from '../modeManager.js';
-import { findNearestShard } from '../rules.js';
-// Ensure all exports are present for external usage
+import { state, config, MAX_LEVEL } from "../../state.js";
+import { createLevelLayout, formatMs } from "../../data.js";
+import { resizeCanvas } from "../../ui/graphics.js";
+import { updateHUD, toast } from "../../ui/hud.js";
+import { openEndOverlay } from "../../ui/overlays.js";
+import { stopEngine } from "../core.js";
+import { handlePlayerMovement } from "../systems/movement.js";
+import { updateParticles } from "../systems/particles.js";
+import { checkCollisionsAndInteractions } from "../collisions/roadmap.js";
+import { startCountdown } from "../lifecycle.js";
+import {
+  findNearestShard,
+  hasRequiredShards,
+  secretEligible,
+} from "../rules.js";
+import {
+  handleShooting,
+  handleOverheat,
+  updateProjectiles,
+} from "../systems/projectiles.js";
+import {
+  updateHazards,
+  applyGravity,
+  resolveHazards,
+  updateDrones,
+  resolveRoadmapProjectiles,
+} from "../systems/environment.js";
+import { playGateMotif, playMusic } from "../../audio.js";
+import {
+  createTrackProgress,
+  updateTrackProgress,
+  constrainToTrack,
+  isLapReady,
+} from "../track.js";
+import { clearCameraPan } from "../systems/camera.js";
 
-// ENSURED EXPORT
 export function updateRoadmap(dt) {
   const lv = state.run?.current;
-  if (!lv) return;
-
-  if (lv) {
-    lv.boost = Math.min(
-      config.BOOST_MAX_PIPS,
-      (lv.boost ?? config.BOOST_MAX_PIPS) + (config.BOOST_REGEN_PER_SEC ?? 0.22) * dt
-    );
+  if (!lv || lv.completed) return;
+  if (state.ui.paused || state.ui.showStartOverlay || state.ui.showEndOverlay) {
+    pauseTimer();
+    return;
   }
-
   if (lv.launched && !lv.timerRunning) startTimer();
-
   if (state.ui.countdownActive) {
     lv.countdownT -= dt;
     lv.player.x = lv.startPos.x;
     lv.player.y = lv.startPos.y;
-    lv.player.vx = 0; lv.player.vy = 0;
+    lv.player.vx = 0;
+    lv.player.vy = 0;
     if (lv.countdownT <= 0) state.ui.countdownActive = false;
-  } else {
-    if (lv.lockedInStart) {
-      lv.stuckTimer += dt;
-      if (lv.stuckTimer > config.STUCK_HINT_SECONDS) lv.showLaunchHint = true;
-    }
-    const movementEnv = {
+    updateHUD();
+    return;
+  }
+  if (lv.lockedInStart) {
+    lv.stuckTimer += dt;
+    lv.showLaunchHint = lv.stuckTimer > config.STUCK_HINT_SECONDS;
+  }
+  // Bound physics/collision steps so a boost cannot tunnel through a shard or rock.
+  let remaining = Math.min(0.1, Math.max(0, dt));
+  while (remaining > 1e-8) {
+    const step = Math.min(1 / 120, remaining);
+    remaining -= step;
+    lv.boost = Math.min(
+      config.BOOST_MAX_PIPS,
+      lv.boost + config.BOOST_REGEN_PER_SEC * step,
+    );
+    lv.player.invulnTimer = Math.max(0, (lv.player.invulnTimer || 0) - step);
+    updateHazards(lv, step);
+    if (!lv.lockedInStart) applyGravity(lv.player, lv.gravityWells, step);
+    const previousPosition = { x: lv.player.x, y: lv.player.y };
+    handlePlayerMovement(step, lv, lv.player, {
       onFuelUse: (amount) => {
         lv.fuel = Math.max(0, lv.fuel - amount);
-        if (lv.fuel === 0) outOfFuel();
       },
-      onLaunch: () => { lv.showLaunchHint = false; lv.stuckTimer = 0; },
-      onLeavePad: () => { startTimer(); }
-    };
-    handlePlayerMovement(dt, lv, lv.player, movementEnv);
+      onLaunch: () => {
+        lv.showLaunchHint = false;
+        lv.stuckTimer = 0;
+        startTimer();
+      },
+      onLeavePad: startTimer,
+    });
     if (!lv.lockedInStart) {
+      if (resolveHazards(lv, lv.player)) state.ui.screenshake = 0.15;
+      constrainToTrack(
+        lv.track,
+        lv.player,
+        previousPosition,
+        config.PLAYER_RADIUS,
+      );
+      updateTrackProgress(lv, previousPosition);
+      updateDrones(lv, lv.player, state.gfx.projectiles, step);
+      handleShooting(step, lv.player);
+      handleOverheat(step, lv.player);
+      updateProjectiles(step);
+      resolveRoadmapProjectiles(lv, state.gfx.projectiles);
+      if (lv.player.hp <= 0) {
+        restartLevel("Hull lost. +15s penalty.", 15000);
+        return;
+      }
+      if (lv.fuel <= 0) {
+        outOfFuel();
+        return;
+      }
+      lv.secretReady = secretEligible(lv);
+      if (lv.secretReady !== !!lv._secretMusicActive) {
+        lv._secretMusicActive = lv.secretReady;
+        playMusic(lv.secretReady ? "secret" : `level${lv.level}`);
+      }
+      if (lv.secretReady && !lv._secretCuePlayed) {
+        lv._secretCuePlayed = true;
+        playGateMotif(true);
+        toast("The gate answers in reverse. Its far side glows.", 4500);
+      }
       checkCollisionsAndInteractions();
+      if (state.run?.current !== lv || state.mode !== "roadmap" || lv.completed)
+        return;
       findNearestShard();
     }
-    updateParticles(dt);
+    updateParticles(step);
   }
-
-  // Do NOT assign camera here. Camera is updated centrally.
   updateHUD();
 }
 
-// ENSURED EXPORT
-export function buildLevel(level, existingNodes = null) {
-  // Initialize camera zoom to base from config for roadmap
-  state.gfx.camera.zoom = config.CAMERA_BASE_ZOOM ?? state.gfx.camera.zoom;
+export function buildLevel(level, _existingNodes = null) {
+  clearCameraPan();
+  state.gfx.camera.zoom = config.CAMERA_BASE_ZOOM;
+  state.gfx.camera._baseZoom = config.CAMERA_BASE_ZOOM;
   resizeCanvas();
   setupResponsiveScaling();
-
-  const seedStr = state.run.seeds[level - 1];
-  const nodes = existingNodes ? structuredClone(existingNodes) : generateLevelNodes(level, state.data, seedStr);
-  const startNode = nodes.find(n => n.kind === 'start') || { x: 1, y: Math.floor(config.GRID_H / 2) };
-
-  const maxFuel = config.MAX_TANK;
-  const startFuel = Math.min(maxFuel, config.BASE_START_FUEL + (level - 1) * config.FUEL_PER_LEVEL);
-
+  const layout = createLevelLayout(level);
+  const start = layout.nodes.find((n) => n.kind === "start");
+  const startPos = { x: start.x + 0.5, y: start.y + 0.5 };
+  state.gfx.camera.x = startPos.x;
+  state.gfx.camera.y = startPos.y;
+  const { nodes, hazards, gravityWells, drones, track, ...levelInfo } = layout;
+  state.gfx.projectiles = [];
+  state.gfx.particles = [];
   state.run.current = {
-    level, nodes,
-    player: { x: startNode.x + 0.5, y: startNode.y + 0.5, vx: 0, vy: 0, angle: 0, hp: config.MAX_HP, maxHp: config.MAX_HP },
-    startPos: { x: startNode.x + 0.5, y: startNode.y + 0.5 },
-    fuel: startFuel, maxFuel, boost: config.BOOST_MAX_PIPS, shards: new Set(), activeMs: 0, timerRunning: false,
-    t0: 0, lockedInStart: true, launched: false, countdownT: 0, completed: false,
-    stuckTimer: 0, showLaunchHint: false, nearestShardTarget: null
+    level,
+    nodes,
+    hazards,
+    gravityWells,
+    drones,
+    levelInfo,
+    track,
+    trackProgress: createTrackProgress(),
+    elapsed: 0,
+    flux: 30,
+    secretReady: false,
+    player: {
+      ...startPos,
+      vx: 0,
+      vy: 0,
+      angle: track.portal.angle,
+      hp: config.MAX_HP,
+      maxHp: config.MAX_HP,
+      invulnTimer: 0,
+      heat: 0,
+      maxHeat: config.PLAYER_MAX_HEAT,
+      isOverheated: false,
+      shootCooldown: 0,
+    },
+    startPos,
+    fuel: config.MAX_TANK,
+    maxFuel: config.MAX_TANK,
+    boost: config.BOOST_MAX_PIPS,
+    shards: new Set(),
+    activeMs: 0,
+    timerRunning: false,
+    t0: 0,
+    lockedInStart: true,
+    launched: false,
+    countdownT: 0,
+    completed: false,
+    stuckTimer: 0,
+    showLaunchHint: false,
+    nearestShardTarget: null,
   };
+  findNearestShard();
+  playMusic(`level${level}`);
+  playGateMotif(false);
   updateHUD();
 }
-
-// ENSURED EXPORT (if needed externally)
-export function outOfFuel() {
-  if (!state.run.current.timerRunning) return;
-  addPenalty(config.FUEL_OUT_PENALTY_MS);
-  const level = state.run.current.level;
-  buildLevel(level);
+function restartLevel(message, penalty) {
+  const previous = state.run.current;
+  pauseTimer();
+  const elapsed = previous.activeMs + penalty;
+  state.run.totalActiveMs += penalty;
+  buildLevel(previous.level);
+  // A failed attempt is still time spent in this level: no secret timer reset exploit.
+  state.run.current.activeMs = elapsed;
   startCountdown(config.COUNTDOWN_DURATION, state.run.current);
-  toast(`Fuel depleted! +30s penalty.`);
+  toast(message);
 }
-
-// ENSURED EXPORT (if needed externally)
+export function outOfFuel() {
+  if (state.run?.current?.launched)
+    restartLevel("Fuel depleted. +30s penalty.", config.FUEL_OUT_PENALTY_MS);
+}
 export function tryFinishLevel() {
-  const lv = state.run.current;
-  if (lv.completed) return;
-
-  const totalPlanets = lv.nodes.filter(n => n.kind === 'planet').length;
-  const required = Math.min(SHARDS_PER_LEVEL, totalPlanets);
-
-  if (lv.shards.size >= required && lv.fuel >= config.GATE_MIN_FUEL) {
+  const lv = state.run?.current;
+  if (!lv || lv.completed) return;
+  if (
+    isLapReady(lv) &&
+    hasRequiredShards(lv) &&
+    lv.fuel >= config.GATE_MIN_FUEL
+  ) {
     pauseTimer();
     lv.completed = true;
-    if (lv.level >= MAX_LEVEL) {
-      finishRun();
-    } else {
-      toast(`Level ${lv.level} complete!`);
-      state.run.levelIndex++;
-      buildLevel(state.run.levelIndex);
+    window.dispatchEvent(
+      new CustomEvent("stardust:levelComplete", {
+        detail: { level: lv.level, elapsedMs: lv.activeMs },
+      }),
+    );
+    if (lv.level >= MAX_LEVEL) finishRun();
+    else {
+      toast(`${lv.levelInfo.title} complete.`);
+      state.run.levelIndex = lv.level + 1;
+      buildLevel(lv.level + 1);
       startCountdown(config.COUNTDOWN_DURATION, state.run.current);
     }
-  } else {
-    const needed = Math.max(0, required - lv.shards.size);
-    toast(needed > 0
-      ? `Gate requires ${needed} more shard(s).`
-      : `Gate requires at least ${config.GATE_MIN_FUEL} fuel.`);
+  } else if ((lv._gateMessageAt || 0) < performance.now()) {
+    lv._gateMessageAt = performance.now() + 1800;
+    const needed = lv.nodes.filter(
+      (n) => n.kind === "planet" && !lv.shards.has(n.id),
+    ).length;
+    toast(
+      !isLapReady(lv)
+        ? "Complete the marked lap before returning to the portal."
+        : needed
+          ? `Gate needs ${needed} more corner signal${needed === 1 ? "" : "s"}.`
+          : "Refuel before using the gate.",
+    );
   }
 }
-
-// ENSURED EXPORT (if needed externally)
 export async function finishRun() {
-  const ms = Math.round(state.run.totalActiveMs);
-  const formattedTime = formatMs(ms);
-  toast(`All levels complete! Total time: ${formattedTime}.`);
-
-  // Exit fullscreen if active
+  const ms = Math.round(state.run.totalActiveMs),
+    formatted = formatMs(ms);
+  toast(`All five sectors complete. ${formatted}.`);
   if (document.fullscreenElement) {
-    try { document.exitFullscreen().catch(() => { }); } catch { }
+    try {
+      document.exitFullscreen().catch(() => {});
+    } catch {}
   }
-  // Stop the engine loop so the game no longer updates after completion
   stopEngine();
-  openEndOverlay(formattedTime);
-  window.dispatchEvent(new CustomEvent('roadmap:runComplete', { detail: { runId: state.run.runId, totalMs: ms } }));
+  openEndOverlay(formatted);
+  window.dispatchEvent(
+    new CustomEvent("roadmap:runComplete", {
+      detail: { runId: state.run.runId, totalMs: ms },
+    }),
+  );
 }
-
-// ENSURED EXPORT
 export function startTimer() {
   const lv = state.run?.current;
-  if (!lv || lv.timerRunning) return;
+  if (!lv || lv.timerRunning || !lv.launched) return;
   lv.timerRunning = true;
   lv.t0 = performance.now();
 }
-
-// ENSURED EXPORT
 export function pauseTimer() {
   const lv = state.run?.current;
   if (!lv || !lv.timerRunning) return;
-  const elapsed = performance.now() - lv.t0;
+  const elapsed = Math.max(0, performance.now() - lv.t0);
   lv.activeMs += elapsed;
   state.run.totalActiveMs += elapsed;
   lv.timerRunning = false;
 }
-
-// ENSURED EXPORT (if needed externally)
 export function addPenalty(ms) {
   const lv = state.run?.current;
-  if (!lv) return;
-  lv.activeMs += ms;
-  state.run.totalActiveMs += ms;
+  if (lv) {
+    lv.activeMs += ms;
+    state.run.totalActiveMs += ms;
+  }
 }
-
 let responsiveScalingSetup = false;
 function setupResponsiveScaling() {
   if (responsiveScalingSetup) return;
-  const applyResize = () => resizeCanvas();
-  window.addEventListener('resize', applyResize, { passive: true });
-  if (window.matchMedia) {
-    try {
-      const query = window.matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`);
-      query.addEventListener('change', applyResize);
-    } catch (err) {
-      console.log('Could not attach DPI media query listener:', err);
-    }
-  }
+  window.addEventListener("resize", resizeCanvas, { passive: true });
   responsiveScalingSetup = true;
 }
-

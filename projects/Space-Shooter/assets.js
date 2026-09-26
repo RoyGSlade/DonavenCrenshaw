@@ -6,15 +6,16 @@
  */
 
 // Resolve the base path to the sprites directory relative to this file
-const SPRITE_BASE = '../../assets/Images/sprites';
+const SPRITE_BASE = new URL('../../assets/Images/sprites/', import.meta.url).href.replace(/\/$/, '');
+const ART_BASE = new URL('./art/', import.meta.url).href;
 
 // This helper function simplifies loading a single image
 function loadImage(src) {
     return new Promise((resolve, reject) => {
         const img = new Image();
-        img.src = src;
         img.onload = () => resolve(img);
-        img.onerror = () => reject(`Failed to load asset: ${src}`);
+        img.onerror = () => reject(new Error(`Failed to load asset: ${src}`));
+        img.src = src;
     });
 }
 
@@ -33,11 +34,14 @@ export const assets = {};
 // This function loads all images and returns a promise that resolves when they are all ready.
 export async function loadAssets() {
     const assetPromises = {
-        playerShip: loadImage(`${SPRITE_BASE}/Raumschiff.png`),
-        fuelStation: loadImage(`${SPRITE_BASE}/fuelstation.png`),
+        playerShip: loadImage(`${ART_BASE}player-ship.png`),
+        fuelStation: loadImage(`${ART_BASE}relay-station-v1.png`),
+
+        asteroid: loadImage(`${ART_BASE}asteroid-v1.png`),
+        relayGate: loadImage(`${ART_BASE}relay-gate-v1.png`),
 
         // Boss and effects
-        bossShip: loadImage(`${SPRITE_BASE}/BossShip.png`),
+        bossShip: loadImage(`${ART_BASE}warden-v1.png`),
         bossShield: loadImage(`${SPRITE_BASE}/BossShieldEffect.png`),
         bossBoom: loadImage(`${SPRITE_BASE}/bossboom.png`),
         bossBoomFrames: loadSequence(`${SPRITE_BASE}/boom`, 'boom', 9),

@@ -1,0 +1,7 @@
+{
+  "date": "2026-09-26",
+  "provider": "OpenAI built-in image_gen",
+  "file": "asteroid-v1.png",
+  "generationId": "exec-1983a2c9-a17e-40d0-998b-669be04c1912",
+  "prompt": "Use case: stylized-concept. Asset type: production transparent PNG asteroid obstacle sprite for top-down browser space game Stardust. ONE roughly round chunky asteroid, overhead orthographic view, centered fully visible with transparent margin. Nearly circular silhouette with minor broad jagged facets; dark slate grey and muted iron-blue rocky material, broad craggy planes and several deep irregular crater depressions, subtle pale grey rim highlights. Premium hand-painted realistic game illustration, strong directional overhead lighting with brighter upper-left planes and dark lower-right fractures, readable volume and tactile rock detail at 100 pixels. Must remain visibly rock rather than a planet. No perspective scene, no background, no stars, no floor, no external cast shadow, no text, no colored lights, no detached pebbles, no dust cloud, no sprite sheet. Actual transparent background."
+}

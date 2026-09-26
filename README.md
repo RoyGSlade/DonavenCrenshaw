@@ -60,3 +60,9 @@ for project-owned image/video carousels and development labels, and
 GitHub Actions checks out each registered project explicitly, runs the same importer and site verification, uploads exactly `public/`, and deploys through GitHub Pages. A validated project push can notify this repository with `repository_dispatch`; the central workflow still re-checks every source before deployment. See [docs/rebuild/](docs/rebuild/) for the audit, architecture, evidence register, verification record, and launch/rollback runbook.
 
 Do not publish a product release, performance claim, customer result, license scope, community destination, or support benefit unless its evidence is present and linked. Keep `SECURITY.md` changes separate unless they are deliberately reviewed; the current checkout contained a pre-existing user edit.
+
+## Stardust game overhaul (local standalone preview)
+
+The game under `projects/Space-Shooter/` now has a separate review build. Run `npm run dev:stardust` and open `http://127.0.0.1:4173/projects/Space-Shooter/`. `npm run test:stardust` runs the focused game tests; `npm run build:stardust` creates `dist/stardust/` without changing the website build or its legacy redirects. See [the current scope, controls, evidence and handoff](docs/stardust/README.md).
+
+The [remaining-work plan](docs/stardust/README.md#remaining-work) separates release/playtest work, Hub integration and discovery handling, and later content/2v2 ideas. The five circuit names are **Alpha Relay, Beacon Prime, Dustfall Station, Nether Crossing, and Iron Veil**. Next priority: prove Hub launch, a friend match and one verified discovery across the actual hosted services before expanding content. Current local discoveries and browser-hosted match results are not trusted account rewards or rankings.

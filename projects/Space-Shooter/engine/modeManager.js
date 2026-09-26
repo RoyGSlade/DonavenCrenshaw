@@ -6,7 +6,9 @@ import { updateHUD, toast } from '../ui/hud.js';
 import { resizeCanvas } from '../ui/graphics.js';
 import { buildLevel, pauseTimer, updateRoadmap } from './modes/roadmap.js';
 import { buildArena, updateArena } from './modes/arena.js';
-import { ensureEngineRunning } from './index.js';
+import { ensureEngineRunning } from './core.js';
+import { startCountdown } from './lifecycle.js';
+export { startCountdown } from './lifecycle.js';
 // NEW: Explicit mode transition functions
 export function enterArena() {
   // Restart engine loop if it was previously stopped by finishRun
@@ -21,7 +23,8 @@ export function enterArena() {
 }
 
 export function updateCurrentMode(dt) {
-  // Disallow pausing in arena
+  if (state.mode === 'arena' && state.arena?.victoryPresented) return;
+  // Active combat cannot be paused by input.
   if (state.mode === 'arena' && state.ui.paused) {
     state.ui.paused = false;
     // optional: toast once on entry already; skip spam here
@@ -34,21 +37,16 @@ export function updateCurrentMode(dt) {
   }
 }
 
-export function startCountdown(seconds, sceneState) {
-  if (!sceneState) return;
-  sceneState.countdownT = seconds;
-  state.ui.countdownActive = true;
-  sceneState.lockedInStart = true;
-  sceneState.launched = false;
-  if ('timerRunning' in sceneState) sceneState.timerRunning = false;
-}
-
 export function startNewRun() {
   // Ensure engine loop is active (may have been stopped after a completed run)
   ensureEngineRunning();
   // Clear any lingering end overlay from prior run
   closeEndOverlay();
   state.mode = 'roadmap';
+  state.arena = null;
+  state.ui.showBossUI = false;
+  state.ui.showMinimap = true;
+  state.ui.showStartOverlay = false;
   const runId = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
   state.run = {
     runId,
@@ -71,20 +69,15 @@ export function retryRun() {
 
   closePauseOverlay();
 
-  // Preserve existing run id, seeds and total active time
-  const { runId, seeds, totalActiveMs } = state.run;
-  const priorNodes = state.run.current?.nodes ?? null;
-
-  state.run = { runId, seeds, totalActiveMs, levelIndex: 1, current: null };
-
-  // Rebuild level one reusing prior shard positions if available
-  buildLevel(1, priorNodes);
-  startCountdown(config.COUNTDOWN_DURATION, state.run.current);
+  // Retry is a fresh run with the same deterministic authored routes.
+  startNewRun();
 }
 
 export function quitRun() {
-  stopMusic();
   state.mode = 'roadmap';
+  state.arena = null;
+  state.gfx.projectiles = [];
+  state.ui.countdownActive = false;
   state.run = null;
   state.ui.paused = false;
   closePauseOverlay();
@@ -98,6 +91,11 @@ export function exitArena(reason = 'quit') {
   state.arena = null;
   state.mode = 'roadmap';
   state.ui.showBossUI = false;
+  state.ui.countdownActive = false;
+  state.ui.paused = true;
+  state.gfx.projectiles = [];
+  const player = state.run?.current?.player;
+  if (player) { player.vx = 0; player.vy = 0; }
 
   if (reason === 'win') toast('Unique event complete. Returning to orbit.');
   else if (reason === 'loss') toast('Defeated. Returning to orbit.');

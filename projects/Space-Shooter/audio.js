@@ -2,24 +2,62 @@
  * @fileoverview Manages all audio playback for the game.
  * Paths are relative to the Space-Shooter directory for static hosting.
  */
-import { state } from './state.js';
+import { createMusicPlayer } from './systems/music.js';
 
 const AUDIO_BASE = '../../assets/audio';
 
-let backgroundMusic = null;
-let masterMusicVolume = 1.0;
 let masterSfxVolume = 1.0;
 let audioUnlocked = false;
+let unlockInitialized = false;
+let motifContext = null;
+
+const music = createMusicPlayer({
+    createAudio(src) {
+        const audio = document.createElement('audio');
+        audio.preload = 'metadata';
+        audio.src = src;
+        return audio;
+    },
+    onError(error, track) {
+        const key = `music:${track}:${error?.name || 'error'}`;
+        if (error?.name !== 'AbortError' && !warnOnce.has(key)) {
+            warnOnce.add(key);
+            console.warn(`Music could not play (${track}):`, error?.name || 'unsupported media');
+        }
+    },
+});
+
+// Exact pitches are authored in code; a generated soundtrack never carries the only clue.
+export function playGateMotif(reverse = false) {
+    if (!audioUnlocked || masterSfxVolume <= 0) return;
+    try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+        motifContext ||= new AudioContext();
+        motifContext.resume().catch(() => {});
+        const notes = reverse ? [659.255, 523.251, 440] : [440, 523.251, 659.255];
+        const t = motifContext.currentTime;
+        notes.forEach((frequency, i) => {
+            const voice = motifContext.createOscillator();
+            const gain = motifContext.createGain();
+            const start = t + i * 0.24;
+            voice.type = 'sine'; voice.frequency.value = frequency;
+            gain.gain.setValueAtTime(0, start);
+            gain.gain.linearRampToValueAtTime(masterSfxVolume * 0.09, start + 0.015);
+            gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.38);
+            voice.connect(gain); gain.connect(motifContext.destination);
+            voice.start(start); voice.stop(start + 0.4);
+            voice.onended = () => { voice.disconnect(); gain.disconnect(); };
+        });
+    } catch { /* Audio support cannot block play. */ }
+}
 
 const soundCache = new Map();
 const warnOnce = new Set();
 const sfxCooldowns = new Map();
 
 const soundSources = {
-    background: `${AUDIO_BASE}/background.mp3`,
-    boss: `${AUDIO_BASE}/bossfight.mp3`,
     voice: `${AUDIO_BASE}/bossvoiceline.wav`,
-    boss_theme: `${AUDIO_BASE}/bossfight.mp3`,
     boss_intro: `${AUDIO_BASE}/bossvoiceline.wav`,
     laser: `${AUDIO_BASE}/laser.wav`,
     explosion: `${AUDIO_BASE}/explosion.mp3`,
@@ -33,10 +71,12 @@ const soundSources = {
 };
 
 export function initAudioUnlock() {
+    if (unlockInitialized) return;
+    unlockInitialized = true;
     function unlock() {
         audioUnlocked = true;
-        window.removeEventListener('pointerdown', unlock, true);
-        window.removeEventListener('keydown', unlock, true);
+        // Later gestures also retry a track if the browser rejected playback.
+        music.unlock();
     }
     window.addEventListener('pointerdown', unlock, true);
     window.addEventListener('keydown', unlock, true);
@@ -75,11 +115,7 @@ function getOrCreateAudio(key, src) {
 
 
 export function setMusicVolume(vol) {
-    masterMusicVolume = vol;
-    if (backgroundMusic) {
-        const relativeVolume = 0.4;
-        backgroundMusic.volume = relativeVolume * masterMusicVolume;
-    }
+    music.setVolume(vol);
 }
 
 export function setSfxVolume(vol) {
@@ -87,38 +123,11 @@ export function setSfxVolume(vol) {
 }
 
 export function playMusic(track, options = {}) {
-    const src = soundSources[track];
-    if (!src) return;
-
-    if (backgroundMusic && backgroundMusic.src.endsWith(src.split('/').pop()) && !backgroundMusic.paused) {
-        return;
-    }
-
-    if (backgroundMusic) {
-        backgroundMusic.pause();
-    }
-
-    if (!soundCache.has(src)) {
-        soundCache.set(src, createAudioWithSources(src));
-    }
-    backgroundMusic = soundCache.get(src);
-
-    backgroundMusic.loop = options.loop !== false;
-    const relativeVolume = options.volume ?? 0.4;
-    backgroundMusic.volume = relativeVolume * masterMusicVolume;
-    backgroundMusic.currentTime = 0;
-    const p = backgroundMusic.play();
-    if (p && p.catch) {
-        p.catch(e => { if (e?.name !== 'AbortError') console.warn('Music play failed:', e?.name || e); });
-    }
+    music.play(track, options);
 }
 
-export function stopMusic() {
-    if (backgroundMusic) {
-        backgroundMusic.pause();
-        backgroundMusic = null;
-    }
-}
+export function stopMusic() { music.stop(); }
+export function getMusicStatus() { return music.status(); }
 
 export function playSoundEffect(sound, volume = 0.5) {
     const src = soundSources[sound];
