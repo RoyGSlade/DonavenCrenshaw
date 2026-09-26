@@ -13,6 +13,47 @@ import {
   isFullscreen,
   watchFullscreen,
 } from "../systems/mobileControls.js";
+import { runtimeConfig } from "../runtime-config.js";
+import { validateBackendUrl } from "../systems/backend.js";
+
+// Accounts. A signed-in pilot hands the relay a short-lived ticket from the hub;
+// when both pilots do, the relay reports the winner to the hub.
+let hubOrigin = null;
+try {
+  const base = validateBackendUrl(runtimeConfig.backendBaseUrl);
+  hubOrigin = base ? new URL(base).origin : null;
+} catch {}
+let pilot = null;
+let counted = false;
+let opponentCounted = false;
+async function hubJson(path, method = "GET") {
+  if (!hubOrigin) return null;
+  try {
+    const res = await fetch(`${hubOrigin}${path}`, { method, credentials: "include", cache: "no-store" });
+    return res.ok ? await res.json() : null;
+  } catch {
+    return null;
+  }
+}
+async function paintAccountLine() {
+  const line = document.getElementById("account-line");
+  if (!line || !hubOrigin) return;
+  const session = await hubJson("/api/users/session");
+  pilot = session?.user || null;
+  line.replaceChildren();
+  if (pilot) {
+    line.append(`Signed in as ${pilot.displayName || pilot.username}. Wins count on your account when your opponent is signed in too.`);
+  } else if (session) {
+    const a = document.createElement("a");
+    a.href = new URL("../../../account/?next=/games/stardust/dogfight/", location.href).href;
+    a.textContent = "Sign in";
+    line.append("Playing as a guest: wins aren’t recorded. ", a, " to count them.");
+  }
+}
+paintAccountLine();
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible" && !role) paintAccountLine();
+});
 
 const $ = (id) => document.getElementById(id),
   canvas = $("arena"),
@@ -195,6 +236,8 @@ function finishView(winner, reason) {
         : reason === "time"
           ? "Time expired. The pilot with more hull remaining wins."
           : "One hull down. Same ships, new round?";
+  if (!interrupted && winner !== null && counted && opponentCounted)
+    $("result-detail").textContent += winner === mine ? " Win recorded on your account." : " Counted as a loss on your account.";
   $("rematch").disabled = false;
   $("rematch-status").textContent = "Both pilots must ready up for a rematch.";
 }
@@ -224,14 +267,21 @@ function receive(message) {
       return;
     role = message.role;
     roomCode = message.code;
+    counted = message.counted === true;
+    opponentCounted = message.opponentCounted === true;
     $("share-code").textContent = roomCode;
     $("role-label").textContent =
       `${role === "host" ? "CYAN / HOST" : "ORANGE / GUEST"} · ROOM ${roomCode}`;
     showLobby(
       role === "host"
         ? "Room created. Waiting for your friend."
-        : "Joined. Preparing the round.",
+        : `Joined. Preparing the round.${counted && opponentCounted ? " Both pilots are signed in, so this match counts." : ""}`,
     );
+    return;
+  }
+  if (message.type === "opponent") {
+    opponentCounted = message.counted === true;
+    if (counted && opponentCounted) status("Your opponent is signed in too, so this match counts.");
     return;
   }
   if (message.type === "closed") {
@@ -364,7 +414,11 @@ async function requestRoom(type) {
     } catch {}
     $("relay-url").value = url;
     status(type === "create" ? "Creating room…" : "Joining room…");
-    next.send(type === "create" ? { type: "create" } : { type: "join", code });
+    const ticket = pilot ? (await hubJson("/api/dogfight/ticket", "POST"))?.ticket : null;
+    if (connection !== next) return;
+    const request = type === "create" ? { type: "create" } : { type: "join", code };
+    if (typeof ticket === "string") request.ticket = ticket;
+    next.send(request);
   } catch (error) {
     status(error.message, true);
     $("connection-settings").open = true;
@@ -391,7 +445,7 @@ $("rematch").addEventListener("click", () => {
 $("copy").addEventListener("click", async () => {
   try {
     await navigator.clipboard.writeText(roomCode);
-    status("Room code copied. Share the same relay address too.");
+    status("Room code copied.");
   } catch {
     status(`Copy this room code: ${roomCode}`);
   }

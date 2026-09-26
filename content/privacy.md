@@ -19,14 +19,14 @@ When you follow an external link—such as GitHub, GitHub Sponsors, Ko-fi, or a 
 
 Accounts are optional. Every page and every game works without one.
 
-- **What is stored:** your email address, your username, a bcrypt hash of your password (never the password itself), and anything you add to your profile: a display name, a short bio, a Discord username. Stardust runs you finish while signed in (times, circuit splits and the game build), plus achievements and any Platinum 10 place, are stored with the account too. Guest runs never leave your browser.
+- **What is stored:** your email address, your username, a bcrypt hash of your password (never the password itself), and anything you add to your profile: a display name, a short bio, a Discord username. Stardust runs you finish while signed in (times, circuit splits and the game build), and your Dogfight wins and losses against other signed-in pilots are stored with the account too. Guest runs never leave your browser.
 - **Where:** in a database on a server in Northern Nevada, on an encrypted disk, with encrypted backups. Nothing is sold or shared, and nothing is sent to an email or marketing service. No emails are sent at all.
 - **Cookie:** signing in sets one cookie, `token`, on `api.donavencrenshaw.com`. It is HttpOnly (page scripts can't read it), sent only over HTTPS, and lasts 30 days. It exists only to keep you signed in. Signing out removes it; changing your password or choosing *Sign out everywhere* ends every session at once.
-- **Public:** your display name (or username), your best times and the date you set them appear on the Stardust leaderboards, and on the Platinum 10 if you earn a place. Your email never does.
+- **Public:** your display name (or username), your best times and the date you set them appear on the Stardust leaderboards. Your Dogfight record is shown only to you, on your account page. Your email never does.
 - **Deleting:** the account page deletes your account and everything tied to it straight away. Backups roll off within about two weeks.
 - **Logs:** the server keeps short-lived request logs, including IP addresses, to limit abuse such as password guessing.
 
-Dogfight rooms connect through the same server. Rooms exist only while a match is being played, and nothing about a match is kept.
+Dogfight rooms connect through the same server and exist only while a match is being played. If both pilots are signed in, the server records who won and who lost; nothing else about the match is kept, and rounds with a guest are not recorded at all.
 
 ## underplain products
 

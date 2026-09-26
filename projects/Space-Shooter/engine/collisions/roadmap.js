@@ -1,6 +1,7 @@
 import { state, config } from "../../state.js";
 import { toast, blinkFuel } from "../../ui/hud.js";
 import { isBacksideArenaEntry } from "../rules.js";
+import { runtimeConfig } from "../../runtime-config.js";
 import { requestArenaEnterFromBack } from "../api.js";
 import { isLapReady, portalCoordinates } from "../track.js";
 import { tryFinishLevel } from "../modes/roadmap.js";
@@ -33,7 +34,7 @@ export function checkCollisionsAndInteractions() {
         }),
       );
     } else if (node.kind === "gate" && d <= config.GATE_RADIUS) {
-      if (isBacksideArenaEntry(node)) {
+      if (runtimeConfig.bossFight !== false && isBacksideArenaEntry(node)) {
         requestArenaEnterFromBack();
         return;
       }

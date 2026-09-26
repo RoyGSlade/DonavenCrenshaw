@@ -3,6 +3,7 @@ import { createLevelLayout, formatMs } from "../../data.js";
 import { resizeCanvas } from "../../ui/graphics.js";
 import { updateHUD, toast } from "../../ui/hud.js";
 import { openEndOverlay } from "../../ui/overlays.js";
+import { runtimeConfig } from "../../runtime-config.js";
 import { stopEngine } from "../core.js";
 import { handlePlayerMovement } from "../systems/movement.js";
 import { updateParticles } from "../systems/particles.js";
@@ -102,7 +103,7 @@ export function updateRoadmap(dt) {
         outOfFuel();
         return;
       }
-      lv.secretReady = secretEligible(lv);
+      lv.secretReady = runtimeConfig.bossFight !== false && secretEligible(lv);
       if (lv.secretReady !== !!lv._secretMusicActive) {
         lv._secretMusicActive = lv.secretReady;
         playMusic(lv.secretReady ? "secret" : `level${lv.level}`);

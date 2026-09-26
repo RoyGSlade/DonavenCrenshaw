@@ -35,6 +35,13 @@ export async function createDogfightServer({
   // Sockets that are not in a room are closed after this long, so idle
   // connections cannot hold the per-address or total slots.
   idleTimeoutMs = 60000,
+  // Accounts, both optional. verifyTicket(ticket) returns { userId } for a
+  // valid ticket from a signed-in pilot, or null. onResult({ winnerId,
+  // loserId, reason }) is called when a round ends with a winner and both
+  // pilots presented valid tickets for different accounts. The hub wires
+  // these up; without them rooms work exactly the same and nothing is kept.
+  verifyTicket = null,
+  onResult = null,
 } = {}) {
   if (!Number.isInteger(port) || port < 0 || port > 65535)
     throw new Error("Invalid port");
@@ -184,6 +191,13 @@ export async function createDogfightServer({
     room.votes = { host: false, guest: false };
     for (const p of [room.host, room.guest])
       send(p, { type: "result", winner, reason, round: room.round });
+    // Ship 0 is the host, ship 1 the guest.
+    const won = winner === 0 ? room.host : winner === 1 ? room.guest : null;
+    const lost = winner === 0 ? room.guest : winner === 1 ? room.host : null;
+    if (onResult && won?.pilot && lost?.pilot && won.pilot.userId !== lost.pilot.userId) {
+      const result = { winnerId: won.pilot.userId, loserId: lost.pilot.userId, reason: typeof reason === "string" ? reason : "finished" };
+      Promise.resolve().then(() => onResult(result)).catch(() => {});
+    }
   }
   function detach(socket, reason = "Opponent disconnected. Room closed.") {
     const room = socket.room;
@@ -288,6 +302,14 @@ export async function createDogfightServer({
           return error(socket, "Too many room attempts. Wait a minute.");
         socket.actions.push(now);
         if (socket.room) return error(socket, "Leave your current room first.");
+        let pilot = null;
+        try {
+          pilot = verifyTicket && typeof message.ticket === "string" && message.ticket.length <= 2048
+            ? verifyTicket(message.ticket) : null;
+        } catch {
+          pilot = null;
+        }
+        socket.pilot = pilot && typeof pilot.userId === "string" ? { userId: pilot.userId } : null;
         if (message.type === "create") {
           if (rooms.size >= 64)
             return error(socket, "Relay is full. Try again later.");
@@ -306,7 +328,7 @@ export async function createDogfightServer({
           rooms.set(roomCode, room);
           socket.room = room;
           socket.role = "host";
-          return send(socket, { type: "room", role: "host", code: roomCode });
+          return send(socket, { type: "room", role: "host", code: roomCode, counted: Boolean(socket.pilot) });
         }
         if (
           typeof message.code !== "string" ||
@@ -319,7 +341,8 @@ export async function createDogfightServer({
         room.guest = socket;
         socket.room = room;
         socket.role = "guest";
-        send(socket, { type: "room", role: "guest", code: room.code });
+        send(socket, { type: "room", role: "guest", code: room.code, counted: Boolean(socket.pilot), opponentCounted: Boolean(room.host.pilot) });
+        send(room.host, { type: "opponent", counted: Boolean(socket.pilot) });
         start(room);
         return;
       }

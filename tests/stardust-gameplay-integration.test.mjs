@@ -132,7 +132,10 @@ test("the actual finish API rejects a full shard inventory without lap proof", (
   assert.equal(state.run.current, lv);
   assert.equal(lv.completed, false);
 });
-test("each sector selects its cue and an expired secret restores Iron Veil music", () => {
+// The Warden fight is switched off (runtime-config bossFight: false), so a lap
+// that meets the secret's conditions keeps Iron Veil's own music and cue. The
+// conditions themselves are still covered by the secretEligible test.
+test("each sector selects its cue, and with the boss fight off the secret never wakes", () => {
   reset();
   for (let level = 1; level <= 5; level++) {
     buildLevel(level);
@@ -150,10 +153,6 @@ test("each sector selects its cue and an expired secret restores Iron Veil music
     lapStarted: true,
     distance: lv.track.length,
   });
-  updateRoadmap(1 / 60);
-  assert.equal(lv.secretReady, true);
-  assert.equal(getMusicStatus().requested, "secret");
-  lv.activeMs = 60000;
   updateRoadmap(1 / 60);
   assert.equal(lv.secretReady, false);
   assert.equal(getMusicStatus().requested, "level5");

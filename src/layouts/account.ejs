@@ -58,13 +58,13 @@
                             <h2 class="acct-card-title mono">What it's for</h2>
                             <ul class="acct-list">
                                 <li><strong>Your name on the boards.</strong> Only signed-in runs count. Every finished circuit, and every full run of all five, is saved with its rank.</li>
-                                <li><strong>The Platinum 10.</strong> Ten places, earned in the game. Only accounts can hold one.</li>
+                                <li><strong>Dogfight wins.</strong> When you and your opponent are both signed in, every win counts on your account.</li>
                                 <li><strong>A profile.</strong> A display name and a short bio, nothing more.</li>
                             </ul>
                         </div>
                         <div class="noir-card acct-card">
                             <h2 class="acct-card-title mono">What's kept</h2>
-                            <p>Your email, username, a salted password hash and anything you add to your profile, on a server in Northern Nevada. Delete the account and it's gone. <a href="privacy/#accounts">Details</a>.</p>
+                            <p>Your email, username, a salted password hash, your profile, your Stardust times and your Dogfight record, on a server in Northern Nevada. Delete the account and it's gone. <a href="privacy/#accounts">Details</a>.</p>
                         </div>
                     </aside>
                 </div>
@@ -83,10 +83,18 @@
                         </div>
                     </section>
 
+                    <section class="noir-card acct-card acct-stats" aria-labelledby="acct-stats-title">
+                        <h2 id="acct-stats-title" class="acct-card-title mono">Your stats</h2>
+                        <dl class="acct-stat-grid">
+                            <div class="acct-stat"><dt class="mono">Fastest Stardust run</dt><dd data-acct-stat="full">—</dd><p class="acct-stat-sub" data-acct-stat-sub="full">All five circuits</p></div>
+                            <div class="acct-stat"><dt class="mono">Fastest circuit</dt><dd data-acct-stat="circuit">—</dd><p class="acct-stat-sub" data-acct-stat-sub="circuit">Any single circuit</p></div>
+                            <div class="acct-stat"><dt class="mono">Dogfight wins</dt><dd data-acct-stat="wins">—</dd><p class="acct-stat-sub" data-acct-stat-sub="wins">Against signed-in pilots</p></div>
+                        </dl>
+                    </section>
+
                     <div class="acct-grid">
                         <section class="noir-card acct-card acct-stardust" aria-labelledby="acct-sd-title">
                             <div class="acct-card-head"><h2 id="acct-sd-title" class="acct-card-title mono">Stardust</h2><a class="acct-link mono" href="stardust/">Game page →</a></div>
-                            <p class="acct-platinum" data-acct-platinum hidden></p>
                             <ol class="acct-bests" data-acct-bests></ol>
                             <p class="acct-empty" data-acct-bests-empty>No saved times yet. <a href="games/stardust/">Fly a circuit</a> while signed in and your best times and ranks show here.</p>
                         </section>
@@ -129,7 +137,7 @@
 
                         <form class="noir-card acct-card acct-form acct-danger" data-acct-form="delete" aria-labelledby="acct-delete-title" novalidate>
                             <h2 id="acct-delete-title" class="acct-card-title mono">Delete account</h2>
-                            <p>This removes your profile, times, saves and any Platinum 10 place, straight away. It can't be undone.</p>
+                            <p>This removes your profile, Stardust times, saves and Dogfight record, straight away. It can't be undone.</p>
                             <label>Type your username to confirm<input name="confirmUsername" type="text" autocomplete="off" spellcheck="false" required></label>
                             <label>Password<input name="password" type="password" autocomplete="current-password" required></label>
                             <p class="acct-status" role="alert" data-acct-status></p>

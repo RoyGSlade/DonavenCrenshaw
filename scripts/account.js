@@ -129,6 +129,15 @@ function runAccountPage(root, first) {
         }
     }
 
+    // ?next=/games/stardust/ sends people back where they came from after they
+    // sign in or create an account. Only paths on this site are accepted.
+    function returnPath() {
+        const next = new URLSearchParams(location.search).get('next');
+        if (!next || !next.startsWith('/') || next.startsWith('//') || next.includes('\\')) return null;
+        const url = new URL(next, location.origin);
+        return url.origin === location.origin ? url.pathname + url.search + url.hash : null;
+    }
+
     function signedIn(next, { isNew = false } = {}) {
         fresh = isNew;
         user = next;
@@ -136,6 +145,7 @@ function runAccountPage(root, first) {
         fillMember();
         show('member');
         loadStardust();
+        loadDogfight();
     }
 
     function signedOut(message) {
@@ -167,6 +177,12 @@ function runAccountPage(root, first) {
         });
     }
     if (location.hash === '#create') selectTab('signup');
+    if (returnPath()) {
+        const back = document.createElement('p');
+        back.className = 'acct-fine';
+        back.textContent = 'You’ll go straight back to the game after signing in.';
+        for (const form of $$('[data-acct-form="signin"], [data-acct-form="signup"]')) form.append(back.cloneNode(true));
+    }
 
     $('[data-acct-form="signin"]').addEventListener('submit', (e) => {
         e.preventDefault();
@@ -179,6 +195,7 @@ function runAccountPage(root, first) {
             if (!res.ok) { status(form, problem(res, 'Couldn’t sign in.')); markField(form, res.status === 401 ? 'password' : null); return; }
             form.reset();
             status(form, '');
+            if (returnPath()) { location.assign(returnPath()); return; }
             signedIn(res.data.user);
         });
     });
@@ -200,6 +217,7 @@ function runAccountPage(root, first) {
             if (!res.ok) { status(form, problem(res, 'Couldn’t create the account.')); markField(form, res.data?.field); return; }
             form.reset();
             status(form, '');
+            if (returnPath()) { location.assign(returnPath()); return; }
             signedIn(res.data.user, { isNew: true });
         });
     });
@@ -251,10 +269,9 @@ function runAccountPage(root, first) {
     async function loadStardust() {
         const list = $('[data-acct-bests]');
         const empty = $('[data-acct-bests-empty]');
-        const platinum = $('[data-acct-platinum]');
         list.replaceChildren();
         const res = await hub('/games/stardust/me');
-        if (!res.ok) { empty.hidden = false; platinum.hidden = true; return; }
+        if (!res.ok) { empty.hidden = false; paintStats({}); return; }
         const bests = res.data?.bests || {};
         for (const [id, name] of BOARDS) {
             const best = bests[id];
@@ -272,9 +289,30 @@ function runAccountPage(root, first) {
             list.append(li);
         }
         empty.hidden = list.children.length > 0;
-        const place = res.data?.platinum?.rank;
-        platinum.hidden = !place;
-        if (place) platinum.textContent = `Platinum 10 · place ${String(place).padStart(2, '0')}`;
+        paintStats(bests);
+    }
+
+    function stat(key, value, sub) {
+        $(`[data-acct-stat="${key}"]`).textContent = value;
+        if (sub) $(`[data-acct-stat-sub="${key}"]`).textContent = sub;
+    }
+
+    function paintStats(bests) {
+        const full = bests.full;
+        stat('full', full ? clock(full.timeMs) : '—', full ? `All five circuits · #${full.rank} on the board` : 'Finish all five circuits while signed in');
+        let fastest = null;
+        for (const [id, name] of BOARDS) {
+            if (id === 'full' || !bests[id]) continue;
+            if (!fastest || bests[id].timeMs < fastest.timeMs) fastest = { ...bests[id], name };
+        }
+        stat('circuit', fastest ? clock(fastest.timeMs) : '—', fastest ? `${fastest.name} · #${fastest.rank}` : 'Any single circuit');
+    }
+
+    async function loadDogfight() {
+        const res = await hub('/dogfight/me');
+        if (!res.ok) { stat('wins', '—', 'Against signed-in pilots'); return; }
+        const { wins = 0, played = 0 } = res.data || {};
+        stat('wins', String(wins), played ? `${wins} of ${played} counted matches` : 'Play a signed-in friend to start counting');
     }
 
     $('[data-acct-form="profile"]').addEventListener('submit', (e) => {
