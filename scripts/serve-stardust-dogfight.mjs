@@ -3,7 +3,7 @@ import { createReadStream } from "node:fs";
 import { realpath, stat } from "node:fs/promises";
 import { randomBytes } from "node:crypto";
 import { networkInterfaces } from "node:os";
-import { BlockList, isIPv4 } from "node:net";
+import { BlockList, isIP, isIPv4 } from "node:net";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { WebSocketServer, WebSocket } from "ws";
@@ -27,6 +27,14 @@ export async function createDogfightServer({
   host = "127.0.0.1",
   lanAddress = null,
   allowedOrigins = [],
+  // Behind a proxy every client shares the proxy's address. Name the header
+  // that carries the real one (e.g. "cf-connecting-ip" behind Cloudflare) so
+  // the per-address limit applies per visitor. Only set it when every
+  // connection arrives through that proxy.
+  clientIpHeader = null,
+  // Sockets that are not in a room are closed after this long, so idle
+  // connections cannot hold the per-address or total slots.
+  idleTimeoutMs = 60000,
 } = {}) {
   if (!Number.isInteger(port) || port < 0 || port > 65535)
     throw new Error("Invalid port");
@@ -185,6 +193,7 @@ export async function createDogfightServer({
       if (!peer) continue;
       peer.room = null;
       peer.role = null;
+      peer.idleSince = Date.now();
       if (peer !== socket) send(peer, { type: "closed", reason });
     }
     socket.room = null;
@@ -212,7 +221,10 @@ export async function createDogfightServer({
       ...(lanAddress ? [`http://${lanAddress}:${boundPort}`] : []),
       ...allowedOrigins,
     ].includes(origin);
-    const ip = req.socket.remoteAddress || "unknown";
+    const forwarded = clientIpHeader && req.headers[clientIpHeader.toLowerCase()];
+    const ip = typeof forwarded === "string" && isIP(forwarded.trim())
+      ? forwarded.trim()
+      : req.socket.remoteAddress || "unknown";
     if (
       req.url !== "/relay" ||
       !permitted ||
@@ -237,6 +249,7 @@ export async function createDogfightServer({
     socket.rateTime = Date.now();
     socket.actions = [];
     socket.alive = true;
+    socket.idleSince = Date.now();
     send(socket, { type: "hello", version: 1 });
     socket.on("pong", () => {
       socket.alive = true;
@@ -370,7 +383,9 @@ export async function createDogfightServer({
       error(socket, "Unsupported room message.");
     });
     socket.on("close", () => {
-      perIP.set(socket.ip, Math.max(0, (perIP.get(socket.ip) || 1) - 1));
+      const left = (perIP.get(socket.ip) || 1) - 1;
+      if (left > 0) perIP.set(socket.ip, left);
+      else perIP.delete(socket.ip);
       detach(socket);
     });
   });
@@ -380,9 +395,16 @@ export async function createDogfightServer({
     for (const room of rooms.values()) {
       if (room.phase === "active" && now - room.lastSnapshot > 3000)
         finish(room, null, "host-stalled");
-      if (now - room.lastActivity > 10 * 60 * 1000)
-        detach(room.host, "Room expired after inactivity.");
+      if (now - room.lastActivity > 10 * 60 * 1000) {
+        const reason = "Room expired after inactivity.";
+        const host = room.host;
+        detach(host, reason);
+        send(host, { type: "closed", reason });
+      }
     }
+    for (const socket of wss.clients)
+      if (!socket.room && now - socket.idleSince > idleTimeoutMs)
+        socket.close(1000, "Idle");
     if (++heartbeat % 20 === 0)
       for (const socket of wss.clients) {
         if (!socket.alive) {
@@ -422,6 +444,7 @@ if (
       .split(",")
       .map((v) => v.trim())
       .filter(Boolean),
+    clientIpHeader: process.env.DOGFIGHT_CLIENT_IP_HEADER || null,
   });
   console.log(
     `Dogfight: http://127.0.0.1:${relay.port}/projects/Space-Shooter/dogfight/`,

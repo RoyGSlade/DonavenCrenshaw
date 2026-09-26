@@ -261,3 +261,14 @@ test("boost waits for GO, has equal bounded impulse and cooldown, and cannot rep
   }
   assert.equal(createMatch(1, 2).ships[0].boostCooldown, 0);
 });
+test("the published site defaults to the hub's public relay", () => {
+  for (const hostname of ["donavencrenshaw.com", "www.donavencrenshaw.com"])
+    assert.equal(
+      defaultRelay({ protocol: "https:", hostname, host: hostname }),
+      "wss://relay.donavencrenshaw.com/relay",
+    );
+  assert.equal(
+    defaultRelay({ protocol: "http:", hostname: "donavencrenshaw.com", host: "donavencrenshaw.com" }),
+    "",
+  );
+});
