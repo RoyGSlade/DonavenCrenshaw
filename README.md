@@ -55,6 +55,11 @@ every project supplies, [the optional showcase guide](docs/project-sources/SHOWC
 for project-owned image/video carousels and development labels, and
 [the automation guide](docs/project-sources/AUTOMATION.md) for GitHub setup.
 
+The Stardust game's source is `projects/Space-Shooter/` ([handoff](docs/stardust/README.md)).
+The site build publishes it as plain ES modules at `/games/stardust/`, with its
+landing page at `/infinite-ages/stardust/`. [docs/game/HUB_CONTRACT.md](docs/game/HUB_CONTRACT.md)
+describes what it sends to the hub and the rules its physics follow so runs can be checked.
+
 ## Delivery
 
 GitHub Actions checks out each registered project explicitly, runs the same importer and site verification, uploads exactly `public/`, and deploys through GitHub Pages. A validated project push can notify this repository with `repository_dispatch`; the central workflow still re-checks every source before deployment. See [docs/rebuild/](docs/rebuild/) for the audit, architecture, evidence register, verification record, and launch/rollback runbook.

@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<%- components.head %>
+<%
+  // Results come from data/hub-snapshot.json, committed by the hub. Without it the
+  // sections render honest empty states, so the page never depends on the hub.
+  const snap = data.hubSnapshot;
+  const board = snap ? snap.leaderboard.slice(0, 10) : [];
+  const platinum = snap ? snap.platinum : [];
+  const asOf = snap && snap.generatedAt ? snap.generatedAt.slice(0, 10) : null;
+  const two = (n) => String(n).padStart(2, '0');
+  const clock = (ms) => {
+    const t = Math.max(0, Math.round(Number(ms) || 0));
+    return `${Math.floor(t / 60000)}:${two(Math.floor(t / 1000) % 60)}.${two(Math.floor((t % 1000) / 10))}`;
+  };
+  const day = (iso) => (iso ? String(iso).slice(0, 10) : '');
+%>
+<body class="site-shell stardust-page" data-branch="infinite-ages">
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+    <%- components.nav %>
+    <div class="content-wrapper">
+        <main id="main-content" class="sd-page" tabindex="-1">
+<%- content %>
+            <section class="sd-section" id="fastest-runs" aria-labelledby="sd-runs-title">
+                <div class="sd-section-head">
+                    <h2 id="sd-runs-title">Fastest runs</h2>
+                    <% if (asOf) { %><p class="sd-meta">As of <time datetime="<%= snap.generatedAt %>"><%= asOf %></time></p><% } %>
+                </div>
+                <% if (board.length) { %>
+                <ol class="sd-board">
+                    <% board.forEach((row) => { %>
+                    <li><span class="sd-rank"><%= two(row.rank) %></span><span class="sd-name"><%= row.name %></span><span class="sd-time"><%= clock(row.timeMs) %></span><span class="sd-date"><%= day(row.setAt) %></span></li>
+                    <% }) %>
+                </ol>
+                <% } else { %>
+                <p class="sd-empty">No recorded runs yet. Every run is a guest run for now, and guest runs aren't saved.</p>
+                <% } %>
+            </section>
+
+            <section class="sd-section sd-platinum" id="platinum-10" aria-labelledby="sd-platinum-title">
+                <div class="sd-section-head">
+                    <h2 id="sd-platinum-title">Platinum 10</h2>
+                    <p class="sd-meta"><%= platinum.length %> of 10 claimed</p>
+                </div>
+                <ol class="sd-platinum-list">
+                    <% for (let i = 1; i <= 10; i++) { const entry = platinum.find((e) => Number(e.rank) === i); %>
+                    <li class="<%= entry ? 'is-claimed' : 'is-open' %>">
+                        <span class="sd-rank"><%= two(i) %></span>
+                        <% if (entry) { %><span class="sd-name"><%= entry.name %></span><span class="sd-badge"><%= entry.badge || '' %></span><span class="sd-date"><%= day(entry.obtainedAt) %></span><% } else { %><span class="sd-name">Unclaimed</span><% } %>
+                    </li>
+                    <% } %>
+                </ol>
+            </section>
+
+            <section class="sd-section sd-credits" id="credits" aria-labelledby="sd-credits-title">
+                <h2 id="sd-credits-title">Credits</h2>
+                <ul>
+                    <li>Created by Donaven Crenshaw.</li>
+                    <li>Soundtrack: ten original Stardust tracks by Donaven Crenshaw, made with Suno.</li>
+                    <li>New ship, Warden, relay gate, station and asteroid art generated for this project with OpenAI image generation.</li>
+                    <li>Carried over from the original game: sound effects by freesound_community and DRAGON-STUDIO via <a href="https://pixabay.com/sound-effects/">Pixabay</a>; ship art by TheRealFusion; spaceship effects by Raphael Hatencia.</li>
+                    <li><a href="games/stardust/credits.html">Full credits</a></li>
+                </ul>
+            </section>
+        </main>
+        <%- components.footer %>
+    </div>
+    <script src="<%= siteRoot %>scripts/script.js"></script>
+</body>
+</html>
