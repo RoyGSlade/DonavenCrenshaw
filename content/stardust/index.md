@@ -17,7 +17,7 @@ ogImage: "assets/images/stardust/iron-veil.webp"
     <a class="sd-cta" href="games/stardust/">Play now <span aria-hidden="true">→</span></a>
     <a class="sd-text-link" href="#how-it-plays">How it plays ↓</a>
   </div>
-  <p class="sd-small">Keyboard, gamepad, or touch · Nothing to install<br>Early build. Runs aren't saved yet. <a href="account/">Create an account</a> now and it will carry your times when they are.</p>
+  <p class="sd-small">Keyboard, gamepad, or touch · Nothing to install<br>Early build. Guests fly free; <a href="account/">signed-in pilots</a> go on the live leaderboard.</p>
 </header>
 
 <div class="sd-facts" aria-label="Stardust at a glance">

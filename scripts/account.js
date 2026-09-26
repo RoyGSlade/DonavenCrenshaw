@@ -93,7 +93,7 @@ function runAccountPage(root, first) {
             lede.textContent = 'Your profile, your Stardust record and your security settings.';
         } else {
             title.textContent = 'Your account';
-            lede.textContent = 'One account for the games and tools on this site. It keeps your name on the Stardust boards when saved runs arrive.';
+            lede.textContent = 'One account for the games and tools on this site. Sign in and every Stardust circuit you finish goes on the leaderboard.';
         }
     }
 

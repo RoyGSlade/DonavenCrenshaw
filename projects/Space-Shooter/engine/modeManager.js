@@ -58,6 +58,7 @@ export function startNewRun() {
   state.ui.paused = false;
   buildLevel(1);
   startCountdown(config.COUNTDOWN_DURATION, state.run.current);
+  window.dispatchEvent(new CustomEvent('stardust:runStart', { detail: { runId } }));
 }
 
 export function retryRun() {
@@ -80,6 +81,7 @@ export function quitRun() {
   state.ui.countdownActive = false;
   state.run = null;
   state.ui.paused = false;
+  window.dispatchEvent(new CustomEvent('stardust:runQuit'));
   closePauseOverlay();
   openStartOverlay();
   updateHUD();
