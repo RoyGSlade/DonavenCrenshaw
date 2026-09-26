@@ -109,6 +109,7 @@
   backdrop-filter: blur(3px);
 }
 .dg-panel {
+  font-weight: 400;
   width: min(620px, 94vw); max-height: 92vh; overflow: auto; padding: clamp(20px, 4vw, 34px); border-radius: 6px;
   background: rgba(5, 10, 16, .93); border: 1px solid rgba(169, 220, 255, .22); box-shadow: 0 30px 90px rgba(0, 0, 0, .6);
 }
@@ -154,6 +155,7 @@
 .touch-btn:active { background: rgba(169, 220, 255, .22); }
 .dpad-up { grid-area: up; } .dpad-down { grid-area: down; } .dpad-left { grid-area: left; } .dpad-right { grid-area: right; }
 .action-boost { position: absolute; right: 24px; bottom: 30px; width: 86px; height: 86px; border-radius: 50%; }
-.action-pause, .action-map { position: absolute; top: 14px; min-width: 64px; height: 36px; }
+/* Below the hull and boost bars, which sit in the top-right corner */
+.action-pause, .action-map { position: absolute; top: 76px; min-width: 64px; height: 36px; }
 .action-pause { right: 16px; }
 .action-map { right: 90px; }

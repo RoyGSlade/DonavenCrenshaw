@@ -58,6 +58,8 @@ function enableTouchControls() {
   // The container ships with the "hidden" class, which wins over inline styles.
   if (container) container.classList.remove('hidden');
   state.input.touch.active = true;
+  // The touch pad sits where the minimap draws; the Map button brings it back.
+  state.ui.showMinimap = false;
 }
 
 function disableTouchControls() {
