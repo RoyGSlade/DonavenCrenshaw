@@ -2,47 +2,25 @@
 import { state, config } from '../../state.js';
 import { playSoundEffectThrottled } from '../../audio.js';
 import { toast } from '../../ui/hud.js';
+import { fireWeapon, coolWeapon, projectileFrom } from './weapons.js';
 
 export function handleShooting(dt, player) {
-    player.shootCooldown = Math.max(0, (player.shootCooldown || 0) - dt);
-
-    if (state.keys.shoot && player.shootCooldown <= 0 && !player.isOverheated) {
-        spawnPlayerProjectile(player);
-        player.shootCooldown = config.PLAYER_FIRE_RATE;
-        player.heat = Math.min(player.maxHeat, player.heat + config.PLAYER_HEAT_PER_SHOT);
-    playSoundEffectThrottled('laser', 0.2, 60);
+    if (fireWeapon(dt, player, state.keys.shoot, config, () => spawnPlayerProjectile(player))) {
+        playSoundEffectThrottled('laser', 0.2, 60);
     }
 }
 
 // No longer needs exitArena; collision detection now handles arena exit.
 export function handleOverheat(dt, player) {
-    if (player.isOverheated) {
-        player.heat = Math.max(0, player.heat - config.PLAYER_OVERHEAT_COOL_RATE * dt);
-        if (player.heat <= 0) {
-            player.isOverheated = false;
-            toast('Weapons online!');
-        }
-    } else {
-        if (!state.keys.shoot) {
-             player.heat = Math.max(0, player.heat - config.PLAYER_COOL_RATE * dt);
-        }
-        if (player.heat >= player.maxHeat) {
-            player.isOverheated = true;
-            toast('Weapon overheated!');
-        }
-    }
+    const transition = coolWeapon(dt, player, state.keys.shoot, config);
+    if (transition === 'cooled') toast('Weapons online!');
+    else if (transition === 'overheated') toast('Weapon overheated!');
 }
 
 export function spawnPlayerProjectile(player) {
-    const angle = player.angle;
-    const speed = config.PLAYER_PROJECTILE_SPEED;
     state.gfx.projectiles.push({
         owner: 'player',
-        x: player.x + Math.cos(angle) * 0.5,
-        y: player.y + Math.sin(angle) * 0.5,
-        vx: player.vx + Math.cos(angle) * speed,
-        vy: player.vy + Math.sin(angle) * speed,
-        life: config.PLAYER_PROJECTILE_LIFE,
+        ...projectileFrom(player, config),
     });
 }
 

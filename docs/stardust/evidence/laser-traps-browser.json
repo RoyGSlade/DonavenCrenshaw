@@ -1,0 +1,19 @@
+{
+  "testedAt": "2026-09-27T08:36:07.250Z",
+  "keyboardHost": true,
+  "touchGuest": true,
+  "quickGuestKey": true,
+  "locksBothSeats": true,
+  "movementSuppressed": true,
+  "automaticRelease": true,
+  "cooldownRecharged": true,
+  "rematchReset": true,
+  "matchingRelayLocks": true,
+  "landscape": "844x390",
+  "portrait": "390x844",
+  "snapshotsSent": 398,
+  "snapshotsReceived": 398,
+  "errors": [],
+  "failedResources": [],
+  "limits": "Local Chromium with emulated phone; no physical phone, real gamepad, human balance or internet latency acceptance."
+}

@@ -17,7 +17,7 @@ test(
     );
     const server = await createDogfightServer({ port: 0 });
     t.after(() => server.close());
-    const browser = await chromium.launch({ headless: true });
+    const browser = await chromium.launch({ headless: true, channel: process.env.BROWSER_CHANNEL || undefined });
     t.after(() => browser.close());
     const hostContext = await browser.newContext({
         viewport: { width: 1280, height: 800 },
@@ -78,9 +78,9 @@ test(
     await host.keyboard.down("w");
     await host.waitForTimeout(500);
     await host.keyboard.up("w");
-    await host.keyboard.down("s");
+    await host.keyboard.down("x");
     await host.waitForTimeout(350);
-    await host.keyboard.up("s");
+    await host.keyboard.up("x");
     assert.ok(
       sentSnapshots.at(-1).ships[0].x > startX + 0.5,
       "Real thrust must change authoritative position",
@@ -88,6 +88,12 @@ test(
     t.diagnostic(
       "Room joined; both canvases focused; host keyboard thrust verified in transmitted snapshots.",
     );
+    await host.keyboard.down("w");
+    await host.waitForTimeout(2300);
+    await host.keyboard.up("w");
+    await host.keyboard.down("x");
+    await host.waitForTimeout(400);
+    await host.keyboard.up("x");
     await host.keyboard.down("Space");
     await host.locator("#result").waitFor({ state: "visible", timeout: 7000 });
     await host.keyboard.up("Space");
@@ -109,6 +115,12 @@ test(
     await guest.locator("#rematch").click();
     await playing(guest, 2);
     assert.deepEqual((await diagnostics(guest)).hull, [100, 100]);
+    await guest.keyboard.down("w");
+    await guest.waitForTimeout(2500);
+    await guest.keyboard.up("w");
+    await guest.keyboard.down("x");
+    await guest.waitForTimeout(400);
+    await guest.keyboard.up("x");
     await guest.keyboard.down("Space");
     await guest.locator("#result").waitFor({ state: "visible", timeout: 7000 });
     await guest.keyboard.up("Space");
@@ -172,7 +184,7 @@ test(
     );
     const server = await createDogfightServer({ port: 0 });
     t.after(() => server.close());
-    const browser = await chromium.launch({ headless: true });
+    const browser = await chromium.launch({ headless: true, channel: process.env.BROWSER_CHANNEL || undefined });
     t.after(() => browser.close());
     const host = await browser.newPage();
     const context = await browser.newContext({
@@ -296,10 +308,18 @@ test(
     await guest.waitForTimeout(160);
     assert.ok(inputs.some((c) => c.reverse && c.boost));
     assert.ok(
-      states.some((s) => s.ships[1].boostCooldown > 1.5),
+      states.some(
+        (s) =>
+          s.ships[1].boostCooldown > 0 &&
+          s.ships[1].boostCooldown <= 0.25 &&
+          s.ships[1].flux < 30,
+      ),
       "Guest boost must reach the host simulation and snapshot",
     );
-    assert.match(await guest.locator("#boost-state").textContent(), /s$/);
+    assert.match(
+      await guest.locator("#boost-state").textContent(),
+      /Flux .*pips/,
+    );
     await guest.evaluate(() => window.dispatchEvent(new Event("blur")));
     assert.equal(
       (await guest.evaluate(() => window.__dogfightDiag().controls)).boost,
@@ -336,5 +356,230 @@ test(
       path: join(tmpdir(), "stardust-dogfight-mobile-controls-portrait.png"),
     });
     assert.deepEqual(errors, []);
+  },
+);
+
+test(
+  "standard controllers drive host and guest with analog strengths and safe disconnect/focus recovery",
+  { skip: !process.env.STARDUST_BROWSER_TEST, timeout: 30000 },
+  async (t) => {
+    const modulePath = process.env.PLAYWRIGHT_MODULE;
+    const { chromium } = await import(
+      modulePath
+        ? modulePath.startsWith("file:")
+          ? modulePath
+          : pathToFileURL(modulePath).href
+        : "playwright"
+    );
+    const server = await createDogfightServer({ port: 0 });
+    t.after(() => server.close());
+    const browser = await chromium.launch({ headless: true, channel: process.env.BROWSER_CHANNEL || undefined });
+    t.after(() => browser.close());
+    const host = await browser.newPage(),
+      guest = await browser.newPage(),
+      states = [],
+      inputs = [],
+      errors = [];
+    host.on("websocket", (socket) =>
+      socket.on("framesent", ({ payload }) => {
+        const m = JSON.parse(payload);
+        if (m.type === "snapshot") states.push(m.state);
+      }),
+    );
+    guest.on("websocket", (socket) =>
+      socket.on("framesent", ({ payload }) => {
+        const m = JSON.parse(payload);
+        if (m.type === "input") inputs.push(m.controls);
+      }),
+    );
+    for (const page of [host, guest]) {
+      page.on("pageerror", (e) => errors.push(e.message));
+      await page.addInitScript(() => {
+        window.__pads = [
+          null,
+          null,
+          {
+            index: 2,
+            connected: true,
+            mapping: "standard",
+            axes: [0, 0, 0, 0],
+            buttons: Array.from({ length: 17 }, () => ({
+              pressed: false,
+              value: 0,
+            })),
+          },
+        ];
+        Object.defineProperty(navigator, "getGamepads", {
+          value: () => window.__pads,
+        });
+      });
+      await page.goto(
+        `http://127.0.0.1:${server.port}/projects/Space-Shooter/dogfight/`,
+      );
+      await page.evaluate(async () => {
+        window.__dogfightDiag = (await import("./client.js")).getDiagnostics;
+      });
+      await page.locator("#connection-settings summary").click();
+      await page
+        .locator("#relay-url")
+        .fill(`ws://127.0.0.1:${server.port}/relay`);
+    }
+    await host.locator("#create").click();
+    await host.waitForFunction(
+      () => document.querySelector("#share-code").textContent.length === 8,
+    );
+    await guest
+      .locator("#room-code")
+      .fill(await host.locator("#share-code").textContent());
+    await guest.locator("#join").click();
+    for (const page of [host, guest]) {
+      await page.waitForFunction(
+        () => window.__dogfightDiag().phase === "playing",
+      );
+      await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+    }
+    await host.waitForTimeout(80);
+    const configure = async (page, axes, buttons = {}) =>
+      page.evaluate(
+        ({ axes, buttons }) => {
+          const p = window.__pads[2];
+          p.axes = axes;
+          p.buttons = Array.from({ length: 17 }, (_, i) => ({
+            pressed: !!buttons[i],
+            value: buttons[i] || 0,
+          }));
+        },
+        { axes, buttons },
+      );
+    for (const [page, id] of [
+      [host, 0],
+      [guest, 1],
+    ]) {
+      const before = { ...states.at(-1).ships[id] };
+      await configure(page, [0.5, -0.65, 0.35], { 7: 1, 4: 1 });
+      await page.waitForTimeout(130);
+      const c = await page.evaluate(() => window.__dogfightDiag().controls);
+      assert.equal(c.thrustStrength, 0.65);
+      assert.equal(c.strafe, 0.3);
+      assert.equal(c.turn, 0.35);
+      assert.equal(c.fire, true);
+      assert.equal(c.boost, true);
+      assert.ok(
+        states.some((s) => s.ships[id].flux < 30),
+        "Boost spends shared flight flux in authoritative snapshots",
+      );
+      await configure(page, [-0.5, 0.5, -0.3], { 5: 1 });
+      await page.waitForTimeout(100);
+      const reverse = await page.evaluate(
+        () => window.__dogfightDiag().controls,
+      );
+      assert.equal(reverse.backStrength, 0.3);
+      assert.equal(reverse.strafe, -0.3);
+      assert.equal(reverse.brake, true);
+      assert.ok(
+        Math.hypot(
+          states.at(-1).ships[id].x - before.x,
+          states.at(-1).ships[id].y - before.y,
+        ) > 0.01,
+        "Controller movement reaches authoritative simulation",
+      );
+      await configure(page, [0, 0, 0]);
+      await page.waitForTimeout(40);
+      // A Y toggle is discarded on blur. Releasing Y after focus must not restore it.
+      await configure(page, [0, 0, 0], { 3: 1 });
+      await page.waitForTimeout(45);
+      await page.evaluate(() => {
+        window.dispatchEvent(new Event("blur"));
+        window.dispatchEvent(new Event("focus"));
+      });
+      await page.waitForTimeout(45);
+      assert.equal(
+        (await page.evaluate(() => window.__dogfightDiag().controls)).boost,
+        false,
+      );
+      await configure(page, [0, 0, 0]);
+      await page.waitForTimeout(40);
+      assert.equal(
+        (await page.evaluate(() => window.__dogfightDiag().controls)).boost,
+        false,
+      );
+      if (id === 1) {
+        await configure(page, [0, -.6, 0], {7:1});
+        await page.waitForTimeout(40);
+        await page.evaluate(() => {
+          Object.defineProperty(document, 'hidden', {configurable:true,value:true});
+          document.dispatchEvent(new Event('visibilitychange'));
+        });
+        await page.waitForTimeout(40);
+        assert.equal((await page.evaluate(() => window.__dogfightDiag().controls)).fire,false);
+        await page.evaluate(() => {
+          Object.defineProperty(document, 'hidden', {configurable:true,value:false});
+          document.dispatchEvent(new Event('visibilitychange'));
+        });
+        await page.waitForTimeout(40);
+        assert.equal((await page.evaluate(() => window.__dogfightDiag().controls)).thrust,false);
+        await configure(page,[0,0,0]);await page.waitForTimeout(40);
+      }
+      await configure(page, [0, -1, 0], { 4: 1 });
+      await page.waitForTimeout(40);
+      await page.evaluate(() => {
+        window.__savedPad = window.__pads[2];
+        window.__pads = [];
+        const e = new Event("gamepaddisconnected");
+        Object.defineProperty(e, "gamepad", { value: window.__savedPad });
+        window.dispatchEvent(e);
+      });
+      await page.waitForTimeout(40);
+      assert.equal(
+        (await page.evaluate(() => window.__dogfightDiag().controls)).thrust,
+        false,
+      );
+      await page.evaluate(() => {
+        window.__pads = [null, null, window.__savedPad];
+      });
+      await page.waitForTimeout(40);
+      assert.equal(
+        (await page.evaluate(() => window.__dogfightDiag().controls)).boost,
+        false,
+      );
+      await configure(page, [0, 0, 0]);
+      await page.waitForTimeout(40);
+      await configure(page, [0, -0.4, 0]);
+      await page.waitForTimeout(40);
+      assert.equal(
+        (await page.evaluate(() => window.__dogfightDiag().controls))
+          .thrustStrength,
+        0.4,
+      );
+      await configure(page, [0, 0, 0]);
+    }
+    assert.ok(
+      inputs.some(
+        (c) =>
+          c.thrustStrength === 0.65 && c.strafe === 0.3 && c.fire && c.boost,
+      ),
+      "Guest analog actions survive relay serialization",
+    );
+    assert.ok(
+      inputs.some(
+        (c) => c.backStrength === 0.3 && c.strafe === -0.3 && c.brake,
+      ),
+      "Guest reverse and strafe survive relay serialization",
+    );
+    // A controller cannot promise fullscreen when a browser rejects activation.
+    await guest.evaluate(() => {
+      document.documentElement.requestFullscreen = () =>
+        Promise.reject(new Error("blocked"));
+    });
+    await configure(guest, [0, 0, 0], { 9: 1 });
+    await guest.waitForTimeout(80);
+    assert.match(
+      await guest.locator("#tilt-status").textContent(),
+      /blocked|Home Screen/i,
+    );
+    assert.deepEqual(errors, []);
+    t.diagnostic(
+      "Both simulated standard pads: analog flight, boost resources, fire, reverse, strafe, disconnect, focus recovery and honest fullscreen failure verified. Physical hardware is not covered.",
+    );
   },
 );

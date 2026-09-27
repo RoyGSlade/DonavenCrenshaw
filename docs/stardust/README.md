@@ -56,6 +56,12 @@ Phone controls now use left GAS/REVERSE and right FIRE/BRAKE/BOOST, with BOOST l
 
 Run `node scripts/test-stardust-audio-browser.mjs` with the same browser environment for full-file decoding, playhead/slider checks and runtime/source hash comparison. This additional script reads the checked-in audio inspection ledger and creates `evidence/audio-browser.json`.
 
+## Controller and flight parity update
+
+Dogfight now shares the solo gamepad reader, flight physics and primary weapon rules. Standard controller controls, analog relay strengths, flux/pips, hold-to-repeat boost, gun heat and safe disconnect/focus recovery are integrated. Baseline flight is compared frame for frame with single-player; host and guest controller paths are covered by simulated-controller browser tests. See [controls and limitations](DOGFIGHT.md). Physical controller feel remains a playtest item. The coordinated update also includes [custom hulls and paint](CUSTOM-SHIPS.md) and the [laser trap](DOGFIGHT.md#laser-trap-secondary-fire). Medium is the solo-equivalent baseline; Light/Heavy intentionally apply class modifiers.
+
+Validation for this update: 122 checks passed with LAN enabled; five optional browser cases were skipped in that unit run and passed separately (three controller/combat/mobile cases, one trap case, one custom-ship case). Root reran the solo browser smoke without page/resource errors and built an export of the exact staged files successfully. Unfinished map modules are excluded from this commit.
+
 ## Remaining work
 
 **Recommended next milestone:** launch Stardust from the Hub, complete a casual friend match across two networks, and save one independently verified discovery to the right account. A second device must read that same result, and an unavailable service must leave local play usable. Finish that slice before adding another mode or a large batch of levels.

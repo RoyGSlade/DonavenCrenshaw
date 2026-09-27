@@ -18,6 +18,7 @@
       href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath fill='%2381e6df' d='M16 1 30 30 16 23 2 30Z'/%3E%3C/svg%3E"
     />
     <link rel="stylesheet" href="./dogfight.css" />
+    <link rel="stylesheet" href="./shipBuilder.css" />
   </head>
   <body>
     <canvas
@@ -31,23 +32,51 @@
       ><button id="leave" hidden>Leave room</button>
     </header>
     <div id="match-hud" hidden>
-      <div class="pilot cyan">
-        CYAN <b id="hp0">100</b
-        ><progress id="bar0" max="100" value="100"></progress>
-      </div>
       <div id="round-clock">03:00</div>
-      <div class="pilot orange">
-        ORANGE <b id="hp1">100</b
-        ><progress id="bar1" max="100" value="100"></progress>
+    </div>
+    <div id="ship-hud" hidden>
+      <div id="ship-health0" class="ship-health cyan">
+        <span id="pilot0">P1</span> <b id="hp0">100 / 100</b>
+        <progress id="bar0" aria-label="Pilot 1 hull" max="100" value="100"></progress>
+        <span id="lock0" class="lock-state"></span>
       </div>
+      <div id="ship-health1" class="ship-health orange">
+        <span id="pilot1">P2</span> <b id="hp1">100 / 100</b>
+        <progress id="bar1" aria-label="Pilot 2 hull" max="100" value="100"></progress>
+        <span id="lock1" class="lock-state"></span>
+      </div>
+    </div>
+    <div id="trap-hud" hidden aria-label="Laser trap recharge">
+      <span id="trap-hud-state">{-} TRAP · READY</span>
+      <progress id="trap-meter" aria-label="Trap charge" max="1" value="1"></progress>
+      <small>F / LT</small>
     </div>
     <main id="lobby" class="panel">
       <p class="eyebrow">FRIEND CHALLENGE / CASUAL PLAY</p>
       <h1>One arena.<br />Two pilots.</h1>
       <p class="intro">
-        A ship each. No upgrades. Use momentum and cover to break their line of
-        fire.
+        Pick your hull. Make it yours. Use momentum and cover to break their line of
+        fire. Land a laser trap to briefly lock their movement — then follow up.
       </p>
+      <fieldset id="ship-builder" aria-describedby="ship-lock-note">
+        <legend>YOUR SHIP</legend>
+        <div class="ship-classes" role="group" aria-label="Ship class">
+          <label><input type="radio" name="ship-class" value="light" /><span>Light<small>Fast & fragile</small></span></label>
+          <label><input type="radio" name="ship-class" value="medium" checked /><span>Medium<small>Balanced</small></span></label>
+          <label><input type="radio" name="ship-class" value="heavy" /><span>Heavy<small>Slow & armored</small></span></label>
+        </div>
+        <div class="ship-workbench">
+          <canvas id="ship-preview" width="320" height="200" role="img" aria-label="Your ship preview"></canvas>
+          <div class="ship-paint">
+            <label for="ship-body">Body <output id="body-value" for="ship-body"></output></label>
+            <input type="color" id="ship-body" value="#53687d" />
+            <label for="ship-accent">Accent <output id="accent-value" for="ship-accent"></output></label>
+            <input type="color" id="ship-accent" value="#81e6df" />
+          </div>
+        </div>
+        <p id="ship-stats" aria-live="polite"></p>
+        <p id="ship-lock-note" class="small">Saved on this device. Ship locks when you create or join a room.</p>
+      </fieldset>
       <details id="connection-settings">
         <summary>Connection settings</summary>
         <label for="relay-url">Relay address</label
@@ -84,10 +113,12 @@
         Create a private match or enter your friend’s code.
       </p>
       <div class="controls-note">
-        <b>W / ↑</b> thrust · <b>A D / ← →</b> rotate · <b>S / ↓</b> brake ·
-        <b>SPACE</b> fire · <b>R</b> reverse · <b>SHIFT</b> boost<br />Both
-        pilots must keep the match open. If the host tab hides or stalls, the
-        round ends.
+        <b>A D / ← →</b> rotate · <b>W/S</b> thrust/reverse · <b>Q/E</b> strafe
+        · <b>X</b> brake · <b>CTRL / SPACE</b> fire · <b>SHIFT</b> boost · <b>F / LT</b> trap<br />
+        Trap: 12s recharge · 0.85s movement lock · cover blocks it · trapped pilots can fire back.<br />
+        Controller: left stick thrust/reverse/strafe, right stick turn, RT fire,
+        RB brake, LB hold boost or Y toggle, Start fullscreen. Both pilots must
+        keep the match open. If the host tab hides or stalls, the round ends.
       </div>
       <p id="account-line" class="small limits">Private matches. Wins count on your account when both pilots are signed in.</p>
     </main>
@@ -101,9 +132,11 @@
       <p id="rematch-status" role="status"></p>
     </section>
     <footer id="flight-footer" hidden>
-      <span id="role-label"></span
-      ><span
-        >W gas · R reverse · A/D turn · S brake · SPACE fire · SHIFT boost</span
+      <span id="role-label"></span><span id="flight-energy"></span
+      ><span id="flight-help"
+        >W/S thrust/reverse · A/D turn · Q/E strafe · X brake · Ctrl fire ·
+        Shift boost · Controller: left stick move, right stick turn, RT fire, RB
+        brake, LB/Y boost, Start fullscreen</span
       ><span id="network-status">Relay connected</span>
       <span id="portrait-hint">Rotate for a wider arena view</span>
     </footer>
@@ -124,9 +157,10 @@
       </div>
       <div class="thumb-cluster right-thumb">
         <button data-key="fire" class="primary">FIRE</button>
+        <button data-key="trap" id="trap-button">{-} TRAP <small id="trap-state">READY</small></button>
         <button data-key="brake">BRAKE</button>
         <button data-key="boost" id="boost-button">
-          BOOST <small id="boost-state">READY</small>
+          BOOST <small id="boost-state">Flux / pips</small>
         </button>
       </div>
     </div>

@@ -3,28 +3,24 @@
  * @fileoverview Centralized state and configuration for the Starmap game.
  */
 
-import movementConfig from './engine/systems/movement-config.json' with { type: 'json' };
+import { FLIGHT_CONFIG } from './engine/systems/flight.js';
+import { WEAPON_CONFIG } from './engine/systems/weapons.js';
 
 export const MAX_LEVEL = 5;
 export const SHARDS_PER_LEVEL = 5;
 
 // All values in grid cells or cells/second unless noted
 export const config = {
+  ...FLIGHT_CONFIG,
+  ...WEAPON_CONFIG,
   GRID_W: 48,
   GRID_H: 32,
   VIEW_CELLS_H: 18,             // Camera scale stays stable as circuit world bounds grow.
 
   // Player ship physics
-  ROT_SPEED: Math.PI * 1.2,    // rad/s
-  ROTATION_SCALE: movementConfig.ROTATION_SCALE ?? 0.35,
-  THRUST_ACCEL: 5.0,           // cells/s^2
-  FRICTION: 0.92,               // multiplier per second (applied with pow(dt))
-  MAX_SPEED: 15.0,             // cells/s
-  LAUNCH_IMPULSE: 3.5,         // cells/s added on boost
   SHIP_SCALE: 0.85 * 0.66,
   SHIP_VISUAL_SCALE: 0.66,
   SHARD_SCALE: 0.66,
-  PLAYER_RADIUS: 0.32 * 0.66,
   MAX_HP: 100,                 // default HP if player lacks stats
   PLAYER_INVULN_DURATION: 0.4, // seconds of invulnerability after a hit
 
@@ -32,13 +28,7 @@ export const config = {
   MAX_TANK: 100.0,
   BASE_START_FUEL: 100.0,
   FUEL_PER_LEVEL: 10.0,
-  FUEL_ROT_PER_SEC: 0.3,
-  FUEL_THRUST_PER_SEC: 1.5,
-  LAUNCH_FUEL_COST: 5.0,
   FUEL_OUT_PENALTY_MS: 30000,   // 30s penalty
-
-  // Start pad logic
-  START_PAD_RADIUS: 0.9,        // distance to consider “on the pad”
 
   // Interaction radii (as fraction of cell size)
   PLANET_RADIUS: 0.45 * 0.66,
@@ -74,21 +64,6 @@ export const config = {
   // Boss sprite controls
   BOSS_SHIP_FRAMES: 6,      // boss sheet has 6 frames horizontally
   BOSS_DRAW_SCALE: 4.4,     // tweak to taste; current look but "one notch bigger"
-
-  // Combat (tune to taste)
-  PLAYER_PROJECTILE_SPEED: 16,       // cells/s
-  PLAYER_PROJECTILE_LIFE: 1.2,       // seconds
-  PLAYER_PROJECTILE_DAMAGE: 50,      // damage per player bullet
-  PLAYER_FIRE_RATE: 0.16,            // seconds between shots
-  PLAYER_MAX_HEAT: 100,
-  PLAYER_HEAT_PER_SHOT: 8,
-  PLAYER_COOL_RATE: 28,              // idle cool
-  PLAYER_OVERHEAT_COOL_RATE: 14,     // slower when overheated
-
-  // Boost (charge-based)
-  BOOST_MAX_PIPS: 3,
-  BOOST_REGEN_PER_SEC: 0.22,     // ~1 pip every ~4.5s; tweak to taste
-  BOOST_IMPULSE: 4.0,            // cells/s for each boost tap
 
   // Ramming the boss
   RAM_DAMAGE: 90,

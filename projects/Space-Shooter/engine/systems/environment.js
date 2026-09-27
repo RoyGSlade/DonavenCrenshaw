@@ -192,24 +192,7 @@ export function resolveRoadmapProjectiles(scene, projectiles) {
     if (consumed) projectiles.splice(i, 1);
   }
 }
-export function updateFlux(scene, player, dt, braking = false) {
-  let flux = scene.flux || 0;
-  const speed = Math.hypot(player.vx, player.vy);
-  if (braking && flux > 0 && speed > 0.1) {
-    const powered = Math.min(dt, flux / 25);
-    const retention = Math.exp(-5 * powered);
-    player.vx *= retention;
-    player.vy *= retention;
-    flux -= powered * 25;
-  } else if (!braking && speed > 3) {
-    const cross =
-      Math.abs(
-        Math.cos(player.angle) * player.vy - Math.sin(player.angle) * player.vx,
-      ) / speed;
-    flux += dt * (speed - 3) * (0.7 + cross * 1.4);
-  }
-  scene.flux = Math.max(0, Math.min(100, flux));
-}
+export { updateFlux } from "./flight.js";
 
 function trackLineClear(track, from, to) {
   const steps = Math.max(

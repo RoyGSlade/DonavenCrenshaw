@@ -59,7 +59,7 @@ a:focus-visible {
 [hidden] {
   display: none !important;
 }
-canvas {
+#arena {
   position: fixed;
   inset: 0;
   width: 100%;
@@ -213,18 +213,23 @@ input {
   top: 84px;
   left: 50%;
   transform: translateX(-50%);
-  width: min(600px, 90%);
-  display: grid;
-  grid-template-columns: 1fr 80px 1fr;
-  gap: 24px;
+  width: 80px;
   z-index: 4;
 }
-.pilot {
+.ship-health {
+  position: fixed;
+  width: 100px;
+  padding: 4px 5px;
+  border-radius: 4px;
+  background: #07101bea;
+  transform: translate(-50%, -100%);
+  pointer-events: none;
+  z-index: 3;
   font:
-    11px Consolas,
+    10px Consolas,
     monospace;
 }
-.pilot b {
+.ship-health b {
   float: right;
 }
 progress {
@@ -315,7 +320,8 @@ footer {
 .turn-fallback button {
   flex: 1;
 }
-#boost-state {
+#boost-state,
+#trap-state {
   display: block;
   font-size: 9px;
   margin-top: 3px;
@@ -324,6 +330,37 @@ footer {
 #boost-button.cooling {
   border-color: #456071;
   background: #0a1926;
+}
+#trap-button { border-color: #bc78d4; color: #f3bdff; }
+#trap-button.cooling { border-color: #53425f; background: #191528; }
+.lock-state { color: #f3bdff; font-size: 9px; }
+#trap-hud {
+  position: fixed;
+  top: 126px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 4;
+  min-width: 160px;
+  padding: 6px 10px;
+  background: #0c1327e8;
+  border: 1px solid #755187;
+  border-radius: 4px;
+  text-align: center;
+  color: #f3bdff;
+  font: 11px Consolas, monospace;
+  pointer-events: none;
+}
+#trap-hud small { font-size: 9px; color: var(--muted); }
+#trap-hud.locked { border-color: #f3bdff; background: #342040; }
+#trap-meter { height: 4px; margin: 4px 0; }
+#trap-meter::-webkit-progress-value { background: #db98f2; }
+#trap-meter::-moz-progress-bar { background: #db98f2; }
+@media (max-width: 600px) and (orientation: portrait) {
+  #trap-hud { top: 200px; }
+}
+@media (orientation: landscape) and (max-height: 600px) {
+  #trap-hud { top: 40px; right: 8px; left: auto; transform: none; min-width: 118px; font-size: 10px; }
+  #trap-hud small { display: none; }
 }
 #mobile-utilities {
   position: fixed;
@@ -350,7 +387,7 @@ footer {
   #touch-controls:not([hidden]) {
     display: flex;
   }
-  footer span:nth-child(2) {
+  #flight-help {
     display: none;
   }
 }
@@ -378,15 +415,13 @@ footer {
   }
   #match-hud {
     top: 74px;
-    gap: 14px;
-    grid-template-columns: 1fr 60px 1fr;
   }
   footer {
     font-size: 9px;
     left: 15px;
     right: 15px;
   }
-  footer span:nth-child(2) {
+  #flight-help {
     display: none;
   }
 }
@@ -475,12 +510,10 @@ progress::-moz-progress-bar {
   }
   #match-hud {
     top: 38px;
-    width: 46%;
-    gap: 10px;
-    grid-template-columns: 1fr 50px 1fr;
   }
-  .pilot {
+  .ship-health {
     font-size: 9px;
+    width: 92px;
   }
   progress {
     height: 5px;

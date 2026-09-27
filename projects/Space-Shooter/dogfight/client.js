@@ -6,6 +6,11 @@ import {
   snapshot,
 } from "./simulation.js";
 import { inputControls, cleanSnapshot } from "./protocol.js";
+import { cleanLoadout, shipStats } from "./ships.js";
+import { createShipBuilder } from "./shipBuilder.js";
+import { drawCustomShip } from "./shipArt.js";
+import { updateShipHud } from "./shipHud.js";
+import { drawLaserTraps, drawTrapLock, updateTrapHud } from "./laserTrapView.js";
 import { connectRelay, defaultRelay, relayAddress } from "./transport.js";
 import {
   createTiltController,
@@ -55,12 +60,14 @@ document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible" && !role) paintAccountLine();
 });
 
+import { createGamepadReader } from "../systems/gamepad.js";
+const gamepad = createGamepadReader();
+let inputFocused = true;
 const $ = (id) => document.getElementById(id),
   canvas = $("arena"),
   ctx = canvas.getContext("2d");
-const shipImage = new Image(),
-  rockImage = new Image();
-shipImage.src = "../art/player-ship.png";
+const shipBuilder = createShipBuilder($("ship-builder"));
+const rockImage = new Image();
 rockImage.src = "../art/asteroid-v1.png";
 let connection = null,
   connecting = false,
@@ -81,9 +88,11 @@ let accumulator = 0,
   lastFrame = performance.now(),
   lastSnapshot = 0,
   lastTickSent = -1;
+const keyCodes = new Map();
 const held = new Set(),
   touch = new Map();
 const counters = { snapshotsReceived: 0, inputsSent: 0 };
+let localTrapPressed = false, guestTrapPressed = false;
 const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
 const bindings = {
   KeyA: "left",
@@ -92,8 +101,14 @@ const bindings = {
   ArrowRight: "right",
   KeyW: "thrust",
   ArrowUp: "thrust",
-  KeyS: "brake",
-  ArrowDown: "brake",
+  KeyS: "reverse",
+  ArrowDown: "reverse",
+  KeyQ: "strafeLeft",
+  KeyE: "strafeRight",
+  KeyX: "brake",
+  KeyF: "trap",
+  ControlLeft: "fire",
+  ControlRight: "fire",
   Space: "fire",
   KeyR: "reverse",
   ShiftLeft: "boost",
@@ -124,21 +139,44 @@ watchFullscreen(() => {
     : "Fullscreen";
 });
 function controls() {
+  const gp = gamepad.poll(navigator.getGamepads?.() || [], {
+    active: inputFocused && !document.hidden,
+  });
+  if (gp.fullscreenEdge)
+    toggleMobileFullscreen().then((result) => {
+      if (!result.ok) $("tilt-status").textContent = result.message;
+    });
+  if (!inputFocused || document.hidden || !match || roundEnded)
+    return { ...NEUTRAL };
   const on = (key) => held.has(key) || Array.from(touch.values()).includes(key);
+  const thrustStrength = on("thrust") ? 1 : gp.thrustStrength;
+  const backStrength = on("reverse") ? 0.6 : gp.backStrength;
+  const strafe =
+    on("strafeLeft") || on("strafeRight")
+      ? ((on("strafeRight") ? 1 : 0) - (on("strafeLeft") ? 1 : 0)) * 0.6
+      : gp.strafe;
+  const tiltAxis = tilt.getAxis();
   return {
     turn:
       on("right") || on("left")
         ? (on("right") ? 1 : 0) - (on("left") ? 1 : 0)
-        : tilt.getAxis(),
-    thrust: on("thrust"),
-    reverse: on("reverse"),
-    boost: on("boost"),
-    brake: on("brake"),
-    fire: on("fire"),
+        : tiltAxis || gp.turnStrength,
+    thrust: thrustStrength > 0,
+    reverse: backStrength > 0,
+    thrustStrength,
+    backStrength,
+    strafe,
+    boost: on("boost") || gp.boost,
+    brake: on("brake") || gp.brake,
+    fire: on("fire") || gp.shoot,
+    trap: on("trap") || gp.trap || localTrapPressed,
   };
 }
 function clearControls() {
+  localTrapPressed = false;
+  gamepad.suspend();
   held.clear();
+  keyCodes.clear();
   touch.clear();
   tilt.suspend();
   for (const button of document.querySelectorAll("[data-key]"))
@@ -151,6 +189,7 @@ function status(text, error = false) {
 }
 function setBusy(busy) {
   connecting = busy;
+  shipBuilder.setLocked(busy || !!role);
   $("create").disabled = busy || !!role;
   $("join").disabled = busy || !!role;
   $("relay-url").disabled = busy || !!role;
@@ -161,6 +200,8 @@ function showLobby(message) {
   $("result").hidden = true;
   $("countdown").hidden = true;
   $("match-hud").hidden = true;
+  $("ship-hud").hidden = true;
+  $("trap-hud").hidden = true;
   $("flight-footer").hidden = true;
   $("touch-controls").hidden = true;
   $("waiting").hidden = role !== "host";
@@ -234,7 +275,7 @@ function finishView(winner, reason) {
       : reason === "host-stalled"
         ? "The host stopped delivering live simulation. Keep its browser foregrounded, then try a rematch."
         : reason === "time"
-          ? "Time expired. The pilot with more hull remaining wins."
+          ? "Time expired. The pilot with the higher hull percentage wins."
           : "One hull down. Same ships, new round?";
   if (!interrupted && winner !== null && counted && opponentCounted)
     $("result-detail").textContent += winner === mine ? " Win recorded on your account." : " Counted as a loss on your account.";
@@ -306,10 +347,17 @@ function receive(message) {
       message.seed > 4294967295
     )
       return;
+    if (!Array.isArray(message.loadouts) || message.loadouts.length !== 2 ||
+        message.loadouts.some(loadout => !cleanLoadout(loadout))) {
+      leave();
+      status("This relay needs the ship customization update. Connect to an updated relay.", true);
+      return;
+    }
     round = message.round;
-    match = createMatch(message.seed, round);
+    match = createMatch(message.seed, round, message.loadouts);
     roundEnded = false;
     guestInput = { ...NEUTRAL };
+    guestTrapPressed = false;
     guestInputAt = 0;
     guestSeq = -1;
     inputSeq = 0;
@@ -324,6 +372,8 @@ function receive(message) {
     $("waiting").hidden = true;
     $("result").hidden = true;
     $("match-hud").hidden = false;
+    $("ship-hud").hidden = false;
+    $("trap-hud").hidden = false;
     $("flight-footer").hidden = false;
     $("leave").hidden = false;
     $("touch-controls").hidden = false;
@@ -346,13 +396,14 @@ function receive(message) {
     const valid = inputControls(message.controls);
     if (valid) {
       guestSeq = message.seq;
+      if (valid.trap && !guestInput.trap) guestTrapPressed = true;
       guestInput = valid;
       guestInputAt = performance.now();
     }
     return;
   }
   if (message.type === "snapshot" && role === "guest") {
-    const data = cleanSnapshot(message.state, round);
+    const data = cleanSnapshot(message.state, round, match?.ships.map(ship => ship.loadout));
     if (!data || (latest && data.tick <= latest.tick)) return;
     previous = latest;
     previousAt = latestAt;
@@ -416,7 +467,7 @@ async function requestRoom(type) {
     status(type === "create" ? "Creating room…" : "Joining room…");
     const ticket = pilot ? (await hubJson("/api/dogfight/ticket", "POST"))?.ticket : null;
     if (connection !== next) return;
-    const request = type === "create" ? { type: "create" } : { type: "join", code };
+    const request = { type, ...(type === "join" ? { code } : {}), loadout: shipBuilder.getLoadout() };
     if (typeof ticket === "string") request.ticket = ticket;
     next.send(request);
   } catch (error) {
@@ -453,26 +504,41 @@ $("copy").addEventListener("click", async () => {
 window.addEventListener("keydown", (event) => {
   if (!match || roundEnded || event.target.matches("input,button,a")) return;
   const action = bindings[event.code];
+  if (event.repeat && !held.has(action)) return;
   if (action) {
     event.preventDefault();
     const changed = !held.has(action);
+    keyCodes.set(event.code, action);
     held.add(action);
+    if (changed && action === "trap" && role === "host") localTrapPressed = true;
     if (changed) sendInput();
   }
 });
 window.addEventListener("keyup", (event) => {
   const action = bindings[event.code];
   if (action) {
-    held.delete(action);
+    keyCodes.delete(event.code);
+    if (![...keyCodes.values()].includes(action)) held.delete(action);
     sendInput();
   }
 });
-window.addEventListener("blur", clearControls);
+window.addEventListener("blur", () => {
+  inputFocused = false;
+  clearControls();
+});
+window.addEventListener("focus", () => {
+  inputFocused = true;
+});
+window.addEventListener("gamepaddisconnected", (event) => {
+  gamepad.disconnect(event.gamepad.index);
+  sendInput();
+});
 for (const button of document.querySelectorAll("[data-key]")) {
   button.addEventListener("pointerdown", (event) => {
     if (!match || roundEnded) return;
     event.preventDefault();
     touch.set(event.pointerId, button.dataset.key);
+    if (button.dataset.key === "trap" && role === "host") localTrapPressed = true;
     button.classList.add("pressed");
     button.setPointerCapture(event.pointerId);
     sendInput();
@@ -528,6 +594,10 @@ function view(now) {
       y: previous.ships[i].y + (ship.y - previous.ships[i].y) * t,
       angle: angle(previous.ships[i].angle, ship.angle),
     })),
+    traps: latest.traps.map(trap => {
+      const old = previous.traps.find(p => p.id === trap.id);
+      return old ? { ...trap, x: old.x + (trap.x - old.x) * t, y: old.y + (trap.y - old.y) * t } : trap;
+    }),
     bullets: latest.bullets.map((b) => {
       const old = previous.bullets.find((p) => p.id === b.id);
       return old
@@ -607,6 +677,7 @@ function render(now) {
     ctx.restore();
   }
   if (display) {
+    drawLaserTraps(ctx, display, unit);
     for (const b of display.bullets) {
       ctx.fillStyle = b.owner === 0 ? "#a4fff7" : "#ffd8a7";
       ctx.shadowColor = ctx.fillStyle;
@@ -624,17 +695,18 @@ function render(now) {
       ctx.strokeStyle = color;
       ctx.lineWidth = (mine ? 1.5 : 1) / unit;
       ctx.globalAlpha = mine ? 0.8 : 0.38;
-      circle(0, 0, 0.65);
+      circle(0, 0, 0.65 * shipStats(ship).scale);
       ctx.stroke();
       ctx.globalAlpha = 1;
       ctx.rotate(ship.angle + Math.PI / 2);
       if (
         mine &&
         controls().thrust &&
+        ship.trapLock <= 0 &&
         !roundEnded &&
         display.phase === "playing"
       ) {
-        ctx.fillStyle = color;
+        ctx.fillStyle = ship.loadout.accentColor;
         ctx.globalAlpha = 0.65;
         ctx.beginPath();
         ctx.moveTo(-0.12, 0.36);
@@ -645,28 +717,22 @@ function render(now) {
       }
       ctx.shadowColor = color;
       ctx.shadowBlur = ship.hit > 0 ? 20 : 5;
-      if (shipImage.complete && shipImage.naturalWidth)
-        ctx.drawImage(shipImage, -0.528, -0.528, 1.056, 1.056);
-      else {
-        ctx.fillStyle = color;
-        ctx.beginPath();
-        ctx.moveTo(0, -0.6);
-        ctx.lineTo(0.4, 0.5);
-        ctx.lineTo(-0.4, 0.5);
-        ctx.closePath();
-        ctx.fill();
-      }
+      drawCustomShip(ctx, ship.loadout, ship.hit > 0);
       ctx.restore();
     }
-    for (let i = 0; i < 2; i++) {
-      $(`hp${i}`).textContent = String(display.ships[i].hp);
-      $(`bar${i}`).value = display.ships[i].hp;
-    }
+    for (const ship of display.ships) drawTrapLock(ctx, ship, unit);
+    updateTrapHud(display, role === "host" ? 0 : 1, roundEnded);
+    updateShipHud(display, role === "host" ? 0 : 1, { ox, oy, unit, width });
     const ownShip = display.ships[role === "host" ? 0 : 1];
     const cooldown = ownShip.boostCooldown || 0;
     $("boost-state").textContent =
-      cooldown > 0.05 ? `${cooldown.toFixed(1)}s` : "READY";
-    $("boost-button").classList.toggle("cooling", cooldown > 0.05);
+      `Flux ${Math.floor(ownShip.flux || 0)} · ${Math.floor(ownShip.boost || 0)} pips · ${cooldown > 0.01 ? `${cooldown.toFixed(2)}s` : ownShip.flux >= 20 || ownShip.boost >= 1 ? "READY" : "EMPTY"}`;
+    $("flight-energy").textContent = $("boost-state").textContent;
+    $("flight-energy").textContent += ownShip.isOverheated ? " · GUN HOT — cooling" : ` · Gun heat ${Math.round(ownShip.heat || 0)}%`;
+    $("boost-button").classList.toggle(
+      "cooling",
+      cooldown > 0.01 || !(ownShip.flux >= 20 || ownShip.boost >= 1),
+    );
     const seconds = Math.ceil(display.remaining);
     $("round-clock").textContent =
       `${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
@@ -695,9 +761,10 @@ function frame(now) {
       while (accumulator >= RULES.step) {
         const remote =
           now - guestInputAt <= RULES.inputTimeout * 1000
-            ? guestInput
+            ? { ...guestInput, trap: guestInput.trap || guestTrapPressed }
             : NEUTRAL;
         stepMatch(match, [controls(), remote]);
+        localTrapPressed = guestTrapPressed = false;
         accumulator -= RULES.step;
       }
       if (now - lastSnapshot >= 50 || match.phase === "finished") {
@@ -719,11 +786,17 @@ export function getDiagnostics() {
       ? "finished"
       : (role === "guest" ? latest?.phase : match?.phase) || "lobby",
     hull: (latest || match)?.ships.map((s) => s.hp) || [],
+    ships: (latest || match)?.ships.map(s => ({ id: s.id, x: s.x, y: s.y, hp: s.hp,
+      maxHp: shipStats(s).hp, loadout: { ...s.loadout } })) || [],
     snapshotsReceived: counters.snapshotsReceived,
     inputsSent: counters.inputsSent,
     bufferedAmount: connection?.socket.bufferedAmount || 0,
     controls: controls(),
     tilt: tilt.getState(),
+    gamepad: gamepad.getState(),
+    trapCooldown: (role === "guest" ? latest : match)?.ships[role === "host" ? 0 : 1]?.trapCooldown ?? 0,
+    trapLock: (role === "guest" ? latest : match)?.ships[role === "host" ? 0 : 1]?.trapLock ?? 0,
+    traps: (role === "guest" ? latest : match)?.traps.length ?? 0,
     boostCooldown:
       (role === "guest" ? latest : match)?.ships[role === "host" ? 0 : 1]
         ?.boostCooldown ?? 0,

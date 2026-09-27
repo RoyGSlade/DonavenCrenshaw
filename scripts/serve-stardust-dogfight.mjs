@@ -7,6 +7,7 @@ import { BlockList, isIP, isIPv4 } from "node:net";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { WebSocketServer, WebSocket } from "ws";
+import { cleanLoadout, defaultLoadout } from "../projects/Space-Shooter/dogfight/ships.js";
 import {
   inputControls,
   cleanSnapshot,
@@ -222,7 +223,7 @@ export async function createDogfightServer({
     room.guest.lastSeq = -1;
     const seed = randomBytes(4).readUInt32LE();
     for (const p of [room.host, room.guest])
-      send(p, { type: "start", round: room.round, seed });
+      send(p, { type: "start", round: room.round, seed, loadouts: room.loadouts });
   }
   server.on("upgrade", (req, socket, head) => {
     const origin = req.headers.origin;
@@ -310,6 +311,9 @@ export async function createDogfightServer({
           pilot = null;
         }
         socket.pilot = pilot && typeof pilot.userId === "string" ? { userId: pilot.userId } : null;
+        const loadout = message.loadout === undefined
+          ? defaultLoadout(message.type === "join" ? 1 : 0) : cleanLoadout(message.loadout);
+        if (!loadout) return error(socket, "Choose a valid ship class and body/accent colors.");
         if (message.type === "create") {
           if (rooms.size >= 64)
             return error(socket, "Relay is full. Try again later.");
@@ -322,6 +326,7 @@ export async function createDogfightServer({
             host: socket,
             guest: null,
             phase: "waiting",
+            loadouts: [loadout, defaultLoadout(1)],
             round: 0,
             lastActivity: now,
           };
@@ -339,6 +344,7 @@ export async function createDogfightServer({
         if (!room || room.guest || room.phase !== "waiting")
           return error(socket, "Room unavailable or already full.");
         room.guest = socket;
+        room.loadouts[1] = loadout;
         socket.room = room;
         socket.role = "guest";
         send(socket, { type: "room", role: "guest", code: room.code, counted: Boolean(socket.pilot), opponentCounted: Boolean(room.host.pilot) });
@@ -374,7 +380,7 @@ export async function createDogfightServer({
       }
       if (message.type === "snapshot") {
         if (socket !== room.host || room.phase !== "active") return;
-        const state = cleanSnapshot(message.state, room.round);
+        const state = cleanSnapshot(message.state, room.round, room.loadouts);
         if (!state || state.tick <= room.lastTick) return;
         room.lastTick = state.tick;
         room.lastSnapshot = now;
