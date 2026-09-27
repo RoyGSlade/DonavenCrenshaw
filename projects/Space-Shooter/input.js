@@ -3,21 +3,14 @@ import { state, config } from "./state.js";
 import { openPauseOverlay, closePauseOverlay } from "./ui/overlays.js";
 import { toggleFullscreen } from "./ui/graphics.js";
 import { getTiltAxis } from "./systems/tilt.js";
-// Inline gamepad mapping (import-assert not supported in browsers)
-const gamepadMapping = {
-  BUTTONS: {
-    LAUNCH: 0,
-    PAUSE: 8,
-    FULLSCREEN: 9,
-    MINIMAP_TOGGLE: [13],
-    BOOST_HOLD: 4,
-    SHOOT: 7,
-    BOOST_TOGGLE: 3,
-  },
-};
-
+import { createGamepadReader, gamepadMapping } from "./systems/gamepad.js";
+import { toast } from "./ui/hud.js";
 export { gamepadMapping };
-
+const gamepad = createGamepadReader({
+  stickDeadzone: config.GAMEPAD?.STICK_DEADZONE ?? 0.2,
+  triggerDeadzone: config.GAMEPAD?.TRIGGER_DEADZONE ?? 0.08,
+});
+let inputFocused = true;
 let isBound = false;
 
 const touch = {};
@@ -38,29 +31,6 @@ const kb = {
   _launchEdge: false,
 };
 
-const gpState = {
-  index: null,
-  dz: config.GAMEPAD?.STICK_DEADZONE ?? 0.15,
-  tdz: config.GAMEPAD?.TRIGGER_DEADZONE ?? 0.1,
-  aWas: false,
-  pauseWas: false,
-  selectWas: false,
-  minimapWas: false,
-  yWas: false,
-  boostToggle: false,
-};
-
-const gamepadButtons = gamepadMapping.BUTTONS;
-
-function resetGamepadState() {
-  gpState.aWas = false;
-  gpState.pauseWas = false;
-  gpState.selectWas = false;
-  gpState.minimapWas = false;
-  gpState.yWas = false;
-  gpState.boostToggle = false;
-}
-
 export async function bindInput() {
   if (isBound) return;
   isBound = true;
@@ -69,42 +39,28 @@ export async function bindInput() {
   window.addEventListener("keyup", onKeyUp, { passive: true });
   window.addEventListener("mousedown", onMouseDown, { passive: true });
   window.addEventListener("mouseup", onMouseUp, { passive: true });
-  window.addEventListener("blur", clearKeys, { passive: true });
+  window.addEventListener(
+    "blur",
+    () => {
+      inputFocused = false;
+      clearKeys();
+    },
+    { passive: true },
+  );
+  window.addEventListener("focus", () => {
+    inputFocused = true;
+  });
   window.addEventListener("stardust:clear-input", clearKeys);
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) clearKeys();
   });
 
-  window.addEventListener("gamepadconnected", onGamepadConnected, {
-    passive: true,
-  });
-  window.addEventListener("gamepaddisconnected", onGamepadDisconnected, {
-    passive: true,
-  });
-
-  // Touch UI for mobile
+  window.addEventListener(
+    "gamepaddisconnected",
+    (event) => gamepad.disconnect(event.gamepad.index),
+    { passive: true },
+  );
   await bindTouchControls();
-
-  // If a pad is already connected at load, grab the first active one
-  if (navigator.getGamepads) {
-    const pads = Array.from(navigator.getGamepads()).filter(Boolean);
-    if (pads.length) {
-      gpState.index = pads[0].index;
-      resetGamepadState();
-    }
-  }
-}
-
-function onGamepadConnected(event) {
-  gpState.index = event.gamepad.index;
-  resetGamepadState();
-}
-
-function onGamepadDisconnected(event) {
-  if (gpState.index === event.gamepad.index) {
-    gpState.index = null;
-    resetGamepadState();
-  }
 }
 
 function onMouseDown(e) {
@@ -122,6 +78,7 @@ function onMouseUp(e) {
 
 function onKeyDown(e) {
   const k = e.key;
+  if (e.repeat) return;
   if (
     state.ui.showStartOverlay ||
     state.ui.showSettingsOverlay ||
@@ -185,12 +142,12 @@ function onKeyUp(e) {
   if (k === "x" || k === "X") kb.brake = false;
 }
 
-function clearKeys() {
+function clearKeys(resetGamepad = true) {
+  if (resetGamepad !== false) gamepad.suspend();
   for (const key of Object.keys(touch)) touch[key] = false;
   touchPointers.clear();
   touchLaunchEdge = false;
   boostLaunchPointer = null;
-  gpState.boostToggle = false;
   for (const k of Object.keys(kb)) kb[k] = false;
   for (const k of Object.keys(state.keys))
     state.keys[k] = typeof state.keys[k] === "number" ? 0 : false;
@@ -295,103 +252,28 @@ async function bindTouchControls() {
 }
 
 function pollGamepad() {
-  const index = gpState.index ?? 0;
-  const pads = navigator.getGamepads ? navigator.getGamepads() : null;
-  const gp = pads && pads[index] ? pads[index] : null;
-  if (!gp) return null;
-
-  // New scheme:
-  // Left stick Y: forward/back thrust
-  // Left stick X: strafe left/right (digital strength 0.6 scaled by magnitude)
-  // Right stick X: turn (rotate) left/right
-  const axLXraw = gp.axes?.[0] ?? 0; // left stick X
-  const axLYraw = gp.axes?.[1] ?? 0; // left stick Y
-  const axRXraw = gp.axes?.[2] ?? 0; // right stick X (common mapping)
-  const axLX = applyDZ(axLXraw, gpState.dz);
-  const axLY = applyDZ(axLYraw, gpState.dz);
-  const axRX = applyDZ(axRXraw, gpState.dz);
-  const forwardStrength = Math.max(0, -axLY); // push up to move forward
-  const reverseStrengthRaw = Math.max(0, axLY); // push down to reverse (thrustBack)
-
-  // Strafing derived from left stick X
-  const strafeLeft = axLX < -gpState.dz;
-  const strafeRight = axLX > gpState.dz;
-  const strafeStrength = Math.min(Math.abs(axLX), 1) * 0.6; // cap at 0.6 like keyboard
-
-  // Turning from right stick X
-  const turnLeft = axRX < -gpState.dz;
-  const turnRight = axRX > gpState.dz;
-  // Signed turn strength (negative = left, positive = right)
-  const turnStrength = axRX;
-
-  // RT shoot in arena only
-  const shootButton = gamepadButtons.SHOOT;
-  const shootTriggerValue =
-    (gp.buttons?.[shootButton]?.value ??
-      (gp.buttons?.[shootButton]?.pressed ? 1 : 0)) ||
-    0;
-  const shoot = shootTriggerValue > gpState.tdz;
-  const brake = !!gp.buttons?.[5]?.pressed;
-
-  // A/Cross launch edge
-  const launchNow = !!gp.buttons?.[gamepadButtons.LAUNCH]?.pressed;
-  const launchEdge = launchNow && !gpState.aWas;
-  gpState.aWas = launchNow;
-
-  // Select/Back => pause (roadmap only) per new mapping
-  const pauseNow = !!gp.buttons?.[gamepadButtons.PAUSE]?.pressed;
-  const pauseEdge = pauseNow && !gpState.pauseWas;
-  gpState.pauseWas = pauseNow;
-  if (pauseEdge && state.mode !== "arena") {
+  const gp = gamepad.poll(navigator.getGamepads?.() || [], {
+    active: inputFocused && !document.hidden,
+    gameplayActive: !state.ui.paused,
+  });
+  if (gp.pauseEdge && state.mode !== "arena") {
     if (!state.ui.paused) openPauseOverlay();
     else closePauseOverlay();
   }
-
-  // Start => fullscreen toggle (swapped)
-  const selectNow = !!gp.buttons?.[gamepadButtons.FULLSCREEN]?.pressed;
-  const selectEdge = selectNow && !gpState.selectWas;
-  gpState.selectWas = selectNow;
-  if (selectEdge) toggleFullscreen();
-
-  // Minimap toggle (roadmap only)
-  const minimapButtons = gamepadButtons.MINIMAP_TOGGLE || [];
-  const minimapNow = minimapButtons.some((id) => !!gp.buttons?.[id]?.pressed);
-  const minimapEdge = minimapNow && !gpState.minimapWas;
-  gpState.minimapWas = minimapNow;
-  if (minimapEdge && state.mode !== "arena") {
+  if (gp.fullscreenEdge)
+    toggleFullscreen().then((result) => {
+      if (result && !result.ok) toast(result.message);
+    });
+  if (gp.minimapEdge && state.mode !== "arena")
     state.ui.showMinimap = !state.ui.showMinimap;
-  }
-
-  // Boost hold/toggle (left bumper hold, optional Y toggle retained)
-  const boostHold = !!gp.buttons?.[gamepadButtons.BOOST_HOLD]?.pressed;
-  const boostToggleNow = !!gp.buttons?.[gamepadButtons.BOOST_TOGGLE]?.pressed;
-  const boostToggleEdge = boostToggleNow && !gpState.yWas;
-  gpState.yWas = boostToggleNow;
-  if (boostToggleEdge) gpState.boostToggle = !gpState.boostToggle;
-  const boost = boostHold || gpState.boostToggle;
-
-  return {
-    // Movement booleans
-    thrust: forwardStrength > 0,
-    thrustBack: reverseStrengthRaw > 0,
-    strafeLeft,
-    strafeRight,
-    turnLeft,
-    turnRight,
-    // Analog strengths (turnStrength signed)
-    thrustStrength: forwardStrength,
-    backStrength: reverseStrengthRaw * 0.6,
-    strafeStrength,
-    turnStrength,
-    // Actions
-    boost,
-    shoot,
-    brake,
-    launchEdge,
-  };
+  return gp;
 }
 
 export function pumpInput() {
+  if (!inputFocused || document.hidden) {
+    clearKeys();
+    return;
+  }
   if (
     state.ui.showStartOverlay ||
     state.ui.showSettingsOverlay ||
@@ -404,7 +286,7 @@ export function pumpInput() {
   }
   const gp = pollGamepad();
   if (state.ui.paused) {
-    clearKeys();
+    clearKeys(false);
     return;
   }
 
@@ -467,8 +349,4 @@ export function pumpInput() {
   out.launch = kb._launchEdge || touchLaunchEdge || !!gp?.launchEdge;
   touchLaunchEdge = false;
   kb._launchEdge = false; // consume edge
-}
-
-function applyDZ(v, dz) {
-  return Math.abs(v) < dz ? 0 : v;
 }

@@ -83,6 +83,7 @@ function event(target, type, properties = {}) {
 }
 function reset(locked = false) {
   event(window, "blur");
+  event(window, "focus");
   pads = [];
   state.mode = "roadmap";
   state.arena = null;
@@ -202,4 +203,26 @@ test("keyboard and touch holds are independent; releasing one input does not era
   event(window, "keyup", { key: "w" });
   pumpInput();
   assert.equal(state.keys.thrustStrength, 0);
+});
+
+test('controller pause accepts Back to resume but never queues Y boost while paused', () => {
+  reset();
+  const controller = {index:0,connected:true,axes:[0,0,0],buttons:Array.from({length:17},()=>({value:0,pressed:false}))};
+  pads=[controller];pumpInput();
+  const button=(index,down)=>{controller.buttons[index]={value:down?1:0,pressed:down};pumpInput();};
+  button(8,true);button(8,false);
+  assert.equal(state.ui.paused,true);
+  button(3,true);button(3,false);
+  assert.equal(state.keys.boost,false);
+  button(8,true);button(8,false);
+  assert.equal(state.ui.paused,false);
+  assert.equal(state.keys.boost,false,'Y pressed in pause must not arm boost on resume');
+  button(3,true);button(3,false);
+  assert.equal(state.keys.boost,true,'A new Y press during flight still toggles boost');
+  button(8,true);button(8,false);
+  assert.equal(state.keys.boost,false);
+  button(3,true);button(8,true);button(8,false);
+  assert.equal(state.ui.paused,false);
+  assert.equal(state.keys.boost,false,'Y held through resume must not create a fresh toggle edge');
+  button(3,false);
 });

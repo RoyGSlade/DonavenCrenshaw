@@ -8,6 +8,16 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { WebSocketServer, WebSocket } from "ws";
 import {
+  isMode,
+  modeSeats,
+  voteKey,
+} from "../projects/Space-Shooter/dogfight/modes.js";
+import { isMapId } from "../projects/Space-Shooter/dogfight/maps.js";
+import {
+  cleanLoadout,
+  defaultLoadout,
+} from "../projects/Space-Shooter/dogfight/ships.js";
+import {
   inputControls,
   cleanSnapshot,
 } from "../projects/Space-Shooter/dogfight/protocol.js";
@@ -54,13 +64,21 @@ export async function createDogfightServer({
   let lanSubnet;
   if (lanAddress !== null) {
     const octets = String(lanAddress).split(".").map(Number);
-    const privateIP = isIPv4(lanAddress) && (octets[0] === 10 ||
-      (octets[0] === 172 && octets[1] >= 16 && octets[1] <= 31) ||
-      (octets[0] === 192 && octets[1] === 168));
-    const nic = Object.values(networkInterfaces()).flat().find(n =>
-      n && !n.internal && n.family === "IPv4" && n.address === lanAddress);
+    const privateIP =
+      isIPv4(lanAddress) &&
+      (octets[0] === 10 ||
+        (octets[0] === 172 && octets[1] >= 16 && octets[1] <= 31) ||
+        (octets[0] === 192 && octets[1] === 168));
+    const nic = Object.values(networkInterfaces())
+      .flat()
+      .find(
+        (n) =>
+          n && !n.internal && n.family === "IPv4" && n.address === lanAddress,
+      );
     if (!privateIP || !nic?.cidr)
-      throw new Error("LAN address must be a private IPv4 address assigned to this computer.");
+      throw new Error(
+        "LAN address must be a private IPv4 address assigned to this computer.",
+      );
     lanSubnet = new BlockList();
     lanSubnet.addSubnet(lanAddress, Number(nic.cidr.split("/")[1]), "ipv4");
   }
@@ -167,13 +185,17 @@ export async function createDogfightServer({
     maxPayload: 16384,
     perMessageDeflate: false,
   });
-  if (lanSubnet) server.on("connection", socket => {
-    const local = socket.localAddress;
-    const remote = socket.remoteAddress;
-    const localClient = local === "127.0.0.1" && remote === "127.0.0.1";
-    const lanClient = local === lanAddress && isIPv4(remote || "") && lanSubnet.check(remote, "ipv4");
-    if (!localClient && !lanClient) socket.destroy();
-  });
+  if (lanSubnet)
+    server.on("connection", (socket) => {
+      const local = socket.localAddress;
+      const remote = socket.remoteAddress;
+      const localClient = local === "127.0.0.1" && remote === "127.0.0.1";
+      const lanClient =
+        local === lanAddress &&
+        isIPv4(remote || "") &&
+        lanSubnet.check(remote, "ipv4");
+      if (!localClient && !lanClient) socket.destroy();
+    });
   const send = (socket, message, transient = false) => {
     if (!socket || socket.readyState !== WebSocket.OPEN) return false;
     if (socket.bufferedAmount > 65536) {
@@ -185,16 +207,30 @@ export async function createDogfightServer({
     return true;
   };
   const error = (socket, message) => send(socket, { type: "error", message });
+  const freshVotes = (room) =>
+    Object.fromEntries(room.players.map((_p, id) => [voteKey(id), false]));
+  function roster(room) {
+    const message = {
+      type: "roster",
+      mode: room.mode,
+      capacity: room.capacity,
+      players: room.players.map((_p, playerId) => ({
+        playerId,
+        loadout: room.loadouts[playerId],
+      })),
+    };
+    for (const peer of room.players) send(peer, message);
+  }
   function finish(room, winner, reason) {
     if (room.phase !== "active") return;
     room.phase = "finished";
-    room.votes = { host: false, guest: false };
-    for (const p of [room.host, room.guest])
+    room.votes = freshVotes(room);
+    for (const p of room.players)
       send(p, { type: "result", winner, reason, round: room.round });
     // Ship 0 is the host, ship 1 the guest.
     const won = winner === 0 ? room.host : winner === 1 ? room.guest : null;
     const lost = winner === 0 ? room.guest : winner === 1 ? room.host : null;
-    if (onResult && won?.pilot && lost?.pilot && won.pilot.userId !== lost.pilot.userId) {
+    if (room.mode === "duel" && onResult && won?.pilot && lost?.pilot && won.pilot.userId !== lost.pilot.userId) {
       const result = { winnerId: won.pilot.userId, loserId: lost.pilot.userId, reason: typeof reason === "string" ? reason : "finished" };
       Promise.resolve().then(() => onResult(result)).catch(() => {});
     }
@@ -203,26 +239,35 @@ export async function createDogfightServer({
     const room = socket.room;
     if (!room) return;
     rooms.delete(room.code);
-    for (const peer of [room.host, room.guest]) {
+    for (const peer of room.players) {
       if (!peer) continue;
       peer.room = null;
       peer.role = null;
       peer.idleSince = Date.now();
+      peer.playerId = null;
       if (peer !== socket) send(peer, { type: "closed", reason });
     }
     socket.room = null;
   }
   function start(room) {
+    if (room.players.length !== room.capacity) return;
     room.round++;
     room.phase = "active";
     room.lastTick = -1;
     room.lastSnapshot = Date.now();
     room.lastActivity = Date.now();
-    room.votes = { host: false, guest: false };
-    room.guest.lastSeq = -1;
+    room.votes = freshVotes(room);
+    for (const peer of room.players) peer.lastSeq = -1;
     const seed = randomBytes(4).readUInt32LE();
-    for (const p of [room.host, room.guest])
-      send(p, { type: "start", round: room.round, seed });
+    for (const p of room.players)
+      send(p, {
+        type: "start",
+        round: room.round,
+        seed,
+        loadouts: room.loadouts,
+        mapId: room.mapId,
+        mode: room.mode,
+      });
   }
   server.on("upgrade", (req, socket, head) => {
     const origin = req.headers.origin;
@@ -258,13 +303,14 @@ export async function createDogfightServer({
   wss.on("connection", (socket) => {
     socket.room = null;
     socket.role = null;
+    socket.playerId = null;
     socket.lastSeq = -1;
     socket.tokens = 100;
     socket.rateTime = Date.now();
     socket.actions = [];
     socket.alive = true;
     socket.idleSince = Date.now();
-    send(socket, { type: "hello", version: 1 });
+    send(socket, { type: "hello", version: 2, modes: ["duel", "ffa3"] });
     socket.on("pong", () => {
       socket.alive = true;
     });
@@ -310,7 +356,16 @@ export async function createDogfightServer({
           pilot = null;
         }
         socket.pilot = pilot && typeof pilot.userId === "string" ? { userId: pilot.userId } : null;
+        const loadout = message.loadout === undefined
+          ? defaultLoadout(message.type === "join" ? 1 : 0) : cleanLoadout(message.loadout);
+        if (!loadout) return error(socket, "Choose a valid ship class and body/accent colors.");
         if (message.type === "create") {
+          const mode = message.mode ?? "duel";
+          if (typeof mode !== "string" || !isMode(mode))
+            return error(socket, "Choose duel or ffa3 mode.");
+          const mapId = message.mapId ?? "classic";
+          if (!isMapId(mapId))
+            return error(socket, "Choose a valid arena map.");
           if (rooms.size >= 64)
             return error(socket, "Relay is full. Try again later.");
           let roomCode;
@@ -319,16 +374,33 @@ export async function createDogfightServer({
           } while (rooms.has(roomCode));
           const room = {
             code: roomCode,
+            mapId,
+            mode,
+            capacity: modeSeats(mode),
+            players: [socket],
             host: socket,
             guest: null,
             phase: "waiting",
+            loadouts: [loadout],
             round: 0,
             lastActivity: now,
           };
           rooms.set(roomCode, room);
           socket.room = room;
           socket.role = "host";
-          return send(socket, { type: "room", role: "host", code: roomCode, counted: Boolean(socket.pilot) });
+          socket.playerId = 0;
+          send(socket, {
+            type: "room",
+            role: "host",
+            playerId: 0,
+            code: roomCode,
+            mapId: room.mapId,
+            mode: room.mode,
+            capacity: room.capacity,
+            counted: room.mode === "duel" && Boolean(socket.pilot),
+          });
+          roster(room);
+          return;
         }
         if (
           typeof message.code !== "string" ||
@@ -336,14 +408,36 @@ export async function createDogfightServer({
         )
           return error(socket, "Use the eight-character room code.");
         const room = rooms.get(message.code);
-        if (!room || room.guest || room.phase !== "waiting")
+        if (
+          !room ||
+          room.players.length >= room.capacity ||
+          room.phase !== "waiting"
+        )
           return error(socket, "Room unavailable or already full.");
-        room.guest = socket;
+        const playerId = room.players.length;
+        room.players.push(socket);
+        room.loadouts[playerId] =
+          message.loadout === undefined ? defaultLoadout(playerId) : loadout;
+        // Retain this alias for existing duel tooling; authority comes from the seat array.
+        room.guest = room.players[1];
         socket.room = room;
         socket.role = "guest";
-        send(socket, { type: "room", role: "guest", code: room.code, counted: Boolean(socket.pilot), opponentCounted: Boolean(room.host.pilot) });
-        send(room.host, { type: "opponent", counted: Boolean(socket.pilot) });
-        start(room);
+        socket.playerId = playerId;
+        room.lastActivity = now;
+        send(socket, {
+          type: "room",
+          role: "guest",
+          playerId,
+          code: room.code,
+          mapId: room.mapId,
+          mode: room.mode,
+          capacity: room.capacity,
+          counted: room.mode === "duel" && Boolean(socket.pilot),
+          opponentCounted: room.mode === "duel" && Boolean(room.host.pilot),
+        });
+        if (room.mode === "duel") send(room.host, { type: "opponent", counted: Boolean(socket.pilot) });
+        roster(room);
+        if (room.players.length === room.capacity) start(room);
         return;
       }
       const room = socket.room;
@@ -367,18 +461,31 @@ export async function createDogfightServer({
         socket.lastSeq = message.seq;
         send(
           room.host,
-          { type: "input", controls, seq: message.seq, round: room.round },
+          {
+            type: "input",
+            controls,
+            seq: message.seq,
+            round: room.round,
+            playerId: socket.playerId,
+          },
           true,
         );
         return;
       }
       if (message.type === "snapshot") {
         if (socket !== room.host || room.phase !== "active") return;
-        const state = cleanSnapshot(message.state, room.round);
+        const state = cleanSnapshot(
+          message.state,
+          room.round,
+          room.loadouts,
+          room.mapId,
+          room.mode,
+        );
         if (!state || state.tick <= room.lastTick) return;
         room.lastTick = state.tick;
         room.lastSnapshot = now;
-        send(room.guest, { type: "snapshot", state }, true);
+        for (const peer of room.players.slice(1))
+          send(peer, { type: "snapshot", state }, true);
         if (state.phase === "finished")
           finish(room, state.winner, state.reason);
         return;
@@ -393,10 +500,11 @@ export async function createDogfightServer({
       }
       if (message.type === "rematch") {
         if (room.phase !== "finished" || message.round !== room.round) return;
-        room.votes[socket.role] = true;
-        for (const p of [room.host, room.guest])
+        room.votes[voteKey(socket.playerId)] = true;
+        for (const p of room.players)
           send(p, { type: "votes", votes: room.votes });
-        if (room.votes.host && room.votes.guest) start(room);
+        if (room.players.every((_peer, id) => room.votes[voteKey(id)]))
+          start(room);
         return;
       }
       if (message.type === "leave") {
@@ -476,8 +584,12 @@ if (
     `Relay: ws://127.0.0.1:${relay.port}/relay — no public tunnel configured.`,
   );
   if (process.env.STARDUST_LAN_IP) {
-    console.log(`Home network game: http://${process.env.STARDUST_LAN_IP}:${relay.port}/projects/Space-Shooter/`);
-    console.log("LAN clients are limited to the selected interface and its local subnet.");
+    console.log(
+      `Home network game: http://${process.env.STARDUST_LAN_IP}:${relay.port}/projects/Space-Shooter/`,
+    );
+    console.log(
+      "LAN clients are limited to the selected interface and its local subnet.",
+    );
   }
   for (const signal of ["SIGINT", "SIGTERM"])
     process.once(signal, async () => {

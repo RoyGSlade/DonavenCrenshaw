@@ -1,0 +1,34 @@
+#lobby { width: min(930px, calc(100% - 30px)); display: grid; grid-template-columns: 1fr 1fr; column-gap: 20px; }
+#lobby > * { grid-column: 1 / -1; }
+#lobby .eyebrow { margin: 0 0 6px; }
+#lobby h1 { font-size: 36px; margin: 8px 0 12px; }
+#lobby .intro { margin: 0 0 10px; }
+#lobby #ship-builder { grid-column: 1; min-width: 0; margin: 10px 0; }
+#lobby #map-picker { grid-column: 2; min-width: 0; margin: 10px 0; }
+#map-picker {
+  border: 1px solid var(--line); border-radius: 5px; padding: 14px; margin: 20px 0;
+}
+#map-picker legend { font: 10px Consolas, monospace; letter-spacing: .12em; color: var(--cyan); padding: 0 7px; }
+.map-choices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.map-choices label { position: relative; margin: 0; cursor: pointer; }
+.map-choices input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.map-choices label > span { display: block; background: #08151e; border: 1px solid #304857; border-radius: 4px; overflow: hidden; }
+.map-choices input:checked + span { border-color: var(--cyan); box-shadow: 0 0 0 1px var(--cyan); background: #143333; }
+.map-choices input:focus-visible + span { outline: 2px solid var(--orange); outline-offset: 3px; }
+.map-choices input:disabled + span { cursor: default; }
+.map-choices canvas { position: static; display: block; width: 100%; height: auto; max-height: 84px; object-fit: contain; }
+.map-choices strong { display: block; padding: 6px 3px; text-align: center; font-size: 11px; }
+#map-description { font-size: 12px; line-height: 1.6; margin-bottom: 7px; }
+#map-legend { color: #c4d6dc; line-height: 1.6; }
+#arena-brief { position: fixed; top: 80px; left: 24px; display: flex; flex-direction: column; gap: 5px; align-items: flex-start; width: min(440px, 35%); pointer-events: none; z-index: 4; font: 10px Consolas, monospace; }
+#arena-name { color: var(--cyan); text-transform: uppercase; letter-spacing: .1em; }
+#arena-tip { color: #b7c8d2; }
+@media (max-width: 720px) { #lobby { display: block; } }
+@media (max-width: 600px) {
+  .map-choices { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #arena-brief { top: 268px; left: 3%; width: 94%; align-items: center; text-align: center; gap: 3px; font-size: 9px; }
+}
+@media (orientation: landscape) and (max-height: 600px) {
+  #arena-brief { top: 80px; left: auto; right: 8px; width: 155px; align-items: flex-end; font-size: 9px; }
+  #arena-tip { display: none; }
+}

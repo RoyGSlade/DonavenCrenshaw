@@ -1,0 +1,40 @@
+#ship-builder {
+  margin: 20px 0;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  min-width: 0;
+  background: #091522;
+}
+#ship-builder legend {
+  padding: 0 8px;
+  color: var(--cyan);
+  font: 11px Consolas, monospace;
+  letter-spacing: .12em;
+}
+.ship-classes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.ship-classes label { position: relative; margin: 0; cursor: pointer; }
+.ship-classes input { position: absolute; width: 1px; height: 1px; opacity: 0; padding: 0; }
+.ship-classes span {
+  display: block;
+  padding: 10px 4px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  text-align: center;
+  color: var(--text);
+}
+.ship-classes small { display: block; margin-top: 5px; font-size: 10px; color: var(--muted); }
+.ship-classes input:checked + span { border-color: var(--cyan); background: #15323c; }
+.ship-classes input:focus-visible + span { outline: 2px solid var(--orange); outline-offset: 2px; }
+#ship-builder:disabled { opacity: .7; }
+.ship-workbench { display: grid; grid-template-columns: 1.4fr 1fr; gap: 18px; align-items: center; }
+#ship-preview { width: 100%; height: auto; min-width: 0; }
+.ship-paint output { float: right; font: 10px Consolas, monospace; }
+.ship-paint input[type="color"] { height: 34px; padding: 3px; cursor: pointer; }
+#ship-stats { margin: 0; color: var(--text); font: 11px Consolas, monospace; line-height: 1.6; }
+#ship-lock-note { margin: 7px 0 0; }
+@media (max-width: 420px) {
+  #ship-builder { padding: 10px; }
+  .ship-workbench { gap: 10px; grid-template-columns: 1fr 1fr; }
+  .ship-paint output { float: none; display: block; margin-top: 3px; }
+}

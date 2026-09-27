@@ -1,3 +1,4 @@
+import { rechargeBoost } from '../systems/flight.js';
 // src/roadmap/engine/modes/arena.js
 import { state, config } from '../../state.js';
 import { playMusic, playSoundEffect } from '../../audio.js';
@@ -35,7 +36,7 @@ function updateArenaStep(dt) {
   if (!A.cine) A.cine = null;
 
   // Recharge, heat, etc (kept)
-  A.boost = Math.min(config.BOOST_MAX_PIPS, (A.boost ?? config.BOOST_MAX_PIPS) + (config.BOOST_REGEN_PER_SEC ?? 0.22) * dt);
+  rechargeBoost(A, dt, config);
   A.player.invulnTimer = Math.max(0, A.player.invulnTimer - dt);
 
 

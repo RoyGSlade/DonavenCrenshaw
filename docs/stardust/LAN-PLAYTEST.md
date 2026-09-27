@@ -8,7 +8,7 @@ Keep the laptop awake and connected to Ethernet. Keep the host player's game tab
 
 ## Phone controls
 
-Refresh both phones after the mobile-control update; create a fresh Dogfight room. **GAS / REVERSE** are on the left. **FIRE / BRAKE / BOOST** are stacked from top to bottom on the right. In solo, tap **BOOST** after the countdown to launch from the portal; release and press again to boost during flight. In Dogfight, boost has a two-second cooldown and fires once per press. Gas and fire can be held together.
+Refresh both phones after the mobile-control update; create a fresh Dogfight room. **GAS / REVERSE** are on the left. **FIRE / BRAKE / BOOST** are stacked from top to bottom on the right. In solo, tap **BOOST** after the countdown to launch from the portal; release and press again to boost during flight. Dogfight now uses the solo boost: hold to repeat every 0.25 seconds while flux or pips remain. Standard controllers share solo controls: left stick thrust/reverse/strafe, right stick turn, RT fire, LB/Y boost, RB brake. Gas and fire can be held together.
 
 Use landscape for the wider view. **Fullscreen** requests the entire page, preserving the controls and current camera. Where fullscreen is unsupported, the UI explains the Home Screen fallback. Home Screen metadata and a standalone manifest are included; actual phone installation remains unverified.
 

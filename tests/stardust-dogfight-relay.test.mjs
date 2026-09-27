@@ -249,3 +249,38 @@ test("rounds with a guest, a bad ticket or the same account on both sides report
   assert.deepEqual(guest.results, []);
   assert.equal(guest.room.counted, false);
 });
+
+test("signed-in three-player matches stay casual for every winning seat", async (t) => {
+  const results = [];
+  const server = await createDogfightServer({
+    port: 0,
+    verifyTicket: (ticket) => ({ userId: ticket }),
+    onResult: (result) => results.push(result),
+  });
+  t.after(() => server.close());
+  for (const winner of [0, 1, 2]) {
+    const peers = await Promise.all([client(server), client(server), client(server)]);
+    peers[0].send({ type: "create", mode: "ffa3", mapId: "shatterbelt", ticket: "ace" });
+    const room = await peers[0].take("room");
+    assert.equal(room.counted, false);
+    for (const id of [1, 2]) {
+      peers[id].send({ type: "join", code: room.code, ticket: `pilot-${id}` });
+      const joined = await peers[id].take("room");
+      assert.equal(joined.counted, false);
+      assert.equal(joined.opponentCounted, false);
+    }
+    const start = await peers[0].take("start");
+    const match = createMatch(start.seed, start.round, start.loadouts, start.mapId, start.mode);
+    match.phase = "finished";
+    match.winner = winner;
+    match.reason = "hull";
+    match.ships.forEach((ship, id) => { if (id !== winner) ship.hp = 0; });
+    peers[0].send({ type: "snapshot", state: snapshot(match) });
+    for (const peer of peers) assert.equal((await peer.take("result")).winner, winner);
+    await pause(30);
+    assert.deepEqual(results, []);
+    peers[0].ws.close();
+    await peers[1].take("closed");
+    peers.forEach(peer => peer.ws.close());
+  }
+});

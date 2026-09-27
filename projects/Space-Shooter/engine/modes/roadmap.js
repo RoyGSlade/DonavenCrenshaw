@@ -1,3 +1,4 @@
+import { rechargeBoost } from '../systems/flight.js';
 import { state, config, MAX_LEVEL } from "../../state.js";
 import { createLevelLayout, formatMs } from "../../data.js";
 import { resizeCanvas } from "../../ui/graphics.js";
@@ -62,10 +63,7 @@ export function updateRoadmap(dt) {
   while (remaining > 1e-8) {
     const step = Math.min(1 / 120, remaining);
     remaining -= step;
-    lv.boost = Math.min(
-      config.BOOST_MAX_PIPS,
-      lv.boost + config.BOOST_REGEN_PER_SEC * step,
-    );
+    rechargeBoost(lv, step, config);
     lv.player.invulnTimer = Math.max(0, (lv.player.invulnTimer || 0) - step);
     updateHazards(lv, step);
     if (!lv.lockedInStart) applyGravity(lv.player, lv.gravityWells, step);

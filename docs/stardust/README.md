@@ -1,8 +1,8 @@
-# Stardust overhaul — working build
+# Stardust — current release handoff
 
-The integrated overhaul is on `codex/stardust-overhaul`, based on GitHub `RoyGSlade/DonavenCrenshaw` main at `03da619`, for pull-request review. This change packages the playable game and Hub handoff; it does not change the production route or deploy the game. The existing website redirects the old game URL, and the standalone build keeps this game review separate from that website.
+The public game, relay, accounts and saved solo runs already exist. This follow-up release adds interactive maps, custom hulls, traps, unified controls and three-player Dogfight, integrated on current public `main`. It is held in a PR at the user's request, with no merge or production restart. Follow the [public release handoff](PUBLIC-RELEASE.md) and the companion Hub deployment note.
 
-[PR #5](https://github.com/RoyGSlade/DonavenCrenshaw/pull/5) is the shared code handoff. The current milestone is a playable base for integration testing. The [remaining-work plan](#remaining-work) below is the authoritative priority list; design notes record ideas, not commitments to implement all of them.
+[PR #5](https://github.com/RoyGSlade/DonavenCrenshaw/pull/5) was the original overhaul and is already merged. Earlier verification and roadmap sections below record that original milestone; the release handoff supersedes their public-hosting status. Design notes record ideas, not commitments to implement all of them.
 
 ## Run and build
 
@@ -56,11 +56,23 @@ Phone controls now use left GAS/REVERSE and right FIRE/BRAKE/BOOST, with BOOST l
 
 Run `node scripts/test-stardust-audio-browser.mjs` with the same browser environment for full-file decoding, playhead/slider checks and runtime/source hash comparison. This additional script reads the checked-in audio inspection ledger and creates `evidence/audio-browser.json`.
 
+## Controller and flight parity update
+
+Dogfight now shares the solo gamepad reader, flight physics and primary weapon rules. Standard controller controls, analog relay strengths, flux/pips, hold-to-repeat boost, gun heat and safe disconnect/focus recovery are integrated. Baseline flight is compared frame for frame with single-player; host and guest controller paths are covered by simulated-controller browser tests. See [controls and limitations](DOGFIGHT.md). Physical controller feel remains a playtest item. The coordinated update also includes [custom hulls and paint](CUSTOM-SHIPS.md) and the [laser trap](DOGFIGHT.md#laser-trap-secondary-fire). Medium is the solo-equivalent baseline; Light/Heavy intentionally apply class modifiers.
+
+Validation for controller commit `9b51f69`: 122 checks passed with LAN enabled; five optional browser cases were skipped in that unit run and passed separately (three controller/combat/mobile cases, one trap case, one custom-ship case). Root reran the solo browser smoke without page/resource errors and built an export of the exact staged files successfully. Map modules were excluded from that commit and are integrated in the following update.
+
+## Casual three-player mode
+
+Dogfight now offers **1v1v1 Free-for-all** alongside 1v1: wait for three players, last ship standing, eliminated-player spectating and all-player rematches. The browser host runs the match; the relay keeps temporary room state only, with no rankings or saved match history. [Rules, setup and limitations](FREE-FOR-ALL.md). The [three new interactive arenas](DOGFIGHT-MAPS.md) are available in both modes; three-way balance still needs human playtesting.
+
+Validation: 149 checks passed with LAN enabled, with six optional browser cases skipped in that unit run. Separate browser runs passed the three existing duel cases, the three-map acceptance script, and the new three-client FFA case. FFA verification uses controller inputs and real combat: Violet eliminates the host, the host continues spectating/simulating, Violet wins, all clients agree, and a rematch requires all three votes. The local relay was restarted and a fresh LAN check verified HTTP access, waiting for the third pilot, and three assigned seats. Physical phone feel and play across different networks remain acceptance work.
+
 ## Remaining work
 
 **Recommended next milestone:** launch Stardust from the Hub, complete a casual friend match across two networks, and save one independently verified discovery to the right account. A second device must read that same result, and an unavailable service must leave local play usable. Finish that slice before adding another mode or a large batch of levels.
 
-The following items describe work still to do. The naming change above is complete; these tables do not claim the Hub or public services exist.
+This table was written before public hosting and account integration. ST-01's public route now exists; ST-02's relay exists, with this new protocol deployment and separate-network playtest still pending. Use the release handoff for current shipping status; the remaining physical-device and human-balance work still applies.
 
 ### NOW — make the current base dependable
 

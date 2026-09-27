@@ -52,6 +52,7 @@ test("countdown cannot move or shoot and fixed timestep is enforced", () => {
 });
 test("actual bullets damage opponent and end a round; rematch resets hull", () => {
   const m = active();
+  m.ships[1].x = 20;
   for (let i = 0; i < 240 && m.phase !== "finished"; i++)
     stepMatch(m, [fire, NEUTRAL]);
   assert.equal(m.phase, "finished");
@@ -67,7 +68,8 @@ test("actual bullets damage opponent and end a round; rematch resets hull", () =
 });
 test("obstacle cover absorbs swept projectiles", () => {
   const m = active();
-  m.obstacles = [{ x: 20, y: 12, radius: 1 }];
+  m.ships[1].x = 24;
+  m.obstacles = [{ x: 14, y: 12, radius: 1 }];
   for (let i = 0; i < 240; i++) stepMatch(m, [fire, NEUTRAL]);
   assert.equal(m.ships[1].hp, 100);
   assert.equal(m.phase, "playing");
@@ -75,7 +77,7 @@ test("obstacle cover absorbs swept projectiles", () => {
 test("fast rock collisions resolve outside geometry, damage once, and keep state finite", () => {
   const m = active();
   m.obstacles = [{ x: 8, y: 12, radius: 1 }];
-  Object.assign(m.ships[0], { x: 6.6, y: 12, vx: 10 });
+  Object.assign(m.ships[0], { x: 6.75, y: 12, vx: 10 });
   stepMatch(m, [NEUTRAL, NEUTRAL]);
   assert.ok(m.ships[0].x <= 8 - 1 - RULES.shipRadius);
   assert.equal(m.ships[0].hp, 95);
@@ -209,57 +211,39 @@ test("analog steering is proportional; new controls accept only bounded types an
     for (const value of [1, "true", null])
       assert.equal(inputControls({ ...NEUTRAL, [key]: value }), null);
 });
-test("reverse accelerates opposite the nose while S/brake only damps momentum", () => {
+test("reverse accelerates opposite the nose while braking at rest adds no movement", () => {
   const reverse = active(),
     brake = active();
   for (let i = 0; i < 30; i++) {
     stepMatch(reverse, [{ ...NEUTRAL, reverse: true }, NEUTRAL]);
     stepMatch(brake, [{ ...NEUTRAL, brake: true }, NEUTRAL]);
   }
-  assert.ok(reverse.ships[0].x < 5 && reverse.ships[0].vx < -4);
+  assert.ok(reverse.ships[0].x < 5.7 && reverse.ships[0].vx < -1.4);
   assert.equal(brake.ships[0].x, 6);
   assert.equal(brake.ships[0].vx, 0);
 });
-test("boost waits for GO, has equal bounded impulse and cooldown, and cannot repeat while held", () => {
+test("boost waits for GO, repeats while held using solo flux/pips, and respects the shared speed cap", () => {
   const m = createMatch();
   const boost = { ...NEUTRAL, boost: true };
   while (m.phase === "countdown") stepMatch(m, [boost, boost]);
   assert.equal(m.ships[0].x, 6);
   assert.equal(m.ships[0].boostCooldown, 0);
   stepMatch(m, [boost, boost]);
-  assert.ok(m.ships[0].vx > 5.9 && m.ships[1].vx < -5.9);
-  assert.equal(m.ships[0].boostCooldown, RULES.boostCooldown);
-  assert.equal(m.ships[1].boostCooldown, RULES.boostCooldown);
-  // Eliminate walls/rocks as a confound while checking hold and release semantics.
+  assert.ok(m.ships[0].vx > 3.9 && m.ships[1].vx < -3.9);
+  assert.equal(m.ships[0].boostCooldown, RULES.boostCooldown - RULES.step / 2);
+  assert.equal(m.ships[0].boostCooldown, m.ships[1].boostCooldown);
+  assert.ok(m.ships[0].flux < 11);
   m.obstacles = [];
-  for (let i = 0; i < 130; i++) {
+  for (let i = 0; i < 35; i++) {
     m.ships[0].x = 6;
     m.ships[1].x = 34;
     stepMatch(m, [boost, NEUTRAL]);
-    assert.ok(Math.hypot(m.ships[0].vx, m.ships[0].vy) <= RULES.maxBoostSpeed);
+    assert.ok(Math.hypot(m.ships[0].vx, m.ships[0].vy) <= RULES.maxSpeed);
   }
-  assert.equal(m.ships[0].boostCooldown, 0);
-  assert.ok(m.ships[0].vx < 6, "holding after expiry must not retrigger");
-  stepMatch(m, [NEUTRAL, NEUTRAL]);
-  m.ships[0].vx = 13;
-  stepMatch(m, [boost, NEUTRAL]);
-  assert.equal(m.ships[0].boostCooldown, 2);
-  assert.ok(m.ships[0].vx <= 14 && m.ships[0].vx > 13);
-  stepMatch(m, [NEUTRAL, NEUTRAL]);
-  const prior = m.ships[0].vx;
-  stepMatch(m, [boost, NEUTRAL]);
-  assert.ok(
-    m.ships[0].vx < prior,
-    "press during cooldown must not add impulse",
-  );
-  const data = snapshot(m);
-  assert.ok(cleanSnapshot(data, 1));
-  for (const value of [-1, 2.001, NaN, "0"]) {
-    const bad = structuredClone(data);
-    bad.ships[0].boostCooldown = value;
-    assert.equal(cleanSnapshot(bad, 1), null);
-  }
-  assert.equal(createMatch(1, 2).ships[0].boostCooldown, 0);
+  assert.ok(m.ships[0].vx > 11, "hold must repeat like solo when charges remain");
+  assert.ok(m.ships[0].boost < 2, "repeated boosts must spend pips after flux");
+  assert.ok(cleanSnapshot(snapshot(m), 1));
+  assert.equal(createMatch(1, 2).ships[0].boost, 3);
 });
 test("the published site defaults to the hub's public relay", () => {
   for (const hostname of ["donavencrenshaw.com", "www.donavencrenshaw.com"])

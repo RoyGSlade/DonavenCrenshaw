@@ -61,6 +61,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Stardust simulation, protocol, relay, and account regression tests
+        run: npm run test:stardust
+
       - name: Validate BetterFingers source directly
         run: node scripts/validateProjectSource.mjs --source project-sources/BetterFingers
 
