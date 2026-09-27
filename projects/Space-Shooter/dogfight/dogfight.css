@@ -559,3 +559,13 @@ progress::-moz-progress-bar {
     top: calc(50% + 12px);
   }
 }
+
+#mode-picker { margin: 18px 0; padding: 14px; border: 1px solid var(--line); border-radius: 8px; }
+#mode-picker legend { font: 11px Consolas, monospace; color: var(--cyan); }
+#match-mode { width: 100%; padding: 10px; color: var(--text); background: #0c1b29; border: 1px solid var(--line); border-radius: 4px; }
+.violet { color: #c7a6ff; }
+.violet progress { accent-color: #c7a6ff; }
+.violet progress::-webkit-progress-value { background: #c7a6ff; }
+.violet progress::-moz-progress-bar { background: #c7a6ff; }
+#spectator-status { position: fixed; bottom: 44px; left: 50%; transform: translateX(-50%); z-index: 7; max-width: 90vw; padding: 8px 12px; text-align: center; background: #0b152eee; border: 1px solid #c7a6ff; border-radius: 6px; font: 12px Consolas, monospace; color: #e3d6ff; pointer-events: none; }
+@media (orientation: landscape) and (max-height: 600px) { #spectator-status { bottom: 28px; max-width: 65vw; font-size: 10px; } }

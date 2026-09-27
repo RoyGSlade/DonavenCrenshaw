@@ -54,7 +54,7 @@ export function updateTrapHud(display, ownId, roundEnded) {
   const own = display.ships[ownId];
   const playing = display.phase === "playing" && !roundEnded;
   const ready = own.trapCooldown === 0;
-  const text = !playing ? (roundEnded ? "ROUND OVER" : "WAIT FOR GO") :
+  const text = own.hp <= 0 ? "ELIMINATED" : !playing ? (roundEnded ? "ROUND OVER" : "WAIT FOR GO") :
     ready ? "READY" : `${own.trapCooldown.toFixed(1)}s`;
   document.getElementById("trap-state").textContent = text;
   const button = document.getElementById("trap-button");

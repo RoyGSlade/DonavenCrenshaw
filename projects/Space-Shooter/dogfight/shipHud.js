@@ -2,6 +2,7 @@ import { shipStats } from "./ships.js";
 
 /** Position upright, readable HUDs over the interpolated ships, in screen pixels. */
 export function updateShipHud(display, ownId, { ox, oy, unit, width }) {
+  document.getElementById('ship-health2').hidden = display.ships.length !== 3;
   for (const ship of display.ships) {
     const stats = shipStats(ship);
     const hud = document.getElementById(`ship-health${ship.id}`);

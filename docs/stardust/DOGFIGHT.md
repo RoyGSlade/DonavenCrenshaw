@@ -1,4 +1,4 @@
-# Dogfight V1 — private 1v1 pilot slice
+# Dogfight — casual 1v1 and 1v1v1
 
 ## Run locally
 
@@ -14,13 +14,13 @@ Or run `node scripts/serve-stardust-dogfight.mjs` directly. Open [Dogfight](http
 
 The parent menu links to `./dogfight/`. A main-game preview on port 4173 uses `ws://127.0.0.1:4174/relay` by default. Connection settings are collapsed for local play and open when a published page has no configured relay. On donavencrenshaw.com the default is the hub's public relay, `wss://relay.donavencrenshaw.com/relay`. Any other relay a player picks is saved only in that browser's local storage.
 
-Controls: **W / up** thrust; **A/D / left/right** rotate; **S / down / R** reverse; **Q/E** strafe; **X** brake; **Ctrl / Space** fire; **Shift** boost. Standard controllers use the same solo mapping: **left stick** thrust/reverse/strafe, **right stick X** turn, **RT** fire, **LB** hold boost, **Y** toggle boost, **RB** brake, and **Start** fullscreen. Press a controller button if the browser has not exposed it yet. Phone controls put **GAS / REVERSE** on the left and **FIRE / BRAKE / BOOST** on the right. Small turn buttons remain available. The countdown prevents spawn movement/shooting. The default Medium hull starts at 100, primary weapons deal 50, and the round ends when a hull reaches zero or the three-minute clock expires. At time expiry, remaining hull percentage determines the winner; equal percentages draw. Both pilots must press **Ready for rematch** to begin a fresh round.
+Controls: **W / up** thrust; **A/D / left/right** rotate; **S / down / R** reverse; **Q/E** strafe; **X** brake; **Ctrl / Space** fire; **Shift** boost. Standard controllers use the same solo mapping: **left stick** thrust/reverse/strafe, **right stick X** turn, **RT** fire, **LB** hold boost, **Y** toggle boost, **RB** brake, and **Start** fullscreen. Press a controller button if the browser has not exposed it yet. Phone controls put **GAS / REVERSE** on the left and **FIRE / BRAKE / BOOST** on the right. Small turn buttons remain available. The countdown prevents spawn movement/shooting. The default Medium hull starts at 100, primary weapons deal 50, and the round ends when a hull reaches zero or the three-minute clock expires. At time expiry, remaining hull percentage determines the winner; equal percentages draw. All connected pilots must press **Ready for rematch** to begin a fresh round.
 
-There are two player seats and a mirrored obstacle arena. [Custom ships](CUSTOM-SHIPS.md) offer Light, Medium and Heavy hulls with body/accent paint; Medium preserves solo flight exactly, while Light/Heavy apply documented class multipliers. The baseline collision radius is 0.2112. Primary fire and a rechargeable laser trap are available; health follows each ship. Eight rocks use seeded, mirrored positions with radii from 0.75 to 1.25. New rematches select a fresh deterministic seed.
+Choose two-seat **1v1** or three-seat **1v1v1** before creating a room. See the [free-for-all rules](FREE-FOR-ALL.md) and [arena guide](DOGFIGHT-MAPS.md). [Custom ships](CUSTOM-SHIPS.md) offer Light, Medium and Heavy hulls with body/accent paint; Medium preserves solo flight exactly, while Light/Heavy apply documented class multipliers. The baseline collision radius is 0.2112. Primary fire and a rechargeable laser trap are available; health follows each ship. Eight rocks use seeded, mirrored positions with radii from 0.75 to 1.25. New rematches select a fresh deterministic seed.
 
 ## Architecture and trust
 
-This is a **host-browser-authoritative casual match**, not a ranked or cheat-resistant service. The room creator's browser runs a fixed 60 Hz network tick with two 120 Hz flight/weapon substeps and owns movement, obstacles, bullets, damage, and victory. The guest transmits bounded control inputs at 30 Hz. The host sends sanitized render snapshots at 20 Hz. The guest interpolates roughly 75 ms behind its received snapshots; it does not predict authoritative hits or positions.
+This is a **host-browser-authoritative casual match**, not a ranked or cheat-resistant service. The room creator's browser runs a fixed 60 Hz network tick with two 120 Hz flight/weapon substeps and owns movement, obstacles, bullets, damage, and victory. Each guest transmits bounded control inputs at 30 Hz. The host sends sanitized render snapshots at 20 Hz. The guest interpolates roughly 75 ms behind its received snapshots; it does not predict authoritative hits or positions.
 
 The relay binds host/guest roles to actual WebSocket connections. A guest cannot impersonate the host by adding a role field, send positions, claim damage, or publish accepted snapshots. The host itself remains trusted and can modify its own browser code; therefore these results must not be used for public rankings. Server authority, identity, anti-abuse accounts, and 2v2 pilot/engineer roles are later work.
 
@@ -28,13 +28,13 @@ Dogfight has its own match state and arena rules, and shares pure `engine/system
 
 ## Lifecycle and bounded resources
 
-- Strict two-player rooms; no global room list, player list, chat, account, or public match history.
+- Room capacity is locked to two or three players; no global room list, player list, chat, account, or public match history.
 - Random eight-character invitation codes from cryptographic random bytes. Rooms live only in memory and are lost when the relay restarts.
 - Maximum 64 rooms, 128 WebSocket clients, and 16 successful WebSocket connections per source IP. Behind a proxy every connection shares the proxy's IP. Pass `clientIpHeader` (or set `DOGFIGHT_CLIENT_IP_HEADER`, e.g. `cf-connecting-ip` behind Cloudflare) so the cap applies per visitor; set it only when every connection arrives through that proxy.
 - Maximum incoming WebSocket payload 16 KiB. JSON text only. Per-connection token bucket: 60 messages/second with a 100-message burst. Room attempts limited to 12/minute per connection.
 - Input sequences must increase and match the current round. Unknown control fields and invalid values are rejected. Guest controls become neutral after 350 ms without an accepted input at the host.
 - Outbound transient messages are dropped above 16 KiB of buffered data; above 64 KiB the slow socket is closed. The host sends the latest state rather than building an application-level snapshot queue.
-- Disconnect closes the room, clears controls, ends the match, and returns the surviving pilot to the lobby. Rematch requires both connected pilots.
+- Disconnect closes the room, clears controls, ends the match, and returns the surviving pilot to the lobby. Rematch requires every connected pilot.
 - Hiding the host tab explicitly ends the round. A host frame gap greater than 500 ms also interrupts it. The relay independently interrupts a round after three seconds without an accepted host snapshot. There is no claim that a browser-hosted match keeps simulating reliably in the background.
 - Rooms expire after ten minutes without activity, and both pilots are told. Sockets outside a room are closed after 60 seconds (`idleTimeoutMs`), so idle connections cannot hold slots; the page closes its own socket when a room ends. WebSocket heartbeat detects dead connections.
 

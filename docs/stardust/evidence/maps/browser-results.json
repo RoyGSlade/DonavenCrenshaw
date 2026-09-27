@@ -1,0 +1,573 @@
+{
+  "at": "2026-09-27T08:44:39.709Z",
+  "results": [
+    {
+      "mapId": "shatterbelt",
+      "host": {
+        "mapId": "shatterbelt",
+        "terrain": {
+          "hp": [
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            150,
+            150,
+            0,
+            150,
+            150,
+            150,
+            0,
+            100,
+            100,
+            100,
+            100
+          ],
+          "bursts": []
+        },
+        "role": "host",
+        "playerId": 0,
+        "mode": "duel",
+        "winner": null,
+        "roomCode": "TT2CXR3Y",
+        "round": 1,
+        "phase": "playing",
+        "hull": [
+          100,
+          100
+        ],
+        "ships": [
+          {
+            "id": 0,
+            "x": 6,
+            "y": 12,
+            "angle": 0,
+            "vx": 0,
+            "vy": 0,
+            "hp": 100,
+            "maxHp": 100,
+            "loadout": {
+              "classId": "medium",
+              "bodyColor": "#53687d",
+              "accentColor": "#81e6df"
+            }
+          },
+          {
+            "id": 1,
+            "x": 34,
+            "y": 12,
+            "angle": 3.141592653589793,
+            "vx": 0,
+            "vy": 0,
+            "hp": 100,
+            "maxHp": 100,
+            "loadout": {
+              "classId": "medium",
+              "bodyColor": "#53687d",
+              "accentColor": "#81e6df"
+            }
+          }
+        ],
+        "snapshotsReceived": 0,
+        "inputsSent": 0,
+        "bufferedAmount": 0,
+        "controls": {
+          "turn": 0,
+          "thrust": false,
+          "reverse": false,
+          "thrustStrength": 0,
+          "backStrength": 0,
+          "strafe": 0,
+          "boost": false,
+          "brake": false,
+          "fire": false,
+          "trap": false
+        },
+        "tilt": {
+          "enabled": false,
+          "status": "idle",
+          "message": "Tilt steering is off."
+        },
+        "gamepad": {
+          "index": null,
+          "awaitingNeutral": true,
+          "boostToggle": false
+        },
+        "trapCooldown": 0,
+        "trapLock": 0,
+        "traps": 0,
+        "boostCooldown": 0
+      },
+      "guest": {
+        "mapId": "shatterbelt",
+        "terrain": {
+          "hp": [
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            150,
+            150,
+            0,
+            150,
+            150,
+            150,
+            0,
+            100,
+            100,
+            100,
+            100
+          ],
+          "bursts": []
+        },
+        "role": "guest",
+        "playerId": 1,
+        "mode": "duel",
+        "winner": null,
+        "roomCode": "TT2CXR3Y",
+        "round": 1,
+        "phase": "playing",
+        "hull": [
+          100,
+          100
+        ],
+        "ships": [
+          {
+            "id": 0,
+            "x": 6,
+            "y": 12,
+            "angle": 0,
+            "hp": 100,
+            "maxHp": 100,
+            "loadout": {
+              "classId": "medium",
+              "bodyColor": "#53687d",
+              "accentColor": "#81e6df"
+            }
+          },
+          {
+            "id": 1,
+            "x": 34,
+            "y": 12,
+            "angle": 3.141592653589793,
+            "hp": 100,
+            "maxHp": 100,
+            "loadout": {
+              "classId": "medium",
+              "bodyColor": "#53687d",
+              "accentColor": "#81e6df"
+            }
+          }
+        ],
+        "snapshotsReceived": 110,
+        "inputsSent": 177,
+        "bufferedAmount": 0,
+        "controls": {
+          "turn": 0,
+          "thrust": false,
+          "reverse": false,
+          "thrustStrength": 0,
+          "backStrength": 0,
+          "strafe": 0,
+          "boost": false,
+          "brake": false,
+          "fire": false,
+          "trap": false
+        },
+        "tilt": {
+          "enabled": false,
+          "status": "idle",
+          "message": "Tilt steering is off."
+        },
+        "gamepad": {
+          "index": null,
+          "awaitingNeutral": true,
+          "boostToggle": false
+        },
+        "trapCooldown": 0,
+        "trapLock": 0,
+        "traps": 0,
+        "boostCooldown": 0
+      }
+    },
+    {
+      "mapId": "gravemaw",
+      "host": {
+        "mapId": "gravemaw",
+        "terrain": {
+          "hp": [
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1
+          ],
+          "bursts": []
+        },
+        "role": "host",
+        "playerId": 0,
+        "mode": "duel",
+        "winner": null,
+        "roomCode": "RJHVKKUZ",
+        "round": 1,
+        "phase": "playing",
+        "hull": [
+          100,
+          100
+        ],
+        "ships": [
+          {
+            "id": 0,
+            "x": 6,
+            "y": 12,
+            "angle": 0,
+            "vx": 0,
+            "vy": 0,
+            "hp": 100,
+            "maxHp": 100,
+            "loadout": {
+              "classId": "medium",
+              "bodyColor": "#53687d",
+              "accentColor": "#81e6df"
+            }
+          },
+          {
+            "id": 1,
+            "x": 34,
+            "y": 12,
+            "angle": 3.141592653589793,
+            "vx": 0,
+            "vy": 0,
+            "hp": 100,
+            "maxHp": 100,
+            "loadout": {
+              "classId": "medium",
+              "bodyColor": "#53687d",
+              "accentColor": "#81e6df"
+            }
+          }
+        ],
+        "snapshotsReceived": 0,
+        "inputsSent": 0,
+        "bufferedAmount": 0,
+        "controls": {
+          "turn": 0,
+          "thrust": false,
+          "reverse": false,
+          "thrustStrength": 0,
+          "backStrength": 0,
+          "strafe": 0,
+          "boost": false,
+          "brake": false,
+          "fire": false,
+          "trap": false
+        },
+        "tilt": {
+          "enabled": false,
+          "status": "idle",
+          "message": "Tilt steering is off."
+        },
+        "gamepad": {
+          "index": null,
+          "awaitingNeutral": true,
+          "boostToggle": false
+        },
+        "trapCooldown": 0,
+        "trapLock": 0,
+        "traps": 0,
+        "boostCooldown": 0
+      },
+      "guest": {
+        "mapId": "gravemaw",
+        "terrain": {
+          "hp": [
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1
+          ],
+          "bursts": []
+        },
+        "role": "guest",
+        "playerId": 1,
+        "mode": "duel",
+        "winner": null,
+        "roomCode": "RJHVKKUZ",
+        "round": 1,
+        "phase": "playing",
+        "hull": [
+          100,
+          100
+        ],
+        "ships": [
+          {
+            "id": 0,
+            "x": 6,
+            "y": 12,
+            "angle": 0,
+            "hp": 100,
+            "maxHp": 100,
+            "loadout": {
+              "classId": "medium",
+              "bodyColor": "#53687d",
+              "accentColor": "#81e6df"
+            }
+          },
+          {
+            "id": 1,
+            "x": 34,
+            "y": 12,
+            "angle": 3.141592653589793,
+            "hp": 100,
+            "maxHp": 100,
+            "loadout": {
+              "classId": "medium",
+              "bodyColor": "#53687d",
+              "accentColor": "#81e6df"
+            }
+          }
+        ],
+        "snapshotsReceived": 56,
+        "inputsSent": 90,
+        "bufferedAmount": 0,
+        "controls": {
+          "turn": 0,
+          "thrust": false,
+          "reverse": false,
+          "thrustStrength": 0,
+          "backStrength": 0,
+          "strafe": 0,
+          "boost": false,
+          "brake": false,
+          "fire": false,
+          "trap": false
+        },
+        "tilt": {
+          "enabled": false,
+          "status": "idle",
+          "message": "Tilt steering is off."
+        },
+        "gamepad": {
+          "index": null,
+          "awaitingNeutral": true,
+          "boostToggle": false
+        },
+        "trapCooldown": 0,
+        "trapLock": 0,
+        "traps": 0,
+        "boostCooldown": 0
+      }
+    },
+    {
+      "mapId": "stormworks",
+      "host": {
+        "mapId": "stormworks",
+        "terrain": {
+          "hp": [
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            100,
+            100
+          ],
+          "bursts": []
+        },
+        "role": "host",
+        "playerId": 0,
+        "mode": "duel",
+        "winner": null,
+        "roomCode": "PBY7UAMY",
+        "round": 1,
+        "phase": "playing",
+        "hull": [
+          100,
+          100
+        ],
+        "ships": [
+          {
+            "id": 0,
+            "x": 6,
+            "y": 12,
+            "angle": 0,
+            "vx": 0,
+            "vy": 0,
+            "hp": 100,
+            "maxHp": 100,
+            "loadout": {
+              "classId": "medium",
+              "bodyColor": "#53687d",
+              "accentColor": "#81e6df"
+            }
+          },
+          {
+            "id": 1,
+            "x": 34,
+            "y": 12,
+            "angle": 3.141592653589793,
+            "vx": 0,
+            "vy": 0,
+            "hp": 100,
+            "maxHp": 100,
+            "loadout": {
+              "classId": "medium",
+              "bodyColor": "#53687d",
+              "accentColor": "#81e6df"
+            }
+          }
+        ],
+        "snapshotsReceived": 0,
+        "inputsSent": 0,
+        "bufferedAmount": 0,
+        "controls": {
+          "turn": 0,
+          "thrust": false,
+          "reverse": false,
+          "thrustStrength": 0,
+          "backStrength": 0,
+          "strafe": 0,
+          "boost": false,
+          "brake": false,
+          "fire": false,
+          "trap": false
+        },
+        "tilt": {
+          "enabled": false,
+          "status": "idle",
+          "message": "Tilt steering is off."
+        },
+        "gamepad": {
+          "index": null,
+          "awaitingNeutral": true,
+          "boostToggle": false
+        },
+        "trapCooldown": 0,
+        "trapLock": 0,
+        "traps": 0,
+        "boostCooldown": 0
+      },
+      "guest": {
+        "mapId": "stormworks",
+        "terrain": {
+          "hp": [
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            100,
+            100
+          ],
+          "bursts": []
+        },
+        "role": "guest",
+        "playerId": 1,
+        "mode": "duel",
+        "winner": null,
+        "roomCode": "PBY7UAMY",
+        "round": 1,
+        "phase": "playing",
+        "hull": [
+          100,
+          100
+        ],
+        "ships": [
+          {
+            "id": 0,
+            "x": 6,
+            "y": 12,
+            "angle": 0,
+            "hp": 100,
+            "maxHp": 100,
+            "loadout": {
+              "classId": "medium",
+              "bodyColor": "#53687d",
+              "accentColor": "#81e6df"
+            }
+          },
+          {
+            "id": 1,
+            "x": 34,
+            "y": 12,
+            "angle": 3.141592653589793,
+            "hp": 100,
+            "maxHp": 100,
+            "loadout": {
+              "classId": "medium",
+              "bodyColor": "#53687d",
+              "accentColor": "#81e6df"
+            }
+          }
+        ],
+        "snapshotsReceived": 174,
+        "inputsSent": 283,
+        "bufferedAmount": 0,
+        "controls": {
+          "turn": 0,
+          "thrust": false,
+          "reverse": false,
+          "thrustStrength": 0,
+          "backStrength": 0,
+          "strafe": 0,
+          "boost": false,
+          "brake": false,
+          "fire": false,
+          "trap": false
+        },
+        "tilt": {
+          "enabled": false,
+          "status": "idle",
+          "message": "Tilt steering is off."
+        },
+        "gamepad": {
+          "index": null,
+          "awaitingNeutral": true,
+          "boostToggle": false
+        },
+        "trapCooldown": 0,
+        "trapLock": 0,
+        "traps": 0,
+        "boostCooldown": 0
+      }
+    }
+  ],
+  "errors": []
+}

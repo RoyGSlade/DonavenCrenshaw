@@ -1,3 +1,4 @@
+import { PILOT_COLORS } from "./modes.js";
 /** Shared loadout rules. Clients choose a class and paint, never their own stats. */
 import { FLIGHT_CONFIG } from "../engine/systems/flight.js";
 const makeClass = (name, role, hp, speed, thrust, turn, scale) => Object.freeze({
@@ -19,7 +20,7 @@ export function shipFlightConfig(ship) {
 }
 export const LOADOUT_STORAGE_KEY = "stardust.dogfight.ship.v1";
 export function defaultLoadout(pilot = 0) {
-  return { classId: "medium", bodyColor: "#53687d", accentColor: pilot === 1 ? "#ffad72" : "#81e6df" };
+  return { classId: "medium", bodyColor: "#53687d", accentColor: PILOT_COLORS[pilot] || PILOT_COLORS[0] };
 }
 export function cleanLoadout(value) {
   if (!value || typeof value !== "object" || Array.isArray(value) || !Object.hasOwn(SHIP_CLASSES, value.classId) ||

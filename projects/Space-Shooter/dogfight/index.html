@@ -18,6 +18,7 @@
       href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath fill='%2381e6df' d='M16 1 30 30 16 23 2 30Z'/%3E%3C/svg%3E"
     />
     <link rel="stylesheet" href="./dogfight.css" />
+    <link rel="stylesheet" href="./maps.css" />
     <link rel="stylesheet" href="./shipBuilder.css" />
   </head>
   <body>
@@ -28,7 +29,7 @@
     ></canvas>
     <header>
       <a href="../" id="back">← STARDUST</a
-      ><strong>DOGFIGHT <span>/ 1v1</span></strong
+      ><strong>DOGFIGHT <span id="mode-label">/ 1v1</span></strong
       ><button id="leave" hidden>Leave room</button>
     </header>
     <div id="match-hud" hidden>
@@ -45,6 +46,11 @@
         <progress id="bar1" aria-label="Pilot 2 hull" max="100" value="100"></progress>
         <span id="lock1" class="lock-state"></span>
       </div>
+      <div id="ship-health2" class="ship-health violet" hidden>
+        <span id="pilot2">P3</span> <b id="hp2">100 / 100</b>
+        <progress id="bar2" aria-label="Pilot 3 hull" max="100" value="100"></progress>
+        <span id="lock2" class="lock-state"></span>
+      </div>
     </div>
     <div id="trap-hud" hidden aria-label="Laser trap recharge">
       <span id="trap-hud-state">{-} TRAP · READY</span>
@@ -53,11 +59,20 @@
     </div>
     <main id="lobby" class="panel">
       <p class="eyebrow">FRIEND CHALLENGE / CASUAL PLAY</p>
-      <h1>One arena.<br />Two pilots.</h1>
+      <h1>Pick your battlefield.</h1>
       <p class="intro">
         Pick your hull. Make it yours. Use momentum and cover to break their line of
         fire. Land a laser trap to briefly lock their movement — then follow up.
       </p>
+      <fieldset id="mode-picker">
+        <legend>HOST CHOOSES THE MODE</legend>
+        <label for="match-mode">Players</label>
+        <select id="match-mode">
+          <option value="duel">1v1 · Duel</option>
+          <option value="ffa3">1v1v1 · Free-for-all</option>
+        </select>
+        <p class="small">Free-for-all starts with three pilots. Last ship standing wins. No rankings or saved match history. Joining uses the host's mode.</p>
+      </fieldset>
       <fieldset id="ship-builder" aria-describedby="ship-lock-note">
         <legend>YOUR SHIP</legend>
         <div class="ship-classes" role="group" aria-label="Ship class">
@@ -76,6 +91,13 @@
         </div>
         <p id="ship-stats" aria-live="polite"></p>
         <p id="ship-lock-note" class="small">Saved on this device. Ship locks when you create or join a room.</p>
+      </fieldset>
+      <fieldset id="map-picker">
+        <legend>HOST CHOOSES THE ARENA</legend>
+        <div class="map-choices"></div>
+        <p id="map-description" aria-live="polite"></p>
+        <p id="map-legend" class="small"></p>
+        <p class="small">Joining uses your friend's arena. Rematches keep the map and rebuild all cover.</p>
       </fieldset>
       <details id="connection-settings">
         <summary>Connection settings</summary>
@@ -105,8 +127,8 @@
       <div id="waiting" hidden>
         <span class="small">YOUR ROOM CODE</span
         ><strong id="share-code"></strong><button id="copy">Copy code</button>
-        <p>
-          Send this code to your friend. Waiting for pilot two…
+        <p id="waiting-status">
+          Send this code to your friends so they can join.
         </p>
       </div>
       <p id="status" role="status" aria-live="polite">
@@ -117,12 +139,14 @@
         · <b>X</b> brake · <b>CTRL / SPACE</b> fire · <b>SHIFT</b> boost · <b>F / LT</b> trap<br />
         Trap: 12s recharge · 0.85s movement lock · cover blocks it · trapped pilots can fire back.<br />
         Controller: left stick thrust/reverse/strafe, right stick turn, RT fire,
-        RB brake, LB hold boost or Y toggle, Start fullscreen. Both pilots must
+        RB brake, LB hold boost or Y toggle, Start fullscreen. All pilots must
         keep the match open. If the host tab hides or stalls, the round ends.
       </div>
-      <p id="account-line" class="small limits">Private matches. Wins count on your account when both pilots are signed in.</p>
+      <p id="account-line" class="small limits">Duels count on your account when both pilots are signed in. Three-player matches are casual.</p>
     </main>
     <div id="countdown" hidden role="status"></div>
+    <div id="spectator-status" hidden role="status"></div>
+    <div id="arena-brief" hidden><strong id="arena-name"></strong><span id="arena-tip"></span></div>
     <section id="result" class="panel" hidden aria-labelledby="result-title">
       <p class="eyebrow">ROUND COMPLETE</p>
       <h2 id="result-title"></h2>

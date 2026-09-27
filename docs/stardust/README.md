@@ -60,7 +60,13 @@ Run `node scripts/test-stardust-audio-browser.mjs` with the same browser environ
 
 Dogfight now shares the solo gamepad reader, flight physics and primary weapon rules. Standard controller controls, analog relay strengths, flux/pips, hold-to-repeat boost, gun heat and safe disconnect/focus recovery are integrated. Baseline flight is compared frame for frame with single-player; host and guest controller paths are covered by simulated-controller browser tests. See [controls and limitations](DOGFIGHT.md). Physical controller feel remains a playtest item. The coordinated update also includes [custom hulls and paint](CUSTOM-SHIPS.md) and the [laser trap](DOGFIGHT.md#laser-trap-secondary-fire). Medium is the solo-equivalent baseline; Light/Heavy intentionally apply class modifiers.
 
-Validation for this update: 122 checks passed with LAN enabled; five optional browser cases were skipped in that unit run and passed separately (three controller/combat/mobile cases, one trap case, one custom-ship case). Root reran the solo browser smoke without page/resource errors and built an export of the exact staged files successfully. Unfinished map modules are excluded from this commit.
+Validation for controller commit `9b51f69`: 122 checks passed with LAN enabled; five optional browser cases were skipped in that unit run and passed separately (three controller/combat/mobile cases, one trap case, one custom-ship case). Root reran the solo browser smoke without page/resource errors and built an export of the exact staged files successfully. Map modules were excluded from that commit and are integrated in the following update.
+
+## Casual three-player mode
+
+Dogfight now offers **1v1v1 Free-for-all** alongside 1v1: wait for three players, last ship standing, eliminated-player spectating and all-player rematches. The browser host runs the match; the relay keeps temporary room state only, with no rankings or saved match history. [Rules, setup and limitations](FREE-FOR-ALL.md). The [three new interactive arenas](DOGFIGHT-MAPS.md) are available in both modes; three-way balance still needs human playtesting.
+
+Validation: 149 checks passed with LAN enabled, with six optional browser cases skipped in that unit run. Separate browser runs passed the three existing duel cases, the three-map acceptance script, and the new three-client FFA case. FFA verification uses controller inputs and real combat: Violet eliminates the host, the host continues spectating/simulating, Violet wins, all clients agree, and a rematch requires all three votes. The local relay was restarted and a fresh LAN check verified HTTP access, waiting for the third pilot, and three assigned seats. Physical phone feel and play across different networks remain acceptance work.
 
 ## Remaining work
 

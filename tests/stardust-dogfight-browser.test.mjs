@@ -38,6 +38,8 @@ test(
     for (const page of [host, guest]) {
       page.setDefaultTimeout(8000);
       page.on("pageerror", (e) => errors.push(e.message));
+      await page.addInitScript(() => localStorage.setItem("stardust.dogfight.map", "classic"));
+
       await page.goto(
         `http://127.0.0.1:${server.port}/projects/Space-Shooter/dogfight/`,
       );
@@ -210,6 +212,8 @@ test(
     );
     for (const page of [host, guest]) {
       page.on("pageerror", (error) => errors.push(error.message));
+      await page.addInitScript(() => localStorage.setItem("stardust.dogfight.map", "classic"));
+
       await page.goto(
         `http://127.0.0.1:${server.port}/projects/Space-Shooter/dogfight/`,
       );
@@ -413,6 +417,8 @@ test(
           value: () => window.__pads,
         });
       });
+      await page.addInitScript(() => localStorage.setItem("stardust.dogfight.map", "classic"));
+
       await page.goto(
         `http://127.0.0.1:${server.port}/projects/Space-Shooter/dogfight/`,
       );

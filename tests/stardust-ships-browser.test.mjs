@@ -16,6 +16,7 @@ test("custom ships: saved paint, distinct hulls, two-client damage, moving HP an
   const url = `http://127.0.0.1:${server.port}/projects/Space-Shooter/dogfight/`;
   for (const page of [host,guest]) {
     page.on("pageerror",e=>errors.push(e.message));
+    await page.addInitScript(() => localStorage.setItem("stardust.dogfight.map", "classic"));
     await page.goto(url);
   }
   const choose = async (page,index,body,accent) => {
