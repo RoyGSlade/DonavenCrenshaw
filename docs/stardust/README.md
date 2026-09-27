@@ -1,8 +1,8 @@
-# Stardust overhaul — working build
+# Stardust — current release handoff
 
-The integrated overhaul is on `codex/stardust-overhaul`, based on GitHub `RoyGSlade/DonavenCrenshaw` main at `03da619`, for pull-request review. This change packages the playable game and Hub handoff; it does not change the production route or deploy the game. The existing website redirects the old game URL, and the standalone build keeps this game review separate from that website.
+The public game, relay, accounts and saved solo runs already exist. This follow-up release adds interactive maps, custom hulls, traps, unified controls and three-player Dogfight, integrated on current public `main`. It is held in a PR at the user's request, with no merge or production restart. Follow the [public release handoff](PUBLIC-RELEASE.md) and the companion Hub deployment note.
 
-[PR #5](https://github.com/RoyGSlade/DonavenCrenshaw/pull/5) is the shared code handoff. The current milestone is a playable base for integration testing. The [remaining-work plan](#remaining-work) below is the authoritative priority list; design notes record ideas, not commitments to implement all of them.
+[PR #5](https://github.com/RoyGSlade/DonavenCrenshaw/pull/5) was the original overhaul and is already merged. Earlier verification and roadmap sections below record that original milestone; the release handoff supersedes their public-hosting status. Design notes record ideas, not commitments to implement all of them.
 
 ## Run and build
 
@@ -72,7 +72,7 @@ Validation: 149 checks passed with LAN enabled, with six optional browser cases 
 
 **Recommended next milestone:** launch Stardust from the Hub, complete a casual friend match across two networks, and save one independently verified discovery to the right account. A second device must read that same result, and an unavailable service must leave local play usable. Finish that slice before adding another mode or a large batch of levels.
 
-The following items describe work still to do. The naming change above is complete; these tables do not claim the Hub or public services exist.
+This table was written before public hosting and account integration. ST-01's public route now exists; ST-02's relay exists, with this new protocol deployment and separate-network playtest still pending. Use the release handoff for current shipping status; the remaining physical-device and human-balance work still applies.
 
 ### NOW — make the current base dependable
 

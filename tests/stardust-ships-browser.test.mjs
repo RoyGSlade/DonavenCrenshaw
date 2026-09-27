@@ -17,7 +17,9 @@ test("custom ships: saved paint, distinct hulls, two-client damage, moving HP an
   for (const page of [host,guest]) {
     page.on("pageerror",e=>errors.push(e.message));
     await page.addInitScript(() => localStorage.setItem("stardust.dogfight.map", "classic"));
-    await page.goto(url);
+    // Keep local gameplay QA independent of the public account service.
+      await page.route("https://api.donavencrenshaw.com/**", route => route.fulfill({ json: { user: null } }));
+      await page.goto(url);
   }
   const choose = async (page,index,body,accent) => {
     await page.locator(".ship-classes label").nth(index).click();

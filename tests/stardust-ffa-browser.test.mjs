@@ -70,6 +70,8 @@ test(
           value: () => [window.__testPad],
         });
       });
+      // Keep local gameplay QA independent of the public account service.
+      await page.route("https://api.donavencrenshaw.com/**", route => route.fulfill({ json: { user: null } }));
       await page.goto(
         `http://127.0.0.1:${server.port}/projects/Space-Shooter/dogfight/`,
       );

@@ -14,7 +14,7 @@ All four current arenas support the mode. Three fixed triangular starts are chec
 
 ## Hosting and records
 
-The creator's browser owns the simulation. The existing WebSocket relay forwards input/snapshots and keeps only temporary rooms, chosen ships/maps, ready votes and the current round result in memory. There are no accounts, rankings, persistent match records or leaderboard writes. This mode still requires the relay to be reachable by all three browsers; it is not a serverless peer-to-peer connection.
+The creator's browser owns the simulation. The existing WebSocket relay forwards input/snapshots and keeps temporary rooms, chosen ships/maps, ready votes and the current round result in memory. Signed-in users can play, but three-player results never write account stats, persistent match records or rankings. Signed-in duel results retain the existing Hub integration. This mode still requires the relay to be reachable by all three browsers; it is not a serverless peer-to-peer connection.
 
 The relay assigns player IDs from the actual sockets, maintains separate input sequences, and locks the mode/capacity when the room is created. A fourth player is refused. Snapshots must contain exactly the room's ship count and bounded owners/winners. A trusted host can modify its own simulation, so the mode remains casual.
 

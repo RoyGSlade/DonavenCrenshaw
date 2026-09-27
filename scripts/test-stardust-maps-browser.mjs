@@ -21,6 +21,8 @@ try {
       page.on("pageerror", e => errors.push(e.message));
       page.on("console", m => { if (m.type() === "error") errors.push(m.text()); });
       page.on("response", r => { if (r.status() >= 400) errors.push(`${r.status()} ${r.url()}`); });
+      // Keep local gameplay QA independent of the public account service.
+      await page.route("https://api.donavencrenshaw.com/**", route => route.fulfill({ json: { user: null } }));
       await page.goto(`http://127.0.0.1:${server.port}/projects/Space-Shooter/dogfight/`);
       await page.evaluate(async () => { window.diag = (await import("./client.js")).getDiagnostics; });
       await page.locator("#connection-settings summary").click();

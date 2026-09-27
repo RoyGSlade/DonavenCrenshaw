@@ -40,6 +40,8 @@ test(
       page.on("pageerror", (e) => errors.push(e.message));
       await page.addInitScript(() => localStorage.setItem("stardust.dogfight.map", "classic"));
 
+      // Keep local gameplay QA independent of the public account service.
+      await page.route("https://api.donavencrenshaw.com/**", route => route.fulfill({ json: { user: null } }));
       await page.goto(
         `http://127.0.0.1:${server.port}/projects/Space-Shooter/dogfight/`,
       );
@@ -214,6 +216,8 @@ test(
       page.on("pageerror", (error) => errors.push(error.message));
       await page.addInitScript(() => localStorage.setItem("stardust.dogfight.map", "classic"));
 
+      // Keep local gameplay QA independent of the public account service.
+      await page.route("https://api.donavencrenshaw.com/**", route => route.fulfill({ json: { user: null } }));
       await page.goto(
         `http://127.0.0.1:${server.port}/projects/Space-Shooter/dogfight/`,
       );
@@ -419,6 +423,8 @@ test(
       });
       await page.addInitScript(() => localStorage.setItem("stardust.dogfight.map", "classic"));
 
+      // Keep local gameplay QA independent of the public account service.
+      await page.route("https://api.donavencrenshaw.com/**", route => route.fulfill({ json: { user: null } }));
       await page.goto(
         `http://127.0.0.1:${server.port}/projects/Space-Shooter/dogfight/`,
       );

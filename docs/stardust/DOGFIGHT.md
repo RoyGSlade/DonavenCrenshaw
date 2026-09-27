@@ -2,7 +2,7 @@
 
 ## Run locally
 
-For the current phone playtest, use the [home-network setup](LAN-PLAYTEST.md). The live link is `http://192.168.1.15:4174/projects/Space-Shooter/`; both phones select the same relay automatically.
+For a local phone playtest, use the [home-network setup](LAN-PLAYTEST.md). The current public game is at https://donavencrenshaw.com/games/stardust/dogfight/. The maps/three-player release is held for coordinated website and relay deployment; see [release handoff](PUBLIC-RELEASE.md).
 
 From the repository root:
 
@@ -22,7 +22,7 @@ Choose two-seat **1v1** or three-seat **1v1v1** before creating a room. See the 
 
 This is a **host-browser-authoritative casual match**, not a ranked or cheat-resistant service. The room creator's browser runs a fixed 60 Hz network tick with two 120 Hz flight/weapon substeps and owns movement, obstacles, bullets, damage, and victory. Each guest transmits bounded control inputs at 30 Hz. The host sends sanitized render snapshots at 20 Hz. The guest interpolates roughly 75 ms behind its received snapshots; it does not predict authoritative hits or positions.
 
-The relay binds host/guest roles to actual WebSocket connections. A guest cannot impersonate the host by adding a role field, send positions, claim damage, or publish accepted snapshots. The host itself remains trusted and can modify its own browser code; therefore these results must not be used for public rankings. Server authority, identity, anti-abuse accounts, and 2v2 pilot/engineer roles are later work.
+The relay binds host/guest roles to actual WebSocket connections. A guest cannot impersonate the host by adding a role field, send positions, claim damage, or publish accepted snapshots. The host itself remains trusted and can modify its own browser code; therefore these results must not be used for competitive rankings. Existing Hub tickets identify signed-in duel pilots for casual account stats; three-player matches never persist results. Server-authoritative simulation, stronger anti-abuse protections, and 2v2 pilot/engineer roles remain later work.
 
 Dogfight has its own match state and arena rules, and shares pure `engine/systems/flight.js`, `engine/systems/weapons.js`, and `systems/gamepad.js` with single-player. The baseline ship uses the exact same thrust, reverse/strafe strengths, steering inertia, drag, speed cap, flux braking, boost recharge, gun heat, firing cadence, muzzle offset and inherited projectile velocity. It uses unlimited propulsion fuel like the solo boss arena. Arena geometry, collision damage and network interpolation remain mode-specific. Dogfight currently has no dedicated music or audio mix.
 

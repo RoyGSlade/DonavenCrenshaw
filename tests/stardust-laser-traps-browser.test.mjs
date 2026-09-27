@@ -30,7 +30,9 @@ test("two browsers: keyboard/touch traps, shared locks, movement release, cooldo
     page.on("pageerror", e => errors.push(e.message));
     page.on("response", response => { if (response.status() >= 400) failedResources.push(response.url()); });
     await page.addInitScript(() => localStorage.setItem("stardust.dogfight.map", "classic"));
-    await page.goto(`http://127.0.0.1:${server.port}/projects/Space-Shooter/dogfight/`);
+    // Keep local gameplay QA independent of the public account service.
+      await page.route("https://api.donavencrenshaw.com/**", route => route.fulfill({ json: { user: null } }));
+      await page.goto(`http://127.0.0.1:${server.port}/projects/Space-Shooter/dogfight/`);
     await page.evaluate(async () => { window.__trapDiag = (await import("./client.js")).getDiagnostics; });
     await page.locator("#connection-settings").evaluate(node => { node.open = true; });
     await page.locator("#relay-url").fill(`ws://127.0.0.1:${server.port}/relay`);
