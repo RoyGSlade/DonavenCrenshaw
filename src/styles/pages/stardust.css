@@ -183,3 +183,9 @@
   .sd-date { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { .sd-cta, .sd-shot img { transition: none; } .sd-shot a:hover img { transform: none; } }
+
+/* Custom track: countdown until release, then Play and its own board tab */
+.sd-page [hidden] { display: none !important; }
+.sd-page .sd-custom-status { margin: 18px 0 0; font: .8rem var(--font-mono); letter-spacing: .06em; color: var(--sd-muted); }
+.sd-custom-status strong { color: var(--sd-ice); font-weight: 600; font-variant-numeric: tabular-nums; }
+.sd-custom .sd-actions { margin: 18px 0 0; }

@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#070d17">
+  <title>Stardust — Custom track editor</title>
+  <meta name="description" content="Unlisted tool for drawing and checking the Stardust custom track.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath fill='%2381e6df' d='M16 1 30 30 16 23 2 30Z'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="./editor/editor.css">
+</head>
+<body>
+  <main class="ed" id="main">
+    <header class="ed-head">
+      <p class="ed-eyebrow">STARDUST / UNLISTED TOOL</p>
+      <h1>Custom track editor</h1>
+      <p class="ed-lede">Draw the custom track on the 48 × 32 grid. It is checked with the same rules and scripted test pilot as the five circuits. When it passes, export it into <code>tracks/custom-track.js</code>.</p>
+      <p class="ed-links"><a href="./">← Hangar</a> <a href="./?preview=custom">Preview the shipped custom track</a></p>
+    </header>
+
+    <div class="ed-layout">
+      <section class="ed-stage" aria-labelledby="ed-grid-title">
+        <h2 id="ed-grid-title" class="ed-h2">Grid</h2>
+        <div class="ed-toolbar">
+          <fieldset class="ed-tools">
+            <legend>Tool</legend>
+            <label><input type="radio" name="tool" value="points" checked> Points</label>
+            <label><input type="radio" name="tool" value="apex"> Apex corners</label>
+            <label><input type="radio" name="tool" value="rocks"> Rocks</label>
+          </fieldset>
+          <label class="ed-check"><input type="checkbox" id="ed-snap" checked> Snap to ½ cell</label>
+          <button type="button" id="ed-undo" disabled>Undo</button>
+        </div>
+        <div class="ed-canvas-wrap">
+          <canvas id="ed-canvas" width="960" height="640" tabindex="0" aria-describedby="ed-hint">Track grid: this editor needs a browser with canvas support.</canvas>
+        </div>
+        <p id="ed-hint" class="ed-hint">Points: click to add the next point (after the selected one), drag to move, select and press Delete to remove. Point 0 is the start portal; the lap runs in point order. Arrow keys nudge the selected point.</p>
+        <div id="ed-selected" class="ed-selected" aria-live="polite"></div>
+      </section>
+
+      <div class="ed-side">
+        <section class="ed-card" aria-labelledby="ed-checks-title">
+          <h2 id="ed-checks-title" class="ed-h2">Checks</h2>
+          <p id="ed-status" class="ed-status" role="status">Checking…</p>
+          <ul id="ed-problems" class="ed-problems"></ul>
+          <p id="ed-pilot" class="ed-pilot"></p>
+        </section>
+
+        <section class="ed-card" aria-labelledby="ed-details-title">
+          <h2 id="ed-details-title" class="ed-h2">Details</h2>
+          <label class="ed-field">Title <input id="ed-title" type="text" maxlength="60" autocomplete="off"></label>
+          <label class="ed-field">Release time (ISO 8601 with offset) <input id="ed-release" type="text" maxlength="40" placeholder="2026-09-29T19:00:00-07:00" autocomplete="off" spellcheck="false"></label>
+          <p id="ed-release-note" class="ed-note"></p>
+          <label class="ed-field">Lane width <span id="ed-width-value">6.4</span><input id="ed-width" type="range" min="5.8" max="8" step="0.1" value="6.4"></label>
+          <div class="ed-row">
+            <label class="ed-field">Music <select id="ed-music"><option value="level1">Alpha Relay</option><option value="level2">Beacon Prime</option><option value="level3">Dustfall Station</option><option value="level4">Nether Crossing</option><option value="level5">Iron Veil</option></select></label>
+            <label class="ed-field">Board version <input id="ed-version" type="number" min="1" step="1" value="1"></label>
+          </div>
+          <label class="ed-check"><input type="checkbox" id="ed-placeholder"> Placeholder (keeps the track locked even after its release time)</label>
+          <details class="ed-more"><summary>Briefing text (optional)</summary>
+            <label class="ed-field">Landmark <input id="ed-landmark" type="text" maxlength="80" autocomplete="off"></label>
+            <label class="ed-field">Lesson (shown while flying) <input id="ed-lesson" type="text" maxlength="200" autocomplete="off"></label>
+            <label class="ed-field">Signal text (shown on each apex) <input id="ed-rumor" type="text" maxlength="200" autocomplete="off"></label>
+          </details>
+          <p id="ed-extras" class="ed-note" hidden></p>
+        </section>
+
+        <section class="ed-card" aria-labelledby="ed-import-title">
+          <h2 id="ed-import-title" class="ed-h2">Start from</h2>
+          <div class="ed-actions">
+            <button type="button" id="ed-load-current">Current custom track</button>
+            <button type="button" id="ed-load-blank">Blank grid</button>
+          </div>
+          <label class="ed-field">Or paste a track (the exported JSON or a custom-track.js file) <textarea id="ed-import-text" rows="4" spellcheck="false"></textarea></label>
+          <div class="ed-actions"><button type="button" id="ed-import">Import pasted track</button></div>
+          <p id="ed-import-note" class="ed-note" role="status"></p>
+        </section>
+
+        <section class="ed-card" aria-labelledby="ed-export-title">
+          <h2 id="ed-export-title" class="ed-h2">Export</h2>
+          <div class="ed-actions">
+            <button type="button" id="ed-copy-js" class="ed-primary">Copy custom-track.js</button>
+            <button type="button" id="ed-copy-json">Copy JSON</button>
+            <button type="button" id="ed-test-fly">Test fly this layout ↗</button>
+          </div>
+          <p id="ed-export-note" class="ed-note" role="status"></p>
+          <textarea id="ed-export" class="ed-export" rows="10" readonly spellcheck="false" aria-label="Exported custom-track.js"></textarea>
+          <details class="ed-more" open>
+            <summary>How to publish your track</summary>
+            <ol class="ed-steps">
+              <li>Get every check above to pass (green), including the test pilot.</li>
+              <li><strong>Test fly</strong> it: it opens the game with <code>?preview=custom&amp;draft=1</code>, flying this draft from this browser. Nothing is saved.</li>
+              <li>Set the release time and untick <em>Placeholder</em>.</li>
+              <li><strong>Copy custom-track.js</strong> and paste it over <code>projects/Space-Shooter/tracks/custom-track.js</code>.</li>
+              <li>Run <code>node --test tests/stardust-custom-track*.test.mjs</code> (they run the same checks and the scripted lap), then the full suite.</li>
+              <li>Open a PR. Once it's merged and deployed, the hangar and the Stardust page count down to the release time, then open it.</li>
+            </ol>
+            <p class="ed-note">Changing the layout after people have set times? Bump the board version here and in the hub's <code>rules.json</code>. Full notes: <code>docs/stardust/CUSTOM-TRACK.md</code>.</p>
+          </details>
+        </section>
+      </div>
+    </div>
+  </main>
+  <script type="module" src="./editor/editor.js"></script>
+</body>
+</html>

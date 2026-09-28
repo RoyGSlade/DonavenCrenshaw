@@ -4,6 +4,9 @@ import { marked } from 'marked';
 import matter from 'gray-matter';
 import ejs from 'ejs';
 import { importProjectSources } from './projectSources.mjs';
+import { CUSTOM_TRACK } from '../projects/Space-Shooter/tracks/custom-track.js';
+import { releaseText, isCustomTrackLive } from '../projects/Space-Shooter/systems/customTrack.js';
+import { checkTrack } from '../projects/Space-Shooter/engine/trackChecks.js';
 
 const ROOT_DIR = path.resolve('.');
 const SRC_DIR = path.join(ROOT_DIR, 'src');
@@ -227,6 +230,22 @@ function validateHubSnapshot(snapshot) {
     };
 }
 
+// The Stardust custom track (projects/Space-Shooter/tracks/custom-track.js) for
+// the landing page: its release time for the countdown and no-JS fallback, and
+// whether it can open at all (it passes the track checks and isn't the placeholder).
+function customTrackData(now = Date.now()) {
+    const check = checkTrack(CUSTOM_TRACK);
+    if (!check.ok) console.warn(`[CUSTOM TRACK] fails its checks, shown as coming soon: ${check.problems.map((p) => p.message).join(' ')}`);
+    const ready = check.ok && !CUSTOM_TRACK.placeholder;
+    return {
+        title: CUSTOM_TRACK.title || 'Custom track',
+        releaseAt: CUSTOM_TRACK.releaseAt,
+        releaseText: releaseText(CUSTOM_TRACK.releaseAt),
+        ready,
+        live: ready && isCustomTrackLive(CUSTOM_TRACK, now)
+    };
+}
+
 function renderContext(site, frontmatter, route, data) {
     const page = pageContext(site, frontmatter, route, data);
     const shared = {
@@ -413,7 +432,7 @@ async function main() {
         publicUrl: sitePath(site, `projects/${source.id}`),
         publishedUpdates: source.publishedUpdates.map((update) => ({ ...update, projectId: source.id, projectName: source.project.name }))
     }));
-    const data = { branches, products, support, updates, hubSnapshot, importedProjects, importedWarnings: projectImport.warnings };
+    const data = { branches, products, support, updates, hubSnapshot, customTrack: customTrackData(), importedProjects, importedWarnings: projectImport.warnings };
     const postsData = [];
     const generatedPaths = [];
     const redirectEntries = [];

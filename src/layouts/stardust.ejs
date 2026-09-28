@@ -21,6 +21,23 @@
         <main id="main-content" class="sd-page" tabindex="-1">
 <% const parts = content.split('<!-- sd-leaderboard -->'); %>
 <%- parts[0] %>
+<%
+  // The custom track: a countdown until its release, then Play and its own
+  // leaderboard tab. data-ready is false while it's the placeholder or fails its
+  // checks. Without JavaScript the release date shows as written here.
+  const custom = data.customTrack;
+%>
+<% if (custom) { %>
+            <section class="sd-section sd-custom" id="custom-track" aria-labelledby="sd-custom-title" data-sd-custom data-release-at="<%= custom.releaseAt %>" data-ready="<%= custom.ready ? 'true' : 'false' %>">
+                <div class="sd-section-head"><h2 id="sd-custom-title">Custom track</h2><p class="sd-meta">One lap · its own leaderboard</p></div>
+                <p class="sd-copy">A new circuit outside the five-circuit network: launch from the portal, fly one lap and bring it home. It has a leaderboard of its own and doesn’t count toward the full network, its splits or its medals.</p>
+                <p class="sd-custom-status" data-sd-custom-status><% if (custom.live) { %>Open now.<% } else if (custom.releaseText) { %>Opens <time datetime="<%= custom.releaseAt %>"><%= custom.releaseText %></time>.<% } else { %>Coming soon.<% } %></p>
+                <div class="sd-actions" data-sd-custom-play<% if (!custom.live) { %> hidden<% } %>>
+                    <a class="sd-cta" href="games/stardust/?track=custom">Fly the custom track <span aria-hidden="true">→</span></a>
+                    <a class="sd-text-link" href="#fastest-runs" data-sd-custom-board>Its leaderboard ↓</a>
+                </div>
+            </section>
+<% } %>
             <section class="sd-section sd-boards" id="fastest-runs" aria-labelledby="sd-runs-title" data-sd-boards>
                 <div class="sd-section-head">
                     <h2 id="sd-runs-title">Leaderboard</h2>
@@ -30,6 +47,8 @@
                     <% [['full', 'Full network'], ['alpha-relay', 'Alpha Relay'], ['beacon-prime', 'Beacon Prime'], ['dustfall-station', 'Dustfall Station'], ['nether-crossing', 'Nether Crossing'], ['iron-veil', 'Iron Veil']].forEach(([id, label], i) => { %>
                     <button type="button" role="tab" aria-selected="<%= i === 0 ? 'true' : 'false' %>" tabindex="<%= i === 0 ? 0 : -1 %>" aria-controls="sd-board-list" data-sd-board="<%= id %>"><%= label %></button>
                     <% }) %>
+                    <%# Only once the custom track has opened (stardust-boards.js shows it). %>
+                    <% if (data.customTrack) { %><button type="button" role="tab" aria-selected="false" tabindex="-1" aria-controls="sd-board-list" data-sd-board="custom-track" data-sd-custom-tab<% if (!data.customTrack.live) { %> hidden<% } %>>Custom track</button><% } %>
                 </div>
                 <%# Signed-in pilots only, on the full network: whose times, and a jump to your own. %>
                 <div class="sd-board-tools" data-sd-board-tools hidden>

@@ -59,24 +59,28 @@ function leaveChallenge() {
   if (state.mode === 'arena') exitArena('quit');
   quitRun();
 }
-function launch() {
+// The last launch, so "Fly again" repeats it: the network or the custom track.
+let lastLaunch = { kind: 'network', preview: false };
+/** Leave the hangar and fly: { kind: 'network' | 'custom', preview }. */
+export function launchRun(options = {}) {
+  lastLaunch = { kind: options.kind === 'custom' ? 'custom' : 'network', preview: !!options.preview };
   hide('starmap-start');
   hide('starmap-end');
   state.ui.showStartOverlay = false;
   state.ui.showEndOverlay = false;
   state.ui.paused = false;
   setTouchControls(wantsTouchControls());
-  startNewRun();
+  startNewRun(lastLaunch);
   focusFlight();
 }
 export function initOverlays() {
   if (initialized) return;
   initialized = true;
-  el('starmap-start-btn')?.addEventListener('click', launch);
+  el('starmap-start-btn')?.addEventListener('click', () => launchRun({ kind: 'network' }));
   el('starmap-resume-btn')?.addEventListener('click', closePauseOverlay);
   el('starmap-retry-btn')?.addEventListener('click', () => { retryRun(); syncTouchControls(); focusFlight(); });
   el('starmap-quit-btn')?.addEventListener('click', leaveChallenge);
-  el('starmap-again-btn')?.addEventListener('click', launch);
+  el('starmap-again-btn')?.addEventListener('click', () => launchRun(lastLaunch));
   el('starmap-end-menu-btn')?.addEventListener('click', leaveChallenge);
   el('victory-continue-btn')?.addEventListener('click', leaveChallenge);
   el('defeat-close-btn')?.addEventListener('click', leaveChallenge);
@@ -169,10 +173,17 @@ export function closePauseOverlay() {
   if (state.ui.showDefeatOverlay) return;
   hide('starmap-pause'); state.ui.paused = false; syncTouchControls(); focusFlight();
 }
-export function openEndOverlay(formattedTime) {
+export function openEndOverlay(formattedTime, { kind = 'network', title = 'Custom track', preview = false } = {}) {
   if (state.mode === 'arena') return;
   playMusic('victory'); setTouchControls(false);
-  el('starmap-end-title').textContent = `Network complete. ${formattedTime}`;
+  const custom = kind === 'custom';
+  el('starmap-end-title').textContent = custom ? `${title} complete. ${formattedTime}` : `Network complete. ${formattedTime}`;
+  const lede = el('starmap-end-lede');
+  if (lede) {
+    lede.textContent = !custom ? 'All five circuits, one run. Fly again and beat your time.'
+      : preview ? 'Preview lap of the custom track. Nothing from a preview is saved.'
+        : 'One lap of the custom track, on its own leaderboard. Fly again and beat your time.';
+  }
   show('starmap-end'); state.ui.showEndOverlay = true; state.ui.paused = true;
   el('starmap-again-btn')?.focus();
 }

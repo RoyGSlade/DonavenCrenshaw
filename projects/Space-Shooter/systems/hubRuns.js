@@ -28,6 +28,8 @@ export function createRunRecorder({ config = runtimeConfig, fetchImpl = globalTh
   let splits = {};
   let challengeId = null;
   let lastRun = null;
+  // A single-board run outside the network (the custom track): { board, run }.
+  let single = null;
   const levels = new Map();
 
   async function call(url, { method = 'GET', body } = {}) {
@@ -74,10 +76,14 @@ export function createRunRecorder({ config = runtimeConfig, fetchImpl = globalTh
   // is no longer current; a reload fixes it), 'signed-out' or 'refused'.
   // With a challenge id the run is started against it; if the hub refuses the
   // challenge, the run is started again without it and challengeRefused says why.
-  async function open(board, challenge = null) {
+  // A board the game carries its own version for (the custom track) passes it
+  // as version: a hub on another version gives 'version-mismatch', and a hub
+  // that doesn't list the board at all gives `missing` instead of 'outdated'.
+  async function open(board, challenge = null, { version = null, missing = 'outdated' } = {}) {
     if (!player) return { error: reachable ? 'guest' : 'offline' };
     if (!versions) return { error: 'offline' };
-    if (!Number.isInteger(versions[board])) return { error: 'outdated' };
+    if (!Number.isInteger(versions[board])) return { error: missing };
+    if (version != null && versions[board] !== version) return { error: 'version-mismatch' };
     const body = { board, version: versions[board], build };
     let res = await call(`${base}/runs`, { method: 'POST', body: challenge ? { ...body, challenge } : body });
     let challengeRefused = null;
@@ -118,6 +124,8 @@ export function createRunRecorder({ config = runtimeConfig, fetchImpl = globalTh
     get reachable() { return reachable; },
     // The board version the hub expects, or null.
     version(board) { return Number.isInteger(versions?.[board]) ? versions[board] : null; },
+    // Whether the hub's board list was read, so a missing board really is missing.
+    get boardsKnown() { return versions != null; },
     connect,
 
     // The signed-in player's progress (bests with full-run splits), or null.
@@ -165,6 +173,7 @@ export function createRunRecorder({ config = runtimeConfig, fetchImpl = globalTh
       splits = {};
       levels.clear();
       full = null;
+      single = null;
       lastRun = null;
       if (!base) return null;
       await connect();
@@ -212,9 +221,39 @@ export function createRunRecorder({ config = runtimeConfig, fetchImpl = globalTh
       return { board: 'full', ...result };
     },
 
+    // One board on its own, such as the custom track: a launch that abandons
+    // every other open run and opens just this one. version is the game's own
+    // version of that board. Resolves like startRun().
+    async startBoardRun(board, { version = null } = {}) {
+      const mine = ++generation;
+      splits = {};
+      levels.clear();
+      full = null;
+      single = null;
+      lastRun = null;
+      if (!base) return null;
+      await connect();
+      if (mine !== generation) return null;
+      const run = open(board, null, { version, missing: 'no-board' });
+      single = { board, run };
+      const info = await run;
+      return mine === generation ? info : null;
+    },
+
+    // The hub's verdict for that board run, or null for guests.
+    async finishBoardRun(elapsedMs) {
+      if (!single) return null;
+      const mine = generation;
+      const { board, run } = single;
+      single = null;
+      const result = await close(run, { timeMs: Math.max(0, Math.round(elapsedMs)) });
+      return mine === generation && result ? { board, ...result } : null;
+    },
+
     abandon() {
       generation += 1;
       full = null;
+      single = null;
       splits = {};
       levels.clear();
     },
@@ -255,6 +294,8 @@ const UNSAVED = {
   outdated: 'this copy of the game is out of date. Reload the page to race for the leaderboard.',
   'signed-out': 'you were signed out, so this time wasn’t saved. Sign in again to race for the leaderboard.',
   refused: 'the leaderboard didn’t accept this run, so the time wasn’t saved.',
+  'no-board': 'this track isn’t on the leaderboard yet, so the time wasn’t saved.',
+  'version-mismatch': 'this track doesn’t match the leaderboard’s version, so the time wasn’t saved. Reload the page to get the current track.',
 };
 
 // One line for the player about a saved result.
