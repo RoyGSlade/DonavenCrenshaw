@@ -90,14 +90,14 @@
           </div>
         </div>
         <p id="ship-stats" aria-live="polite"></p>
-        <p id="ship-lock-note" class="small">Saved on this device. Ship locks when you create or join a room.</p>
+        <p id="ship-lock-note" class="small">Saved on this device. Locked during a round; change it between rounds.</p>
       </fieldset>
       <fieldset id="map-picker">
         <legend>HOST CHOOSES THE ARENA</legend>
         <div class="map-choices"></div>
         <p id="map-description" aria-live="polite"></p>
         <p id="map-legend" class="small"></p>
-        <p class="small">Joining uses your friend's arena. Rematches keep the map and rebuild all cover.</p>
+        <p class="small">Joining uses your friend's arena. Between rounds the host can switch it; every round rebuilds all cover.</p>
       </fieldset>
       <details id="connection-settings">
         <summary>Connection settings</summary>
@@ -111,6 +111,19 @@
         />
         <p id="relay-help" class="small"></p>
       </details>
+      <div id="rejoin-offer" class="prompt" hidden>
+        <p id="rejoin-text"></p>
+        <button id="rejoin-yes" class="primary">Rejoin</button
+        ><button id="rejoin-no">Forget it</button>
+      </div>
+      <div id="link-join" class="prompt" hidden>
+        <p id="link-join-text"></p>
+        <button id="link-join-yes" class="primary">Join</button
+        ><button id="link-join-no">Not now</button>
+      </div>
+      <section id="invites" class="prompt" hidden aria-label="Room invites">
+        <ul id="invite-list"></ul>
+      </section>
       <div class="room-actions">
         <button id="create" class="primary">Create room</button>
         <div class="join">
@@ -126,10 +139,17 @@
       </div>
       <div id="waiting" hidden>
         <span class="small">YOUR ROOM CODE</span
-        ><strong id="share-code"></strong><button id="copy">Copy code</button>
+        ><strong id="share-code"></strong><button id="copy">Copy code</button
+        ><button id="copy-link">Copy link</button>
         <p id="waiting-status">
           Send this code to your friends so they can join.
         </p>
+        <ul id="waiting-seats" class="seats"></ul>
+        <details id="invite-friends" hidden>
+          <summary>Invite a friend</summary>
+          <ul id="friend-list"></ul>
+          <p id="invite-status" class="small" role="status"></p>
+        </details>
       </div>
       <p id="status" role="status" aria-live="polite">
         Create a private match or enter your friend’s code.
@@ -146,11 +166,39 @@
     </main>
     <div id="countdown" hidden role="status"></div>
     <div id="spectator-status" hidden role="status"></div>
+    <div id="pause-panel" hidden>
+      <p id="pause-text" role="status" aria-live="polite"></p>
+      <div id="pause-actions" hidden>
+        <button id="continue-without" class="primary">Continue without them</button
+        ><button id="keep-waiting">Keep waiting</button>
+      </div>
+      <div id="reconnect-actions" hidden>
+        <button id="rejoin-now" class="primary">Rejoin</button
+        ><button id="reconnect-leave">Leave room</button>
+      </div>
+    </div>
     <div id="arena-brief" hidden><strong id="arena-name"></strong><span id="arena-tip"></span></div>
     <section id="result" class="panel" hidden aria-labelledby="result-title">
       <p class="eyebrow">ROUND COMPLETE</p>
       <h2 id="result-title"></h2>
       <p id="result-detail"></p>
+      <div id="after-lobby" hidden>
+        <ul id="lobby-seats" class="seats"></ul>
+        <p id="lobby-map" class="small"></p>
+        <details id="lobby-ship">
+          <summary>Change ship</summary>
+          <div id="lobby-ship-slot"></div>
+        </details>
+        <details id="lobby-arena" hidden>
+          <summary>Change arena</summary>
+          <div id="lobby-map-slot"></div>
+        </details>
+        <p class="small lobby-share">
+          Room <b id="lobby-code"></b>
+          <button id="lobby-copy-link">Copy link</button>
+        </p>
+        <div id="lobby-invite-slot"></div>
+      </div>
       <button id="rematch" class="primary">Ready for rematch</button
       ><button id="result-leave">Leave room</button>
       <p id="rematch-status" role="status"></p>

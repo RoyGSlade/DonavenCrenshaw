@@ -14,7 +14,7 @@ Or run `node scripts/serve-stardust-dogfight.mjs` directly. Open [Dogfight](http
 
 The parent menu links to `./dogfight/`. A main-game preview on port 4173 uses `ws://127.0.0.1:4174/relay` by default. Connection settings are collapsed for local play and open when a published page has no configured relay. On donavencrenshaw.com the default is the hub's public relay, `wss://relay.donavencrenshaw.com/relay`. Any other relay a player picks is saved only in that browser's local storage.
 
-Controls: **W / up** thrust; **A/D / left/right** rotate; **S / down / R** reverse; **Q/E** strafe; **X** brake; **Ctrl / Space** fire; **Shift** boost. Standard controllers use the same solo mapping: **left stick** thrust/reverse/strafe, **right stick X** turn, **RT** fire, **LB** hold boost, **Y** toggle boost, **RB** brake, and **Start** fullscreen. Press a controller button if the browser has not exposed it yet. Phone controls put **GAS / REVERSE** on the left and **FIRE / BRAKE / BOOST** on the right. Small turn buttons remain available. The countdown prevents spawn movement/shooting. The default Medium hull starts at 100, primary weapons deal 50, and the round ends when a hull reaches zero or the three-minute clock expires. At time expiry, remaining hull percentage determines the winner; equal percentages draw. All connected pilots must press **Ready for rematch** to begin a fresh round.
+Controls: **W / up** thrust; **A/D / left/right** rotate; **S / down / R** reverse; **Q/E** strafe; **X** brake; **Ctrl / Space** fire; **Shift** boost. Standard controllers use the same solo mapping: **left stick** thrust/reverse/strafe, **right stick X** turn, **RT** fire, **LB** hold boost, **Y** toggle boost, **RB** brake, and **Start** fullscreen. Press a controller button if the browser has not exposed it yet. Phone controls put **GAS / REVERSE** on the left and **FIRE / BRAKE / BOOST** on the right. Small turn buttons remain available. The countdown prevents spawn movement/shooting. The default Medium hull starts at 100, primary weapons deal 50, and the round ends when a hull reaches zero or the three-minute clock expires. At time expiry, remaining hull percentage determines the winner; equal percentages draw. Between rounds every pilot can change ship and the host can change the arena in the [after-match lobby](#after-match-lobby-rejoin-and-invites); the next round starts when every pilot presses **Ready**.
 
 Choose two-seat **1v1** or three-seat **1v1v1** before creating a room. See the [free-for-all rules](FREE-FOR-ALL.md) and [arena guide](DOGFIGHT-MAPS.md). [Custom ships](CUSTOM-SHIPS.md) offer Light, Medium and Heavy hulls with body/accent paint; Medium preserves solo flight exactly, while Light/Heavy apply documented class multipliers. The baseline collision radius is 0.2112. Primary fire and a rechargeable laser trap are available; health follows each ship. Eight rocks use seeded, mirrored positions with radii from 0.75 to 1.25. New rematches select a fresh deterministic seed.
 
@@ -34,9 +34,39 @@ Dogfight has its own match state and arena rules, and shares pure `engine/system
 - Maximum incoming WebSocket payload 16 KiB. JSON text only. Per-connection token bucket: 60 messages/second with a 100-message burst. Room attempts limited to 12/minute per connection.
 - Input sequences must increase and match the current round. Unknown control fields and invalid values are rejected. Guest controls become neutral after 350 ms without an accepted input at the host.
 - Outbound transient messages are dropped above 16 KiB of buffered data; above 64 KiB the slow socket is closed. The host sends the latest state rather than building an application-level snapshot queue.
-- Disconnect closes the room, clears controls, ends the match, and returns the surviving pilot to the lobby. Rematch requires every connected pilot.
+- A **host** disconnect, or any pilot pressing **Leave room**, closes the room, clears controls, ends the match, and returns everyone to the lobby. A **guest** disconnect holds that seat for a rejoin (relay version 3, below); in a room with an older page it still closes the room. The next round requires every seat to be filled and ready.
 - Hiding the host tab explicitly ends the round. A host frame gap greater than 500 ms also interrupts it. The relay independently interrupts a round after three seconds without an accepted host snapshot. There is no claim that a browser-hosted match keeps simulating reliably in the background.
 - Rooms expire after ten minutes without activity, and both pilots are told. Sockets outside a room are closed after 60 seconds (`idleTimeoutMs`), so idle connections cannot hold slots; the page closes its own socket when a room ends. WebSocket heartbeat detects dead connections.
+
+## After-match lobby, rejoin and invites
+
+These need **relay version 3** (the relay's `hello` says `version: 3`) and a current page for every pilot in the room: the page sends `protocol: 3` with create/join. The deployed relay stays on the older rematch-only flow until it is switched to this commit. Against an older relay, or when any pilot in the room uses an older page, the room keeps the previous rules (rematch vote only, a disconnect closes the room); the page detects this and shows the plain **Ready for rematch** screen. Older pages ignore the new messages and play normally on the new relay.
+
+**After-match lobby.** When a round ends, the result panel becomes a lobby: each seat's ship, whether it is ready, and whether its pilot is connected. Every pilot can open **Change ship** (the same class/body/accent builder as the front page, validated by the relay with `cleanLoadout`); the host can open **Change arena** (validated with `isMapId`). Mode and seat count stay fixed for the room. Changes are accepted only between rounds, and **any change un-readies everyone**, so nobody launches against a ship or arena they have not seen. The round starts with the new ships and arena when every seat is filled and ready. **Leave room** is still there.
+
+**Guest disconnect and rejoin.** When a guest joins, the relay sends that socket alone a secret seat token; the page keeps it in `sessionStorage` with the room code and relay address (this tab only, up to 15 minutes since the last round event). If the guest's connection drops:
+
+- The relay keeps the seat and tells everyone. During a live round the host holds the simulation (clock, ships, shots) and every pilot sees **Waiting for Orange… (rejoin window)**; the relay's stall watchdog is suspended while a seat is held.
+- The guest's page retries automatically (about a minute of backoff) and shows a **Rejoin** button. Reloading the tab offers **Rejoin your seat?** — it never rejoins without the click. A rejoin gets the round's seed and the newest accepted snapshot, then everyone counts down 3-2-1 and play resumes. A token-holder's rejoin also replaces a connection the relay has not yet noticed is dead.
+- The host sees a 5-second countdown (enforced by the relay too), then **Continue without them** and **Keep waiting**. Waiting is the default and has no timer of its own; the seat is released automatically after `holdMs` (10 minutes by default), and an idle room still expires after 10 minutes without messages.
+- **Continue without them**: in a duel the round ends as a host win by **forfeit**. Forfeits are casual — the relay never calls `onResult` for them, only for rounds played to the end. In three-player, that ship is eliminated and the round continues after a 3-2-1.
+- A given-up seat is **open**: its pilot can still reclaim it with the token (mid-round they watch as an eliminated ship), or between rounds a new pilot can take it with the room code or link and gets a fresh token. Between rounds a disconnected seat shows an **Open seat** button for the host after the same countdown. Nobody new can take a seat during a live round.
+
+**Host disconnect** keeps today's behaviour: the room closes and the round ends for everyone. Host migration is not implemented.
+
+**Invites.** In a room (the host while waiting; everyone in the after-match lobby) **Copy link** copies `dogfight/?room=CODE`; opening it fills in the code and asks **Join CODE?** — it never joins without a click. A signed-in pilot also sees **Invite a friend**: the friends list from the hub (`GET /api/friends`) with an **Invite** button each (`POST /api/dogfight/invites`); a sent button stays disabled, and hub errors (not friends, too many invites, …) are shown as text. While signed in and not in a room, the page polls `GET /api/dogfight/invites` every 15 s while visible (and when it becomes visible) and shows **Ace invited you to a room** with **Join** and **Dismiss** (both delete the invite). On a hub without these endpoints the invite UI stays hidden; the link still works. All names are rendered as text.
+
+New relay messages (version 3 rooms only; every one is validated for type, size, round, seat ownership and host-only use):
+
+| From | Message | Rule |
+| --- | --- | --- |
+| guest page | `rejoin { code, token, protocol }` | Held or open seat with a matching token; counts toward the 12/minute room attempts. |
+| any seat | `loadout { round, loadout }` | Between rounds; `cleanLoadout`; un-readies everyone. |
+| host | `map { round, mapId }` | Between rounds; `isMapId`; un-readies everyone. |
+| any seat | `ready { round, ready }` | Between rounds; `rematch` remains the older page's `ready: true`. |
+| host | `release { round, playerId }` | A guest seat that has been away for at least 5 s. |
+| relay | `lobby { round, phase, mapId, holdMs, seats[] }` | Per seat: `playerId`, `loadout`, `ready`, `presence` (`here`/`away`/`open`), `awayMs`. Never contains tokens. |
+| relay | `room { seatToken }` | To the joining guest's socket only. `roster` gains `lobby: true/false`. `result` may carry `reason: "forfeit"`. |
 
 ## Local server and future internet connection
 
@@ -64,6 +94,8 @@ node --test tests/stardust-dogfight.test.mjs tests/stardust-dogfight-relay.test.
 ```
 
 The focused checks cover deterministic physics, countdown lockout, fixed-step enforcement, actual projectile damage/victory, cover absorption, collision response, timeout draws, payload sanitation, two seats, connection-bound host authority, replayed inputs, rematch/disconnect, Host/Origin spoofing, static-file boundaries, payload limits, and an independently stalled-host timeout.
+
+`tests/stardust-lobby-relay.test.mjs` covers relay version 3: tokens only to their own socket, between-round ship/map validation and un-readying, held seats with the watchdog suspended, bad/forged tokens, rejoin with the cached snapshot, the host-only 5-second release, duel forfeits never reported, three-player elimination, open seats for new pilots, older pages keeping the old rules, hold expiry, token takeover and host drop. `tests/stardust-lobby-browser.test.mjs` (with `STARDUST_BROWSER_TEST=1`) drives real Chromium pages: a phone-width guest changes ship and the host changes arena before round 2; a guest drop pauses the host with the countdown and buttons, then the guest reclaims the seat by automatic retry and again after a reload; **Continue without them** gives a forfeit win and a friend fills the seat from a `?room=` link; an older page (no protocol, `hello` v2) finishes a match and rematches; and mocked hub invites are sent (including a plain error) and joined. Real network drops, phones and the live hub still need a hands-on check.
 
 Run the optional actual-browser test:
 
