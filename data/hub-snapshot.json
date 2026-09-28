@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-09-28T05:28:14.778Z",
+  "generatedAt": "2026-09-28T11:48:18.729Z",
   "stardust": {
     "leaderboard": [
       {
@@ -44,20 +44,6 @@
   "platinum10": [],
   "votes": {
     "features": [
-      {
-        "id": "rpg-more-roles",
-        "title": "More Roles: Healer & Tracker",
-        "category": "Text RPG",
-        "status": "planned",
-        "votes": 0
-      },
-      {
-        "id": "rpg-day-night",
-        "title": "Day/Night cycle",
-        "category": "Text RPG",
-        "status": "planned",
-        "votes": 0
-      },
       {
         "id": "site-devlog",
         "title": "Dev Log feed",
