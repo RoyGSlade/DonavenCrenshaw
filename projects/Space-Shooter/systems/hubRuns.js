@@ -262,7 +262,15 @@ export function describeResult(result, name) {
   if (!result) return null;
   if (result.status === 'accepted') {
     const rank = result.best?.rank ? ` · #${result.best.rank}` : '';
-    return result.personalBest ? `${name}: new best ${clock(result.timeMs)}${rank}` : `${name}: saved ${clock(result.timeMs)}${rank}`;
+    const line = result.personalBest ? `${name}: new best ${clock(result.timeMs)}${rank}` : `${name}: saved ${clock(result.timeMs)}${rank}`;
+    // A better circuit medal and any achievement are worth a second line.
+    const extras = [];
+    if (result.medal?.improved && result.medal.earned && !result.medal.gauntlet) {
+      extras.push(`${result.medal.earned[0].toUpperCase()}${result.medal.earned.slice(1)} medal!`);
+    }
+    const unlocked = (result.achievements || []).map((a) => a?.name).filter(Boolean);
+    if (unlocked.length) extras.push(`Achievement: ${unlocked.join(', ')}`);
+    return extras.length ? `${line}\n${extras.join(' · ')}` : line;
   }
   if (result.status === 'unsaved') return `${name}: ${UNSAVED[result.reasons?.[0]] || UNSAVED.refused}`;
   if (result.status === 'error') return `${name}: couldn’t reach the leaderboard; this time wasn’t saved.`;

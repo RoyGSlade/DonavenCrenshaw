@@ -354,3 +354,28 @@ test('challenge links are built relative to the site, with a prepared message', 
 test('existing save wording is unchanged', () => {
   assert.match(describeResult({ status: 'unsaved', reasons: ['offline'] }, 'Full network'), /offline, so this time wasn’t saved/);
 });
+
+import { finishSummary as networkSummary } from '../projects/Space-Shooter/systems/challenges.js';
+import { describeResult as circuitLine } from '../projects/Space-Shooter/systems/hubRuns.js';
+
+test('the network medal comes from the circuits, and achievements are named', () => {
+  const summary = networkSummary({
+    status: 'accepted', timeMs: 110000, personalBest: false, best: { timeMs: 105000, rank: 2 },
+    medal: { earned: 'silver', gauntlet: true, circuits: { gold: 2, silver: 3, bronze: 5 }, next: { medal: 'gold', circuitsNeeded: 1 } },
+    achievements: [{ id: 'the-bronze-age', name: 'The Bronze Age' }],
+  });
+  assert.ok(summary.lines.includes('Network medal: Silver (3 of 5 circuits).'));
+  assert.ok(summary.lines.includes('Next network medal: Gold on 1 more circuit.'));
+  assert.ok(summary.lines.includes('Achievement: The Bronze Age.'));
+  const none = networkSummary({ status: 'accepted', timeMs: 200000, best: { timeMs: 200000, rank: 9 }, medal: { earned: null, gauntlet: true, circuits: { gold: 0, silver: 0, bronze: 1 }, next: { medal: 'bronze', circuitsNeeded: 2 } } });
+  assert.ok(none.lines.includes('Next network medal: Bronze on 2 more circuits.'));
+  assert.ok(!none.lines.some((l) => l.startsWith('Network medal:')));
+});
+
+test('a circuit toast adds a better medal and any achievement on a second line', () => {
+  assert.equal(
+    circuitLine({ status: 'accepted', timeMs: 16900, personalBest: true, best: { rank: 1 }, medal: { earned: 'gold', improved: true }, achievements: [{ name: 'Struck Gold' }] }, 'Alpha Relay'),
+    'Alpha Relay: new best 0:16.90 · #1\nGold medal! · Achievement: Struck Gold',
+  );
+  assert.equal(circuitLine({ status: 'accepted', timeMs: 20000, personalBest: false, best: { rank: 4 }, medal: { earned: 'bronze', improved: false } }, 'Iron Veil'), 'Iron Veil: saved 0:20.00 · #4');
+});

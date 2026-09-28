@@ -145,11 +145,19 @@ export function finishSummary(result) {
     else if (friends.rank === 1 && friends.of > 1) lines.push('You lead your friends.');
   }
   const medal = result.medal;
-  if (medal) {
+  if (medal?.gauntlet) {
+    // The network medal is the best medal held on most circuits.
+    const held = medal.earned ? medal.circuits?.[medal.earned] : null;
+    if (medal.earned) lines.push(`Network medal: ${MEDAL[medal.earned] || medal.earned}${Number.isInteger(held) ? ` (${held} of ${CIRCUITS.length} circuits)` : ''}.`);
+    const need = medal.next?.circuitsNeeded;
+    if (Number.isInteger(need) && need > 0) lines.push(`Next network medal: ${MEDAL[medal.next.medal] || medal.next.medal} on ${need} more circuit${need === 1 ? '' : 's'}.`);
+  } else if (medal) {
     if (medal.earned && medal.improved) lines.push(`${MEDAL[medal.earned] || medal.earned} medal earned.`);
     else if (medal.earned) lines.push(`Your medal: ${MEDAL[medal.earned] || medal.earned}.`);
     if (medal.next && finite(medal.next.gapMs)) lines.push(`Next medal: ${MEDAL[medal.next.medal] || medal.next.medal}, ${formatGap(medal.next.gapMs)} faster.`);
   }
+  const unlocked = (result.achievements || []).map((a) => a?.name).filter(Boolean);
+  if (unlocked.length) lines.push(`Achievement${unlocked.length > 1 ? 's' : ''}: ${unlocked.join(', ')}.`);
   const challenge = result.challenge;
   if (challenge) {
     const line = challengeOutcome({ timeMs: result.timeMs, targetMs: challenge.targetMs, pilot: challenge.pilot || challenge.from });

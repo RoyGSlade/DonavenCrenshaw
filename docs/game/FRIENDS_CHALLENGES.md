@@ -166,6 +166,18 @@ best run) and `medal`:
   "medals": { "gold": 120000, "silver": 150000, "bronze": 210000 } | null }
 ```
 
-Medal times are fixed per board **version** in the hub's `rules.json` and are
-calibrated from real runs (`scripts/stardust-metrics.js --medals`). Until they
-are set, `medals` is `null` and the UI shows none.
+Medal times are fixed per board **version** in the hub's `rules.json`. Stardust
+uses 17 / 19 / 21 seconds (gold / silver / bronze) on every circuit.
+
+The **full network** medal comes from the circuits: the best medal held on a
+majority of them (3 of 5). Its board has `"medals": null, "medalRule":
+"circuits-majority"`, and a full-run finish reports it as:
+
+```
+"medal": { "earned": "silver" | null, "gauntlet": true,
+           "circuits": { "gold": 2, "silver": 3, "bronze": 4 },     circuits holding at least each medal
+           "next": { "medal": "gold", "circuitsNeeded": 1 } | null }
+```
+
+Finishes can also return medal and challenge achievements (for example Clean
+Sweep for gold on all five circuits) in the usual `achievements` list.
