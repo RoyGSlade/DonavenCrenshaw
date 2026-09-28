@@ -1,8 +1,8 @@
 ---
 title: "Now"
 layout: "default"
-description: "Current public builds: BetterFingers Alpha 3 and the Kingdoms & Caravans friend playtest. Next: real use and feedback."
-date: "2026-09-07"
+description: "What Donaven Crenshaw is working on right now: Stardust and the site, to get more people playing and coming back."
+date: "2026-09-28"
 status: "Current"
 branch: "parent"
 skin: "parent"
@@ -15,35 +15,35 @@ hero_scene: "lamp"
   <section class="section-block now-update" aria-labelledby="now-update">
     <div class="noir-card now-lead-card">
       <div>
-        <p class="section-label">CURRENT PUBLIC BUILDS</p>
-        <h2 id="now-update" class="now-date metal-text">2026-09-07</h2>
+        <p class="section-label">WHAT I'M WORKING ON</p>
+        <h2 id="now-update" class="now-date metal-text">2026-09-28</h2>
       </div>
       <div class="now-lead-copy">
+        <p class="section-desc">Right now the priority is Stardust and this site: making them worth finding, worth playing, and worth coming back to, so more people check out everything else I'm building. And so I have something I'm proud to point at.</p>
         <p class="section-desc">A dated snapshot, not a promise that the work is finished.</p>
-        <p class="section-desc">BetterFingers Alpha 3 is published; Kingdoms &amp; Caravans 0.3.2 is the current very early preview for friend playtesting.</p>
       </div>
     </div>
     <div class="manifesto-grid">
       <article class="noir-card noir-card--lit manifesto-point">
         <span class="icon-ring" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="m5 12 4 4L19 6" /></svg></span>
         <h3>Win</h3>
-        <p>BetterFingers Alpha 3 is published with its signed Windows release and current release evidence.</p>
+        <p>Stardust has real pilots on its leaderboard, five circuits, accounts, and Dogfight rooms for two or three players. The homepage now puts it first.</p>
       </article>
       <article class="noir-card noir-card--lit manifesto-point">
         <span class="icon-ring" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M12 3 3 20h18L12 3Z" /><path d="M12 9v5m0 3v.01" /></svg></span>
         <h3>Difficulty</h3>
-        <p>Kingdoms &amp; Caravans remains an unfinished, unsigned Windows friend playtest; the next proof is feedback from additional hardware and players.</p>
+        <p>Pilots joining someone else's Dogfight room could feel lag. Fixes are built; a real match across the internet is the proof. Kingdoms &amp; Caravans' infrastructure has been harder than expected, so it's waiting behind Stardust for now.</p>
       </article>
       <article class="noir-card noir-card--lit manifesto-point">
         <span class="icon-ring" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M4 12h15m-5-5 5 5-5 5" /></svg></span>
         <h3>Next step</h3>
-        <p>Run the next friend playtest, collect hardware and usability feedback, and use it to decide what the city-management loop needs next.</p>
+        <p>Rolling out now: friends, challenge links you can send back and forth, medals, and a playtest of new boost, fuel and rail rules. After that, a custom track.</p>
       </article>
     </div>
   </section>
 
   <section class="section-block now-honest-state" aria-labelledby="honest-state">
-    <div class="section-header"><div><h2 id="honest-state" class="section-title">Try the current builds</h2><p class="section-desc">Downloads, screenshots, and release status in one place.</p></div></div>
-    <div class="reading-text"><p><a href="../projects/betterfingers/">BetterFingers Alpha 3</a> includes its signed Windows download and product tour. <a href="../kingdoms-caravans/">Kingdoms &amp; Caravans 0.3.2</a> includes real gameplay screenshots, an opening guide, and the Windows playtest. Both remain early builds; broader reliability and usability need more real-world use.</p></div>
+    <div class="section-header"><div><h2 id="honest-state" class="section-title">Try the current builds</h2><p class="section-desc">Everything here is playable or downloadable today.</p></div></div>
+    <div class="reading-text"><p><a href="../stardust/">Stardust</a> runs in your browser with nothing to install; sign in to put your times on the board. <a href="../kingdoms-caravans/">Kingdoms &amp; Caravans 0.3.2</a> is still available as an early Windows playtest. <a href="../projects/betterfingers/">BetterFingers Alpha 3</a> has its signed Windows download. All of them are early builds; real play and honest feedback are what move them forward.</p></div>
   </section>
 </div>

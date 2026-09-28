@@ -1,12 +1,22 @@
 ---
 title: "Support"
 layout: "default"
-description: "Support free software by Donaven Crenshaw through GitHub Sponsors or one-time Ko-fi support."
-date: "2026-07-31"
+description: "Support Donaven Crenshaw's games and free software through GitHub Sponsors or one-time Ko-fi support."
+date: "2026-09-28"
 hero_title: "Support"
-hero_sub: "Help keep useful free software moving."
+hero_sub: "Help keep the games and free software coming."
 hero_scene: "desk"
 ---
+
+<section class="section-block support-why" aria-labelledby="what-support-pays-for">
+  <div class="section-header"><div><h2 id="what-support-pays-for" class="section-title">What your support pays for</h2></div></div>
+  <div class="noir-card noir-card--lit reading-text">
+    <p>Art, music and sound for the games. The new game ideas I'm trying out. And sometimes, honestly, just the Red Bull in my hand while I build.</p>
+    <p><strong>Shipped lately:</strong> <a href="stardust/">Stardust</a> with five circuits, leaderboards and Dogfight rooms; the <a href="kingdoms-caravans/">Kingdoms &amp; Caravans</a> friend playtest; <a href="projects/betterfingers/">BetterFingers</a> Alpha 3.</p>
+    <p><strong>Next:</strong> friend challenges and medals in Stardust, then a custom track.</p>
+    <p>Everything stays free to play. Support never buys an advantage, a cosmetic or early access.</p>
+  </div>
+</section>
 
 <section class="section-block support-channels" aria-labelledby="primary-recurring-support">
   <div class="section-header"><div><h2 id="primary-recurring-support" class="section-title">Primary recurring support</h2></div></div>
