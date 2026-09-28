@@ -86,7 +86,8 @@ export function createLabLog() {
     dock() { log.docks += 1; },
     fuelOut() { log.fuelOuts += 1; },
     hullLoss() { log.hullLosses += 1; },
-    circuit(level, ms) { log.circuits.push({ level, ms }); },
+    // name: for a circuit outside the network, such as the custom track.
+    circuit(level, ms, name) { log.circuits.push(name ? { level, ms, name } : { level, ms }); },
     reset() {
       Object.assign(log, { boosts: 0, boostStrength: 0, railHits: 0, hardRailHits: 0, railDamage: 0, docks: 0, fuelOuts: 0, hullLosses: 0, lowestFuel: Infinity, circuits: [] });
     },
@@ -104,7 +105,7 @@ export const labHooks = {
   dock: () => active?.dock(),
   fuelOut: () => active?.fuelOut(),
   hullLoss: () => active?.hullLoss(),
-  circuit: (level, ms) => active?.circuit(level, ms),
+  circuit: (level, ms, name) => active?.circuit(level, ms, name),
 };
 
 const CIRCUITS = ['Alpha Relay', 'Beacon Prime', 'Dustfall Station', 'Nether Crossing', 'Iron Veil'];
@@ -120,7 +121,7 @@ export function labReport(lab, data, totalMs) {
   return [
     `Stardust playtest lab: ${labLabel(lab)}`,
     `Total ${clock(totalMs)} (not saved)`,
-    ...data.circuits.map((c) => `  ${CIRCUITS[c.level - 1] || `Circuit ${c.level}`}: ${clock(c.ms)}`),
+    ...data.circuits.map((c) => `  ${c.name || CIRCUITS[c.level - 1] || `Circuit ${c.level}`}: ${clock(c.ms)}`),
     `Boosts ${data.boosts} (average strength ×${avg})`,
     `Rail hits ${data.railHits}, hard ${data.hardRailHits}, rail damage ${Math.round(data.railDamage)}`,
     `Docked ${data.docks}, ran out of fuel ${data.fuelOuts}, lowest fuel ${Number.isFinite(data.lowestFuel) ? Math.round(data.lowestFuel) : '–'}`,

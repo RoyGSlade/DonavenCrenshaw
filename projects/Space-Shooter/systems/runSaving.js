@@ -9,9 +9,11 @@ import {
   challengeLink, challengeMessage,
 } from './challenges.js';
 import { toast } from '../ui/hud.js';
+import { CUSTOM_BOARD, activeCustomTrack } from './customTrack.js';
 
 const ACCOUNT_URL = new URL('../../account/', document.baseURI).href;
 const BOARDS_URL = new URL('../../stardust/#fastest-runs', document.baseURI).href;
+const CUSTOM_URL = new URL('../../stardust/#custom-track', document.baseURI).href;
 const CIRCUIT_NAME = Object.fromEntries(CIRCUITS);
 
 const recorder = createRunRecorder();
@@ -68,6 +70,17 @@ function paintPlayer() {
     note.hidden = false;
   }
   if (chip) chip.textContent = user ? `SIGNED IN · ${name(user).toUpperCase()}` : reachable ? 'GUEST · TIMES NOT SAVED' : 'LEADERBOARD OFFLINE · TIMES NOT SAVED';
+  // A hub that answers but has no custom-track board yet (an older hub):
+  // the track still flies, and the card says plainly that its times won't save.
+  const save = byId('custom-track-save');
+  if (save) {
+    save.textContent = customBoardMissing() ? 'The leaderboard doesn’t have this track yet, so its times won’t be saved.' : '';
+    save.hidden = !save.textContent;
+  }
+}
+
+function customBoardMissing() {
+  return recorder.reachable && recorder.boardsKnown && recorder.version(CUSTOM_BOARD) == null;
 }
 
 // The hangar's challenge line.
@@ -305,6 +318,37 @@ export async function initRunSaving() {
       flight.target = challengeTarget(started);
     }
   });
+  // The custom track: one lap, one board ('custom-track'), none of the network's
+  // splits, challenges or medals. A preview is never sent to the hub.
+  window.addEventListener('stardust:customRunStart', async (event) => {
+    launches += 1;
+    flight = null;
+    paintEnd(null);
+    paintBreakdown(null);
+    paintSocial(null);
+    if (event.detail?.preview) { recorder.abandon(); return; }
+    await recorder.startBoardRun(CUSTOM_BOARD, { version: activeCustomTrack().version }).catch(() => null);
+    paintPlayer();
+  });
+  window.addEventListener('stardust:customRunComplete', async (event) => {
+    const { totalMs, title = 'Custom track', preview } = event.detail || {};
+    paintBreakdown(null);
+    paintSocial(null);
+    if (preview) { paintEnd(`Preview — not saved. Your time: ${clock(totalMs)}.`); return; }
+    if (customBoardMissing()) { paintEnd(`Your time: ${clock(totalMs)}. This track isn’t on the leaderboard yet, so it wasn’t saved.`); return; }
+    if (!recorder.player) {
+      if (!recorder.reachable) paintEnd(`Your time: ${clock(totalMs)}. The leaderboard was offline, so it wasn’t saved.`);
+      else paintEnd([`Guest run: ${clock(totalMs)} isn’t on the leaderboard. `, link('Create an account', `${ACCOUNT_URL}#create`), ' and your next run counts.']);
+      return;
+    }
+    paintEnd('Saving your time…');
+    const result = await recorder.finishBoardRun(totalMs);
+    if (!result) { paintEnd('This run started before you signed in, so it wasn’t saved. The next one will be.'); return; }
+    if (result.status === 'unsaved' || result.status === 'error') { paintEnd(`Your time: ${clock(totalMs)}. ${describeResult(result, title)}`); return; }
+    if (result.status === 'accepted') paintEnd([`${describeResult(result, title)} `, link('See the leaderboard', CUSTOM_URL)]);
+    else paintEnd(describeResult(result, title));
+  });
+
   window.addEventListener('stardust:levelStart', (event) => recorder.startLevel(event.detail?.level));
   window.addEventListener('stardust:runQuit', () => { launches += 1; flight = null; recorder.abandon(); });
 

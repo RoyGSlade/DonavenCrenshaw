@@ -59,6 +59,53 @@ if (gate && typeof gate.showModal === 'function') {
     });
 }
 
+// The custom track section: a live countdown until releaseAt, then Play and
+// its leaderboard tab. The page is built with the release date written out, so
+// it still reads right with JavaScript off. data-ready="false" (the placeholder,
+// or a track that fails its checks) never opens.
+async function initCustomTrack() {
+    const section = document.querySelector('[data-sd-custom]');
+    if (!section) return;
+    let releaseCountdown;
+    try {
+        ({ releaseCountdown } = await import('../games/stardust/systems/customTrack.js'));
+    } catch {
+        return;
+    }
+    const status = section.querySelector('[data-sd-custom-status]');
+    const play = section.querySelector('[data-sd-custom-play]');
+    const tab = document.querySelector('[data-sd-custom-tab]');
+    const when = status.querySelector('time')?.cloneNode(true) || null;
+    const ready = section.dataset.ready === 'true';
+    let timer = 0;
+    const paint = () => {
+        const countdown = releaseCountdown(section.dataset.releaseAt, Date.now());
+        if (countdown.valid && !countdown.released) {
+            const count = document.createElement('strong');
+            count.textContent = `New track in ${countdown.label}`;
+            status.replaceChildren(count);
+            if (when) status.append(' · opens ', when, '.');
+            return;
+        }
+        clearInterval(timer);
+        timer = 0;
+        if (countdown.released && ready) {
+            status.textContent = 'Open now.';
+            play.hidden = false;
+            if (tab) tab.hidden = false;
+        } else {
+            status.textContent = 'Coming soon: the track is still being built.';
+        }
+    };
+    section.querySelector('[data-sd-custom-board]')?.addEventListener('click', () => {
+        document.dispatchEvent(new CustomEvent('sd:board', { detail: 'custom-track' }));
+    });
+    paint();
+    const counting = releaseCountdown(section.dataset.releaseAt, Date.now());
+    if (counting.valid && !counting.released) timer = setInterval(paint, 1000);
+}
+initCustomTrack();
+
 if (root) {
     const tabs = [...root.querySelectorAll('[data-sd-board]')];
     const list = root.querySelector('[data-sd-board-list]');
@@ -99,7 +146,9 @@ if (root) {
         if (!entries.length) {
             list.replaceChildren(el('p', 'sd-empty', board === 'full'
                 ? 'No saved runs yet. The first pilot with an account to finish all five circuits takes the top spot.'
-                : 'No saved times on this circuit yet. Sign in, finish it once, and it’s yours.'));
+                : board === 'custom-track'
+                    ? 'No saved times on the custom track yet. Sign in, fly one lap, and it’s yours.'
+                    : 'No saved times on this circuit yet. Sign in, finish it once, and it’s yours.'));
             return;
         }
         list.replaceChildren(boardList(boardRows(entries, me?.username)));
@@ -168,6 +217,11 @@ if (root) {
     function asleep(board) {
         live(false);
         if (board === 'full') list.innerHTML = snapshot;
+        // The snapshot only covers the full network; an older hub may not have this board at all.
+        else if (board === 'custom-track') {
+            meta.textContent = 'Custom track board unavailable';
+            list.replaceChildren(el('p', 'sd-empty', 'Custom track times aren’t available right now. The track still flies; check back for its leaderboard.'));
+        }
     }
 
     async function loadSocial(key) {
@@ -235,15 +289,23 @@ if (root) {
         load(board);
     }
 
-    tabs.forEach((tab, i) => {
+    tabs.forEach((tab) => {
         tab.addEventListener('click', () => select(tab.dataset.sdBoard));
         tab.addEventListener('keydown', (e) => {
             const step = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
             if (!step) return;
-            const next = tabs[(i + step + tabs.length) % tabs.length];
+            // The custom track tab stays hidden until the track opens.
+            const shown = tabs.filter((t) => !t.hidden);
+            const i = shown.indexOf(tab);
+            const next = shown[(i + step + shown.length) % shown.length];
             next.focus();
             select(next.dataset.sdBoard);
         });
+    });
+    // "Its leaderboard" in the custom track section.
+    document.addEventListener('sd:board', (event) => {
+        const tab = tabs.find((t) => t.dataset.sdBoard === event.detail && !t.hidden);
+        if (tab) select(tab.dataset.sdBoard);
     });
 
     const session = await sessionPromise;

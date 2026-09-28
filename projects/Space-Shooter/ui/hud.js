@@ -55,7 +55,11 @@ export function updateHUD() {
     const got = lv.shards?.size ?? 0;
     const level = lv.level ?? (state.run?.levelIndex ?? 1);
     const route = lv.track ? `\nLAP 1/1  ·  CORNERS ${lv.trackProgress?.passed || 0}/${lv.track.checkpoints.length}` : '';
-    missionEl.textContent = `${String(level).padStart(2, '0')} / ${MAX_LEVEL}  ${lv.levelInfo?.title || 'Gate network'}\nSHARDS ${got}/${required}  ·  FLUX ${Math.floor(lv.flux || 0)}%${route}`;
+    // The custom track is one lap outside the network: no "n / 5".
+    const where = state.run?.kind === 'custom'
+      ? `CUSTOM${state.run.preview ? ' · PREVIEW' : ''}`
+      : `${String(level).padStart(2, '0')} / ${MAX_LEVEL}`;
+    missionEl.textContent = `${where}  ${lv.levelInfo?.title || 'Gate network'}\nSHARDS ${got}/${required}  ·  FLUX ${Math.floor(lv.flux || 0)}%${route}`;
   }
   if (lessonEl) lessonEl.textContent = lv.levelInfo?.lesson || '';
   if (instructionEl) instructionEl.textContent = lv.lockedInStart ? (state.input.touch.active ? 'Tap BOOST after the countdown to launch. GAS accelerates; BRAKE spends Flux.' : 'Press Space after the countdown. Coast while you turn; use X to brake with Flux.') : lv.levelInfo?.briefing || '';

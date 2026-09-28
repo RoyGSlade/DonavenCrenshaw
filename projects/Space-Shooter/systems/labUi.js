@@ -71,10 +71,19 @@ export function initLab(lab) {
     const { level, elapsedMs } = event.detail || {};
     if (Number.isFinite(elapsedMs)) log.circuit(level, elapsedMs);
   });
-  window.addEventListener('roadmap:runComplete', (event) => {
+  window.addEventListener('roadmap:runComplete', (event) => showReport(event.detail?.totalMs));
+  // The custom track under lab rules: one lap, same report, never saved.
+  window.addEventListener('stardust:customRunStart', () => log.reset());
+  window.addEventListener('stardust:customRunComplete', (event) => {
+    const { totalMs, title } = event.detail || {};
+    if (Number.isFinite(totalMs)) log.circuit('custom', totalMs, title || 'Custom track');
+    showReport(totalMs);
+  });
+
+  function showReport(totalMs) {
     const out = byId('starmap-end-save');
     if (!out) return;
-    const report = labReport(lab, log.data, event.detail?.totalMs);
+    const report = labReport(lab, log.data, totalMs);
     const pre = el('pre', report);
     pre.className = 'lab-report';
     pre.tabIndex = 0;
@@ -85,5 +94,5 @@ export function initLab(lab) {
     button.addEventListener('click', () => copy(report, status));
     out.replaceChildren(el('p', 'Playtest lab run, not saved.'), pre, button, status);
     out.hidden = false;
-  });
+  }
 }

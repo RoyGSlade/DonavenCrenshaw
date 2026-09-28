@@ -1,6 +1,8 @@
 import { rechargeBoost } from '../systems/flight.js';
 import { state, config, MAX_LEVEL } from "../../state.js";
 import { createLevelLayout, formatMs } from "../../data.js";
+import { createCustomLayout, CUSTOM_LEVEL } from "../levels.js";
+import { activeCustomTrack, customMusic } from "../../systems/customTrack.js";
 import { resizeCanvas } from "../../ui/graphics.js";
 import { updateHUD, toast } from "../../ui/hud.js";
 import { openEndOverlay } from "../../ui/overlays.js";
@@ -136,7 +138,9 @@ export function buildLevel(level, _existingNodes = null) {
   state.gfx.camera._baseZoom = config.CAMERA_BASE_ZOOM;
   resizeCanvas();
   setupResponsiveScaling();
-  const layout = createLevelLayout(level);
+  // The custom track is its own one-circuit run; level is CUSTOM_LEVEL there.
+  const custom = level === CUSTOM_LEVEL;
+  const layout = custom ? createCustomLayout(activeCustomTrack()) : createLevelLayout(level);
   const start = layout.nodes.find((n) => n.kind === "start");
   const startPos = { x: start.x + 0.5, y: start.y + 0.5 };
   state.gfx.camera.x = startPos.x;
@@ -186,7 +190,7 @@ export function buildLevel(level, _existingNodes = null) {
     nearestShardTarget: null,
   };
   findNearestShard();
-  playMusic(`level${level}`);
+  playMusic(custom ? customMusic(activeCustomTrack()) : `level${level}`);
   playGateMotif(false);
   updateHUD();
 }
@@ -217,6 +221,11 @@ export function tryFinishLevel() {
   ) {
     pauseTimer();
     lv.completed = true;
+    // A custom-track lap is the whole run: no network circuit events, splits or boards.
+    if (lv.level === CUSTOM_LEVEL) {
+      finishCustomRun();
+      return;
+    }
     window.dispatchEvent(
       new CustomEvent("stardust:levelComplete", {
         detail: { level: lv.level, elapsedMs: lv.activeMs },
@@ -258,6 +267,26 @@ export async function finishRun() {
   window.dispatchEvent(
     new CustomEvent("roadmap:runComplete", {
       detail: { runId: state.run.runId, totalMs: ms },
+    }),
+  );
+}
+/** The end of a custom-track run: one lap, its own event for its own board. */
+export function finishCustomRun() {
+  const ms = Math.round(state.run.totalActiveMs),
+    formatted = formatMs(ms);
+  const title = state.run.current?.levelInfo?.title || "Custom track";
+  const preview = !!state.run.preview;
+  toast(`${title} complete. ${formatted}.`);
+  if (document.fullscreenElement) {
+    try {
+      document.exitFullscreen().catch(() => {});
+    } catch {}
+  }
+  stopEngine();
+  openEndOverlay(formatted, { kind: "custom", title, preview });
+  window.dispatchEvent(
+    new CustomEvent("stardust:customRunComplete", {
+      detail: { runId: state.run.runId, totalMs: ms, title, preview },
     }),
   );
 }

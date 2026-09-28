@@ -162,13 +162,27 @@ function apexPosition(track, index) {
     y: track.points[index].y + (tx / length) * turn * 0.7,
   };
 }
-function asteroidScale(level, index) {
+function asteroidScale(seed, index) {
   // Stable per sector/obstacle, including both requested endpoints across the pack.
-  return [1.125, 0.75, 0.875, 1, 1.25][(level + index) % 5];
+  return [1.125, 0.75, 0.875, 1, 1.25][(seed + index) % 5];
 }
 export function createLevelLayout(level) {
   const source = LEVELS[level - 1];
   if (!source) throw new RangeError(`Unknown level: ${level}`);
+  return createTrackLayout(source, { level, idPrefix: `L${level}` });
+}
+
+/**
+ * The custom track (tracks/custom-track.js, or an editor draft) in the same
+ * LEVELS format. Its signal ids are CT-S1…; it is never part of the network.
+ */
+export const CUSTOM_LEVEL = "custom";
+export function createCustomLayout(source) {
+  return createTrackLayout(source, { level: CUSTOM_LEVEL, idPrefix: "CT", scaleSeed: 0 });
+}
+
+/** Any LEVELS-format source to a playable layout. */
+export function createTrackLayout(source, { level, idPrefix, scaleSeed = level } = {}) {
   const track = createTrack(source.points, source.width, source.title);
   const colors = ["blue", "green", "purple", "pink", "blue"];
   const apexes = source.apexes.map((index) => ({
@@ -188,7 +202,7 @@ export function createLevelLayout(level) {
       kind: "planet",
       x: point.x - 0.5,
       y: point.y - 0.5,
-      id: `L${level}-S${index + 1}`,
+      id: `${idPrefix}-S${index + 1}`,
       color: colors[index],
       corner: point.corner,
       title: `${source.title} apex ${index + 1}`,
@@ -207,7 +221,7 @@ export function createLevelLayout(level) {
         segment.start + segment.length * 0.5,
         side * 1.95,
       );
-      const sizeScale = asteroidScale(level, index),
+      const sizeScale = asteroidScale(scaleSeed, index),
         baseRadius = 1;
       const hazard = {
         kind: "asteroid",
@@ -219,6 +233,7 @@ export function createLevelLayout(level) {
         hp: 100,
         maxHp: 100,
         destructible: true,
+        segment: segmentIndex,
       };
       if (source.moving?.includes(segmentIndex)) {
         const axis = Math.abs(segment.tx) > Math.abs(segment.ty) ? "y" : "x";

@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createLevelLayout } from "../projects/Space-Shooter/engine/levels.js";
+import { createLevelLayout, LEVELS } from "../projects/Space-Shooter/engine/levels.js";
+import { checkTrackLayout, checkTrackSource, flyCarefulLap, sceneForLayout } from "../projects/Space-Shooter/engine/trackChecks.js";
 import { generateLevelNodes } from "../projects/Space-Shooter/data.js";
 import { state, config } from "../projects/Space-Shooter/state.js";
 import { handlePlayerMovement } from "../projects/Space-Shooter/engine/systems/movement.js";
@@ -26,34 +27,7 @@ import {
   hasRequiredShards,
 } from "../projects/Space-Shooter/engine/rules.js";
 
-function sceneFor(level) {
-  const scene = createLevelLayout(level),
-    portal = scene.track.portal;
-  return {
-    ...scene,
-    level,
-    player: {
-      x: portal.x,
-      y: portal.y,
-      vx: 0,
-      vy: 0,
-      angle: portal.angle,
-      hp: 100,
-      invulnTimer: 0,
-    },
-    startPos: { x: portal.x, y: portal.y },
-    lockedInStart: false,
-    launched: true,
-    fuel: 100,
-    flux: 30,
-    boost: 3,
-    elapsed: 0,
-    trackProgress: createTrackProgress(),
-    shards: new Set(),
-    activeMs: 0,
-    timerRunning: false,
-  };
-}
+const sceneFor = (level) => sceneForLayout(createLevelLayout(level), level);
 for (let level = 1; level <= 5; level++) {
   test(`circuit ${level} has deterministic apex signals, one portal, sized obstacles and a connected corridor`, () => {
     const scene = createLevelLayout(level),
@@ -72,47 +46,17 @@ for (let level = 1; level <= 5; level++) {
       gate = scene.nodes.find((n) => n.kind === "gate");
     assert.equal(start.x, gate.x);
     assert.equal(start.y, gate.y);
-    assert.ok(track.width >= 5.8);
-    assert.ok(track.length > 95);
-    for (const point of track.points) {
-      assert.ok(
-        point.x - track.width / 2 > 0 && point.x + track.width / 2 < 48,
-      );
-      assert.ok(
-        point.y - track.width / 2 > 0 && point.y + track.width / 2 < 32,
-      );
-    }
-    for (const node of scene.nodes) {
-      assert.ok(
-        isInsideTrack(track, node.x + 0.5, node.y + 0.5, config.PLAYER_RADIUS),
-        `${node.kind} outside corridor`,
-      );
-      for (const h of scene.hazards)
-        assert.ok(
-          Math.hypot(node.x + 0.5 - h.x, node.y + 0.5 - h.y) >
-            h.radius + config.PLAYER_RADIUS + 0.1,
-        );
-    }
+    // Width, lap length, bounds, signals and rocks in the lane and clear of
+    // each other, the racing line clear of rocks, a drivable centreline and no
+    // merging lanes: the shared rules the custom track and editor also use.
+    const { problems, warnings } = checkTrackLayout(scene, LEVELS[level - 1]);
+    assert.deepEqual(problems, []);
+    assert.deepEqual(warnings, []);
+    assert.deepEqual(checkTrackSource(LEVELS[level - 1]), []);
     for (const h of scene.hazards) {
       assert.ok(h.sizeScale >= 0.75 && h.sizeScale <= 1.25);
       assert.equal(h.radius, h.baseRadius * h.sizeScale);
     }
-    // Continuous centerline and central racing lane remain drivable along the entire lap.
-    for (let d = 0; d < track.length; d += 0.1) {
-      const p = pointOnTrack(track, d);
-      assert.ok(isInsideTrack(track, p.x, p.y, config.PLAYER_RADIUS));
-    }
-    // Nonlocal portions do not merge into an infield shortcut; local corner cutting is intentional.
-    for (let a = 0; a < track.length; a += 1)
-      for (let b = a + 20; b < track.length; b += 1) {
-        if (track.length - (b - a) < 20) continue;
-        const p = pointOnTrack(track, a),
-          q = pointOnTrack(track, b);
-        assert.ok(
-          Math.hypot(p.x - q.x, p.y - q.y) > track.width,
-          `nonlocal lanes merge at ${a},${b}`,
-        );
-      }
   });
 }
 test("swept rails block a cross-infield move even when its endpoint is on another valid lane", () => {
@@ -224,107 +168,28 @@ test("destroying a scaled asteroid removes its collision, and infield rails abso
   assert.equal(shots.length, 0);
 });
 
-/** Closed-loop pilot: only turn/thrust inputs, real hazards, gravity, enemies and rails. */
+/** Closed-loop pilot (engine/trackChecks.js): only turn/thrust inputs, real hazards, gravity, enemies and rails. */
 function flyLap(level, rear = false) {
-  const scene = sceneFor(level),
-    player = scene.player,
-    gate = scene.nodes.find((n) => n.kind === "gate"),
-    portal = scene.track.portal;
-  const at = (forward, lateral) => ({
-    x: portal.x + portal.tx * forward + portal.nx * lateral,
-    y: portal.y + portal.ty * forward + portal.ny * lateral,
-  });
-  const path = rear
-    ? [
-        ...scene.safeRoute.slice(0, -1),
-        at(-2, 1.7),
-        at(2, 1.7),
-        at(2, 0),
-        at(-2, 0),
-      ]
-    : scene.safeRoute;
-  state.mode = "roadmap";
-  state.ui.countdownActive = false;
-  state.gfx.particles = [];
-  const shots = [];
-  let target = 1,
-    time = 0,
-    finished = false;
-  for (; time < 60 && target < path.length; time += 1 / 120) {
-    const goal = path[target],
-      dx = goal.x - player.x,
-      dy = goal.y - player.y,
-      d = Math.hypot(dx, dy);
-    if (d < 0.3) {
-      target++;
-      continue;
-    }
-    const desiredSpeed = Math.min(4, Math.sqrt(5 * d));
-    const ax = ((dx / d) * desiredSpeed - player.vx) * 2,
-      ay = ((dy / d) * desiredSpeed - player.vy) * 2;
-    let error = Math.atan2(ay, ax) - player.angle;
-    error = Math.atan2(Math.sin(error), Math.cos(error));
-    Object.assign(state.keys, {
-      launch: false,
-      boost: false,
-      brake: false,
-      left: false,
-      right: false,
-      turnStrength: Math.max(-1, Math.min(1, error * 2)),
-      thrustStrength:
-        Math.abs(error) < 0.35 ? Math.min(1, Math.hypot(ax, ay) / 5) : 0,
-      backStrength: 0,
-      strafeLeft: false,
-      strafeRight: false,
-    });
-    const previous = { x: player.x, y: player.y };
-    updateHazards(scene, 1 / 120);
-    applyGravity(player, scene.gravityWells, 1 / 120);
-    handlePlayerMovement(1 / 120, scene, player, {
-      onFuelUse: (amount) => (scene.fuel -= amount),
-    });
-    resolveHazards(scene, player);
-    constrainToTrack(scene.track, player, previous, config.PLAYER_RADIUS);
-    updateTrackProgress(scene, previous);
-    player.invulnTimer = Math.max(0, player.invulnTimer - 1 / 120);
-    updateDrones(scene, player, shots, 1 / 120);
-    for (let i = shots.length - 1; i >= 0; i--) {
-      const shot = shots[i];
-      shot.prevX = shot.x;
-      shot.prevY = shot.y;
-      shot.x += shot.vx / 120;
-      shot.y += shot.vy / 120;
-      shot.life -= 1 / 120;
-      if (shot.life <= 0) shots.splice(i, 1);
-    }
-    resolveRoadmapProjectiles(scene, shots);
-    for (const node of scene.nodes.filter((n) => n.kind === "planet"))
-      if (
-        Math.hypot(player.x - node.x - 0.5, player.y - node.y - 0.5) <=
-        config.PLANET_RADIUS + config.PLAYER_RADIUS
-      )
-        scene.shards.add(node.id);
-    scene.activeMs = time * 1000;
-    const relative = portalCoordinates(scene.track, player);
-    const ordinary =
-      isLapReady(scene) &&
-      hasRequiredShards(scene) &&
-      Math.hypot(relative.forward, relative.lateral) <= config.GATE_RADIUS &&
-      relative.forward < -0.12 &&
-      relative.velocity > 0.15;
-    if (rear && ordinary)
-      throw new Error("Secret pilot accidentally triggered the ordinary exit");
-    if (rear ? isBacksideArenaEntry(gate, scene, 0) : ordinary) {
-      finished = true;
-      break;
-    }
-    assert.ok(
-      isInsideTrack(scene.track, player.x, player.y, config.PLAYER_RADIUS),
-    );
+  const layout = createLevelLayout(level);
+  const options = { level };
+  if (rear) {
+    options.route = (scene) => {
+      const portal = scene.track.portal;
+      const at = (forward, lateral) => ({
+        x: portal.x + portal.tx * forward + portal.nx * lateral,
+        y: portal.y + portal.ty * forward + portal.ny * lateral,
+      });
+      return [...scene.safeRoute.slice(0, -1), at(-2, 1.7), at(2, 1.7), at(2, 0), at(-2, 0)];
+    };
+    options.finish = (scene, ordinary) => {
+      if (ordinary) throw new Error("Secret pilot accidentally triggered the ordinary exit");
+      return isBacksideArenaEntry(scene.nodes.find((n) => n.kind === "gate"), scene, 0);
+    };
   }
-  return { scene, time, finished };
-}
-for (let level = 1; level <= 5; level++)
+  const result = flyCarefulLap(layout, options);
+  assert.equal(result.leftLane, false, "pilot left the lane");
+  return result;
+}for (let level = 1; level <= 5; level++)
   test(`full circuit ${level}: controls fly all checkpoints and apexes back to original portal under60`, (t) => {
     const { scene, time, finished } = flyLap(level);
     assert.ok(

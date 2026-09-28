@@ -5,6 +5,7 @@ import { closePauseOverlay, openStartOverlay, closeEndOverlay } from '../ui/over
 import { updateHUD, toast } from '../ui/hud.js';
 import { resizeCanvas } from '../ui/graphics.js';
 import { buildLevel, pauseTimer, updateRoadmap } from './modes/roadmap.js';
+import { CUSTOM_LEVEL } from './levels.js';
 import { buildArena, updateArena } from './modes/arena.js';
 import { ensureEngineRunning } from './core.js';
 import { startCountdown } from './lifecycle.js';
@@ -37,7 +38,10 @@ export function updateCurrentMode(dt) {
   }
 }
 
-export function startNewRun() {
+// kind 'network' is the five-circuit run; 'custom' is one lap of the custom
+// track, with its own start/complete events so the network run, its splits,
+// challenges and boards never see it. preview (custom only) is never saved.
+export function startNewRun({ kind = 'network', preview = false } = {}) {
   // Ensure engine loop is active (may have been stopped after a completed run)
   ensureEngineRunning();
   // Clear any lingering end overlay from prior run
@@ -47,18 +51,22 @@ export function startNewRun() {
   state.ui.showBossUI = false;
   state.ui.showMinimap = true;
   state.ui.showStartOverlay = false;
+  const custom = kind === 'custom';
   const runId = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
   state.run = {
     runId,
+    kind: custom ? 'custom' : 'network',
+    preview: custom && !!preview,
     totalActiveMs: 0,
     levelIndex: 1,
     seeds: Array.from({ length: MAX_LEVEL }, (_, i) => `${runId}-L${i + 1}`),
     current: null,
   };
   state.ui.paused = false;
-  buildLevel(1);
+  buildLevel(custom ? CUSTOM_LEVEL : 1);
   startCountdown(config.COUNTDOWN_DURATION, state.run.current);
-  window.dispatchEvent(new CustomEvent('stardust:runStart', { detail: { runId } }));
+  if (custom) window.dispatchEvent(new CustomEvent('stardust:customRunStart', { detail: { runId, preview: state.run.preview } }));
+  else window.dispatchEvent(new CustomEvent('stardust:runStart', { detail: { runId } }));
 }
 
 export function retryRun() {
@@ -70,8 +78,8 @@ export function retryRun() {
 
   closePauseOverlay();
 
-  // Retry is a fresh run with the same deterministic authored routes.
-  startNewRun();
+  // Retry is a fresh run of the same kind with the same deterministic authored routes.
+  startNewRun({ kind: state.run.kind, preview: state.run.preview });
 }
 
 export function quitRun() {
