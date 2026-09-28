@@ -150,11 +150,20 @@ for (const label of ['Now', 'underplain', 'BetterFingers', 'GetFast', 'PDFManage
 if (primaryNav.includes('data-route="projects"')) failures.push('primary navigation still contains the retired Projects item');
 if (![...primaryNav.matchAll(/<a\b[^>]*>/gi)].some(([tag]) => /data-route="kingdoms-caravans"/i.test(tag) && /href="[^\"]*kingdoms-caravans\//i.test(tag))) failures.push('primary navigation is missing a direct Kingdoms & Caravans link');
 if (/Crenshaw Systems|Service process|data-nav-group="crenshaw-systems"/i.test(primaryNav)) failures.push('primary navigation still promotes the hidden business branch');
-if (!/UNDERPLAIN · FREE SOFTWARE BY DONAVEN CRENSHAW/i.test(home)) failures.push('homepage does not lead with underplain');
+const stardustLead = home.match(/<section\b[^>]*class="[^"]*home-stardust-lead[^"]*"[\s\S]*?<\/section>/i)?.[0] || '';
+if (!stardustLead) failures.push('homepage does not lead with Stardust');
+if (!/<h1\b/i.test(stardustLead)) failures.push('homepage Stardust lead does not own the page heading');
+if (!/href="[^"]*games\/stardust\/"[^>]*>PLAY STARDUST</i.test(stardustLead)) failures.push('homepage Stardust lead is missing a direct Play link');
+if (!/signed in[\s\S]*leaderboard/i.test(stardustLead)) failures.push('homepage Stardust lead does not say which runs count');
+const leadIndex = home.search(/home-stardust-lead/i);
+const kingdomsIndex = home.search(/class="[^"]*game-spotlight/i);
+const betterFingersIndex = home.search(/home-betterfingers-spotlight/i);
+if (!(leadIndex >= 0 && kingdomsIndex > leadIndex && (betterFingersIndex < 0 || betterFingersIndex > kingdomsIndex))) failures.push('homepage order must be Stardust, then Kingdoms & Caravans, then BetterFingers');
+if (!/UNDERPLAIN · FEATURED RELEASE/i.test(home)) failures.push('homepage no longer labels BetterFingers as underplain free software');
 if (!/home-betterfingers-spotlight/i.test(home) || !/assets\/projects\/betterfingers\/showcase\/complete-workflow\.png/i.test(home)) failures.push('homepage is missing the BetterFingers visual spotlight');
 if (!/href="\/projects\/betterfingers\/"/i.test(home)) failures.push('homepage spotlight does not link to BetterFingers');
 if (!/<section\b[^>]*class="[^"]*game-spotlight[^"]*"[\s\S]*href="[^\"]*kingdoms-caravans\//i.test(home)) failures.push('homepage is missing the Kingdoms & Caravans game spotlight/link');
-if (!/datetime="2026-08-26"/i.test(home)) failures.push('homepage current-state date is stale');
+if (!/datetime="2026-09-27"/i.test(home)) failures.push('homepage current-state date is stale');
 if (/BRING ME A BUSINESS PROBLEM|Crenshaw Systems/i.test(home)) failures.push('homepage still promotes the hidden business branch');
 
 const betterFingersPage = fs.existsSync(routeFile('/projects/betterfingers/')) ? fs.readFileSync(routeFile('/projects/betterfingers/'), 'utf8') : '';

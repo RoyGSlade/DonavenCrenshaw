@@ -11,7 +11,55 @@
             <% const betterFingers = importedProjects.find((item) => item.id === 'betterfingers'); %>
             <% const betterFingersImage = betterFingers && betterFingers.showcase && betterFingers.showcase.slides[0] && betterFingers.showcase.slides[0].media[0]; %>
             <% const betterFingersRelease = betterFingers && betterFingers.project.links.find((link) => link.type === 'documentation'); %>
-            <% if (frontmatter.hero_title) { %><%- include('hero', { frontmatter }) %><% } %>
+            <%
+              // The lead game owns the first screen. Times come from the committed hub
+              // snapshot, so the homepage never waits on (or breaks with) the hub.
+              const snap = data.hubSnapshot;
+              const podium = snap ? snap.leaderboard.slice(0, 3) : [];
+              const two = (n) => String(n).padStart(2, '0');
+              const clock = (ms) => {
+                const t = Math.max(0, Math.round(Number(ms) || 0));
+                return `${Math.floor(t / 60000)}:${two(Math.floor(t / 1000) % 60)}.${two(Math.floor((t % 1000) / 10))}`;
+              };
+            %>
+            <% if (frontmatter.lead_game === 'stardust') { %>
+                <section class="container home-stardust-lead" aria-labelledby="stardust-lead-title">
+                    <div class="home-stardust-copy">
+                        <p class="section-label"><%= frontmatter.hero_kicker %></p>
+                        <h1 id="stardust-lead-title"><%= frontmatter.hero_title %></h1>
+                        <p class="home-stardust-lede"><%= frontmatter.hero_sub %></p>
+                        <div class="home-stardust-actions">
+                            <a class="sd-cta home-stardust-play" href="<%= siteRoot %>games/stardust/">PLAY STARDUST</a>
+                            <a class="btn-noir" href="<%= siteRoot %>stardust/#fastest-runs">LEADERBOARD</a>
+                        </div>
+                        <p class="home-stardust-rules">Nothing to install. Guests fly every circuit; only runs flown while <a href="<%= siteRoot %>account/">signed in</a> go on the leaderboard.</p>
+                    </div>
+                    <div class="home-stardust-side">
+                        <a class="home-stardust-visual" href="<%= siteRoot %>stardust/" aria-label="About Stardust">
+                            <img src="<%= siteRoot %>assets/images/stardust/alpha-relay-flight.webp" width="1200" height="750" alt="The courier ship boosting away from the launch portal on Alpha Relay, with the lap timer, hull and fuel gauges and the circuit minimap." loading="eager" fetchpriority="high">
+                        </a>
+                        <% if (podium.length) { %>
+                        <div class="home-stardust-board" aria-labelledby="stardust-lead-board">
+                            <p id="stardust-lead-board" class="mono home-stardust-board-title">TIME TO BEAT · FULL NETWORK<% if (snap.generatedAt) { %> · <time datetime="<%= snap.generatedAt %>"><%= snap.generatedAt.slice(0, 10) %></time><% } %></p>
+                            <ol>
+                                <% podium.forEach((row) => { %><li><span class="mono"><%= two(row.rank) %></span><span><%= row.name %></span><span class="mono"><%= clock(row.timeMs) %></span></li><% }); %>
+                            </ol>
+                        </div>
+                        <% } %>
+                    </div>
+                </section>
+            <% } else if (frontmatter.hero_title) { %><%- include('hero', { frontmatter }) %><% } %>
+            <section class="container game-spotlight" aria-labelledby="kingdoms-caravans-spotlight-title">
+                <a class="game-spotlight-visual" href="<%= siteRoot %>kingdoms-caravans/" aria-label="Explore Kingdoms and Caravans">
+                    <img src="<%= siteRoot %>assets/kingdoms-caravans/city.png" alt="Kingdoms and Caravans city preview with buildings, workers, and surrounding landscape" loading="lazy">
+                </a>
+                <div class="game-spotlight-copy">
+                    <p class="section-label">PLAYABLE NOW · EARLY GAME BUILD</p>
+                    <h2 id="kingdoms-caravans-spotlight-title">Kingdoms &amp; Caravans</h2>
+                    <p class="section-desc">Build a growing city, move logs into planks, and keep food in reserve while two raider waves approach. It is an unfinished, unsigned Windows friend playtest focused on city supply, housing, and defense.</p>
+                    <p><a class="btn btn-primary" href="<%= siteRoot %>kingdoms-caravans/">EXPLORE THE PLAYTEST</a> <a class="btn-noir" href="https://github.com/RoyGSlade/KingdomsAndCaravans/releases/tag/v0.3.2" rel="noopener noreferrer">RELEASE NOTES</a></p>
+                </div>
+            </section>
             <% if (betterFingers) { %>
                 <section class="container home-betterfingers-spotlight" aria-labelledby="betterfingers-spotlight-title">
                     <a class="home-betterfingers-visual" href="<%= siteRoot %>projects/betterfingers/" aria-label="Explore BetterFingers">
@@ -30,17 +78,6 @@
                     </div>
                 </section>
             <% } %>
-            <section class="container game-spotlight" aria-labelledby="kingdoms-caravans-spotlight-title">
-                <a class="game-spotlight-visual" href="<%= siteRoot %>kingdoms-caravans/" aria-label="Explore Kingdoms and Caravans">
-                    <img src="<%= siteRoot %>assets/kingdoms-caravans/city.png" alt="Kingdoms and Caravans city preview with buildings, workers, and surrounding landscape" loading="lazy">
-                </a>
-                <div class="game-spotlight-copy">
-                    <p class="section-label">PLAYABLE NOW · EARLY GAME BUILD</p>
-                    <h2 id="kingdoms-caravans-spotlight-title">Kingdoms &amp; Caravans</h2>
-                    <p class="section-desc">Build a growing city, move logs into planks, and keep food in reserve while two raider waves approach. It is an unfinished, unsigned Windows friend playtest focused on city supply, housing, and defense.</p>
-                    <p><a class="btn btn-primary" href="<%= siteRoot %>kingdoms-caravans/">EXPLORE THE PLAYTEST</a> <a class="btn-noir" href="https://github.com/RoyGSlade/KingdomsAndCaravans/releases/tag/v0.3.2" rel="noopener noreferrer">RELEASE NOTES</a></p>
-                </div>
-            </section>
             <%- content %>
             <% const featuredProjects = importedProjects.filter((item) => item.project.featured && item.id !== 'betterfingers'); %>
             <% const latestUpdates = importedProjects.flatMap((item) => item.publishedUpdates || []).sort((a, b) => b.date.localeCompare(a.date) || a.id.localeCompare(b.id)).slice(0, 5); %>
