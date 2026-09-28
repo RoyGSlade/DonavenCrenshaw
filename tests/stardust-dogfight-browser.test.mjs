@@ -158,17 +158,24 @@ test(
       "Round interrupted",
     );
     await blocked;
+    // Relay v3: a dropped guest's seat is held for a rejoin instead of closing the room.
     await guestContext.close();
-    await host.waitForTimeout(200);
+    await host.waitForFunction(
+      () => window.__dogfightDiag().lobby?.seats[1].presence === "away",
+    );
+    assert.match(await host.locator("#lobby-seats").textContent(), /Orange · disconnected/);
+    assert.equal(server.rooms.size, 1);
     t.diagnostic(
       JSON.stringify({
         afterDisconnect: await diagnostics(host),
-        status: await host.locator("#status").textContent(),
+        seats: await host.locator("#lobby-seats").textContent(),
         rooms: server.rooms.size,
       }),
     );
+    await host.locator("#result-leave").click();
     await host.waitForFunction(() => window.__dogfightDiag().phase === "lobby");
     assert.equal((await diagnostics(host)).phase, "lobby");
+    await host.waitForTimeout(100);
     assert.equal(server.rooms.size, 0);
     assert.deepEqual(errors, []);
   },

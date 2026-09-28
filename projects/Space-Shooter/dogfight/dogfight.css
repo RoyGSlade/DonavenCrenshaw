@@ -401,7 +401,9 @@ footer {
   }
   .panel {
     padding: 20px;
-    max-height: calc(100dvh - 80px);
+    /* Clear the 58px header when the panel fills the screen. */
+    top: calc(50% + 29px);
+    max-height: calc(100dvh - 90px);
   }
   h1 {
     font-size: 35px;
@@ -567,5 +569,29 @@ progress::-moz-progress-bar {
 .violet progress { accent-color: #c7a6ff; }
 .violet progress::-webkit-progress-value { background: #c7a6ff; }
 .violet progress::-moz-progress-bar { background: #c7a6ff; }
+/* After-match lobby, rejoin and invites. */
+.seats { list-style: none; margin: 12px 0; padding: 0; display: grid; gap: 6px; }
+.seats li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px; padding: 7px 9px; border: 1px solid var(--line); border-radius: 4px; font: 12px Consolas, monospace; background: #08131f; }
+.seats li button, .prompt button, #friend-list button, .lobby-share button { padding: 7px 11px; }
+.seats li.away { border-style: dashed; }
+#after-lobby details, #invite-friends { margin: 10px 0; border: 1px solid var(--line); border-radius: 4px; padding: 8px 10px; }
+#after-lobby summary, #invite-friends summary { cursor: pointer; color: var(--text); font-size: 12px; }
+#after-lobby #ship-builder, #after-lobby #map-picker { margin: 10px 0 0; }
+#result > button { margin: 4px 6px 4px 0; }
+.lobby-share { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+#lobby-code { font: 14px Consolas, monospace; letter-spacing: .12em; color: var(--cyan); }
+#copy-link { margin-left: 6px; }
+.prompt { margin: 14px 0; padding: 12px 14px; border: 1px solid #397078; border-radius: 4px; background: #102d3a; }
+.prompt p { margin: 0 0 10px; }
+.prompt button + button { margin-left: 6px; }
+#invite-list, #friend-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+#invite-list li, #friend-list li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px; font-size: 12px; min-width: 0; }
+#invite-list li span, #friend-list li span { overflow-wrap: anywhere; min-width: 0; }
+#friend-list { margin-top: 8px; }
+#invite-status.error { color: var(--orange); }
+#pause-panel { position: fixed; top: 34%; left: 50%; transform: translateX(-50%); z-index: 12; width: min(440px, calc(100% - 30px)); padding: 14px 16px; text-align: center; background: #0b152ef2; border: 1px solid var(--orange); border-radius: 6px; }
+#pause-panel p { margin: 0; font: 13px Consolas, monospace; line-height: 1.5; }
+#pause-actions, #reconnect-actions { margin-top: 10px; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+@media (orientation: landscape) and (max-height: 600px) { #pause-panel { top: 22%; padding: 10px 12px; } }
 #spectator-status { position: fixed; bottom: 44px; left: 50%; transform: translateX(-50%); z-index: 7; max-width: 90vw; padding: 8px 12px; text-align: center; background: #0b152eee; border: 1px solid #c7a6ff; border-radius: 6px; font: 12px Consolas, monospace; color: #e3d6ff; pointer-events: none; }
 @media (orientation: landscape) and (max-height: 600px) { #spectator-status { bottom: 28px; max-width: 65vw; font-size: 10px; } }

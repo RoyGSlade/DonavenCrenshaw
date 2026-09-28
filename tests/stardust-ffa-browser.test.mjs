@@ -316,14 +316,19 @@ test(
       assert.ok(bounds.x >= 0 && bounds.x + bounds.width <= 390, `Pilot ${id} hull must fit the phone viewport`);
     }
     await violet.screenshot({ path: join(evidence, "ffa-portrait.png") });
+    // Relay v3: a dropped pilot pauses the round for everyone while the seat is held.
     await contexts[1].close();
     for (const page of [host, violet]) {
-      await page.waitForFunction(() => window.__ffaDiag().phase === "lobby");
-      assert.match(
-        await page.locator("#status").textContent(),
-        /disconnected|closed/i,
-      );
+      await page.locator("#pause-panel").waitFor({ state: "visible" });
+      assert.match(await page.locator("#pause-text").textContent(), /Waiting for Orange/);
+      assert.equal((await diag(page)).paused, true);
     }
+    assert.equal(server.rooms.size, 1);
+    // The host leaving still closes the room for everyone.
+    await host.locator("#leave").click();
+    await violet.waitForFunction(() => window.__ffaDiag().phase === "lobby");
+    assert.match(await violet.locator("#status").textContent(), /disconnected|closed/i);
+    await host.waitForTimeout(100);
     assert.equal(server.rooms.size, 0);
     assert.deepEqual(errors, []);
     t.diagnostic(
