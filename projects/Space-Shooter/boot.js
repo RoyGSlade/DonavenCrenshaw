@@ -17,6 +17,7 @@ try {
 }
 checkBackend().then(result => {
   document.getElementById('connection-status').textContent = result.available ? 'LOCAL FLIGHT · RELAY ONLINE' : 'LOCAL FLIGHT';
-  // Saved runs need the hub; without it every flight stays local.
-  if (result.available) initRunSaving().catch(error => console.warn('Stardust: leaderboard unavailable', error));
+  // Saved runs need the hub. Run saving starts either way: while the hub is
+  // down it says so, and it reconnects on every launch.
+  initRunSaving().catch(error => console.warn('Stardust: leaderboard unavailable', error));
 });

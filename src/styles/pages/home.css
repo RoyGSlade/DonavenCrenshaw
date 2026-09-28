@@ -4,6 +4,123 @@
     gap: clamp(3rem, 7vw, 6rem);
 }
 
+/* Stardust leads the first screen: pitch and Play on the left, real gameplay and the
+   current times to beat on the right. Colors follow the Stardust landing page. */
+.home-stardust-lead {
+    --sd-ice: #e6f5ff;
+    --sd-frost: #a9dcff;
+    --sd-line: rgba(169, 220, 255, 0.2);
+    display: grid;
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+    gap: clamp(1.4rem, 4vw, 3.2rem);
+    align-items: center;
+    margin-top: clamp(1.5rem, 4vw, 3rem);
+    margin-bottom: clamp(3rem, 7vw, 6rem);
+    padding: clamp(1.15rem, 3vw, 2.4rem);
+    border: 1px solid var(--sd-line);
+    border-radius: var(--radius-cut);
+    background:
+        radial-gradient(ellipse at 80% 20%, rgba(120, 190, 255, 0.14), transparent 60%),
+        #03070b;
+    box-shadow: var(--shadow-high);
+}
+
+.home-stardust-copy {
+    display: grid;
+    gap: 1rem;
+    align-content: center;
+}
+
+.home-stardust-copy .section-label {
+    margin: 0;
+    color: var(--sd-frost);
+}
+
+.home-stardust-copy h1 {
+    margin: 0;
+    color: var(--sd-ice);
+    font-size: clamp(2.6rem, 6vw, 4.8rem);
+    line-height: 0.95;
+    letter-spacing: -0.045em;
+    text-transform: none;
+}
+
+.home-stardust-lede {
+    margin: 0;
+    color: #e3eef6;
+    font-size: clamp(1.05rem, 1.7vw, 1.3rem);
+    line-height: 1.55;
+}
+
+.home-stardust-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    padding-top: 0.35rem;
+}
+
+.home-stardust-rules {
+    margin: 0;
+    color: #9db3c4;
+    font-size: 0.9rem;
+    line-height: 1.6;
+}
+
+.home-stardust-rules a {
+    color: var(--sd-frost);
+}
+
+.home-stardust-side {
+    display: grid;
+    gap: 0.85rem;
+    min-width: 0;
+}
+
+.home-stardust-visual {
+    display: block;
+    border: 1px solid var(--sd-line);
+    border-radius: var(--radius-soft);
+    overflow: hidden;
+    background: #050707;
+}
+
+.home-stardust-visual img {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
+.home-stardust-board-title {
+    margin: 0 0 0.35rem;
+    color: var(--sd-frost);
+    font-size: 0.7rem;
+    letter-spacing: 0.14em;
+}
+
+.home-stardust-board ol {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.home-stardust-board li {
+    display: grid;
+    grid-template-columns: 3ch minmax(0, 1fr) auto;
+    gap: 0.9rem;
+    padding: 0.45rem 0;
+    border-bottom: 1px solid var(--sd-line);
+    color: #e3eef6;
+}
+
+.home-stardust-board li span:nth-child(2) {
+    overflow-wrap: anywhere;
+}
+
+.home-stardust-board li span:last-child {
+    color: var(--sd-ice);
+    font-variant-numeric: tabular-nums;
+}
+
 .home-betterfingers-spotlight {
     display: grid;
     grid-template-columns: minmax(0, 1.3fr) minmax(18rem, 0.7fr);
@@ -184,9 +301,16 @@
 }
 
 @media (max-width: 48rem) {
+    .home-stardust-lead,
     .home-betterfingers-spotlight {
         grid-template-columns: 1fr;
         padding: 1rem;
+    }
+
+    .home-stardust-actions > * {
+        width: 100%;
+        justify-content: center;
+        text-align: center;
     }
 
     .home-betterfingers-copy h2 {

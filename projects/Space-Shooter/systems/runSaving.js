@@ -22,17 +22,19 @@ function link(text, href) {
 }
 
 // The start screen line and the status chip.
-function paintPlayer(reachable) {
+function paintPlayer() {
   const note = byId('leaderboard-note');
   const chip = byId('connection-status');
   const user = recorder.player;
+  const reachable = recorder.reachable;
   if (note) {
     note.replaceChildren();
     if (user) note.append(`Signed in as ${name(user)}. Finished circuits go to the `, link('leaderboard', BOARDS_URL), '.');
     else if (reachable) note.append('Guest flight: times aren’t saved. ', link('Sign in or create an account', ACCOUNT_URL), ' to race the leaderboard.');
-    note.hidden = !user && !reachable;
+    else note.append('The leaderboard is offline right now. You can still fly; times won’t be saved until it’s back.');
+    note.hidden = false;
   }
-  if (chip && reachable) chip.textContent = user ? `SIGNED IN · ${name(user).toUpperCase()}` : 'GUEST · TIMES NOT SAVED';
+  if (chip) chip.textContent = user ? `SIGNED IN · ${name(user).toUpperCase()}` : reachable ? 'GUEST · TIMES NOT SAVED' : 'LEADERBOARD OFFLINE · TIMES NOT SAVED';
 }
 
 function paintEnd(content) {
@@ -63,15 +65,15 @@ async function paintBoard() {
   panel.hidden = false;
 }
 
+// Runs even when the hub looked down at boot: every launch reconnects, so a hub
+// that wakes up mid-session starts saving from the next run, and the player is
+// told plainly while it can't.
 export async function initRunSaving() {
   if (!recorder.enabled) return;
-  let reachable = false;
   const refresh = async () => {
     await recorder.connect();
-    // A session check that answers at all means the hub is up, even for guests.
-    reachable = true;
-    paintPlayer(reachable);
-    await paintBoard();
+    paintPlayer();
+    if (recorder.reachable) await paintBoard();
   };
   await refresh().catch(() => {});
   // Signing in happens on another page; pick it up when the player comes back.
@@ -81,7 +83,7 @@ export async function initRunSaving() {
 
   window.addEventListener('stardust:runStart', () => {
     paintEnd(null);
-    recorder.startRun().then(() => paintPlayer(reachable)).catch(() => {});
+    recorder.startRun().then(() => paintPlayer()).catch(() => {});
   });
   window.addEventListener('stardust:levelStart', (event) => recorder.startLevel(event.detail?.level));
   window.addEventListener('stardust:runQuit', () => recorder.abandon());
@@ -96,12 +98,14 @@ export async function initRunSaving() {
   window.addEventListener('roadmap:runComplete', async (event) => {
     const totalMs = event.detail?.totalMs;
     if (!recorder.player) {
-      paintEnd([`Guest run: ${clock(totalMs)} isn’t on the leaderboard. `, link('Create an account', `${ACCOUNT_URL}#create`), ' and your next run counts.']);
+      if (!recorder.reachable) paintEnd(`Your time: ${clock(totalMs)}. The leaderboard was offline, so it wasn’t saved.`);
+      else paintEnd([`Guest run: ${clock(totalMs)} isn’t on the leaderboard. `, link('Create an account', `${ACCOUNT_URL}#create`), ' and your next run counts.']);
       return;
     }
     paintEnd('Saving your time…');
     const result = await recorder.finishRun(totalMs);
     if (!result) { paintEnd('This run started before you signed in, so it wasn’t saved. The next one will be.'); return; }
+    if (result.status === 'unsaved' || result.status === 'error') { paintEnd(`Your time: ${clock(totalMs)}. ${describeResult(result, 'Full network')}`); return; }
     paintBoard().catch(() => {});
     if (result.status === 'accepted') {
       const rank = result.best?.rank ? `#${result.best.rank} on the full network` : 'Saved to the full-network board';

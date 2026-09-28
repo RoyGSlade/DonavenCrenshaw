@@ -1,21 +1,21 @@
 ---
 layout: "home"
-title: "underplain — Free software by Donaven Crenshaw"
-description: "underplain is Donaven Crenshaw's home for practical free software, led by the BetterFingers local-first dictation app."
+title: "Donaven Crenshaw — Stardust, games and free software"
+description: "Race your friends in Stardust, a free browser game by Donaven Crenshaw, then try the Kingdoms & Caravans playtest and underplain's free software."
 branch: "underplain"
 skin: "underplain"
 page_kind: "underplain-home"
-hero_kicker: "UNDERPLAIN · FREE SOFTWARE BY DONAVEN CRENSHAW"
-hero_title: "Free software that gives your time back."
-hero_sub: "underplain is where I build practical, local-first tools that keep people in control. BetterFingers is the work front and center right now."
-hero_scene: "desk"
+lead_game: "stardust"
+hero_kicker: "FREE BROWSER GAME · EARLY BUILD"
+hero_title: "Race your friends in Stardust."
+hero_sub: "Fly five drift circuits in your browser, set a time, and dare your friends to beat it."
 ---
 
 <div class="container stack-gap-lg home-page-content">
   <section class="section-block" aria-labelledby="current-state">
     <div class="section-header">
-      <div><h2 id="current-state" class="section-title section-label">Current state</h2><p class="section-desc">The live proof, the remaining gap, and the next useful test.</p></div>
-      <time class="section-subtitle mono" datetime="2026-08-26">2026-08-26</time>
+      <div><h2 id="current-state" class="section-title section-label">Current state</h2><p class="section-desc">What works, what doesn't yet, and what I'm building next.</p></div>
+      <time class="section-subtitle mono" datetime="2026-09-27">2026-09-27</time>
     </div>
     <div class="stat-row">
       <article class="noir-card stat-tile">
@@ -23,21 +23,21 @@ hero_scene: "desk"
           <svg viewBox="0 0 24 24" focusable="false"><path d="m5 12 4 4L19 6" /></svg>
         </span>
         <h3 class="stat-number metal-text">Shipped</h3>
-        <p>BetterFingers Alpha 3 is public with a signed Windows installer, checksums, release notes, and an updater bootstrap.</p>
+        <p>Stardust has five circuits, accounts and a live leaderboard, plus private Dogfight rooms for one-on-one and casual three-player matches. BetterFingers Alpha 3 is out as a signed Windows installer.</p>
       </article>
       <article class="noir-card stat-tile">
         <span class="icon-ring" aria-hidden="true">
           <svg viewBox="0 0 24 24" focusable="false"><path d="M12 4 21 20H3L12 4Z" /><path d="M12 9v5m0 3v.01" /></svg>
         </span>
         <h3 class="stat-number metal-text">Boundary</h3>
-        <p>It is still experimental public-alpha software. Friend feedback and wider hardware and application evidence remain qualification work.</p>
+        <p>Both games are early builds. In Dogfight, pilots joining someone else's room can feel lag, so I'm fixing guest responsiveness before promoting it. Leaderboard times are checked for plausibility, not replayed.</p>
       </article>
       <article class="noir-card stat-tile">
         <span class="icon-ring" aria-hidden="true">
           <svg viewBox="0 0 24 24" focusable="false"><path d="M4 12h14" /><path d="m13 7 5 5-5 5" /></svg>
         </span>
         <h3 class="stat-number metal-text">Next</h3>
-        <p>Test the signed build with real microphones and applications, then prove the first Alpha 3-to-later-version update path.</p>
+        <p>Friend challenges: find a friend's time, beat it, and send them a link to take it back.</p>
       </article>
     </div>
   </section>
@@ -52,9 +52,11 @@ hero_scene: "desk"
   </section>
 
   <section class="section-block" aria-labelledby="participate">
-    <div class="section-header"><div><h2 id="participate" class="section-title section-label">Use it. Test it. Improve it.</h2><p class="section-desc">The most useful support right now is real use and reproducible feedback.</p></div></div>
+    <div class="section-header"><div><h2 id="participate" class="section-title section-label">Play it. Test it. Improve it.</h2><p class="section-desc">The most useful support right now is real play, real use, and reproducible feedback.</p></div></div>
     <div class="noir-card reading-text">
       <ul>
+        <li><a href="games/stardust/">Fly a Stardust run</a>, then send the leaderboard to a friend who thinks they're faster.</li>
+        <li><a href="kingdoms-caravans/">Try the Kingdoms &amp; Caravans playtest</a> and tell me where the city stopped making sense.</li>
         <li><a href="projects/betterfingers/index.html">Start with BetterFingers</a> and read the alpha boundaries before installing.</li>
         <li><a href="https://github.com/RoyGSlade/BetterFingers/issues" target="_blank" rel="noopener noreferrer">Report reproducible BetterFingers problems on GitHub</a> without attaching private transcripts or recordings.</li>
         <li><a href="https://github.com/RoyGSlade" target="_blank" rel="noopener noreferrer">Follow the source and the rest of the work on GitHub</a>.</li>

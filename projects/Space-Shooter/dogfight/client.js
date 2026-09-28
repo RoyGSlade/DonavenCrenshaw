@@ -7,6 +7,7 @@ import {
   snapshot,
 } from "./simulation.js";
 import { inputControls, cleanSnapshot } from "./protocol.js";
+import { createSnapshotBuffer, blendSnapshots } from "./interpolation.js";
 import { MAPS, createArena, isMapId, ventPhase } from "./maps.js";
 import { createMapPicker } from "./mapPicker.js";
 import { drawTerrain } from "./terrainView.js";
@@ -87,9 +88,9 @@ let connection = null,
   round = 0,
   match = null,
   roundEnded = false;
-let previous = null,
-  latest = null,
-  previousAt = 0,
+// Guests draw from a short buffer of host snapshots; `latest` is the newest one.
+const snapshots = createSnapshotBuffer();
+let latest = null,
   latestAt = 0,
   remoteInputs = new Map(),
   inputSeq = 0;
@@ -231,7 +232,7 @@ function resetRoom(message) {
   roomCode = "";
   round = 0;
   match = null;
-  previous = null;
+  snapshots.clear();
   latest = null;
   roundEnded = false;
   showLobby(message);
@@ -401,7 +402,7 @@ function receive(message) {
     roundEnded = false;
     remoteInputs = new Map();
     inputSeq = 0;
-    previous = null;
+    snapshots.clear();
     latest = null;
     lastTickSent = -1;
     accumulator = 0;
@@ -445,11 +446,9 @@ function receive(message) {
   }
   if (message.type === "snapshot" && role === "guest") {
     const data = cleanSnapshot(message.state, round, match?.ships.map(ship => ship.loadout), match?.mapId, mode);
-    if (!data || (latest && data.tick <= latest.tick)) return;
-    previous = latest;
-    previousAt = latestAt;
-    latest = data;
-    latestAt = performance.now();
+    if (!data || !snapshots.push(data, performance.now())) return;
+    latest = snapshots.newest;
+    latestAt = snapshots.newestAt;
     counters.snapshotsReceived++;
     return;
   }
@@ -620,33 +619,8 @@ $("relay-help").textContent = initial
 function view(now) {
   if (role !== "guest") return match ? snapshot(match) : null;
   if (!latest) return match ? snapshot(match) : null;
-  if (!previous) return latest;
-  const t = clamp(
-    (now - 75 - previousAt) / (latestAt - previousAt || 50),
-    0,
-    1,
-  );
-  const angle = (a, b) => a + Math.atan2(Math.sin(b - a), Math.cos(b - a)) * t;
-  const positionT = (ship, i) => Math.hypot(ship.x - previous.ships[i].x, ship.y - previous.ships[i].y) > 3 ? 1 : t;
-  return {
-    ...latest,
-    ships: latest.ships.map((ship, i) => ({
-      ...ship,
-      x: previous.ships[i].x + (ship.x - previous.ships[i].x) * positionT(ship, i),
-      y: previous.ships[i].y + (ship.y - previous.ships[i].y) * positionT(ship, i),
-      angle: angle(previous.ships[i].angle, ship.angle),
-    })),
-    traps: latest.traps.map(trap => {
-      const old = previous.traps.find(p => p.id === trap.id);
-      return old ? { ...trap, x: old.x + (trap.x - old.x) * t, y: old.y + (trap.y - old.y) * t } : trap;
-    }),
-    bullets: latest.bullets.map((b) => {
-      const old = previous.bullets.find((p) => p.id === b.id);
-      return old
-        ? { ...b, x: old.x + (b.x - old.x) * t, y: old.y + (b.y - old.y) * t }
-        : b;
-    }),
-  };
+  const pair = snapshots.sample(now);
+  return pair ? blendSnapshots(pair, latest) : latest;
 }
 function circle(x, y, r) {
   ctx.beginPath();
