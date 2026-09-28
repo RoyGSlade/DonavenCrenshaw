@@ -27,6 +27,7 @@ import { createArena, arenaSnapshot } from "./maps.js";
 import { isMode, modeSeats } from "./modes.js";
 import {
   advanceTerrain,
+  applyFields,
   resolveTerrain,
   damageTerrain,
   impactTime,
@@ -333,6 +334,31 @@ export function stepMatch(match, inputs = [NEUTRAL, NEUTRAL], dt = RULES.step) {
   }
   return match;
 }
+/**
+ * One fixed step of a single ship with no rivals, shots, hazards or gates:
+ * the guest's prediction of its own flight between host snapshots. It uses
+ * the host's flight, boundary, obstacle and field code, so a pilot's own
+ * input shows immediately; the host stays authoritative and every snapshot
+ * corrects it. `arena` needs obstacles (with current hp) and fields.
+ */
+export function stepShipAlone(arena, ship, input = NEUTRAL, dt = RULES.step) {
+  if (dt !== RULES.step)
+    throw new RangeError("Dogfight requires a fixed 1/60 second step.");
+  if (ship.hp <= 0) return ship;
+  const locked = ship.trapLock > 0;
+  ship.trapLock = ship.trapLock <= dt + 1e-9 ? 0 : ship.trapLock - dt;
+  if (locked) {
+    // The host pins a trapped ship in place for the whole step.
+    ship.vx = ship.vy = ship.angVel = 0;
+    return ship;
+  }
+  const scratch = { obstacles: arena.obstacles, bullets: [], nextBullet: 1 };
+  for (let substep = 0; substep < 2; substep++) {
+    applyFields(arena.fields || [], ship, dt / 2);
+    advanceShip(scratch, ship, input, dt / 2);
+  }
+  return ship;
+}
 export function snapshot(match) {
   return {
     ...arenaSnapshot(match),
@@ -357,6 +383,9 @@ export function snapshot(match) {
         x,
         y,
         angle,
+        vx,
+        vy,
+        angVel,
         hp,
         hit,
         boostCooldown,
@@ -369,6 +398,10 @@ export function snapshot(match) {
         x,
         y,
         angle: angle % (Math.PI * 2),
+        // Velocities let a guest predict its own ship from this snapshot.
+        vx,
+        vy,
+        angVel: angVel || 0,
         hp,
         maxHp: shipStats(match.ships[id]).hp,
         loadout: { ...match.ships[id].loadout },
