@@ -8,6 +8,7 @@ import {
 } from "./simulation.js";
 import { inputControls, cleanSnapshot } from "./protocol.js";
 import { createSnapshotBuffer, blendSnapshots } from "./interpolation.js";
+import { createPredictor } from "./prediction.js";
 import { MAPS, createArena, isMapId, ventPhase } from "./maps.js";
 import { createMapPicker } from "./mapPicker.js";
 import { drawTerrain } from "./terrainView.js";
@@ -90,6 +91,11 @@ let connection = null,
   roundEnded = false;
 // Guests draw from a short buffer of host snapshots; `latest` is the newest one.
 const snapshots = createSnapshotBuffer();
+// A guest flies its own ship ahead of the host with the controls it last sent.
+const predictor = createPredictor();
+let sentControls = { ...NEUTRAL },
+  predictionArena = null,
+  snapshotGaps = { last: 0, max: 0, total: 0, count: 0 };
 let latest = null,
   latestAt = 0,
   remoteInputs = new Map(),
@@ -233,6 +239,7 @@ function resetRoom(message) {
   round = 0;
   match = null;
   snapshots.clear();
+  resetPrediction();
   latest = null;
   roundEnded = false;
   showLobby(message);
@@ -246,26 +253,59 @@ function leave() {
 function sendInput() {
   if (role === "guest" && round && !roundEnded && connection) {
     inputSeq++;
+    const sent = document.hidden ? { ...NEUTRAL } : controls();
     if (
       connection.send(
         {
           type: "input",
           round,
           seq: inputSeq,
-          controls: document.hidden ? { ...NEUTRAL } : controls(),
+          controls: sent,
         },
         true,
       )
-    )
+    ) {
       counters.inputsSent++;
+      // Prediction flies with exactly what the host was sent, in the same shape.
+      sentControls = inputControls(sent) || { ...NEUTRAL };
+    }
   }
+}
+function resetPrediction() {
+  predictor.reset();
+  sentControls = { ...NEUTRAL };
+  predictionArena = null;
+  snapshotGaps = { last: 0, max: 0, total: 0, count: 0 };
+}
+// The guest's copy of the arena, with obstacle damage from the newest snapshot.
+function refreshPredictionArena() {
+  if (!match || !latest) return;
+  const hp = latest.terrain?.hp;
+  predictionArena = {
+    obstacles: match.obstacles.map((o, i) => ({ ...o, hp: hp?.[i] ?? o.hp })),
+    fields: match.fields,
+  };
+}
+function reconcileOwnShip() {
+  const own = latest?.ships[playerId];
+  if (!own || latest.phase !== "playing" || own.hp <= 0 || roundEnded) {
+    predictor.reset();
+    return;
+  }
+  refreshPredictionArena();
+  predictor.reconcile(own, predictionArena);
 }
 function publish() {
   if (role !== "host" || !match || roundEnded || match.tick === lastTickSent)
     return;
+  const state = snapshot(match);
+  // Tell each guest the newest input of theirs this state includes.
+  for (const [id, remote] of remoteInputs) {
+    if (state.ships[id]) state.ships[id].ack = remote.seq;
+  }
   if (
     connection?.send(
-      { type: "snapshot", state: snapshot(match) },
+      { type: "snapshot", state },
       match.phase !== "finished",
     )
   )
@@ -403,6 +443,7 @@ function receive(message) {
     remoteInputs = new Map();
     inputSeq = 0;
     snapshots.clear();
+    resetPrediction();
     latest = null;
     lastTickSent = -1;
     accumulator = 0;
@@ -446,10 +487,16 @@ function receive(message) {
   }
   if (message.type === "snapshot" && role === "guest") {
     const data = cleanSnapshot(message.state, round, match?.ships.map(ship => ship.loadout), match?.mapId, mode);
-    if (!data || !snapshots.push(data, performance.now())) return;
+    const arrived = performance.now();
+    if (!data || !snapshots.push(data, arrived)) return;
+    if (latestAt) {
+      const gap = arrived - latestAt;
+      snapshotGaps = { last: gap, max: Math.max(snapshotGaps.max, gap), total: snapshotGaps.total + gap, count: snapshotGaps.count + 1 };
+    }
     latest = snapshots.newest;
     latestAt = snapshots.newestAt;
     counters.snapshotsReceived++;
+    reconcileOwnShip();
     return;
   }
   if (
@@ -620,7 +667,15 @@ function view(now) {
   if (role !== "guest") return match ? snapshot(match) : null;
   if (!latest) return match ? snapshot(match) : null;
   const pair = snapshots.sample(now);
-  return pair ? blendSnapshots(pair, latest) : latest;
+  const shown = pair ? blendSnapshots(pair, latest) : latest;
+  // Our own ship is drawn where we are flying it now; everything else stays
+  // on the smoothed host timeline.
+  const pose = predictor.active && !roundEnded ? predictor.pose() : null;
+  if (!pose || !shown.ships[playerId]) return shown;
+  return {
+    ...shown,
+    ships: shown.ships.map((ship, i) => (i === playerId ? { ...ship, ...pose } : ship)),
+  };
 }
 function circle(x, y, r) {
   ctx.beginPath();
@@ -742,13 +797,17 @@ function render(now) {
         ? "Hosting · connected"
         : latestAt && now - latestAt > 1000
           ? "Waiting for host…"
-          : "Connected";
+          : predictor.active
+            ? "Connected · predicted"
+            : "Connected";
   }
   ctx.restore();
 }
 function frame(now) {
   const elapsed = now - lastFrame;
   lastFrame = now;
+  if (role === "guest" && predictor.active && predictionArena && !roundEnded)
+    predictor.advance(elapsed / 1000, sentControls, inputSeq, predictionArena);
   if (role === "host" && match && !roundEnded) {
     if (elapsed > 500) abortHost("host-stalled");
     else {
@@ -793,6 +852,16 @@ export function getDiagnostics() {
       maxHp: shipStats(s).hp, loadout: { ...s.loadout } })) || [],
     snapshotsReceived: counters.snapshotsReceived,
     inputsSent: counters.inputsSent,
+    // Playtest evidence for guest feel: snapshot spacing and prediction corrections.
+    network: {
+      snapshotGapMs: {
+        last: Math.round(snapshotGaps.last),
+        max: Math.round(snapshotGaps.max),
+        average: snapshotGaps.count ? Math.round(snapshotGaps.total / snapshotGaps.count) : 0,
+      },
+      prediction: { active: predictor.active, ...predictor.stats },
+      drawnOwnShip: role === "guest" ? predictor.pose() : null,
+    },
     bufferedAmount: connection?.socket.bufferedAmount || 0,
     controls: controls(),
     tilt: tilt.getState(),

@@ -11,16 +11,21 @@ export function advanceTerrain(match, dt) {
     ship.gateCooldown = Math.max(0, (ship.gateCooldown || 0) - dt);
     ship.terrainCooldown = Math.max(0, (ship.terrainCooldown || 0) - dt);
     if (ship.hp <= 0 || ship.trapLock > 0 || ship.trapAnchor) continue;
-    for (const field of match.fields) {
-      if (field.type === "gravity") {
-        const dx = field.x - ship.x, dy = field.y - ship.y, distance = Math.hypot(dx, dy);
-        if (distance > field.radius || distance < 0.001) continue;
-        const force = 10 * (1 - distance / field.radius);
-        ship.vx += (dx - dy * 0.35) / distance * force * dt;
-        ship.vy += (dy + dx * 0.35) / distance * force * dt;
-      } else if (inRect(ship, field)) {
-        ship.vx += field.direction * 12 * dt;
-      }
+    applyFields(match.fields, ship, dt);
+  }
+}
+
+// Gravity wells and boost streams. Shared by the host and guest prediction.
+export function applyFields(fields, ship, dt) {
+  for (const field of fields) {
+    if (field.type === "gravity") {
+      const dx = field.x - ship.x, dy = field.y - ship.y, distance = Math.hypot(dx, dy);
+      if (distance > field.radius || distance < 0.001) continue;
+      const force = 10 * (1 - distance / field.radius);
+      ship.vx += (dx - dy * 0.35) / distance * force * dt;
+      ship.vy += (dy + dx * 0.35) / distance * force * dt;
+    } else if (inRect(ship, field)) {
+      ship.vx += field.direction * 12 * dt;
     }
   }
 }

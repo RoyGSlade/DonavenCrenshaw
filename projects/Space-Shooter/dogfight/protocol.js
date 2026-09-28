@@ -57,6 +57,8 @@ export function inputControls(value) {
 }
 const number = (v, lo, hi) =>
   typeof v === "number" && Number.isFinite(v) && v >= lo && v <= hi;
+// Flight caps speed at 15; bounces, fields and blasts can briefly add to it.
+const MAX_PREDICTED_SPEED = 40;
 export function cleanSnapshot(
   s,
   round,
@@ -133,6 +135,15 @@ export function cleanSnapshot(
         ))
     )
       return null;
+    // Optional prediction data. Older hosts and relays omit it, and anything
+    // out of range is dropped rather than costing the guest the snapshot.
+    const motion =
+      number(p.vx, -MAX_PREDICTED_SPEED, MAX_PREDICTED_SPEED) &&
+      number(p.vy, -MAX_PREDICTED_SPEED, MAX_PREDICTED_SPEED) &&
+      (p.angVel === undefined || number(p.angVel, -20, 20))
+        ? { vx: p.vx, vy: p.vy, angVel: p.angVel ?? 0 }
+        : {};
+    const ack = Number.isSafeInteger(p.ack) && p.ack >= 0 && p.ack <= 1e9 ? { ack: p.ack } : {};
     ships.push({
       id,
       x: p.x,
@@ -150,6 +161,8 @@ export function cleanSnapshot(
       trapCooldown: p.trapCooldown ?? 0,
       trapLock: p.trapLock ?? 0,
       trapImmunity: p.trapImmunity ?? 0,
+      ...motion,
+      ...ack,
     });
   }
   const bullets = [];
