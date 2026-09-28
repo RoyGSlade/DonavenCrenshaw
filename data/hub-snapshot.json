@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-09-27T17:18:07.540Z",
+  "generatedAt": "2026-09-28T05:28:14.778Z",
   "stardust": {
     "leaderboard": [
       {
@@ -29,6 +29,12 @@
       },
       {
         "rank": 5,
+        "name": "Antwon",
+        "timeMs": 351403,
+        "setAt": "2026-09-28T05:21:00.437Z"
+      },
+      {
+        "rank": 6,
         "name": "CrispyNacho",
         "timeMs": 375421,
         "setAt": "2026-09-27T08:15:50.496Z"
