@@ -4,19 +4,22 @@
 // it reads fine with JavaScript off or the hub asleep. This swaps in live
 // boards from the hub, one per tab. Everything the hub returns is written with
 // textContent.
+//
+// Signed-in pilots also get, on the full network tab, a Friends scope and a
+// "Jump to my time" view of the pilots around them (docs/game/FRIENDS_CHALLENGES.md).
+
+import { boardRows, aroundMe, nextAbove, friendlessBoard, inviteLink, inviteMessage, accountPath, playPath, problemText, createHub, socialApi } from './social.js';
+import { createShareBox } from './share.js';
 
 const root = document.querySelector('[data-sd-boards]');
 const tag = document.querySelector('script[data-hub]');
 const HUB = (tag?.dataset.hub || 'https://api.donavencrenshaw.com').replace(/\/+$/, '');
 const GAME = `${HUB}/api/games/stardust`;
+const BASE = window.SITE_BASE || '/';
 const REFRESH_MS = 60000;
+const api = socialApi(createHub(HUB));
 
 const two = (n) => String(n).padStart(2, '0');
-const clock = (ms) => {
-    const t = Math.max(0, Math.round(Number(ms) || 0));
-    return `${Math.floor(t / 60000)}:${two(Math.floor(t / 1000) % 60)}.${two(Math.floor((t % 1000) / 10))}`;
-};
-const day = (iso) => (iso ? String(iso).slice(0, 10) : '');
 
 async function getJson(url) {
     const controller = new AbortController();
@@ -61,66 +64,165 @@ if (root) {
     const list = root.querySelector('[data-sd-board-list]');
     const meta = root.querySelector('[data-sd-board-meta]');
     const note = root.querySelector('[data-sd-board-note]');
+    const tools = root.querySelector('[data-sd-board-tools]');
+    const scopes = [...root.querySelectorAll('[data-sd-scope]')];
+    const jump = root.querySelector('[data-sd-jump]');
     const snapshot = list.innerHTML;
     let current = 'full';
+    // On the full network: 'top' (global top 10), 'around' (Jump to my time)
+    // or 'friends'. Other boards are always 'top'.
+    let mode = 'top';
     let me = null;
     let timer = null;
+    let invite = null;
+
+    const view = () => `${current}:${current === 'full' ? mode : 'top'}`;
+    const el = (tagName, className, text) => {
+        const node = document.createElement(tagName);
+        if (className) node.className = className;
+        if (text !== undefined) node.textContent = text;
+        return node;
+    };
+
+    function boardList(rows) {
+        const ol = el('ol', 'sd-board');
+        for (const row of rows) {
+            const li = el('li');
+            if (row.isMe) li.classList.add('is-me');
+            li.append(el('span', 'sd-rank', two(row.rank)), el('span', 'sd-name', row.name), el('span', 'sd-time', row.time), el('span', 'sd-date', row.date));
+            ol.append(li);
+        }
+        return ol;
+    }
 
     function render(board, entries) {
         if (!entries.length) {
-            const empty = document.createElement('p');
-            empty.className = 'sd-empty';
-            empty.textContent = board === 'full'
+            list.replaceChildren(el('p', 'sd-empty', board === 'full'
                 ? 'No saved runs yet. The first pilot with an account to finish all five circuits takes the top spot.'
-                : 'No saved times on this circuit yet. Sign in, finish it once, and it’s yours.';
+                : 'No saved times on this circuit yet. Sign in, finish it once, and it’s yours.'));
+            return;
+        }
+        list.replaceChildren(boardList(boardRows(entries, me?.username)));
+    }
+
+    // Nobody on your friends board yet: hand over the invite link instead.
+    function invitePanel() {
+        if (!invite) {
+            invite = createShareBox({ linkLabel: 'Your invite link', messageLabel: 'Message to send with it', buttonClass: 'sd-btn', className: 'sd-share' });
+        }
+        const link = inviteLink(location.origin, BASE, me.username);
+        if (invite.link !== link) {
+            invite.update({ link, message: inviteMessage(link), shareText: inviteMessage(), title: 'Stardust friend invite' });
+            invite.link = link;
+        }
+        const panel = el('div', 'sd-empty sd-invite');
+        const more = el('a', '', 'Add friends by username on your account page');
+        more.href = accountPath(BASE, '#friends');
+        const lead = el('p', '', 'No friends on your board yet. Send your invite link to someone you race; once they accept, their times show up here. ');
+        lead.append(more, '.');
+        panel.append(lead, invite.element);
+        return panel;
+    }
+
+    function renderFriends(data) {
+        const entries = Array.isArray(data?.entries) ? data.entries : [];
+        const parts = [];
+        const next = nextAbove(entries, me.username);
+        const mine = entries.find((entry) => entry.isMe || entry.username === me.username);
+        if (next) parts.push(el('p', 'sd-next', next.text));
+        else if (mine && entries.length > 1) parts.push(el('p', 'sd-next', 'You lead your friends. Nobody to chase.'));
+        if (entries.length) parts.push(boardList(boardRows(entries, me.username)));
+        if (friendlessBoard(entries, me.username)) parts.push(invitePanel());
+        list.replaceChildren(...parts);
+    }
+
+    function renderAround(data) {
+        const around = aroundMe(data, me.username);
+        if (!around.hasTime) {
+            const empty = el('p', 'sd-empty', 'No full-network time yet. Fly all five circuits while signed in and this jumps straight to you. ');
+            const play = el('a', '', 'Fly now');
+            play.href = playPath(BASE);
+            empty.append(play);
             list.replaceChildren(empty);
             return;
         }
-        const ol = document.createElement('ol');
-        ol.className = 'sd-board';
-        for (const entry of entries) {
-            const li = document.createElement('li');
-            if (me && entry.username === me.username) li.classList.add('is-me');
-            const cells = [
-                ['sd-rank', two(entry.rank)],
-                ['sd-name', entry.displayName || entry.username],
-                ['sd-time', clock(entry.timeMs)],
-                ['sd-date', day(entry.setAt)]
-            ];
-            for (const [cls, text] of cells) {
-                const span = document.createElement('span');
-                span.className = cls;
-                span.textContent = text;
-                li.append(span);
-            }
-            ol.append(li);
-        }
-        list.replaceChildren(ol);
+        const where = `You’re #${around.me.rank}${around.total ? ` of ${around.total}` : ''}`;
+        const line = el('p', 'sd-next', around.next ? `${where} · ${around.next.text}` : `${where} · First place. Nobody to chase.`);
+        const ol = boardList(around.rows);
+        ol.classList.add('sd-board--window');
+        list.replaceChildren(line, ol);
     }
 
-    function live(on) {
+    function live(on, label = 'Live · top 10') {
         meta.replaceChildren();
         if (on) {
             const dot = document.createElement('span');
             dot.className = 'sd-live-dot';
             dot.setAttribute('aria-hidden', 'true');
-            meta.append(dot, 'Live · top 10');
+            meta.append(dot, label);
         } else {
             meta.textContent = 'Hub asleep · showing the last snapshot';
         }
     }
 
-    async function load(board) {
-        const data = await getJson(`${GAME}/boards/${encodeURIComponent(board)}?limit=10`);
-        if (board !== current) return;
-        if (!data || !Array.isArray(data.entries)) {
-            live(false);
-            if (board === 'full') list.innerHTML = snapshot;
+    function asleep(board) {
+        live(false);
+        if (board === 'full') list.innerHTML = snapshot;
+    }
+
+    async function loadSocial(key) {
+        const res = mode === 'friends' ? await api.board('full', { scope: 'friends', limit: 50 }) : await api.aroundMe(3);
+        if (view() !== key) return;
+        if (res.signedOut) {
+            // The session ended since the page loaded: back to the global board.
+            me = null;
+            mode = 'top';
+            paintTools();
+            load(current);
             return;
         }
+        if (res.offline) { asleep('full'); return; }
+        if (!res.ok) {
+            meta.textContent = mode === 'friends' ? 'Friends board' : 'Around you';
+            list.replaceChildren(el('p', 'sd-empty', problemText(res, 'That view isn’t available right now. The global board still is.')));
+            return;
+        }
+        if (mode === 'friends') {
+            live(true, 'Live · you and your friends');
+            renderFriends(res.data);
+        } else {
+            live(true, 'Live · around you');
+            renderAround(res.data);
+        }
+    }
+
+    async function load(board) {
+        const key = view();
+        if (board === 'full' && me && mode !== 'top') return loadSocial(key);
+        const data = await getJson(`${GAME}/boards/${encodeURIComponent(board)}?limit=10`);
+        if (view() !== key) return;
+        if (!data || !Array.isArray(data.entries)) { asleep(board); return; }
         live(true);
         render(board, data.entries);
     }
+
+    // Scope and Jump only exist for signed-in pilots on the full network.
+    function paintTools() {
+        tools.hidden = !(me && current === 'full');
+        for (const button of scopes) button.setAttribute('aria-pressed', String((button.dataset.sdScope === 'friends') === (mode === 'friends')));
+        jump.hidden = mode === 'friends';
+        jump.setAttribute('aria-pressed', String(mode === 'around'));
+        jump.textContent = mode === 'around' ? 'Back to the top 10' : 'Jump to my time';
+    }
+
+    function setMode(next) {
+        if (next === mode) return;
+        mode = next;
+        paintTools();
+        load(current);
+    }
+    for (const button of scopes) button.addEventListener('click', () => setMode(button.dataset.sdScope === 'friends' ? 'friends' : 'top'));
+    jump.addEventListener('click', () => setMode(mode === 'around' ? 'top' : 'around'));
 
     function select(board) {
         current = board;
@@ -129,6 +231,7 @@ if (root) {
             tab.setAttribute('aria-selected', String(on));
             tab.tabIndex = on ? 0 : -1;
         }
+        paintTools();
         load(board);
     }
 
@@ -148,13 +251,15 @@ if (root) {
     if (me) {
         note.replaceChildren(`Signed in as ${me.displayName || me.username}. Every circuit you finish in the game is saved here. `);
         const a = document.createElement('a');
-        a.href = `${window.SITE_ROOT || '/'}games/stardust/`;
+        a.href = playPath(BASE);
         a.textContent = 'Fly now';
         note.append(a);
     }
     root.querySelector('[data-sd-board-tabs]').hidden = false;
+    paintTools();
     await load(current);
     timer = setInterval(() => { if (document.visibilityState === 'visible') load(current); }, REFRESH_MS);
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') load(current); });
     window.addEventListener('pagehide', () => clearInterval(timer));
 }
+
