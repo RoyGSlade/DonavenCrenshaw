@@ -5,6 +5,7 @@ import { runtimeConfig } from "../../runtime-config.js";
 import { requestArenaEnterFromBack } from "../api.js";
 import { isLapReady, portalCoordinates } from "../track.js";
 import { tryFinishLevel } from "../modes/roadmap.js";
+import { labHooks } from "../../systems/lab.js";
 export function checkCollisionsAndInteractions() {
   const lv = state.run?.current;
   if (!lv) return;
@@ -17,6 +18,7 @@ export function checkCollisionsAndInteractions() {
       if (lv.fuel < lv.maxFuel - 1 || lv.player.hp < lv.player.maxHp) {
         lv.fuel = lv.maxFuel;
         lv.player.hp = lv.player.maxHp;
+        labHooks.dock();
         blinkFuel();
         toast("Dock service: hull repaired, fuel full.");
       }

@@ -70,7 +70,58 @@ function applyRotation(dt, player, keys, env, config) {
   }
 }
 
+// Playtest-lab boost models (systems/lab.js). Solo only: Dogfight's ship
+// config never sets BOOST_MODEL, so it always takes the current model.
+// Charge: hold to build a push, release to fire it; a tap does nothing.
+export const CHARGE_BOOST = Object.freeze({ MIN: 0.15, FULL: 0.7, LOW: 0.5, HIGH: 1.6, COOLDOWN: 0.6 });
+// Heat: no charges; every boost heats the drive and a hot drive pushes weaker.
+export const HEAT_BOOST = Object.freeze({ PER_BOOST: 34, COOL_PER_SEC: 26, COOLDOWN: 0.25, MIN_SCALE: 0.35, BONUS: 1.15 });
+
+function spendBoost(sceneState) {
+  if ((sceneState.flux || 0) >= 20) { sceneState.flux -= 20; return true; }
+  if (typeof sceneState.boost === "number" && sceneState.boost >= 1) { sceneState.boost -= 1; return true; }
+  return false;
+}
+
+function push(player, config, scale) {
+  player.vx += Math.cos(player.angle) * config.BOOST_IMPULSE * scale;
+  player.vy += Math.sin(player.angle) * config.BOOST_IMPULSE * scale;
+}
+
+function chargeBoost(player, sceneState, keys, env, dt, config) {
+  player._boostCd = Math.max(0, (player._boostCd || 0) - dt);
+  if (keys.boost) {
+    const ready = player._boostCd <= 0 && ((sceneState.flux || 0) >= 20 || (sceneState.boost ?? 0) >= 1);
+    player._boostCharge = ready ? Math.min(CHARGE_BOOST.FULL, (player._boostCharge || 0) + dt) : 0;
+    return;
+  }
+  const held = player._boostCharge || 0;
+  player._boostCharge = 0;
+  if (held < CHARGE_BOOST.MIN || !spendBoost(sceneState)) return;
+  const t = (held - CHARGE_BOOST.MIN) / (CHARGE_BOOST.FULL - CHARGE_BOOST.MIN);
+  const scale = CHARGE_BOOST.LOW + (CHARGE_BOOST.HIGH - CHARGE_BOOST.LOW) * t;
+  push(player, config, scale);
+  player._boostCd = CHARGE_BOOST.COOLDOWN;
+  env.onBoost?.(scale);
+}
+
+function heatBoost(player, sceneState, keys, env, dt, config) {
+  player._boostCd = Math.max(0, (player._boostCd || 0) - dt);
+  player._boostHeat = Math.max(0, (player._boostHeat || 0) - HEAT_BOOST.COOL_PER_SEC * dt);
+  if (keys.boost && player._boostCd <= 0) {
+    const scale = HEAT_BOOST.BONUS * Math.max(HEAT_BOOST.MIN_SCALE, 1 - player._boostHeat / 100);
+    push(player, config, scale);
+    player._boostHeat = Math.min(100, player._boostHeat + HEAT_BOOST.PER_BOOST);
+    player._boostCd = HEAT_BOOST.COOLDOWN;
+    env.onBoost?.(scale);
+  }
+  // The pips meter shows how cool the drive is, so the HUD still reads true.
+  sceneState.boost = (config.BOOST_MAX_PIPS ?? 3) * (1 - player._boostHeat / 100);
+}
+
 function tryBoost(player, sceneState, keys, env, dt, config) {
+  if (config.BOOST_MODEL === "charge") return chargeBoost(player, sceneState, keys, env, dt, config);
+  if (config.BOOST_MODEL === "heat") return heatBoost(player, sceneState, keys, env, dt, config);
   player._boostCd = Math.max(0, (player._boostCd || 0) - dt);
   if (!BOOST.ENABLED || !keys.boost) return;
   if (player._boostCd > 0) return;
@@ -90,6 +141,7 @@ function tryBoost(player, sceneState, keys, env, dt, config) {
   player.vx += Math.cos(player.angle) * config.BOOST_IMPULSE;
   player.vy += Math.sin(player.angle) * config.BOOST_IMPULSE;
   player._boostCd = BOOST.COOLDOWN;
+  env.onBoost?.(1);
 }
 
 export function advanceFlight(dt, sceneState, player, keys, env = {}, config = FLIGHT_CONFIG) {

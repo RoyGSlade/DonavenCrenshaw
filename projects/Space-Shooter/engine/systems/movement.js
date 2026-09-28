@@ -2,6 +2,20 @@ import { state, config } from "../../state.js";
 import { spawnExhaust } from "./particles.js";
 import { constrainToTrack } from "../track.js";
 import { advanceFlight } from "./flight.js";
+import { damagePlayer } from "./environment.js";
+import { labHooks } from "../../systems/lab.js";
+
+// Rail rules for the playtest lab; null (today's rails) outside it.
+export function railRules(player) {
+  if (config.RAIL_MODEL !== "impact") return null;
+  return {
+    model: "impact",
+    onImpact(hit) {
+      if (hit.damage > 0) damagePlayer(player, hit.damage);
+      labHooks.rail(hit);
+    },
+  };
+}
 
 export function handlePlayerMovement(dt, sceneState, player, env = {}) {
   advanceFlight(dt, sceneState, player, state.keys, {
@@ -11,7 +25,7 @@ export function handlePlayerMovement(dt, sceneState, player, env = {}) {
     constrain(player, previous) {
       if (state.mode === "roadmap" && sceneState.track) {
         if (
-          constrainToTrack(sceneState.track, player, previous, config.PLAYER_RADIUS)
+          constrainToTrack(sceneState.track, player, previous, config.PLAYER_RADIUS, railRules(player))
         ) {
           if (sceneState.trackProgress) sceneState.trackProgress.boundaryHits++;
         }
