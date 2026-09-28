@@ -2,7 +2,7 @@
 title: "Privacy"
 layout: "default"
 description: "Plain-language privacy scope for this static website and its linked products."
-date: "2026-09-26"
+date: "2026-09-28"
 ---
 
 <p class="section-desc">What this website says, and what it cannot promise for linked products.</p>
@@ -22,9 +22,13 @@ Accounts are optional. Every page and every game works without one.
 - **What is stored:** your email address, your username, a bcrypt hash of your password (never the password itself), and anything you add to your profile: a display name, a short bio, a Discord username. Stardust runs you finish while signed in (times, circuit splits and the game build), and your Dogfight wins and losses against other signed-in pilots are stored with the account too. Guest runs never leave your browser.
 - **Where:** in a database on a server in Northern Nevada, on an encrypted disk, with encrypted backups. Nothing is sold or shared, and nothing is sent to an email or marketing service. No emails are sent at all.
 - **Cookie:** signing in sets one cookie, `token`, on `api.donavencrenshaw.com`. It is HttpOnly (page scripts can't read it), sent only over HTTPS, and lasts 30 days. It exists only to keep you signed in. Signing out removes it; changing your password or choosing *Sign out everywhere* ends every session at once.
+- **Friends:** friend requests you send and receive, your friends, and pilots you have blocked. Anyone who knows your exact username can send you a request; nothing happens until you accept it. A block is never announced to the other pilot.
+- **Challenges:** challenge links you make (which of your runs, or a friend's, is the target, and who it was sent to, if anyone), and which of your runs were flown against a challenge.
 - **Public:** your display name (or username), your best times and the date you set them appear on the Stardust leaderboards. Your Dogfight record is shown only to you, on your account page. Your email never does.
-- **Deleting:** the account page deletes your account and everything tied to it straight away. Backups roll off within about two weeks.
-- **Logs:** the server keeps short-lived request logs, including IP addresses, to limit abuse such as password guessing.
+- **Challenge pages are public to anyone with the link**, signed in or not. A page shows the name of whoever made it, the name of the pilot whose run is the target, that run's time, circuit times and date, and the fastest attempts at it (up to 20 names, best times and whether they beat it). If you fly against a challenge while signed in, your name and best attempt can appear on its page. A friend can make a challenge link from one of your accepted runs, so your name and that run's times can appear on a page they share. Pilots you have blocked, or who have blocked you, can't open each other's challenges.
+- **Seen only by you and your friends:** your friends list is shown only to you. The friends leaderboard shows you and your friends' best times to each of you.
+- **Deleting:** the account page deletes your account and everything tied to it straight away, including friends, blocks and challenges you made or received. Backups roll off within about two weeks.
+- **Logs:** the server keeps short-lived request logs, including IP addresses, to limit abuse such as password guessing. A few account actions (such as a rejected run or a new challenge link) are also noted in an event log to spot abuse; deleting your account detaches those notes from it.
 
 Dogfight rooms connect through the same server and exist only while a match is being played. If both pilots are signed in, the server records who won and who lost; nothing else about the match is kept, and rounds with a guest are not recorded at all.
 
