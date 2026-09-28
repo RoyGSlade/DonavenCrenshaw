@@ -94,7 +94,48 @@ test('with no hub configured nothing is requested', async () => {
   assert.equal(rec.enabled, false);
 });
 
+test('an unreachable hub is reported as offline, never as a guest or a save', async () => {
+  const rec = createRunRecorder({ config, fetchImpl: async () => { throw new TypeError('network down'); } });
+  await rec.startRun();
+  assert.equal(rec.reachable, false);
+  assert.equal(rec.player, null);
+  assert.deepEqual(await rec.finishRun(200000), { board: 'full', status: 'unsaved', reasons: ['offline'] });
+});
+
+test('a hub that answers "no one signed in" is reachable', async () => {
+  const hub = fakeHub({ user: null });
+  const rec = createRunRecorder({ config, fetchImpl: hub.fetchImpl });
+  await rec.connect();
+  assert.equal(rec.reachable, true);
+});
+
+test('a refused start tells a signed-in player why their time is not saved', async () => {
+  for (const [status, reason] of [[409, 'outdated'], [403, 'outdated'], [401, 'signed-out'], [502, 'offline'], [429, 'refused']]) {
+    const hub = fakeHub();
+    const fetchImpl = async (url, init) => (url === `${BASE}/runs`
+      ? { ok: false, status, json: async () => ({ error: 'x' }) }
+      : hub.fetchImpl(url, init));
+    const rec = createRunRecorder({ config, fetchImpl });
+    await rec.startRun();
+    const full = await rec.finishRun(200000);
+    assert.deepEqual(full, { board: 'full', status: 'unsaved', reasons: [reason] }, `HTTP ${status}`);
+    const level = await rec.finishLevel(1, 40000);
+    assert.equal(level.status, 'unsaved');
+    assert.equal(finished(hub.calls).length, 0, 'no finish is sent for a run that never opened');
+  }
+});
+
+test('a board the hub no longer lists asks the player to reload', async () => {
+  const hub = fakeHub({ boards: [{ board: 'full', version: 2 }] });
+  const rec = createRunRecorder({ config, fetchImpl: hub.fetchImpl });
+  await rec.startRun();
+  const level = await rec.finishLevel(1, 40000);
+  assert.match(describeResult(level, 'Alpha Relay'), /out of date\. Reload the page/);
+});
+
 test('results read plainly', () => {
+  assert.match(describeResult({ status: 'unsaved', reasons: ['offline'] }, 'Full network'), /offline, so this time wasn’t saved/);
+  assert.match(describeResult({ status: 'unsaved', reasons: ['signed-out'] }, 'Full network'), /signed out/);
   assert.equal(describeResult({ status: 'accepted', timeMs: 41230, personalBest: true, best: { rank: 3 } }, 'Alpha Relay'), 'Alpha Relay: new best 0:41.23 · #3');
   assert.equal(describeResult({ status: 'accepted', timeMs: 61000, personalBest: false, best: { rank: 9 } }, 'Iron Veil'), 'Iron Veil: saved 1:01.00 · #9');
   assert.match(describeResult({ status: 'rejected', reasons: ['below-floor'] }, 'Iron Veil'), /not counted \(faster than the circuit allows\)/);
