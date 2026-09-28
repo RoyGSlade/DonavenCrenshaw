@@ -26,6 +26,17 @@
 
                 <!-- Signed out -->
                 <div class="acct-guest" data-view-only="guest" hidden>
+                    <%# A friend invite (?friend=<username>) waits here until the visitor signs in; the page then asks again. %>
+                    <section class="noir-card noir-card--lit acct-card acct-invite" aria-labelledby="acct-invite-guest-title" data-acct-invite-guest hidden>
+                        <h2 id="acct-invite-guest-title" class="acct-card-title mono">Friend invite</h2>
+                        <p class="acct-invite-q" data-acct-invite-guest-text></p>
+                        <p>Sign in or create an account first. You’ll come straight back to this invite, and nothing is sent until you say so.</p>
+                        <div class="acct-invite-actions">
+                            <button class="btn-noir btn-noir--solid" type="button" data-acct-invite-tab="signin">Sign in</button>
+                            <button class="btn-noir" type="button" data-acct-invite-tab="signup">Create account</button>
+                        </div>
+                    </section>
+
                     <section class="noir-card noir-card--lit acct-card acct-auth" aria-labelledby="acct-auth-title">
                         <h2 id="acct-auth-title" class="visually-hidden">Sign in or create an account</h2>
                         <div class="acct-tabs mono" role="tablist" aria-label="Account">
@@ -83,6 +94,13 @@
                         </div>
                     </section>
 
+                    <section class="noir-card noir-card--lit acct-card acct-invite" aria-labelledby="acct-invite-title" data-acct-invite hidden>
+                        <h2 id="acct-invite-title" class="acct-card-title mono">Friend invite</h2>
+                        <p class="acct-invite-q" data-acct-invite-text></p>
+                        <div class="acct-invite-actions" data-acct-invite-actions></div>
+                        <p class="acct-status" role="status" data-acct-status="invite"></p>
+                    </section>
+
                     <section class="noir-card acct-card acct-stats" aria-labelledby="acct-stats-title">
                         <h2 id="acct-stats-title" class="acct-card-title mono">Your stats</h2>
                         <dl class="acct-stat-grid">
@@ -97,6 +115,67 @@
                             <div class="acct-card-head"><h2 id="acct-sd-title" class="acct-card-title mono">Stardust</h2><a class="acct-link mono" href="stardust/">Game page →</a></div>
                             <ol class="acct-bests" data-acct-bests></ol>
                             <p class="acct-empty" data-acct-bests-empty>No saved times yet. <a href="games/stardust/">Fly a circuit</a> while signed in and your best times and ranks show here.</p>
+                            <div class="acct-splits" data-acct-splits hidden>
+                                <h3 class="acct-sub-title mono">Best full run, circuit by circuit</h3>
+                                <dl class="acct-split-list" data-acct-split-list></dl>
+                            </div>
+                        </section>
+
+                        <section class="noir-card acct-card acct-wide acct-challenges" id="challenges" aria-labelledby="acct-ch-title">
+                            <div class="acct-card-head"><h2 id="acct-ch-title" class="acct-card-title mono">Challenges</h2><a class="acct-link mono" href="stardust/#fastest-runs">Leaderboard →</a></div>
+                            <p class="acct-hint acct-ch-hint">A challenge is one fixed full run for someone to beat. Send one from the game after a full run; it stays open for 14 days. Times are casual: checked for plausibility, not replayed.</p>
+                            <div class="acct-ch-cols">
+                                <section aria-labelledby="acct-inbox-title">
+                                    <h3 id="acct-inbox-title" class="acct-sub-title mono">Inbox</h3>
+                                    <ul class="acct-ch-list" data-acct-ch-list="inbox"></ul>
+                                    <p class="acct-empty" data-acct-ch-empty="inbox">Nothing yet. When a friend sends you a challenge, it lands here.</p>
+                                </section>
+                                <section aria-labelledby="acct-sent-title">
+                                    <h3 id="acct-sent-title" class="acct-sub-title mono">Sent</h3>
+                                    <ul class="acct-ch-list" data-acct-ch-list="sent"></ul>
+                                    <p class="acct-empty" data-acct-ch-empty="sent">You haven’t sent one yet. Finish a full run in the game and send it to a friend.</p>
+                                </section>
+                            </div>
+                            <p class="acct-status" role="status" data-acct-status="challenges"></p>
+                        </section>
+
+                        <section class="noir-card acct-card acct-wide acct-friends" id="friends" aria-labelledby="acct-friends-title">
+                            <h2 id="acct-friends-title" class="acct-card-title mono">Friends</h2>
+                            <p class="acct-status acct-friends-status" role="status" data-acct-status="friends"></p>
+                            <div class="acct-friends-grid">
+                                <div class="acct-friends-lists">
+                                    <section aria-labelledby="acct-fr-in-title" data-acct-fr-group="incoming" hidden>
+                                        <h3 id="acct-fr-in-title" class="acct-sub-title mono">Asking to be friends</h3>
+                                        <ul class="acct-people" data-acct-fr-list="incoming"></ul>
+                                    </section>
+                                    <section aria-labelledby="acct-fr-title">
+                                        <h3 id="acct-fr-title" class="acct-sub-title mono">Your friends</h3>
+                                        <ul class="acct-people" data-acct-fr-list="friends"></ul>
+                                        <p class="acct-empty" data-acct-fr-empty>No friends yet. Send your invite link to someone you race, or add them by username.</p>
+                                    </section>
+                                    <section aria-labelledby="acct-fr-out-title" data-acct-fr-group="outgoing" hidden>
+                                        <h3 id="acct-fr-out-title" class="acct-sub-title mono">Waiting on them</h3>
+                                        <ul class="acct-people" data-acct-fr-list="outgoing"></ul>
+                                    </section>
+                                    <section aria-labelledby="acct-fr-blocked-title" data-acct-fr-group="blocked" hidden>
+                                        <h3 id="acct-fr-blocked-title" class="acct-sub-title mono">Blocked</h3>
+                                        <ul class="acct-people" data-acct-fr-list="blocked"></ul>
+                                    </section>
+                                </div>
+                                <div class="acct-friends-side">
+                                    <form class="acct-form acct-add-friend" data-acct-form="friend" aria-labelledby="acct-add-title" novalidate>
+                                        <h3 id="acct-add-title" class="acct-sub-title mono">Add a friend</h3>
+                                        <label>Username<input name="username" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="300" aria-describedby="acct-add-hint"></label>
+                                        <p class="acct-hint" id="acct-add-hint">Their exact username, or paste their invite link.</p>
+                                        <p class="acct-status" role="status" data-acct-status></p>
+                                        <button class="btn-noir btn-noir--solid" type="submit">Send request</button>
+                                    </form>
+                                    <div class="acct-invite-share" data-acct-invite-share>
+                                        <h3 class="acct-sub-title mono">Your invite link</h3>
+                                        <p class="acct-hint">Whoever opens it is asked whether to add you. Nothing is sent for you.</p>
+                                    </div>
+                                </div>
+                            </div>
                         </section>
 
                         <form class="noir-card acct-card acct-form" data-acct-form="profile" aria-labelledby="acct-profile-title" novalidate>

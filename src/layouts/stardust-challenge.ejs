@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<%- components.head %>
+<%
+  // One page for every challenge link: /stardust/challenge/?c=<id>. The challenge
+  // itself comes from the hub in stardust-challenge.js; without JavaScript or
+  // with the hub asleep the page still offers a normal run.
+%>
+<body class="site-shell stardust-page" data-branch="stardust">
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+    <%- components.nav %>
+    <div class="content-wrapper">
+        <main id="main-content" class="sd-page sd-challenge" tabindex="-1" data-sd-challenge>
+            <header class="sd-hero">
+                <p class="sd-eyebrow">Stardust · Challenge</p>
+                <h1 class="sd-ch-title" data-ch-title>A Stardust challenge</h1>
+                <p class="sd-ch-lede" role="status" aria-live="polite" data-ch-lede>Loading the challenge…</p>
+                <noscript><p class="sd-ch-lede">Challenges need JavaScript. You can still fly a normal run.</p></noscript>
+                <dl class="sd-ch-facts" data-ch-facts hidden></dl>
+                <p class="sd-ch-you" data-ch-you hidden></p>
+                <div class="sd-actions">
+                    <a class="sd-cta" href="games/stardust/" data-ch-play>Play Stardust <span aria-hidden="true">→</span></a>
+                    <button class="sd-btn" type="button" data-ch-retry hidden>Try the hub again</button>
+                    <a class="sd-text-link" href="stardust/">About Stardust</a>
+                </div>
+                <p class="sd-small" data-ch-signin hidden>You can fly it as a guest, but only a signed-in attempt counts against the challenge. <a data-ch-signin-link href="account/">Sign in</a> or <a data-ch-create-link href="account/#create">create an account</a> and you’ll come straight back here.</p>
+                <p class="sd-small">Times are casual: runs are checked for plausibility, not replayed.</p>
+            </header>
+
+            <section class="sd-section" aria-labelledby="sd-ch-splits-title" data-ch-splits-section hidden>
+                <div class="sd-section-head"><h2 id="sd-ch-splits-title">The target, circuit by circuit</h2></div>
+                <dl class="sd-ch-splits" data-ch-splits></dl>
+            </section>
+
+            <section class="sd-section" aria-labelledby="sd-ch-attempts-title" data-ch-attempts-section hidden>
+                <div class="sd-section-head"><h2 id="sd-ch-attempts-title">Attempts</h2><p class="sd-meta">Best 20 · signed-in pilots</p></div>
+                <div data-ch-attempts></div>
+            </section>
+
+            <section class="sd-section sd-ch-share" aria-labelledby="sd-ch-share-title" data-ch-share-section hidden>
+                <div class="sd-section-head"><h2 id="sd-ch-share-title">Pass it on</h2></div>
+                <p class="sd-copy">Copy the link or the message and send it wherever you talk. Nothing is sent for you.</p>
+                <div data-ch-share></div>
+            </section>
+        </main>
+        <%- components.footer %>
+    </div>
+    <script src="<%= siteRoot %>scripts/script.js"></script>
+    <script type="module" src="<%= siteRoot %>scripts/stardust-challenge.js"></script>
+</body>
+</html>

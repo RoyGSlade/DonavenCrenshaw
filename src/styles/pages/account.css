@@ -106,13 +106,64 @@
 .acct-danger-btn { border-color: rgba(255, 138, 138, 0.45); color: #ffc9c9; }
 .acct-danger-btn:hover, .acct-danger-btn:focus-visible { border-color: #ff8a8a; color: #fff; background: rgba(255, 90, 90, 0.12); box-shadow: 0 0 16px rgba(255, 90, 90, 0.18); }
 
+/* Stardust progress: medals and splits */
+.acct-bests .acct-best-sub { grid-column: 1 / -1; margin-top: -0.35rem; font-size: 0.76rem; color: var(--text-secondary); }
+.acct-medal { display: inline-block; margin-left: 0.25rem; padding: 0.1rem 0.5rem; border: 1px solid var(--line-bright); border-radius: 999px; font-size: 0.62rem; letter-spacing: 0.12em; text-transform: uppercase; vertical-align: 0.1em; }
+.acct-medal[data-medal="gold"] { border-color: rgba(240, 206, 120, 0.6); color: #f3d98f; }
+.acct-medal[data-medal="silver"] { border-color: rgba(214, 222, 232, 0.6); color: #dfe6ee; }
+.acct-medal[data-medal="bronze"] { border-color: rgba(214, 150, 110, 0.6); color: #e2ad89; }
+.acct-sub-title { margin: 0 0 var(--space-3); font-size: 0.66rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-secondary); }
+.acct-splits { margin-top: var(--space-5); }
+.acct-split-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr)); gap: var(--space-3); margin: 0; }
+.acct-split { display: grid; gap: 0.2rem; padding: var(--space-3) var(--space-4); border: 1px solid var(--line-hair); border-radius: 8px; background: var(--noir-1); }
+.acct-split dt { font-size: 0.74rem; color: var(--text-secondary); }
+.acct-split dd { margin: 0; font-variant-numeric: tabular-nums; color: #e6f5ff; }
+
+/* Friends, invites and challenges */
+.acct-wide { grid-column: 1 / -1; }
+.acct-invite { display: grid; gap: var(--space-3); grid-column: 1 / -1; }
+.acct-card .acct-invite-q { font-size: 1.1rem; color: var(--text-main); overflow-wrap: anywhere; }
+.acct-invite-actions { display: flex; flex-wrap: wrap; gap: var(--space-3); }
+.acct-invite .acct-card-title { margin: 0; }
+
+.acct-friends-grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr); gap: var(--space-6); align-items: start; }
+.acct-friends-lists { display: grid; gap: var(--space-5); }
+.acct-friends-side { display: grid; gap: var(--space-5); }
+.acct-friends-status:not(:empty) { margin-bottom: var(--space-4); }
+.acct-people { display: grid; margin: 0; padding: 0; list-style: none; }
+.acct-person { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2) var(--space-4); padding: var(--space-3) 0; border-bottom: 1px solid var(--line-hair); }
+.acct-person-who { display: grid; gap: 0.1rem; min-width: 0; }
+.acct-person-name { color: var(--text-main); font-weight: 600; overflow-wrap: anywhere; }
+.acct-person-meta { font-size: 0.7rem; color: var(--text-secondary); overflow-wrap: anywhere; }
+.acct-person-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.acct-person-actions .btn-noir, .acct-invite-actions .btn-noir, .share-actions .btn-noir { min-height: 2.5rem; padding: 0.5rem 0.9rem; font-size: 0.68rem; }
+.acct-confirm-q { flex-basis: 100%; font-size: 0.82rem; color: var(--text-soft); }
+
+/* .share-box, .share-field and .share-actions are laid out in stardust.css, next to the other share box. */
+.acct-card .share-field { color: var(--text-soft); }
+.acct-card .share-status { min-height: 1.2em; font: 0.8rem var(--font-mono); color: #b9f5d0; }
+.acct-card .share-status:empty { min-height: 0; }
+
+.acct-card .acct-ch-hint { margin: 0 0 var(--space-5); }
+.acct-ch-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-6); }
+.acct-ch-list { display: grid; margin: 0; padding: 0; list-style: none; }
+.acct-ch { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.2rem var(--space-3); align-items: baseline; padding: var(--space-3) 0; border-bottom: 1px solid var(--line-hair); }
+.acct-ch-link { display: grid; gap: 0.15rem; min-width: 0; color: var(--text-main); text-decoration: none; }
+.acct-ch-link:hover .acct-ch-title, .acct-ch-link:focus-visible .acct-ch-title { text-decoration: underline; text-underline-offset: 4px; }
+.acct-ch-title { font-weight: 600; overflow-wrap: anywhere; }
+.acct-ch-target { font-size: 0.74rem; color: #e6f5ff; }
+.acct-ch-status { padding: 0.1rem 0.5rem; border: 1px solid var(--line-hair); border-radius: 999px; font-size: 0.62rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-secondary); }
+.acct-ch-status[data-status="active"] { border-color: var(--line-bright); color: var(--text-main); }
+.acct-ch-status[data-status="beaten"] { border-color: rgba(185, 245, 208, 0.5); color: #b9f5d0; }
+.acct-card .acct-ch-detail { grid-column: 1 / -1; font-size: 0.76rem; color: var(--text-secondary); }
+
 /* Nav account link */
 .site-nav .nav-footer .nav-account-link span { max-width: 14ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .site-nav .nav-footer .nav-account-link[data-state="member"] { color: var(--text-main); }
 .site-nav .nav-footer .nav-account-link[data-state="member"] svg { filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.5)); }
 
 @media (max-width: 900px) {
-    .acct-guest, .acct-grid, .acct-stat-grid { grid-template-columns: minmax(0, 1fr); }
+    .acct-guest, .acct-grid, .acct-stat-grid, .acct-friends-grid, .acct-ch-cols { grid-template-columns: minmax(0, 1fr); }
     .acct-id { grid-template-columns: auto minmax(0, 1fr); }
     .acct-id-actions { grid-column: 1 / -1; }
 }

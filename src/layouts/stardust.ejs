@@ -31,6 +31,14 @@
                     <button type="button" role="tab" aria-selected="<%= i === 0 ? 'true' : 'false' %>" tabindex="<%= i === 0 ? 0 : -1 %>" aria-controls="sd-board-list" data-sd-board="<%= id %>"><%= label %></button>
                     <% }) %>
                 </div>
+                <%# Signed-in pilots only, on the full network: whose times, and a jump to your own. %>
+                <div class="sd-board-tools" data-sd-board-tools hidden>
+                    <div class="sd-scope" role="group" aria-label="Whose times">
+                        <button type="button" aria-pressed="true" aria-controls="sd-board-list" data-sd-scope="global">Global</button>
+                        <button type="button" aria-pressed="false" aria-controls="sd-board-list" data-sd-scope="friends">Friends</button>
+                    </div>
+                    <button type="button" class="sd-jump" aria-pressed="false" aria-controls="sd-board-list" data-sd-jump>Jump to my time</button>
+                </div>
                 <div id="sd-board-list" role="tabpanel" aria-live="polite" data-sd-board-list>
                 <% if (board.length) { %>
                 <ol class="sd-board">

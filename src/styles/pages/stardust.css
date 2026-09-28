@@ -96,11 +96,60 @@
 .sd-page .sd-board-note a { color: var(--sd-ice); text-underline-offset: 4px; }
 .sd-live-dot { display: inline-block; width: .45rem; height: .45rem; margin-right: .5rem; border-radius: 50%; background: #7ee2b8; box-shadow: 0 0 10px rgba(126, 226, 184, .7); vertical-align: middle; }
 
+/* Global / Friends and Jump to my time (signed in, full network) */
+.sd-board-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin: -6px 0 18px; }
+.sd-scope { display: inline-flex; padding: 2px; border: 1px solid var(--sd-line); border-radius: 4px; }
+.sd-scope button, .sd-jump, .sd-btn {
+  min-height: 36px; padding: 7px 12px; border: 0; border-radius: 3px; background: transparent; color: var(--sd-muted);
+  font: .68rem var(--font-mono); letter-spacing: .1em; text-transform: uppercase; cursor: pointer;
+}
+.sd-scope button[aria-pressed="true"] { background: rgba(169, 220, 255, .14); color: var(--sd-ice); }
+.sd-jump, .sd-btn { border: 1px solid var(--sd-line-strong); color: var(--sd-text); }
+.sd-jump[aria-pressed="true"] { border-color: var(--sd-frost); color: var(--sd-ice); }
+.sd-scope button:hover, .sd-jump:hover, .sd-btn:hover { color: #fff; }
+.sd-scope button:focus-visible, .sd-jump:focus-visible, .sd-btn:focus-visible { outline: 2px solid var(--sd-frost); outline-offset: 3px; }
+.sd-page .sd-next { margin: 0 0 10px; font: .78rem var(--font-mono); letter-spacing: .06em; color: var(--sd-frost); }
+.sd-page .sd-board li.is-me { margin-inline: -10px; padding-inline: 10px; background: rgba(169, 220, 255, .07); box-shadow: inset 2px 0 0 var(--sd-frost); }
+
+/* Share boxes: invite links and challenge links */
+.sd-page .sd-invite { display: grid; gap: 16px; margin-top: 14px; }
+.sd-page .sd-invite p { margin: 0; }
+.share-box { display: grid; gap: 12px; }
+.share-field { display: grid; gap: .35rem; font-size: .78rem; font-weight: 600; }
+.share-field input, .share-field textarea { min-height: 0; font: .84rem var(--font-mono); resize: none; }
+.share-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.sd-page .share-field { color: var(--sd-muted); }
+.sd-page .share-field input, .sd-page .share-field textarea { border-color: var(--sd-line-strong); background: #050b12; color: var(--sd-text); }
+.sd-page .share-status { min-height: 1.2em; margin: 0; font: .76rem var(--font-mono); color: #7ee2b8; }
+.sd-page .share-status:empty { min-height: 0; }
+
+/* Challenge page: /stardust/challenge/?c=<id> */
+.sd-challenge .sd-hero { padding-bottom: 24px; }
+.sd-page .sd-ch-title { margin: 0 0 18px; font-weight: 300; font-size: clamp(1.9rem, 5.6vw, 3.6rem); line-height: 1.1; letter-spacing: .04em; overflow-wrap: anywhere; }
+.sd-page .sd-ch-lede { max-width: 60ch; margin: 0; font-size: 1.02rem; }
+.sd-page .sd-ch-lede[data-kind="warn"] { color: #f3d98f; }
+.sd-ch-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0; margin: 28px 0 0; border-top: 1px solid var(--sd-line); }
+.sd-ch-facts div { display: grid; gap: 4px; padding: 14px 16px 14px 0; border-bottom: 1px solid var(--sd-line); }
+.sd-ch-facts dt { font: .64rem var(--font-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--sd-muted); }
+.sd-page .sd-ch-facts dd { margin: 0; color: var(--sd-text); overflow-wrap: anywhere; line-height: 1.4; }
+.sd-page .sd-ch-facts .sd-ch-time { font: 1.5rem var(--font-mono); font-variant-numeric: tabular-nums; color: var(--sd-ice); }
+.sd-page .sd-ch-you { margin: 18px 0 0; font: .84rem var(--font-mono); color: var(--sd-text); }
+.sd-page .sd-ch-you[data-beaten="true"] { color: #7ee2b8; }
+.sd-ch-splits { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 0; }
+.sd-ch-splits div { display: grid; gap: 2px; padding: 10px 12px; border: 1px solid var(--sd-line); border-radius: 4px; }
+.sd-ch-splits dt { font-size: .74rem; color: var(--sd-muted); }
+.sd-page .sd-ch-splits dd { margin: 0; font: .9rem var(--font-mono); color: var(--sd-ice); }
+.sd-ch-share { max-width: 640px; }
+.sd-ch-share .sd-copy { margin: 0 0 16px; }
+
 .sd-boards { padding-top: clamp(36px, 5vw, 56px); }
 .sd-boards .sd-section-head h2 { font-size: clamp(1.7rem, 3.4vw, 2.6rem); }
 .sd-boards .sd-board li { padding: 14px 0; }
 .sd-boards .sd-board li:first-child .sd-time { font-size: 1.25rem; }
 .sd-boards .sd-board li:first-child .sd-name { font-weight: 600; }
+/* Around me starts mid-board, so its first row is nobody's first place. */
+.sd-boards .sd-board--window li:first-child .sd-time { font-size: 1rem; }
+.sd-boards .sd-board--window li:first-child .sd-name { font-weight: 400; }
 
 .sd-gate {
   /* The dialog sits outside .sd-page, so it carries the page's colours itself. */

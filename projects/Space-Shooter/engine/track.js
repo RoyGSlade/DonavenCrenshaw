@@ -109,8 +109,27 @@ export function createTrackProgress() {
     boundaryHits: 0,
   };
 }
-/** Clip the entire swept move, not just its endpoint, so boosts cannot cross an infield. */
-export function constrainToTrack(track, player, previous, radius) {
+// Playtest-lab rails (systems/lab.js): a head-on hit bites and a scrape only
+// rubs. The along-rail speed is scrubbed in proportion to how hard the ship
+// hit the rail, and hull damage starts above a threshold impact speed.
+export const IMPACT_RAILS = Object.freeze({ SCRUB_PER_SPEED: 0.035, MAX_SCRUB: 0.45, DAMAGE_FROM: 4, DAMAGE_PER_SPEED: 3.5, MAX_DAMAGE: 25 });
+
+export function railImpact(outward) {
+  const impact = Math.max(0, outward);
+  return {
+    impact,
+    keep: 1 - Math.min(IMPACT_RAILS.MAX_SCRUB, impact * IMPACT_RAILS.SCRUB_PER_SPEED),
+    damage: impact > IMPACT_RAILS.DAMAGE_FROM
+      ? Math.min(IMPACT_RAILS.MAX_DAMAGE, (impact - IMPACT_RAILS.DAMAGE_FROM) * IMPACT_RAILS.DAMAGE_PER_SPEED)
+      : 0,
+  };
+}
+
+/**
+ * Clip the entire swept move, not just its endpoint, so boosts cannot cross an infield.
+ * rails: optional { model: "impact", onImpact({ impact, damage }) } for the playtest lab.
+ */
+export function constrainToTrack(track, player, previous, radius, rails = null) {
   const dx = player.x - previous.x,
     dy = player.y - previous.y;
   const steps = Math.max(1, Math.ceil(Math.hypot(dx, dy) / 0.12));
@@ -144,7 +163,14 @@ export function constrainToTrack(track, player, previous, radius) {
     const nx = (player.x - nearest.x) / (nearest.distance || 1),
       ny = (player.y - nearest.y) / (nearest.distance || 1);
     const outward = player.vx * nx + player.vy * ny;
-    if (outward > 0) {
+    if (rails?.model === "impact" && outward > 0) {
+      const hit = railImpact(outward);
+      const alongX = player.vx - outward * nx,
+        alongY = player.vy - outward * ny;
+      player.vx = alongX * hit.keep - outward * 0.25 * nx;
+      player.vy = alongY * hit.keep - outward * 0.25 * ny;
+      rails.onImpact?.(hit);
+    } else if (outward > 0) {
       player.vx -= outward * 1.25 * nx;
       player.vy -= outward * 1.25 * ny;
     }

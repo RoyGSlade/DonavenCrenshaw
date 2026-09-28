@@ -26,6 +26,8 @@ export function createRunRecorder({ config = runtimeConfig, fetchImpl = globalTh
   let generation = 0;
   let full = null;
   let splits = {};
+  let challengeId = null;
+  let lastRun = null;
   const levels = new Map();
 
   async function call(url, { method = 'GET', body } = {}) {
@@ -70,12 +72,24 @@ export function createRunRecorder({ config = runtimeConfig, fetchImpl = globalTh
   // Opens a hub run. Resolves to { runId } or { error } saying why the time
   // can't be saved: 'guest', 'offline', 'outdated' (this build or board version
   // is no longer current; a reload fixes it), 'signed-out' or 'refused'.
-  async function open(board) {
+  // With a challenge id the run is started against it; if the hub refuses the
+  // challenge, the run is started again without it and challengeRefused says why.
+  async function open(board, challenge = null) {
     if (!player) return { error: reachable ? 'guest' : 'offline' };
     if (!versions) return { error: 'offline' };
     if (!Number.isInteger(versions[board])) return { error: 'outdated' };
-    const res = await call(`${base}/runs`, { method: 'POST', body: { board, version: versions[board], build } });
-    if (res.ok && res.data?.runId) return { runId: res.data.runId };
+    const body = { board, version: versions[board], build };
+    let res = await call(`${base}/runs`, { method: 'POST', body: challenge ? { ...body, challenge } : body });
+    let challengeRefused = null;
+    if (challenge && refusesChallenge(res)) {
+      challengeRefused = res.data?.error || (res.status === 410 ? 'challenge_expired' : 'unknown_challenge');
+      res = await call(`${base}/runs`, { method: 'POST', body });
+    }
+    if (res.ok && res.data?.runId) {
+      if (!challenge) return { runId: res.data.runId };
+      if (challengeRefused) return { runId: res.data.runId, challenge: null, challengeRefused };
+      return { runId: res.data.runId, challenge: res.data.challenge || { id: challenge } };
+    }
     if (res.status === 401) { player = null; return { error: 'signed-out' }; }
     if (res.status === 409 || res.status === 403) return { error: 'outdated' };
     return { error: unreachable(res.status) ? 'offline' : 'refused' };
@@ -102,20 +116,64 @@ export function createRunRecorder({ config = runtimeConfig, fetchImpl = globalTh
     get enabled() { return Boolean(base); },
     // Whether the last connect() reached the hub at all.
     get reachable() { return reachable; },
+    // The board version the hub expects, or null.
+    version(board) { return Number.isInteger(versions?.[board]) ? versions[board] : null; },
     connect,
 
+    // The signed-in player's progress (bests with full-run splits), or null.
+    async profile() {
+      if (!base || !player) return null;
+      const res = await call(`${base}/me`);
+      return res.ok && res.data && typeof res.data === 'object' ? res.data : null;
+    },
+
+    // A challenge link's details: { status, data } straight from the hub, for
+    // classifyChallenge() in challenges.js. Public, so guests can read it too.
+    async loadChallenge(id) {
+      if (!base) return { status: 0, data: null };
+      const res = await call(`${base}/challenges/${encodeURIComponent(id)}`);
+      return { status: res.status, data: res.data };
+    },
+
+    // Full runs from now on are started against this challenge (null for none).
+    useChallenge(id) { challengeId = id || null; },
+    get challengeId() { return challengeId; },
+
+    // The last accepted full run of this launch: { runId, timeMs }, or null.
+    get lastRun() { return lastRun; },
+
+    // Makes a challenge link from an accepted run. Resolves to { challenge }
+    // or { error } with the hub's code, 'offline' or 'signed-out'.
+    async createChallenge({ runId, to, parent } = {}) {
+      if (!base || !player) return { error: 'signed-out' };
+      if (!runId) return { error: 'not_accepted' };
+      const body = { runId };
+      if (to) body.to = to;
+      if (parent) body.parent = parent;
+      const res = await call(`${base}/challenges`, { method: 'POST', body });
+      if (res.ok && res.data?.challenge?.id) return { challenge: res.data.challenge };
+      if (res.status === 401) { player = null; return { error: 'signed-out' }; }
+      if (unreachable(res.status)) return { error: 'offline' };
+      return { error: res.data?.error || res.data?.code || 'refused' };
+    },
+
     // A new launch from the hangar, or a restart: every open run is abandoned.
-    // The hub expires abandoned runs on its own.
+    // The hub expires abandoned runs on its own. Resolves to how the full run
+    // opened ({ runId, challenge, challengeRefused } or { error }), or null.
     async startRun() {
       const mine = ++generation;
       splits = {};
       levels.clear();
       full = null;
-      if (!base) return;
+      lastRun = null;
+      if (!base) return null;
       await connect();
-      if (mine !== generation) return;
-      full = open('full');
+      if (mine !== generation) return null;
+      full = open('full', challengeId);
+      const started = full;
       levels.set(1, open(LEVEL_BOARDS[0]));
+      const info = await started;
+      return mine === generation ? info : null;
     },
 
     // Circuits after the first open as the previous one finishes.
@@ -143,8 +201,15 @@ export function createRunRecorder({ config = runtimeConfig, fetchImpl = globalTh
       const mine = generation;
       const run = full;
       full = null;
-      const result = await close(run, { timeMs: Math.max(0, Math.round(totalMs)), splits: { ...splits } });
-      return mine === generation && result ? { board: 'full', ...result } : null;
+      const timeMs = Math.max(0, Math.round(totalMs));
+      const result = await close(run, { timeMs, splits: { ...splits } });
+      if (mine !== generation || !result) return null;
+      // Challenges point at an accepted run, so keep its id for "Challenge a friend".
+      if (result.status === 'accepted') {
+        const { runId } = await run;
+        lastRun = { runId: result.runId || runId, timeMs: Number.isFinite(result.timeMs) ? result.timeMs : timeMs };
+      }
+      return { board: 'full', ...result };
     },
 
     abandon() {
@@ -168,6 +233,15 @@ function unreachable(status) {
   return !status || status >= 500;
 }
 
+// The hub turned down the challenge, not the run: unknown (404), expired (410),
+// or outdated / another board (409 challenge_*). A 409 version_mismatch is the
+// run itself and is not retried.
+function refusesChallenge(res) {
+  if (res.ok) return false;
+  if (res.status === 404 || res.status === 410) return true;
+  return res.status === 409 && String(res.data?.error || '').startsWith('challenge_');
+}
+
 const REASONS = {
   'below-floor': 'faster than the circuit allows',
   'longer-than-elapsed': 'longer than the run has existed',
@@ -188,7 +262,15 @@ export function describeResult(result, name) {
   if (!result) return null;
   if (result.status === 'accepted') {
     const rank = result.best?.rank ? ` · #${result.best.rank}` : '';
-    return result.personalBest ? `${name}: new best ${clock(result.timeMs)}${rank}` : `${name}: saved ${clock(result.timeMs)}${rank}`;
+    const line = result.personalBest ? `${name}: new best ${clock(result.timeMs)}${rank}` : `${name}: saved ${clock(result.timeMs)}${rank}`;
+    // A better circuit medal and any achievement are worth a second line.
+    const extras = [];
+    if (result.medal?.improved && result.medal.earned && !result.medal.gauntlet) {
+      extras.push(`${result.medal.earned[0].toUpperCase()}${result.medal.earned.slice(1)} medal!`);
+    }
+    const unlocked = (result.achievements || []).map((a) => a?.name).filter(Boolean);
+    if (unlocked.length) extras.push(`Achievement: ${unlocked.join(', ')}`);
+    return extras.length ? `${line}\n${extras.join(' · ')}` : line;
   }
   if (result.status === 'unsaved') return `${name}: ${UNSAVED[result.reasons?.[0]] || UNSAVED.refused}`;
   if (result.status === 'error') return `${name}: couldn’t reach the leaderboard; this time wasn’t saved.`;

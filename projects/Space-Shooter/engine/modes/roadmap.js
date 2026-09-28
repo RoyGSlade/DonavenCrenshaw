@@ -6,7 +6,8 @@ import { updateHUD, toast } from "../../ui/hud.js";
 import { openEndOverlay } from "../../ui/overlays.js";
 import { runtimeConfig } from "../../runtime-config.js";
 import { stopEngine } from "../core.js";
-import { handlePlayerMovement } from "../systems/movement.js";
+import { handlePlayerMovement, railRules } from "../systems/movement.js";
+import { labHooks } from "../../systems/lab.js";
 import { updateParticles } from "../systems/particles.js";
 import { checkCollisionsAndInteractions } from "../collisions/roadmap.js";
 import { startCountdown } from "../lifecycle.js";
@@ -70,7 +71,13 @@ export function updateRoadmap(dt) {
     const previousPosition = { x: lv.player.x, y: lv.player.y };
     handlePlayerMovement(step, lv, lv.player, {
       onFuelUse: (amount) => {
-        lv.fuel = Math.max(0, lv.fuel - amount);
+        // FUEL_BURN_SCALE is 1 outside the playtest lab.
+        lv.fuel = Math.max(0, lv.fuel - amount * (config.FUEL_BURN_SCALE ?? 1));
+        labHooks.fuel(lv.fuel);
+      },
+      onBoost: (scale) => {
+        if (config.BOOST_FUEL_COST) lv.fuel = Math.max(0, lv.fuel - config.BOOST_FUEL_COST);
+        labHooks.boost(scale);
       },
       onLaunch: () => {
         lv.showLaunchHint = false;
@@ -86,6 +93,7 @@ export function updateRoadmap(dt) {
         lv.player,
         previousPosition,
         config.PLAYER_RADIUS,
+        railRules(lv.player),
       );
       updateTrackProgress(lv, previousPosition);
       updateDrones(lv, lv.player, state.gfx.projectiles, step);
@@ -94,6 +102,7 @@ export function updateRoadmap(dt) {
       updateProjectiles(step);
       resolveRoadmapProjectiles(lv, state.gfx.projectiles);
       if (lv.player.hp <= 0) {
+        labHooks.hullLoss();
         restartLevel("Hull lost. +15s penalty.", 15000);
         return;
       }
@@ -193,8 +202,10 @@ function restartLevel(message, penalty) {
   toast(message);
 }
 export function outOfFuel() {
-  if (state.run?.current?.launched)
+  if (state.run?.current?.launched) {
+    labHooks.fuelOut();
     restartLevel("Fuel depleted. +30s penalty.", config.FUEL_OUT_PENALTY_MS);
+  }
 }
 export function tryFinishLevel() {
   const lv = state.run?.current;

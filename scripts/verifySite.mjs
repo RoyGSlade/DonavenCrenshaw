@@ -23,6 +23,7 @@ const requiredRoutes = [
     '/infinite-ages/',
     '/kingdoms-caravans/',
     '/stardust/',
+    '/stardust/challenge/',
     '/account/',
     '/build-log/',
     '/support/',
