@@ -5,6 +5,7 @@ import { CUSTOM_TRACK } from '../tracks/custom-track.js';
 import { customTrackView, parseCustomQuery, readDraft, releaseText, useCustomTrack } from './customTrack.js';
 import { checkTrack } from '../engine/trackChecks.js';
 import { launchRun } from '../ui/overlays.js';
+import { currentWeekly } from './weekly.js';
 
 const byId = (id) => document.getElementById(id);
 
@@ -22,6 +23,10 @@ export function initCustomTrackUi({ ready = true, lab = null } = {}) {
   const note = byId('custom-track-note');
   if (!card || !button || !note) return;
   const query = parseCustomQuery(location.search);
+  // The weekly time trial has taken over the custom track's slot. The card
+  // (and the editor's ?preview=custom test flights) still work when asked for
+  // directly; ?track=custom now lands on the weekly card instead.
+  if (!query.preview && currentWeekly()) { card.hidden = true; return; }
 
   let track = CUSTOM_TRACK;
   let draftError = null;

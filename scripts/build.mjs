@@ -7,6 +7,7 @@ import { importProjectSources } from './projectSources.mjs';
 import { CUSTOM_TRACK } from '../projects/Space-Shooter/tracks/custom-track.js';
 import { releaseText, isCustomTrackLive } from '../projects/Space-Shooter/systems/customTrack.js';
 import { checkTrack } from '../projects/Space-Shooter/engine/trackChecks.js';
+import { currentWeekly, weeklyStatus, weeklyGameUrl, weeklyPreviewSvg } from '../projects/Space-Shooter/systems/weekly.js';
 
 const ROOT_DIR = path.resolve('.');
 const SRC_DIR = path.join(ROOT_DIR, 'src');
@@ -16,6 +17,17 @@ const PUBLIC_DIR = path.join(ROOT_DIR, 'public');
 const COMPONENTS_DIR = path.join(SRC_DIR, 'components');
 const LAYOUTS_DIR = path.join(SRC_DIR, 'layouts');
 const SITE_BASE = process.env.SITE_BASE || '/DonavenCrenshaw/';
+// The hub the pages talk to (data-hub on account.js). Local builds point it at
+// a hub on this machine: HUB_URL=http://localhost:3100 npm run build.
+const HUB_URL = hubOrigin(process.env.HUB_URL || 'https://api.donavencrenshaw.com');
+
+function hubOrigin(value) {
+    let parsed;
+    try { parsed = new URL(String(value).trim()); } catch { throw new Error(`[CONFIG ERROR] HUB_URL must be an absolute http(s) URL, got ${value}`); }
+    if (!/^https?:$/.test(parsed.protocol)) throw new Error('[CONFIG ERROR] HUB_URL must use http or https');
+    if (parsed.protocol === 'http:' && !/^(localhost|127\.0\.0\.1|\[::1\])$/.test(parsed.hostname)) throw new Error('[CONFIG ERROR] HUB_URL may only use plain http for a hub on this machine');
+    return parsed.origin;
+}
 
 function normaliseBase(base) {
     const value = String(base || '/').trim();
@@ -187,7 +199,8 @@ async function initPublicDir() {
     const copyIfPresent = async (source, destination) => {
         if (fs.existsSync(source)) await fs.copy(source, destination);
     };
-    await copyIfPresent(path.join(ROOT_DIR, 'assets'), path.join(PUBLIC_DIR, 'assets'));
+    // Folder READMEs (assets/images/avatars/README.md) are notes for the owner, not site files.
+    await fs.copy(path.join(ROOT_DIR, 'assets'), path.join(PUBLIC_DIR, 'assets'), { filter: (candidate) => path.basename(candidate) !== 'README.md' });
     await copyIfPresent(path.join(SRC_DIR, 'styles'), path.join(PUBLIC_DIR, 'styles'));
     // Stardust is plain ES modules. It is published at /games/stardust/ so its
     // ../../assets/ paths land on the site's /assets/. Art provenance and QA
@@ -198,7 +211,7 @@ async function initPublicDir() {
     });
     if (fs.existsSync(path.join(ROOT_DIR, 'scripts'))) {
         await fs.ensureDir(path.join(PUBLIC_DIR, 'scripts'));
-        for (const filename of ['script.js', 'smoke.js', 'light-engine.js', 'account.js', 'stardust-boards.js', 'stardust-challenge.js', 'social.js', 'share.js']) {
+        for (const filename of ['script.js', 'smoke.js', 'light-engine.js', 'account.js', 'stardust-boards.js', 'stardust-challenge.js', 'social.js', 'share.js', 'profile.js', 'pilot-ui.js', 'stardust-weekly.js', 'pilot-profile.js']) {
             await copyIfPresent(path.join(ROOT_DIR, 'scripts', filename), path.join(PUBLIC_DIR, 'scripts', filename));
         }
     }
@@ -246,10 +259,61 @@ function customTrackData(now = Date.now()) {
     };
 }
 
+// data/avatars.json: the one place a preset id maps to an image. Validated
+// here and published as scripts/avatars.js for the pages' modules.
+async function avatarData() {
+    const avatars = await readJson('avatars.json', { required: true });
+    if (!Array.isArray(avatars) || !avatars.length) throw new Error('[DATA ERROR] data/avatars.json must be a non-empty array');
+    const seen = new Set();
+    for (const [index, entry] of avatars.entries()) {
+        if (!entry || !/^[a-z0-9-]{1,40}$/.test(String(entry.id))) throw new Error(`[DATA ERROR] avatars[${index}].id must be lowercase letters, digits and -`);
+        if (seen.has(entry.id)) throw new Error(`[DATA ERROR] avatars[${index}].id ${entry.id} is duplicated`);
+        seen.add(entry.id);
+        requiredString(entry.name, `avatars[${index}].name`);
+        if (!/^assets\/images\/avatars\/[A-Za-z0-9_-]+\.(?:svg|png|webp|jpe?g|avif)$/.test(String(entry.file))) throw new Error(`[DATA ERROR] avatars[${index}].file must be an image under assets/images/avatars/`);
+        if (!fs.existsSync(path.join(ROOT_DIR, entry.file))) throw new Error(`[DATA ERROR] avatars[${index}].file ${entry.file} does not exist`);
+    }
+    return avatars.map(({ id, name, file }) => ({ id, name, file }));
+}
+
+// The current weekly time trial (projects/Space-Shooter/tracks/weekly.js): the
+// words the page is built with, so it reads right without JavaScript, and its
+// layout picture at assets/images/stardust/weekly/<id>-layout.svg.
+async function weeklyData(now = Date.now()) {
+    const event = currentWeekly(now);
+    if (!event) return null;
+    const status = weeklyStatus(event, now);
+    const layout = `assets/images/stardust/weekly/${event.id}-layout.svg`;
+    await fs.ensureDir(path.join(PUBLIC_DIR, path.dirname(layout)));
+    const svg = weeklyPreviewSvg(event, { obstacles: false });
+    await fs.writeFile(path.join(PUBLIC_DIR, layout), svg);
+    const size = /\swidth="(\d+)" height="(\d+)"/.exec(svg);
+    const shards = Array.isArray(event.track?.shards) ? event.track.shards.length : 0;
+    return {
+        id: event.id,
+        week: event.week,
+        title: event.title,
+        tagline: event.tagline || '',
+        opensAt: event.opensAt,
+        closesAt: event.closesAt,
+        opensText: status.opensText,
+        closesText: status.closesText,
+        state: status.state,
+        rewards: event.rewards || {},
+        commentsPage: event.commentsPage,
+        gameUrl: weeklyGameUrl(event),
+        layout,
+        layoutWidth: size ? Number(size[1]) : 752,
+        layoutHeight: size ? Number(size[2]) : 1234,
+        shards
+    };
+}
+
 function renderContext(site, frontmatter, route, data) {
     const page = pageContext(site, frontmatter, route, data);
     const shared = {
         site,
+        hubUrl: HUB_URL,
         data,
         page,
         frontmatter,
@@ -432,7 +496,12 @@ async function main() {
         publicUrl: sitePath(site, `projects/${source.id}`),
         publishedUpdates: source.publishedUpdates.map((update) => ({ ...update, projectId: source.id, projectName: source.project.name }))
     }));
-    const data = { branches, products, support, updates, hubSnapshot, customTrack: customTrackData(), importedProjects, importedWarnings: projectImport.warnings };
+    const avatars = await avatarData();
+    await fs.writeFile(path.join(PUBLIC_DIR, 'scripts', 'avatars.js'), `// Generated by scripts/build.mjs from data/avatars.json. Edit that file, not this one.\nexport const AVATARS = ${JSON.stringify(avatars, null, 2)};\n`);
+    const weekly = await weeklyData();
+    console.log(`[HUB] ${HUB_URL}`);
+    if (weekly) console.log(`[WEEKLY] ${weekly.id} ${weekly.title}: ${weekly.state} at build time -> ${weekly.layout}`);
+    const data = { branches, products, support, updates, hubSnapshot, customTrack: customTrackData(), weekly, avatars, importedProjects, importedWarnings: projectImport.warnings };
     const postsData = [];
     const generatedPaths = [];
     const redirectEntries = [];

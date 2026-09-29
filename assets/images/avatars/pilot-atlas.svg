@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" width="256" height="256" role="img" aria-label="Atlas pilot badge">
+<defs>
+<radialGradient id="atlas-bg" cx="50%" cy="38%" r="62%"><stop offset="0" stop-color="#13304a"/><stop offset=".65" stop-color="#0a1828"/><stop offset="1" stop-color="#040a12"/></radialGradient>
+<linearGradient id="atlas-shell" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#c9d1dc"/><stop offset="1" stop-color="#6d7a8a"/></linearGradient>
+<linearGradient id="atlas-visor" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffa27a"/><stop offset="1" stop-color="#6a1c0a"/></linearGradient>
+<clipPath id="atlas-clip"><circle cx="48" cy="48" r="44"/></clipPath>
+</defs>
+<circle cx="48" cy="48" r="47" fill="url(#atlas-bg)"/>
+<g clip-path="url(#atlas-clip)">
+<circle cx="18" cy="24" r=".9" fill="#cfe8fb" opacity=".7"/><circle cx="79" cy="30" r=".7" fill="#cfe8fb" opacity=".6"/><circle cx="72" cy="15" r="1" fill="#cfe8fb" opacity=".5"/>
+<path d="M14 96 C16 84 30 79 48 79 C66 79 80 84 82 96 Z" fill="#6d7a8a"/>
+<path d="M48 21 L48 34" stroke="#4fd6ff" stroke-width="4" stroke-linecap="round"/>
+<path d="M21 80 L22 44 L33 26 L48 21 L63 26 L74 44 L75 80 Z" fill="url(#atlas-shell)" stroke="#040a12" stroke-width="1.5" stroke-linejoin="round"/>
+
+<path d="M28 51 C28 40 37 35 48 35 C59 35 68 40 68 51 C68 59 60 63 48 63 C36 63 28 59 28 51 Z" fill="url(#atlas-visor)" stroke="#040a12" stroke-width="1.8" stroke-linejoin="round"/>
+<path d="M33 47 C34 42 39 39 45 38.5" fill="none" stroke="#ffffff" stroke-opacity=".75" stroke-width="2.4" stroke-linecap="round"/>
+<path d="M34 80 L62 80 L59 66 L37 66 Z" fill="#081421" opacity=".55"/>
+<circle cx="48" cy="72" r="5.2" fill="none" stroke="#4fd6ff" stroke-width="1.6"/><path d="M42.8 72 L53.2 72 M48 66.8 C45 69 45 75 48 77.2 C51 75 51 69 48 66.8" fill="none" stroke="#4fd6ff" stroke-width="1.2"/>
+</g>
+<circle cx="48" cy="48" r="45" fill="none" stroke="#aab6c4" stroke-width="3"/>
+<circle cx="48" cy="48" r="42.5" fill="none" stroke="#040a12" stroke-opacity=".6" stroke-width="1"/>
+</svg>

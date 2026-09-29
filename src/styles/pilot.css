@@ -1,0 +1,64 @@
+/* Pilot identity, shared by every page that shows pilots: the round avatar,
+   the rarity-coloured title chip and the profile link. Drawn by scripts/pilot-ui.js. */
+
+.pilot-avatar {
+    --pa-size: 28px;
+    display: inline-grid;
+    place-items: center;
+    flex: none;
+    width: var(--pa-size);
+    height: var(--pa-size);
+    overflow: hidden;
+    border: 1px solid rgba(169, 220, 255, 0.28);
+    border-radius: 50%;
+    background: radial-gradient(circle at 50% 35%, #173450, #0a1828 60%, #050b14);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    vertical-align: middle;
+}
+.pilot-avatar--sm { --pa-size: 28px; }
+.pilot-avatar--md { --pa-size: 48px; }
+.pilot-avatar--lg { --pa-size: 112px; border-width: 2px; border-color: rgba(169, 220, 255, 0.4); box-shadow: 0 0 0 4px rgba(169, 220, 255, 0.06), 0 12px 40px rgba(0, 0, 0, 0.45); }
+.pilot-avatar img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.pilot-avatar[data-kind="preset"] { border-color: transparent; background: transparent; box-shadow: none; }
+.pilot-avatar-letter {
+    font-family: var(--font-mono, ui-monospace, monospace);
+    font-size: calc(var(--pa-size) * 0.46);
+    font-weight: 600;
+    line-height: 1;
+    color: #cfe8fb;
+    text-shadow: 0 0 12px rgba(169, 220, 255, 0.4);
+}
+
+/* Title chips: rarity decides the colour; the class name comes from a whitelist in profile.js. */
+.pilot-chip {
+    --chip: #a9bccb;
+    display: inline-flex;
+    align-items: center;
+    max-width: 100%;
+    padding: 0.14rem 0.5rem 0.12rem;
+    border: 1px solid color-mix(in srgb, var(--chip) 55%, transparent);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--chip) 10%, transparent);
+    color: var(--chip);
+    font: 600 0.6rem/1.35 var(--font-mono, ui-monospace, monospace);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: 0.12em;
+}
+.pilot-chip--common { --chip: #a9bccb; }
+.pilot-chip--rare { --chip: #6fbaff; }
+.pilot-chip--epic { --chip: #bd93ff; }
+.pilot-chip--legendary { --chip: #ffc561; box-shadow: 0 0 14px rgba(255, 197, 97, 0.14); }
+.pilot-chip--unique {
+    --chip: #7ef0e0;
+    border-color: transparent;
+    background: linear-gradient(100deg, #7ef0e0, #a9dcff 45%, #ff9ad8);
+    color: #06121c;
+    box-shadow: 0 0 16px rgba(169, 220, 255, 0.25);
+}
+
+.pilot-link { color: inherit; text-decoration: none; }
+.pilot-link:hover, .pilot-link:focus-visible { text-decoration: underline; text-underline-offset: 4px; }

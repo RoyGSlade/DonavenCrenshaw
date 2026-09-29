@@ -1,0 +1,248 @@
+// The weekly time trial: the event data, the layout, its rules (mines, rails,
+// sentries, the finish line), the scripted lap, and exact replays.
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { existsSync, readFileSync } from 'node:fs';
+import { WEEKLY_EVENTS, currentWeekly, weeklyById } from '../projects/Space-Shooter/tracks/weekly.js';
+import { createWeeklyLayout, WEEKLY_RULES as R, bouncerPosition } from '../projects/Space-Shooter/engine/weekly/layout.js';
+import { createWeeklyScene, stepWeekly, quantizeFrame, frameFromKeys, keysFromFrame, BIT, WEEKLY_CONFIG } from '../projects/Space-Shooter/engine/weekly/sim.js';
+import { encodeInputLog, decodeInputLog, replayInputLog, ghostPose } from '../projects/Space-Shooter/engine/weekly/replay.js';
+import { flyWeeklyLap } from '../projects/Space-Shooter/engine/weekly/pilot.js';
+import { weeklyStatus, parseWeeklyQuery, weeklyPreviewSvg, weeklyGameUrl } from '../projects/Space-Shooter/systems/weekly.js';
+import { isInsideTrack, pointOnTrack, nearestTrackPoint, updateTrackProgress, createTrackProgress } from '../projects/Space-Shooter/engine/track.js';
+
+const event = WEEKLY_EVENTS[0];
+const layout = createWeeklyLayout(event);
+const lap = flyWeeklyLap(layout);
+const launch = { turn: 0, thrust: 0, back: 0, strafe: 0, bits: BIT.LAUNCH };
+const idle = { turn: 0, thrust: 0, back: 0, strafe: 0, bits: 0 };
+
+function launched() {
+  const scene = createWeeklyScene(layout);
+  stepWeekly(scene, launch);
+  return scene;
+}
+
+test('every weekly event is well formed, a week long and uniquely named', () => {
+  const ids = new Set();
+  for (const e of WEEKLY_EVENTS) {
+    assert.match(e.id, /^weekly-\d{2}$/);
+    assert.ok(!ids.has(e.id)); ids.add(e.id);
+    assert.ok(Number.isInteger(e.week) && Number.isInteger(e.version) && e.version > 0);
+    const open = Date.parse(e.opensAt), close = Date.parse(e.closesAt);
+    assert.ok(Number.isFinite(open) && Number.isFinite(close), `${e.id} has readable dates with offsets`);
+    assert.equal(close - open, 7 * 86400000, `${e.id} runs exactly seven days`);
+    assert.equal(e.commentsPage, `stardust-${e.id}`);
+    assert.ok(e.rewards.podiumSize === 3 && e.rewards.champion && e.rewards.podium && e.rewards.entitlement);
+  }
+  assert.equal(weeklyById('weekly-01'), event);
+  assert.equal(weeklyById('nope'), null);
+  assert.equal(currentWeekly(Date.parse('2026-10-01T00:00:00Z')).id, 'weekly-01');
+});
+
+test("the hub's rules and titles agree with the game (when the hub repo sits alongside)", { skip: !existsSync(new URL('../../hub/api/games/stardust/rules.json', import.meta.url)) }, () => {
+  const rules = JSON.parse(readFileSync(new URL('../../hub/api/games/stardust/rules.json', import.meta.url), 'utf8'));
+  const titles = JSON.parse(readFileSync(new URL('../../hub/api/config/titles.json', import.meta.url), 'utf8'));
+  const titleIds = new Set((titles.titles || titles).map((t) => t.id));
+  for (const e of WEEKLY_EVENTS) {
+    const level = rules.levels.find((l) => l.id === e.id);
+    assert.ok(level, `hub has a ${e.id} board`);
+    assert.equal(level.version, e.version);
+    assert.equal(Date.parse(level.opensAt), Date.parse(e.opensAt), `${e.id} opens at the same moment on both sides`);
+    assert.equal(Date.parse(level.closesAt), Date.parse(e.closesAt), `${e.id} closes at the same moment on both sides`);
+    assert.equal(level.network, false);
+    assert.equal(level.staffHidden, true, 'the owner\'s dev times stay off the public board');
+    assert.equal(level.replay, 'store');
+    assert.ok(level.minTimeMs < lap.time, 'the hub floor is below a careful lap');
+    const hubEvent = rules.events.find((x) => x.id === e.id);
+    assert.ok(hubEvent && hubEvent.board === e.id, `hub has the ${e.id} event`);
+    assert.equal(hubEvent.rewards.championTitle, e.rewards.champion);
+    assert.equal(hubEvent.rewards.podiumTitle, e.rewards.podium);
+    assert.equal(hubEvent.rewards.podiumEntitlement, e.rewards.entitlement);
+    assert.ok(titleIds.has(e.rewards.champion) && titleIds.has(e.rewards.podium), 'reward titles exist in titles.json');
+  }
+});
+
+test('the layout: huge, closed, every piece in its place', () => {
+  const { track } = layout;
+  assert.ok(track.length > R.MIN_LENGTH, `lap ${track.length.toFixed(0)} cells`);
+  assert.ok(track.length > 6 * 120, 'several times longer than a network circuit');
+  assert.ok(track.width >= R.MIN_WIDTH && track.width <= R.MAX_WIDTH);
+  assert.ok(track.bounds.maxX > 48 && track.bounds.maxY > 32, 'not held to the network grid');
+  const r = WEEKLY_CONFIG.PLAYER_RADIUS;
+  for (const s of layout.shards) assert.ok(isInsideTrack(track, s.x, s.y, r), `${s.id} is flyable`);
+  for (const s of layout.stations) assert.ok(isInsideTrack(track, s.x, s.y, r), `${s.id} is flyable`);
+  for (const m of layout.mines) {
+    assert.ok(isInsideTrack(track, m.x, m.y), `${m.id} is on the lane`);
+    for (const s of layout.shards) assert.ok(Math.hypot(m.x - s.x, m.y - s.y) > m.radius + r + R.SHARD_PICKUP, `${m.id} doesn't sit on ${s.id}`);
+    // A ship-width gap past every mine, on at least one side.
+    const c = nearestTrackPoint(track, m.x, m.y);
+    const room = track.width / 2 - c.distance - m.radius;
+    assert.ok(room > 2 * r || track.width / 2 + c.distance - m.radius > 2 * r, `${m.id} leaves a gap`);
+  }
+  for (const t of layout.sentries) assert.ok(!isInsideTrack(track, t.x, t.y), `${t.id} sits beyond the outside rail`);
+  for (const b of layout.bouncers) {
+    for (const time of [0, 0.37, 1.1, 2.9, 7.3]) {
+      const p = bouncerPosition(b, time);
+      assert.ok(isInsideTrack(track, p.x, p.y, b.radius - 0.1), `${b.id} stays between the rails`);
+    }
+  }
+  // No infield shortcut: distant parts of the lane never touch.
+  for (let a = 0; a < track.length; a += 1.5)
+    for (let b = a + R.LANE_GAP; b < track.length; b += 1.5) {
+      if (track.length - (b - a) < R.LANE_GAP) continue;
+      const p = pointOnTrack(track, a), q = pointOnTrack(track, b);
+      assert.ok(Math.hypot(p.x - q.x, p.y - q.y) > track.width, `lanes merge near ${a.toFixed(0)} / ${b.toFixed(0)}`);
+    }
+});
+
+test('the scripted pilot finishes a clean lap with every shard, hull and fuel intact', () => {
+  assert.ok(lap.finished, `finished (dead: ${lap.dead})`);
+  assert.equal(lap.scene.shards.size, layout.shards.length);
+  assert.ok(lap.time < R.PILOT_SECONDS * 1000);
+  assert.ok(lap.time > 45000, 'no lap is anywhere near the hub floor of 45 s by accident');
+  assert.ok(lap.scene.fuel > 20 && lap.scene.player.hp > 0);
+  assert.equal(lap.scene.trackProgress.passed, layout.track.checkpoints.length);
+});
+
+test('a recorded lap replays to the exact same finish, through the text log', () => {
+  const log = encodeInputLog({ eventId: event.id, version: event.version, frames: lap.frames, finishMs: lap.time });
+  assert.ok(log.length < 256 * 1024, `log ${log.length} bytes fits the hub's 256 KB`);
+  const decoded = decodeInputLog(log);
+  assert.equal(decoded.frames.length, lap.frames.length);
+  assert.deepEqual(decoded.frames.slice(0, 50), lap.frames.slice(0, 50));
+  const replay = replayInputLog(layout, log);
+  assert.ok(replay.finished && replay.matches);
+  assert.equal(replay.finishMs, lap.time, 'bit-for-bit the same time');
+  const pose = ghostPose(replay.poses, lap.time / 2);
+  assert.ok(isInsideTrack(layout.track, pose.x, pose.y), 'the ghost flies the lane');
+  // Changing one frame changes the outcome, so the log really drives the run.
+  const tampered = lap.frames.map((f, i) => (i > 200 && i < 260 ? { ...f, turn: 100 } : f));
+  const other = replayInputLog(layout, { frames: tampered, finishMs: Math.round(lap.time) });
+  assert.ok(!other.matches);
+});
+
+test('malformed logs are refused', () => {
+  for (const bad of [null, '', 'SDW2|x|1|0|0|', 'SDW1|weekly-01|1|5|0|1,0,0,0,0,0', 'SDW1|weekly-01|1|1|0|1,zz,0', 'x'.repeat(300000)])
+    assert.equal(decodeInputLog(bad), null);
+});
+
+test('inputs are quantised the same way live and in replays', () => {
+  const f = frameFromKeys({ turnStrength: 0.333, thrustStrength: 0.77, backStrength: 0, strafeStrength: 1, left: true, boost: true, launch: true });
+  assert.deepEqual(f, { turn: 34, thrust: 75, back: 0, strafe: 100, bits: BIT.LEFT | BIT.BOOST | BIT.LAUNCH });
+  assert.deepEqual(quantizeFrame(f), f);
+  assert.equal(keysFromFrame(f).turnStrength, 0.34);
+});
+
+test('nothing moves and the clock does not run until launch', () => {
+  const scene = createWeeklyScene(layout);
+  for (let i = 0; i < 300; i++) stepWeekly(scene, idle);
+  assert.equal(scene.step, 0);
+  assert.ok(scene.lockedInStart);
+  const events = stepWeekly(scene, { ...idle, thrust: 100 });
+  assert.equal(events[0].type, 'launch');
+  assert.equal(scene.step, 1);
+});
+
+test('a rail hit halves the speed and takes the controls away for half a second', () => {
+  const scene = launched();
+  const p = scene.player;
+  const at = pointOnTrack(layout.track, 60, 2.6);
+  Object.assign(p, { x: at.x, y: at.y, vx: at.tx * 8 - at.ty * 5, vy: at.ty * 8 + at.tx * 5 });
+  const before = Math.hypot(p.vx, p.vy);
+  let hit = null;
+  for (let i = 0; i < 30 && !hit; i++) hit = stepWeekly(scene, idle).find((e) => e.type === 'wall');
+  assert.ok(hit, 'the rail was hit');
+  assert.ok(Math.hypot(p.vx, p.vy) < before * 0.55, 'speed halved');
+  assert.ok(p.stunTimer > R.WALL_STUN - 0.02);
+  // Full right turn while stunned: the nose doesn't move.
+  const angle = p.angle;
+  for (let i = 0; i < 50; i++) stepWeekly(scene, { ...idle, turn: 100 });
+  assert.equal(p.angle, angle, 'no steering during the stun');
+  for (let i = 0; i < 30; i++) stepWeekly(scene, { ...idle, turn: 100 });
+  assert.notEqual(p.angle, angle, 'control comes back after 0.5 s');
+});
+
+test('touching a mine ends the attempt at once', () => {
+  const scene = launched();
+  const m = layout.mines[0];
+  Object.assign(scene.player, { x: m.x - 1, y: m.y, vx: 6, vy: 0 });
+  let dead = null;
+  for (let i = 0; i < 60 && !dead; i++) dead = stepWeekly(scene, idle).find((e) => e.type === 'dead');
+  assert.equal(dead?.cause, 'mine');
+  assert.equal(scene.dead, 'mine');
+  assert.deepEqual(stepWeekly(scene, idle), [], 'a dead scene takes no more steps');
+});
+
+test('corner sentries fire at slow ships and leave fast ones alone', () => {
+  const s = layout.sentries[0];
+  const corner = layout.track.points[s.point];
+  const slow = launched();
+  let fired = false;
+  for (let i = 0; i < 240; i++) {
+    Object.assign(slow.player, { x: corner.x - 3, y: corner.y + 0.4, vx: 1, vy: 0 });
+    if (stepWeekly(slow, idle).some((e) => e.type === 'sentry-fire')) fired = true;
+  }
+  assert.ok(fired, 'a slow ship draws fire');
+  const fast = launched();
+  let locked = false;
+  for (let i = 0; i < 240; i++) {
+    Object.assign(fast.player, { x: corner.x - 3, y: corner.y + 0.4, vx: R.SENTRY_MIN_SPEED + 3, vy: 0 });
+    if (stepWeekly(fast, idle).some((e) => e.type === 'sentry-lock')) locked = true;
+  }
+  assert.ok(!locked, 'a fast ship is never targeted');
+});
+
+test('the finish line counts only after a full lap with every shard, across its full width', () => {
+  const scene = launched();
+  const g = layout.track.portal;
+  const ready = () => {
+    Object.assign(scene.trackProgress, { lapStarted: true, nextCheckpoint: layout.track.checkpoints.length, passed: layout.track.checkpoints.length, distance: layout.track.length });
+    Object.assign(scene.player, { x: g.x - g.tx * 0.5 + g.nx * (layout.track.width / 2 - 0.3), y: g.y - g.ty * 0.5 + g.ny * (layout.track.width / 2 - 0.3), vx: g.tx * 6, vy: g.ty * 6 });
+  };
+  ready();
+  let events = [];
+  for (let i = 0; i < 30; i++) events.push(...stepWeekly(scene, idle));
+  assert.ok(events.some((e) => e.type === 'missing-shards'));
+  assert.ok(!scene.finished, 'no finish without the shards');
+  for (const s of layout.shards) scene.shards.add(s.id);
+  ready();
+  events = [];
+  for (let i = 0; i < 30 && !scene.finished; i++) events.push(...stepWeekly(scene, idle));
+  assert.ok(scene.finished, 'crossing near the rail still finishes');
+  assert.ok(scene.finishMs > 0 && scene.finishMs < scene.step * 1000 / 120 + 1e-9);
+});
+
+test('checkpoints span the whole corner: an apex cut still counts', () => {
+  const { track } = layout;
+  const c = track.checkpoints[0];
+  const inside = c.insideSide;
+  // Cross the corner's line on the inside, beyond width/2 but inside the lane.
+  const off = track.width / 2 + (c.insideReach - track.width / 2) / 2;
+  const nx = -c.ty * inside, ny = c.tx * inside;
+  const scene = { track, launched: true, trackProgress: createTrackProgress(), player: { x: c.x + nx * off + c.tx * 0.1, y: c.y + ny * off + c.ty * 0.1 } };
+  scene.trackProgress.lapStarted = true;
+  const previous = { x: c.x + nx * off - c.tx * 0.1, y: c.y + ny * off - c.ty * 0.1 };
+  assert.ok(isInsideTrack(track, previous.x, previous.y) && isInsideTrack(track, scene.player.x, scene.player.y), 'the cut is on the lane');
+  updateTrackProgress(scene, previous);
+  assert.equal(scene.trackProgress.passed, 1);
+});
+
+test('release window: upcoming, live, closed; links and the public layout picture', () => {
+  assert.equal(weeklyStatus(event, Date.parse('2026-09-29T18:59:59-07:00')).state, 'upcoming');
+  assert.equal(weeklyStatus(event, Date.parse('2026-09-29T19:00:00-07:00')).state, 'live');
+  assert.equal(weeklyStatus(event, Date.parse('2026-09-30T19:00:00-07:00')).countdown.label, '6d 00:00:00');
+  assert.equal(weeklyStatus(event, Date.parse('2026-10-06T19:00:00-07:00')).state, 'closed');
+  assert.equal(parseWeeklyQuery('?weekly=weekly-01').event, event);
+  assert.equal(parseWeeklyQuery('?weekly=../../x').event, null);
+  assert.equal(parseWeeklyQuery('?preview=weekly').preview, true);
+  // Old custom-track links land on the weekly card, which took over that slot.
+  assert.equal(parseWeeklyQuery('?track=custom').event, currentWeekly());
+  assert.equal(parseWeeklyQuery('?track=custom').focus, true);
+  assert.equal(weeklyGameUrl(event), 'games/stardust/?weekly=weekly-01');
+  const svg = weeklyPreviewSvg(event);
+  assert.match(svg, /^<svg /);
+  assert.equal((svg.match(/<text[^>]*font-weight="700" fill="#[0-9a-f]{6}"[^>]*>\d+<\/text>/g) || []).length, layout.shards.length, 'every shard is numbered');
+  assert.ok(!svg.includes('#ff5a4e'), 'the public picture hides the mines');
+  assert.ok(weeklyPreviewSvg(event, { obstacles: true }).includes('#ff5a4e'));
+});

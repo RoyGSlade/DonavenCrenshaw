@@ -140,7 +140,10 @@ const ERRORS = {
     challenge_expired: 'This challenge has expired.',
     challenge_outdated: 'The track has changed since this time was set, so it can’t be raced as a challenge.',
     outdated: 'The track has changed since this time was set, so it can’t be raced as a challenge.',
-    signed_out: 'Your session ended. Sign in again.'
+    signed_out: 'Your session ended. Sign in again.',
+    unknown_avatar: 'That avatar isn’t available any more. Pick another one.',
+    title_not_earned: 'You haven’t earned that title yet.',
+    not_found: 'No pilot has that username.'
 };
 
 // Plain words for a failed hub call. `res` is what createHub() returns.
@@ -185,6 +188,10 @@ export function boardRows(entries, meUsername) {
         time: clock(entry.timeMs),
         timeMs: entry.timeMs,
         date: day(entry.setAt),
+        // Identity for the row: picture, title chip and profile link (pilot-ui.js).
+        avatarPreset: entry.avatarPreset ?? null,
+        avatarUrl: entry.avatarUrl ?? null,
+        title: entry.title && typeof entry.title === 'object' ? entry.title : null,
         isMe: Boolean(entry.isMe || (meUsername && entry.username === meUsername))
     }));
 }
@@ -341,6 +348,19 @@ export function socialApi(hub) {
         board: (board, { scope, limit = 10 } = {}) => hub(`/games/stardust/boards/${id(board)}?${scope === 'friends' ? 'scope=friends&' : ''}limit=${limit}`),
         aroundMe: (spanRows = 3) => hub(`/games/stardust/boards/full/around-me?span=${spanRows}`),
         challenge: (challengeId) => hub(`/games/stardust/challenges/${id(challengeId)}`),
-        challenges: (box) => hub(`/games/stardust/challenges?box=${box === 'sent' ? 'sent' : 'inbox'}`)
+        challenges: (box) => hub(`/games/stardust/challenges?box=${box === 'sent' ? 'sent' : 'inbox'}`),
+        // Titles, avatars and public profiles.
+        titles: () => hub('/titles'),
+        myTitles: () => hub('/users/me/titles'),
+        setTitle: (titleId) => hub('/users/me/title', { method: 'PUT', body: { titleId: titleId || null } }),
+        avatars: () => hub('/avatars'),
+        setAvatar: (preset) => hub('/users/me/avatar', { method: 'PUT', body: { preset: preset || null } }),
+        setProfilePublic: (profilePublic) => hub('/users/profile', { method: 'PUT', body: { profilePublic: Boolean(profilePublic) } }),
+        profile: (username) => hub(`/profiles/${id(username)}`),
+        // Weekly events and their comments.
+        event: (eventId) => hub(`/games/stardust/events/${id(eventId)}`),
+        comments: (page) => hub(`/feedback?page=${id(page)}`),
+        postComment: (page, text) => hub('/feedback', { method: 'POST', body: { page, text } }),
+        deleteComment: (commentId) => hub(`/feedback/${id(commentId)}`, { method: 'DELETE' })
     };
 }

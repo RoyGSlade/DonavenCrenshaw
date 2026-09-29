@@ -15,6 +15,8 @@ import {
     createHub, socialApi
 } from './social.js';
 import { createShareBox } from './share.js';
+import { profilePath, lockedTitles, sortTitles, rarityLabel } from './profile.js';
+import { createPilotUi } from './pilot-ui.js';
 
 const tag = document.querySelector('script[data-hub]');
 const HUB = (tag?.dataset.hub || 'https://api.donavencrenshaw.com').replace(/\/+$/, '');
@@ -24,6 +26,7 @@ const BASE = window.SITE_BASE || '/';
 // status >= 502 or no answer at all is `offline`: the hub is asleep.
 const hub = createHub(HUB, { timeoutMs: TIMEOUT_MS });
 const api = socialApi(hub);
+const ui = createPilotUi({ base: BASE, hub: HUB });
 
 // Reads named form fields into a request body. Emails and usernames are trimmed;
 // secrets are sent exactly as typed.
@@ -142,6 +145,7 @@ function runAccountPage(root, first) {
         loadDogfight();
         loadFriends();
         loadChallenges();
+        loadPilotCard();
     }
 
     function signedOut(message) {
@@ -225,7 +229,7 @@ function runAccountPage(root, first) {
 
     function fillMember() {
         const name = displayName(user);
-        $('[data-acct-monogram]').textContent = name.slice(0, 1).toUpperCase();
+        paintIdentity();
         $('[data-acct-name]').textContent = name;
         $('[data-acct-username]').textContent = `@${user.username}`;
         const since = user.createdAt ? new Date(user.createdAt) : null;
@@ -246,6 +250,136 @@ function runAccountPage(root, first) {
         const link = inviteLink(location.origin, BASE, user.username);
         inviteShare.update({ link, message: inviteMessage(link), shareText: inviteMessage(), title: 'Stardust friend invite' });
     }
+
+    // --- Pilot card: avatar, title, public profile ---------------------------------
+
+    // The picture (preset, upload or letter) and the active title chip at the top.
+    function paintIdentity() {
+        const slot = $('[data-acct-monogram]');
+        const picture = ui.avatar(user, { size: 'md' });
+        slot.replaceChildren(...picture.childNodes);
+        slot.dataset.kind = picture.dataset.kind || 'letter';
+        const chip = ui.chip(user.title);
+        const title = $('[data-acct-title-chip]');
+        title.replaceChildren(...(chip ? [chip] : []));
+        title.hidden = !chip;
+        const href = profilePath(BASE, user.username);
+        for (const a of $$('[data-acct-profile-link]')) if (href) a.href = href;
+        $('[data-acct-public]').checked = Boolean(user.profilePublic);
+    }
+
+    let earned = [];
+
+    function radio(name, value, checked, onPick) {
+        const input = document.createElement('input');
+        input.type = 'radio';
+        input.name = name;
+        input.value = value;
+        input.checked = checked;
+        input.dataset.was = String(checked);
+        input.addEventListener('change', () => { if (input.checked) onPick(input); });
+        return input;
+    }
+
+    // Saves right away; on failure the previous choice comes back.
+    async function pick(input, key, call, done) {
+        const group = $$(`input[name="${input.name}"]`);
+        const before = group.find((other) => other.dataset.was === 'true');
+        for (const other of group) other.disabled = true;
+        note(key, 'Saving…', 'info');
+        const res = await call();
+        for (const other of group) other.disabled = false;
+        if (res.signedOut) return signedOut('Your session ended. Sign in again.');
+        if (!res.ok) {
+            if (before) before.checked = true;
+            note(key, problemText(res, 'Couldn’t save that.'), 'error');
+            return;
+        }
+        for (const other of group) other.dataset.was = String(other === input);
+        done(res.data || {});
+        paintIdentity();
+        note(key, 'Saved.', 'ok');
+    }
+
+    function paintAvatars(known) {
+        const grid = $('[data-acct-avatar-grid]');
+        const current = user.avatarPreset || '';
+        const options = [{ id: '', name: 'Letter' }, ...[...ui.avatars.values()].filter((a) => !known || known.has(a.id))];
+        grid.replaceChildren(...options.map((option) => {
+            const label = el('label', 'acct-avatar-opt');
+            const input = radio('acct-avatar', option.id, option.id === current, (chosen) => pick(chosen, 'avatar',
+                () => api.setAvatar(chosen.value || null),
+                (data) => { user.avatarPreset = data.avatarPreset === undefined ? (chosen.value || null) : data.avatarPreset; }));
+            input.className = 'acct-avatar-input';
+            // The letter option shows the pilot's own monogram (or their upload).
+            const face = ui.avatar(option.id ? { avatarPreset: option.id } : { ...user, avatarPreset: null }, { size: 'md' });
+            label.append(input, face, el('span', 'acct-avatar-name', option.id ? option.name : (user.avatarUrl ? 'Upload' : 'Letter')));
+            return label;
+        }));
+    }
+
+    function titleOption(title, checked) {
+        const label = el('label', 'acct-title-opt');
+        const input = radio('acct-title', title ? title.id : '', checked, (chosen) => pick(chosen, 'title',
+            () => api.setTitle(chosen.value || null),
+            (data) => {
+                const active = data.active === undefined ? (chosen.value || null) : data.active;
+                const found = earned.find((item) => item.id === active);
+                user.titleId = active;
+                user.title = found ? { id: found.id, title: found.title, rarity: found.rarity } : null;
+            }));
+        const text = el('span', 'acct-title-text');
+        if (title) {
+            text.append(ui.chip(title));
+            if (title.description) text.append(el('span', 'acct-title-desc', title.description));
+        } else {
+            text.append(el('span', 'acct-title-none', 'No title'));
+        }
+        label.append(input, text);
+        return label;
+    }
+
+    function paintTitles(mine, all) {
+        earned = sortTitles(mine?.earned);
+        const active = mine?.active ?? user.titleId ?? null;
+        $('[data-acct-title-list]').replaceChildren(titleOption(null, !active), ...earned.map((t) => titleOption(t, t.id === active)));
+        $('[data-acct-titles-empty]').hidden = earned.length > 0;
+
+        const locked = all ? lockedTitles(all, earned) : [];
+        $('[data-acct-locked]').hidden = locked.length === 0;
+        $('[data-acct-locked-count]').textContent = `(${locked.length})`;
+        $('[data-acct-locked-list]').replaceChildren(...locked.map((t) => {
+            const li = el('li', `acct-locked-item${t.secret ? ' is-secret' : ''}`);
+            const chip = ui.chip({ title: t.title, rarity: t.rarity });
+            chip.classList.add('is-locked');
+            li.append(chip, el('span', 'acct-locked-meta mono', rarityLabel(t.rarity)), el('span', 'acct-locked-text', t.secret ? `Hint: ${t.text}` : t.text));
+            return li;
+        }));
+    }
+
+    async function loadPilotCard() {
+        const [mine, all, presets] = await Promise.all([api.myTitles(), api.titles(), api.avatars()]);
+        if (mine.signedOut) return signedOut('Your session ended. Sign in again.');
+        // Only offer the presets the hub knows; with the hub unsure, offer the site's list.
+        const known = presets.ok && Array.isArray(presets.data?.presets) ? new Set(presets.data.presets.map((p) => p.id)) : null;
+        paintAvatars(known && known.size ? known : null);
+        note('title', mine.ok ? '' : problemText(mine, 'Couldn’t load your titles.'), 'error');
+        paintTitles(mine.ok ? mine.data : { earned: [], active: user.titleId }, all.ok ? all.data?.titles : null);
+    }
+
+    $('[data-acct-public]').addEventListener('change', async (e) => {
+        const box = e.currentTarget;
+        const wanted = box.checked;
+        box.disabled = true;
+        note('public', 'Saving…', 'info');
+        const res = await api.setProfilePublic(wanted);
+        box.disabled = false;
+        if (res.signedOut) return signedOut('Your session ended. Sign in again.');
+        if (!res.ok) { box.checked = !wanted; note('public', problemText(res, 'Couldn’t change that.'), 'error'); return; }
+        user = res.data?.user ? { ...user, ...res.data.user } : { ...user, profilePublic: wanted };
+        paintIdentity();
+        note('public', wanted ? 'Your profile is public.' : 'Your profile is private.', 'ok');
+    });
 
     function updateCount(area) {
         const out = document.getElementById(area.dataset.acctCount);

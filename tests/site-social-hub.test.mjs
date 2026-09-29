@@ -87,6 +87,78 @@ test('boards, around-me, challenges and progress use the contract paths', async 
   ]);
 });
 
+test('titles, avatars, profiles, events and comments use the contract method and path', async () => {
+  const hub = fakeHub({
+    'PUT /users/me/title': [200, { active: 'wingmate' }],
+    'PUT /users/me/avatar': [200, { avatarPreset: 'pilot-nova' }],
+    'PUT /users/profile': [200, { user: { username: 'nova', profilePublic: true } }],
+    'POST /feedback': [201, { id: 'c1' }],
+    'DELETE /feedback/c%2F1': [204]
+  });
+  const api = socialApi(createHub(ORIGIN, { fetchImpl: hub.fetchImpl }));
+  await api.titles();
+  await api.myTitles();
+  assert.equal((await api.setTitle('wingmate')).data.active, 'wingmate');
+  await api.setTitle(null);
+  await api.setTitle('');
+  await api.avatars();
+  assert.equal((await api.setAvatar('pilot-nova')).data.avatarPreset, 'pilot-nova');
+  await api.setAvatar(null);
+  assert.equal((await api.setProfilePublic(true)).ok, true);
+  await api.setProfilePublic(0);
+  await api.profile('Roy_G_Slade');
+  await api.profile('a/b');
+  await api.event('weekly-01');
+  await api.board('weekly-01', { limit: 50 });
+  await api.comments('stardust-weekly-01');
+  assert.equal((await api.postComment('stardust-weekly-01', 'good luck')).status, 201);
+  assert.equal((await api.deleteComment('c/1')).ok, true);
+
+  assert.deepEqual(hub.calls.map((c) => `${c.method} ${c.path}`), [
+    'GET /titles',
+    'GET /users/me/titles',
+    'PUT /users/me/title',
+    'PUT /users/me/title',
+    'PUT /users/me/title',
+    'GET /avatars',
+    'PUT /users/me/avatar',
+    'PUT /users/me/avatar',
+    'PUT /users/profile',
+    'PUT /users/profile',
+    'GET /profiles/Roy_G_Slade',
+    'GET /profiles/a%2Fb',
+    'GET /games/stardust/events/weekly-01',
+    'GET /games/stardust/boards/weekly-01?limit=50',
+    'GET /feedback?page=stardust-weekly-01',
+    'POST /feedback',
+    'DELETE /feedback/c%2F1'
+  ]);
+  const bodies = hub.calls.map((c) => c.body);
+  assert.deepEqual(bodies[2], { titleId: 'wingmate' });
+  assert.deepEqual(bodies[3], { titleId: null });
+  assert.deepEqual(bodies[4], { titleId: null });
+  assert.deepEqual(bodies[6], { preset: 'pilot-nova' });
+  assert.deepEqual(bodies[7], { preset: null });
+  assert.deepEqual(bodies[8], { profilePublic: true });
+  assert.deepEqual(bodies[9], { profilePublic: false });
+  assert.deepEqual(bodies[15], { page: 'stardust-weekly-01', text: 'good luck' });
+  assert.ok(hub.calls.every((c) => c.credentials === 'include'));
+});
+
+test('title, avatar and profile errors come through with their contract codes', async () => {
+  const hub = fakeHub({
+    'PUT /users/me/title': [400, { error: 'title_not_earned' }],
+    'PUT /users/me/avatar': [400, { error: 'unknown_avatar' }],
+    'POST /feedback': [400, { error: 'display_name_required' }]
+  });
+  const api = socialApi(createHub(ORIGIN, { fetchImpl: hub.fetchImpl }));
+  assert.deepEqual([(await api.setTitle('gatecrasher')).data.error], ['title_not_earned']);
+  assert.deepEqual([(await api.setAvatar('pilot-x')).data.error], ['unknown_avatar']);
+  const missing = await api.profile('nobody');
+  assert.deepEqual([missing.ok, missing.status, missing.data.error, missing.offline], [false, 404, 'not_found', false]);
+  assert.equal((await api.postComment('p', 'x')).data.error, 'display_name_required');
+});
+
 test('a 401 is signed out, not offline; contract errors come through with their code', async () => {
   const hub = fakeHub({
     'GET /friends': [401, { error: 'signed_out' }],

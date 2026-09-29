@@ -9,7 +9,7 @@
         <main id="main-content" class="page-shell" tabindex="-1">
             <div class="container page-content acct" data-account-app data-view="loading">
                 <header class="acct-head">
-                    <p class="acct-eyebrow mono">Account · api.donavencrenshaw.com</p>
+                    <p class="acct-eyebrow mono">Account · <%= new URL(hubUrl).host %></p>
                     <h1 class="section-title acct-title" data-acct-title>Your account</h1>
                     <p class="acct-lede" data-acct-lede>One account for the games and tools on this site. Sign in and every Stardust circuit you finish goes on the leaderboard.</p>
                 </header>
@@ -86,10 +86,12 @@
                         <span class="acct-monogram" aria-hidden="true" data-acct-monogram></span>
                         <div class="acct-id-copy">
                             <p class="acct-id-name" data-acct-name></p>
+                            <p class="acct-id-title" data-acct-title-chip hidden></p>
                             <p class="acct-id-meta mono"><span data-acct-username></span> · <span data-acct-since></span></p>
                             <p class="acct-id-bio" data-acct-bio></p>
                         </div>
                         <div class="acct-id-actions">
+                            <a class="btn-noir" href="u/" data-acct-profile-link>View my public profile</a>
                             <button class="btn-noir" type="button" data-acct-signout>Sign out</button>
                         </div>
                     </section>
@@ -108,6 +110,36 @@
                             <div class="acct-stat"><dt class="mono">Fastest circuit</dt><dd data-acct-stat="circuit">—</dd><p class="acct-stat-sub" data-acct-stat-sub="circuit">Any single circuit</p></div>
                             <div class="acct-stat"><dt class="mono">Dogfight wins</dt><dd data-acct-stat="wins">—</dd><p class="acct-stat-sub" data-acct-stat-sub="wins">Against signed-in pilots</p></div>
                         </dl>
+                    </section>
+
+                    <%# Avatar, title and profile visibility: how the pilot shows up on boards, comments and /u/. %>
+                    <section class="noir-card noir-card--lit acct-card acct-pilot" id="pilot-card" aria-labelledby="acct-pilot-title">
+                        <div class="acct-card-head"><h2 id="acct-pilot-title" class="acct-card-title mono">Pilot card</h2><a class="acct-link mono" href="u/" data-acct-profile-link>Public profile →</a></div>
+                        <p class="acct-hint acct-pilot-hint">How you appear on leaderboards, in comments and on your profile.</p>
+                        <div class="acct-pilot-grid">
+                            <fieldset class="acct-fieldset acct-avatars">
+                                <legend class="acct-sub-title mono">Avatar</legend>
+                                <div class="acct-avatar-grid" data-acct-avatar-grid></div>
+                                <p class="acct-status" role="status" data-acct-status="avatar"></p>
+                            </fieldset>
+                            <div class="acct-pilot-side">
+                                <fieldset class="acct-fieldset acct-titles">
+                                    <legend class="acct-sub-title mono">Title</legend>
+                                    <div class="acct-title-list" data-acct-title-list></div>
+                                    <p class="acct-hint" data-acct-titles-empty hidden>No titles yet. Win a weekly, place on a board or finish a challenge and they turn up here.</p>
+                                    <p class="acct-status" role="status" data-acct-status="title"></p>
+                                    <details class="acct-locked" data-acct-locked hidden>
+                                        <summary class="mono">Locked titles <span data-acct-locked-count></span></summary>
+                                        <ul class="acct-locked-list" data-acct-locked-list></ul>
+                                    </details>
+                                </fieldset>
+                                <div class="acct-public">
+                                    <label class="acct-switch"><input type="checkbox" role="switch" data-acct-public aria-describedby="acct-public-hint"><span class="acct-switch-track" aria-hidden="true"></span><span class="acct-switch-label">Public profile</span></label>
+                                    <p class="acct-hint" id="acct-public-hint">On: anyone with your profile link sees your bio, titles, Stardust bests and Dogfight record. Off: only your name, avatar, title and weekly placements.</p>
+                                    <p class="acct-status" role="status" data-acct-status="public"></p>
+                                </div>
+                            </div>
+                        </div>
                     </section>
 
                     <div class="acct-grid">
@@ -178,7 +210,7 @@
                             </div>
                         </section>
 
-                        <form class="noir-card acct-card acct-form" data-acct-form="profile" aria-labelledby="acct-profile-title" novalidate>
+                        <form class="noir-card acct-card acct-form" id="profile" data-acct-form="profile" aria-labelledby="acct-profile-title" novalidate>
                             <h2 id="acct-profile-title" class="acct-card-title mono">Profile</h2>
                             <label>Display name<input name="displayName" type="text" maxlength="32" autocomplete="nickname" aria-describedby="acct-dn-hint"></label>
                             <p class="acct-hint" id="acct-dn-hint">Shown instead of your username where there's room. Up to 32 characters.</p>

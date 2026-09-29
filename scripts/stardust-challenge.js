@@ -12,12 +12,14 @@ import {
     challengeLink, challengeMessage, challengePath, playPath, signInPath, createHub, socialApi
 } from './social.js';
 import { createShareBox } from './share.js';
+import { createPilotUi } from './pilot-ui.js';
 
 const root = document.querySelector('[data-sd-challenge]');
 const tag = document.querySelector('script[data-hub]');
 const HUB = (tag?.dataset.hub || 'https://api.donavencrenshaw.com').replace(/\/+$/, '');
 const BASE = window.SITE_BASE || '/';
 const api = socialApi(createHub(HUB));
+const ui = createPilotUi({ base: BASE, hub: HUB });
 
 if (root) run();
 
@@ -96,18 +98,9 @@ function run() {
             return;
         }
         // Attempts come best first; number them in that order.
-        const rows = boardRows(attempts.map((a, i) => ({ ...a, rank: i + 1, timeMs: a.bestMs })), me?.username);
-        const ol = el('ol', 'sd-board');
-        rows.forEach((row, i) => {
-            const li = el('li');
-            if (row.isMe) li.classList.add('is-me');
-            // The badge sits in the name cell so it survives the narrow layout.
-            const name = el('span', 'sd-name', row.name);
-            if (attempts[i].beaten) name.append(' ', el('span', 'sd-badge', 'Beaten'));
-            li.append(el('span', 'sd-rank', String(row.rank).padStart(2, '0')), name, el('span', 'sd-time', row.time), el('span', 'sd-date', ''));
-            ol.append(li);
-        });
-        box.replaceChildren(ol);
+        const rows = boardRows(attempts.map((a, i) => ({ ...a, rank: i + 1, timeMs: a.bestMs, setAt: null })), me?.username);
+        // The badge sits in the name cell so it survives the narrow layout.
+        box.replaceChildren(ui.boardList(rows, { extra: (row, i) => (attempts[i].beaten ? el('span', 'sd-badge', 'Beaten') : null) }));
     }
 
     function paintYou(c) {

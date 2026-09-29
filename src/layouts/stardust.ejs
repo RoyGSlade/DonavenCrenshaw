@@ -13,6 +13,12 @@
     return `${Math.floor(t / 60000)}:${two(Math.floor(t / 1000) % 60)}.${two(Math.floor((t % 1000) / 10))}`;
   };
   const day = (iso) => (iso ? String(iso).slice(0, 10) : '');
+  // Snapshot rows may carry username, avatarPreset and title (newer hub
+  // snapshots); older ones only have a name, so each part degrades on its own.
+  const avatarFile = (id) => ((data.avatars || []).find((a) => a.id === id) || {}).file;
+  const rarity = (r) => (['common', 'rare', 'epic', 'legendary', 'unique'].includes(r) ? r : 'common');
+  const isUser = (u) => /^[A-Za-z0-9_-]{3,20}$/.test(String(u || ''));
+  const wk = data.weekly;
 %>
 <body class="site-shell stardust-page" data-branch="stardust">
     <a class="skip-link" href="#main-content">Skip to main content</a>
@@ -20,6 +26,20 @@
     <div class="content-wrapper">
         <main id="main-content" class="sd-page" tabindex="-1">
 <% const parts = content.split('<!-- sd-leaderboard -->'); %>
+<% if (wk) { %>
+            <%# The weekly time trial, above the fold. stardust-weekly.js ticks the countdown. %>
+            <a class="sd-weekly-banner" href="stardust/weekly/" data-sd-weekly-banner data-event-id="<%= wk.id %>" data-state="<%= wk.state %>">
+                <span class="sd-wb-tag">Weekly time trial</span>
+                <span class="sd-wb-main">
+                    <span class="sd-wb-title">Week <%= wk.week %> · <%= wk.title %></span>
+                    <span class="sd-wb-copy">One lap, every shard. Fastest time wins the <%= (wk.rewards && wk.rewards.championTitle) || 'Champion' %> title; the top <%= (wk.rewards && wk.rewards.podiumSize) || 3 %> get early access to Stardust: Planetfall.</span>
+                </span>
+                <span class="sd-wb-side">
+                    <span class="sd-wb-status" data-sd-weekly-status><%= wk.state === 'upcoming' ? `Opens ${wk.opensText}` : wk.state === 'live' ? `Live · closes ${wk.closesText}` : 'Closed · see the results' %></span>
+                    <span class="sd-wb-go"><span data-sd-weekly-go><%= wk.state === 'live' ? 'Fly it now' : wk.state === 'closed' ? 'Results' : 'See the track' %></span> <span aria-hidden="true">→</span></span>
+                </span>
+            </a>
+<% } %>
 <%- parts[0] %>
 <%
   // The custom track: a countdown until its release, then Play and its own
@@ -27,7 +47,27 @@
   // checks. Without JavaScript the release date shows as written here.
   const custom = data.customTrack;
 %>
-<% if (custom) { %>
+<% if (wk) { %>
+            <%# The custom-track slot now runs the weekly time trial. The placeholder
+                custom track, its editor and its hub board stay in the code for later;
+                #custom-track still lands here for old links. The ticker in
+                stardust-weekly.js drives [data-sd-weekly-banner]. %>
+            <section class="sd-section sd-custom sd-weekly-slot" id="weekly" aria-labelledby="sd-weekly-slot-title" data-sd-weekly-banner data-event-id="<%= wk.id %>" data-state="<%= wk.state %>">
+                <span id="custom-track" class="sd-anchor" aria-hidden="true"></span>
+                <div class="sd-section-head"><h2 id="sd-weekly-slot-title">Weekly time trial</h2><p class="sd-meta">Week <%= wk.week %> · one lap · its own leaderboard</p></div>
+                <div class="sd-weekly-slot-grid">
+                    <a class="sd-weekly-slot-map" href="stardust/weekly/"><img src="<%= wk.layout %>" alt="<%= wk.title %> layout: start/finish, checkpoints and <%= wk.shards %> numbered shards, obstacles hidden" width="<%= wk.layoutWidth %>" height="<%= wk.layoutHeight %>" loading="lazy"></a>
+                    <div>
+                        <p class="sd-copy"><strong>Week <%= wk.week %> · <%= wk.title %>.</strong> A new hand-built track every week, outside the five-circuit network. Collect every shard, then cross the finish line: no portal. Mines, bouncing asteroids and corner sentries that shoot slow ships. Fastest time when the week closes takes the <%= (wk.rewards && wk.rewards.championTitle) || 'champion' %> title; the top <%= (wk.rewards && wk.rewards.podiumSize) || 3 %> get early access to Stardust: Planetfall.</p>
+                        <p class="sd-custom-status"><strong data-sd-weekly-status><%= wk.state === 'upcoming' ? `Opens ${wk.opensText}` : wk.state === 'live' ? `Live · closes ${wk.closesText}` : 'Closed · see the results' %></strong></p>
+                        <div class="sd-actions">
+                            <a class="sd-cta" href="stardust/weekly/"><span data-sd-weekly-go><%= wk.state === 'live' ? 'Fly it now' : wk.state === 'closed' ? 'Results' : 'See the track' %></span> <span aria-hidden="true">→</span></a>
+                            <a class="sd-text-link" href="#fastest-runs" data-sd-weekly-board="<%= wk.id %>">Weekly leaderboard ↓</a>
+                        </div>
+                    </div>
+                </div>
+            </section>
+<% } else if (custom) { %>
             <section class="sd-section sd-custom" id="custom-track" aria-labelledby="sd-custom-title" data-sd-custom data-release-at="<%= custom.releaseAt %>" data-ready="<%= custom.ready ? 'true' : 'false' %>">
                 <div class="sd-section-head"><h2 id="sd-custom-title">Custom track</h2><p class="sd-meta">One lap · its own leaderboard</p></div>
                 <p class="sd-copy">A new circuit outside the five-circuit network: launch from the portal, fly one lap and bring it home. It has a leaderboard of its own and doesn’t count toward the full network, its splits or its medals.</p>
@@ -48,7 +88,8 @@
                     <button type="button" role="tab" aria-selected="<%= i === 0 ? 'true' : 'false' %>" tabindex="<%= i === 0 ? 0 : -1 %>" aria-controls="sd-board-list" data-sd-board="<%= id %>"><%= label %></button>
                     <% }) %>
                     <%# Only once the custom track has opened (stardust-boards.js shows it). %>
-                    <% if (data.customTrack) { %><button type="button" role="tab" aria-selected="false" tabindex="-1" aria-controls="sd-board-list" data-sd-board="custom-track" data-sd-custom-tab<% if (!data.customTrack.live) { %> hidden<% } %>>Custom track</button><% } %>
+                    <% if (wk) { %><button type="button" role="tab" aria-selected="false" tabindex="-1" aria-controls="sd-board-list" data-sd-board="<%= wk.id %>" data-sd-weekly-tab>Week <%= wk.week %> · <%= wk.title %></button>
+                    <% } else if (data.customTrack) { %><button type="button" role="tab" aria-selected="false" tabindex="-1" aria-controls="sd-board-list" data-sd-board="custom-track" data-sd-custom-tab<% if (!data.customTrack.live) { %> hidden<% } %>>Custom track</button><% } %>
                 </div>
                 <%# Signed-in pilots only, on the full network: whose times, and a jump to your own. %>
                 <div class="sd-board-tools" data-sd-board-tools hidden>
@@ -60,9 +101,10 @@
                 </div>
                 <div id="sd-board-list" role="tabpanel" aria-live="polite" data-sd-board-list>
                 <% if (board.length) { %>
-                <ol class="sd-board">
+                <ol class="sd-board sd-board--pilots">
                     <% board.forEach((row) => { %>
-                    <li><span class="sd-rank"><%= two(row.rank) %></span><span class="sd-name"><%= row.name %></span><span class="sd-time"><%= clock(row.timeMs) %></span><span class="sd-date"><%= day(row.setAt) %></span></li>
+                    <% const file = avatarFile(row.avatarPreset); const who = row.displayName || row.name || row.username || 'A pilot'; %>
+                    <li><span class="sd-rank"><%= two(row.rank) %></span><span class="pilot-avatar pilot-avatar--sm" aria-hidden="true" data-kind="<%= file ? 'preset' : 'letter' %>"><% if (file) { %><img src="<%= file %>" alt="" width="28" height="28" loading="lazy" decoding="async"><% } else { %><span class="pilot-avatar-letter"><%= String(who).trim().charAt(0).toUpperCase() || '?' %></span><% } %></span><span class="sd-name"><% if (isUser(row.username)) { %><a class="sd-pilot" href="u/?name=<%= encodeURIComponent(row.username) %>"><%= who %></a><% } else { %><span class="sd-pilot"><%= who %></span><% } %><% if (row.title && row.title.title) { %> <span class="pilot-chip pilot-chip--<%= rarity(row.title.rarity) %>"><%= row.title.title %></span><% } %></span><span class="sd-time"><%= clock(row.timeMs) %></span><span class="sd-date"><%= day(row.setAt) %></span></li>
                     <% }) %>
                 </ol>
                 <% } else { %>
@@ -103,5 +145,6 @@
         <a class="sd-gate-guest" href="games/stardust/" data-sd-guest>Play as a guest →</a>
     </dialog>
     <script type="module" src="<%= siteRoot %>scripts/stardust-boards.js"></script>
+    <script type="module" src="<%= siteRoot %>scripts/stardust-weekly.js"></script>
 </body>
 </html>

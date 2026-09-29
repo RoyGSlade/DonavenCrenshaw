@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<%- components.head %>
+<%
+  // One page for every pilot: /u/?name=<username>. The profile comes from the
+  // hub in pilot-profile.js; this is the shell it fills.
+%>
+<body class="site-shell stardust-page" data-branch="stardust">
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+    <%- components.nav %>
+    <div class="content-wrapper">
+        <main id="main-content" class="sd-page sd-pf" tabindex="-1" data-pilot-profile data-view="loading">
+            <header class="sd-pf-card">
+                <span class="pilot-avatar pilot-avatar--lg" aria-hidden="true" data-pf-avatar><span class="pilot-avatar-letter">?</span></span>
+                <div class="sd-pf-id">
+                    <p class="sd-eyebrow">Pilot profile</p>
+                    <h1 class="sd-pf-name" data-pf-name>Pilot profile</h1>
+                    <p class="sd-pf-handle" data-pf-handle hidden><span class="sd-pf-username" data-pf-username></span><span data-pf-chip></span></p>
+                    <p class="sd-pf-joined" data-pf-joined hidden></p>
+                </div>
+            </header>
+
+            <p class="sd-pf-status" role="status" aria-live="polite" data-pf-status>Loading the pilot…</p>
+            <noscript><p class="sd-pf-status">Pilot profiles need JavaScript. The <a href="stardust/#fastest-runs">leaderboards</a> work without it.</p></noscript>
+            <div class="sd-actions sd-pf-retry" data-pf-retry-row hidden><button class="sd-btn" type="button" data-pf-retry>Try the hub again</button></div>
+
+            <p class="sd-pf-private" data-pf-private hidden></p>
+
+            <div class="sd-pf-grid" data-pf-body hidden>
+                <section class="sd-pf-panel sd-pf-wide" aria-labelledby="sd-pf-bio-title" data-pf-section="bio" hidden>
+                    <h2 id="sd-pf-bio-title" class="sd-pf-title">About</h2>
+                    <p class="sd-pf-bio" data-pf-bio></p>
+                </section>
+
+                <section class="sd-pf-panel sd-pf-wide" aria-labelledby="sd-pf-titles-title" data-pf-section="titles" hidden>
+                    <h2 id="sd-pf-titles-title" class="sd-pf-title">Titles</h2>
+                    <ul class="sd-pf-chips" data-pf-titles></ul>
+                </section>
+
+                <section class="sd-pf-panel" aria-labelledby="sd-pf-bests-title" data-pf-section="bests" hidden>
+                    <h2 id="sd-pf-bests-title" class="sd-pf-title">Stardust bests</h2>
+                    <ol class="sd-pf-list" data-pf-bests></ol>
+                    <p class="sd-pf-empty" data-pf-bests-empty hidden>No saved times yet.</p>
+                </section>
+
+                <section class="sd-pf-panel" aria-labelledby="sd-pf-dogfight-title" data-pf-section="dogfight" hidden>
+                    <h2 id="sd-pf-dogfight-title" class="sd-pf-title">Dogfight</h2>
+                    <dl class="sd-pf-stat">
+                        <div><dt>Wins</dt><dd data-pf-wins>0</dd></div>
+                        <div><dt>Losses</dt><dd data-pf-losses>0</dd></div>
+                    </dl>
+                    <p class="sd-pf-empty" data-pf-dogfight-empty hidden>No recorded duels yet.</p>
+                </section>
+
+                <section class="sd-pf-panel sd-pf-wide" aria-labelledby="sd-pf-events-title" data-pf-section="events" hidden>
+                    <h2 id="sd-pf-events-title" class="sd-pf-title">Weekly placements</h2>
+                    <ol class="sd-pf-list" data-pf-events></ol>
+                    <p class="sd-pf-empty" data-pf-events-empty hidden>No weekly placements yet. <a href="stardust/weekly/">This week’s time trial</a>.</p>
+                </section>
+
+                <section class="sd-pf-panel sd-pf-wide sd-pf-dev" aria-labelledby="sd-pf-dev-title" data-pf-section="dev" hidden>
+                    <h2 id="sd-pf-dev-title" class="sd-pf-title"><span class="sd-pf-staff">Staff</span> Dev times — not ranked</h2>
+                    <p class="sd-pf-dev-note">Times set by the developer on weekly tracks. They never appear on a board and never take a place from a pilot.</p>
+                    <ol class="sd-pf-list" data-pf-dev></ol>
+                    <p class="sd-pf-empty" data-pf-dev-empty hidden>No dev times on this week’s track yet.</p>
+                </section>
+            </div>
+
+            <p class="sd-pf-back"><a class="sd-text-link" href="stardust/#fastest-runs">← Leaderboards</a> <a class="sd-text-link" href="stardust/weekly/">Weekly time trial</a></p>
+        </main>
+        <%- components.footer %>
+    </div>
+    <script src="<%= siteRoot %>scripts/script.js"></script>
+    <script type="module" src="<%= siteRoot %>scripts/pilot-profile.js"></script>
+</body>
+</html>

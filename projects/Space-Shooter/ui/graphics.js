@@ -13,6 +13,8 @@ import { toggleMobileFullscreen, isFullscreen } from '../systems/mobileControls.
 import { drawHUD } from './hud.js';
 import { isLapReady } from '../engine/track.js';
 import { drawCourier, drawRelayGate, drawShield, drawExplosion, drawFlightEnvironment, drawShard } from '../gfx/stardustVfx.js';
+import { drawWeeklyWorld, drawWeeklyHud } from '../gfx/weeklyVfx.js';
+import { ghostPosesNow } from '../engine/modes/weekly.js';
 
 // drawArena/drawRoadmap are defined locally below to avoid missing module imports.
 
@@ -217,6 +219,7 @@ export function render() {
 
   if (mode === 'roadmap') {
     drawShardIndicator(W, H);
+    if (state.run?.current?.weekly) drawWeeklyHud(ctx, W, H, state.run.current);
     if (state.run?.current?.showLaunchHint) drawLaunchHint(W, H);
     drawCountdown(W, H, state.run?.current);
   } else if (mode === 'arena') {
@@ -316,9 +319,10 @@ function drawRoadmap(ctx) {
   else { drawPlayfieldSlab(); drawGrid(); }
   drawFlightEnvironment(ctx, {...lv,reducedMotion:state.settings?.reducedMotion}, state.gfx.cellW, state.gfx.visualTime || 0, assets);
   drawNodes();
+  if (lv?.weekly) drawWeeklyWorld(ctx, lv, state.gfx.cellW, state.gfx.visualTime || 0, { ghosts: ghostPosesNow(), shipImg: assets.playerShip, reducedMotion: !!state.settings?.reducedMotion });
   drawProjectiles();
   drawParticles();
-  drawShip(lv?.player);
+  if (!lv?.wreck) drawShip(lv?.player);
 }
 
 function drawCircuit(ctx, scene) {
@@ -350,11 +354,30 @@ function drawCircuit(ctx, scene) {
       ctx.beginPath(); ctx.moveTo(-.15 * unit, -.16 * unit); ctx.lineTo(.07 * unit, 0); ctx.lineTo(-.15 * unit, .16 * unit); ctx.stroke(); ctx.restore();
     }
   }
-  const next = track.checkpoints?.[scene.trackProgress?.nextCheckpoint || 0];
+  // Checkpoints span the full lane: the outside rail to where the inner rails
+  // meet (engine/track.js). The weekly tracks show every corner's line.
+  const nextIndex = scene.trackProgress?.nextCheckpoint || 0;
+  const crossLine = (c) => {
+    const nx = -c.ty, ny = c.tx, inside = c.insideSide || 1;
+    const out = track.width / 2, reach = c.insideReach ?? track.width / 2;
+    ctx.beginPath();
+    ctx.moveTo((c.x - nx * inside * out) * unit, (c.y - ny * inside * out) * unit);
+    ctx.lineTo((c.x + nx * inside * reach) * unit, (c.y + ny * inside * reach) * unit);
+    ctx.stroke();
+  };
+  if (scene.weekly) {
+    ctx.lineWidth = .05 * unit; ctx.setLineDash([.2 * unit, .18 * unit]);
+    track.checkpoints.forEach((c, i) => {
+      if (i === nextIndex) return;
+      ctx.strokeStyle = i < nextIndex ? '#5fd6a326' : '#ffd39a3a';
+      crossLine(c);
+    });
+    ctx.setLineDash([]);
+  }
+  const next = track.checkpoints?.[nextIndex];
   if (next && !scene.lockedInStart) {
-    const nx = -next.ty, ny = next.tx, half = track.width * .45;
-    ctx.strokeStyle = '#ffd39a66'; ctx.lineWidth = .045 * unit; ctx.setLineDash([.15 * unit, .15 * unit]);
-    ctx.beginPath(); ctx.moveTo((next.x + nx * half) * unit, (next.y + ny * half) * unit); ctx.lineTo((next.x - nx * half) * unit, (next.y - ny * half) * unit); ctx.stroke(); ctx.setLineDash([]);
+    ctx.strokeStyle = scene.weekly ? '#ffd39acc' : '#ffd39a66'; ctx.lineWidth = (scene.weekly ? .09 : .045) * unit; ctx.setLineDash([.15 * unit, .15 * unit]);
+    crossLine(next); ctx.setLineDash([]);
   }
   const portal = track.portal;
   if (portal) {

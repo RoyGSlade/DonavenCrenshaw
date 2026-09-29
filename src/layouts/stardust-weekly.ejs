@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<%- components.head %>
+<%
+  // The weekly time trial. Built from data.weekly (projects/Space-Shooter/tracks/weekly.js
+  // via build.mjs), so the dates, rules, rewards and layout read right without
+  // JavaScript. stardust-weekly.js adds the countdown, Play, the live board and comments.
+  const wk = data.weekly;
+  const rewards = (wk && wk.rewards) || {};
+  const podium = rewards.podiumSize || 3;
+  const live = wk && wk.state === 'live';
+  const gameHref = wk ? `${siteRoot}${wk.gameUrl}` : `${siteRoot}games/stardust/`;
+  const next = encodeURIComponent(gameHref);
+  const short = (text) => String(text || '').replace(/^(\d+ \w+) \d{4}, /, '$1, ');
+%>
+<body class="site-shell stardust-page" data-branch="stardust">
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+    <%- components.nav %>
+    <div class="content-wrapper">
+<% if (!wk) { %>
+        <main id="main-content" class="sd-page" tabindex="-1">
+            <header class="sd-hero">
+                <p class="sd-eyebrow">Stardust · Weekly time trial</p>
+                <h1 class="sd-ch-title">No weekly track right now</h1>
+                <p class="sd-lede">The next weekly time trial hasn’t been announced yet. The five circuits are always open.</p>
+                <div class="sd-actions"><a class="sd-cta" href="stardust/">Back to Stardust <span aria-hidden="true">→</span></a></div>
+            </header>
+        </main>
+<% } else { %>
+        <main id="main-content" class="sd-page sd-weekly" tabindex="-1" data-sd-weekly data-event-id="<%= wk.id %>" data-state="<%= wk.state %>" data-comments-page="<%= wk.commentsPage %>" data-game-url="<%= gameHref %>">
+            <header class="sd-wk-hero">
+                <div class="sd-wk-hero-copy">
+                    <h1 class="sd-wk-title"><span class="sd-wk-kicker">Weekly time trial · Week <%= wk.week %> ·</span> <span class="sd-wk-name"><%= wk.title %></span></h1>
+                    <p class="sd-wk-tagline"><%= wk.tagline %></p>
+
+                    <div class="sd-wk-clock" role="group" aria-labelledby="sd-wk-clock-label" data-wk-clock data-state="<%= wk.state %>">
+                        <p class="sd-wk-clock-label" id="sd-wk-clock-label" data-wk-clock-label><%= wk.state === 'upcoming' ? 'Opens' : wk.state === 'live' ? 'Open now · closes' : 'Closed' %></p>
+                        <p class="sd-wk-clock-value" aria-hidden="true" data-wk-clock-value><time datetime="<%= wk.state === 'upcoming' ? wk.opensAt : wk.closesAt %>"><%= wk.state === 'upcoming' ? wk.opensText : wk.closesText %></time></p>
+                        <p class="visually-hidden" data-wk-clock-words><%= wk.state === 'upcoming' ? `Opens ${wk.opensText}.` : `Closes ${wk.closesText}.` %></p>
+                        <p class="sd-wk-window">Open <time datetime="<%= wk.opensAt %>"><%= wk.opensText %></time> → <time datetime="<%= wk.closesAt %>"><%= wk.closesText %></time></p>
+                    </div>
+
+                    <div class="sd-actions sd-wk-actions">
+                        <a class="sd-cta sd-wk-play" href="<%= gameHref %>" data-wk-play<% if (!live) { %> hidden<% } %>>Fly <%= wk.title %> <span aria-hidden="true">→</span></a>
+                        <button class="sd-cta sd-wk-wait" type="button" disabled data-wk-play-wait<% if (live) { %> hidden<% } %>><%= wk.state === 'upcoming' ? `Opens ${short(wk.opensText)}` : 'Closed' %></button>
+                        <a class="sd-text-link" href="#weekly-board">Leaderboard ↓</a>
+                        <a class="sd-text-link" href="#weekly-rules">Rules ↓</a>
+                    </div>
+                    <p class="sd-small">One lap, every shard. Only runs flown while <a href="account/?next=<%= next %>">signed in</a> go on the board.</p>
+                </div>
+
+                <aside class="sd-wk-rewards" aria-labelledby="sd-wk-rewards-title">
+                    <h2 id="sd-wk-rewards-title" class="sd-wk-panel-title">Rewards</h2>
+                    <ol class="sd-wk-reward-list">
+                        <li class="sd-wk-reward sd-wk-reward--champion">
+                            <span class="sd-wk-place">1st</span>
+                            <div>
+                                <p class="sd-wk-reward-name"><span class="pilot-chip pilot-chip--unique"><%= rewards.championTitle || 'Weekly Champion' %></span></p>
+                                <p class="sd-wk-reward-copy">The fastest time when the week closes. One pilot holds it, for good.</p>
+                            </div>
+                        </li>
+                        <li class="sd-wk-reward">
+                            <span class="sd-wk-place">Top <%= podium %></span>
+                            <div>
+                                <p class="sd-wk-reward-name"><span class="pilot-chip pilot-chip--legendary"><%= rewards.podiumTitle || 'Podium' %></span></p>
+                                <p class="sd-wk-reward-copy"><strong>Early access to Stardust: Planetfall</strong>, and the title to show for it.</p>
+                            </div>
+                        </li>
+                    </ol>
+                    <p class="sd-wk-reward-note">Titles are permanent. They’re awarded when the board closes on <time datetime="<%= wk.closesAt %>"><%= short(wk.closesText) %></time>.</p>
+                </aside>
+            </header>
+
+            <section class="sd-section sd-wk-track" id="weekly-rules" aria-labelledby="sd-wk-track-title">
+                <div class="sd-section-head"><h2 id="sd-wk-track-title">The track</h2><p class="sd-meta">One lap · <%= wk.shards %> shards · obstacles hidden</p></div>
+                <div class="sd-wk-track-grid">
+                    <figure class="sd-wk-layout">
+                        <a href="<%= wk.layout %>"><img src="<%= wk.layout %>" width="<%= wk.layoutWidth %>" height="<%= wk.layoutHeight %>" loading="lazy" decoding="async" alt="The <%= wk.title %> layout from above: the lane, every checkpoint, the start/finish line, the <%= wk.shards %> shards numbered in lap order and the fuel docks. Obstacles are not shown."></a>
+                        <figcaption>Start/finish, checkpoints, the <%= wk.shards %> shards in lap order and the fuel docks. <strong>Obstacles hidden</strong>: you’ll meet them on the track.</figcaption>
+                    </figure>
+                    <div class="sd-wk-rules">
+                        <h3 class="sd-wk-panel-title">The rules</h3>
+                        <ol class="sd-wk-rule-list">
+                            <li>Collect every shard, then cross the finish line.</li>
+                            <li>The fastest time this week earns the <strong><%= rewards.championTitle || 'Champion' %></strong> title.</li>
+                            <li>The top <%= podium %> get early access to <strong>Stardust: Planetfall</strong>.</li>
+                            <li>You have 7 days to set your fastest time.</li>
+                        </ol>
+                        <p class="sd-wk-goodluck">Good luck, pilots.</p>
+
+                        <h3 class="sd-wk-panel-title">Hazards</h3>
+                        <dl class="sd-wk-hazards">
+                            <div><dt>Mines</dt><dd>Stationary. Touch one and the run is over.</dd></div>
+                            <div><dt>Bouncing asteroids</dt><dd>Ricochet around the corners.</dd></div>
+                            <div><dt>Corner sentries</dt><dd>Shoot ships that slow down.</dd></div>
+                            <div><dt>Rails</dt><dd>Halve your speed and stun your controls for 0.5 s.</dd></div>
+                            <div><dt>One lap, no portal</dt><dd>You start and finish on the line.</dd></div>
+                        </dl>
+                    </div>
+                </div>
+            </section>
+
+            <section class="sd-section sd-boards sd-wk-board" id="weekly-board" aria-labelledby="sd-wk-board-title">
+                <div class="sd-section-head">
+                    <h2 id="sd-wk-board-title">Leaderboard</h2>
+                    <p class="sd-meta" data-wk-board-meta><%= wk.state === 'upcoming' ? 'Opens with the track' : wk.state === 'live' ? 'Live' : 'Closed' %></p>
+                </div>
+                <div id="sd-wk-board-list" aria-live="polite" data-wk-board-list>
+                    <p class="sd-empty"><%= wk.state === 'upcoming' ? 'Board opens with the track.' : 'The board loads from the hub. With JavaScript off, open the game to see your time.' %></p>
+                </div>
+                <p class="sd-board-note">The top <%= podium %> when the board closes get early access to Planetfall. Only signed-in runs count, and staff times are never ranked.</p>
+            </section>
+
+            <section class="sd-section sd-wk-comments" id="comments" aria-labelledby="sd-wk-comments-title">
+                <div class="sd-section-head"><h2 id="sd-wk-comments-title">Pilot comms</h2><p class="sd-meta">Newest first</p></div>
+                <noscript><p class="sd-empty">Comments need JavaScript.</p></noscript>
+                <p class="sd-wk-signin" data-wk-comment-signin hidden><a href="account/?next=<%= encodeURIComponent(`${siteRoot}stardust/weekly/#comments`) %>">Sign in</a> to leave a comment. Reading is open to everyone.</p>
+                <form class="sd-wk-form" data-wk-comment-form novalidate hidden>
+                    <p class="sd-wk-name-hint" data-wk-comment-name hidden>Comments show your display name. <a href="account/#profile">Set one on your account page</a> before you post.</p>
+                    <label class="sd-wk-label" for="sd-wk-comment-text">Your comment</label>
+                    <textarea id="sd-wk-comment-text" name="text" rows="3" maxlength="1000" aria-describedby="sd-wk-comment-count"></textarea>
+                    <div class="sd-wk-form-row">
+                        <p class="sd-wk-count" id="sd-wk-comment-count" data-wk-comment-count>0 / 1000</p>
+                        <button class="sd-cta sd-wk-post" type="submit">Post</button>
+                    </div>
+                    <p class="sd-wk-status" role="status" data-wk-comment-status></p>
+                </form>
+                <p class="sd-wk-status" role="status" data-wk-comment-note></p>
+                <ol class="sd-wk-comment-list" data-wk-comment-list></ol>
+                <p class="sd-empty" data-wk-comment-empty hidden>No comments yet.</p>
+            </section>
+
+            <p class="sd-wk-back"><a class="sd-text-link" href="stardust/">← Stardust</a> <a class="sd-text-link" href="stardust/#fastest-runs">All leaderboards</a></p>
+        </main>
+<% } %>
+        <%- components.footer %>
+    </div>
+    <script src="<%= siteRoot %>scripts/script.js"></script>
+<% if (wk) { %>
+    <dialog class="sd-gate" data-sd-gate aria-labelledby="sd-gate-title">
+        <form method="dialog" class="sd-gate-close"><button type="submit" aria-label="Close">×</button></form>
+        <p class="sd-eyebrow">Before you launch</p>
+        <h2 id="sd-gate-title">Your time won't count</h2>
+        <p>Guests can fly <%= wk.title %>, but only signed-in pilots go on the weekly board and can win its rewards. Sign in and you'll come straight back to launch.</p>
+        <div class="sd-gate-actions">
+            <a class="sd-cta" href="account/?next=<%= next %>">Sign in</a>
+            <a class="sd-cta sd-cta--quiet" href="account/?next=<%= next %>#create">Create account</a>
+        </div>
+        <a class="sd-gate-guest" href="<%= gameHref %>" data-sd-guest>Fly as a guest →</a>
+    </dialog>
+<% } %>
+    <script type="module" src="<%= siteRoot %>scripts/stardust-weekly.js"></script>
+</body>
+</html>

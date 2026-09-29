@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" width="256" height="256" role="img" aria-label="Nova pilot badge">
+<defs>
+<radialGradient id="nova-bg" cx="50%" cy="38%" r="62%"><stop offset="0" stop-color="#13304a"/><stop offset=".65" stop-color="#0a1828"/><stop offset="1" stop-color="#040a12"/></radialGradient>
+<linearGradient id="nova-shell" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e6f5ff"/><stop offset="1" stop-color="#8fb3cc"/></linearGradient>
+<linearGradient id="nova-visor" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7fe6ff"/><stop offset="1" stop-color="#0a4f7c"/></linearGradient>
+<clipPath id="nova-clip"><circle cx="48" cy="48" r="44"/></clipPath>
+</defs>
+<circle cx="48" cy="48" r="47" fill="url(#nova-bg)"/>
+<g clip-path="url(#nova-clip)">
+<circle cx="18" cy="24" r=".9" fill="#cfe8fb" opacity=".7"/><circle cx="79" cy="30" r=".7" fill="#cfe8fb" opacity=".6"/><circle cx="72" cy="15" r="1" fill="#cfe8fb" opacity=".5"/>
+<path d="M14 96 C16 84 30 79 48 79 C66 79 80 84 82 96 Z" fill="#8fb3cc"/>
+
+<path d="M20 80 C19 46 30 21 48 21 C66 21 77 46 76 80 Z" fill="url(#nova-shell)" stroke="#040a12" stroke-width="1.5" stroke-linejoin="round"/>
+<path d="M48 22 L48 33" stroke="#ffb347" stroke-width="5" stroke-linecap="round"/>
+<path d="M28 51 C28 40 37 35 48 35 C59 35 68 40 68 51 C68 59 60 63 48 63 C36 63 28 59 28 51 Z" fill="url(#nova-visor)" stroke="#040a12" stroke-width="1.8" stroke-linejoin="round"/>
+<path d="M33 47 C34 42 39 39 45 38.5" fill="none" stroke="#ffffff" stroke-opacity=".75" stroke-width="2.4" stroke-linecap="round"/>
+<path d="M34 80 L62 80 L59 66 L37 66 Z" fill="#081421" opacity=".55"/>
+<path d="M48 66 L49.8 70.2 L54.3 70.4 L50.8 73.2 L52 77.6 L48 75.1 L44 77.6 L45.2 73.2 L41.7 70.4 L46.2 70.2 Z" fill="#ffb347"/>
+</g>
+<circle cx="48" cy="48" r="45" fill="none" stroke="#7fd3ff" stroke-width="3"/>
+<circle cx="48" cy="48" r="42.5" fill="none" stroke="#040a12" stroke-opacity=".6" stroke-width="1"/>
+</svg>

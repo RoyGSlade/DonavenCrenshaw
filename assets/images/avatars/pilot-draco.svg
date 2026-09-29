@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" width="256" height="256" role="img" aria-label="Draco pilot badge">
+<defs>
+<radialGradient id="draco-bg" cx="50%" cy="38%" r="62%"><stop offset="0" stop-color="#13304a"/><stop offset=".65" stop-color="#0a1828"/><stop offset="1" stop-color="#040a12"/></radialGradient>
+<linearGradient id="draco-shell" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3fc28e"/><stop offset="1" stop-color="#1d7353"/></linearGradient>
+<linearGradient id="draco-visor" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e0ffa6"/><stop offset="1" stop-color="#285f14"/></linearGradient>
+<clipPath id="draco-clip"><circle cx="48" cy="48" r="44"/></clipPath>
+</defs>
+<circle cx="48" cy="48" r="47" fill="url(#draco-bg)"/>
+<g clip-path="url(#draco-clip)">
+<circle cx="18" cy="24" r=".9" fill="#cfe8fb" opacity=".7"/><circle cx="79" cy="30" r=".7" fill="#cfe8fb" opacity=".6"/><circle cx="72" cy="15" r="1" fill="#cfe8fb" opacity=".5"/>
+<path d="M14 96 C16 84 30 79 48 79 C66 79 80 84 82 96 Z" fill="#1d7353"/>
+<path d="M44 24 L48 9 L52 24 Z" fill="#ff6a5a"/>
+<path d="M20 80 C19 47 30 23 48 23 C66 23 77 47 76 80 Z" fill="url(#draco-shell)" stroke="#040a12" stroke-width="1.5" stroke-linejoin="round"/>
+
+<path d="M27 38 L69 38 L69 47 L56 47 L55 62 L41 62 L40 47 L27 47 Z" fill="url(#draco-visor)" stroke="#040a12" stroke-width="1.8" stroke-linejoin="round"/>
+<path d="M31 41.5 L44 41.5" fill="none" stroke="#ffffff" stroke-opacity=".75" stroke-width="2.4" stroke-linecap="round"/>
+<path d="M34 80 L62 80 L59 66 L37 66 Z" fill="#081421" opacity=".55"/>
+<path d="M42 68 L48 72.5 L54 68 M42 73 L48 77.5 L54 73" fill="none" stroke="#ff6a5a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<circle cx="48" cy="48" r="45" fill="none" stroke="#5fe0aa" stroke-width="3"/>
+<circle cx="48" cy="48" r="42.5" fill="none" stroke="#040a12" stroke-opacity=".6" stroke-width="1"/>
+</svg>

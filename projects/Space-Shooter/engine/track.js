@@ -81,12 +81,20 @@ export function createTrack(coordinates, width, name) {
     let tx = incoming.tx + outgoing.tx,
       ty = incoming.ty + outgoing.ty;
     const magnitude = Math.hypot(tx, ty) || 1;
+    // Full width, corner included: across the bisector the lane reaches
+    // width/2 on the outside (the rounded rail) but width/2 / cos(turn/2) on
+    // the inside, where the two inner rails meet. An apex cut still counts.
+    const turn = Math.acos(Math.max(-1, Math.min(1, incoming.tx * outgoing.tx + incoming.ty * outgoing.ty)));
+    const side = Math.sign(incoming.tx * outgoing.ty - incoming.ty * outgoing.tx);
     return {
       ...point,
       tx: tx / magnitude,
       ty: ty / magnitude,
       index,
       along: outgoing.start,
+      // +1: the inside of the corner is on the normal (-ty, tx) side.
+      insideSide: side,
+      insideReach: Math.min(width * 2, width / 2 / Math.max(0.25, Math.cos(turn / 2))),
     };
   });
   return {
@@ -127,7 +135,8 @@ export function railImpact(outward) {
 
 /**
  * Clip the entire swept move, not just its endpoint, so boosts cannot cross an infield.
- * rails: optional { model: "impact", onImpact({ impact, damage }) } for the playtest lab.
+ * rails: optional { model: "impact", onImpact({ impact, damage }) } for the playtest lab,
+ * or { model: "stun", keep, hits(outward), onImpact({ impact }) } for the weekly tracks.
  */
 export function constrainToTrack(track, player, previous, radius, rails = null) {
   const dx = player.x - previous.x,
@@ -170,6 +179,15 @@ export function constrainToTrack(track, player, previous, radius, rails = null) 
       player.vx = alongX * hit.keep - outward * 0.25 * nx;
       player.vy = alongY * hit.keep - outward * 0.25 * ny;
       rails.onImpact?.(hit);
+    } else if (rails?.model === "stun" && outward > 0) {
+      // Weekly rails: a real hit halves the ship's speed (the caller stuns
+      // the controls); a scrape, or a touch while already stunned, just slides.
+      const alongX = player.vx - outward * nx,
+        alongY = player.vy - outward * ny;
+      const keep = rails.hits(outward) ? rails.keep : 1;
+      player.vx = (alongX - outward * 0.2 * nx) * keep;
+      player.vy = (alongY - outward * 0.2 * ny) * keep;
+      if (keep !== 1) rails.onImpact?.({ impact: outward });
     } else if (outward > 0) {
       player.vx -= outward * 1.25 * nx;
       player.vy -= outward * 1.25 * ny;
@@ -209,10 +227,11 @@ export function updateTrackProgress(scene, previous) {
   const t = -before / (after - before);
   const x = previous.x + (player.x - previous.x) * t,
     y = previous.y + (player.y - previous.y) * t;
-  const lateral = Math.abs(
-    (x - checkpoint.x) * -checkpoint.ty + (y - checkpoint.y) * checkpoint.tx,
-  );
-  if (lateral <= track.width / 2) {
+  const signed =
+    (x - checkpoint.x) * -checkpoint.ty + (y - checkpoint.y) * checkpoint.tx;
+  const inside = checkpoint.insideSide ? Math.sign(signed) === checkpoint.insideSide : false;
+  const reach = inside ? checkpoint.insideReach ?? track.width / 2 : track.width / 2;
+  if (Math.abs(signed) <= reach) {
     progress.nextCheckpoint++;
     progress.passed = progress.nextCheckpoint;
   }

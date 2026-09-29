@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" width="256" height="256" role="img" aria-label="Sol pilot badge">
+<defs>
+<radialGradient id="sol-bg" cx="50%" cy="38%" r="62%"><stop offset="0" stop-color="#13304a"/><stop offset=".65" stop-color="#0a1828"/><stop offset="1" stop-color="#040a12"/></radialGradient>
+<linearGradient id="sol-shell" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffd24a"/><stop offset="1" stop-color="#b8860b"/></linearGradient>
+<linearGradient id="sol-visor" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff9a4a"/><stop offset="1" stop-color="#6a1a00"/></linearGradient>
+<clipPath id="sol-clip"><circle cx="48" cy="48" r="44"/></clipPath>
+</defs>
+<circle cx="48" cy="48" r="47" fill="url(#sol-bg)"/>
+<g clip-path="url(#sol-clip)">
+<circle cx="18" cy="24" r=".9" fill="#cfe8fb" opacity=".7"/><circle cx="79" cy="30" r=".7" fill="#cfe8fb" opacity=".6"/><circle cx="72" cy="15" r="1" fill="#cfe8fb" opacity=".5"/>
+<path d="M14 96 C16 84 30 79 48 79 C66 79 80 84 82 96 Z" fill="#b8860b"/>
+
+<path d="M20 80 C19 46 30 21 48 21 C66 21 77 46 76 80 Z" fill="url(#sol-shell)" stroke="#040a12" stroke-width="1.5" stroke-linejoin="round"/>
+<path d="M48 22 L48 33" stroke="#fff4c8" stroke-width="5" stroke-linecap="round"/>
+<path d="M27 38 L69 38 L69 47 L56 47 L55 62 L41 62 L40 47 L27 47 Z" fill="url(#sol-visor)" stroke="#040a12" stroke-width="1.8" stroke-linejoin="round"/>
+<path d="M31 41.5 L44 41.5" fill="none" stroke="#ffffff" stroke-opacity=".75" stroke-width="2.4" stroke-linecap="round"/>
+<path d="M34 80 L62 80 L59 66 L37 66 Z" fill="#081421" opacity=".55"/>
+<circle cx="48" cy="72" r="3" fill="#fff4c8"/><path d="M48 65.5 L48 67 M48 77 L48 78.5 M41.5 72 L43 72 M53 72 L54.5 72 M43.4 67.4 L44.5 68.5 M51.5 75.5 L52.6 76.6 M43.4 76.6 L44.5 75.5 M51.5 68.5 L52.6 67.4" stroke="#fff4c8" stroke-width="1.4" stroke-linecap="round"/>
+</g>
+<circle cx="48" cy="48" r="45" fill="none" stroke="#ffdf7a" stroke-width="3"/>
+<circle cx="48" cy="48" r="42.5" fill="none" stroke="#040a12" stroke-opacity=".6" stroke-width="1"/>
+</svg>
