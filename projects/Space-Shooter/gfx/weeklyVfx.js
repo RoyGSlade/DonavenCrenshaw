@@ -52,13 +52,17 @@ export function drawWeeklyWorld(ctx, scene, unit, time, { ghosts = [], shipImg =
     ctx.fillStyle = hot ? '#fff1a4' : '#ff9447'; circle(ctx, 0, 0, r * 0.3); ctx.fill();
     ctx.restore();
   }
-  // Shots.
+  // Shots, interpolated between steps like the ship (scene.alpha).
+  const a = scene.alpha ?? 1;
+  const at = (s) => ({ x: s.prevX == null ? s.x : s.prevX + (s.x - s.prevX) * a, y: s.prevY == null ? s.y : s.prevY + (s.y - s.prevY) * a });
   for (const s of scene.enemyShots) {
+    const q = at(s);
     ctx.save(); ctx.strokeStyle = '#ff8a3d'; ctx.shadowColor = '#ff8800'; ctx.shadowBlur = 10; ctx.lineWidth = unit * 0.14; ctx.lineCap = 'round';
-    ctx.beginPath(); ctx.moveTo((s.x - s.vx * 0.03) * unit, (s.y - s.vy * 0.03) * unit); ctx.lineTo(s.x * unit, s.y * unit); ctx.stroke(); ctx.restore();
+    ctx.beginPath(); ctx.moveTo((q.x - s.vx * 0.03) * unit, (q.y - s.vy * 0.03) * unit); ctx.lineTo(q.x * unit, q.y * unit); ctx.stroke(); ctx.restore();
   }
   for (const s of scene.playerShots) {
-    ctx.save(); ctx.fillStyle = '#00ffff'; ctx.shadowColor = '#00ffff'; ctx.shadowBlur = 10; circle(ctx, s.x * unit, s.y * unit, 0.15 * unit); ctx.fill(); ctx.restore();
+    const q = at(s);
+    ctx.save(); ctx.fillStyle = '#00ffff'; ctx.shadowColor = '#00ffff'; ctx.shadowBlur = 10; circle(ctx, q.x * unit, q.y * unit, 0.15 * unit); ctx.fill(); ctx.restore();
   }
   // Ghosts: translucent ships with a name tag.
   for (const g of ghosts) {
@@ -69,7 +73,7 @@ export function drawWeeklyWorld(ctx, scene, unit, time, { ghosts = [], shipImg =
     ctx.restore();
   }
   // Stun: a flickering ring around the ship.
-  const p = scene.player;
+  const p = scene.viewPlayer || scene.player;
   if (p?.stunTimer > 0) {
     ctx.save(); ctx.strokeStyle = `rgba(255,214,120,${0.5 + 0.4 * Math.sin(time * 40) ** 2})`; ctx.lineWidth = 2; ctx.setLineDash([4, 4]);
     circle(ctx, p.x * unit, p.y * unit, unit * 0.75); ctx.stroke(); ctx.restore();

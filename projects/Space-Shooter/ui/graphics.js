@@ -317,12 +317,13 @@ function drawRoadmap(ctx) {
   const lv = state.run?.current;
   if (lv?.track) drawCircuit(ctx, lv);
   else { drawPlayfieldSlab(); drawGrid(); }
-  drawFlightEnvironment(ctx, {...lv,reducedMotion:state.settings?.reducedMotion}, state.gfx.cellW, state.gfx.visualTime || 0, assets);
+  // The weekly mode draws interpolated poses between its fixed steps (engine/modes/weekly.js).
+  drawFlightEnvironment(ctx, {...lv,hazards:lv?.viewHazards || lv?.hazards,reducedMotion:state.settings?.reducedMotion}, state.gfx.cellW, state.gfx.visualTime || 0, assets);
   drawNodes();
   if (lv?.weekly) drawWeeklyWorld(ctx, lv, state.gfx.cellW, state.gfx.visualTime || 0, { ghosts: ghostPosesNow(), shipImg: assets.playerShip, reducedMotion: !!state.settings?.reducedMotion });
   drawProjectiles();
   drawParticles();
-  if (!lv?.wreck) drawShip(lv?.player);
+  if (!lv?.wreck) drawShip(lv?.viewPlayer || lv?.player);
 }
 
 function drawCircuit(ctx, scene) {

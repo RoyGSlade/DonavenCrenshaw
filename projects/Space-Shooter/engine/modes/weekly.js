@@ -16,7 +16,7 @@ import { updateHUD, toast } from "../../ui/hud.js";
 import { openEndOverlay } from "../../ui/overlays.js";
 import { stopEngine } from "../core.js";
 import { startCountdown } from "../lifecycle.js";
-import { clearCameraPan } from "../systems/camera.js";
+import { clearCameraPan, resetWeeklyCamera } from "../systems/camera.js";
 import { spawnExhaust, updateParticles } from "../systems/particles.js";
 import { playMusic, playSoundEffectThrottled } from "../../audio.js";
 
@@ -84,6 +84,7 @@ export function startWeekly(event, { preview = false } = {}) {
 
 function buildAttempt() {
   clearCameraPan();
+  resetWeeklyCamera();
   state.gfx.camera.zoom = WEEKLY_ZOOM;
   state.gfx.camera._baseZoom = WEEKLY_ZOOM;
   resizeCanvas();
@@ -177,6 +178,7 @@ export function updateWeekly(dt) {
   lv.acc = Math.min(lv.acc + Math.min(Math.max(0, dt), 0.1), 0.25);
   while (lv.acc >= STEP - 1e-9) {
     lv.acc -= STEP;
+    rememberPoses(lv);
     const frame = frameFromKeys(state.keys);
     const wasLocked = lv.lockedInStart;
     const events = stepWeekly(lv, frame);
@@ -205,9 +207,32 @@ export function updateWeekly(dt) {
   }
   lv.activeMs = sceneMs(lv);
   state.run.totalActiveMs = lv.activeMs;
+  updateView(lv);
   updateTarget(lv);
   updateParticles(dt);
   updateHUD();
+}
+
+// Render interpolation. The simulation steps at exactly 120 Hz, but screens
+// refresh at 60, 144, 165 Hz…, so a frame can hold two steps, one or none. The
+// renderer and camera draw everything between the last two steps instead of
+// at the last one, which keeps motion smooth on any display. Visual only: the
+// simulation, recordings and times never see these numbers.
+function rememberPoses(lv) {
+  const p = lv.player;
+  lv._prev = { x: p.x, y: p.y, angle: p.angle };
+  for (const h of lv.hazards) { h._px = h.x; h._py = h.y; }
+}
+
+const lerp = (a, b, t) => a + (b - a) * t;
+function updateView(lv) {
+  const alpha = Math.max(0, Math.min(1, lv.acc / STEP));
+  lv.alpha = alpha;
+  const p = lv.player, prev = lv._prev || p;
+  let da = p.angle - prev.angle;
+  da = Math.atan2(Math.sin(da), Math.cos(da));
+  lv.viewPlayer = { ...p, x: lerp(prev.x, p.x, alpha), y: lerp(prev.y, p.y, alpha), angle: prev.angle + da * alpha };
+  lv.viewHazards = lv.hazards.map((h) => (h.hp > 0 && h._px != null ? { ...h, x: lerp(h._px, h.x, alpha), y: lerp(h._py, h.y, alpha) } : h));
 }
 
 function finish(lv) {
@@ -237,7 +262,8 @@ function finish(lv) {
 export function ghostPosesNow() {
   const lv = state.run?.current;
   if (!lv?.weekly || !ghostsVisible) return [];
-  const ms = sceneMs(lv);
+  // Interpolated like the ship, so ghost and ship move in step.
+  const ms = sceneMs(lv) + (lv.launched && !lv.finished ? (lv.alpha || 0) * STEP * 1000 : 0);
   const out = [];
   for (const g of ghosts.values()) {
     const pose = ghostPose(g.poses, ms);
