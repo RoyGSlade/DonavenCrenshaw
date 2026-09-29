@@ -6,6 +6,7 @@ import { config } from './state.js';
 import { parseLab, labConfig } from './systems/lab.js';
 import { initLab } from './systems/labUi.js';
 import { initCustomTrackUi } from './systems/customTrackUi.js';
+import { initWeeklyUi } from './systems/weeklyUi.js';
 const status = document.getElementById('boot-status');
 const button = document.getElementById('starmap-start-btn');
 // ?lab=... swaps in playtest rules. Such a session never saves runs.
@@ -26,6 +27,8 @@ try {
 }
 // The custom track card: countdown until release, then its own one-lap run.
 try { initCustomTrackUi({ ready, lab }); } catch (error) { console.error('Stardust: custom track unavailable', error); }
+// The weekly time trial card: countdown to the opening, then to the close.
+try { initWeeklyUi({ ready, lab }); } catch (error) { console.error('Stardust: weekly track unavailable', error); }
 if (lab) {
   initLab(lab);
 } else {

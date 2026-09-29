@@ -24,6 +24,8 @@ const requiredRoutes = [
     '/kingdoms-caravans/',
     '/stardust/',
     '/stardust/challenge/',
+    '/stardust/weekly/',
+    '/u/',
     '/account/',
     '/build-log/',
     '/support/',
@@ -166,6 +168,19 @@ if (!/href="\/projects\/betterfingers\/"/i.test(home)) failures.push('homepage s
 if (!/<section\b[^>]*class="[^"]*game-spotlight[^"]*"[\s\S]*href="[^\"]*kingdoms-caravans\//i.test(home)) failures.push('homepage is missing the Kingdoms & Caravans game spotlight/link');
 if (!/datetime="2026-09-27"/i.test(home)) failures.push('homepage current-state date is stale');
 if (/BRING ME A BUSINESS PROBLEM|Crenshaw Systems/i.test(home)) failures.push('homepage still promotes the hidden business branch');
+
+// The weekly page must read right with JavaScript off: dates, rules and the layout written at build time.
+const weeklyPage = fs.existsSync(routeFile('/stardust/weekly/')) ? fs.readFileSync(routeFile('/stardust/weekly/'), 'utf8') : '';
+const weeklyLayout = weeklyPage.match(/<img\b[^>]*src="[^"]*(assets\/images\/stardust\/weekly\/[^"]+-layout\.svg)"[^>]*>/i);
+if (!weeklyLayout) failures.push('weekly page is missing its layout image');
+else if (!fs.existsSync(path.join(PUBLIC, weeklyLayout[1]))) failures.push(`weekly layout ${weeklyLayout[1]} was not written`);
+if (!/<time datetime="\d{4}-\d{2}-\d{2}T[^"]+">[^<]+<\/time>/i.test(weeklyPage)) failures.push('weekly page does not state its dates without JavaScript');
+if (!/Collect every shard/i.test(weeklyPage)) failures.push('weekly page is missing its rules');
+const stardustPage = fs.existsSync(routeFile('/stardust/')) ? fs.readFileSync(routeFile('/stardust/'), 'utf8') : '';
+if (!/class="sd-weekly-banner"[^>]*href="[^"]*stardust\/weekly\/"|href="[^"]*stardust\/weekly\/"[^>]*class="sd-weekly-banner"/i.test(stardustPage)) failures.push('/stardust/ is missing the weekly banner');
+if (!/href="[^"]*stardust\/weekly\/"/i.test(stardustLead)) failures.push('homepage Stardust lead is missing the weekly banner');
+const profilePage = fs.existsSync(routeFile('/u/')) ? fs.readFileSync(routeFile('/u/'), 'utf8') : '';
+if (!/<meta name="robots" content="noindex, follow">/i.test(profilePage)) failures.push('/u/ profile shell must be noindex');
 
 const betterFingersPage = fs.existsSync(routeFile('/projects/betterfingers/')) ? fs.readFileSync(routeFile('/projects/betterfingers/'), 'utf8') : '';
 if (!/Signed alpha · Windows 11 x64/i.test(betterFingersPage)) failures.push('BetterFingers download card does not identify the signed Windows alpha');

@@ -97,6 +97,9 @@ export function createRunRecorder({ config = runtimeConfig, fetchImpl = globalTh
       return { runId: res.data.runId, challenge: res.data.challenge || { id: challenge } };
     }
     if (res.status === 401) { player = null; return { error: 'signed-out' }; }
+    // A weekly board outside its window says which side of it we're on.
+    if (res.status === 403 && res.data?.error === 'board_closed') return { error: 'closed' };
+    if (res.status === 403 && res.data?.error === 'board_not_open') return { error: 'not-open' };
     if (res.status === 409 || res.status === 403) return { error: 'outdated' };
     return { error: unreachable(res.status) ? 'offline' : 'refused' };
   }
@@ -240,14 +243,24 @@ export function createRunRecorder({ config = runtimeConfig, fetchImpl = globalTh
       return mine === generation ? info : null;
     },
 
-    // The hub's verdict for that board run, or null for guests.
-    async finishBoardRun(elapsedMs) {
+    // The hub's verdict for that board run, or null for guests. extra adds
+    // finish fields, such as a weekly run's inputLog.
+    async finishBoardRun(elapsedMs, extra = {}) {
       if (!single) return null;
       const mine = generation;
       const { board, run } = single;
       single = null;
-      const result = await close(run, { timeMs: Math.max(0, Math.round(elapsedMs)) });
+      const result = await close(run, { ...extra, timeMs: Math.max(0, Math.round(elapsedMs)) });
       return mine === generation && result ? { board, ...result } : null;
+    },
+
+    // A leaderboard ghost: { username, displayName, timeMs, inputLog, rank } or
+    // null. rank picks a public place; me: true is the signed-in player's best.
+    async ghost(board, { rank = 1, me = false } = {}) {
+      if (!base) return null;
+      const q = me ? 'me=1' : `rank=${encodeURIComponent(rank)}`;
+      const res = await call(`${base}/boards/${encodeURIComponent(board)}/ghost?${q}`);
+      return res.ok && typeof res.data?.inputLog === 'string' ? res.data : null;
     },
 
     abandon() {
@@ -296,6 +309,8 @@ const UNSAVED = {
   refused: 'the leaderboard didn’t accept this run, so the time wasn’t saved.',
   'no-board': 'this track isn’t on the leaderboard yet, so the time wasn’t saved.',
   'version-mismatch': 'this track doesn’t match the leaderboard’s version, so the time wasn’t saved. Reload the page to get the current track.',
+  closed: 'this week’s board has closed, so the time wasn’t saved.',
+  'not-open': 'this week’s board isn’t open yet, so the time wasn’t saved.',
 };
 
 // One line for the player about a saved result.

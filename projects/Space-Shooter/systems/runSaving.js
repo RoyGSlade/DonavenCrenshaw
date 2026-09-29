@@ -10,10 +10,14 @@ import {
 } from './challenges.js';
 import { toast } from '../ui/hud.js';
 import { CUSTOM_BOARD, activeCustomTrack } from './customTrack.js';
+import { setWeeklyGhost, currentWeeklySession } from '../engine/modes/weekly.js';
 
 const ACCOUNT_URL = new URL('../../account/', document.baseURI).href;
 const BOARDS_URL = new URL('../../stardust/#fastest-runs', document.baseURI).href;
 const CUSTOM_URL = new URL('../../stardust/#custom-track', document.baseURI).href;
+const WEEKLY_URL = new URL('../../stardust/weekly/', document.baseURI).href;
+// The hub stores up to 256 KB of input log; a longer one is sent without it.
+const MAX_LOG = 250000;
 const CIRCUIT_NAME = Object.fromEntries(CIRCUITS);
 
 const recorder = createRunRecorder();
@@ -347,6 +351,51 @@ export async function initRunSaving() {
     if (result.status === 'unsaved' || result.status === 'error') { paintEnd(`Your time: ${clock(totalMs)}. ${describeResult(result, title)}`); return; }
     if (result.status === 'accepted') paintEnd([`${describeResult(result, title)} `, link('See the leaderboard', CUSTOM_URL)]);
     else paintEnd(describeResult(result, title));
+  });
+
+  // The weekly time trial: every attempt (the grid, after a launch or a
+  // crash) opens a fresh run on the event's board; a preview never touches the
+  // hub. The leaderboard's #1 flies along as a ghost once it's been fetched.
+  let ghostFor = null;
+  window.addEventListener('stardust:weeklyAttempt', async (event) => {
+    const { eventId, version, preview } = event.detail || {};
+    launches += 1;
+    flight = null;
+    paintEnd(null);
+    paintBreakdown(null);
+    paintSocial(null);
+    if (ghostFor !== `${eventId}.${version}`) {
+      ghostFor = `${eventId}.${version}`;
+      recorder.ghost(eventId, { rank: 1 }).then((top) => {
+        if (!top || currentWeeklySession()?.event?.id !== eventId) return;
+        setWeeklyGhost('top', { log: top.inputLog, label: `#1 ${top.displayName || top.username} ${clock(top.timeMs)}`, color: '#ffd166' });
+      }).catch(() => {});
+    }
+    if (preview) { recorder.abandon(); return; }
+    await recorder.startBoardRun(eventId, { version }).catch(() => null);
+    paintPlayer();
+  });
+  window.addEventListener('stardust:weeklyRunComplete', async (event) => {
+    const { eventId, totalMs, inputLog, preview, personalBest, previousMs, title = 'Weekly track' } = event.detail || {};
+    paintBreakdown(null);
+    paintSocial(null);
+    const local = personalBest && previousMs != null ? ` New best on this browser (was ${clock(previousMs)}).` : '';
+    if (preview) { paintEnd(`Preview — not saved. Your time: ${clock(totalMs)}.${local}`); return; }
+    if (recorder.reachable && recorder.boardsKnown && recorder.version(eventId) == null) { paintEnd(`Your time: ${clock(totalMs)}. This week’s board isn’t on the leaderboard yet, so it wasn’t saved.${local}`); return; }
+    if (!recorder.player) {
+      if (!recorder.reachable) paintEnd(`Your time: ${clock(totalMs)}. The leaderboard was offline, so it wasn’t saved.${local}`);
+      else paintEnd([`Guest run: ${clock(totalMs)} isn’t on the weekly board. `, link('Create an account', `${ACCOUNT_URL}#create`), ' and your next run counts.']);
+      return;
+    }
+    paintEnd('Saving your time…');
+    const extra = typeof inputLog === 'string' && inputLog.length <= MAX_LOG ? { inputLog } : {};
+    const result = await recorder.finishBoardRun(totalMs, extra);
+    if (!result) { paintEnd('This attempt started before you signed in, so it wasn’t saved. The next one will be.'); return; }
+    if (result.status === 'unsaved' || result.status === 'error') { paintEnd(`Your time: ${clock(totalMs)}. ${describeResult(result, title)}`); return; }
+    if (result.status === 'accepted') {
+      const line = result.staff ? `${title}: ${clock(result.timeMs ?? totalMs)} saved as a dev time (not ranked).` : describeResult(result, title);
+      paintEnd([`${line} `, link('Weekly leaderboard', WEEKLY_URL)]);
+    } else paintEnd(describeResult(result, title));
   });
 
   window.addEventListener('stardust:levelStart', (event) => recorder.startLevel(event.detail?.level));

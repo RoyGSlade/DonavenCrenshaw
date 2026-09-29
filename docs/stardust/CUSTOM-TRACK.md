@@ -1,5 +1,13 @@
 # Stardust custom track
 
+> **2026-09-29: the weekly time trial has taken over this slot.** While a
+> weekly event exists (`tracks/weekly.js`), the Stardust page's custom-track
+> section and board tab show the weekly instead, `#custom-track` anchors land
+> on it, the hangar hides the placeholder custom-track card, and
+> `?track=custom` focuses the weekly card. Everything below still works and is
+> kept for later: the placeholder data, the editor, `?preview=custom` test
+> flights and the hub's `custom-track` board. See [WEEKLY.md](WEEKLY.md).
+
 One extra circuit with its own leaderboard, released on a timer. It sits
 outside the five-circuit network: it is not part of the full network run, its
 splits, the network medal, challenges or the five-circuit achievements.

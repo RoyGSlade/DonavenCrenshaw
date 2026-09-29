@@ -70,6 +70,31 @@
     color: var(--sd-frost);
 }
 
+/* This week's time trial, at the top of the Stardust lead. */
+.home-weekly {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem 0.75rem;
+    justify-self: start;
+    max-width: 100%;
+    padding: 0.55rem 0.9rem 0.55rem 0.55rem;
+    border: 1px solid rgba(255, 197, 97, 0.45);
+    border-radius: 14px;
+    background: linear-gradient(100deg, rgba(255, 197, 97, 0.14), rgba(255, 197, 97, 0.02) 60%);
+    color: #e3eef6;
+    text-decoration: none;
+    box-shadow: 0 0 30px rgba(255, 197, 97, 0.08);
+    transition: border-color 0.15s, background 0.15s;
+}
+.home-weekly:hover, .home-weekly:focus-visible { border-color: rgba(255, 197, 97, 0.85); background: linear-gradient(100deg, rgba(255, 197, 97, 0.22), rgba(255, 197, 97, 0.04) 60%); color: #fff; }
+.home-weekly:focus-visible { outline: 2px solid #ffc561; outline-offset: 3px; }
+.home-weekly-tag { padding: 0.2rem 0.55rem; border-radius: 999px; background: #ffc561; color: #1a1004; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; }
+.home-weekly-title { font-size: 0.9rem; font-weight: 600; letter-spacing: 0.02em; }
+.home-weekly-status { font-size: 0.74rem; font-variant-numeric: tabular-nums; color: var(--sd-frost); }
+.home-weekly[data-state="live"] .home-weekly-status { color: #7ee2b8; }
+.home-weekly-go { color: #ffc561; }
+
 .home-stardust-side {
     display: grid;
     gap: 0.85rem;

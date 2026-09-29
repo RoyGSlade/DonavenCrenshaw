@@ -10,6 +10,7 @@
 
 import { boardRows, aroundMe, nextAbove, friendlessBoard, inviteLink, inviteMessage, accountPath, playPath, problemText, createHub, socialApi } from './social.js';
 import { createShareBox } from './share.js';
+import { createPilotUi } from './pilot-ui.js';
 
 const root = document.querySelector('[data-sd-boards]');
 const tag = document.querySelector('script[data-hub]');
@@ -18,8 +19,9 @@ const GAME = `${HUB}/api/games/stardust`;
 const BASE = window.SITE_BASE || '/';
 const REFRESH_MS = 60000;
 const api = socialApi(createHub(HUB));
+// Rows show each pilot's avatar, title chip and a link to their profile.
+const ui = createPilotUi({ base: BASE, hub: HUB });
 
-const two = (n) => String(n).padStart(2, '0');
 
 async function getJson(url) {
     const controller = new AbortController();
@@ -131,16 +133,7 @@ if (root) {
         return node;
     };
 
-    function boardList(rows) {
-        const ol = el('ol', 'sd-board');
-        for (const row of rows) {
-            const li = el('li');
-            if (row.isMe) li.classList.add('is-me');
-            li.append(el('span', 'sd-rank', two(row.rank)), el('span', 'sd-name', row.name), el('span', 'sd-time', row.time), el('span', 'sd-date', row.date));
-            ol.append(li);
-        }
-        return ol;
-    }
+    const boardList = (rows) => ui.boardList(rows);
 
     function render(board, entries) {
         if (!entries.length) {
@@ -148,6 +141,8 @@ if (root) {
                 ? 'No saved runs yet. The first pilot with an account to finish all five circuits takes the top spot.'
                 : board === 'custom-track'
                     ? 'No saved times on the custom track yet. Sign in, fly one lap, and it’s yours.'
+                    : board.startsWith('weekly-')
+                    ? 'No times on this week’s board yet. It opens with the track: sign in, collect every shard, cross the line.'
                     : 'No saved times on this circuit yet. Sign in, finish it once, and it’s yours.'));
             return;
         }
@@ -218,6 +213,10 @@ if (root) {
         live(false);
         if (board === 'full') list.innerHTML = snapshot;
         // The snapshot only covers the full network; an older hub may not have this board at all.
+        else if (board.startsWith('weekly-')) {
+            meta.textContent = 'Weekly board unavailable';
+            list.replaceChildren(el('p', 'sd-empty', 'The weekly board lives on a small server at home, and it isn’t answering right now. The track still flies; check back in a few minutes.'));
+        }
         else if (board === 'custom-track') {
             meta.textContent = 'Custom track board unavailable';
             list.replaceChildren(el('p', 'sd-empty', 'Custom track times aren’t available right now. The track still flies; check back for its leaderboard.'));
@@ -301,6 +300,10 @@ if (root) {
             next.focus();
             select(next.dataset.sdBoard);
         });
+    });
+    // "Weekly leaderboard" in the weekly section (the old custom track slot).
+    document.querySelector('[data-sd-weekly-board]')?.addEventListener('click', (event) => {
+        document.dispatchEvent(new CustomEvent('sd:board', { detail: event.currentTarget.dataset.sdWeeklyBoard }));
     });
     // "Its leaderboard" in the custom track section.
     document.addEventListener('sd:board', (event) => {

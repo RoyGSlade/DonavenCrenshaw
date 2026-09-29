@@ -58,7 +58,9 @@ export function updateHUD() {
     // The custom track is one lap outside the network: no "n / 5".
     const where = state.run?.kind === 'custom'
       ? `CUSTOM${state.run.preview ? ' · PREVIEW' : ''}`
-      : `${String(level).padStart(2, '0')} / ${MAX_LEVEL}`;
+      : state.run?.kind === 'weekly'
+        ? `WEEKLY ${state.run.event?.week ?? ''}${state.run.preview ? ' · PREVIEW' : ''}`
+        : `${String(level).padStart(2, '0')} / ${MAX_LEVEL}`;
     missionEl.textContent = `${where}  ${lv.levelInfo?.title || 'Gate network'}\nSHARDS ${got}/${required}  ·  FLUX ${Math.floor(lv.flux || 0)}%${route}`;
   }
   if (lessonEl) lessonEl.textContent = lv.levelInfo?.lesson || '';
@@ -349,16 +351,19 @@ export function drawMinimapBottomLeft(ctx, W, H) {
     return;
   }
 
-  const sx = Math.min(r.w / config.GRID_W, r.h / config.GRID_H);
+  // The network grid, or a bigger track's own bounds (the weekly tracks).
+  const b = lv.track?.bounds || { minX: 0, minY: 0, maxX: config.GRID_W, maxY: config.GRID_H };
+  const bw = b.maxX - b.minX, bh = b.maxY - b.minY;
+  const sx = Math.min(r.w / bw, r.h / bh);
   const sy = sx;
-  const insetX = (r.w - config.GRID_W * sx) / 2;
-  const insetY = (r.h - config.GRID_H * sy) / 2;
+  const insetX = (r.w - bw * sx) / 2;
+  const insetY = (r.h - bh * sy) / 2;
   const icon = Math.max(3, r.w * 0.018);
 
   // world → minimap coords
   const toMini = (gx, gy) => ({
-    x: r.x + insetX + gx * sx,
-    y: r.y + insetY + gy * sy,
+    x: r.x + insetX + (gx - b.minX) * sx,
+    y: r.y + insetY + (gy - b.minY) * sy,
   });
 
   if (lv.track?.points?.length) {

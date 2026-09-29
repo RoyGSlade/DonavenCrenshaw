@@ -1,0 +1,62 @@
+[
+  {
+    "id": "pilot-nova",
+    "name": "Nova",
+    "file": "assets/images/avatars/pilot-nova.svg"
+  },
+  {
+    "id": "pilot-comet",
+    "name": "Comet",
+    "file": "assets/images/avatars/pilot-comet.svg"
+  },
+  {
+    "id": "pilot-vega",
+    "name": "Vega",
+    "file": "assets/images/avatars/pilot-vega.svg"
+  },
+  {
+    "id": "pilot-orion",
+    "name": "Orion",
+    "file": "assets/images/avatars/pilot-orion.svg"
+  },
+  {
+    "id": "pilot-lyra",
+    "name": "Lyra",
+    "file": "assets/images/avatars/pilot-lyra.svg"
+  },
+  {
+    "id": "pilot-draco",
+    "name": "Draco",
+    "file": "assets/images/avatars/pilot-draco.svg"
+  },
+  {
+    "id": "pilot-atlas",
+    "name": "Atlas",
+    "file": "assets/images/avatars/pilot-atlas.svg"
+  },
+  {
+    "id": "pilot-ember",
+    "name": "Ember",
+    "file": "assets/images/avatars/pilot-ember.svg"
+  },
+  {
+    "id": "pilot-frost",
+    "name": "Frost",
+    "file": "assets/images/avatars/pilot-frost.svg"
+  },
+  {
+    "id": "pilot-void",
+    "name": "Void",
+    "file": "assets/images/avatars/pilot-void.svg"
+  },
+  {
+    "id": "pilot-sol",
+    "name": "Sol",
+    "file": "assets/images/avatars/pilot-sol.svg"
+  },
+  {
+    "id": "pilot-nebula",
+    "name": "Nebula",
+    "file": "assets/images/avatars/pilot-nebula.svg"
+  }
+]

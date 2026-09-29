@@ -61,9 +61,10 @@ function leaveChallenge() {
 }
 // The last launch, so "Fly again" repeats it: the network or the custom track.
 let lastLaunch = { kind: 'network', preview: false };
-/** Leave the hangar and fly: { kind: 'network' | 'custom', preview }. */
+/** Leave the hangar and fly: { kind: 'network' | 'custom' | 'weekly', preview, event }. */
 export function launchRun(options = {}) {
-  lastLaunch = { kind: options.kind === 'custom' ? 'custom' : 'network', preview: !!options.preview };
+  const kind = ['custom', 'weekly'].includes(options.kind) ? options.kind : 'network';
+  lastLaunch = { kind, preview: !!options.preview, event: kind === 'weekly' ? options.event : null };
   hide('starmap-start');
   hide('starmap-end');
   state.ui.showStartOverlay = false;
@@ -176,11 +177,12 @@ export function closePauseOverlay() {
 export function openEndOverlay(formattedTime, { kind = 'network', title = 'Custom track', preview = false } = {}) {
   if (state.mode === 'arena') return;
   playMusic('victory'); setTouchControls(false);
-  const custom = kind === 'custom';
-  el('starmap-end-title').textContent = custom ? `${title} complete. ${formattedTime}` : `Network complete. ${formattedTime}`;
+  const custom = kind === 'custom', weekly = kind === 'weekly';
+  el('starmap-end-title').textContent = custom || weekly ? `${title} complete. ${formattedTime}` : `Network complete. ${formattedTime}`;
   const lede = el('starmap-end-lede');
   if (lede) {
-    lede.textContent = !custom ? 'All five circuits, one run. Fly again and beat your time.'
+    lede.textContent = weekly ? (preview ? 'Preview lap of the weekly track. Nothing from a preview is saved.' : 'Every shard, one lap, the weekly leaderboard. Fly again and shave it down.')
+      : !custom ? 'All five circuits, one run. Fly again and beat your time.'
       : preview ? 'Preview lap of the custom track. Nothing from a preview is saved.'
         : 'One lap of the custom track, on its own leaderboard. Fly again and beat your time.';
   }

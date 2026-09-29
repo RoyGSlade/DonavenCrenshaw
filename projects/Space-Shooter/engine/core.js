@@ -29,7 +29,8 @@ function update(dt) {
   state.gfx.lastDt = dt;
   updateCurrentMode(dt);
   // Update camera after movement updates; prefer arena player else roadmap
-  const p = state.arena?.player || state.run?.current?.player || null;
+  // The weekly mode's interpolated pose when it has one (engine/modes/weekly.js).
+  const p = state.arena?.player || state.run?.current?.viewPlayer || state.run?.current?.player || null;
   updateCamera(dt, p);
 }
 

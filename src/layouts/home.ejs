@@ -25,6 +25,16 @@
             <% if (frontmatter.lead_game === 'stardust') { %>
                 <section class="container home-stardust-lead" aria-labelledby="stardust-lead-title">
                     <div class="home-stardust-copy">
+                        <% const wk = data.weekly; %>
+                        <% if (wk) { %>
+                        <%# This week's time trial. An <a>, not a <section>: verifySite reads the lead up to its first </section>. %>
+                        <a class="home-weekly" href="<%= siteRoot %>stardust/weekly/" data-sd-weekly-banner data-event-id="<%= wk.id %>" data-state="<%= wk.state %>">
+                            <span class="home-weekly-tag mono">Weekly</span>
+                            <span class="home-weekly-title">Week <%= wk.week %> · <%= wk.title %></span>
+                            <span class="home-weekly-status mono" data-sd-weekly-status><%= wk.state === 'upcoming' ? `Opens ${wk.opensText}` : wk.state === 'live' ? `Live · closes ${wk.closesText}` : 'Closed · see the results' %></span>
+                            <span class="home-weekly-go" aria-hidden="true">→</span>
+                        </a>
+                        <% } %>
                         <p class="section-label"><%= frontmatter.hero_kicker %></p>
                         <h1 id="stardust-lead-title"><%= frontmatter.hero_title %></h1>
                         <p class="home-stardust-lede"><%= frontmatter.hero_sub %></p>
@@ -99,5 +109,6 @@
     <script src="<%= siteRoot %>scripts/script.js"></script>
     <script src="<%= siteRoot %>scripts/light-engine.js"></script>
     <script src="<%= siteRoot %>scripts/smoke.js"></script>
+    <% if (data.weekly) { %><script type="module" src="<%= siteRoot %>scripts/stardust-weekly.js"></script><% } %>
 </body>
 </html>

@@ -67,9 +67,68 @@ export function clearCameraPan() {
   cam._hold = null;
 }
 
+// Weekly time trial: chase framing. The ship sits near the trailing edge of the
+// screen along its direction of travel, so most of the view shows what's ahead
+// (mines come fast at these speeds). Locked to the ship's interpolated pose, so
+// the only smoothing is on the direction and how far ahead it looks.
+const CHASE = {
+  LEAD: 0.76,        // at speed: ship 12% in from the trailing edge (88% of the view ahead)
+  LEAD_SLOW: 0.32,   // slow: ship a third of the way in (66% of the view ahead)
+  LEAD_FROM: 2,      // cells/s where the lead starts growing…
+  LEAD_FULL: 11,     // …and where it reaches LEAD (eased between)
+  LEAD_RESP: 0.9,    // how fast the lead follows speed (1/s): a slow slide, not a jump
+  TURN_EASE: 0.3,    // the lead eases in by up to this much while the framing swings
+  SPRING: 2.2,       // critically damped direction spring (rad/s): no lurch, no overshoot
+  ZOOM_OUT: 0.9,     // zoom multiplier at full speed
+};
+const smooth01 = (a, b, x) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+function updateWeeklyCamera(cam, dt, player) {
+  const speed = Math.hypot(player.vx || 0, player.vy || 0);
+  // Where the ship is going, blended with where it points while it's slow, so
+  // the target never snaps from one to the other.
+  const w = smooth01(0.5, 3, speed);
+  const hx = Math.cos(player.angle) * (1 - w) + (speed > 1e-6 ? (player.vx / speed) * w : 0);
+  const hy = Math.sin(player.angle) * (1 - w) + (speed > 1e-6 ? (player.vy / speed) * w : 0);
+  const want = Math.hypot(hx, hy) > 1e-6 ? Math.atan2(hy, hx) : player.angle;
+  const k = (rate) => 1 - Math.exp(-rate * Math.max(0, dt));
+  if (!Number.isFinite(cam._chaseDir)) { cam._chaseDir = want; cam._chaseSpin = 0; }
+  // Critically damped spring on the framing's direction: it eases into a turn
+  // and settles without overshooting (sub-stepped so long frames stay stable).
+  const err = angDelta(cam._chaseDir, want);
+  for (let left = Math.max(0, Math.min(dt, 0.1)); left > 1e-6; left -= 1 / 240) {
+    const h = Math.min(1 / 240, left);
+    const e = angDelta(cam._chaseDir, want);
+    cam._chaseSpin += (CHASE.SPRING ** 2 * e - 2 * CHASE.SPRING * cam._chaseSpin) * h;
+    cam._chaseDir += cam._chaseSpin * h;
+  }
+  const leadWant = lerp(CHASE.LEAD_SLOW, CHASE.LEAD, smooth01(CHASE.LEAD_FROM, CHASE.LEAD_FULL, speed))
+    * (1 - CHASE.TURN_EASE * Math.min(1, Math.abs(err) / 1.2));
+  cam._chaseLead = Number.isFinite(cam._chaseLead) ? lerp(cam._chaseLead, leadWant, k(CHASE.LEAD_RESP)) : CHASE.LEAD_SLOW;
+  const baseZoom = (cam._baseZoom ??= (cam.zoom ?? (config.CAMERA_BASE_ZOOM ?? 1)));
+  cam.zoom = lerp(cam.zoom ?? baseZoom, baseZoom * lerp(1, CHASE.ZOOM_OUT, Math.min(1, speed / 12)), k(1.5));
+  const gfx = state.gfx;
+  const unit = (gfx.cellW || 1) * cam.zoom;
+  const halfW = (gfx.canvas?.width / (gfx.dpr || 1)) / unit / 2;
+  const halfH = (gfx.canvas?.height / (gfx.dpr || 1)) / unit / 2;
+  const dx = Math.cos(cam._chaseDir), dy = Math.sin(cam._chaseDir);
+  // Distance from the screen centre to its edge along the travel direction.
+  const edge = Math.min(Math.abs(dx) > 1e-6 ? halfW / Math.abs(dx) : Infinity, Math.abs(dy) > 1e-6 ? halfH / Math.abs(dy) : Infinity);
+  const lead = Number.isFinite(edge) ? edge * cam._chaseLead : 0;
+  cam.x = player.x + dx * lead;
+  cam.y = player.y + dy * lead;
+  return cam;
+}
+export function resetWeeklyCamera() {
+  const cam = ensureCamera();
+  cam._chaseDir = NaN;
+  cam._chaseLead = NaN;
+  cam._chaseSpin = 0;
+}
+
 export function updateCamera(dt, player) {
   const cam = ensureCamera();
   if (!player) return cam;
+  if (state.mode === 'roadmap' && state.run?.current?.weekly && !cam._pan?.active && !cam._hold) return updateWeeklyCamera(cam, dt, player);
 
   // If we are in a cinematic pan, drive position solely by pan until finished
   if (cam._pan?.active) {

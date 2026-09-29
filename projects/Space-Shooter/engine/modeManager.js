@@ -7,6 +7,7 @@ import { resizeCanvas } from '../ui/graphics.js';
 import { buildLevel, pauseTimer, updateRoadmap } from './modes/roadmap.js';
 import { CUSTOM_LEVEL } from './levels.js';
 import { buildArena, updateArena } from './modes/arena.js';
+import { startWeekly, updateWeekly } from './modes/weekly.js';
 import { ensureEngineRunning } from './core.js';
 import { startCountdown } from './lifecycle.js';
 export { startCountdown } from './lifecycle.js';
@@ -32,7 +33,8 @@ export function updateCurrentMode(dt) {
   }
 
   if (state.mode === 'roadmap') {
-    updateRoadmap(dt);
+    if (state.run?.kind === 'weekly') updateWeekly(dt);
+    else updateRoadmap(dt);
   } else if (state.mode === 'arena') {
     updateArena(dt);
   }
@@ -40,8 +42,9 @@ export function updateCurrentMode(dt) {
 
 // kind 'network' is the five-circuit run; 'custom' is one lap of the custom
 // track, with its own start/complete events so the network run, its splits,
-// challenges and boards never see it. preview (custom only) is never saved.
-export function startNewRun({ kind = 'network', preview = false } = {}) {
+// challenges and boards never see it. 'weekly' is the weekly time trial of
+// `event` (engine/modes/weekly.js). preview (custom/weekly) is never saved.
+export function startNewRun({ kind = 'network', preview = false, event = null } = {}) {
   // Ensure engine loop is active (may have been stopped after a completed run)
   ensureEngineRunning();
   // Clear any lingering end overlay from prior run
@@ -51,6 +54,13 @@ export function startNewRun({ kind = 'network', preview = false } = {}) {
   state.ui.showBossUI = false;
   state.ui.showMinimap = true;
   state.ui.showStartOverlay = false;
+  if (kind === 'weekly' && event) {
+    state.run = { runId: Date.now().toString(36), kind: 'weekly', event, preview: !!preview, totalActiveMs: 0, levelIndex: 1, seeds: [], current: null };
+    state.ui.paused = false;
+    startWeekly(event, { preview: !!preview });
+    startCountdown(config.COUNTDOWN_DURATION, state.run.current);
+    return;
+  }
   const custom = kind === 'custom';
   const runId = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
   state.run = {
@@ -79,7 +89,7 @@ export function retryRun() {
   closePauseOverlay();
 
   // Retry is a fresh run of the same kind with the same deterministic authored routes.
-  startNewRun({ kind: state.run.kind, preview: state.run.preview });
+  startNewRun({ kind: state.run.kind, preview: state.run.preview, event: state.run.event });
 }
 
 export function quitRun() {
