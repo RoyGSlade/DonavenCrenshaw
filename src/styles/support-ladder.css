@@ -1,0 +1,164 @@
+/* -------------------------------------------------------------------------
+   Support ladder: account, follow along, sponsor. Shared by the footer
+   (compact), the homepage and the Stardust page (full). See
+   src/components/support-ladder.ejs.
+   ------------------------------------------------------------------------- */
+
+.support-ladder-steps {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+/* Full variant */
+.support-ladder--full {
+    display: grid;
+    gap: 1.25rem;
+}
+
+.support-ladder-head {
+    display: grid;
+    gap: 0.35rem;
+}
+
+.support-ladder-title,
+.support-ladder-sub {
+    margin: 0;
+}
+
+.support-ladder-sub {
+    color: var(--text-soft);
+}
+
+.support-ladder--full .support-ladder-steps {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1.25rem;
+}
+
+.support-ladder-rung {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: clamp(1.1rem, 2.5vw, 1.75rem);
+    border: 1px solid var(--line-hair);
+    border-radius: var(--radius-soft);
+    background: var(--bg-panel);
+}
+
+.support-ladder-rung h3,
+.support-ladder-rung p {
+    margin: 0;
+}
+
+.support-ladder-rung h3 {
+    font-size: 1.1rem;
+    text-transform: uppercase;
+}
+
+.support-ladder-rung p {
+    color: var(--text-soft);
+}
+
+.support-ladder--full .support-ladder-num {
+    color: var(--text-secondary);
+    font-size: 0.7rem;
+    letter-spacing: 0.18em;
+}
+
+.support-ladder-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin-top: auto;
+}
+
+.support-ladder-rung > .btn-noir {
+    margin-top: auto;
+}
+
+/* Compact variant: a strip at the top of the footer */
+.support-ladder--compact {
+    max-width: var(--container-max);
+    margin: 0 auto 1.25rem;
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid var(--line-hair);
+}
+
+.support-ladder--compact .support-ladder-steps {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 2rem;
+    color: var(--text-secondary);
+    font-size: 0.66rem;
+}
+
+.support-ladder--compact li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.35rem;
+}
+
+.support-ladder--compact .support-ladder-num {
+    color: var(--text-muted);
+}
+
+.support-ladder--compact .support-ladder-num::after {
+    content: ".";
+}
+
+.support-ladder--compact a {
+    color: var(--text-soft);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.support-ladder--compact a:hover,
+.support-ladder--compact a:focus-visible {
+    color: var(--neon);
+}
+
+/* Placement */
+.home-support-ladder {
+    margin-block: clamp(2rem, 5vw, 4rem);
+}
+
+.sd-join {
+    margin-block: clamp(2rem, 5vw, 3.5rem);
+}
+
+.sd-page .support-ladder-title {
+    font-size: 1.4rem;
+}
+
+/* Discord rules block on /support/ */
+.discord-rules-card {
+    display: grid;
+    gap: 0.75rem;
+    padding: clamp(1.25rem, 3vw, 2rem);
+}
+
+.discord-rules-card h3,
+.discord-rules-card p {
+    margin: 0;
+}
+
+.discord-rules-card h3 {
+    font-size: 1rem;
+    text-transform: uppercase;
+}
+
+.discord-rules-card ul {
+    margin: 0;
+    padding-left: 1.2rem;
+    color: var(--text-soft);
+}
+
+@media (max-width: 860px) {
+    .support-ladder--full .support-ladder-steps {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}

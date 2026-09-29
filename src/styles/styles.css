@@ -24,6 +24,7 @@
 @import url('./pages/kingdoms.css');
 @import url('./pages/stardust.css');
 @import url('./pages/account.css');
+@import url('./support-ladder.css');
 
 .hero {
     position: relative;

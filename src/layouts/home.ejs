@@ -79,6 +79,7 @@
                 </section>
             <% } %>
             <%- content %>
+            <div class="container home-support-ladder"><%- include('support-ladder', { variant: 'full' }) %></div>
             <% const featuredProjects = importedProjects.filter((item) => item.project.featured && item.id !== 'betterfingers'); %>
             <% const latestUpdates = importedProjects.flatMap((item) => item.publishedUpdates || []).sort((a, b) => b.date.localeCompare(a.date) || a.id.localeCompare(b.id)).slice(0, 5); %>
             <% if (featuredProjects.length) { %>
