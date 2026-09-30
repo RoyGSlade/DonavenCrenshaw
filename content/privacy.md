@@ -11,9 +11,11 @@ date: "2026-09-28"
 
 This is a static website published from the repository. Optional accounts, game results and the Dogfight relay run on a small server Donaven operates at `api.donavencrenshaw.com` (see [Accounts](#accounts)). The site does not add analytics or advertising trackers, and it loads nothing from third-party hosts.
 
+Updates are opt-in. There is no newsletter and no email list, and the site sends no email at all. If you want news, the community Discord and the social accounts linked in the footer are where it goes; following either is your choice, and nothing on this site subscribes you to anything.
+
 The Stardust browser game keeps your sound and control settings in your browser's local storage. They never leave your device, and clearing site data removes them.
 
-When you follow an external link—such as GitHub, GitHub Sponsors, Ko-fi, or a product repository—you are using that service under its own privacy practices. This page does not extend this site's promises to those services.
+When you follow an external link—such as GitHub, GitHub Sponsors, Ko-fi, Discord, X, or a product repository—you are using that service under its own privacy practices. This page does not extend this site's promises to those services.
 
 <h2 id="accounts">Accounts</h2>
 

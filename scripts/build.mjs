@@ -344,7 +344,7 @@ async function buildAllContent(dirPath, subDir = '', components, site, data, pos
             const context = renderContext(site, frontmatter, route, data);
             const renderedComponents = {
                 nav: ejs.render(components.nav, context),
-                footer: ejs.render(components.footer, context),
+                footer: ejs.render(components.footer, context, { views: [COMPONENTS_DIR] }),
                 head: ejs.render(components.head, context)
             };
             const layoutPath = path.join(LAYOUTS_DIR, `${frontmatter.layout || 'default'}.ejs`);
@@ -446,7 +446,7 @@ async function build404(components, site, data) {
     const context = renderContext(site, frontmatter, '', data);
     const renderedComponents = {
         nav: ejs.render(components.nav, context),
-        footer: ejs.render(components.footer, context),
+        footer: ejs.render(components.footer, context, { views: [COMPONENTS_DIR] }),
         head: ejs.render(components.head, { ...context, page: { ...context.page, url: null } })
     };
     const layout = await fs.readFile(path.join(LAYOUTS_DIR, 'default.ejs'), 'utf-8');
@@ -465,7 +465,7 @@ async function buildImportedProjects(site, components, data, generatedPaths) {
         const context = renderContext(site, frontmatter, route, data);
         const renderedComponents = {
             nav: ejs.render(components.nav, context),
-            footer: ejs.render(components.footer, context),
+            footer: ejs.render(components.footer, context, { views: [COMPONENTS_DIR] }),
             head: ejs.render(components.head, context)
         };
         const layout = await fs.readFile(path.join(LAYOUTS_DIR, 'imported-project.ejs'), 'utf8');

@@ -1,0 +1,27 @@
+<%
+  // Discord access and moderation rules, straight from data/support.json. Renders
+  // nothing unless the Discord is live and both rule lists are written. The invite
+  // link is shown only once data/support.json has a real https URL for it.
+  const ruleSupport = (data && data.support) || {};
+  const ruleDiscord = ruleSupport.discord || {};
+  const ruleList = (value) => (Array.isArray(value) ? value.filter((item) => typeof item === 'string' && item.trim() !== '') : []);
+  const ruleAccess = ruleList(ruleDiscord.accessRules);
+  const ruleModeration = ruleList(ruleDiscord.moderationRules);
+  const ruleInvite = typeof ruleDiscord.url === 'string' && /^https:\/\/\S+$/i.test(ruleDiscord.url.trim()) ? ruleDiscord.url.trim() : null;
+%>
+<% if (ruleDiscord.status === 'live' && ruleAccess.length && ruleModeration.length) { %>
+<section class="section-block discord-rules" id="discord-rules" aria-labelledby="discord-rules-title">
+    <div class="section-header"><div><h2 id="discord-rules-title" class="section-title">Discord rules</h2></div></div>
+    <div class="noir-card noir-card--lit discord-rules-card">
+        <% if (ruleInvite) { %><p><a class="btn-noir btn-noir--solid" href="<%= ruleInvite %>" target="_blank" rel="noopener noreferrer">Join the Discord</a></p><% } else { %><p>The invite link isn't up yet. It will appear here and in the footer when it is.</p><% } %>
+        <h3>Getting in and staying in</h3>
+        <ul>
+            <% ruleAccess.forEach((rule) => { %><li><%= rule %></li><% }); %>
+        </ul>
+        <h3>Moderation</h3>
+        <ul>
+            <% ruleModeration.forEach((rule) => { %><li><%= rule %></li><% }); %>
+        </ul>
+    </div>
+</section>
+<% } %>
