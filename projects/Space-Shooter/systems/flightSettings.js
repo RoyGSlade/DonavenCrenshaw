@@ -25,6 +25,9 @@ function defaults(touch) {
     minimap: { show: !touch, zoomIndex: 0, iconIndex: 2 },
     // Auto fire replaces the fire button on phones; desktop keeps its fire key.
     autoFire: touch,
+    // 'track': the screen keeps the track's orientation. 'behind': the view
+    // turns with the ship, so it always points up the screen.
+    cameraMode: 'track',
     tilt: { ...TILT_DEFAULTS },
     introSeen: {},
     layouts: { touch: null, desktop: null },
@@ -75,6 +78,7 @@ export const tiltTuning = (settings = flightSettings()) => ({
   fullLockDeg: pick(TILT_MAX_TILTS, settings.tilt?.maxIndex, TILT_DEFAULTS.maxIndex),
   expo: pick(TILT_EXPOS, settings.tilt?.sensIndex, TILT_DEFAULTS.sensIndex),
 });
+export const cameraBehind = () => flightSettings().cameraMode === 'behind';
 export const minimapZoom = () => MINIMAP_ZOOMS[Math.max(0, Math.min(MINIMAP_ZOOMS.length - 1, flightSettings().minimap.zoomIndex | 0))];
 export const minimapIconScale = () => ICON_SCALES[Math.max(0, Math.min(ICON_SCALES.length - 1, flightSettings().minimap.iconIndex | 0))];
 
@@ -98,7 +102,7 @@ export function encodeSettingsCode(settings = flightSettings()) {
     if (Object.keys(out).length) layouts[short] = out;
   }
   const tilt = { ...TILT_DEFAULTS, ...settings.tilt };
-  const data = { v: 1, m: [settings.minimap.show ? 1 : 0, settings.minimap.zoomIndex | 0, settings.minimap.iconIndex | 0], a: settings.autoFire ? 1 : 0, t: [tilt.deadIndex | 0, tilt.maxIndex | 0, tilt.sensIndex | 0], l: layouts };
+  const data = { v: 1, m: [settings.minimap.show ? 1 : 0, settings.minimap.zoomIndex | 0, settings.minimap.iconIndex | 0], a: settings.autoFire ? 1 : 0, c: settings.cameraMode === 'behind' ? 1 : 0, t: [tilt.deadIndex | 0, tilt.maxIndex | 0, tilt.sensIndex | 0], l: layouts };
   return CODE_PREFIX + btoa(JSON.stringify(data)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
@@ -125,7 +129,9 @@ export function decodeSettingsCode(code) {
       }
       if (Object.keys(out).length) layouts[mode] = out;
     }
-    return { minimap: { show: data.m[0] === 1, zoomIndex, iconIndex }, autoFire: data.a === 1, tilt: { deadIndex, maxIndex, sensIndex }, layouts };
+    // Codes made before the camera setting existed carry no "c": leave the camera alone.
+    const cameraMode = data.c === 1 ? 'behind' : data.c === 0 ? 'track' : undefined;
+    return { minimap: { show: data.m[0] === 1, zoomIndex, iconIndex }, autoFire: data.a === 1, tilt: { deadIndex, maxIndex, sensIndex }, layouts, ...(cameraMode ? { cameraMode } : {}) };
   } catch { return null; }
 }
 
@@ -137,6 +143,7 @@ export function applySettingsCode(code) {
     s.minimap = next.minimap;
     s.autoFire = next.autoFire;
     s.tilt = next.tilt;
+    if (next.cameraMode) s.cameraMode = next.cameraMode;
     s.layouts = { ...(s.layouts || {}), ...next.layouts };
   });
   return true;

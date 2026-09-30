@@ -203,11 +203,14 @@ export function render() {
   ctx.scale(dpr, dpr);
 
   const cam = ensureCamera();
+  // The camera point sits at the view anchor (screen centre in the track view,
+  // lower down in the behind-ship view) and the world turns about it.
   const viewCenterX = W / 2;
-  const viewCenterY = H / 2;
+  const viewCenterY = H * (cam.anchorY ?? 0.5);
 
   ctx.translate(viewCenterX, viewCenterY);
   ctx.scale(cam.zoom || 1, cam.zoom || 1);
+  if (cam.viewRot) ctx.rotate(cam.viewRot);
   ctx.translate(-cam.x * cellW, -cam.y * cellH);
 
   if (mode === 'roadmap') {
@@ -614,17 +617,24 @@ function drawParticles() {
   }
 }
 
+/** A world point (cells) to CSS pixels on screen, through the camera's zoom, rotation and anchor. */
+export function worldToScreen(x, y, W, H) {
+  const cam = state.gfx.camera, zoom = cam.zoom || 1;
+  const dx = (x - cam.x) * state.gfx.cellW * zoom, dy = (y - cam.y) * state.gfx.cellH * zoom;
+  const r = cam.viewRot || 0, c = Math.cos(r), s = Math.sin(r);
+  return { x: W / 2 + dx * c - dy * s, y: H * (cam.anchorY ?? 0.5) + dx * s + dy * c };
+}
+
 function drawShardIndicator(W, H) {
   const lv = state.run?.current;
   if (!lv || !lv.nearestShardTarget) return;
   const { player } = lv;
   const t = lv.nearestShardTarget;
-  const a = Math.atan2((t.y + 0.5) - player.y, (t.x + 0.5) - player.x);
-  // Around the ship on screen (the chase camera keeps it off centre), not the screen centre.
-  const cam = state.gfx.camera, zoom = cam.zoom || 1;
+  // Around the ship on screen (the camera keeps it off centre), turned with the view.
+  const cam = state.gfx.camera;
+  const a = Math.atan2((t.y + 0.5) - player.y, (t.x + 0.5) - player.x) + (cam.viewRot || 0);
   const ship = lv.viewPlayer || player;
-  const sx = W / 2 + (ship.x - cam.x) * state.gfx.cellW * zoom;
-  const sy = H / 2 + (ship.y - cam.y) * state.gfx.cellH * zoom;
+  const { x: sx, y: sy } = worldToScreen(ship.x, ship.y, W, H);
   const r = Math.min(W, H) * 0.09;
   const x = sx + r * Math.cos(a);
   const y = sy + r * Math.sin(a);
@@ -689,13 +699,19 @@ function drawParallaxStars(ctx, W, H, vxPx, vyPx) {
   const S = config.STARFIELD;
   const camXpx = state.settings?.reducedMotion ? 0 : state.gfx.camera.x * state.gfx.cellW;
   const camYpx = state.settings?.reducedMotion ? 0 : state.gfx.camera.y * state.gfx.cellH;
+  const cam = state.gfx.camera;
+  const turned = !!cam.viewRot && !state.settings?.reducedMotion;
+  // Turned with the view: tile a square that covers the screen at any angle about the anchor.
+  const ay = H * (cam.anchorY ?? 0.5);
+  const TW = turned ? 2 * Math.hypot(W / 2, Math.max(ay, H - ay)) : W, TH = turned ? TW : H;
   ctx.save();
+  if (turned) { ctx.translate(W / 2, ay); ctx.rotate(cam.viewRot); ctx.translate(-TW / 2, -TH / 2); }
   ctx.globalAlpha = S.ALPHA ?? 0.25;
   ctx.lineCap = 'round';
   for (const layer of state.gfx._stars) {
     for (const s of layer) {
-      let x = (s.u * W + (camXpx * s.p)) % W; if (x < 0) x += W;
-      let y = (s.v * H + (camYpx * s.p)) % H; if (y < 0) y += H;
+      let x = (s.u * TW - (turned ? camXpx * s.p : -camXpx * s.p)) % TW; if (x < 0) x += TW;
+      let y = (s.v * TH - (turned ? camYpx * s.p : -camYpx * s.p)) % TH; if (y < 0) y += TH;
       const speed = Math.hypot(vxPx, vyPx);
       const streakLen = state.settings?.reducedMotion ? 0 : Math.min(14, speed * (S.STREAK_MULT ?? 0.018) * s.p);
       if (streakLen > 0.5) {

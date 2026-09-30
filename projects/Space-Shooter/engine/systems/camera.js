@@ -1,6 +1,7 @@
 // src/roadmap/engine/systems/camera.js
 // Ship-aligned camera with smoothing, forward bias, aim look-ahead, and cinematic pans
 import { state, config } from '../../state.js';
+import { cameraBehind } from '../../systems/flightSettings.js';
 
 const CAM = {
   // Look-ahead tuning
@@ -118,6 +119,47 @@ function updateWeeklyCamera(cam, dt, player) {
   cam.y = player.y + dy * lead;
   return cam;
 }
+// "Behind ship" view (flight settings): the world turns so the ship always
+// points up the screen, which keeps strafe left/right on screen left/right.
+// Render-only: cam.viewRot is the world's rotation and cam.anchorY is where on
+// the screen (fraction of its height) the camera point sits. The track view is
+// viewRot 0, anchor 0.5; both ease between the two so a change never snaps.
+export const BEHIND = {
+  ANCHOR_SLOW: 0.64,   // ship 64% down the screen at rest…
+  ANCHOR_FAST: 0.8,    // …80% at speed, so more of the view is ahead
+  ROT_RESP: 9,         // how fast the view follows the ship's heading (1/s)
+  ANCHOR_RESP: 1.6,
+  ZOOM_WIDE: 0.8,      // extra zoom-out on a wide screen, which shows less ahead when "up" is forward
+  ZOOM_OUT: 0.9,       // and at full speed
+};
+/** The world rotation that puts a ship heading `angle` pointing up the screen. */
+export const behindRotation = (angle) => -Math.PI / 2 - angle;
+
+function easeView(cam, dt, rotWant, anchorWant) {
+  const k = (rate) => 1 - Math.exp(-rate * Math.max(0, dt));
+  if (!Number.isFinite(cam.viewRot)) cam.viewRot = 0;
+  if (!Number.isFinite(cam.anchorY)) cam.anchorY = 0.5;
+  cam.viewRot += angDelta(cam.viewRot, rotWant) * k(BEHIND.ROT_RESP);
+  // Keep it bounded; only its sine and cosine matter.
+  cam.viewRot = Math.atan2(Math.sin(cam.viewRot), Math.cos(cam.viewRot));
+  cam.anchorY = lerp(cam.anchorY, anchorWant, k(BEHIND.ANCHOR_RESP));
+  if (Math.abs(cam.viewRot) < 1e-4 && rotWant === 0) cam.viewRot = 0;
+}
+
+function updateBehindCamera(cam, dt, player) {
+  const speed = Math.hypot(player.vx || 0, player.vy || 0);
+  const k = (rate) => 1 - Math.exp(-rate * Math.max(0, dt));
+  easeView(cam, dt, behindRotation(player.angle), lerp(BEHIND.ANCHOR_SLOW, BEHIND.ANCHOR_FAST, smooth01(2, 11, speed)));
+  const baseZoom = (cam._baseZoom ??= (cam.zoom ?? (config.CAMERA_BASE_ZOOM ?? 1)));
+  const gfx = state.gfx;
+  const wide = (gfx.canvas?.width || 1) > (gfx.canvas?.height || 1);
+  cam.zoom = lerp(cam.zoom ?? baseZoom, baseZoom * (wide ? BEHIND.ZOOM_WIDE : 1) * lerp(1, BEHIND.ZOOM_OUT, Math.min(1, speed / 12)), k(1.5));
+  // Locked to the ship: the rotation pivots on it.
+  cam.x = player.x;
+  cam.y = player.y;
+  return cam;
+}
+
 export function resetWeeklyCamera() {
   const cam = ensureCamera();
   cam._chaseDir = NaN;
@@ -128,7 +170,11 @@ export function resetWeeklyCamera() {
 export function updateCamera(dt, player) {
   const cam = ensureCamera();
   if (!player) return cam;
-  if (state.mode === 'roadmap' && state.run?.current?.weekly && !cam._pan?.active && !cam._hold) return updateWeeklyCamera(cam, dt, player);
+  const free = !cam._pan?.active && !cam._hold;
+  if (state.mode === 'roadmap' && free && cameraBehind()) return updateBehindCamera(cam, dt, player);
+  // Track view, pans and the arena: ease the view back to upright and centred.
+  easeView(cam, dt, 0, 0.5);
+  if (state.mode === 'roadmap' && state.run?.current?.weekly && free) return updateWeeklyCamera(cam, dt, player);
 
   // If we are in a cinematic pan, drive position solely by pan until finished
   if (cam._pan?.active) {

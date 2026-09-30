@@ -1,5 +1,6 @@
 /** Weekly time-trial visuals: mines, sentries, shots, ghosts, stun and the speed warning. Never mutates simulation. */
 import { drawCourier, drawExplosion } from './stardustVfx.js';
+import { state } from '../state.js';
 import { WEEKLY_RULES } from '../engine/weekly/layout.js';
 import { WEEKLY_CONFIG } from '../engine/weekly/sim.js';
 
@@ -70,7 +71,9 @@ export function drawWeeklyWorld(ctx, scene, unit, time, { ghosts = [], shipImg =
     ctx.save(); ctx.globalAlpha = 0.34;
     drawCourier(ctx, { x: g.x, y: g.y, angle: g.angle, vx: 0, vy: 0, hp: 100, maxHp: 100 }, { paused: true }, {}, unit, shipImg, time, 0.66);
     ctx.globalAlpha = 0.8; ctx.fillStyle = g.color; ctx.font = `${Math.max(10, unit * 0.32)}px Consolas, monospace`; ctx.textAlign = 'center';
-    ctx.fillText(g.label, g.x * unit, (g.y - 0.9) * unit);
+    const turn = state.gfx?.camera?.viewRot || 0;
+    ctx.translate(g.x * unit, g.y * unit); ctx.rotate(-turn);
+    ctx.fillText(g.label, 0, -0.9 * unit);
     ctx.restore();
   }
   // Stun: a flickering ring around the ship.

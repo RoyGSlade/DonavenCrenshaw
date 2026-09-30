@@ -85,7 +85,7 @@ test("settings share code: round trip, and junk or hostile codes are refused or 
   const code = encodeSettingsCode(settings);
   assert.match(code, /^SD1-[A-Za-z0-9_-]+$/);
   assert.deepEqual(decodeSettingsCode(`  ${code}\n`), {
-    minimap: settings.minimap, autoFire: false, tilt: settings.tilt,
+    minimap: settings.minimap, autoFire: false, tilt: settings.tilt, cameraMode: 'track',
     layouts: { 'touch-landscape': { stick: { x: 0.12, y: 0.74, s: 1.3 }, wheel: { x: 0.861, y: 0.72, s: 0.9 } } },
   });
   // introSeen is personal and never travels in a code.
@@ -96,4 +96,41 @@ test("settings share code: round trip, and junk or hostile codes are refused or 
   // Bad widgets are dropped; good ones in the same code survive.
   const mixed = decodeSettingsCode(forge({ v: 1, m: [0, 0, 0], a: 1, t: [0, 0, 0], l: { p: { stick: [500, 500, 1000], 'BAD ID': [1, 1, 1000], wheel: [5000, 1, 1000], boost: [1, 1, 99999] }, zz: { stick: [1, 1, 1000] } } }));
   assert.deepEqual(mixed.layouts, { 'touch-portrait': { stick: { x: 0.5, y: 0.5, s: 1 } } });
+});
+
+test("behind-ship camera: the ship points up, the view eases in and back out, and the setting travels in share codes", async () => {
+  const { state } = await import('../projects/Space-Shooter/state.js');
+  const { updateCamera, ensureCamera, behindRotation, BEHIND } = await import('../projects/Space-Shooter/engine/systems/camera.js');
+  const { flightSettings, encodeSettingsCode, decodeSettingsCode } = await import('../projects/Space-Shooter/systems/flightSettings.js');
+  // Rotating a heading by behindRotation puts it at -90° (up the screen) for any ship angle.
+  for (const angle of [0, 1, -2.5, Math.PI, 7]) {
+    const onScreen = angle + behindRotation(angle);
+    assert.ok(Math.abs(Math.cos(onScreen)) < 1e-9 && Math.sin(onScreen) < -0.999, `heading ${angle} points up`);
+  }
+  state.mode = 'roadmap';
+  state.run = { current: { weekly: true } };
+  state.gfx.canvas = { width: 844, height: 390 };
+  state.gfx.cellW = state.gfx.cellH = 30;
+  const cam = ensureCamera();
+  const player = { x: 12, y: 7, vx: 0, vy: 9, angle: Math.PI / 2 };
+  flightSettings().cameraMode = 'behind';
+  for (let i = 0; i < 240; i++) updateCamera(1 / 60, player);
+  assert.ok(Math.abs(Math.sin(cam.viewRot - behindRotation(player.angle))) < 1e-3, 'view settles on the ship heading');
+  assert.equal(cam.x, player.x); assert.equal(cam.y, player.y);
+  assert.ok(cam.anchorY > BEHIND.ANCHOR_SLOW && cam.anchorY <= BEHIND.ANCHOR_FAST, `ship sits low on the screen (${cam.anchorY})`);
+  // One frame never snaps the view: a quarter turn takes several frames.
+  player.angle += Math.PI / 2;
+  const before = cam.viewRot;
+  updateCamera(1 / 60, player);
+  const moved = Math.abs(Math.atan2(Math.sin(cam.viewRot - before), Math.cos(cam.viewRot - before)));
+  assert.ok(moved > 0.01 && moved < 0.4, 'rotation is eased (' + moved + ')');
+  // Back to the track view: upright and centred again.
+  flightSettings().cameraMode = 'track';
+  for (let i = 0; i < 600; i++) updateCamera(1 / 60, player);
+  assert.equal(cam.viewRot, 0);
+  assert.ok(Math.abs(cam.anchorY - 0.5) < 1e-3);
+  // Share codes: the camera travels; codes from before the setting leave it alone.
+  assert.equal(decodeSettingsCode(encodeSettingsCode({ ...flightSettings(), cameraMode: 'behind' })).cameraMode, 'behind');
+  assert.equal(decodeSettingsCode(encodeSettingsCode({ ...flightSettings(), cameraMode: 'track' })).cameraMode, 'track');
+  assert.equal('cameraMode' in decodeSettingsCode(`SD1-${btoa(JSON.stringify({ v: 1, m: [0, 0, 0], a: 1, t: [0, 0, 0], l: {} }))}`), false);
 });

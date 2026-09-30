@@ -70,6 +70,7 @@ function buildFlightSettings() {
     <div class="fx-set-row"><span>Minimap</span><button type="button" data-fx="map-toggle"></button></div>
     <div class="fx-set-row"><span>Minimap zoom</span><div class="fx-stepper"><button type="button" data-fx="zoom-" aria-label="Zoom out">−</button><output data-fx-out="zoom"></output><button type="button" data-fx="zoom+" aria-label="Zoom in">+</button></div></div>
     <div class="fx-set-row"><span>Map icon size</span><div class="fx-stepper"><button type="button" data-fx="icon-" aria-label="Smaller icons">−</button><output data-fx-out="icon"></output><button type="button" data-fx="icon+" aria-label="Bigger icons">+</button></div></div>
+    <div class="fx-set-row"><span>Camera <small>(behind ship: the view turns with you)</small></span><button type="button" data-fx="camera"></button></div>
     <div class="fx-set-row"><span>Auto fire <small>(shoots breakable targets ahead)</small></span><button type="button" data-fx="autofire"></button></div>
     <div class="fx-set-row fx-tilt-row"><span>Tilt sensitivity <small>(higher is quicker off centre)</small></span><div class="fx-stepper"><button type="button" data-fx="sens-" aria-label="Lower tilt sensitivity">−</button><output data-fx-out="sens"></output><button type="button" data-fx="sens+" aria-label="Higher tilt sensitivity">+</button></div></div>
     <div class="fx-set-row fx-tilt-row"><span>Max tilt <small>(tilt for a full turn)</small></span><div class="fx-stepper"><button type="button" data-fx="max-" aria-label="Less tilt for a full turn">−</button><output data-fx-out="max"></output><button type="button" data-fx="max+" aria-label="More tilt for a full turn">+</button></div></div>
@@ -83,6 +84,7 @@ function buildFlightSettings() {
     box.querySelector('[data-fx="map-toggle"]').setAttribute('aria-pressed', String(s.minimap.show));
     box.querySelector('[data-fx-out="zoom"]').textContent = `${MINIMAP_ZOOMS[s.minimap.zoomIndex] ?? 1}×`;
     box.querySelector('[data-fx-out="icon"]').textContent = `${Math.round((ICON_SCALES[s.minimap.iconIndex] ?? 1) * 100)}%`;
+    box.querySelector('[data-fx="camera"]').textContent = s.cameraMode === 'behind' ? 'Behind ship' : 'Track view';
     const tilt = tiltTuning(s);
     box.querySelector('[data-fx-out="sens"]').textContent = `${TILT_EXPOS.indexOf(tilt.expo) + 1} / ${TILT_EXPOS.length}`;
     box.querySelector('[data-fx-out="max"]').textContent = `${tilt.fullLockDeg}°`;
@@ -106,6 +108,7 @@ function buildFlightSettings() {
       const d = action.endsWith('+') ? 1 : -1;
       updateFlightSettings((s) => { s.tilt = { ...TILT_DEFAULTS, ...s.tilt }; s.tilt[key] = Math.max(0, Math.min(list.length - 1, (s.tilt[key] | 0) + d)); });
     }
+    else if (action === 'camera') updateFlightSettings((s) => { s.cameraMode = s.cameraMode === 'behind' ? 'track' : 'behind'; });
     else if (action === 'copy-code') { copySettingsCode(); return; }
     else if (action === 'paste-code') { pasteSettingsCode().then(() => { applyMinimapSetting(); paint(); }); return; }
     else if (action === 'autofire') updateFlightSettings((s) => { s.autoFire = !s.autoFire; });
