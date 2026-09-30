@@ -40,11 +40,11 @@ ogImage: "assets/Images/planetfall/wreck-clearing.png"
   <div class="pf-shots">
     <figure>
       <a href="assets/Images/planetfall/opening-dogfight.png"><img src="assets/Images/planetfall/opening-dogfight.png" width="1600" height="900" loading="lazy" decoding="async" alt="The player's frigate firing across a star field at an enemy fighter during the opening ship battle."></a>
-      <figcaption><strong>Before impact.</strong> The opening ship battle is playable.</figcaption>
+      <figcaption><strong>Before impact.</strong> Get ready to fight in a new ship.</figcaption>
     </figure>
     <figure>
       <a href="assets/Images/planetfall/wreck-interior.png"><img src="assets/Images/planetfall/wreck-interior.png" width="1600" height="900" loading="lazy" decoding="async" alt="The damaged frigate's rooms seen from above, with cargo, consoles and an emergency light visible through the roof."></a>
-      <figcaption><strong>After impact.</strong> The wreck has rooms to explore and power to restore.</figcaption>
+      <figcaption><strong>After impact.</strong> Be ready to explore a new world.</figcaption>
     </figure>
   </div>
 </section>
