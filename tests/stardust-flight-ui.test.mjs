@@ -74,3 +74,26 @@ test('default layouts keep every widget on screen and the touch controls apart',
   assert.ok(touch.settings.x > 0.9 && touch.settings.y < 0.2, 'settings top-right');
   assert.deepEqual(Object.keys(currentLayout('desktop')).sort(), Object.keys(DEFAULT_LAYOUTS.desktop).sort());
 });
+
+test("settings share code: round trip, and junk or hostile codes are refused or clamped", async () => {
+  const { encodeSettingsCode, decodeSettingsCode } = await import('../projects/Space-Shooter/systems/flightSettings.js');
+  const settings = {
+    minimap: { show: true, zoomIndex: 2, iconIndex: 4 }, autoFire: false, introSeen: { 'weekly-01': true },
+    tilt: { deadIndex: 5, maxIndex: 1, sensIndex: 6 },
+    layouts: { 'touch-landscape': { stick: { x: 0.12, y: 0.74, s: 1.3 }, wheel: { x: 0.861, y: 0.72, s: 0.9 } }, desktop: null },
+  };
+  const code = encodeSettingsCode(settings);
+  assert.match(code, /^SD1-[A-Za-z0-9_-]+$/);
+  assert.deepEqual(decodeSettingsCode(`  ${code}\n`), {
+    minimap: settings.minimap, autoFire: false, tilt: settings.tilt,
+    layouts: { 'touch-landscape': { stick: { x: 0.12, y: 0.74, s: 1.3 }, wheel: { x: 0.861, y: 0.72, s: 0.9 } } },
+  });
+  // introSeen is personal and never travels in a code.
+  assert.ok(!atob(code.slice(4).replace(/-/g, '+').replace(/_/g, '/')).includes('weekly-01'));
+  const forge = (data) => `SD1-${btoa(JSON.stringify(data))}`;
+  for (const bad of [null, '', 'hello', 'SD1-', 'SD1-!!!', 'SD2-abcd', forge({ v: 2 }), forge({ v: 1, m: [1, 99, 0], t: [0, 0, 0] }), forge({ v: 1, m: [1, 0, 0], t: [0, 0, 'x'] }), `SD1-${'A'.repeat(7000)}`])
+    assert.equal(decodeSettingsCode(bad), null, `refused: ${String(bad).slice(0, 20)}`);
+  // Bad widgets are dropped; good ones in the same code survive.
+  const mixed = decodeSettingsCode(forge({ v: 1, m: [0, 0, 0], a: 1, t: [0, 0, 0], l: { p: { stick: [500, 500, 1000], 'BAD ID': [1, 1, 1000], wheel: [5000, 1, 1000], boost: [1, 1, 99999] }, zz: { stick: [1, 1, 1000] } } }));
+  assert.deepEqual(mixed.layouts, { 'touch-portrait': { stick: { x: 0.5, y: 0.5, s: 1 } } });
+});

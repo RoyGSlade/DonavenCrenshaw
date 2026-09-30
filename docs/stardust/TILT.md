@@ -156,3 +156,15 @@ These need a real phone over HTTPS. Use the public site or an HTTPS tunnel; the 
 7. **Real-world stalls.** App-switch, lock and unlock, and notification shade: steering should not lurch when the player returns.
 
 Headless Chromium only proved that the module loads and the config file is fetched (HTTP 200). It also proved that the landscape (90) and portrait (0) mapping, symmetry, flat fade, recenter and stale-to-zero behaviour work with *simulated* `deviceorientation` events. Chromium sent no `devicemotion` there, so the motion path is covered only by unit tests.
+
+## Player settings (pause panel, touch devices only)
+
+Three steppers under Flight settings, saved per device in `stardust.flight.v1` (`tilt`), applied on top of `tilt-config.json` through the controller's `setTuning`:
+
+| Setting | Config value | Steps | Default |
+| --- | --- | --- | --- |
+| Tilt sensitivity | `EXPO` (the curve between dead zone and max tilt) | 1 to 7: 0.9, 0.65, 0.35, 0.15, 0, -0.3, -0.6 | 3 (0.35) |
+| Max tilt | `FULL_LOCK_DEG` (tilt for a full turn) | 15, 20, 25, 30, 35, 40, 45, 50, 60° | 40° |
+| Tilt dead zone | `DEAD_ZONE_DEG` | 0, 1, 2, 3, 4, 6, 8, 10, 12° | 3° |
+
+A negative `EXPO` bends the curve the other way: quick off centre, gentle near full lock. The defaults equal the tuned config, so nothing changes until a player moves a setting. Not yet tried on a real phone.

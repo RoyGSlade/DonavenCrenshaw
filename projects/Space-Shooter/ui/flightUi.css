@@ -118,14 +118,11 @@ body.fx-touch-device .fx-minimap { width: 170px; height: 110px; }
 .fx-intro { position: fixed; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 28px; pointer-events: none; }
 .fx-intro.is-on { display: flex; }
 .fx-intro.is-flying { pointer-events: auto; cursor: pointer; }
-.fx-intro-card { min-width: min(560px, 86vw); padding: 22px 44px 20px; text-align: center; border: 1px solid #81e6dfaa; outline: 1px solid #81e6df44; outline-offset: 5px; background: linear-gradient(180deg, #0b1622ee, #071019e6); box-shadow: 0 0 40px #81e6df22; animation: fx-card-in .5s ease-out both; background-size: 100% 100%; background-repeat: no-repeat; }
-.fx-intro-card.has-art { border: 0; outline: 0; background-color: transparent; box-shadow: none; padding: 34px 110px 32px; }
-@media (max-height: 500px) { .fx-intro-card.has-art { padding: 26px 90px 24px; } }
-.fx-intro-card.has-art .fx-intro-kicker { margin-bottom: 10px; }
-.fx-intro-card.has-art .fx-intro-sub { margin-top: 12px; }
-.fx-intro-kicker { margin: 0 0 6px; font-size: 11px; letter-spacing: .28em; color: #ffc47d; }
-.fx-intro-title { margin: 0; font: 800 clamp(28px, 6vw, 54px)/1 Saira, system-ui, sans-serif; letter-spacing: .06em; text-transform: uppercase; color: #f2fbff; text-shadow: 0 0 18px #81e6df66; }
-.fx-intro-sub { margin: 8px 0 0; font-size: 12px; letter-spacing: .2em; text-transform: uppercase; color: #a9dcff; }
+.fx-intro-card { position: absolute; top: max(1.5vh, env(safe-area-inset-top)); left: 0; right: 0; margin: 0 auto; width: fit-content; max-width: 92vw; max-height: 25vh; min-width: min(300px, 70vw); box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; overflow: hidden; padding: 2vh 5vh; text-align: center; border: 1px solid #81e6dfaa; outline: 1px solid #81e6df44; outline-offset: 5px; background: linear-gradient(180deg, #0b1622ee, #071019e6); box-shadow: 0 0 40px #81e6df22; animation: fx-card-in .5s ease-out both; background-size: 100% 100%; background-repeat: no-repeat; }
+.fx-intro-card.has-art { border: 0; outline: 0; background-color: transparent; box-shadow: none; padding: 4.5vh 13vh 4vh; }
+.fx-intro-kicker { margin: 0 0 .8vh; font-size: clamp(8px, 1.8vh, 11px); letter-spacing: .28em; color: #ffc47d; white-space: nowrap; }
+.fx-intro-title { margin: 0; font: 800 clamp(15px, min(5.5vh, 5vw), 36px)/1 Saira, system-ui, sans-serif; letter-spacing: .06em; text-transform: uppercase; color: #f2fbff; text-shadow: 0 0 18px #81e6df66; white-space: nowrap; }
+.fx-intro-sub { margin: 1vh 0 0; font-size: clamp(8px, 1.9vh, 12px); letter-spacing: .2em; text-transform: uppercase; color: #a9dcff; white-space: nowrap; }
 .fx-intro-call { min-height: 80px; display: flex; align-items: center; justify-content: center; padding: 0 60px; background-position: center; background-size: contain; background-repeat: no-repeat; }
 .fx-intro-call span { font: 900 clamp(36px, min(9vw, 14vh), 88px)/1 Saira, system-ui, sans-serif; letter-spacing: .12em; color: #fff; text-shadow: 0 0 22px #81e6df, 0 0 4px #000; }
 .fx-intro-call[data-word=set] span { color: #ffd6a3; text-shadow: 0 0 22px #ff9a4a, 0 0 4px #000; }
@@ -135,13 +132,14 @@ body.fx-touch-device .fx-minimap { width: 170px; height: 110px; }
 body.fx-intro-fly .fx-intro-call { display: none; }
 @keyframes fx-pop { from { transform: scale(1.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 @keyframes fx-card-in { from { transform: translateY(-12px); opacity: 0; } to { transform: none; opacity: 1; } }
-@media (max-height: 500px) { .fx-intro { gap: 12px; } .fx-intro-card { padding: 12px 26px; } .fx-intro-call { min-height: 56px; } }
+@media (max-height: 500px) { .fx-intro { gap: 12px; } .fx-intro-call { min-height: 56px; } }
 
 /* Flight settings (pause panel) and the layout editor bar */
 .fx-settings-panel { margin: 10px 0 14px; padding: 10px 12px; border: 1px solid #81e6df2e; border-radius: 8px; background: #07101a99; text-align: left; }
 .fx-settings-panel .eyebrow { margin: 0 0 6px !important; }
 .fx-set-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 5px 0; font-size: 13px; }
 .fx-set-row small { color: #8fb6c8; }
+.fx-set-row[hidden] { display: none; }
 .fx-set-row button { min-width: 62px; padding: 6px 10px; }
 .fx-stepper { display: flex; align-items: center; gap: 6px; }
 .fx-stepper button { min-width: 36px; padding: 6px; }
@@ -153,8 +151,23 @@ body.fx-editing .fx-edit-bar { display: flex; }
 @media (max-width: 560px) { .fx-edit-bar { flex-wrap: wrap; justify-content: center; width: 86vw; } }
 
 /* Weekly attempt-over screen (ui/failScreen.js) */
-.fx-fail .panel { max-width: 460px; }
-.fx-fail h2 { color: #ff8a6b; letter-spacing: .04em; }
+.fx-fail { backdrop-filter: blur(3px); background: #03091488; }
+.fx-fail .panel { width: min(400px, 100%); padding: 18px 20px 14px; }
+.fx-fail .eyebrow { margin: 0; font-size: 10px; }
+.fx-fail h2 { margin: 6px 0 4px; font-size: 22px; color: #ff8a6b; letter-spacing: .04em; }
+.fx-fail .fx-fail-why { font-size: 13px; line-height: 1.4; }
+.fx-fail .actions { margin: 0; gap: 8px; }
+.fx-fail .actions button { flex: 1 1 0; padding: 10px 12px; white-space: nowrap; }
+@media (max-height: 500px) and (orientation: landscape) {
+  .fx-fail { align-items: center; padding: 8px; }
+  .fx-fail .panel { width: min(560px, 100%); display: grid; grid-template-columns: 1fr 1fr; column-gap: 16px; align-items: start; padding: 12px 16px; }
+  .fx-fail .panel > .eyebrow, .fx-fail .panel > h2, .fx-fail .panel > .fx-fail-why, .fx-fail .panel > .fx-fail-stats { grid-column: 1; }
+  .fx-fail .panel > .fx-fail-board { grid-column: 2; grid-row: 1 / span 4; margin: 0; }
+  .fx-fail .panel > .actions { grid-column: 1 / -1; margin-top: 10px; }
+  .fx-fail h2 { font-size: 19px; }
+  .fx-fail .fx-fail-stats { margin-bottom: 0; }
+  .fx-fail-board li { padding: 3px 6px; font-size: 12px; }
+}
 .fx-fail-why { margin: 4px 0 2px; color: #e8d9c7; }
 .fx-fail-stats { margin: 0 0 12px; font: 12px Consolas, ui-monospace, monospace; color: #8fb6c8; }
 .fx-fail-board { margin: 0 0 14px; padding: 8px 10px; border: 1px solid #81e6df2e; border-radius: 8px; background: #07101a99; text-align: left; }

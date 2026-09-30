@@ -6,6 +6,13 @@ const KEY = 'stardust.flight.v1';
 
 export const MINIMAP_ZOOMS = Object.freeze([1, 1.5, 2, 3, 4]);
 export const ICON_SCALES = Object.freeze([0.6, 0.8, 1, 1.3, 1.7]);
+// Tilt steering. Dead zone: degrees of tilt ignored around centre. Max tilt:
+// degrees of tilt for a full-lock turn. Sensitivity: the curve between the two
+// (low = gentle near centre, high = quick off centre), as the EXPO value.
+export const TILT_DEAD_ZONES = Object.freeze([0, 1, 2, 3, 4, 6, 8, 10, 12]);
+export const TILT_MAX_TILTS = Object.freeze([15, 20, 25, 30, 35, 40, 45, 50, 60]);
+export const TILT_EXPOS = Object.freeze([0.9, 0.65, 0.35, 0.15, 0, -0.3, -0.6]);
+export const TILT_DEFAULTS = Object.freeze({ deadIndex: 3, maxIndex: 5, sensIndex: 2 });
 
 export function isTouchDevice(win = globalThis) {
   try {
@@ -18,6 +25,7 @@ function defaults(touch) {
     minimap: { show: !touch, zoomIndex: 0, iconIndex: 2 },
     // Auto fire replaces the fire button on phones; desktop keeps its fire key.
     autoFire: touch,
+    tilt: { ...TILT_DEFAULTS },
     introSeen: {},
     layouts: { touch: null, desktop: null },
   };
@@ -39,6 +47,7 @@ export function flightSettings() {
         ...base,
         ...saved,
         minimap: { ...base.minimap, ...(saved.minimap || {}) },
+        tilt: { ...base.tilt, ...(saved.tilt || {}) },
         introSeen: { ...(saved.introSeen || {}) },
         layouts: { ...base.layouts, ...(saved.layouts || {}) },
       };
@@ -59,5 +68,76 @@ export function updateFlightSettings(mutate) {
   globalThis.dispatchEvent?.(new CustomEvent('stardust:flightSettings'));
 }
 
+const pick = (list, index, fallback) => list[Number.isInteger(index) && index >= 0 && index < list.length ? index : fallback];
+/** The player's tilt tuning: { deadZoneDeg, fullLockDeg, expo }. */
+export const tiltTuning = (settings = flightSettings()) => ({
+  deadZoneDeg: pick(TILT_DEAD_ZONES, settings.tilt?.deadIndex, TILT_DEFAULTS.deadIndex),
+  fullLockDeg: pick(TILT_MAX_TILTS, settings.tilt?.maxIndex, TILT_DEFAULTS.maxIndex),
+  expo: pick(TILT_EXPOS, settings.tilt?.sensIndex, TILT_DEFAULTS.sensIndex),
+});
 export const minimapZoom = () => MINIMAP_ZOOMS[Math.max(0, Math.min(MINIMAP_ZOOMS.length - 1, flightSettings().minimap.zoomIndex | 0))];
 export const minimapIconScale = () => ICON_SCALES[Math.max(0, Math.min(ICON_SCALES.length - 1, flightSettings().minimap.iconIndex | 0))];
+
+// --- Share code ---------------------------------------------------------------
+// Flight settings as a short text code a player can post and another can paste:
+// minimap, auto fire, tilt tuning and every saved layout. "SD1-" + base64url of
+// compact JSON. Layout numbers are thousandths.
+const CODE_PREFIX = 'SD1-';
+const LAYOUT_KEYS = { d: 'desktop', l: 'touch-landscape', p: 'touch-portrait' };
+const WIDGET_ID = /^[a-z][a-z0-9-]{0,23}$/;
+const int = (v, lo, hi) => (Number.isInteger(v) && v >= lo && v <= hi ? v : null);
+
+export function encodeSettingsCode(settings = flightSettings()) {
+  const layouts = {};
+  for (const [short, mode] of Object.entries(LAYOUT_KEYS)) {
+    const saved = settings.layouts?.[mode];
+    if (!saved || typeof saved !== 'object') continue;
+    const out = {};
+    for (const [id, spot] of Object.entries(saved))
+      if (WIDGET_ID.test(id) && spot && [spot.x, spot.y, spot.s].every(Number.isFinite)) out[id] = [Math.round(spot.x * 1000), Math.round(spot.y * 1000), Math.round(spot.s * 1000)];
+    if (Object.keys(out).length) layouts[short] = out;
+  }
+  const tilt = { ...TILT_DEFAULTS, ...settings.tilt };
+  const data = { v: 1, m: [settings.minimap.show ? 1 : 0, settings.minimap.zoomIndex | 0, settings.minimap.iconIndex | 0], a: settings.autoFire ? 1 : 0, t: [tilt.deadIndex | 0, tilt.maxIndex | 0, tilt.sensIndex | 0], l: layouts };
+  return CODE_PREFIX + btoa(JSON.stringify(data)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+/** A pasted code → the settings it holds, every value range-checked, or null if it is not a valid code. */
+export function decodeSettingsCode(code) {
+  try {
+    const text = String(code ?? '').trim();
+    if (!text.startsWith(CODE_PREFIX) || text.length > 6000) return null;
+    const data = JSON.parse(atob(text.slice(CODE_PREFIX.length).replace(/-/g, '+').replace(/_/g, '/')));
+    if (!data || data.v !== 1 || !Array.isArray(data.m) || !Array.isArray(data.t)) return null;
+    const zoomIndex = int(data.m[1], 0, MINIMAP_ZOOMS.length - 1), iconIndex = int(data.m[2], 0, ICON_SCALES.length - 1);
+    const deadIndex = int(data.t[0], 0, TILT_DEAD_ZONES.length - 1), maxIndex = int(data.t[1], 0, TILT_MAX_TILTS.length - 1), sensIndex = int(data.t[2], 0, TILT_EXPOS.length - 1);
+    if ([zoomIndex, iconIndex, deadIndex, maxIndex, sensIndex].includes(null)) return null;
+    const layouts = {};
+    for (const [short, mode] of Object.entries(LAYOUT_KEYS)) {
+      const saved = data.l?.[short];
+      if (!saved || typeof saved !== 'object') continue;
+      const out = {};
+      for (const [id, spot] of Object.entries(saved).slice(0, 24)) {
+        if (!WIDGET_ID.test(id) || !Array.isArray(spot)) continue;
+        const x = int(spot[0], 0, 1000), y = int(spot[1], 0, 1000), sc = int(spot[2], 100, 4000);
+        if (x === null || y === null || sc === null) continue;
+        out[id] = { x: x / 1000, y: y / 1000, s: sc / 1000 };
+      }
+      if (Object.keys(out).length) layouts[mode] = out;
+    }
+    return { minimap: { show: data.m[0] === 1, zoomIndex, iconIndex }, autoFire: data.a === 1, tilt: { deadIndex, maxIndex, sensIndex }, layouts };
+  } catch { return null; }
+}
+
+/** Apply a pasted code. Layouts the code does not carry are left as they are. Returns false for a bad code. */
+export function applySettingsCode(code) {
+  const next = decodeSettingsCode(code);
+  if (!next) return false;
+  updateFlightSettings((s) => {
+    s.minimap = next.minimap;
+    s.autoFire = next.autoFire;
+    s.tilt = next.tilt;
+    s.layouts = { ...(s.layouts || {}), ...next.layouts };
+  });
+  return true;
+}

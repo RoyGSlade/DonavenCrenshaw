@@ -1,5 +1,6 @@
 import { state } from '../state.js';
 import { createTiltController } from './mobileControls.js';
+import { tiltTuning } from './flightSettings.js';
 export { computeTurnAxis } from './mobileControls.js';
 
 const listeners = new Set();
@@ -8,6 +9,9 @@ const controller = createTiltController({ onChange(status) {
   state.input.touch.turnAxis = 0;
   for (const listener of listeners) listener(status);
 } });
+// Dead zone and sensitivity from the pause panel's flight settings.
+controller.setTuning(tiltTuning());
+globalThis.addEventListener?.('stardust:flightSettings', () => controller.setTuning(tiltTuning()));
 export const enableTiltControls = () => controller.enable();
 export const disableTiltControls = () => controller.disable();
 /** Recenter (Recenter button today; meant to be called at the start line too). Safe mid-race. */
