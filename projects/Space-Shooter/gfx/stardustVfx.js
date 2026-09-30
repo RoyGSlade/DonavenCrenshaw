@@ -1,4 +1,5 @@
 /** Stardust visual language. All helpers preserve Canvas state and never mutate simulation. */
+import { getCourierAppearance, getCourierExhaustPorts } from '../systems/shipAppearance.js';
 const TAU = Math.PI * 2;
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 function circle(ctx, x, y, r) { ctx.beginPath(); ctx.arc(x, y, Math.max(0.01, r), 0, TAU); }
@@ -7,6 +8,8 @@ function glow(ctx, x, y, r, color) {
   g.addColorStop(0, color); g.addColorStop(1, 'rgba(0,0,0,0)');
   ctx.fillStyle = g; ctx.fillRect(x-r, y-r, r*2, r*2);
 }
+// The original sprite's two exhaust ports, for ships drawn as the standard one (ghosts).
+const STANDARD_PORTS = [{ x: -0.13, y: 0.38, width: 0.13 }, { x: 0.13, y: 0.38, width: 0.13 }];
 export function drawCourier(ctx, player, scene, keys, unit, img, time, scale = 0.66) {
   const s = unit * 1.6 * scale;
   const active = !scene?.lockedInStart && !scene?.onStartPad && !scene?.showLaunchHint && !scene?.paused;
@@ -15,11 +18,11 @@ export function drawCourier(ctx, player, scene, keys, unit, img, time, scale = 0
   ctx.save(); ctx.translate(player.x*unit, player.y*unit); ctx.rotate(player.angle + Math.PI/2);
   if (burn || boost) {
     const length = s * ((boost ? 1 : 0.32) + burn*0.25) * (0.94 + Math.sin(time*53)*0.06);
-    for (const side of [-1, 1]) {
-      const x = side*s*0.13, y = s*0.38;
+    for (const port of (player.standardShip ? STANDARD_PORTS : getCourierExhaustPorts())) {
+      const x = port.x*s, y = port.y*s, halfWidth = port.width*s/2;
       const g = ctx.createLinearGradient(x,y,x,y+length);
       g.addColorStop(0,'#edffff'); g.addColorStop(0.16,'#75e9ff'); g.addColorStop(0.65,'rgba(40,150,255,.6)'); g.addColorStop(1,'rgba(30,100,255,0)');
-      ctx.fillStyle=g; ctx.beginPath(); ctx.moveTo(x-s*0.065,y); ctx.quadraticCurveTo(x-s*0.09,y+length*0.4,x,y+length); ctx.quadraticCurveTo(x+s*0.09,y+length*0.4,x+s*0.065,y); ctx.fill();
+      ctx.fillStyle=g; ctx.beginPath(); ctx.moveTo(x-halfWidth,y); ctx.quadraticCurveTo(x-halfWidth*1.4,y+length*0.4,x,y+length); ctx.quadraticCurveTo(x+halfWidth*1.4,y+length*0.4,x+halfWidth,y); ctx.fill();
     }
   }
   if (active && scene?.fuel > 0 && keys.backStrength > 0) {
@@ -27,7 +30,8 @@ export function drawCourier(ctx, player, scene, keys, unit, img, time, scale = 0
     for(const side of [-1,1]) { ctx.beginPath(); ctx.moveTo(side*s*.31,s*.1); ctx.lineTo(side*s*.34,-s*.14); ctx.stroke(); }
   }
   ctx.shadowColor='#44bacc'; ctx.shadowBlur=unit*.12;
-  if(img) ctx.drawImage(img,-s/2,-s/2,s,s); else { ctx.fillStyle='#bcefff'; ctx.beginPath(); ctx.moveTo(0,-s*.46); ctx.lineTo(s*.35,s*.36); ctx.lineTo(0,s*.22); ctx.lineTo(-s*.35,s*.36); ctx.closePath(); ctx.fill(); }
+  const appearance = (player.standardShip ? null : getCourierAppearance()) || img;
+  if(appearance) ctx.drawImage(appearance,-s/2,-s/2,s,s); else { ctx.fillStyle='#bcefff'; ctx.beginPath(); ctx.moveTo(0,-s*.46); ctx.lineTo(s*.35,s*.36); ctx.lineTo(0,s*.22); ctx.lineTo(-s*.35,s*.36); ctx.closePath(); ctx.fill(); }
   ctx.shadowBlur=0;
   if (player.invulnTimer > 0) {
     ctx.strokeStyle=`rgba(255,183,105,${0.45+0.4*Math.sin(time*45)**2})`; ctx.lineWidth=2;

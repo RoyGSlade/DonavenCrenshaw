@@ -1,0 +1,147 @@
+{
+  "needle-wings-0": {
+    "paint": "albedo",
+    "detail": "pbr-render",
+    "contactShadow": true,
+    "layout": "fit"
+  },
+  "needle-body-0": {
+    "paint": "albedo",
+    "detail": "pbr-render",
+    "contactShadow": true,
+    "layout": "fit"
+  },
+  "needle-cockpit-0": {
+    "paint": "albedo",
+    "detail": "pbr-render",
+    "contactShadow": true,
+    "layout": "fit"
+  },
+  "needle-engines-0": {
+    "paint": "albedo",
+    "detail": "pbr-render",
+    "contactShadow": true,
+    "layout": "fit"
+  },
+  "manta-wings-0": {
+    "paint": "albedo",
+    "detail": "pbr-render",
+    "contactShadow": true,
+    "layout": "fit"
+  },
+  "manta-body-0": {
+    "paint": "albedo",
+    "detail": "pbr-render",
+    "contactShadow": true,
+    "layout": "fit"
+  },
+  "manta-cockpit-0": {
+    "paint": "albedo",
+    "detail": "pbr-render",
+    "contactShadow": true,
+    "layout": "fit"
+  },
+  "manta-engines-0": {
+    "paint": "albedo",
+    "detail": "pbr-render",
+    "contactShadow": true,
+    "layout": "fit"
+  },
+  "wisp-wings-0": {
+    "paint": "albedo",
+    "detail": "pbr-render",
+    "contactShadow": true,
+    "layout": "fit"
+  },
+  "wisp-body-0": {
+    "paint": "albedo",
+    "detail": "pbr-render",
+    "contactShadow": true,
+    "layout": "fit"
+  },
+  "wisp-cockpit-0": {
+    "paint": "albedo",
+    "detail": "pbr-render",
+    "contactShadow": true,
+    "layout": "fit"
+  },
+  "wisp-engines-0": {
+    "paint": "albedo",
+    "detail": "pbr-render",
+    "contactShadow": true,
+    "layout": "fit"
+  },
+  "manta-body-2": {
+    "paint": "albedo",
+    "detail": "pbr-render",
+    "contactShadow": true,
+    "layout": "fit"
+  },
+  "manta-engines-1": {
+    "paint": "albedo",
+    "detail": "pbr-render",
+    "contactShadow": true,
+    "layout": "fit",
+    "layer": "under-wing"
+  },
+  "manta-wings-1": {
+    "paint": "albedo",
+    "detail": "pbr-render",
+    "contactShadow": true,
+    "layout": "fit"
+  },
+  "manta-cockpit-2": {
+    "paint": "albedo",
+    "detail": "pbr-render",
+    "contactShadow": true,
+    "layout": "fit"
+  },
+  "needle-wings-1": {
+    "paint": "albedo",
+    "detail": "pbr-render",
+    "contactShadow": true,
+    "layout": "fit"
+  },
+  "needle-body-2": {
+    "paint": "albedo",
+    "detail": "pbr-render",
+    "contactShadow": true,
+    "layout": "fit"
+  },
+  "needle-cockpit-2": {
+    "paint": "albedo",
+    "detail": "pbr-render",
+    "contactShadow": true,
+    "layout": "fit"
+  },
+  "needle-engines-1": {
+    "paint": "albedo",
+    "detail": "pbr-render",
+    "contactShadow": true,
+    "layout": "fit"
+  },
+  "wisp-cockpit-2": {
+    "paint": "albedo",
+    "detail": "pbr-render",
+    "contactShadow": true,
+    "layout": "fit"
+  },
+  "wisp-body-2": {
+    "paint": "albedo",
+    "detail": "pbr-render",
+    "contactShadow": true,
+    "layout": "fit"
+  },
+  "wisp-wings-1": {
+    "paint": "albedo",
+    "detail": "pbr-render",
+    "contactShadow": true,
+    "layout": "fit"
+  },
+  "wisp-engines-1": {
+    "paint": "albedo",
+    "detail": "pbr-render",
+    "contactShadow": true,
+    "layout": "fit"
+  }
+}

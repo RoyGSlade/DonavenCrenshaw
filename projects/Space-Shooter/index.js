@@ -7,12 +7,14 @@ import { state } from './state.js';
 import { resizeCanvas } from './ui/graphics.js';
 import { loadAssets } from './assets.js';
 import { initHangarShip } from './ui/hangarShip.js';
+import { initShipGarage } from './ui/shipGarage.js';
 
 
 let isInitialized = false;
 
 export async function initStarmap(canvas) {
   if (isInitialized) return;
+  initShipGarage();
   initHangarShip();
 
   try {

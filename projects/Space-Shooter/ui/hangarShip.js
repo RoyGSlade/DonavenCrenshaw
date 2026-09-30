@@ -13,11 +13,15 @@ export function initHangarShip() {
   let angle = initialAngle;
   let pointer = null;
   let lastX = 0, lastY = 0, lastMove = 0;
+  let movement = 0;
   let velocity = 0;
   let frame = 0, lastFrame = 0;
   const reducedMotion = () => !!state.settings?.reducedMotion || motionPreference.matches;
-  const available = () => !document.hidden && !hangar.hidden && !hangar.classList.contains('hidden') && !state.ui.showSettingsOverlay;
+  const available = () => !document.hidden && !hangar.hidden && !hangar.classList.contains('hidden') && !state.ui.showSettingsOverlay && !document.getElementById('ship-garage')?.open;
   const paint = () => control.style.setProperty('--ship-angle', `${angle.toFixed(2)}deg`);
+  control.setAttribute('aria-label', 'Customize ship');
+  const hint = document.getElementById('hangar-ship-hint');
+  if (hint) hint.textContent = 'CLICK TO CUSTOMIZE · DRAG TO SPIN';
 
   function stopInertia() {
     if (frame) cancelAnimationFrame(frame);
@@ -46,6 +50,7 @@ export function initHangarShip() {
     event.preventDefault(); event.stopPropagation();
     stopInertia();
     pointer = event.pointerId;
+    movement = 0;
     lastX = event.clientX; lastY = event.clientY; lastMove = event.timeStamp;
     control.focus({ preventScroll: true });
     control.setPointerCapture(pointer);
@@ -54,6 +59,7 @@ export function initHangarShip() {
   control.addEventListener('pointermove', event => {
     if (event.pointerId !== pointer) return;
     event.preventDefault(); event.stopPropagation();
+    movement += Math.hypot(event.clientX-lastX,event.clientY-lastY);
     const delta = (event.clientX - lastX) * .7 + (event.clientY - lastY) * .22;
     const dt = Math.max(8, event.timeStamp - lastMove);
     angle = (angle + delta) % 360;
@@ -67,6 +73,7 @@ export function initHangarShip() {
     pointer = null;
     control.classList.remove('is-dragging');
     if (control.hasPointerCapture(event.pointerId)) control.releasePointerCapture(event.pointerId);
+    if (movement < 6 && available()) { stopInertia(); window.dispatchEvent(new Event('stardust:open-garage')); return; }
     if (!available() || reducedMotion() || event.timeStamp - lastMove > 100) return stopInertia();
     lastFrame = performance.now();
     frame = requestAnimationFrame(coast);
@@ -81,11 +88,11 @@ export function initHangarShip() {
     angle = event.key === 'Home' ? initialAngle : (angle + (['ArrowLeft','ArrowDown'].includes(event.key) ? -15 : 15)) % 360;
     paint();
   });
-  // Native button activation gives Enter/Space and assistive technology a turn action.
+  // Native button activation gives Enter/Space and assistive technology garage access.
   control.addEventListener('click', event => {
     event.stopPropagation();
     if (event.detail !== 0 || !available()) return;
-    cancelInteraction(); angle = (angle + 30) % 360; paint();
+    cancelInteraction(); window.dispatchEvent(new Event('stardust:open-garage'));
   });
   control.addEventListener('blur', cancelInteraction);
   window.addEventListener('blur', cancelInteraction);
