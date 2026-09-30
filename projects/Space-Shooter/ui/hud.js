@@ -4,6 +4,8 @@
  * minimap (bottom-left). Also keeps mission text updated and hides the old DOM fuel gauge.
  */
 import { state, config, MAX_LEVEL, SHARDS_PER_LEVEL } from '../state.js';
+import { minimapRect } from './flightHud.js';
+import { minimapZoom, minimapIconScale } from '../systems/flightSettings.js';
 
 // ---------------------------- DOM HUD --------------------------------
 const missionEl = document.getElementById('mission-tracker');
@@ -30,7 +32,9 @@ export function blinkFuel() {}
 export function updateHUD() {
   const showFlight = !!state.run && !state.ui.showStartOverlay && !state.ui.showEndOverlay;
   controlsEl?.classList.toggle('hidden', !showFlight || state.mode === 'arena');
-  briefingEl?.classList.toggle('hidden', !showFlight || state.mode === 'arena');
+  // The mission text and briefing are retired: the race intro names the track,
+  // and the HUD widgets carry shards, time and resources.
+  briefingEl?.classList.add('hidden');
   // This function is for the DOM mission tracker, which is hidden in arena mode.
   if (state.mode === 'arena') {
       if (missionEl) missionEl.classList.add('hidden');
@@ -38,7 +42,7 @@ export function updateHUD() {
       return;
   }
 
-  if (missionEl) missionEl.classList.toggle('hidden', !showFlight);
+  if (missionEl) missionEl.classList.add('hidden');
 
   const lv = state.run?.current;
   if (!lv) {
@@ -74,12 +78,11 @@ export function drawHUD(W, H) {
   if (!ctx) return;
 
   if (state.mode === 'roadmap') {
-    drawGlobalTimerTopCenter(ctx, W, H);
+    // Timer, hull, fuel and boost are HUD widgets now (ui/flightHud.js); the
+    // minimap is still drawn here, inside its widget's frame.
     const lv = state.run?.current;
-    if (lv) {
-        drawResourcesTopRight(ctx, W, H, lv.player, lv.fuel, lv.maxFuel);
-        if (state.ui.showMinimap) drawMinimapBottomLeft(ctx, W, H);
-    }
+    // Only inside its widget frame, which is hidden when the minimap is off.
+    if (lv && state.ui.showMinimap && !state.ui.countdownActive && minimapRect()) drawMinimapBottomLeft(ctx, W, H);
   } else if (state.mode === 'arena') {
     const arenaState = state.arena;
     if (arenaState) {
@@ -336,7 +339,7 @@ function drawGeneratorStatus(ctx, W, H, genOrArray) {
 export function drawMinimapBottomLeft(ctx, W, H) {
   const MM = config.MINIMAP;
   const lv = state.run?.current;
-  const r = getMinimapRect(W, H);
+  const r = minimapRect() || getMinimapRect(W, H);
 
   // Panel + clipping to keep drawing inside the panel (prevents fullscreen edge bleed)
   ctx.save();
@@ -352,13 +355,23 @@ export function drawMinimapBottomLeft(ctx, W, H) {
   }
 
   // The network grid, or a bigger track's own bounds (the weekly tracks).
-  const b = lv.track?.bounds || { minX: 0, minY: 0, maxX: config.GRID_W, maxY: config.GRID_H };
+  // Zoomed in (Settings), the map follows the ship instead of showing it all.
+  const full = lv.track?.bounds || { minX: 0, minY: 0, maxX: config.GRID_W, maxY: config.GRID_H };
+  const zoom = minimapZoom();
+  let b = full;
+  if (zoom > 1 && lv.player) {
+    const fw = full.maxX - full.minX, fh = full.maxY - full.minY;
+    const vw = Math.max(fw / zoom, (fh / zoom) * (r.w / r.h)), vh = vw * (r.h / r.w);
+    const cx = Math.min(Math.max(lv.player.x, full.minX + vw / 2), full.maxX - vw / 2);
+    const cy = Math.min(Math.max(lv.player.y, full.minY + vh / 2), full.maxY - vh / 2);
+    b = { minX: cx - vw / 2, minY: cy - vh / 2, maxX: cx + vw / 2, maxY: cy + vh / 2 };
+  }
   const bw = b.maxX - b.minX, bh = b.maxY - b.minY;
   const sx = Math.min(r.w / bw, r.h / bh);
   const sy = sx;
   const insetX = (r.w - bw * sx) / 2;
   const insetY = (r.h - bh * sy) / 2;
-  const icon = Math.max(3, r.w * 0.018);
+  const icon = Math.max(2, r.w * 0.018 * minimapIconScale());
 
   // world → minimap coords
   const toMini = (gx, gy) => ({
@@ -497,16 +510,7 @@ function drawMinimapNodes(ctx, lv, toMini, icon) {
     ctx.stroke();
   }
 
-  // Gate (ring)
-  for (const n of nodes) {
-    if (typeOf(n) !== 'gate') continue;
-    const { x, y } = toMini(n.x + 0.5, n.y + 0.5);
-    ctx.lineWidth = Math.max(1, icon * MM.GATE_THICKNESS);
-    ctx.strokeStyle = lv.secretReady ? '#b6a5eb' : '#81e6df';
-    ctx.beginPath();
-    ctx.arc(x, y, icon * MM.GATE_RADIUS, 0, Math.PI * 2);
-    ctx.stroke();
-  }
+  // No portal ring: the finish is the start/finish line, drawn with the track.
 }
 
 function drawCenteredText(ctx, r, text) {

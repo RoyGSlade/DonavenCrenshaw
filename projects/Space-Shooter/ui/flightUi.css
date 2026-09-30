@@ -1,0 +1,146 @@
+/* ===== Flight UI layer (ui/flightUi.js): HUD widgets, touch pad, race intro, layout editor =====
+   Placeholders are drawn in CSS; a matching art/ui/*.png (listed in its manifest) replaces each. */
+#starmap-touch-controls, #mission-tracker, #flight-briefing { display: none !important; }
+.flight-ui { position: fixed; inset: 0; z-index: 24; pointer-events: none; font-family: Consolas, ui-monospace, monospace; color: #dff6ff; }
+.fx-widget { position: fixed; width: max-content; white-space: nowrap; left: 50%; top: 50%; transform: translate(-50%, -50%) scale(var(--fx-s, 1)); transform-origin: center; pointer-events: auto; display: none; user-select: none; -webkit-user-select: none; touch-action: none; -webkit-tap-highlight-color: transparent; }
+.fx-widget.has-art { background-position: center; background-size: contain; background-repeat: no-repeat; }
+
+/* When things show: HUD in flight (not during the flythrough), touch pad on touch
+   screens in flight, everything in the layout editor. */
+body.fx-flying:not(.fx-intro-fly) .fx-gauges,
+body.fx-flying:not(.fx-intro-fly) .fx-topbar,
+body.fx-flying:not(.fx-intro-fly) .fx-settings { display: flex; }
+body.fx-flying:not(.fx-intro-on) .fx-minimap:not(.is-off) { display: block; }
+body.fx-flying.fx-touch-on:not(.fx-intro-fly) .fx-touch:not(.is-off) { display: flex; }
+body.fx-intro-on .fx-gauges, body.fx-intro-on .fx-topbar, body.fx-intro-on .fx-settings { visibility: hidden; }
+body.fx-editing .fx-widget:not(.fx-unplaced) { display: flex !important; visibility: visible !important; outline: 1px dashed #81e6dfaa; outline-offset: 4px; cursor: grab; }
+body.fx-editing:not(.fx-touch-on) .fx-touch { display: none !important; }
+body.fx-editing .fx-minimap { display: block !important; background: #0714219c; }
+body.fx-editing .fx-widget.fx-selected { outline: 2px solid #ffc47d; box-shadow: 0 0 24px #ffc47d55; }
+.fx-unplaced { display: none !important; }
+
+/* Gauges */
+.fx-gauges { align-items: flex-end; gap: 10px; padding: 8px 12px 8px 8px; border: 1px solid #81e6df33; border-radius: 10px; background: linear-gradient(180deg, #0b1622dd, #07101acc); box-shadow: 0 0 0 1px #00000055, 0 8px 24px #0006; }
+.fx-dial { position: relative; width: 78px; height: 78px; }
+.fx-dial svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.fx-dial.has-art { background-size: contain; background-position: center; background-repeat: no-repeat; }
+.fx-dial.has-art svg { display: none; } /* the art carries its own scale */
+.fx-dial.has-art .fx-dial-value { top: 44%; }
+.fx-dial.has-art .fx-dial-label { bottom: -6px; }
+.fx-dial-track { fill: none; stroke: #1c3444; stroke-width: 8; stroke-linecap: round; }
+.fx-dial-fill { fill: none; stroke: #81e6df; stroke-width: 8; stroke-linecap: round; filter: drop-shadow(0 0 3px #81e6dfaa); }
+.fx-dial-speed .fx-dial-fill { stroke: #a9dcff; }
+.fx-dial.is-low .fx-dial-fill { stroke: #ff7a5c; filter: drop-shadow(0 0 4px #ff7a5c); }
+.fx-dial-needle { position: absolute; left: 50%; bottom: 50%; width: 3px; height: 31px; margin-left: -1.5px; border-radius: 2px; background: linear-gradient(#fff, #81e6df); transform-origin: 50% 100%; transform: rotate(var(--turn, -120deg)); box-shadow: 0 0 4px #81e6df; }
+.fx-dial-needle.has-art { width: 12px; margin-left: -6px; background-color: transparent; box-shadow: none; background-size: contain; background-repeat: no-repeat; }
+.fx-dial-value { position: absolute; left: 0; right: 0; top: 54%; text-align: center; font-size: 14px; font-weight: 700; color: #fff; }
+.fx-dial-label { position: absolute; left: 0; right: 0; bottom: -2px; text-align: center; font-size: 9px; letter-spacing: .14em; color: #8fb6c8; }
+.fx-hull { display: flex; flex-direction: column; align-items: center; gap: 4px; height: 78px; }
+.fx-hull-label, .fx-boost-label { font-size: 9px; letter-spacing: .14em; color: #8fb6c8; }
+.fx-hull-bar { position: relative; flex: 1; width: 16px; border: 1px solid #81e6df66; border-radius: 8px; background: #0a1824; overflow: hidden; }
+.fx-hull-bar.has-art { width: 22px; border: 0; background-color: transparent; background-size: 100% 100%; overflow: visible; }
+.fx-hull-bar.has-art .fx-hull-fill { left: 29%; right: 29%; bottom: 5%; height: calc(var(--fill, 100%) * .82); border-radius: 4px; }
+.fx-hull-fill { position: absolute; left: 0; right: 0; bottom: 0; height: var(--fill, 100%); background: linear-gradient(0deg, #3ec8b8, #b5fff4); box-shadow: 0 0 8px #81e6df; }
+.fx-hull.is-low .fx-hull-fill { background: linear-gradient(0deg, #ff5a4e, #ffb38a); }
+.fx-boostmeter { display: flex; flex-direction: column; gap: 5px; height: 78px; justify-content: center; }
+.fx-pips { display: flex; gap: 5px; }
+.fx-pips span { width: 18px; height: 20px; clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%); background: #1b3344; }
+.fx-pips span.is-full { background: linear-gradient(135deg, #e9ffff, #81e6df); box-shadow: 0 0 6px #81e6df; }
+.fx-pips span.has-art { clip-path: none; background-color: transparent; background-size: contain; background-repeat: no-repeat; box-shadow: none; }
+.fx-refill { width: 64px; height: 5px; border-radius: 3px; background: #1b3344; overflow: hidden; }
+.fx-refill div { width: var(--fill, 0%); height: 100%; background: #81e6df; }
+.fx-flux { font-size: 9px; letter-spacing: .1em; color: #ffc47d; }
+
+/* Top bar */
+.fx-topbar { gap: 0; padding: 6px 10px; border: 1px solid #81e6df3a; border-top-color: #81e6df88; border-radius: 8px; background: #0b1622dd; box-shadow: 0 8px 24px #0006; }
+.fx-topbar.has-art { display: grid; grid-template-columns: 1fr 1fr 1fr; width: 470px; height: 56px; align-items: center; border: 0; background-color: transparent; background-size: 100% 100%; box-shadow: none; padding: 0 52px; }
+.fx-topbar.has-art .fx-tb-cell { border-left: 0; padding: 0 6px; }
+body.fx-flying:not(.fx-intro-fly) .fx-topbar.has-art { display: grid; }
+.fx-tb-cell { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 0 16px; border-left: 1px solid #81e6df2a; }
+.fx-tb-cell:first-child { border-left: 0; }
+.fx-tb-label { font-size: 9px; letter-spacing: .16em; color: #8fb6c8; }
+.fx-tb-best { font-size: 15px; color: #ffd6a3; font-variant-numeric: tabular-nums; }
+.fx-tb-time { font-size: 21px; font-weight: 700; color: #fff; font-variant-numeric: tabular-nums; min-width: 7.2ch; text-align: center; }
+.fx-tb-shards { display: flex; gap: 6px; min-height: 18px; align-items: center; }
+.fx-tb-shards span { width: 11px; height: 11px; transform: rotate(45deg); border: 1.5px solid #81e6df88; }
+.fx-tb-shards span.is-full { background: linear-gradient(135deg, #f0ffff, #bca5ff); border-color: #e6f5ff; box-shadow: 0 0 8px #bca5ffaa; }
+.fx-topbar.has-art .fx-tb-shards { gap: 2px; }
+.fx-tb-shards span.has-art { transform: none; border: 0; width: 11px; height: 14px; background-size: contain; background-repeat: no-repeat; box-shadow: none; }
+
+/* Settings gear, minimap frame */
+.fx-settings { align-items: center; justify-content: center; width: 44px; height: 44px; padding: 0; border: 1px solid #81e6df66; border-radius: 12px; background: #0b1622dd; color: #bff4ff; font-size: 24px; line-height: 1; cursor: pointer; }
+.fx-settings.has-art { border: 0; background-color: transparent; }
+.fx-settings.has-art span { visibility: hidden; }
+.fx-minimap { width: 210px; height: 132px; border: 1px solid #365565; border-radius: 6px; pointer-events: none; }
+body.fx-touch-device .fx-minimap { width: 170px; height: 110px; }
+
+/* Touch pad */
+.fx-stick { width: 156px; height: 156px; align-items: center; justify-content: center; }
+.fx-stick-base { position: absolute; inset: 0; border-radius: 50%; border: 2px solid #81e6df88; background: radial-gradient(circle, #0b1622cc 55%, #12314466); box-shadow: inset 0 0 22px #81e6df22, 0 0 18px #0008; background-size: contain; background-repeat: no-repeat; }
+.fx-stick-base.has-art { border: 0; box-shadow: none; background-color: transparent; }
+.fx-stick-base.has-art .fx-stick-mark { display: none; }
+.fx-stick-mark { position: absolute; width: 0; height: 0; border: 7px solid transparent; }
+.fx-stick-mark.fx-up { top: 8px; left: 50%; margin-left: -7px; border-bottom-color: #ffc47d; }
+.fx-stick-mark.fx-down { bottom: 8px; left: 50%; margin-left: -7px; border-top-color: #81e6df99; }
+.fx-stick-mark.fx-left { left: 8px; top: 50%; margin-top: -7px; border-right-color: #81e6df99; }
+.fx-stick-mark.fx-right { right: 8px; top: 50%; margin-top: -7px; border-left-color: #81e6df99; }
+.fx-stick-knob { position: relative; width: 66px; height: 66px; border-radius: 50%; background: radial-gradient(circle at 40% 35%, #d9fbff, #4aa9b8 55%, #1a4658); border: 2px solid #b5fff4; box-shadow: 0 4px 14px #000a, 0 0 12px #81e6df66; transition: transform .08s ease-out; background-size: contain; background-repeat: no-repeat; }
+.fx-stick-knob.has-art { border: 0; background-color: transparent; box-shadow: none; }
+.fx-stick.is-held .fx-stick-knob { transition: none; }
+.fx-wheel { width: 176px; height: 176px; align-items: center; justify-content: center; }
+.fx-wheel.is-off { display: none !important; }
+.fx-wheel-rim { position: absolute; inset: 0; border-radius: 50%; border: 12px solid #1d4a5c; box-shadow: inset 0 0 0 2px #81e6df88, 0 0 0 2px #81e6df66, 0 0 20px #0009; background-size: contain; background-repeat: no-repeat; }
+.fx-wheel-rim.has-art { border: 0; box-shadow: none; background-color: transparent; }
+.fx-wheel-rim.has-art span { display: none; }
+.fx-wheel-grip { position: absolute; top: 50%; width: 26px; height: 54px; margin-top: -27px; border-radius: 10px; background: #2c6478; border: 1px solid #81e6dfaa; }
+.fx-wheel-grip.fx-gl { left: -19px; }
+.fx-wheel-grip.fx-gr { right: -19px; }
+.fx-wheel-mark { position: absolute; top: -12px; left: 50%; width: 10px; height: 14px; margin-left: -5px; border-radius: 3px; background: #ff9a4a; box-shadow: 0 0 8px #ff9a4a; }
+.fx-wheel-hub { position: absolute; left: 50%; top: 50%; width: 46px; height: 46px; margin: -23px 0 0 -23px; border-radius: 50%; background: #0b1622; border: 2px solid #81e6df88; }
+.fx-wheel.is-held .fx-wheel-rim { box-shadow: inset 0 0 0 2px #b5fff4, 0 0 0 2px #b5fff4, 0 0 26px #81e6df66; }
+.fx-btn { width: 78px; height: 78px; border-radius: 50%; padding: 0; align-items: center; justify-content: center; flex-direction: column; border: 2px solid #81e6df88; background: radial-gradient(circle, #133247, #0b1622); color: #e6f5ff; font: 800 11px/1 Saira, system-ui, sans-serif; letter-spacing: .1em; }
+.fx-btn.fx-boost { border-color: #ffb86b; color: #ffd6a3; }
+.fx-btn.has-art { border: 0; background-color: transparent; }
+.fx-btn.has-art .fx-btn-label { position: absolute; bottom: -14px; font-size: 9px; opacity: .8; }
+.fx-btn.is-held { box-shadow: 0 0 0 3px #b5fff4, 0 0 22px #81e6dfaa; filter: brightness(1.25); }
+.fx-btn.has-art.is-held { box-shadow: none; }
+.fx-btn-ring { position: absolute; inset: -6px; border-radius: 50%; opacity: 0; background-size: contain; background-repeat: no-repeat; background-position: center; pointer-events: none; transition: opacity .08s; }
+.fx-btn.is-held .fx-btn-ring.has-art { opacity: 1; }
+
+/* Race intro */
+.fx-intro { position: fixed; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 28px; pointer-events: none; }
+.fx-intro.is-on { display: flex; }
+.fx-intro.is-flying { pointer-events: auto; cursor: pointer; }
+.fx-intro-card { min-width: min(560px, 86vw); padding: 22px 44px 20px; text-align: center; border: 1px solid #81e6dfaa; outline: 1px solid #81e6df44; outline-offset: 5px; background: linear-gradient(180deg, #0b1622ee, #071019e6); box-shadow: 0 0 40px #81e6df22; animation: fx-card-in .5s ease-out both; background-size: 100% 100%; background-repeat: no-repeat; }
+.fx-intro-card.has-art { border: 0; outline: 0; background-color: transparent; box-shadow: none; padding: 34px 110px 32px; }
+@media (max-height: 500px) { .fx-intro-card.has-art { padding: 26px 90px 24px; } }
+.fx-intro-card.has-art .fx-intro-kicker { margin-bottom: 10px; }
+.fx-intro-card.has-art .fx-intro-sub { margin-top: 12px; }
+.fx-intro-kicker { margin: 0 0 6px; font-size: 11px; letter-spacing: .28em; color: #ffc47d; }
+.fx-intro-title { margin: 0; font: 800 clamp(28px, 6vw, 54px)/1 Saira, system-ui, sans-serif; letter-spacing: .06em; text-transform: uppercase; color: #f2fbff; text-shadow: 0 0 18px #81e6df66; }
+.fx-intro-sub { margin: 8px 0 0; font-size: 12px; letter-spacing: .2em; text-transform: uppercase; color: #a9dcff; }
+.fx-intro-call { min-height: 80px; display: flex; align-items: center; justify-content: center; padding: 0 60px; background-position: center; background-size: contain; background-repeat: no-repeat; }
+.fx-intro-call span { font: 900 clamp(36px, min(9vw, 14vh), 88px)/1 Saira, system-ui, sans-serif; letter-spacing: .12em; color: #fff; text-shadow: 0 0 22px #81e6df, 0 0 4px #000; }
+.fx-intro-call[data-word=set] span { color: #ffd6a3; text-shadow: 0 0 22px #ff9a4a, 0 0 4px #000; }
+.fx-intro-call[data-word=go] span { color: #b5fff4; text-shadow: 0 0 30px #81e6df, 0 0 4px #000; }
+.fx-intro-call.pop span { display: inline-block; animation: fx-pop .45s cubic-bezier(.2, 1.6, .4, 1) both; }
+.fx-intro-skip { margin: 0; font-size: 11px; letter-spacing: .14em; color: #8fb6c8; }
+body.fx-intro-fly .fx-intro-call { display: none; }
+@keyframes fx-pop { from { transform: scale(1.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes fx-card-in { from { transform: translateY(-12px); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (max-height: 500px) { .fx-intro { gap: 12px; } .fx-intro-card { padding: 12px 26px; } .fx-intro-call { min-height: 56px; } }
+
+/* Flight settings (pause panel) and the layout editor bar */
+.fx-settings-panel { margin: 10px 0 14px; padding: 10px 12px; border: 1px solid #81e6df2e; border-radius: 8px; background: #07101a99; text-align: left; }
+.fx-settings-panel .eyebrow { margin: 0 0 6px !important; }
+.fx-set-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 5px 0; font-size: 13px; }
+.fx-set-row small { color: #8fb6c8; }
+.fx-set-row button { min-width: 62px; padding: 6px 10px; }
+.fx-stepper { display: flex; align-items: center; gap: 6px; }
+.fx-stepper button { min-width: 36px; padding: 6px; }
+.fx-stepper output { min-width: 44px; text-align: center; font-variant-numeric: tabular-nums; }
+.fx-edit-bar { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); display: none; align-items: center; gap: 8px; padding: 10px 12px; border: 1px solid #ffc47d88; border-radius: 10px; background: #0b1622f2; pointer-events: auto; box-shadow: 0 10px 40px #000c; z-index: 30; }
+body.fx-editing .fx-edit-bar { display: flex; }
+.fx-edit-hint { font-size: 12px; color: #ffd6a3; margin-right: 4px; }
+.fx-edit-bar button { padding: 8px 12px; min-width: 40px; }
+@media (max-width: 560px) { .fx-edit-bar { flex-wrap: wrap; justify-content: center; width: 86vw; } }

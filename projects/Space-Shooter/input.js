@@ -5,6 +5,9 @@ import { toggleFullscreen } from "./ui/graphics.js";
 import { getTiltAxis } from "./systems/tilt.js";
 import { createGamepadReader, gamepadMapping } from "./systems/gamepad.js";
 import { toast } from "./ui/hud.js";
+import { touchInput } from "./ui/touchPad.js";
+import { wantsAutoFire } from "./systems/autofire.js";
+import { flightSettings } from "./systems/flightSettings.js";
 export { gamepadMapping };
 const gamepad = createGamepadReader({
   stickDeadzone: config.GAMEPAD?.STICK_DEADZONE ?? 0.2,
@@ -337,6 +340,29 @@ export function pumpInput() {
     }
   }
 
+  // The touch joystick, wheel, Brake and Boost (ui/touchPad.js), merged with the rest.
+  if (state.input.touch.active) {
+    const t = touchInput;
+    if (t.thrust > out.thrustStrength) out.thrustStrength = t.thrust;
+    if (t.back > (out.backStrength || 0)) out.backStrength = t.back;
+    out.thrust = out.thrust || t.thrust > 0;
+    out.thrustBack = out.thrustBack || t.back > 0;
+    if (Math.abs(t.strafe) > 0.01) {
+      out.strafeLeft = t.strafe < 0;
+      out.strafeRight = t.strafe > 0;
+      out.strafeStrength = Math.abs(t.strafe);
+    }
+    if (Math.abs(t.turn) > 0.001 && !state.input.touch.useTilt) out.turnStrength = t.turn;
+    out.brake = out.brake || t.brake;
+    out.boost = out.boost || t.boost;
+  }
+
+  // Auto fire (Settings): hold fire while something breakable is ahead of the nose.
+  if (!out.shoot && flightSettings().autoFire && state.mode === "roadmap") {
+    const scene = state.run?.current;
+    out.shoot = wantsAutoFire(scene, scene?.player);
+  }
+
   // Launch edge
   if (state.settings.invertThrustAxis) {
     const thrust = out.thrust;
@@ -346,7 +372,8 @@ export function pumpInput() {
     out.thrustStrength = out.backStrength;
     out.backStrength = strength;
   }
-  out.launch = kb._launchEdge || touchLaunchEdge || !!gp?.launchEdge;
+  out.launch = kb._launchEdge || touchLaunchEdge || touchInput.launchEdge || !!gp?.launchEdge;
   touchLaunchEdge = false;
+  touchInput.launchEdge = false;
   kb._launchEdge = false; // consume edge
 }

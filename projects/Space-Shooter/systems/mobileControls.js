@@ -1,29 +1,57 @@
 /** Shared phone sensors and fullscreen, independent of either game simulation. */
-const clamp = (value, lo, hi) => Math.max(lo, Math.min(hi, value));
-const angleDelta = (value, origin) => ((value - origin + 540) % 360) - 180;
+import {
+  DEFAULT_TILT_CONFIG,
+  createGravitySignResolver,
+  createSteeringProcessor,
+  gravityFromOrientation,
+  normalizeScreenAngle,
+  steeringFromGravity,
+  steeringResponse,
+} from "./tiltSteering.js";
 
-export function computeTurnAxis(degrees) {
-  if (!Number.isFinite(degrees)) return 0;
-  const amount = Math.max(0, Math.abs(degrees) - 2.5) / (24 - 2.5);
-  return Math.sign(degrees) * Math.pow(clamp(amount, 0, 1), 1.35);
+// Tuning lives in tilt-config.json (see docs/stardust/TILT.md); defaults mirror it.
+const TILT_CONFIG_URL = new URL("./tilt-config.json", import.meta.url);
+const SOURCE_FRESH_MS = 250;   // a sensor stream older than this is not "live"
+const STALE_AXIS_MS = 350;     // no readings for this long → steering returns to 0
+const FIRST_READING_MS = 2500; // no readings at all after permission → report unavailable
+
+/** Degrees away from neutral → steering in [-1, 1] (dead zone, expo curve, full lock). */
+export function computeTurnAxis(degrees, config = DEFAULT_TILT_CONFIG) {
+  return steeringResponse(degrees, config);
 }
 
+/**
+ * Steering roll (degrees, + = right) of the screen relative to gravity for a
+ * DeviceOrientationEvent-like {alpha, beta, gamma}. Independent of how far back the
+ * phone is held; null for incomplete readings.
+ */
 export function screenTiltDegrees(event, screenAngle = 0) {
-  if (!Number.isFinite(event?.beta) || !Number.isFinite(event?.gamma)) return null;
-  const radians = screenAngle * Math.PI / 180;
-  return event.gamma * Math.cos(radians) + event.beta * Math.sin(radians);
+  const up = gravityFromOrientation(event?.alpha, event?.beta, event?.gamma);
+  return up ? steeringFromGravity(up, screenAngle).roll : null;
 }
 
-export function createTiltController({ onChange = () => {}, windowTarget = globalThis.window } = {}) {
+export function createTiltController({ onChange = () => {}, windowTarget = globalThis.window, config } = {}) {
   const win = windowTarget;
+  const processor = createSteeringProcessor(config ?? DEFAULT_TILT_CONFIG);
+  const gravitySign = createGravitySignResolver();
   let state = { enabled: false, status: "idle", message: "Tilt steering is off." };
-  let axis = 0, neutral = null, lastSample = 0, lastAngle = null;
+  let lastSample = 0, lastMotion = -Infinity, lastOrientation = -Infinity;
+  let orientationUp = null, source = null, wasCalibrating = false;
   let generation = 0, listening = false, timer = null, resolveEnable = null;
   const now = () => win?.performance?.now?.() ?? Date.now();
+  const screenAngle = () => normalizeScreenAngle(win?.screen?.orientation?.angle ?? win?.orientation ?? 0);
   const announce = (status, message, enabled = false) => {
     state = { status, message, enabled };
     onChange({ ...state });
   };
+  // Hand-tuned values from tilt-config.json, fetched without blocking the permission gesture.
+  if (config === undefined && typeof win?.fetch === "function") {
+    Promise.resolve()
+      .then(() => win.fetch(TILT_CONFIG_URL))
+      .then(response => (response?.ok ? response.json() : null))
+      .then(json => { if (json) processor.setConfig(json); })
+      .catch(() => {});
+  }
   function finishPending(result) {
     if (timer !== null) win.clearTimeout(timer);
     timer = null;
@@ -33,45 +61,68 @@ export function createTiltController({ onChange = () => {}, windowTarget = globa
   }
   function removeListeners() {
     if (!listening) return;
-    win.removeEventListener("deviceorientation", sample);
+    win.removeEventListener("devicemotion", onMotion);
+    win.removeEventListener("deviceorientation", onOrientation);
     win.removeEventListener("blur", suspend);
     win.document?.removeEventListener("visibilitychange", visibility);
     listening = false;
   }
+  /** Blur, hidden tab or game pause: steering to 0 and filter history dropped; neutral kept. */
   function suspend() {
-    axis = 0;
-    neutral = null;
+    processor.reset();
     lastSample = 0;
   }
   function visibility() {
     if (win.document?.hidden) suspend();
   }
-  function sample(event) {
-    if (win.document?.hidden) return;
-    const screenAngle = win.screen?.orientation?.angle ?? win.orientation ?? 0;
-    const value = screenTiltDegrees(event, screenAngle);
-    if (value === null) return;
-    const time = now();
-    if (neutral === null || screenAngle !== lastAngle) {
-      neutral = value;
-      axis = 0;
-    } else {
-      const target = computeTurnAxis(angleDelta(value, neutral));
-      const dt = clamp((time - lastSample) / 1000, 1 / 120, 0.1);
-      axis += (target - axis) * (1 - Math.exp(-dt / 0.065));
-    }
-    lastAngle = screenAngle;
+  function accept(up, kind, time) {
+    source = kind;
+    processor.update(up, screenAngle(), time);
     lastSample = time;
     if (!state.enabled) {
-      announce("enabled", "Tilt on. Hold comfortably; Recenter sets straight ahead.", true);
+      announce("enabled", "Tilt on. Hold steady a moment while straight ahead is set.", true);
       finishPending(true);
+    } else if (wasCalibrating && !processor.calibrating) {
+      announce("enabled", "Tilt on. Turn the phone like a wheel; Recenter sets straight ahead.", true);
     }
+    wasCalibrating = processor.calibrating;
+  }
+  const motionIsLive = time => gravitySign.sign !== 0 && time - lastMotion <= SOURCE_FRESH_MS;
+  const orientationIsLive = time => time - lastOrientation <= SOURCE_FRESH_MS;
+  function onOrientation(event) {
+    if (win.document?.hidden) return;
+    const up = gravityFromOrientation(event?.alpha, event?.beta, event?.gamma);
+    if (!up) return;
+    const time = now();
+    orientationUp = up;
+    lastOrientation = time;
+    // Orientation is the fallback unless the config prefers it or motion is not flowing.
+    if (processor.config.PREFERRED_SOURCE === "motion" && motionIsLive(time)) return;
+    accept(up, "orientation", time);
+  }
+  function onMotion(event) {
+    if (win.document?.hidden) return;
+    const g = event?.accelerationIncludingGravity;
+    if (!g || !Number.isFinite(g.x) || !Number.isFinite(g.y) || !Number.isFinite(g.z)) return;
+    const length = Math.hypot(g.x, g.y, g.z);
+    if (!(length > 1e-3)) return;
+    const unit = { x: g.x / length, y: g.y / length, z: g.z / length };
+    const time = now();
+    // Platforms disagree on this vector's sign; resolve it before trusting it.
+    const sign = gravitySign.push(unit, orientationIsLive(time) ? orientationUp : null, screenAngle());
+    if (!sign) return;
+    lastMotion = time;
+    if (processor.config.PREFERRED_SOURCE === "orientation" && orientationIsLive(time)) return;
+    accept({ x: unit.x * sign, y: unit.y * sign, z: unit.z * sign }, "motion", time);
   }
   function disable() {
     generation++;
     removeListeners();
     finishPending(false);
-    suspend();
+    processor.hardReset();
+    gravitySign.reset();
+    lastSample = 0; lastMotion = -Infinity; lastOrientation = -Infinity;
+    orientationUp = null; source = null; wasCalibrating = false;
     announce("idle", "Tilt steering is off.");
   }
   async function enable() {
@@ -82,52 +133,71 @@ export function createTiltController({ onChange = () => {}, windowTarget = globa
       announce("unavailable", "Tilt needs a trusted HTTPS game link. Use the steering buttons on this Wi-Fi link.");
       return false;
     }
-    if (!win.DeviceOrientationEvent) {
+    if (!win.DeviceOrientationEvent && !win.DeviceMotionEvent) {
       announce("unavailable", "This browser has no motion sensors. Use the steering buttons.");
       return false;
     }
     announce("requesting", "Allow motion access to steer by tilting your phone.");
-    try {
-      // Call from the button gesture before any asynchronous work: required on iOS.
-      if (typeof win.DeviceOrientationEvent.requestPermission === "function") {
-        const permission = await win.DeviceOrientationEvent.requestPermission();
-        if (current !== generation) return false;
-        if (permission !== "granted") {
-          announce("denied", "Motion access was denied. Steering buttons remain available.");
-          return false;
-        }
+    // iOS 13+: both prompts must start synchronously inside the button gesture, before any await.
+    const requests = [win.DeviceOrientationEvent, win.DeviceMotionEvent]
+      .filter(api => typeof api?.requestPermission === "function")
+      .map(api => {
+        try { return Promise.resolve(api.requestPermission()); }
+        catch (error) { return Promise.reject(error); }
+      });
+    if (requests.length) {
+      const results = await Promise.allSettled(requests);
+      if (current !== generation) return false;
+      if (!results.some(r => r.status === "fulfilled" && r.value === "granted")) {
+        announce("denied", results.every(r => r.status === "rejected")
+          ? "Motion access failed. Tap Enable tilt to try again."
+          : "Motion access was denied. Steering buttons remain available.");
+        return false;
       }
-    } catch {
-      if (current === generation) announce("denied", "Motion access failed. Tap Enable tilt to try again.");
-      return false;
     }
     if (current !== generation) return false;
     announce("calibrating", "Hold the phone comfortably while tilt calibrates…");
     const ready = new Promise(resolve => { resolveEnable = resolve; });
     listening = true;
-    win.addEventListener("deviceorientation", sample);
+    win.addEventListener("devicemotion", onMotion);
+    win.addEventListener("deviceorientation", onOrientation);
     win.addEventListener("blur", suspend);
     win.document?.addEventListener("visibilitychange", visibility);
+    processor.calibrate(now());
+    wasCalibrating = true;
     timer = win.setTimeout(() => {
       removeListeners();
       suspend();
       announce("unavailable", "No motion readings arrived. Check motion permission or use steering buttons.");
       finishPending(false);
-    }, 2500);
+    }, FIRST_READING_MS);
     return ready;
   }
   return {
     enable, disable, suspend,
+    /** Average the next ~0.3 s of steady readings into straight ahead (clamped to ±25°). */
     calibrate() {
       if (!state.enabled) return false;
-      suspend();
-      announce("enabled", "Hold the phone comfortably; straight ahead resets on the next reading.", true);
+      processor.calibrate(now());
+      wasCalibrating = true;
+      announce("enabled", "Recentering: hold the phone where straight ahead should be.", true);
       return true;
     },
     getAxis() {
-      return state.enabled && !win.document?.hidden && now() - lastSample <= 350 ? axis : 0;
+      return state.enabled && !win.document?.hidden && now() - lastSample <= STALE_AXIS_MS ? processor.axis : 0;
     },
     getState: () => ({ ...state }),
+    /** Live numbers for on-device tuning; not used by gameplay. */
+    getDebug: () => ({
+      source,
+      screenAngle: screenAngle(),
+      roll: processor.roll,
+      neutral: processor.neutral,
+      confidence: processor.confidence,
+      axis: processor.axis,
+      calibrating: processor.calibrating,
+      motionSign: gravitySign.sign,
+    }),
   };
 }
 

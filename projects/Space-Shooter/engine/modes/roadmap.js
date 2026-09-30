@@ -8,7 +8,9 @@ import { updateHUD, toast } from "../../ui/hud.js";
 import { openEndOverlay } from "../../ui/overlays.js";
 import { runtimeConfig } from "../../runtime-config.js";
 import { stopEngine } from "../core.js";
-import { handlePlayerMovement, railRules } from "../systems/movement.js";
+import { railRules } from "../systems/movement.js";
+import { handleShipMovement } from "../shipMovement.js";
+import { PLAYER_HULL } from "../hull.js";
 import { labHooks } from "../../systems/lab.js";
 import { updateParticles } from "../systems/particles.js";
 import { checkCollisionsAndInteractions } from "../collisions/roadmap.js";
@@ -36,6 +38,7 @@ import {
   updateTrackProgress,
   constrainToTrack,
   isLapReady,
+  crossedFinishLine,
 } from "../track.js";
 import { clearCameraPan } from "../systems/camera.js";
 
@@ -71,7 +74,8 @@ export function updateRoadmap(dt) {
     updateHazards(lv, step);
     if (!lv.lockedInStart) applyGravity(lv.player, lv.gravityWells, step);
     const previousPosition = { x: lv.player.x, y: lv.player.y };
-    handlePlayerMovement(step, lv, lv.player, {
+    // The ship's real body (engine/hull.js) meets the rails, rocks and shots.
+    handleShipMovement(step, lv, lv.player, {
       onFuelUse: (amount) => {
         // FUEL_BURN_SCALE is 1 outside the playtest lab.
         lv.fuel = Math.max(0, lv.fuel - amount * (config.FUEL_BURN_SCALE ?? 1));
@@ -94,10 +98,15 @@ export function updateRoadmap(dt) {
         lv.track,
         lv.player,
         previousPosition,
-        config.PLAYER_RADIUS,
+        PLAYER_HULL,
         railRules(lv.player),
       );
       updateTrackProgress(lv, previousPosition);
+      // No portal: a full lap ends by crossing the start/finish line forward.
+      if (isLapReady(lv) && crossedFinishLine(lv.track, previousPosition, lv.player) !== null) {
+        tryFinishLevel();
+        if (state.run?.current !== lv || lv.completed) return;
+      }
       updateDrones(lv, lv.player, state.gfx.projectiles, step);
       handleShooting(step, lv.player);
       handleOverheat(step, lv.player);
@@ -246,7 +255,7 @@ export function tryFinishLevel() {
     ).length;
     toast(
       !isLapReady(lv)
-        ? "Complete the marked lap before returning to the portal."
+        ? "Complete the whole lap before crossing the finish line."
         : needed
           ? `Gate needs ${needed} more corner signal${needed === 1 ? "" : "s"}.`
           : "Refuel before using the gate.",

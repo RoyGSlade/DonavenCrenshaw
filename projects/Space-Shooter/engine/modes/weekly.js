@@ -32,22 +32,9 @@ let session = null;
 const ghosts = new Map();
 let ghostsVisible = true;
 
-function storage() {
-  try { return window.localStorage; } catch { return null; }
-}
-const bestKey = (event) => `stardust.weekly.${event.id}.v${event.version}.best`;
-
-/** This browser's best on an event: { ms, log } or null. */
-export function readLocalBest(event, store = storage()) {
-  try {
-    const raw = store?.getItem(bestKey(event));
-    const best = raw ? JSON.parse(raw) : null;
-    return best && Number.isFinite(best.ms) && typeof best.log === "string" ? best : null;
-  } catch { return null; }
-}
-function saveLocalBest(event, best, store = storage()) {
-  try { store?.setItem(bestKey(event), JSON.stringify(best)); } catch { /* private window */ }
-}
+// This browser's best per event lives in engine/weekly/localBest.js.
+import { readLocalBest, saveLocalBest } from "../weekly/localBest.js";
+export { readLocalBest };
 
 /** Add or replace a ghost from an input log; it is replayed once here. */
 export function setWeeklyGhost(id, { log, label, color = "#9fe8ff", layout = session?.layout } = {}) {
@@ -241,7 +228,7 @@ function finish(lv) {
   const ms = Math.round(lv.finishMs);
   lv.activeMs = ms;
   state.run.totalActiveMs = ms;
-  const inputLog = encodeInputLog({ eventId: event.id, version: event.version, frames: session.frames, finishMs: lv.finishMs });
+  const inputLog = encodeInputLog({ eventId: event.id, version: event.version, frames: session.frames, finishMs: lv.finishMs, physics: lv.physics });
   const previous = readLocalBest(event);
   const personalBest = !previous || ms < previous.ms;
   if (personalBest) {

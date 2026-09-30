@@ -15,6 +15,10 @@ import { isLapReady } from '../engine/track.js';
 import { drawCourier, drawRelayGate, drawShield, drawExplosion, drawFlightEnvironment, drawShard } from '../gfx/stardustVfx.js';
 import { drawWeeklyWorld, drawWeeklyHud } from '../gfx/weeklyVfx.js';
 import { ghostPosesNow } from '../engine/modes/weekly.js';
+import { updateFlightUi } from './flightUi.js';
+import { drawHitboxDebug } from '../gfx/hitboxDebug.js';
+// ?debug=hitbox outlines the ship's exact body and the pickup shapes.
+const DEBUG_HITBOX = new URLSearchParams(globalThis.location?.search || '').get('debug') === 'hitbox';
 
 // drawArena/drawRoadmap are defined locally below to avoid missing module imports.
 
@@ -220,11 +224,10 @@ export function render() {
   if (mode === 'roadmap') {
     drawShardIndicator(W, H);
     if (state.run?.current?.weekly) drawWeeklyHud(ctx, W, H, state.run.current);
-    if (state.run?.current?.showLaunchHint) drawLaunchHint(W, H);
-    drawCountdown(W, H, state.run?.current);
-  } else if (mode === 'arena') {
-    drawCountdown(W, H, state.arena);
+    if (state.run?.current?.showLaunchHint && !state.ui.countdownActive) drawLaunchHint(W, H);
   }
+  // HUD widgets, touch controls and the race intro (READY / SET / GO) are DOM (ui/flightUi.js).
+  updateFlightUi(dt);
 
   // Startup hint if there’s no active run
   if (!hasRun()) {
@@ -324,6 +327,7 @@ function drawRoadmap(ctx) {
   drawProjectiles();
   drawParticles();
   if (!lv?.wreck) drawShip(lv?.viewPlayer || lv?.player);
+  if (DEBUG_HITBOX && lv) drawHitboxDebug(ctx, lv, state.gfx.cellW);
 }
 
 function drawCircuit(ctx, scene) {
@@ -376,7 +380,8 @@ function drawCircuit(ctx, scene) {
     ctx.setLineDash([]);
   }
   const next = track.checkpoints?.[nextIndex];
-  if (next && !scene.lockedInStart) {
+  // Main circuits: the corner lines are hidden for now (they still count across the full lane).
+  if (next && !scene.lockedInStart && scene.weekly) {
     ctx.strokeStyle = scene.weekly ? '#ffd39acc' : '#ffd39a66'; ctx.lineWidth = (scene.weekly ? .09 : .045) * unit; ctx.setLineDash([.15 * unit, .15 * unit]);
     crossLine(next); ctx.setLineDash([]);
   }
@@ -576,15 +581,7 @@ function drawNodes() {
   for(const n of lv.nodes) {
     const x=(n.x+.5)*cellW,y=(n.y+.5)*cellH;
     if(n.kind==='planet' && !lv.shards.has(n.id)) drawShard(ctx,x,y,cellW*.95,colors[n.color] || colors.blue,clock,config.SHARD_SCALE);
-    if(n.kind==='gate') {
-      const required=lv.nodes.filter(node=>node.kind==='planet').length;
-      const lapReady=!lv.track || isLapReady(lv);
-      const ready=lv.shards.size>=required && lapReady && lv.fuel >= config.GATE_MIN_FUEL;
-      const angle=lv.track?.portal ? Math.atan2(lv.track.portal.ty,lv.track.portal.tx) : 0;
-      ctx.save(); ctx.translate(x,y); ctx.rotate(angle);
-      drawRelayGate(ctx,0,0,cellW*3,assets.relayGate,clock,ready,!!lv.secretReady);
-      ctx.restore();
-    }
+    // No portal: the start/finish line (drawCircuit) is the finish, so the gate isn't drawn.
     if(n.kind==='station' && assets.fuelStation) {
       const size=cellW*2;
       ctx.save();ctx.shadowColor='#6ed2e3';ctx.shadowBlur=cellW*.1;

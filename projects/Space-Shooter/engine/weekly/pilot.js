@@ -3,8 +3,19 @@
 // its recorded frames exercise the replay path in the tests. It is careful,
 // not fast: a human should beat it comfortably.
 import { pointOnTrack, nearestTrackPoint } from "../track.js";
-import { WEEKLY_RULES as R } from "./layout.js";
-import { createWeeklyScene, stepWeekly, quantizeFrame, BIT, WEEKLY_CONFIG } from "./sim.js";
+import { WEEKLY_RULES as R, bouncerPosition } from "./layout.js";
+import { createWeeklyScene, stepWeekly, quantizeFrame, BIT, WEEKLY_CONFIG, WEEKLY_PHYSICS } from "./sim.js";
+import { PLAYER_HULL } from "../hull.js";
+
+/**
+ * The line's distance from the rails for a physics version: 0.75 cells for
+ * the circle, i.e. 0.54 clear of the ship's edge, and the same 0.54 clear of
+ * the hull's farthest point (its bounding radius) for the real body.
+ */
+export function pilotMargin(physics = WEEKLY_PHYSICS.CURRENT) {
+  const reach = physics === WEEKLY_PHYSICS.HULL ? PLAYER_HULL.radius : WEEKLY_CONFIG.PLAYER_RADIUS;
+  return 0.75 - WEEKLY_CONFIG.PLAYER_RADIUS + reach;
+}
 
 const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
 
@@ -75,11 +86,12 @@ export function pilotSpeeds(line, { cruise = 11, grip = 3.2, accel = 3, brake = 
 
 /**
  * Fly the layout with the scripted pilot. Returns { scene, frames, finished,
- * time, dead, events } — frames are exactly what a player's recording holds.
+ * time, dead, events, physics } — frames are exactly what a player's
+ * recording holds. physics: the weekly physics to fly (default: current).
  */
-export function flyWeeklyLap(layout, { maxSeconds = R.PILOT_SECONDS, speeds = {} } = {}) {
-  const scene = createWeeklyScene(layout);
-  const line = pilotLine(layout);
+export function flyWeeklyLap(layout, { maxSeconds = R.PILOT_SECONDS, speeds = {}, physics = WEEKLY_PHYSICS.CURRENT, line: lineOptions = {} } = {}) {
+  const scene = createWeeklyScene(layout, { physics });
+  const line = pilotLine(layout, { margin: pilotMargin(physics), ...lineOptions });
   const v = pilotSpeeds(line, speeds);
   const n = line.length;
   const frames = [];
@@ -109,13 +121,22 @@ export function flyWeeklyLap(layout, { maxSeconds = R.PILOT_SECONDS, speeds = {}
     if (Math.abs(error) > 2.4 && need > 0.6) frame.back = 60;
     if (speed > want + 0.8) frame.bits |= BIT.BRAKE;
     if (step === 0) frame.bits |= BIT.LAUNCH;
+    // A rock sweeping across the lane ahead: shoot it (two hits break one),
+    // leading it by the shot's flight time.
+    for (const b of scene.hazards) {
+      if (b.hp <= 0) continue;
+      const range = Math.hypot(b.x - p.x, b.y - p.y);
+      if (range > 12 || range < 0.8) continue;
+      const aim = bouncerPosition(b, scene.elapsed + range / (WEEKLY_CONFIG.PLAYER_PROJECTILE_SPEED + speed));
+      if (Math.abs(wrap(Math.atan2(aim.y - p.y, aim.x - p.x) - p.angle)) < Math.atan2(b.radius + 0.6, range)) { frame.bits |= BIT.SHOOT; break; }
+    }
     const q = quantizeFrame(frame);
     frames.push(q);
     const events = stepWeekly(scene, q);
     for (const e of events) counts[e.type] = (counts[e.type] || 0) + 1;
     if (scene.finished || scene.dead) break;
   }
-  return { scene, frames, finished: scene.finished, time: scene.finishMs, dead: scene.dead, events: counts, line };
+  return { scene, frames, finished: scene.finished, time: scene.finishMs, dead: scene.dead, events: counts, line, physics };
 }
 
 export { WEEKLY_CONFIG };

@@ -7,6 +7,7 @@ import {
 import { generateLevelNodes } from "../projects/Space-Shooter/data.js";
 import { state, config } from "../projects/Space-Shooter/state.js";
 import { handlePlayerMovement } from "../projects/Space-Shooter/engine/systems/movement.js";
+import { shipTouchesCircle } from "../projects/Space-Shooter/engine/hull.js";
 import {
   motionPosition,
   updateHazards,
@@ -91,10 +92,12 @@ test("extreme dt and gravity-core overlap stay finite and below speed cap", () =
   };
   applyGravity(p, scene.gravityWells, 1 / 120);
   resolveHazards(scene, p);
+  // The ship's real body (engine/hull.js) is pushed clear of the core.
+  assert.ok(!shipTouchesCircle(p, 16, 9, 1.2), 'the hull is clear of the well core');
   handlePlayerMovement(99, scene, p);
   assert.ok(Object.values(p).every(Number.isFinite));
   assert.ok(Math.hypot(p.vx, p.vy) <= config.MAX_SPEED + 1e-6);
-  assert.ok(Math.hypot(p.x - 16, p.y - 9) >= 1.2 + config.PLAYER_RADIUS);
+  assert.ok(Math.hypot(p.x - 16, p.y - 9) > 1.2);
 });
 test("gravity attracts, leaves exterior coasting untouched, and bounded core is not singular", () => {
   const well = { x: 10, y: 10, radius: 1.2, influence: 6, strength: 10 };

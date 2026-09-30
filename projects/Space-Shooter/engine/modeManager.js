@@ -52,7 +52,6 @@ export function startNewRun({ kind = 'network', preview = false, event = null } 
   state.mode = 'roadmap';
   state.arena = null;
   state.ui.showBossUI = false;
-  state.ui.showMinimap = true;
   state.ui.showStartOverlay = false;
   if (kind === 'weekly' && event) {
     state.run = { runId: Date.now().toString(36), kind: 'weekly', event, preview: !!preview, totalActiveMs: 0, levelIndex: 1, seeds: [], current: null };

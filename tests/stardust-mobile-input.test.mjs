@@ -226,3 +226,47 @@ test('controller pause accepts Back to resume but never queues Y boost while pau
   assert.equal(state.keys.boost,false,'Y held through resume must not create a fresh toggle edge');
   button(3,false);
 });
+
+test('tilt steering flows through tilt.js into pumpInput as an analog turn and stops when hidden', async () => {
+  // Simulated sensor events only: proves wiring, not real phone hardware.
+  const { enableTiltControls, disableTiltControls } = await import('../projects/Space-Shooter/systems/tilt.js');
+  let clock = 1000;
+  Object.assign(window, {
+    isSecureContext: true,
+    DeviceOrientationEvent: {},
+    screen: { orientation: { angle: 90 } },
+    performance: { now: () => clock },
+    setTimeout: () => 1,
+    clearTimeout() {},
+  });
+  // Landscape (angle 90), phone held 40° back and turned `roll` degrees clockwise.
+  const hold = (roll) => {
+    const p = 40 * Math.PI / 180, r = roll * Math.PI / 180;
+    const screenUp = { x: -Math.sin(r) * Math.cos(p), y: Math.cos(r) * Math.cos(p), z: Math.sin(p) };
+    const up = { x: screenUp.y, y: -screenUp.x, z: screenUp.z };
+    clock += 50;
+    event(window, 'deviceorientation', { alpha: null, beta: Math.asin(up.y) * 180 / Math.PI, gamma: Math.atan2(-up.x, up.z) * 180 / Math.PI });
+  };
+  reset();
+  const ready = enableTiltControls();
+  hold(0);
+  assert.equal(await ready, true);
+  assert.equal(state.input.touch.useTilt, true);
+  for (let i = 0; i < 10; i++) hold(0);
+  pumpInput();
+  assert.equal(state.keys.turnStrength, 0);
+  for (let i = 0; i < 6; i++) hold(22);
+  pumpInput();
+  assert.ok(state.keys.turnStrength > 0.2 && state.keys.turnStrength < 1, `analog right: ${state.keys.turnStrength}`);
+  for (let i = 0; i < 6; i++) hold(-60);
+  pumpInput();
+  assert.equal(state.keys.turnStrength, -1);
+  document.hidden = true;
+  event(document, 'visibilitychange');
+  hold(-60);
+  pumpInput();
+  assert.equal(state.keys.turnStrength, 0);
+  document.hidden = false;
+  disableTiltControls();
+  assert.equal(state.input.touch.useTilt, false);
+});

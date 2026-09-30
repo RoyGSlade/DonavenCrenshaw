@@ -205,7 +205,11 @@ function flyLap(level, rear = false) {
       `${scene.track.name}: ${time.toFixed(2)}s, fuel ${scene.fuel.toFixed(1)}, hull ${scene.player.hp.toFixed(1)}, rail contacts ${scene.trackProgress.boundaryHits}`,
     );
   });
-test("Iron Veil L5 genuine full lap permits an intentional under60 rear entry", (t) => {
+// 2026-09-29: the owner removed the portal; a full lap ends on the full-width
+// finish line, so the ship can no longer slip past it to enter from behind.
+// The rear-entry secret (arena, seal, Platinum 10) is switched off
+// (runtimeConfig.bossFight false) and needs a new trigger before it returns.
+test("Iron Veil L5 genuine full lap permits an intentional under60 rear entry", { skip: "portal removed: the rear-entry secret needs a new trigger (bossFight is off)" }, (t) => {
   const { scene, time, finished } = flyLap(5, true);
   assert.ok(finished, `rear entry failed after ${time}s`);
   assert.ok(scene.player.hp > 0);

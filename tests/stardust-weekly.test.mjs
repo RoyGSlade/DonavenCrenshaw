@@ -3,13 +3,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { WEEKLY_EVENTS, currentWeekly, weeklyById } from '../projects/Space-Shooter/tracks/weekly.js';
 import { createWeeklyLayout, WEEKLY_RULES as R, bouncerPosition } from '../projects/Space-Shooter/engine/weekly/layout.js';
-import { createWeeklyScene, stepWeekly, quantizeFrame, frameFromKeys, keysFromFrame, BIT, WEEKLY_CONFIG } from '../projects/Space-Shooter/engine/weekly/sim.js';
-import { encodeInputLog, decodeInputLog, replayInputLog, ghostPose } from '../projects/Space-Shooter/engine/weekly/replay.js';
+import { createWeeklyScene, stepWeekly, quantizeFrame, frameFromKeys, keysFromFrame, BIT, WEEKLY_CONFIG, WEEKLY_PHYSICS } from '../projects/Space-Shooter/engine/weekly/sim.js';
+import { encodeInputLog, decodeInputLog, replayInputLog, ghostPose, LOG_PREFIX } from '../projects/Space-Shooter/engine/weekly/replay.js';
+import { PLAYER_HULL, shipTouchesCircle } from '../projects/Space-Shooter/engine/hull.js';
 import { flyWeeklyLap } from '../projects/Space-Shooter/engine/weekly/pilot.js';
 import { weeklyStatus, parseWeeklyQuery, weeklyPreviewSvg, weeklyGameUrl } from '../projects/Space-Shooter/systems/weekly.js';
-import { isInsideTrack, pointOnTrack, nearestTrackPoint, updateTrackProgress, createTrackProgress } from '../projects/Space-Shooter/engine/track.js';
+import { isInsideTrack, isHullInsideTrack, pointOnTrack, nearestTrackPoint, updateTrackProgress, createTrackProgress } from '../projects/Space-Shooter/engine/track.js';
 
 const event = WEEKLY_EVENTS[0];
 const layout = createWeeklyLayout(event);
@@ -69,16 +71,17 @@ test('the layout: huge, closed, every piece in its place', () => {
   assert.ok(track.length > 6 * 120, 'several times longer than a network circuit');
   assert.ok(track.width >= R.MIN_WIDTH && track.width <= R.MAX_WIDTH);
   assert.ok(track.bounds.maxX > 48 && track.bounds.maxY > 32, 'not held to the network grid');
-  const r = WEEKLY_CONFIG.PLAYER_RADIUS;
+  // The ship is its real body (physics 2): r is its bounding radius, span its wingspan.
+  const r = PLAYER_HULL.radius, span = 2 * PLAYER_HULL.halfSpan;
   for (const s of layout.shards) assert.ok(isInsideTrack(track, s.x, s.y, r), `${s.id} is flyable`);
   for (const s of layout.stations) assert.ok(isInsideTrack(track, s.x, s.y, r), `${s.id} is flyable`);
   for (const m of layout.mines) {
     assert.ok(isInsideTrack(track, m.x, m.y), `${m.id} is on the lane`);
     for (const s of layout.shards) assert.ok(Math.hypot(m.x - s.x, m.y - s.y) > m.radius + r + R.SHARD_PICKUP, `${m.id} doesn't sit on ${s.id}`);
-    // A ship-width gap past every mine, on at least one side.
+    // A wingspan-wide gap past every mine, on at least one side.
     const c = nearestTrackPoint(track, m.x, m.y);
     const room = track.width / 2 - c.distance - m.radius;
-    assert.ok(room > 2 * r || track.width / 2 + c.distance - m.radius > 2 * r, `${m.id} leaves a gap`);
+    assert.ok(room > span || track.width / 2 + c.distance - m.radius > span, `${m.id} leaves a gap`);
   }
   for (const t of layout.sentries) assert.ok(!isInsideTrack(track, t.x, t.y), `${t.id} sits beyond the outside rail`);
   for (const b of layout.bouncers) {
@@ -97,21 +100,27 @@ test('the layout: huge, closed, every piece in its place', () => {
 });
 
 test('the scripted pilot finishes a clean lap with every shard, hull and fuel intact', () => {
+  assert.equal(lap.physics, WEEKLY_PHYSICS.HULL, 'the pilot flies the current physics: the real body');
   assert.ok(lap.finished, `finished (dead: ${lap.dead})`);
   assert.equal(lap.scene.shards.size, layout.shards.length);
   assert.ok(lap.time < R.PILOT_SECONDS * 1000);
   assert.ok(lap.time > 45000, 'no lap is anywhere near the hub floor of 45 s by accident');
   assert.ok(lap.scene.fuel > 20 && lap.scene.player.hp > 0);
   assert.equal(lap.scene.trackProgress.passed, layout.track.checkpoints.length);
+  assert.ok(!lap.events.wall, 'no rail hit on the whole lap');
 });
 
 test('a recorded lap replays to the exact same finish, through the text log', () => {
   const log = encodeInputLog({ eventId: event.id, version: event.version, frames: lap.frames, finishMs: lap.time });
   assert.ok(log.length < 256 * 1024, `log ${log.length} bytes fits the hub's 256 KB`);
+  assert.equal(LOG_PREFIX, 'SDW2');
+  assert.match(log, /^SDW2|weekly-01|/, 'new recordings are SDW2: the hull physics');
   const decoded = decodeInputLog(log);
+  assert.equal(decoded.physics, WEEKLY_PHYSICS.HULL);
   assert.equal(decoded.frames.length, lap.frames.length);
   assert.deepEqual(decoded.frames.slice(0, 50), lap.frames.slice(0, 50));
   const replay = replayInputLog(layout, log);
+  assert.equal(replay.physics, WEEKLY_PHYSICS.HULL);
   assert.ok(replay.finished && replay.matches);
   assert.equal(replay.finishMs, lap.time, 'bit-for-bit the same time');
   const pose = ghostPose(replay.poses, lap.time / 2);
@@ -122,8 +131,77 @@ test('a recorded lap replays to the exact same finish, through the text log', ()
   assert.ok(!other.matches);
 });
 
+test('an SDW1 log flown under the old circle rules still replays to its exact finish', () => {
+  const old = flyWeeklyLap(layout, { physics: WEEKLY_PHYSICS.CIRCLE });
+  assert.ok(old.finished, `physics 1 pilot finished (dead: ${old.dead})`);
+  const log = encodeInputLog({ eventId: event.id, version: event.version, frames: old.frames, finishMs: old.time, physics: WEEKLY_PHYSICS.CIRCLE });
+  assert.match(log, /^SDW1|weekly-01|/);
+  const decoded = decodeInputLog(log);
+  assert.equal(decoded.physics, WEEKLY_PHYSICS.CIRCLE);
+  // The prefix alone picks the physics: the text log and its decoded frames.
+  for (const input of [log, decoded]) {
+    const replay = replayInputLog(layout, input);
+    assert.equal(replay.physics, WEEKLY_PHYSICS.CIRCLE);
+    assert.ok(replay.finished && replay.matches);
+    assert.equal(replay.finishMs, old.time, 'bit-for-bit the same time');
+  }
+  assert.equal(encodeInputLog({ ...decoded, finishMs: old.time }), log, 'decode/encode round trip keeps SDW1');
+  // The same inputs under the hull are a different run: physics really differ.
+  const hull = replayInputLog(layout, { frames: old.frames, finishMs: Math.round(old.time) }, { physics: WEEKLY_PHYSICS.HULL });
+  assert.equal(hull.physics, WEEKLY_PHYSICS.HULL);
+  assert.notEqual(hull.finishMs, old.time);
+});
+
+// Recorded with the pre-hull code (the scripted pilot of that day, before this
+// change): a real SDW1 run with rock hits, a rail hit and a sentry shot. It
+// must replay exactly as it did then, pose for pose.
+test('a run recorded before the hull (tests/fixtures SDW1 log) replays bit-for-bit', () => {
+  const log = readFileSync(new URL('./fixtures/stardust-weekly-01.sdw1.log', import.meta.url), 'utf8').trim();
+  assert.match(log, /^SDW1|weekly-01|1|12808|106731|/);
+  const replay = replayInputLog(layout, log);
+  assert.equal(replay.physics, WEEKLY_PHYSICS.CIRCLE);
+  assert.ok(replay.finished && replay.matches);
+  assert.equal(replay.finishMs, 106731.39117082204);
+  assert.equal(replay.poses.length, 3203);
+  assert.equal(createHash('sha256').update(JSON.stringify(replay.poses)).digest('hex'), '296ec4402fd271c860979b599d4445cd24e1fb12c4dc8967ccd9e4b0dec069a5', 'every ghost pose unchanged');
+  assert.equal(replayInputLog(layout, decodeInputLog(log)).finishMs, 106731.39117082204);
+});
+
+test('the hull physics: wing tips collect shards, and the body (not a circle) meets mines and rails', () => {
+  const s = layout.shards[1];
+  // A shard just off the right wing tip, beyond the old 0.7 centre pickup, is
+  // collected. Facing +x (angle 0) the right wing points +y and the tip vertex
+  // [tx, ty] (ship-local) sits at (x + ty, y + tx) in the world.
+  const [tx, ty] = PLAYER_HULL.points.reduce((a, b) => (b[0] > a[0] ? b : a));
+  const reach = tx + R.SHARD_TOUCH - 0.02;
+  const scene = launched();
+  Object.assign(scene.player, { x: s.x - ty, y: s.y - reach, vx: 0, vy: 0, angle: 0 });
+  assert.ok(Math.hypot(scene.player.x - s.x, scene.player.y - s.y) > R.SHARD_PICKUP, 'beyond the old pickup');
+  assert.ok(shipTouchesCircle(scene.player, s.x, s.y, R.SHARD_TOUCH));
+  const events = stepWeekly(scene, idle);
+  assert.ok(events.some((e) => e.type === 'shard' && e.id === s.id), 'the wing tip collected it');
+  // Under physics 1 the same spot is out of reach.
+  const old = createWeeklyScene(layout, { physics: WEEKLY_PHYSICS.CIRCLE });
+  stepWeekly(old, launch);
+  Object.assign(old.player, { x: s.x - ty, y: s.y - reach, vx: 0, vy: 0, angle: 0 });
+  assert.ok(!stepWeekly(old, idle).some((e) => e.type === 'shard'));
+  // A mine that the old circle missed but the nose touches ends the run.
+  const m = layout.mines[0];
+  const nose = launched();
+  Object.assign(nose.player, { x: m.x - m.radius - PLAYER_HULL.nose + 0.03, y: m.y, vx: 0, vy: 0, angle: 0 });
+  assert.ok(Math.hypot(nose.player.x - m.x, nose.player.y - m.y) > m.radius + WEEKLY_CONFIG.PLAYER_RADIUS, 'clear of the old circle');
+  assert.ok(stepWeekly(nose, idle).some((e) => e.type === 'dead' && e.cause === 'mine'));
+  // Parked beside a rail, the whole body stays on the lane.
+  const rail = launched();
+  const at = pointOnTrack(layout.track, 60, layout.track.width / 2 - 0.3);
+  Object.assign(rail.player, { x: at.x, y: at.y, vx: -at.ty * 3, vy: at.tx * 3, angle: Math.atan2(at.ty, at.tx) + 0.8 });
+  for (let i = 0; i < 20; i++) stepWeekly(rail, idle);
+  assert.ok(isHullInsideTrack(layout.track, rail.player.x, rail.player.y, rail.player.angle, PLAYER_HULL, 1e-6), 'no part of the ship crosses the rail');
+});
+
 test('malformed logs are refused', () => {
-  for (const bad of [null, '', 'SDW2|x|1|0|0|', 'SDW1|weekly-01|1|5|0|1,0,0,0,0,0', 'SDW1|weekly-01|1|1|0|1,zz,0', 'x'.repeat(300000)])
+  // SDW2 is a real prefix now (the hull physics); an unknown one is refused.
+  for (const bad of [null, '', 'SDW3|x|1|0|0|', 'SDW0|x|1|0|0|', 'SDW1|weekly-01|1|5|0|1,0,0,0,0,0', 'SDW2|weekly-01|1|5|0|1,0,0,0,0,0', 'SDW1|weekly-01|1|1|0|1,zz,0', 'x'.repeat(300000)])
     assert.equal(decodeInputLog(bad), null);
 });
 
