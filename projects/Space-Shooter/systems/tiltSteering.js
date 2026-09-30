@@ -42,7 +42,7 @@ export function angleDelta(a, b) {
 }
 
 const RANGES = {
-  DEAD_ZONE_DEG: [0, 20], FULL_LOCK_DEG: [5, 90], EXPO: [0, 1],
+  DEAD_ZONE_DEG: [0, 20], FULL_LOCK_DEG: [5, 90], EXPO: [-1, 1],
   FILTER_MIN_CUTOFF_HZ: [0.1, 30], FILTER_BETA: [0, 1], FILTER_DERIVATIVE_CUTOFF_HZ: [0.1, 30],
   FLAT_FADE_START_DEG: [30, 89], FLAT_FADE_END_DEG: [31, 90],
   CALIBRATION_MS: [0, 3000], CALIBRATION_MAX_MS: [0, 10000], CALIBRATION_MAX_SPREAD_DEG: [1, 90],
@@ -125,7 +125,9 @@ export function steeringResponse(degrees, config = DEFAULT_TILT_CONFIG) {
   const u = clamp((Math.abs(degrees) - dz) / (full - dz), 0, 1);
   if (u === 0) return 0;
   // (1-e)·u + e·u³: keeps a live slope just past the dead zone, soft middle, exact 1 at full lock.
-  return Math.sign(degrees) * ((1 - e) * u + e * u * u * u);
+  // A negative e bends the other way (quick off centre, gentle near full lock).
+  const curve = e >= 0 ? u * u * u : 1 - (1 - u) ** 3;
+  return Math.sign(degrees) * ((1 - Math.abs(e)) * u + Math.abs(e) * curve);
 }
 
 /**

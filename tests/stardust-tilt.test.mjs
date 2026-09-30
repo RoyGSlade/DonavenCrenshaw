@@ -276,3 +276,38 @@ test("accelerationIncludingGravity sign is resolved from orientation or from how
   for (let i = 0; i < 10; i++) edge.push(toScreenFrame({ x: 1, y: 0, z: 0 }, 0), null, 0);
   assert.equal(edge.sign, 0);
 });
+
+test("player tilt settings: every dead zone, max tilt and sensitivity step gives a well-formed curve", async () => {
+  const { TILT_DEAD_ZONES, TILT_MAX_TILTS, TILT_EXPOS, TILT_DEFAULTS, tiltTuning } = await import("../projects/Space-Shooter/systems/flightSettings.js");
+  // The defaults are the tuned config, so nothing changes until a player moves a setting.
+  const base = tiltTuning({ tilt: { ...TILT_DEFAULTS } });
+  assert.deepEqual(base, { deadZoneDeg: DEFAULT_TILT_CONFIG.DEAD_ZONE_DEG, fullLockDeg: DEFAULT_TILT_CONFIG.FULL_LOCK_DEG, expo: DEFAULT_TILT_CONFIG.EXPO });
+  // Missing or junk saved values fall back to the defaults.
+  assert.deepEqual(tiltTuning({}), base);
+  assert.deepEqual(tiltTuning({ tilt: { deadIndex: 99, maxIndex: -1, sensIndex: "x" } }), base);
+  for (const dz of TILT_DEAD_ZONES) for (const full of TILT_MAX_TILTS) for (const expo of TILT_EXPOS) {
+    const config = normalizeTiltConfig({ DEAD_ZONE_DEG: dz, FULL_LOCK_DEG: full, EXPO: expo });
+    assert.equal(config.DEAD_ZONE_DEG, dz); assert.equal(config.FULL_LOCK_DEG, full); assert.equal(config.EXPO, expo);
+    assert.equal(steeringResponse(dz, config), 0);
+    near(steeringResponse(full, config), 1, 1e-12);
+    let previous = 0;
+    for (let d = 0; d <= full + 5; d += 0.25) {
+      const y = steeringResponse(d, config);
+      assert.ok(y >= previous - 1e-12 && y <= 1, `monotonic at ${d} (${dz}/${full}/${expo})`);
+      previous = y;
+    }
+  }
+  // Sensitivity orders the curve: at half travel a higher level always turns harder.
+  const half = TILT_EXPOS.map((expo) => steeringResponse(21.5, normalizeTiltConfig({ DEAD_ZONE_DEG: 3, FULL_LOCK_DEG: 40, EXPO: expo })));
+  for (let i = 1; i < half.length; i++) assert.ok(half[i] > half[i - 1], `level ${i + 1} is quicker than level ${i}`);
+});
+
+test("the tilt controller applies player tuning on top of its config", async () => {
+  const { createTiltController } = await import("../projects/Space-Shooter/systems/mobileControls.js");
+  const controller = createTiltController({ windowTarget: {}, config: DEFAULT_TILT_CONFIG });
+  controller.setTuning({ deadZoneDeg: 8, fullLockDeg: 25, expo: -0.3 });
+  assert.deepEqual([controller.getConfig().DEAD_ZONE_DEG, controller.getConfig().FULL_LOCK_DEG, controller.getConfig().EXPO], [8, 25, -0.3]);
+  assert.equal(controller.getConfig().FILTER_BETA, DEFAULT_TILT_CONFIG.FILTER_BETA);
+  controller.setTuning({});
+  assert.equal(controller.getConfig().FULL_LOCK_DEG, DEFAULT_TILT_CONFIG.FULL_LOCK_DEG);
+});

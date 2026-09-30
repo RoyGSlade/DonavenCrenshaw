@@ -33,6 +33,9 @@ export function screenTiltDegrees(event, screenAngle = 0) {
 export function createTiltController({ onChange = () => {}, windowTarget = globalThis.window, config } = {}) {
   const win = windowTarget;
   const processor = createSteeringProcessor(config ?? DEFAULT_TILT_CONFIG);
+  // The player's own dead zone and full-lock angle sit on top of the tuned config.
+  let baseConfig = config ?? DEFAULT_TILT_CONFIG, tuning = {};
+  const applyConfig = () => processor.setConfig({ ...baseConfig, ...tuning });
   const gravitySign = createGravitySignResolver();
   let state = { enabled: false, status: "idle", message: "Tilt steering is off." };
   let lastSample = 0, lastMotion = -Infinity, lastOrientation = -Infinity;
@@ -49,7 +52,7 @@ export function createTiltController({ onChange = () => {}, windowTarget = globa
     Promise.resolve()
       .then(() => win.fetch(TILT_CONFIG_URL))
       .then(response => (response?.ok ? response.json() : null))
-      .then(json => { if (json) processor.setConfig(json); })
+      .then(json => { if (json) { baseConfig = json; applyConfig(); } })
       .catch(() => {});
   }
   function finishPending(result) {
@@ -187,6 +190,15 @@ export function createTiltController({ onChange = () => {}, windowTarget = globa
       return state.enabled && !win.document?.hidden && now() - lastSample <= STALE_AXIS_MS ? processor.axis : 0;
     },
     getState: () => ({ ...state }),
+    /** Player settings: { deadZoneDeg, fullLockDeg, expo }. Omitted values fall back to the config. */
+    setTuning({ deadZoneDeg, fullLockDeg, expo } = {}) {
+      tuning = {};
+      if (Number.isFinite(deadZoneDeg)) tuning.DEAD_ZONE_DEG = deadZoneDeg;
+      if (Number.isFinite(fullLockDeg)) tuning.FULL_LOCK_DEG = fullLockDeg;
+      if (Number.isFinite(expo)) tuning.EXPO = expo;
+      applyConfig();
+    },
+    getConfig: () => processor.config,
     /** Live numbers for on-device tuning; not used by gameplay. */
     getDebug: () => ({
       source,

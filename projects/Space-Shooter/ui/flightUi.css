@@ -142,6 +142,7 @@ body.fx-intro-fly .fx-intro-call { display: none; }
 .fx-settings-panel .eyebrow { margin: 0 0 6px !important; }
 .fx-set-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 5px 0; font-size: 13px; }
 .fx-set-row small { color: #8fb6c8; }
+.fx-set-row[hidden] { display: none; }
 .fx-set-row button { min-width: 62px; padding: 6px 10px; }
 .fx-stepper { display: flex; align-items: center; gap: 6px; }
 .fx-stepper button { min-width: 36px; padding: 6px; }

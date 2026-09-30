@@ -9,7 +9,7 @@ import { initFlightHud, updateFlightHud, setMinimapVisible } from './flightHud.j
 import { initTouchPad, updateTouchPad, setWheelHidden, releaseTouchPad, touchInput } from './touchPad.js';
 import { initRaceIntro, updateRaceIntro } from './raceIntro.js';
 import { initLayout, applyLayout, startEditing, isEditingLayout } from './layoutEditor.js';
-import { flightSettings, updateFlightSettings, MINIMAP_ZOOMS, ICON_SCALES, isTouchDevice } from '../systems/flightSettings.js';
+import { flightSettings, updateFlightSettings, MINIMAP_ZOOMS, ICON_SCALES, TILT_DEAD_ZONES, TILT_MAX_TILTS, TILT_EXPOS, TILT_DEFAULTS, tiltTuning, isTouchDevice } from '../systems/flightSettings.js';
 import { subscribeTilt, calibrateTiltControls, getTiltState } from '../systems/tilt.js';
 import { openPauseOverlay, closePauseOverlay } from './overlays.js';
 import { toast } from './hud.js';
@@ -71,6 +71,9 @@ function buildFlightSettings() {
     <div class="fx-set-row"><span>Minimap zoom</span><div class="fx-stepper"><button type="button" data-fx="zoom-" aria-label="Zoom out">−</button><output data-fx-out="zoom"></output><button type="button" data-fx="zoom+" aria-label="Zoom in">+</button></div></div>
     <div class="fx-set-row"><span>Map icon size</span><div class="fx-stepper"><button type="button" data-fx="icon-" aria-label="Smaller icons">−</button><output data-fx-out="icon"></output><button type="button" data-fx="icon+" aria-label="Bigger icons">+</button></div></div>
     <div class="fx-set-row"><span>Auto fire <small>(shoots breakable targets ahead)</small></span><button type="button" data-fx="autofire"></button></div>
+    <div class="fx-set-row fx-tilt-row"><span>Tilt sensitivity <small>(higher is quicker off centre)</small></span><div class="fx-stepper"><button type="button" data-fx="sens-" aria-label="Lower tilt sensitivity">−</button><output data-fx-out="sens"></output><button type="button" data-fx="sens+" aria-label="Higher tilt sensitivity">+</button></div></div>
+    <div class="fx-set-row fx-tilt-row"><span>Max tilt <small>(tilt for a full turn)</small></span><div class="fx-stepper"><button type="button" data-fx="max-" aria-label="Less tilt for a full turn">−</button><output data-fx-out="max"></output><button type="button" data-fx="max+" aria-label="More tilt for a full turn">+</button></div></div>
+    <div class="fx-set-row fx-tilt-row"><span>Tilt dead zone <small>(tilt ignored around centre)</small></span><div class="fx-stepper"><button type="button" data-fx="dead-" aria-label="Smaller tilt dead zone">−</button><output data-fx-out="dead"></output><button type="button" data-fx="dead+" aria-label="Bigger tilt dead zone">+</button></div></div>
     <div class="fx-set-row"><span>HUD &amp; controls layout</span><button type="button" data-fx="edit">Edit layout</button></div>`;
   panel.insertBefore(box, panel.querySelector('.actions'));
   const paint = () => {
@@ -79,6 +82,12 @@ function buildFlightSettings() {
     box.querySelector('[data-fx="map-toggle"]').setAttribute('aria-pressed', String(s.minimap.show));
     box.querySelector('[data-fx-out="zoom"]').textContent = `${MINIMAP_ZOOMS[s.minimap.zoomIndex] ?? 1}×`;
     box.querySelector('[data-fx-out="icon"]').textContent = `${Math.round((ICON_SCALES[s.minimap.iconIndex] ?? 1) * 100)}%`;
+    const tilt = tiltTuning(s);
+    box.querySelector('[data-fx-out="sens"]').textContent = `${TILT_EXPOS.indexOf(tilt.expo) + 1} / ${TILT_EXPOS.length}`;
+    box.querySelector('[data-fx-out="max"]').textContent = `${tilt.fullLockDeg}°`;
+    box.querySelector('[data-fx-out="dead"]').textContent = `${tilt.deadZoneDeg}°`;
+    // Tilt only exists on touch devices.
+    for (const row of box.querySelectorAll('.fx-tilt-row')) row.hidden = !isTouchDevice();
     box.querySelector('[data-fx="autofire"]').textContent = s.autoFire ? 'On' : 'Off';
     box.querySelector('[data-fx="autofire"]').setAttribute('aria-pressed', String(s.autoFire));
   };
@@ -91,6 +100,11 @@ function buildFlightSettings() {
     else if (action === 'zoom+') step('zoomIndex', MINIMAP_ZOOMS, 1);
     else if (action === 'icon-') step('iconIndex', ICON_SCALES, -1);
     else if (action === 'icon+') step('iconIndex', ICON_SCALES, 1);
+    else if (/^(sens|max|dead)[-+]$/.test(action)) {
+      const [key, list] = { sens: ['sensIndex', TILT_EXPOS], max: ['maxIndex', TILT_MAX_TILTS], dead: ['deadIndex', TILT_DEAD_ZONES] }[action.slice(0, -1)];
+      const d = action.endsWith('+') ? 1 : -1;
+      updateFlightSettings((s) => { s.tilt = { ...TILT_DEFAULTS, ...s.tilt }; s.tilt[key] = Math.max(0, Math.min(list.length - 1, (s.tilt[key] | 0) + d)); });
+    }
     else if (action === 'autofire') updateFlightSettings((s) => { s.autoFire = !s.autoFire; });
     else if (action === 'edit') {
       // Stay paused, hide the panel, edit over the frozen flight.
