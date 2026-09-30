@@ -1,4 +1,4 @@
-import { ZONES, PART_SLOTS, SHIP_STYLES, cleanAppearance, sayingText } from './shipLivery.js';
+import { ZONES, PART_SLOTS, SHIP_STYLES, cleanAppearance, sayingText, presetAppearance } from './shipLivery.js';
 export { ZONES, PART_SLOTS, SHIP_STYLES, cleanAppearance, presetAppearance } from './shipLivery.js';
 export const APPEARANCE_KEY = 'stardust.courier.appearance.v1';
 const canvas = (size = 512) =>
