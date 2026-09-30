@@ -93,13 +93,31 @@ export function buildStats(key) {
   return Object.freeze(out);
 }
 
-/** The build's collision outline (ship-local cells), or null. */
-export function buildHull(key) {
-  return Object.hasOwn(BUILD_HULL, key) ? HULLS[BUILD_HULL[key]] : null;
+// Size on top of the garage's framing (which fits every ship to the same
+// square). The twin-blade Needle (Lance wings) came out 0.30 cells wide, a
+// third of every other ship, so it flies at 1.75 times the size (owner's
+// call, 2026-09-30): about 0.52 wide and 1.7 long. Drawing and hitbox both.
+const SCALE = Object.freeze({ "needle-lance": 1.75 });
+/** How much bigger than the garage framing a build is drawn and collides. */
+export function buildScale(key) {
+  const b = parseBuild(key);
+  if (!b) return 1;
+  return b.family === "needle" && b.wings === 0 ? SCALE["needle-lance"] : 1;
 }
-/** { width, length, area } of the build's hull in cells, or null. */
+
+const scaled = new Map(); // "hull index x scale" -> frozen outline, shared by builds that differ only by cockpit
+/** The build's collision outline (ship-local cells), scaled, or null. */
+export function buildHull(key) {
+  if (!Object.hasOwn(BUILD_HULL, key)) return null;
+  const k = buildScale(key), id = `${BUILD_HULL[key]}x${k}`;
+  if (!scaled.has(id)) scaled.set(id, k === 1 ? HULLS[BUILD_HULL[key]] : Object.freeze(HULLS[BUILD_HULL[key]].map(([x, y]) => Object.freeze([+(x * k).toFixed(4), +(y * k).toFixed(4)]))));
+  return scaled.get(id);
+}
+/** { width, length, area } of the build's hull in cells, scaled, or null. */
 export function buildHullSize(key) {
-  return Object.hasOwn(BUILD_HULL, key) ? HULL_METRICS[BUILD_HULL[key]] : null;
+  if (!Object.hasOwn(BUILD_HULL, key)) return null;
+  const k = buildScale(key), m = HULL_METRICS[BUILD_HULL[key]];
+  return k === 1 ? m : Object.freeze({ width: +(m.width * k).toFixed(4), length: +(m.length * k).toFixed(4), area: +(m.area * k * k).toFixed(4) });
 }
 
 // Grip. Today's ship has no sideways damping at all: it keeps sliding until

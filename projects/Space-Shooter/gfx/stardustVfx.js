@@ -1,5 +1,6 @@
 /** Stardust visual language. All helpers preserve Canvas state and never mutate simulation. */
 import { getCourierAppearance, getCourierExhaustPorts } from '../systems/shipAppearance.js';
+import { buildScale } from '../engine/shipStats.js';
 const TAU = Math.PI * 2;
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 function circle(ctx, x, y, r) { ctx.beginPath(); ctx.arc(x, y, Math.max(0.01, r), 0, TAU); }
@@ -11,7 +12,8 @@ function glow(ctx, x, y, r, color) {
 // The original sprite's two exhaust ports, for ships drawn as the standard one (ghosts).
 const STANDARD_PORTS = [{ x: -0.13, y: 0.38, width: 0.13 }, { x: 0.13, y: 0.38, width: 0.13 }];
 export function drawCourier(ctx, player, scene, keys, unit, img, time, scale = 0.66) {
-  const s = unit * 1.6 * scale;
+  // A garage build flying its own physics is drawn at its own size (engine/shipStats.js).
+  const s = unit * 1.6 * scale * (scene?.ship && !player.standardShip ? buildScale(scene.ship) : 1);
   const active = !scene?.lockedInStart && !scene?.onStartPad && !scene?.showLaunchHint && !scene?.paused;
   const burn = active && scene?.fuel > 0 ? clamp(keys.thrustStrength || 0, 0, 1) : 0;
   const boost = active && player._boostCd > 0.12;
