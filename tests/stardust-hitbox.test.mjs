@@ -274,7 +274,11 @@ test("ship builds: stats stay inside their limits, the cockpit never changes sta
   // The owner's table: the standard courier is 100 across the board, the thin
   // Needle is the fast drifty extreme and the broad Manta the grippy slow one.
   assert.deepEqual(S.buildStats("courier:0-0-0-0"), { topSpeed: 1, accel: 1, grip: 1, boost: 1, brake: 1 });
-  assert.deepEqual(S.buildStats("needle:0-0-0-0"), { topSpeed: 1.2, accel: 0.85, grip: 0.75, boost: 1, brake: 1 });
+  assert.deepEqual(S.buildStats("needle:0-0-0-0"), { topSpeed: 1.2, accel: 0.85, grip: 0.8, boost: 1, brake: 1 });
+  // Every twin-blade Needle keeps some grip, and its parts move it.
+  const lance = S.ALL_BUILDS.filter((k) => /^needle:\d-0-/.test(k)).map((k) => S.buildStats(k).grip);
+  assert.equal(Math.min(...lance), 0.8);
+  assert.equal(Math.max(...lance), 0.94);
   assert.deepEqual(S.buildStats("manta:2-1-0-0"), { topSpeed: 0.8, accel: 1.15, grip: 1.25, boost: 1, brake: 1 });
   assert.equal(S.buildStats("wisp:0-0-0-0").boost, 1.1);
   for (const bad of [null, "", "needle", "needle:1-0-0-0", "needle:0-0-0-0 ", "ghost:0-0-0-0", "needle:0-0-0-9"]) {
@@ -285,7 +289,8 @@ test("ship builds: stats stay inside their limits, the cockpit never changes sta
   assert.equal(WEEKLY_CONFIG.MAX_SPEED, 15);
   assert.ok(Math.abs(S.applyBuildStats(WEEKLY_CONFIG, S.buildStats("needle:0-0-0-0")).MAX_SPEED - 18) < 1e-9);
   assert.ok(Math.abs(S.applyBuildStats(WEEKLY_CONFIG, S.buildStats("manta:2-1-0-0")).MAX_SPEED - 12) < 1e-9);
-  assert.equal(S.applyBuildStats(WEEKLY_CONFIG, S.buildStats("needle:0-0-0-0")).LATERAL_DAMP, 0);
+  // Every build has some dampening; the least is the twin-blade Needle's.
+  for (const key of S.ALL_BUILDS) assert.ok(S.applyBuildStats(WEEKLY_CONFIG, S.buildStats(key)).LATERAL_DAMP > 0, key);
 
   const layout = createWeeklyLayout(WEEKLY_EVENTS[0]);
   // A build scene needs a real build, and the standard physics ignores one.
@@ -306,8 +311,8 @@ test("ship builds: stats stay inside their limits, the cockpit never changes sta
   };
   assert.ok(slide("manta:2-1-0-0") < slide("courier:0-0-0-0"), "more grip, less slide");
   assert.ok(slide("courier:0-0-0-0") < slide("needle:0-0-0-0"), "less grip, more slide");
-  // Sizes on top of the garage framing: twin-blade Needles 1.75x, every Manta 1.4x, every Wisp 1.25x.
-  assert.equal(S.buildScale("needle:0-0-0-0"), 1.75);
+  // Sizes on top of the garage framing: twin-blade Needles 1.5x, every Manta 1.4x, every Wisp 1.25x.
+  assert.equal(S.buildScale("needle:0-0-0-0"), 1.5);
   assert.equal(S.buildScale("needle:0-1-0-0"), 1);
   assert.equal(S.buildScale("manta:2-1-2-1"), 1.4);
   assert.equal(S.buildScale("wisp:0-0-0-0"), 1.25);
@@ -360,7 +365,8 @@ test("stat points: the standard ship is 50 on every stat, the ends of each range
   const S = await import("../projects/Space-Shooter/engine/shipStats.js");
   assert.deepEqual(S.statPoints(S.buildStats("courier:0-0-0-0")), { topSpeed: 50, accel: 50, grip: 50, boost: 50, brake: 50 });
   // The twin-blade Needle at its extremes: fastest, weakest thrust, least grip.
-  assert.deepEqual(S.statPoints(S.buildStats("needle:0-0-0-0")), { topSpeed: 100, accel: 0, grip: 0, boost: 50, brake: 50 });
+  assert.deepEqual(S.statPoints(S.buildStats("needle:0-0-0-0")), { topSpeed: 100, accel: 0, grip: 10, boost: 50, brake: 50 });
+  assert.equal(S.statPoints(S.buildStats("needle:2-0-0-1")).grip, 38);
   assert.deepEqual(S.statPoints(S.buildStats("manta:2-1-0-0")), { topSpeed: 0, accel: 100, grip: 100, boost: 50, brake: 50 });
   for (const key of S.ALL_BUILDS) for (const v of Object.values(S.statPoints(S.buildStats(key)))) assert.ok(Number.isInteger(v) && v >= 0 && v <= 100);
   assert.deepEqual(S.STAT_NAMES.map(([id]) => id), ["topSpeed", "accel", "grip", "boost", "brake"]);

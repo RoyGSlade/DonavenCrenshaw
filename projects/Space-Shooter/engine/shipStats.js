@@ -37,12 +37,18 @@ const ARMOURED_BODY = Object.freeze({ grip: +0.02, topSpeed: -0.02 });
 const BIG_ENGINE = Object.freeze({ topSpeed: +0.05, accel: -0.05, grip: -0.05 });  // one large drive: top end, slow off the line
 const TWIN_ENGINE = Object.freeze({ topSpeed: -0.05, accel: +0.05, grip: +0.05 }); // two small drives: snappy, steadier
 const NONE = Object.freeze({});
+// The Needle's twin-blade Lance wings carry dampener nozzles along both spars:
+// the same speed-for-thrust trade as other thin wings, but a little grip
+// instead of less. Without it every twin-blade Needle sat at zero grip and
+// its body and engines could not move it (owner's call, 2026-09-30): now its
+// builds run from 10 to 38 grip points instead of 0 to 24.
+const NEEDLE_LANCE = Object.freeze({ grip: +0.02, topSpeed: +0.05, accel: -0.03 });
 
 // Which part index is which, per family (names from the garage's PART_CHOICES).
 const PARTS = Object.freeze({
   needle: {
     body: { 0: SLIM_BODY, 2: ARMOURED_BODY },       // Spear, Bastion
-    wings: { 0: THIN_WING, 1: THICK_WING },         // Lance (twin needles), Talon (armoured hooks)
+    wings: { 0: NEEDLE_LANCE, 1: THICK_WING },      // Lance (twin needles), Talon (armoured hooks)
     engines: { 0: BIG_ENGINE, 1: TWIN_ENGINE },     // Torch (single nozzle), Twin
   },
   manta: {
@@ -97,10 +103,10 @@ export function buildStats(key) {
 // square), for drawing and hitbox both. Owner's calls from test flights,
 // 2026-09-30:
 //   - the twin-blade Needle (Lance wings) came out 0.30 cells wide, a third
-//     of every other ship: 1.75x (about 0.52 wide, 1.7 long);
+//     of every other ship: 1.5x (about 0.44 wide, 1.45 long);
 //   - every Manta felt too small: 1.4x (about 1.1 to 1.35 wide);
 //   - every Wisp: 1.25x.
-export const SCALE = Object.freeze({ "needle-lance": 1.75, manta: 1.4, wisp: 1.25 });
+export const SCALE = Object.freeze({ "needle-lance": 1.5, manta: 1.4, wisp: 1.25 });
 /** How much bigger than the garage framing a build is drawn and collides. */
 export function buildScale(key) {
   const b = parseBuild(key);
