@@ -28,6 +28,16 @@ ogImage: "assets/images/stardust/iron-veil.webp"
   <div><strong>Dogfight 1v1</strong><span>A private room for you and a friend</span></div>
 </div>
 
+<section class="sd-planetfall-preview" aria-labelledby="sd-planetfall-preview-title">
+  <a class="sd-planetfall-preview-image" href="stardust/planetfall/"><img src="assets/Images/planetfall/wreck-clearing.png" width="1600" height="900" loading="lazy" decoding="async" alt="A wrecked frigate in the first Planetfall clearing, surrounded by smoke, trees and a pond."></a>
+  <div>
+    <p class="sd-planetfall-preview-kicker">Coming from Stardust · Early build</p>
+    <h2 id="sd-planetfall-preview-title">Planetfall</h2>
+    <p>The race has a destination. The top three pilots in the Week 1 time trial earn early access to Stardust: Planetfall. See real screenshots from the opening flight and crash site.</p>
+    <a href="stardust/planetfall/">See the Planetfall preview →</a>
+  </div>
+</section>
+
 <!-- sd-leaderboard -->
 
 <section class="sd-section sd-gallery" id="screens" aria-labelledby="sd-screens-title">
