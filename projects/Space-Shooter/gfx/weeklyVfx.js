@@ -69,7 +69,7 @@ export function drawWeeklyWorld(ctx, scene, unit, time, { ghosts = [], shipImg =
   // Ghosts: translucent ships with a name tag.
   for (const g of ghosts) {
     ctx.save(); ctx.globalAlpha = 0.34;
-    drawCourier(ctx, { x: g.x, y: g.y, angle: g.angle, vx: 0, vy: 0, hp: 100, maxHp: 100 }, { paused: true }, {}, unit, shipImg, time, 0.66);
+    drawCourier(ctx, { x: g.x, y: g.y, angle: g.angle, vx: 0, vy: 0, hp: 100, maxHp: 100, standardShip: true }, { paused: true }, {}, unit, shipImg, time, 0.66);
     ctx.globalAlpha = 0.8; ctx.fillStyle = g.color; ctx.font = `${Math.max(10, unit * 0.32)}px Consolas, monospace`; ctx.textAlign = 'center';
     const turn = state.gfx?.camera?.viewRot || 0;
     ctx.translate(g.x * unit, g.y * unit); ctx.rotate(-turn);
