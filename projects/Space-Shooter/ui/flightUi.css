@@ -141,6 +141,16 @@ body.fx-intro-fly .fx-intro-call { display: none; }
 .fx-set-row small { color: #8fb6c8; }
 .fx-set-row[hidden] { display: none; }
 .fx-set-row button { min-width: 62px; padding: 6px 10px; }
+.fx-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 10px; }
+.fx-tabs button { flex: 1 1 auto; min-width: 0; padding: 7px 10px; font-size: 12px; background: #0b1826; }
+.fx-tabs button.is-on { border-color: #81e6df; color: #0b1826; background: #81e6df; }
+.fx-pane[hidden] { display: none; }
+.fx-pane-note { margin: 2px 0 6px; font-size: 12px; line-height: 1.45; color: #8fb6c8; }
+.fx-binds { display: flex; align-items: center; gap: 6px; }
+.fx-set-row .fx-bind { min-width: 96px; padding: 6px 8px; font-variant-numeric: tabular-nums; }
+.fx-set-row .fx-bind.is-waiting { border-color: #ffc47d; color: #ffd6a3; }
+.fx-set-row .fx-bind-clear { min-width: 30px; padding: 6px 0; color: #8fb6c8; }
+@media (max-width: 560px) { .fx-set-row .fx-bind { min-width: 72px; } }
 .fx-stepper { display: flex; align-items: center; gap: 6px; }
 .fx-stepper button { min-width: 36px; padding: 6px; }
 .fx-stepper output { min-width: 44px; text-align: center; font-variant-numeric: tabular-nums; }

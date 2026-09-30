@@ -9,6 +9,9 @@ const FOCUSABLE = 'button:not(:disabled), a[href], input:not([disabled]), select
 let held = {};        // direction -> { since, last }
 let lastButtons = {};
 let current = null;
+let suspended = false;
+/** While a controller button is being rebound, presses must not drive the menu. */
+export function setPadMenuSuspended(on) { suspended = !!on; }
 
 function panel() {
   const open = [...document.querySelectorAll('.overlay-panel:not(.hidden)')].filter((p) => p.getClientRects().length);
@@ -83,6 +86,8 @@ function tick(now) {
     return;
   }
   const btn = (i) => !!pad.buttons?.[i]?.pressed;
+  // Keep tracking A and B so the press that ends a rebind is not taken as a click.
+  if (suspended) { lastButtons = { a: btn(0), b: btn(1) }; held = {}; return; }
   const ax = pad.axes?.[0] || 0, ay = pad.axes?.[1] || 0;
   const dirs = {
     up: btn(12) || ay < -STICK,

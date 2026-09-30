@@ -34,14 +34,34 @@ const neutral = () => ({
   pauseEdge: false,
   fullscreenEdge: false,
   minimapEdge: false,
+  cameraEdge: false,
 });
+// The player's bindings (systems/keybinds.js) laid over the standard mapping.
+// A button taken by a player binding leaves the fixed trap button alone only
+// if it is a different button.
+function resolve(bindings) {
+  const B = gamepadMapping.BUTTONS;
+  if (!bindings?.pad) {
+    return {
+      launch: B.LAUNCH, boostToggle: B.BOOST_TOGGLE, boostHold: B.BOOST_HOLD, brake: B.BRAKE, trap: B.TRAP, shoot: B.SHOOT,
+      pause: B.PAUSE, fullscreen: B.FULLSCREEN, minimap: B.MINIMAP_TOGGLE[0], camera: null, thrust: null, thrustBack: null, sticks: 'split',
+    };
+  }
+  const pad = bindings.pad;
+  const taken = new Set(Object.values(pad).filter((v) => v !== null));
+  return { ...pad, trap: taken.has(B.TRAP) ? null : B.TRAP, sticks: bindings.sticks === 'left-turn' ? 'left-turn' : 'split' };
+}
+/**
+ * getBindings: optional () => { pad: { action: buttonIndex | null }, sticks }.
+ * Without it the reader uses the standard mapping above, unchanged.
+ */
 export function createGamepadReader({
   stickDeadzone = 0.2,
   triggerDeadzone = 0.08,
+  getBindings = null,
 } = {}) {
   const dz = finite(stickDeadzone, 0, 1),
-    tdz = finite(triggerDeadzone, 0, 1),
-    buttons = gamepadMapping.BUTTONS;
+    tdz = finite(triggerDeadzone, 0, 1);
   let index = null,
     awaitingNeutral = false,
     boostToggle = false,
@@ -73,35 +93,45 @@ export function createGamepadReader({
       return neutral();
     }
     if (!pad) return neutral();
+    const buttons = resolve(getBindings?.());
     const axis = (i) => {
       const v = finite(pad.axes?.[i], -1, 1);
       return Math.abs(v) < dz ? 0 : v;
     };
     const value = (i) =>
-      finite(
+      i == null ? 0 : finite(
         pad.buttons?.[i]?.value ?? (pad.buttons?.[i]?.pressed ? 1 : 0),
         0,
         1,
       );
-    const pressed = (i) => !!pad.buttons?.[i]?.pressed || value(i) > 0.5;
+    const pressed = (i) => i != null && (!!pad.buttons?.[i]?.pressed || value(i) > 0.5);
     const lx = axis(0),
       ly = axis(1),
       rx = axis(2);
+    // Stick layout: which stick turns and which one strafes.
+    const turnAxis = buttons.sticks === 'left-turn' ? lx : rx;
+    const strafeAxis = buttons.sticks === 'left-turn' ? rx : lx;
+    // Thrust and reverse can also sit on a button or an analog trigger.
+    const gas = value(buttons.thrust) > tdz ? value(buttons.thrust) : 0;
+    const reverse = value(buttons.thrustBack) > tdz ? value(buttons.thrustBack) : 0;
     const now = {
-      launch: pressed(buttons.LAUNCH),
-      pause: pressed(buttons.PAUSE),
-      fullscreen: pressed(buttons.FULLSCREEN),
-      minimap: buttons.MINIMAP_TOGGLE.some(pressed),
-      y: pressed(buttons.BOOST_TOGGLE),
+      launch: pressed(buttons.launch),
+      pause: pressed(buttons.pause),
+      fullscreen: pressed(buttons.fullscreen),
+      minimap: pressed(buttons.minimap),
+      camera: pressed(buttons.camera),
+      y: pressed(buttons.boostToggle),
     };
     const anyHeld =
       lx !== 0 ||
       ly !== 0 ||
       rx !== 0 ||
-      value(buttons.SHOOT) > tdz ||
-      value(buttons.TRAP) > tdz ||
-      pressed(buttons.BRAKE) ||
-      pressed(buttons.BOOST_HOLD) ||
+      gas > 0 ||
+      reverse > 0 ||
+      value(buttons.shoot) > tdz ||
+      value(buttons.trap) > tdz ||
+      pressed(buttons.brake) ||
+      pressed(buttons.boostHold) ||
       Object.values(now).some(Boolean);
     if (awaitingNeutral) {
       if (!anyHeld) {
@@ -112,26 +142,29 @@ export function createGamepadReader({
     }
     const edge = (key) => now[key] && !previous[key];
     if (gameplayActive && edge("y")) boostToggle = !boostToggle;
+    const thrustStrength = Math.max(Math.max(0, -ly), gas);
+    const backStrength = Math.max(Math.max(0, ly), reverse) * 0.6;
     const result = {
-      thrust: ly < 0,
-      thrustBack: ly > 0,
-      strafeLeft: lx < -dz,
-      strafeRight: lx > dz,
-      turnLeft: rx < -dz,
-      turnRight: rx > dz,
-      thrustStrength: Math.max(0, -ly),
-      backStrength: Math.max(0, ly) * 0.6,
-      strafeStrength: Math.abs(lx) * 0.6,
-      strafe: Math.abs(lx) > dz ? lx * 0.6 : 0,
-      turnStrength: rx,
-      boost: pressed(buttons.BOOST_HOLD) || boostToggle,
-      shoot: value(buttons.SHOOT) > tdz,
-      trap: value(buttons.TRAP) > tdz,
-      brake: pressed(buttons.BRAKE),
+      thrust: thrustStrength > 0,
+      thrustBack: backStrength > 0,
+      strafeLeft: strafeAxis < -dz,
+      strafeRight: strafeAxis > dz,
+      turnLeft: turnAxis < -dz,
+      turnRight: turnAxis > dz,
+      thrustStrength,
+      backStrength,
+      strafeStrength: Math.abs(strafeAxis) * 0.6,
+      strafe: Math.abs(strafeAxis) > dz ? strafeAxis * 0.6 : 0,
+      turnStrength: turnAxis,
+      boost: pressed(buttons.boostHold) || boostToggle,
+      shoot: value(buttons.shoot) > tdz,
+      trap: value(buttons.trap) > tdz,
+      brake: pressed(buttons.brake),
       launchEdge: edge("launch"),
       pauseEdge: edge("pause"),
       fullscreenEdge: edge("fullscreen"),
       minimapEdge: edge("minimap"),
+      cameraEdge: edge("camera"),
     };
     previous = now;
     // Menus retain navigation edges, but cannot queue gameplay actions for resume.

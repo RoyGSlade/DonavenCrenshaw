@@ -111,3 +111,36 @@ test('paused reader preserves menu edges and suppresses gameplay including LT tr
  assert.equal(r.getState().boostToggle,false);
  assert.equal(r.poll([pad()],{gameplayActive:true}).boost,false);
 });
+
+test("player bindings: remapped buttons, thrust on a trigger, swapped sticks, camera switch", () => {
+  const pad = (buttons = {}, axes = [0, 0, 0, 0]) => ({ index: 0, connected: true, axes, buttons: Array.from({ length: 17 }, (_, i) => ({ pressed: !!buttons[i], value: typeof buttons[i] === 'number' ? buttons[i] : buttons[i] ? 1 : 0 })) });
+  let bindings = { pad: { launch: 0, boostToggle: 3, boostHold: 4, brake: 1, shoot: 5, thrust: 7, thrustBack: 6, camera: 2, minimap: 13, pause: 8, fullscreen: 9 }, sticks: 'left-turn' };
+  const r = createGamepadReader({ getBindings: () => bindings });
+  r.poll([pad()]);
+  // Right trigger half down = half thrust; B brakes; RB fires; the old brake button does nothing.
+  let out = r.poll([pad({ 7: 0.5, 1: true, 5: true })]);
+  assert.equal(out.thrust, true);
+  assert.equal(out.thrustStrength, 0.5);
+  assert.equal(out.brake, true);
+  assert.equal(out.shoot, true);
+  // Left trigger reverses at the usual 60%.
+  out = r.poll([pad({ 6: 1 })]);
+  assert.ok(Math.abs(out.backStrength - 0.6) < 1e-9);
+  assert.equal(out.trap, false, 'a rebound button no longer fires its fixed action');
+  // Swapped sticks: the left stick turns, the right stick strafes.
+  out = r.poll([pad({}, [0.8, 0, -0.7, 0])]);
+  assert.equal(out.turnStrength, 0.8);
+  assert.equal(out.strafeLeft, true);
+  assert.equal(out.turnRight, true);
+  // Camera switch is an edge: once per press.
+  assert.equal(r.poll([pad({ 2: true })]).cameraEdge, true);
+  assert.equal(r.poll([pad({ 2: true })]).cameraEdge, false);
+  // Bindings are read live.
+  bindings = { pad: { ...bindings.pad, camera: null, launch: 2 }, sticks: 'split' };
+  r.poll([pad()]);
+  out = r.poll([pad({ 2: true }, [0.8, 0, 0, 0])]);
+  assert.equal(out.launchEdge, true);
+  assert.equal(out.cameraEdge, false);
+  assert.equal(out.strafeRight, true);
+  assert.equal(out.turnStrength, 0);
+});
