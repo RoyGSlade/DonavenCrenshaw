@@ -218,14 +218,18 @@ export function render() {
 
   ctx.restore();
 
-  // Screen-space UI
+  // Screen-space UI, in CSS pixels like the DOM widgets: scale by the device
+  // pixel ratio, or on a 125%/150% display the minimap, the shard arrow and the
+  // weekly warnings land at 1/dpr of where they belong.
+  ctx.save();
+  ctx.scale(dpr, dpr);
   drawHUD(W, H);
-
   if (mode === 'roadmap') {
     drawShardIndicator(W, H);
     if (state.run?.current?.weekly) drawWeeklyHud(ctx, W, H, state.run.current);
     if (state.run?.current?.showLaunchHint && !state.ui.countdownActive) drawLaunchHint(W, H);
   }
+  ctx.restore();
   // HUD widgets, touch controls and the race intro (READY / SET / GO) are DOM (ui/flightUi.js).
   updateFlightUi(dt);
 
@@ -616,9 +620,14 @@ function drawShardIndicator(W, H) {
   const { player } = lv;
   const t = lv.nearestShardTarget;
   const a = Math.atan2((t.y + 0.5) - player.y, (t.x + 0.5) - player.x);
-  const r = Math.min(W, H) * 0.15;
-  const x = W / 2 + r * Math.cos(a);
-  const y = H / 2 + r * Math.sin(a);
+  // Around the ship on screen (the chase camera keeps it off centre), not the screen centre.
+  const cam = state.gfx.camera, zoom = cam.zoom || 1;
+  const ship = lv.viewPlayer || player;
+  const sx = W / 2 + (ship.x - cam.x) * state.gfx.cellW * zoom;
+  const sy = H / 2 + (ship.y - cam.y) * state.gfx.cellH * zoom;
+  const r = Math.min(W, H) * 0.09;
+  const x = sx + r * Math.cos(a);
+  const y = sy + r * Math.sin(a);
   const { ctx } = state.gfx;
   ctx.save();
   ctx.beginPath();

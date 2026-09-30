@@ -54,6 +54,8 @@ The closed-loop validation pilot uses only turn and thrust inputs, with real phy
 | Nether Crossing      | 53.01 s    | 67.9      | 100       | 2             |
 | Iron Veil            | 43.23 s    | 71.4      | 90.4      | 0             |
 
+**Legacy (parked 2026-09-30):** the portal is gone from the main tracks and a lap ends at the finish line, so the Iron Veil rear-entry secret (arena, seal, Platinum 10) cannot be reached. It stays in the code, switched off, until it is restarted with a new trigger. The figures below are from when it was live.
+
 The genuine Iron Veil lap plus deliberate portal bypass and rear entry takes 50.36 seconds, leaving 66.1 fuel and 90.4 hull. This proves mechanical attainability with roughly nine seconds of secret margin; it does not establish novice human difficulty. Nether Crossing's two harmless rail contacts are retained in the evidence. The pilot does not need boost, shooting or station refuelling, leaving those options available to players.
 
 Earlier timestamped package/screenshot evidence retains its former research labels. Current naming is verified separately in `evidence/track-names.json` and the `track-names-*.png` screenshots; the old evidence was not rewritten to imply it captured a later build.

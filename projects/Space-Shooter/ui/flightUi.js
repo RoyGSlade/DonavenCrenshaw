@@ -13,6 +13,7 @@ import { flightSettings, updateFlightSettings, MINIMAP_ZOOMS, ICON_SCALES, isTou
 import { subscribeTilt, calibrateTiltControls, getTiltState } from '../systems/tilt.js';
 import { openPauseOverlay, closePauseOverlay } from './overlays.js';
 import { toast } from './hud.js';
+import { initPadMenu } from './padMenu.js';
 
 let root = null;
 let lastPadUse = -Infinity, lastTouch = -Infinity, padNotified = false;
@@ -34,6 +35,7 @@ export function initFlightUi() {
   initLayout(root);
   document.body.classList.toggle('fx-touch-device', isTouchDevice());
   buildFlightSettings();
+  initPadMenu();
   subscribeTilt((tilt) => setWheelHidden(tilt.enabled));
   window.addEventListener('pointerdown', (e) => { if (e.pointerType === 'touch') lastTouch = performance.now(); }, { capture: true, passive: true });
   window.addEventListener('stardust:clear-input', releaseTouchPad);

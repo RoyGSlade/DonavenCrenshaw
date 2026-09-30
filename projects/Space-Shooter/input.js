@@ -282,6 +282,7 @@ export function pumpInput() {
     state.ui.showSettingsOverlay ||
     state.ui.showEndOverlay ||
     state.ui.showDefeatOverlay ||
+    state.ui.showFailOverlay ||
     state.arena?.victoryPresented
   ) {
     clearKeys();

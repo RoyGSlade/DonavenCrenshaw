@@ -44,7 +44,6 @@ export function initRaceIntro(root) {
   card.innerHTML = '<div class="fx-intro-card"><p class="fx-intro-kicker"></p><h2 class="fx-intro-title"></h2><p class="fx-intro-sub"></p></div><div class="fx-intro-call"><span></span></div><p class="fx-intro-skip">Tap to skip the flythrough</p>';
   root.append(card);
   artImage('title-card-frame', card.querySelector('.fx-intro-card'));
-  artImage('ready-set-go-glow', card.querySelector('.fx-intro-call'));
   els = { card, kicker: card.querySelector('.fx-intro-kicker'), title: card.querySelector('.fx-intro-title'), sub: card.querySelector('.fx-intro-sub'), call: card.querySelector('.fx-intro-call span'), skip: card.querySelector('.fx-intro-skip') };
   const skip = (event) => {
     const scene = currentScene();

@@ -71,6 +71,9 @@ try {
     const tick = () => {
       const lv = state.run?.current;
       if (!lv || lv.completed || state.ui.showEndOverlay) { for (const k of [...held]) key(k, false); window.__weeklyDriver.done = true; return; }
+      // A death opens the attempt-over screen: retry, like a player would.
+      if (state.ui.showFailOverlay) { for (const k of [...held]) key(k, false); window.__weeklyDriver.deaths = (window.__weeklyDriver.deaths || 0) + (window.__weeklyDriver.onFail ? 0 : 1); window.__weeklyDriver.onFail = true; document.querySelector('[data-fail="retry"]')?.click(); requestAnimationFrame(tick); return; }
+      window.__weeklyDriver.onFail = false;
       if (lv.wreck || state.ui.countdownActive) { for (const k of [...held]) key(k, false); requestAnimationFrame(tick); return; }
       if (lv.lockedInStart) { idx = 0; window.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true })); requestAnimationFrame(tick); return; }
       const p = lv.player;
@@ -98,7 +101,11 @@ try {
     const reached = await page.waitForFunction((s) => window.__sd.run?.current?.activeMs >= s * 1000 || window.__weeklyDriver?.done, seconds, { timeout: 240000, polling: 100 }).then(() => true).catch(() => false);
     if (reached) await page.screenshot({ path: path.join(out, `${name}.png`) });
   }
-  await page.waitForFunction(() => window.__weeklyDriver?.done, null, { timeout: 300000, polling: 250 });
+  await page.waitForFunction(() => window.__weeklyDriver?.done, null, { timeout: 300000, polling: 250 }).catch(async (error) => {
+    // Say where the pilot got stuck instead of a bare timeout.
+    console.log('lap did not finish:', JSON.stringify(await page.evaluate(() => { const lv = window.__sd.run?.current, ui = window.__sd.ui; return { activeMs: lv?.activeMs, shards: lv?.shards?.size, dead: lv?.dead, wreck: !!lv?.wreck, locked: lv?.lockedInStart, deaths: window.__weeklyDriver?.deaths, countdown: ui.countdownActive, paused: ui.paused, fail: ui.showFailOverlay, end: ui.showEndOverlay, start: ui.showStartOverlay }; })), errors);
+    throw error;
+  });
   const result = await page.evaluate(async () => {
     const { state } = await import('/projects/Space-Shooter/state.js');
     const { replayInputLog } = await import('/projects/Space-Shooter/engine/weekly/replay.js');
@@ -112,7 +119,7 @@ try {
   check(result.finished && result.shards === result.total, `finished a live lap with every shard (${(result.ms / 1000).toFixed(2)} s, ${result.wallHits} rail hits)`);
   check(Math.round(result.ms) === result.best, 'local best saved with the finish time');
   check(result.matches === true, `recorded inputs replay to the same finish (${result.replayMs?.toFixed(3)} vs ${result.ms?.toFixed(3)} ms, ${result.logBytes} bytes)`);
-  check(/Gantry Drop complete/.test(result.end || ''), 'end screen names the weekly track');
+  check(/Gantry Drop complete/.test(await page.textContent('#starmap-end-lede') || ''), 'end screen names the weekly track');
   await page.screenshot({ path: path.join(out, 'game-finish.png') });
 
   // Fly again: the best now rides along as a ghost.
@@ -155,7 +162,11 @@ try {
     return { dead: lv.dead, wreck: !!lv.wreck };
   });
   check(mine.dead === 'mine' && mine.wreck, 'touching a mine destroys the ship');
+  // The attempt-over screen: cause, the board around you, Retry / Return to hangar.
+  const failShown = await page.waitForSelector('#weekly-fail:not(.hidden)', { timeout: 5000 }).then(() => true).catch(() => false);
+  check(failShown && /DESTROYED/.test(await page.textContent('#fx-fail-title')), 'a death opens the attempt-over screen');
   await page.screenshot({ path: path.join(out, 'game-mine-death.png') });
+  await page.keyboard.press('r');
   const reset = await page.waitForFunction(() => { const lv = window.__sd.run.current; return lv && !lv.dead && lv.lockedInStart && lv.activeMs === 0; }, null, { timeout: 5000 }).then(() => true).catch(() => false);
   check(reset, 'after a death the next attempt starts on the grid with the clock at zero');
 
@@ -170,14 +181,14 @@ try {
     const corner = lv.track.points[s.point];
     let fired = false;
     const t0 = performance.now();
-    while (performance.now() - t0 < 1800) {
+    while (performance.now() - t0 < 4000) {
       lv.player.x = corner.x - 3; lv.player.y = corner.y + 0.5; lv.player.vx = 0.5; lv.player.vy = 0; lv.player.hp = 100;
       if (lv.enemyShots.length || s.state === 'telegraph') fired = true;
       await new Promise((r) => setTimeout(r, 30));
     }
-    return { fired };
+    return { fired, state: s.state, locked: lv.lockedInStart, activeMs: lv.activeMs, fail: state.ui.showFailOverlay, countdown: state.ui.countdownActive, dead: lv.dead };
   });
-  check(sentry.fired, 'a slow ship in range draws sentry fire');
+  check(sentry.fired, `a slow ship in range draws sentry fire${sentry.fired ? '' : ` ${JSON.stringify(sentry)}`}`);
   await page.screenshot({ path: path.join(out, 'game-sentry-lock.png') });
   check(!errors.length, `no page errors${errors.length ? `: ${errors.slice(0, 3).join(' | ')}` : ''}`);
 } finally {

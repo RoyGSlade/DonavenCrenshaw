@@ -86,7 +86,7 @@ export function initLayout(flightRoot) {
   window.addEventListener('stardust:flightSettings', relayout);
   bar = document.createElement('div');
   bar.className = 'fx-edit-bar';
-  bar.innerHTML = '<span class="fx-edit-hint">Drag to move · select, then − / + to resize</span><button type="button" data-edit="smaller" aria-label="Smaller">−</button><button type="button" data-edit="bigger" aria-label="Bigger">+</button><button type="button" data-edit="reset">Reset</button><button type="button" data-edit="done" class="primary">Done</button>';
+  bar.innerHTML = '<span class="fx-edit-hint">Drag to move · drag the corner (or − / +) to resize</span><button type="button" data-edit="smaller" aria-label="Smaller">−</button><button type="button" data-edit="bigger" aria-label="Bigger">+</button><button type="button" data-edit="reset">Reset</button><button type="button" data-edit="done" class="primary">Done</button>';
   root.append(bar);
   bar.addEventListener('click', (event) => {
     const action = event.target.closest('[data-edit]')?.dataset.edit;
@@ -104,13 +104,22 @@ export function initLayout(flightRoot) {
     if (!el || !working[el.dataset.widget]) return;
     event.preventDefault();
     event.stopPropagation();
-    select(el.dataset.widget);
     const id = el.dataset.widget;
-    const start = { x: event.clientX, y: event.clientY, wx: working[id].x, wy: working[id].y };
+    // The corner handle resizes; anywhere else on the widget moves it.
+    const resizing = !!event.target.closest('.fx-resize');
+    select(id);
+    const rect = el.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
+    const start = { x: event.clientX, y: event.clientY, wx: working[id].x, wy: working[id].y, s: working[id].s, d: Math.max(8, Math.hypot(event.clientX - cx, event.clientY - cy)) };
     const move = (e) => {
       if (e.pointerId !== event.pointerId) return;
-      working[id].x = Math.min(1, Math.max(0, start.wx + (e.clientX - start.x) / window.innerWidth));
-      working[id].y = Math.min(1, Math.max(0, start.wy + (e.clientY - start.y) / window.innerHeight));
+      if (resizing) {
+        const d = Math.hypot(e.clientX - cx, e.clientY - cy);
+        working[id].s = Math.min(MAX_S, Math.max(MIN_S, start.s * (d / start.d)));
+      } else {
+        working[id].x = Math.min(1, Math.max(0, start.wx + (e.clientX - start.x) / window.innerWidth));
+        working[id].y = Math.min(1, Math.max(0, start.wy + (e.clientY - start.y) / window.innerHeight));
+      }
       applyLayout(working);
     };
     const up = (e) => {
@@ -129,7 +138,17 @@ export function initLayout(flightRoot) {
 
 function select(id) {
   selected = id;
-  for (const el of root.querySelectorAll('[data-widget]')) el.classList.toggle('fx-selected', el.dataset.widget === id);
+  root.querySelector('.fx-resize')?.remove();
+  for (const el of root.querySelectorAll('[data-widget]')) {
+    const on = el.dataset.widget === id;
+    el.classList.toggle('fx-selected', on);
+    if (on) {
+      const handle = document.createElement('span');
+      handle.className = 'fx-resize';
+      handle.setAttribute('aria-hidden', 'true');
+      el.append(handle);
+    }
+  }
 }
 
 export const isEditingLayout = () => editing;

@@ -15,7 +15,11 @@ body.fx-flying.fx-touch-on:not(.fx-intro-fly) .fx-touch:not(.is-off) { display: 
 body.fx-intro-on .fx-gauges, body.fx-intro-on .fx-topbar, body.fx-intro-on .fx-settings { visibility: hidden; }
 body.fx-editing .fx-widget:not(.fx-unplaced) { display: flex !important; visibility: visible !important; outline: 1px dashed #81e6dfaa; outline-offset: 4px; cursor: grab; }
 body.fx-editing:not(.fx-touch-on) .fx-touch { display: none !important; }
-body.fx-editing .fx-minimap { display: block !important; background: #0714219c; }
+body.fx-editing .fx-minimap { display: block !important; background: #0714219c; pointer-events: auto; }
+body.fx-editing .fx-minimap::after { content: 'MINIMAP'; position: absolute; left: 8px; top: 6px; font-size: 10px; letter-spacing: .16em; color: #8fb6c8; }
+body.fx-editing .fx-minimap.is-off::after { content: 'MINIMAP (OFF)'; }
+.fx-resize { position: absolute; right: -14px; bottom: -14px; width: 22px; height: 22px; border-radius: 50%; background: #ffc47d; border: 2px solid #0b1622; box-shadow: 0 0 10px #ffc47daa; cursor: nwse-resize; z-index: 2; pointer-events: auto; }
+.fx-resize::before { content: ''; position: absolute; inset: 5px; border-right: 2px solid #0b1622; border-bottom: 2px solid #0b1622; }
 body.fx-editing .fx-widget.fx-selected { outline: 2px solid #ffc47d; box-shadow: 0 0 24px #ffc47d55; }
 .fx-unplaced { display: none !important; }
 
@@ -53,7 +57,10 @@ body.fx-editing .fx-widget.fx-selected { outline: 2px solid #ffc47d; box-shadow:
 
 /* Top bar */
 .fx-topbar { gap: 0; padding: 6px 10px; border: 1px solid #81e6df3a; border-top-color: #81e6df88; border-radius: 8px; background: #0b1622dd; box-shadow: 0 8px 24px #0006; }
-.fx-topbar.has-art { display: grid; grid-template-columns: 1fr 1fr 1fr; width: 470px; height: 56px; align-items: center; border: 0; background-color: transparent; background-size: 100% 100%; box-shadow: none; padding: 0 52px; }
+/* Columns match the art's compartments: its dividers sit at 35.1% and 65.3%,
+   its slanted ends take about 7% on each side. */
+.fx-topbar.has-art { display: grid; grid-template-columns: minmax(0, 28.1fr) minmax(0, 30.2fr) minmax(0, 27.7fr); width: 470px; height: 56px; align-items: center; border: 0; background-color: transparent; background-size: 100% 100%; box-shadow: none; padding: 0 33px; }
+.fx-topbar.has-art .fx-tb-cell { min-width: 0; }
 .fx-topbar.has-art .fx-tb-cell { border-left: 0; padding: 0 6px; }
 body.fx-flying:not(.fx-intro-fly) .fx-topbar.has-art { display: grid; }
 .fx-tb-cell { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 0 16px; border-left: 1px solid #81e6df2a; }
@@ -144,3 +151,21 @@ body.fx-editing .fx-edit-bar { display: flex; }
 .fx-edit-hint { font-size: 12px; color: #ffd6a3; margin-right: 4px; }
 .fx-edit-bar button { padding: 8px 12px; min-width: 40px; }
 @media (max-width: 560px) { .fx-edit-bar { flex-wrap: wrap; justify-content: center; width: 86vw; } }
+
+/* Weekly attempt-over screen (ui/failScreen.js) */
+.fx-fail .panel { max-width: 460px; }
+.fx-fail h2 { color: #ff8a6b; letter-spacing: .04em; }
+.fx-fail-why { margin: 4px 0 2px; color: #e8d9c7; }
+.fx-fail-stats { margin: 0 0 12px; font: 12px Consolas, ui-monospace, monospace; color: #8fb6c8; }
+.fx-fail-board { margin: 0 0 14px; padding: 8px 10px; border: 1px solid #81e6df2e; border-radius: 8px; background: #07101a99; text-align: left; }
+.fx-fail-board-title { margin: 0 0 6px; font: 10px Consolas, ui-monospace, monospace; letter-spacing: .18em; color: #ffc47d; }
+.fx-fail-board ol { margin: 0; padding: 0; list-style: none; }
+.fx-fail-board li { display: grid; grid-template-columns: 3.5ch 1fr auto; gap: 10px; padding: 5px 6px; border-radius: 5px; font: 13px Consolas, ui-monospace, monospace; }
+.fx-fail-board li.is-me { background: #81e6df1f; color: #fff; outline: 1px solid #81e6df55; }
+.fx-fb-rank { color: #8fb6c8; }
+.fx-fb-time { font-variant-numeric: tabular-nums; color: #ffd6a3; }
+.fx-fail-board-note { margin: 6px 0 0; font-size: 12px; color: #9fd7d2; }
+.fx-fail-board-note:empty { display: none; }
+
+/* Controller menu navigation (ui/padMenu.js): a clear highlight on the selected control. */
+.pad-focus { outline: 3px solid #ffc47d !important; outline-offset: 3px; box-shadow: 0 0 0 6px #ffc47d33, 0 0 22px #ffc47d66 !important; }
