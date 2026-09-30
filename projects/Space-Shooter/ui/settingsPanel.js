@@ -13,6 +13,7 @@ import {
 } from '../systems/keybinds.js';
 import { toast } from './hud.js';
 import { setPadMenuSuspended } from './padMenu.js';
+import { getSyncStatus, syncStatusText } from '../systems/hubSyncLive.js';
 
 const TABS = [['camera', 'Camera'], ['controls', 'Controls'], ['keys', 'Keys'], ['pad', 'Controller'], ['hud', 'HUD']];
 
@@ -70,6 +71,7 @@ function markup() {
       ${steppers('hud')}
       ${row('HUD &amp; controls layout', '', '<button type="button" data-fx="edit">Edit layout</button>')}
       ${row('Share settings', 'camera, controls, keys, layout', '<div class="fx-stepper"><button type="button" data-fx="copy-code">Copy code</button><button type="button" data-fx="paste-code">Paste code</button></div>')}
+      <p class="fx-pane-note" data-fx-sync role="status"></p>
     </div>`;
 }
 
@@ -91,6 +93,9 @@ function paint() {
   toggle('autofire', s.autoFire, s.autoFire ? 'On' : 'Off');
   toggle('map-toggle', s.minimap.show, s.minimap.show ? 'On' : 'Off');
   toggle('sticks', s.binds.sticks === 'left-turn', s.binds.sticks === 'left-turn' ? 'Left turns · right strafes' : 'Left moves · right turns');
+  // Whether these settings (and your ship and designs) are kept on your account.
+  const syncLine = box.querySelector('[data-fx-sync]');
+  if (syncLine) { const status = getSyncStatus(); syncLine.textContent = syncStatusText(status); syncLine.dataset.status = status; }
   // Tilt only exists on touch devices.
   for (const r of box.querySelectorAll('.fx-tilt-row')) r.hidden = !isTouchDevice();
   for (const b of box.querySelectorAll('[data-bind-key]')) {
@@ -245,6 +250,7 @@ export function buildFlightSettings({ onEditLayout, onChange }) {
   new MutationObserver(() => { if (document.getElementById('starmap-pause')?.classList.contains('hidden')) endCapture(); })
     .observe(document.getElementById('starmap-pause'), { attributes: true, attributeFilter: ['class'] });
   window.addEventListener('stardust:flightSettings', paint);
+  window.addEventListener('stardust:syncStatus', paint);
   paint();
 }
 

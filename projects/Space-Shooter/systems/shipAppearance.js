@@ -159,6 +159,10 @@ export function loadShipKits() {
     });
   return kitsPromise;
 }
+/** Whether the part images are loaded, so renderAppearance can run. */
+export function shipKitsLoaded() {
+  return !!kits;
+}
 export function availablePartIndices(family, slot) {
   return (kits?.[family]?.[slot] || []).flatMap((part, index) => part.available ? [index] : []);
 }
@@ -472,7 +476,11 @@ export function getEquippedAppearance() {
 }
 function updateHangar() {
   const image = document.querySelector('#hangar-ship img');
-  if (image && equippedCanvas) image.src = equippedCanvas.toDataURL('image/png');
+  if (!image) return;
+  // The page's own picture of the standard ship comes back when nothing is equipped.
+  image.dataset.standardSrc ||= image.getAttribute('src') || '';
+  if (equippedCanvas) image.src = equippedCanvas.toDataURL('image/png');
+  else if (image.dataset.standardSrc) image.src = image.dataset.standardSrc;
 }
 export function initCourierAppearance() {
   if (!readyPromise)
@@ -511,4 +519,14 @@ export function equipAppearance(value) {
   updateHangar();
   window.dispatchEvent(new CustomEvent('stardust:appearance-changed'));
   return saved;
+}
+/** Back to the standard ship: forgets the equipped one on this device. */
+export function unequipAppearance() {
+  try {
+    localStorage.removeItem(APPEARANCE_KEY);
+  } catch {}
+  equipped = null;
+  equippedCanvas = null;
+  updateHangar();
+  window.dispatchEvent(new CustomEvent('stardust:appearance-changed'));
 }

@@ -44,7 +44,8 @@ export function updateCurrentMode(dt) {
 // track, with its own start/complete events so the network run, its splits,
 // challenges and boards never see it. 'weekly' is the weekly time trial of
 // `event` (engine/modes/weekly.js). preview (custom/weekly) is never saved.
-export function startNewRun({ kind = 'network', preview = false, event = null } = {}) {
+// ship: 'equipped' flies a weekly preview as the equipped garage build (see startWeekly).
+export function startNewRun({ kind = 'network', preview = false, event = null, ship = null } = {}) {
   // Ensure engine loop is active (may have been stopped after a completed run)
   ensureEngineRunning();
   // Clear any lingering end overlay from prior run
@@ -54,9 +55,9 @@ export function startNewRun({ kind = 'network', preview = false, event = null } 
   state.ui.showBossUI = false;
   state.ui.showStartOverlay = false;
   if (kind === 'weekly' && event) {
-    state.run = { runId: Date.now().toString(36), kind: 'weekly', event, preview: !!preview, totalActiveMs: 0, levelIndex: 1, seeds: [], current: null };
+    state.run = { runId: Date.now().toString(36), kind: 'weekly', event, preview: !!preview, ship: preview ? ship : null, totalActiveMs: 0, levelIndex: 1, seeds: [], current: null };
     state.ui.paused = false;
-    startWeekly(event, { preview: !!preview });
+    startWeekly(event, { preview: !!preview, ship: preview ? ship : null });
     startCountdown(config.COUNTDOWN_DURATION, state.run.current);
     return;
   }
@@ -88,7 +89,7 @@ export function retryRun() {
   closePauseOverlay();
 
   // Retry is a fresh run of the same kind with the same deterministic authored routes.
-  startNewRun({ kind: state.run.kind, preview: state.run.preview, event: state.run.event });
+  startNewRun({ kind: state.run.kind, preview: state.run.preview, event: state.run.event, ship: state.run.ship });
 }
 
 export function quitRun() {

@@ -33,10 +33,29 @@ export function saveDesign(name, appearance) {
   if (json.length > 3500000)
     throw new Error('Your design library is full. Remove a design to make room.');
   localStorage.setItem(KEY, json);
+  changed();
   return entry;
 }
 export function removeDesign(id) {
   localStorage.setItem(KEY, JSON.stringify(readLibrary().filter((i) => i.id !== id)));
+  changed();
+}
+/** The library changed through the garage (systems/hubSync.js saves it to the account). */
+function changed() {
+  try { globalThis.dispatchEvent?.(new CustomEvent('stardust:library-changed')); } catch { /* no window */ }
+}
+/** Replace the library with a list of designs (the account's, merged). Cleaned and capped like a read; no change event. */
+export function writeLibrary(items) {
+  try {
+    const clean = (Array.isArray(items) ? items : [])
+      .filter((i) => typeof i?.name === 'string' && typeof i?.id === 'string' && cleanAppearance(i.appearance))
+      .map((i) => ({ ...i, appearance: cleanAppearance(i.appearance) }))
+      .slice(0, 12);
+    localStorage.setItem(KEY, JSON.stringify(clean));
+    return true;
+  } catch {
+    return false;
+  }
 }
 export function downloadDesign(name, appearance) {
   const url = URL.createObjectURL(
@@ -68,7 +87,7 @@ export async function readDesignFile(file) {
 }
 let apiBase =
   runtimeConfig.liveryApiBaseUrl ||
-  (['donavencrenshaw.com', 'www.donavencrenshaw.com'].includes(location.hostname)
+  (['donavencrenshaw.com', 'www.donavencrenshaw.com'].includes(globalThis.location?.hostname)
     ? 'https://api.donavencrenshaw.com'
     : '');
 export function getLiveryApi() {

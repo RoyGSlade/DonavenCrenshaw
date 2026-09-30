@@ -11,9 +11,13 @@ function glow(ctx, x, y, r, color) {
 }
 // The original sprite's two exhaust ports, for ships drawn as the standard one (ghosts).
 const STANDARD_PORTS = [{ x: -0.13, y: 0.38, width: 0.13 }, { x: 0.13, y: 0.38, width: 0.13 }];
+// player.appearanceCanvas: a ready-painted ship to draw instead of the equipped one
+// (a ghost flown in someone's custom ship); player.buildKey is the build it flew,
+// which sets its size the way scene.ship does for the pilot's own.
 export function drawCourier(ctx, player, scene, keys, unit, img, time, scale = 0.66) {
   // A garage build flying its own physics is drawn at its own size (engine/shipStats.js).
-  const s = unit * 1.6 * scale * (scene?.ship && !player.standardShip ? buildScale(scene.ship) : 1);
+  const build = player.appearanceCanvas ? player.buildKey : scene?.ship && !player.standardShip ? scene.ship : null;
+  const s = unit * 1.6 * scale * (build ? buildScale(build) : 1);
   const active = !scene?.lockedInStart && !scene?.onStartPad && !scene?.showLaunchHint && !scene?.paused;
   const burn = active && scene?.fuel > 0 ? clamp(keys.thrustStrength || 0, 0, 1) : 0;
   const boost = active && player._boostCd > 0.12;
@@ -32,7 +36,7 @@ export function drawCourier(ctx, player, scene, keys, unit, img, time, scale = 0
     for(const side of [-1,1]) { ctx.beginPath(); ctx.moveTo(side*s*.31,s*.1); ctx.lineTo(side*s*.34,-s*.14); ctx.stroke(); }
   }
   ctx.shadowColor='#44bacc'; ctx.shadowBlur=unit*.12;
-  const appearance = (player.standardShip ? null : getCourierAppearance()) || img;
+  const appearance = player.appearanceCanvas || (player.standardShip ? null : getCourierAppearance()) || img;
   if(appearance) ctx.drawImage(appearance,-s/2,-s/2,s,s); else { ctx.fillStyle='#bcefff'; ctx.beginPath(); ctx.moveTo(0,-s*.46); ctx.lineTo(s*.35,s*.36); ctx.lineTo(0,s*.22); ctx.lineTo(-s*.35,s*.36); ctx.closePath(); ctx.fill(); }
   ctx.shadowBlur=0;
   if (player.invulnTimer > 0) {

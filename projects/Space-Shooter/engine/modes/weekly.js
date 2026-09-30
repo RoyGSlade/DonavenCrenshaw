@@ -3,8 +3,11 @@
 // that send the ship straight back to the grid, the finish, and ghosts.
 //
 // Events for systems/runSaving.js:
-//   stardust:weeklyAttempt      { eventId, version, preview }  a fresh attempt (grid + countdown)
-//   stardust:weeklyRunComplete  { eventId, version, totalMs, inputLog, preview, personalBest, previousMs, title }
+//   stardust:weeklyAttempt      { eventId, version, preview, build, appearance }  a fresh attempt (grid + countdown)
+//   stardust:weeklyRunComplete  { eventId, version, totalMs, inputLog, preview, personalBest, previousMs, title, build, appearance }
+// build is the garage build the attempt flies (null for the standard ship) and
+// appearance the ship equipped when it started, cleaned (null when none).
+// Both are taken once, at the start of the attempt.
 import { state, config } from "../../state.js";
 import { createWeeklyLayout, WEEKLY_RULES } from "../weekly/layout.js";
 import { createWeeklyScene, stepWeekly, frameFromKeys, sceneMs, BIT, WEEKLY_PHYSICS } from "../weekly/sim.js";
@@ -40,15 +43,18 @@ const ghosts = new Map();
 let ghostsVisible = true;
 
 // This browser's best per event lives in engine/weekly/localBest.js.
-import { readLocalBest, saveLocalBest } from "../weekly/localBest.js";
+import { readLocalBest, saveLocalBest, makeLocalBest } from "../weekly/localBest.js";
+import { snapshotAppearance } from "../../systems/runClient.js";
 export { readLocalBest };
 
 /** Add or replace a ghost from an input log; it is replayed once here. */
-export function setWeeklyGhost(id, { log, label, color = "#9fe8ff", layout = session?.layout } = {}) {
+export function setWeeklyGhost(id, { log, label, color = "#9fe8ff", layout = session?.layout, appearance = null, build = null } = {}) {
   if (!layout || !log) { ghosts.delete(id); return false; }
   const replay = replayInputLog(layout, log);
   if (!replay.ok || !replay.finished) { ghosts.delete(id); return false; }
-  ghosts.set(id, { poses: replay.poses, label, color, ms: replay.finishMs });
+  // appearance / build: the ship the ghost was flown in (gfx/ghostShip.js draws it;
+  // the drawn sprite is cached on this entry). Without them it is the standard ship.
+  ghosts.set(id, { poses: replay.poses, label, color, ms: replay.finishMs, appearance, build, sprite: null });
   return true;
 }
 export function weeklyGhosts() {
@@ -63,14 +69,18 @@ export function currentWeeklySession() {
 }
 
 /** A new weekly launch from the hangar (or Fly again). */
-export function startWeekly(event, { preview = false } = {}) {
+// ship: 'equipped' (or a build key) flies a preview attempt as that garage build,
+// the same as ?preview=weekly&ship= in the address bar; it only applies to
+// previews, so a ranked attempt can never fly it.
+export function startWeekly(event, { preview = false, ship = null } = {}) {
   if (session?.event !== event) {
     ghosts.clear();
     session = { event, layout: createWeeklyLayout(event), preview, attempts: 0, frames: [] };
     const best = readLocalBest(event);
-    if (best) setWeeklyGhost("best", { log: best.log, label: `Your best ${formatMs(best.ms)}`, color: "#9fe8ff" });
+    if (best) setWeeklyGhost("best", { log: best.log, label: `Your best ${formatMs(best.ms)}`, color: "#9fe8ff", appearance: best.appearance, build: best.build });
   }
   session.preview = preview;
+  session.ship = preview ? ship : null;
   session.attempts = 0;
   buildAttempt();
   playMusic(event.music || "level3");
@@ -84,7 +94,7 @@ function buildAttempt() {
   resizeCanvas();
   // A garage build flies its own hitbox and stats where the event allows it
   // (or on a preview flight asked for with ?ship=); otherwise the standard ship.
-  const ship = buildForRun(session.event, { preview: session.preview });
+  const ship = buildForRun(session.event, { preview: session.preview, ship: session.ship });
   if (ship && ship !== equippedBuild()) {
     const b = parseBuild(ship);
     setFlightBuild(b.family, { body: b.body, wings: b.wings, cockpit: b.cockpit, engines: b.engines }).catch(() => clearFlightBuild());
@@ -106,8 +116,11 @@ function buildAttempt() {
   state.run.totalActiveMs = 0;
   session.frames = [];
   session.attempts += 1;
+  // What this attempt is flown in, fixed now: a ship changed mid-attempt changes nothing.
+  session.build = ship || null;
+  session.appearance = snapshotAppearance();
   updateTarget(scene);
-  window.dispatchEvent(new CustomEvent("stardust:weeklyAttempt", { detail: { eventId: session.event.id, version: session.event.version, preview: session.preview } }));
+  window.dispatchEvent(new CustomEvent("stardust:weeklyAttempt", { detail: { eventId: session.event.id, version: session.event.version, preview: session.preview, build: session.build, appearance: session.appearance } }));
   updateHUD();
 }
 
@@ -249,10 +262,14 @@ function finish(lv) {
   state.run.totalActiveMs = ms;
   const inputLog = encodeInputLog({ eventId: event.id, version: event.version, frames: session.frames, finishMs: lv.finishMs, physics: lv.physics, ship: lv.ship });
   const previous = readLocalBest(event);
-  const personalBest = !previous || ms < previous.ms;
+  // A practice flight in a garage build (preview + build) is not a time on the
+  // standard ship, so it never replaces this browser's best or its ghost.
+  const practice = preview && !!lv.ship;
+  const personalBest = !practice && (!previous || ms < previous.ms);
+  const { build, appearance } = session;
   if (personalBest) {
-    saveLocalBest(event, { ms, log: inputLog, at: new Date().toISOString() });
-    setWeeklyGhost("best", { log: inputLog, label: `Your best ${formatMs(ms)}`, color: "#9fe8ff", layout });
+    saveLocalBest(event, makeLocalBest({ ms, log: inputLog, appearance, build }));
+    setWeeklyGhost("best", { log: inputLog, label: `Your best ${formatMs(ms)}`, color: "#9fe8ff", layout, appearance, build });
   }
   const title = `Week ${event.week} · ${event.title}`;
   toast(`${title}: ${formatMs(ms)}${personalBest && previous ? " — new personal best!" : ""}`, 3500);
@@ -260,7 +277,7 @@ function finish(lv) {
   stopEngine();
   openEndOverlay(formatMs(ms), { kind: "weekly", title, preview, previousMs: previous?.ms ?? null });
   window.dispatchEvent(new CustomEvent("stardust:weeklyRunComplete", {
-    detail: { eventId: event.id, version: event.version, totalMs: ms, inputLog, preview, personalBest, previousMs: previous?.ms ?? null, title, wallHits: lv.wallHits },
+    detail: { eventId: event.id, version: event.version, totalMs: ms, inputLog, preview, personalBest, previousMs: previous?.ms ?? null, title, wallHits: lv.wallHits, build, appearance },
   }));
 }
 
@@ -273,7 +290,7 @@ export function ghostPosesNow() {
   const out = [];
   for (const g of ghosts.values()) {
     const pose = ghostPose(g.poses, ms);
-    if (pose && !(pose.done && lv.launched && ms > g.ms + 1500)) out.push({ ...pose, label: g.label, color: g.color });
+    if (pose && !(pose.done && lv.launched && ms > g.ms + 1500)) out.push({ ...pose, label: g.label, color: g.color, ghost: g });
   }
   return out;
 }

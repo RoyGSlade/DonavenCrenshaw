@@ -22,9 +22,11 @@ export function equippedBuild(storage = globalThis.localStorage) {
   } catch { return null; }
 }
 
-export function buildForRun(event, { preview = false, search = globalThis.location?.search || '', storage } = {}) {
+// ship: the same ask as ?ship=, made by the game instead of the address bar (the
+// hangar's "Practice in your ship"). Like the address bar, it only counts on a preview.
+export function buildForRun(event, { preview = false, search = globalThis.location?.search || '', storage, ship = null } = {}) {
   if (preview) {
-    const asked = new URLSearchParams(search).get('ship');
+    const asked = ship || new URLSearchParams(search).get('ship');
     if (asked === 'equipped') return equippedBuild(storage);
     if (asked && isBuild(asked)) return asked;
   }
