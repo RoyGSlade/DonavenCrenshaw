@@ -2,6 +2,7 @@
 // what happened to each time. Guests see why their times aren't saved.
 // Challenge links (?challenge=<id>), circuit splits and the finish breakdown
 // live here too; their wording comes from challenges.js.
+import { equippedBuild } from './shipBuild.js';
 import { createRunRecorder, describeResult, clock, LEVEL_BOARDS } from './hubRuns.js';
 import {
   CIRCUITS, parseChallengeId, classifyChallenge, challengeNote, pilotName, splitLine, runningLine, referenceSoFar,
@@ -321,7 +322,7 @@ export async function initRunSaving() {
 
   window.addEventListener('stardust:runStart', async () => {
     const mine = ++launches;
-    runClient.begin();
+    runClient.begin({ build: equippedBuild() });
     paintEnd(null);
     paintBreakdown(null);
     paintSocial(null);
@@ -348,7 +349,7 @@ export async function initRunSaving() {
   window.addEventListener('stardust:customRunStart', async (event) => {
     launches += 1;
     flight = null;
-    runClient.begin();
+    runClient.begin({ build: equippedBuild() });
     paintEnd(null);
     paintBreakdown(null);
     paintSocial(null);

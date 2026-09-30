@@ -46,7 +46,7 @@ export function createStatChart() {
   size.className = 'garage-stats-size';
   const note = document.createElement('p');
   note.className = 'garage-stats-note';
-  note.textContent = '50 = standard ship. Applies on tracks that allow custom builds.';
+  note.textContent = '50 = standard ship. Your ship flies like this on every track.';
   // Small screens have no room for the pentagon over the ship: one line instead.
   const row = document.createElement('p');
   row.className = 'garage-stats-row';

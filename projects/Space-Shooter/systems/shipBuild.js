@@ -1,12 +1,8 @@
-// Which garage build a weekly attempt flies (engine/shipStats.js), or null for
-// the standard ship. Builds change the hitbox and the physics, so they only
-// apply where that is allowed:
-//   - an event marked `ships: "builds"` in tracks/weekly.js flies the equipped
-//     garage ship;
-//   - a preview flight (never submitted) flies `?ship=needle:0-1-0-0` from the
-//     address bar, or `?ship=equipped` for the ship equipped in the garage, for
-//     testing the stat table.
-// Everywhere else the ship is the standard one, whatever it looks like.
+// Which garage build a run flies (engine/shipStats.js), or null for the
+// standard ship. Every run, ranked or not, flies the equipped ship with its own
+// hitbox and stats, on the same leaderboards as everyone else (owner's call,
+// 2026-09-30). A preview flight (never submitted) can instead fly a build named
+// in the address bar, `?ship=needle:0-1-0-0`, to test the stat table.
 import { isBuild, buildKey } from '../engine/shipStats.js';
 
 const APPEARANCE_KEY = 'stardust.courier.appearance.v1'; // written by the garage (systems/shipAppearance.js)
@@ -30,5 +26,5 @@ export function buildForRun(event, { preview = false, search = globalThis.locati
     if (asked === 'equipped') return equippedBuild(storage);
     if (asked && isBuild(asked)) return asked;
   }
-  return event?.ships === 'builds' ? equippedBuild(storage) : null;
+  return equippedBuild(storage);
 }

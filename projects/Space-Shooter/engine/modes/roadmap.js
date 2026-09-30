@@ -10,7 +10,9 @@ import { runtimeConfig } from "../../runtime-config.js";
 import { stopEngine } from "../core.js";
 import { railRules } from "../systems/movement.js";
 import { handleShipMovement } from "../shipMovement.js";
-import { PLAYER_HULL } from "../hull.js";
+import { hullForBuild } from "../hull.js";
+import { buildStats, applyBuildStats } from "../shipStats.js";
+import { equippedBuild } from "../../systems/shipBuild.js";
 import { labHooks } from "../../systems/lab.js";
 import { updateParticles } from "../systems/particles.js";
 import { checkCollisionsAndInteractions } from "../collisions/roadmap.js";
@@ -93,12 +95,12 @@ export function updateRoadmap(dt) {
       onLeavePad: startTimer,
     });
     if (!lv.lockedInStart) {
-      if (resolveHazards(lv, lv.player)) state.ui.screenshake = 0.15;
+      if (resolveHazards(lv, lv.player, lv.hull || hullForBuild(null))) state.ui.screenshake = 0.15;
       constrainToTrack(
         lv.track,
         lv.player,
         previousPosition,
-        PLAYER_HULL,
+        lv.hull || hullForBuild(null),
         railRules(lv.player),
       );
       updateTrackProgress(lv, previousPosition);
@@ -157,8 +159,13 @@ export function buildLevel(level, _existingNodes = null) {
   const { nodes, hazards, gravityWells, drones, track, ...levelInfo } = layout;
   state.gfx.projectiles = [];
   state.gfx.particles = [];
+  // The equipped garage build flies the whole run with its own hitbox and
+  // stats; it is fixed when the run starts, so the garage can't change it mid-run.
+  if (state.run.ship === undefined) state.run.ship = equippedBuild();
+  const ship = state.run.ship, stats = ship ? buildStats(ship) : null;
   state.run.current = {
     level,
+    ...(stats ? { ship, stats, hull: hullForBuild(ship), flightConfig: applyBuildStats(config, stats) } : {}),
     nodes,
     hazards,
     gravityWells,

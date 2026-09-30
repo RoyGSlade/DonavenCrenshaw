@@ -284,11 +284,11 @@ test('drawCourier draws a ghost sprite at its build size, and the standard ship 
   assert.ok(Math.abs(side(draws[2]) - side(draws[0]) * buildScale('manta:0-1-0-1')) < 1e-9);
 });
 
-test('practice flights: the game can ask for the equipped build as it would from the address bar, previews only', () => {
+test('practice and ranked flights fly the equipped build; the address bar works for previews', () => {
   const store = memoryStore({ 'stardust.courier.appearance.v1': JSON.stringify(ship('needle')) });
   const event = { id: 'weekly-01' };
   assert.equal(buildForRun(event, { preview: true, ship: 'equipped', search: '', storage: store }), 'needle:0-1-0-1');
-  assert.equal(buildForRun(event, { preview: false, ship: 'equipped', search: '', storage: store }), null, 'ranked stays standard');
+  assert.equal(buildForRun(event, { preview: false, search: '', storage: store }), 'needle:0-1-0-1', 'ranked flies the equipped build');
   assert.equal(buildForRun(event, { preview: true, search: '?ship=equipped', storage: store }), 'needle:0-1-0-1', 'the address bar still works');
   assert.equal(buildForRun(event, { preview: true, ship: 'equipped', search: '', storage: memoryStore() }), null, 'no custom ship: standard');
 });

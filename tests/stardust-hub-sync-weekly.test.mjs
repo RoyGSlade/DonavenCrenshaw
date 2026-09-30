@@ -44,8 +44,8 @@ test('an attempt records the ship equipped when it started; changing ship afterw
   startWeekly(event, { preview: false });
   const first = attempts().at(-1);
   assert.equal(first.preview, false);
-  assert.equal(first.build, null, 'ranked flights stay on the standard ship');
-  assert.deepEqual(first.appearance, cleanAppearance(needle()), 'but the paint is the equipped ship');
+  assert.equal(first.build, 'needle:0-1-0-1', 'ranked flights fly the equipped build');
+  assert.deepEqual(first.appearance, cleanAppearance(needle()), 'with its paint');
   // The pilot swaps ships while flying: the running attempt's snapshot stays.
   const manta = presetAppearance('manta');
   storage.set(APPEARANCE_KEY, JSON.stringify(manta));
@@ -59,18 +59,20 @@ test('no ship equipped: the attempt has no appearance', () => {
   assert.equal(attempts().at(-1).appearance, null);
 });
 
-test('practice in your ship: a preview asked for the equipped build flies it; a ranked attempt never does', () => {
+test('practice in your ship and ranked attempts both fly the equipped build', () => {
   storage.set(APPEARANCE_KEY, JSON.stringify(needle()));
   startWeekly(event, { preview: true, ship: 'equipped' });
   assert.equal(attempts().at(-1).build, 'needle:0-1-0-1');
   assert.equal(attempts().at(-1).preview, true);
   assert.equal(state.run.current.ship, 'needle:0-1-0-1');
   startWeekly(event, { preview: false, ship: 'equipped' });
+  assert.equal(attempts().at(-1).build, 'needle:0-1-0-1');
+  assert.equal(state.run.current.ship, 'needle:0-1-0-1');
+  // With nothing equipped every attempt is the standard ship.
+  storage.delete(APPEARANCE_KEY);
+  startWeekly(event, { preview: false });
   assert.equal(attempts().at(-1).build, null);
   assert.equal(state.run.current.ship, undefined, 'the standard ship has no build');
-  // A preview without the ask is still the standard ship, as before.
-  startWeekly(event, { preview: true });
-  assert.equal(attempts().at(-1).build, null);
 });
 
 test('a ghost keeps the ship it was flown in (from the local best or the hub), and stays standard without one', () => {

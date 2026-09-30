@@ -179,7 +179,7 @@ export function resolveRoadmapProjectiles(scene, projectiles) {
     const shot = projectiles[i];
     const hits = (target) =>
       target === scene.player
-        ? shotHitsShip(target, shot.prevX ?? shot.x, shot.prevY ?? shot.y, shot.x, shot.y)
+        ? shotHitsShip(target, shot.prevX ?? shot.x, shot.prevY ?? shot.y, shot.x, shot.y, scene.hull || PLAYER_HULL)
         : segmentHitsCircle(
         shot.prevX ?? shot.x,
         shot.prevY ?? shot.y,

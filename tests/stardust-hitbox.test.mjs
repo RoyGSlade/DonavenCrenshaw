@@ -340,7 +340,7 @@ test("ship builds: stats stay inside their limits, the cockpit never changes sta
   assert.throws(() => encodeInputLog({ eventId: "x", version: 1, frames: [], finishMs: 0, physics: WEEKLY_PHYSICS.BUILD }), /Unknown ship build/);
 });
 
-test("which build a run flies: standard unless the event allows builds or a preview asks", async () => {
+test("which build a run flies: the equipped ship, ranked or not; a preview can name another", async () => {
   const { buildForRun, equippedBuild } = await import("../projects/Space-Shooter/systems/shipBuild.js");
   const store = (value) => ({ getItem: () => (value === undefined ? null : JSON.stringify(value)) });
   const needle = { family: "needle", parts: { body: 0, wings: 1, cockpit: 2, engines: 0 } };
@@ -348,17 +348,15 @@ test("which build a run flies: standard unless the event allows builds or a prev
   assert.equal(equippedBuild(store(undefined)), null);
   assert.equal(equippedBuild(store({ family: "needle", parts: { body: 1, wings: 9, cockpit: 0, engines: 0 } })), null);
   assert.equal(equippedBuild({ getItem: () => "{not json" }), null);
-  // A ranked flight on an ordinary event is always the standard ship, whatever is equipped or asked for.
-  assert.equal(buildForRun({ id: "weekly-01" }, { preview: false, search: "?ship=needle:0-0-0-0", storage: store(needle) }), null);
+  // A ranked flight flies the equipped ship; the address bar can't swap it.
+  assert.equal(buildForRun({ id: "weekly-01" }, { preview: false, search: "?ship=needle:0-0-0-0", storage: store(needle) }), "needle:0-1-2-0");
+  assert.equal(buildForRun({ id: "weekly-01" }, { preview: false, search: "", storage: store(undefined) }), null, "nothing equipped: the standard ship");
   // A preview flight can test any real build from the address bar.
   assert.equal(buildForRun({ id: "weekly-01" }, { preview: true, search: "?ship=needle:0-0-0-0", storage: store(needle) }), "needle:0-0-0-0");
-  assert.equal(buildForRun({ id: "weekly-01" }, { preview: true, search: "?ship=needle:7-7-7-7", storage: store(needle) }), null);
+  assert.equal(buildForRun({ id: "weekly-01" }, { preview: true, search: "?ship=needle:7-7-7-7", storage: store(needle) }), "needle:0-1-2-0", "an unknown build falls back to the equipped ship");
   // ...or the ship equipped in the garage.
   assert.equal(buildForRun({ id: "weekly-01" }, { preview: true, search: "?ship=equipped", storage: store(needle) }), "needle:0-1-2-0");
-  assert.equal(buildForRun({ id: "weekly-01" }, { preview: false, search: "?ship=equipped", storage: store(needle) }), null);
-  // An event that allows builds flies the equipped ship.
-  assert.equal(buildForRun({ id: "weekly-02", ships: "builds" }, { preview: false, search: "", storage: store(needle) }), "needle:0-1-2-0");
-  assert.equal(buildForRun({ id: "weekly-02", ships: "builds" }, { preview: false, search: "", storage: store(undefined) }), null);
+  assert.equal(buildForRun({ id: "weekly-01" }, { preview: false, search: "?ship=equipped", storage: store(needle) }), "needle:0-1-2-0");
 });
 
 test("stat points: the standard ship is 50 on every stat, the ends of each range are 0 and 100", async () => {
