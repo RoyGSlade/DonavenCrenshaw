@@ -17,6 +17,8 @@ import {
 import { createShareBox } from './share.js';
 import { profilePath, lockedTitles, sortTitles, rarityLabel } from './profile.js';
 import { createPilotUi } from './pilot-ui.js';
+import { paintShip, shipThumb } from './ship-ui.js';
+import { familyName } from './ship-info.js';
 
 const tag = document.querySelector('script[data-hub]');
 const HUB = (tag?.dataset.hub || 'https://api.donavencrenshaw.com').replace(/\/+$/, '');
@@ -146,6 +148,9 @@ function runAccountPage(root, first) {
         loadFriends();
         loadChallenges();
         loadPilotCard();
+        loadShip();
+        loadLiveries();
+        loadVisibility();
     }
 
     function signedOut(message) {
@@ -265,7 +270,7 @@ function runAccountPage(root, first) {
         title.hidden = !chip;
         const href = profilePath(BASE, user.username);
         for (const a of $$('[data-acct-profile-link]')) if (href) a.href = href;
-        $('[data-acct-public]').checked = Boolean(user.profilePublic);
+        paintVisibility();
     }
 
     let earned = [];
@@ -367,6 +372,43 @@ function runAccountPage(root, first) {
         paintTitles(mine.ok ? mine.data : { earned: [], active: user.titleId }, all.ok ? all.data?.titles : null);
     }
 
+    // --- Public profile: the master switch and one switch per section -------------------------
+
+    const SHOW_LABELS = { bio: 'Bio', titles: 'Titles', bests: 'Best times', dogfight: 'Dogfight record', events: 'Event results', ship: 'Ship', devices: 'Device badges' };
+    const saving = new Set();
+
+    // Switches show what is saved; a missing key means shown (the hub's default).
+    // While the profile is private every switch but Event results is off the table.
+    function paintVisibility() {
+        if (!user) return;
+        const isPublic = Boolean(user.profilePublic);
+        const show = user.profileShow && typeof user.profileShow === 'object' ? user.profileShow : {};
+        $('[data-acct-public]').checked = isPublic;
+        for (const input of $$('[data-acct-show-key]')) {
+            const key = input.dataset.acctShowKey;
+            if (!saving.has(key)) input.checked = show[key] !== false;
+            const locked = !isPublic && key !== 'events';
+            input.disabled = saving.has(key) || locked;
+            input.closest('[data-acct-show-row]').classList.toggle('is-locked', locked);
+        }
+        $('[data-acct-show-lock]').hidden = isPublic;
+        const group = $('[data-acct-show]');
+        if (isPublic) group.removeAttribute('aria-describedby');
+        else group.setAttribute('aria-describedby', 'acct-show-lock');
+    }
+
+    // The session carries these too; GET /users/me is the fresher word.
+    async function loadVisibility() {
+        paintVisibility();
+        const res = await api.account();
+        if (!user || !res.ok || saving.size) return;
+        const fresh = res.data?.user || res.data;
+        if (!fresh || typeof fresh !== 'object') return;
+        if (typeof fresh.profilePublic === 'boolean') user.profilePublic = fresh.profilePublic;
+        if (fresh.profileShow && typeof fresh.profileShow === 'object') user.profileShow = fresh.profileShow;
+        paintVisibility();
+    }
+
     $('[data-acct-public]').addEventListener('change', async (e) => {
         const box = e.currentTarget;
         const wanted = box.checked;
@@ -378,8 +420,107 @@ function runAccountPage(root, first) {
         if (!res.ok) { box.checked = !wanted; note('public', problemText(res, 'Couldn’t change that.'), 'error'); return; }
         user = res.data?.user ? { ...user, ...res.data.user } : { ...user, profilePublic: wanted };
         paintIdentity();
-        note('public', wanted ? 'Your profile is public.' : 'Your profile is private.', 'ok');
+        note('public', wanted ? 'Saved. Your profile is public.' : 'Saved. Your profile is private.', 'ok');
     });
+
+    for (const input of $$('[data-acct-show-key]')) {
+        input.addEventListener('change', async () => {
+            const key = input.dataset.acctShowKey;
+            const wanted = input.checked;
+            const label = SHOW_LABELS[key] || key;
+            saving.add(key);
+            input.disabled = true;
+            note('show', `Saving ${label}…`, 'info');
+            const res = await api.setProfileShow(key, wanted);
+            saving.delete(key);
+            if (res.signedOut) return signedOut('Your session ended. Sign in again.');
+            if (!res.ok) {
+                input.checked = !wanted;
+                paintVisibility();
+                note('show', `Not saved. ${problemText(res, `Couldn’t change ${label}.`)}`, 'error');
+                return;
+            }
+            const sent = res.data?.user?.profileShow && typeof res.data.user.profileShow === 'object' ? res.data.user.profileShow : user.profileShow;
+            user = { ...user, ...(res.data?.user || {}), profileShow: { ...(sent || {}), [key]: wanted } };
+            paintVisibility();
+            note('show', `Saved. ${label} ${wanted ? 'will show' : 'is hidden'}.`, 'ok');
+        });
+    }
+
+    // --- Your ship and your designs -------------------------------------------------------------
+
+    let shipTicket = 0;
+    // GET /stardust/ship: the equipped ship, drawn by the game's renderer from its
+    // appearance. 404 no_ship means the standard ship. The renderer is loaded by
+    // paintShip, and only when there is a ship to draw.
+    async function loadShip() {
+        const slot = $('[data-acct-ship]');
+        const ticket = ++shipTicket;
+        const name = user.username;
+        note('ship', '');
+        slot.replaceChildren(el('p', 'acct-hint', 'Loading your ship…'));
+        const res = await api.myShip();
+        if (ticket !== shipTicket || user?.username !== name) return;
+        if (res.signedOut) return signedOut('Your session ended. Sign in again.');
+        if (res.ok && res.data && typeof res.data === 'object') {
+            paintShip(slot, res.data, { size: 256, base: BASE }).catch(() => {});
+            return;
+        }
+        // Standard ship: nothing equipped (404 no_ship), or the hub couldn't say.
+        const card = el('div', 'ship-card');
+        card.dataset.state = 'text';
+        const art = el('div', 'ship-art');
+        art.append(el('span', 'ship-art-text', 'Standard'));
+        const copy = el('div', 'ship-copy');
+        copy.append(el('p', 'ship-family', 'Standard ship'), el('p', 'ship-parts', 'No custom ship is equipped.'));
+        card.append(art, copy);
+        slot.replaceChildren(card);
+        if (res.status !== 404) note('ship', problemText(res, 'Couldn’t load your equipped ship.'), 'error');
+    }
+
+    let liveryTicket = 0;
+    // Published designs, each drawn from its own appearance. The hub keeps no
+    // preview images; the game's renderer paints every thumbnail here.
+    async function loadLiveries() {
+        const root = $('[data-acct-liveries]');
+        const status = $('[data-acct-livery-status]');
+        const name = user.username;
+        const ticket = ++liveryTicket;
+        const link = new URL(`${BASE}games/stardust/`, location.origin);
+        link.searchParams.set('garageArtist', name);
+        $('[data-acct-livery-link]').href = link.href;
+        root.replaceChildren();
+        status.textContent = 'Loading designs…';
+        status.hidden = false;
+        const res = await api.liveries(name);
+        if (ticket !== liveryTicket || user?.username !== name) return;
+        if (!res.ok) {
+            status.textContent = 'The design gallery is unavailable. Your account and game records are still available.';
+            return;
+        }
+        const designs = Array.isArray(res.data?.designs) ? res.data.designs : [];
+        if (!designs.length) {
+            status.textContent = 'No published designs yet. Open the ship garage in Stardust to make one.';
+            return;
+        }
+        status.textContent = '';
+        status.hidden = true;
+        const cards = designs.map((design) => {
+            const a = el('a', 'acct-livery');
+            a.href = link.href;
+            const art = el('span', 'acct-livery-art');
+            art.append(el('span', 'acct-livery-fallback', familyName(design.family) || 'Ship'));
+            a.append(art, el('span', 'acct-livery-title', String(design.title ?? 'Untitled')));
+            root.append(a);
+            return { design, art };
+        });
+        for (const { design, art } of cards) {
+            if (ticket !== liveryTicket) return;
+            const thumb = await shipThumb(design.appearance, { size: 128, base: BASE });
+            if (thumb && ticket === liveryTicket) art.replaceChildren(thumb);
+            await new Promise((resolve) => setTimeout(resolve, 0));
+        }
+    }
 
     function updateCount(area) {
         const out = document.getElementById(area.dataset.acctCount);
