@@ -10,6 +10,7 @@ import { enableTiltControls, disableTiltControls, calibrateTiltControls, getTilt
 import { toggleFullscreen } from './graphics.js';
 import { watchFullscreen } from '../systems/mobileControls.js';
 import { isMobileViewport } from '../utils/view.js';
+import { showFinishScreen, dismissFinishScreen } from './finishScreen.js';
 const el = id => document.getElementById(id);
 const show = id => el(id)?.classList.remove('hidden');
 const hide = id => el(id)?.classList.add('hidden');
@@ -63,6 +64,7 @@ function leaveChallenge() {
 let lastLaunch = { kind: 'network', preview: false };
 /** Leave the hangar and fly: { kind: 'network' | 'custom' | 'weekly', preview, event }. */
 export function launchRun(options = {}) {
+  dismissFinishScreen();
   const kind = ['custom', 'weekly'].includes(options.kind) ? options.kind : 'network';
   lastLaunch = { kind, preview: !!options.preview, event: kind === 'weekly' ? options.event : null };
   hide('starmap-start');
@@ -174,22 +176,14 @@ export function closePauseOverlay() {
   if (state.ui.showDefeatOverlay) return;
   hide('starmap-pause'); state.ui.paused = false; syncTouchControls(); focusFlight();
 }
-export function openEndOverlay(formattedTime, { kind = 'network', title = 'Custom track', preview = false } = {}) {
+export function openEndOverlay(formattedTime, { kind = 'network', title = 'Custom track', preview = false, previousMs } = {}) {
   if (state.mode === 'arena') return;
   playMusic('victory'); setTouchControls(false);
-  const custom = kind === 'custom', weekly = kind === 'weekly';
-  el('starmap-end-title').textContent = custom || weekly ? `${title} complete. ${formattedTime}` : `Network complete. ${formattedTime}`;
-  const lede = el('starmap-end-lede');
-  if (lede) {
-    lede.textContent = weekly ? (preview ? 'Preview lap of the weekly track. Nothing from a preview is saved.' : 'Every shard, one lap, the weekly leaderboard. Fly again and shave it down.')
-      : !custom ? 'All five circuits, one run. Fly again and beat your time.'
-      : preview ? 'Preview lap of the custom track. Nothing from a preview is saved.'
-        : 'One lap of the custom track, on its own leaderboard. Fly again and beat your time.';
-  }
+  showFinishScreen({ timeMs: state.run?.totalActiveMs, kind, title, preview, previousMs });
   show('starmap-end'); state.ui.showEndOverlay = true; state.ui.paused = true;
-  el('starmap-again-btn')?.focus();
+  el('starmap-again-btn')?.focus({ preventScroll: true });
 }
-export function closeEndOverlay() { hide('starmap-end'); state.ui.showEndOverlay = false; }
+export function closeEndOverlay() { dismissFinishScreen(); hide('starmap-end'); state.ui.showEndOverlay = false; }
 export function openSettingsOverlay(event) {
   event?.preventDefault?.();
   settingsReturnPaused = state.ui.paused;
