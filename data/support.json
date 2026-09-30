@@ -16,7 +16,7 @@
   "voting": {"status":"draft","enabled":null,"policy":null,"note":"Decided, not live: one feature vote per signed-in account per month, independent of any payment. This is not sponsor voting. Do not describe it on public pages until accounts and voting ship."},
   "discord": {
     "status": "live",
-    "url": null,
+    "url": "https://discord.gg/qjntnnd9cD",
     "accessRules": [
       "Be decent. This is a community, not a comment section.",
       "Keep it SFW. No adult content.",
