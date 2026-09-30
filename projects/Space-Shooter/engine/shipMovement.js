@@ -36,10 +36,10 @@ export function handleShipMovement(dt, sceneState, player, env = {}) {
     spawnExhaust,
     constrain(player, previous) {
       if (state.mode !== "roadmap") return;
-      if (sceneState.track && constrainToTrack(sceneState.track, player, previous, PLAYER_HULL, railRules(player))) {
+      if (sceneState.track && constrainToTrack(sceneState.track, player, previous, sceneState.hull || PLAYER_HULL, railRules(player))) {
         if (sceneState.trackProgress) sceneState.trackProgress.boundaryHits++;
       }
       clampToWorld(player);
     },
-  }, config);
+  }, sceneState.flightConfig || config);
 }

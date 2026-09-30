@@ -8,6 +8,7 @@
 // right is (-sin a, cos a) — the way drawCourier rotates the sprite by
 // a + PI/2 on the y-down canvas.
 import { SHIP_HULL, SHIP_BODY } from "./shipHull.js";
+import { buildHull } from "./shipStats.js";
 
 function describe(points) {
   let radius = 0, halfSpan = 0, nose = -Infinity, tail = Infinity;
@@ -41,6 +42,15 @@ export function makeHull(points) {
   let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
   for (const [x, y] of points) { minX = Math.min(minX, x); maxX = Math.max(maxX, x); minY = Math.min(minY, y); maxY = Math.max(maxY, y); }
   return Object.freeze({ kind: "hull", points, body: Object.freeze({ width: maxX - minX, length: maxY - minY }), ...describe(points) });
+}
+
+const buildHulls = new Map(); // build key -> hull shape (describing one samples 720 directions)
+/** The hull shape of a garage build ("needle:0-1-0-1"), or the standard ship's for null or an unknown build. */
+export function hullForBuild(key) {
+  const points = key ? buildHull(key) : null;
+  if (!points) return PLAYER_HULL;
+  if (!buildHulls.has(key)) buildHulls.set(key, makeHull(points));
+  return buildHulls.get(key);
 }
 
 export const isHullShape = (shape) => !!shape && typeof shape === "object" && shape.kind === "hull";
