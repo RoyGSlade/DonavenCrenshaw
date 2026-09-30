@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-09-29T14:58:36.651Z",
+  "generatedAt": "2026-09-30T03:38:47.935Z",
   "stardust": {
     "leaderboard": [
       {
@@ -11,30 +11,36 @@
       },
       {
         "rank": 2,
+        "name": "Phyllo",
+        "timeMs": 143182,
+        "setAt": "2026-09-30T02:48:05.835Z"
+      },
+      {
+        "rank": 3,
         "name": "DwarvenEx",
         "timeMs": 147454,
         "setAt": "2026-09-27T16:32:18.969Z"
       },
       {
-        "rank": 3,
+        "rank": 4,
         "name": "Antwon",
         "timeMs": 157584,
         "setAt": "2026-09-28T14:56:23.601Z"
       },
       {
-        "rank": 4,
+        "rank": 5,
         "name": "debo",
         "timeMs": 217799,
         "setAt": "2026-09-27T08:36:55.644Z"
       },
       {
-        "rank": 5,
+        "rank": 6,
         "name": "DrageNivek",
         "timeMs": 275670,
         "setAt": "2026-09-26T19:30:45.892Z"
       },
       {
-        "rank": 6,
+        "rank": 7,
         "name": "CrispyNacho",
         "timeMs": 375421,
         "setAt": "2026-09-27T08:15:50.496Z"
