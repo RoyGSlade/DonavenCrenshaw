@@ -9,7 +9,7 @@ import { initFlightHud, updateFlightHud, setMinimapVisible } from './flightHud.j
 import { initTouchPad, updateTouchPad, setWheelHidden, releaseTouchPad, touchInput } from './touchPad.js';
 import { initRaceIntro, updateRaceIntro } from './raceIntro.js';
 import { initLayout, applyLayout, startEditing, isEditingLayout } from './layoutEditor.js';
-import { flightSettings, updateFlightSettings, MINIMAP_ZOOMS, ICON_SCALES, TILT_DEAD_ZONES, TILT_MAX_TILTS, TILT_EXPOS, TILT_DEFAULTS, tiltTuning, isTouchDevice } from '../systems/flightSettings.js';
+import { flightSettings, updateFlightSettings, MINIMAP_ZOOMS, ICON_SCALES, TILT_DEAD_ZONES, TILT_MAX_TILTS, TILT_EXPOS, TILT_DEFAULTS, tiltTuning, isTouchDevice, encodeSettingsCode, applySettingsCode } from '../systems/flightSettings.js';
 import { subscribeTilt, calibrateTiltControls, getTiltState } from '../systems/tilt.js';
 import { openPauseOverlay, closePauseOverlay } from './overlays.js';
 import { toast } from './hud.js';
@@ -74,7 +74,8 @@ function buildFlightSettings() {
     <div class="fx-set-row fx-tilt-row"><span>Tilt sensitivity <small>(higher is quicker off centre)</small></span><div class="fx-stepper"><button type="button" data-fx="sens-" aria-label="Lower tilt sensitivity">−</button><output data-fx-out="sens"></output><button type="button" data-fx="sens+" aria-label="Higher tilt sensitivity">+</button></div></div>
     <div class="fx-set-row fx-tilt-row"><span>Max tilt <small>(tilt for a full turn)</small></span><div class="fx-stepper"><button type="button" data-fx="max-" aria-label="Less tilt for a full turn">−</button><output data-fx-out="max"></output><button type="button" data-fx="max+" aria-label="More tilt for a full turn">+</button></div></div>
     <div class="fx-set-row fx-tilt-row"><span>Tilt dead zone <small>(tilt ignored around centre)</small></span><div class="fx-stepper"><button type="button" data-fx="dead-" aria-label="Smaller tilt dead zone">−</button><output data-fx-out="dead"></output><button type="button" data-fx="dead+" aria-label="Bigger tilt dead zone">+</button></div></div>
-    <div class="fx-set-row"><span>HUD &amp; controls layout</span><button type="button" data-fx="edit">Edit layout</button></div>`;
+    <div class="fx-set-row"><span>HUD &amp; controls layout</span><button type="button" data-fx="edit">Edit layout</button></div>
+    <div class="fx-set-row"><span>Share settings <small>(layout, tilt, minimap)</small></span><div class="fx-stepper"><button type="button" data-fx="copy-code">Copy code</button><button type="button" data-fx="paste-code">Paste code</button></div></div>`;
   panel.insertBefore(box, panel.querySelector('.actions'));
   const paint = () => {
     const s = flightSettings();
@@ -105,6 +106,8 @@ function buildFlightSettings() {
       const d = action.endsWith('+') ? 1 : -1;
       updateFlightSettings((s) => { s.tilt = { ...TILT_DEFAULTS, ...s.tilt }; s.tilt[key] = Math.max(0, Math.min(list.length - 1, (s.tilt[key] | 0) + d)); });
     }
+    else if (action === 'copy-code') { copySettingsCode(); return; }
+    else if (action === 'paste-code') { pasteSettingsCode().then(() => { applyMinimapSetting(); paint(); }); return; }
     else if (action === 'autofire') updateFlightSettings((s) => { s.autoFire = !s.autoFire; });
     else if (action === 'edit') {
       // Stay paused, hide the panel, edit over the frozen flight.
@@ -117,6 +120,20 @@ function buildFlightSettings() {
   });
   window.addEventListener('stardust:flightSettings', paint);
   paint();
+}
+
+// Clipboard when the browser allows it; a text prompt otherwise (some phones).
+async function copySettingsCode() {
+  const code = encodeSettingsCode();
+  try { await navigator.clipboard.writeText(code); toast('Settings code copied. Paste it anywhere to share your setup.', 3000); }
+  catch { window.prompt('Copy your settings code:', code); }
+}
+async function pasteSettingsCode() {
+  let code = null;
+  try { code = await navigator.clipboard.readText(); } catch { /* blocked: ask instead */ }
+  if (!code || !code.trim().startsWith('SD1-')) code = window.prompt('Paste a settings code:', '');
+  if (code == null || !code.trim()) return;
+  toast(applySettingsCode(code) ? 'Settings applied from the code.' : 'That is not a Stardust settings code.', 3000);
 }
 
 // --- Per frame -----------------------------------------------------------------
