@@ -62,7 +62,38 @@ export function loadPartChoices(base = window.SITE_BASE || '/') {
 export async function shipCanvas(appearance, { size = 256, base } = {}) {
     if (!appearance || typeof appearance !== 'object') throw new Error('No appearance to draw.');
     const art = await loadShipArt(base);
-    return art.renderAppearance(appearance, null, size);
+    // Render big, then pose it to fill the frame (see posed()).
+    return posed(art.renderAppearance(appearance, null, size * 2), size);
+}
+
+// The game frames every ship by its longest side, so a thin one (the
+// twin-blade Needle is a third as wide as it is long) comes out a sliver in a
+// square card. Pose it like the hangar does, nose up and to the right, and
+// scale so its visible body fills the frame whatever its shape.
+const POSE = (-35 * Math.PI) / 180;
+function posed(src, size) {
+    const w = src.width, h = src.height;
+    const data = src.getContext('2d').getImageData(0, 0, w, h).data;
+    let minX = w, maxX = -1, minY = h, maxY = -1;
+    for (let y = 0; y < h; y += 2) for (let x = 0; x < w; x += 2) {
+        if (data[(y * w + x) * 4 + 3] < 24) continue;
+        if (x < minX) minX = x; if (x > maxX) maxX = x;
+        if (y < minY) minY = y; if (y > maxY) maxY = y;
+    }
+    if (maxX < 0) return src;
+    const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
+    const c = Math.abs(Math.cos(POSE)), s = Math.abs(Math.sin(POSE));
+    const bw = maxX - minX + 2, bh = maxY - minY + 2;
+    const scale = (0.92 * size) / Math.max(bw * c + bh * s, bw * s + bh * c);
+    const out = document.createElement('canvas');
+    out.width = out.height = size;
+    const g = out.getContext('2d');
+    g.imageSmoothingQuality = 'high';
+    g.translate(size / 2, size / 2);
+    g.rotate(POSE);
+    g.scale(scale, scale);
+    g.drawImage(src, -cx, -cy);
+    return out;
 }
 
 // Fills `target` with a ship: its picture, its family and the parts it is built

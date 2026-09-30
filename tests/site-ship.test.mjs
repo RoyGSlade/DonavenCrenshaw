@@ -182,7 +182,8 @@ test('the ship renderer is imported on demand, from the published game path', ()
   assert.match(ui, /import\(`\$\{gameRoot\(base\)\}shipAppearance\.js`\)/);
   assert.match(ui, /games\/stardust\/systems\//);
   assert.match(ui, /loadShipKits\(\)/);
-  assert.match(ui, /renderAppearance\(appearance, null, size\)/);
+  // Rendered at twice the card size, then posed to fill the frame.
+  assert.match(ui, /renderAppearance\(appearance, null, size \* 2\)/);
   // The build publishes the two new modules.
   const build = read('scripts/build.mjs');
   assert.match(build, /'ship-info\.js'/);
