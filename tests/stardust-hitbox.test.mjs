@@ -355,3 +355,13 @@ test("which build a run flies: standard unless the event allows builds or a prev
   assert.equal(buildForRun({ id: "weekly-02", ships: "builds" }, { preview: false, search: "", storage: store(needle) }), "needle:0-1-2-0");
   assert.equal(buildForRun({ id: "weekly-02", ships: "builds" }, { preview: false, search: "", storage: store(undefined) }), null);
 });
+
+test("stat points: the standard ship is 50 on every stat, the ends of each range are 0 and 100", async () => {
+  const S = await import("../projects/Space-Shooter/engine/shipStats.js");
+  assert.deepEqual(S.statPoints(S.buildStats("courier:0-0-0-0")), { topSpeed: 50, accel: 50, grip: 50, boost: 50, brake: 50 });
+  // The twin-blade Needle at its extremes: fastest, weakest thrust, least grip.
+  assert.deepEqual(S.statPoints(S.buildStats("needle:0-0-0-0")), { topSpeed: 100, accel: 0, grip: 0, boost: 50, brake: 50 });
+  assert.deepEqual(S.statPoints(S.buildStats("manta:2-1-0-0")), { topSpeed: 0, accel: 100, grip: 100, boost: 50, brake: 50 });
+  for (const key of S.ALL_BUILDS) for (const v of Object.values(S.statPoints(S.buildStats(key)))) assert.ok(Number.isInteger(v) && v >= 0 && v <= 100);
+  assert.deepEqual(S.STAT_NAMES.map(([id]) => id), ["topSpeed", "accel", "grip", "boost", "brake"]);
+});

@@ -146,3 +146,19 @@ export function applyBuildStats(base, stats) {
     LATERAL_DAMP: GRIP_RATE * Math.max(0, stats.grip - GRIP_FLOOR),
   });
 }
+
+// Stats as points for players (the garage's stat chart). Percentages mean
+// little on a spec sheet, so each stat reads 0 to 100: the standard ship is 50
+// on every stat, and 0 and 100 are the ends of that stat's range.
+export const STAT_NAMES = Object.freeze([
+  ["topSpeed", "Top speed"], ["accel", "Thrust"], ["grip", "Grip"], ["boost", "Boost"], ["brake", "Brake"],
+]);
+export function statPoints(stats) {
+  const out = {};
+  for (const [stat] of STAT_NAMES) {
+    const [lo, hi] = STAT_LIMITS[stat];
+    const half = (hi - lo) / 2;
+    out[stat] = Math.round(Math.max(0, Math.min(100, 50 + (50 * (stats[stat] - 1)) / half)));
+  }
+  return out;
+}

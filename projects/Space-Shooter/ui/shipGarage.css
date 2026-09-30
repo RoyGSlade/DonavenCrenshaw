@@ -779,3 +779,36 @@
     gap: 22px;
   }
 }
+
+/* Flight stat chart (ui/shipStatsChart.js), top right of the stage. */
+.garage-stats {
+  position: absolute;
+  top: 14px;
+  right: clamp(16px, 4vw, 64px);
+  width: 210px;
+  padding: 8px 10px 10px;
+  border: 1px solid #34536299;
+  border-radius: 8px;
+  background: #07121ccc;
+  pointer-events: none;
+}
+.garage-stats[hidden] { display: none; }
+.garage-stats-title { margin: 0 0 2px; font: 700 10px Consolas, monospace; letter-spacing: 0.18em; color: #69f3ec; }
+.garage-stats svg { display: block; width: 100%; height: auto; overflow: visible; }
+.garage-stats .ring { fill: none; stroke: #34536266; stroke-width: 1; }
+.garage-stats .ring.standard { stroke: #91b8bd88; stroke-dasharray: 3 3; }
+.garage-stats .spoke { stroke: #34536266; stroke-width: 1; }
+.garage-stats .shape { fill: #69f3ec40; stroke: #69f3ec; stroke-width: 2; stroke-linejoin: round; transition: all 0.25s ease; }
+.garage-stats text { font: 9px Consolas, monospace; letter-spacing: 0.06em; }
+.garage-stats .name { fill: #91b8bd; }
+.garage-stats .value { fill: #ffd6a3; font-weight: 700; font-size: 11px; }
+.garage-stats-size { margin: 2px 0 0; font: 10px Consolas, monospace; letter-spacing: 0.08em; color: #cfe8f5; text-align: center; }
+.garage-stats-note { margin: 4px 0 0; font-size: 10px; line-height: 1.35; color: #7f9fa8; text-align: center; }
+.garage-stats-row { display: none; }
+/* Phones: a one-line readout under the stage label instead of the pentagon. */
+@media (max-width: 650px), (max-height: 550px) {
+  .garage-stats { top: 34px; left: clamp(16px, 4vw, 64px); right: auto; width: auto; padding: 3px 7px; border-radius: 6px; }
+  .garage-stats-title, .garage-stats svg, .garage-stats-size, .garage-stats-note { display: none; }
+  .garage-stats-row { display: block; margin: 0; font: 9px Consolas, monospace; letter-spacing: 0.06em; color: #91b8bd; white-space: nowrap; }
+  .garage-stats-row b { color: #ffd6a3; font-size: 10px; }
+}

@@ -1,3 +1,5 @@
+import { createStatChart } from './shipStatsChart.js';
+import { buildKey } from '../engine/shipStats.js';
 import { state } from '../state.js';
 import {
   PART_SLOTS,
@@ -141,7 +143,11 @@ export function initShipGarage() {
       : 'DRAG TO SPIN';
     paint();
   }
+  // The flight stat chart on the stage, for the build being edited.
+  const statChart = createStatChart();
+  find('.garage-stage').append(statChart);
   function sync() {
+    statChart.update(buildKey({ family: draft.family, ...draft.parts }));
     for (const z of ZONES) find(`#garage-paint-${z}`).value = draft.paint[z];
     for (const b of dialog.querySelectorAll('[data-family]'))
       b.setAttribute('aria-pressed', String(b.dataset.family === draft.family));
