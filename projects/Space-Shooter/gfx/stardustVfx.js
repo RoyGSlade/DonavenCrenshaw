@@ -1,5 +1,5 @@
 /** Stardust visual language. All helpers preserve Canvas state and never mutate simulation. */
-import { getCourierAppearance, getCourierExhaustPorts } from '../systems/shipAppearance.js';
+import { getCourierAppearance, getCourierExhaustPorts, getEquippedBuild } from '../systems/shipAppearance.js';
 import { buildScale } from '../engine/shipStats.js';
 const TAU = Math.PI * 2;
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
@@ -16,7 +16,12 @@ const STANDARD_PORTS = [{ x: -0.13, y: 0.38, width: 0.13 }, { x: 0.13, y: 0.38, 
 // which sets its size the way scene.ship does for the pilot's own.
 export function drawCourier(ctx, player, scene, keys, unit, img, time, scale = 0.66) {
   // A garage build flying its own physics is drawn at its own size (engine/shipStats.js).
-  const build = player.appearanceCanvas ? player.buildKey : scene?.ship && !player.standardShip ? scene.ship : null;
+  // Drawn at its build's size wherever it flies. On standard-ship runs (ranked
+  // boards, main circuits) a custom ship is a skin over the standard hitbox,
+  // but it should still look the size it is in the garage and in practice.
+  const build = player.appearanceCanvas ? player.buildKey
+    : player.standardShip ? null
+      : scene?.ship || (getCourierAppearance() ? getEquippedBuild() : null);
   const s = unit * 1.6 * scale * (build ? buildScale(build) : 1);
   const active = !scene?.lockedInStart && !scene?.onStartPad && !scene?.showLaunchHint && !scene?.paused;
   const burn = active && scene?.fuel > 0 ? clamp(keys.thrustStrength || 0, 0, 1) : 0;

@@ -45,7 +45,7 @@ function appearance(family, parts, paint = {}) {
   Object.assign(a.paint, paint);
   return a;
 }
-const EQUIPPED = appearance('needle', { body: 0, wings: 1, cockpit: 2, engines: 0 }, { hull: '#d9492f', wings: '#2f6fd9', nose: '#f2c230', trim: '#20242b', glass: '#47d8f5', engines: '#8c8c8c' });
+const EQUIPPED = appearance('needle', { body: 0, wings: 0, cockpit: 2, engines: 0 }, { hull: '#d9492f', wings: '#2f6fd9', nose: '#f2c230', trim: '#20242b', glass: '#47d8f5', engines: '#8c8c8c' });
 const DESIGNS = [
   { id: 'd1', title: 'Ember Needle', family: 'needle', appearance: EQUIPPED, createdAt: '2026-09-28T10:00:00Z', author: { username: 'nova', displayName: 'Nova' } },
   { id: 'd2', title: 'Midnight Manta', family: 'manta', appearance: appearance('manta', { body: 2, wings: 0, cockpit: 1, engines: 2 }, { hull: '#1d2747', wings: '#26335f', nose: '#6b7dd6' }), createdAt: '2026-09-27T10:00:00Z', author: { username: 'nova', displayName: 'Nova' } },

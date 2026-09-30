@@ -121,7 +121,7 @@
 .sd-device-tip[hidden] { display: none; }
 
 /* A drawn ship: the game's renderer output with its build underneath. */
-.ship-card { display: grid; grid-template-columns: minmax(0, 14rem) minmax(0, 1fr); align-items: center; gap: 1rem 1.75rem; }
+.ship-card { display: grid; grid-template-columns: minmax(0, 16rem) minmax(0, 1fr); align-items: center; gap: 1rem 1.75rem; }
 .ship-art {
     display: grid;
     place-items: center;
@@ -140,6 +140,6 @@
 .ship-card .ship-parts { font-size: 0.82rem; line-height: 1.6; color: #9db3c4; overflow-wrap: anywhere; }
 @media (max-width: 560px) {
     .ship-card { grid-template-columns: minmax(0, 1fr); justify-items: start; }
-    .ship-art { width: min(100%, 16rem); }
+    .ship-art { width: min(100%, 18rem); }
 }
 @media (prefers-reduced-motion: reduce) { .sd-device { transition: none; } }

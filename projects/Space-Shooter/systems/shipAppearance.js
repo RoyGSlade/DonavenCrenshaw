@@ -471,6 +471,11 @@ export function getCourierExhaustPorts() {
     width: p.width * layout.scale,
   }));
 }
+/** The equipped ship's build key ("needle:0-0-0-0"), or null for the standard ship. */
+export function getEquippedBuild() {
+  const p = equipped?.parts;
+  return p ? `${equipped.family}:${p.body}-${p.wings}-${p.cockpit}-${p.engines}` : null;
+}
 export function getEquippedAppearance() {
   return equipped ? structuredClone(equipped) : null;
 }

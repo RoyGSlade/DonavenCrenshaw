@@ -236,7 +236,7 @@
 /* Your ship: the game's renderer output, its build, and a link to the garage. */
 .acct-ship-body { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: var(--space-5) var(--space-6); align-items: center; }
 .acct-card .acct-ship-hint { margin: 0; }
-.acct-ship .ship-card { grid-template-columns: minmax(0, 12rem) minmax(0, 1fr); }
+.acct-ship .ship-card { grid-template-columns: minmax(0, 16rem) minmax(0, 1fr); }
 
 /* Published designs: thumbnails painted by the game's renderer; the family name shows until (or unless) one is drawn. */
 .acct-liveries { display: flex; flex-wrap: wrap; gap: var(--space-3); }
