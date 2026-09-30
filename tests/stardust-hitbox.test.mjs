@@ -306,11 +306,12 @@ test("ship builds: stats stay inside their limits, the cockpit never changes sta
   };
   assert.ok(slide("manta:2-1-0-0") < slide("courier:0-0-0-0"), "more grip, less slide");
   assert.ok(slide("courier:0-0-0-0") < slide("needle:0-0-0-0"), "less grip, more slide");
-  // Sizes on top of the garage framing: twin-blade Needles 1.75x, every Manta 1.4x.
+  // Sizes on top of the garage framing: twin-blade Needles 1.75x, every Manta 1.4x, every Wisp 1.25x.
   assert.equal(S.buildScale("needle:0-0-0-0"), 1.75);
   assert.equal(S.buildScale("needle:0-1-0-0"), 1);
   assert.equal(S.buildScale("manta:2-1-2-1"), 1.4);
-  assert.equal(S.buildScale("wisp:0-0-0-0"), 1);
+  assert.equal(S.buildScale("wisp:0-0-0-0"), 1.25);
+  assert.equal(S.buildScale("courier:0-0-0-0"), 1);
   const H = await import("../projects/Space-Shooter/engine/shipHulls.js");
   const raw = H.HULLS[H.BUILD_HULL["manta:0-0-0-0"]];
   S.buildHull("manta:0-0-0-0").forEach(([x, y], i) => { assert.ok(Math.abs(x - raw[i][0] * 1.4) < 1e-4 && Math.abs(y - raw[i][1] * 1.4) < 1e-4, "the Manta outline is the traced one at 1.4x"); });

@@ -98,14 +98,16 @@ export function buildStats(key) {
 // 2026-09-30:
 //   - the twin-blade Needle (Lance wings) came out 0.30 cells wide, a third
 //     of every other ship: 1.75x (about 0.52 wide, 1.7 long);
-//   - every Manta felt too small: 1.4x (about 1.1 to 1.35 wide).
-export const SCALE = Object.freeze({ "needle-lance": 1.75, manta: 1.4 });
+//   - every Manta felt too small: 1.4x (about 1.1 to 1.35 wide);
+//   - every Wisp: 1.25x.
+export const SCALE = Object.freeze({ "needle-lance": 1.75, manta: 1.4, wisp: 1.25 });
 /** How much bigger than the garage framing a build is drawn and collides. */
 export function buildScale(key) {
   const b = parseBuild(key);
   if (!b) return 1;
   if (b.family === "needle" && b.wings === 0) return SCALE["needle-lance"];
   if (b.family === "manta") return SCALE.manta;
+  if (b.family === "wisp") return SCALE.wisp;
   return 1;
 }
 
