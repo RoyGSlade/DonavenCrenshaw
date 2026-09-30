@@ -7,11 +7,14 @@ import { createGamepadReader, gamepadMapping } from "./systems/gamepad.js";
 import { toast } from "./ui/hud.js";
 import { touchInput } from "./ui/touchPad.js";
 import { wantsAutoFire } from "./systems/autofire.js";
-import { flightSettings } from "./systems/flightSettings.js";
+import { flightSettings, updateFlightSettings, binds } from "./systems/flightSettings.js";
+import { keyToken, mouseToken } from "./systems/keybinds.js";
+import { runClient, gamepadDriving } from "./systems/runClient.js";
 export { gamepadMapping };
 const gamepad = createGamepadReader({
   stickDeadzone: config.GAMEPAD?.STICK_DEADZONE ?? 0.2,
   triggerDeadzone: config.GAMEPAD?.TRIGGER_DEADZONE ?? 0.08,
+  getBindings: binds,
 });
 let inputFocused = true;
 let isBound = false;
@@ -33,6 +36,31 @@ const kb = {
   brake: false,
   _launchEdge: false,
 };
+// Keys and mouse buttons held right now, as binding tokens (systems/keybinds.js).
+const pressed = new Set();
+const HOLD_ACTIONS = ["left", "right", "thrust", "thrustBack", "strafeLeft", "strafeRight", "shoot", "boost", "brake"];
+function syncHeld() {
+  const keys = binds().keys;
+  for (const action of HOLD_ACTIONS) kb[action] = keys[action].some((token) => pressed.has(token));
+}
+const boundTo = (token) => Object.entries(binds().keys).filter(([, list]) => list.includes(token)).map(([action]) => action);
+function switchCamera() {
+  if (state.mode === "arena") return;
+  updateFlightSettings((s) => { s.cameraMode = s.cameraMode === "behind" ? "track" : "behind"; });
+  toast(flightSettings().cameraMode === "behind" ? "Camera: behind ship" : "Camera: track view", 1400);
+}
+/** One-shot actions on a fresh press; returns true if the token did something. */
+function pressToken(token) {
+  const actions = boundTo(token);
+  if (!actions.length) return false;
+  pressed.add(token);
+  if (actions.includes("launch")) kb._launchEdge = true;
+  if (actions.includes("fullscreen")) toggleFullscreen();
+  if (actions.includes("minimap") && state.mode !== "arena") state.ui.showMinimap = !state.ui.showMinimap;
+  if (actions.includes("camera")) switchCamera();
+  syncHeld();
+  return true;
+}
 
 export async function bindInput() {
   if (isBound) return;
@@ -42,6 +70,10 @@ export async function bindInput() {
   window.addEventListener("keyup", onKeyUp, { passive: true });
   window.addEventListener("mousedown", onMouseDown, { passive: true });
   window.addEventListener("mouseup", onMouseUp, { passive: true });
+  // A bound right click must not open the browser menu over the game.
+  window.addEventListener("contextmenu", (e) => {
+    if (e.target?.id === "starmap-canvas" && boundTo("Mouse2").length) e.preventDefault();
+  });
   window.addEventListener(
     "blur",
     () => {
@@ -66,17 +98,20 @@ export async function bindInput() {
   await bindTouchControls();
 }
 
+// Mouse buttons are bindable to actions (fire by default). The mouse never steers.
 function onMouseDown(e) {
+  const token = mouseToken(e.button);
   if (
-    e.button === 0 &&
+    token &&
     e.target?.id === "starmap-canvas" &&
     !state.ui.showStartOverlay &&
     !state.ui.paused
   )
-    kb.shoot = true;
+    pressToken(token);
 }
 function onMouseUp(e) {
-  if (e.button === 0) kb.shoot = false;
+  const token = mouseToken(e.button);
+  if (token && pressed.delete(token)) syncHeld();
 }
 
 function onKeyDown(e) {
@@ -91,58 +126,20 @@ function onKeyDown(e) {
   )
     return;
   if (e.target?.matches?.("input, textarea, select, button")) return;
-  if (
-    [
-      " ",
-      "ArrowUp",
-      "ArrowDown",
-      "ArrowLeft",
-      "ArrowRight",
-      "Control",
-    ].includes(k)
-  )
-    e.preventDefault();
   if (k === "Escape") {
     if (state.mode === "arena") return; // no pausing in arena
     if (!state.ui.paused) openPauseOverlay();
     else closePauseOverlay();
     return;
   }
-  if (k === "f" || k === "F") {
-    toggleFullscreen();
-    return;
-  }
-  if (k === "m" || k === "M") {
-    if (state.mode !== "arena") state.ui.showMinimap = !state.ui.showMinimap;
-    return;
-  }
-
-  if (k === "ArrowLeft" || k === "a" || k === "A") kb.left = true;
-  if (k === "ArrowRight" || k === "d" || k === "D") kb.right = true;
-  if (k === "ArrowUp" || k === "w" || k === "W") kb.thrust = true;
-  if (k === "ArrowDown" || k === "s" || k === "S") kb.thrustBack = true;
-
-  if (k === "q" || k === "Q") kb.strafeLeft = true;
-  if (k === "e" || k === "E") kb.strafeRight = true;
-
-  if (k === " ") kb._launchEdge = true;
-  if (k === "Shift") kb.boost = true;
-  if (k === "Control") kb.shoot = true;
-  if (k === "x" || k === "X") kb.brake = true;
+  // Everything else goes through the player's bindings. A bound key never
+  // scrolls the page or triggers a browser shortcut of its own.
+  const token = keyToken(e);
+  if (token && pressToken(token) && !e.metaKey && !e.altKey) e.preventDefault();
 }
 function onKeyUp(e) {
-  const k = e.key;
-  if (k === "ArrowLeft" || k === "a" || k === "A") kb.left = false;
-  if (k === "ArrowRight" || k === "d" || k === "D") kb.right = false;
-  if (k === "ArrowUp" || k === "w" || k === "W") kb.thrust = false;
-  if (k === "ArrowDown" || k === "s" || k === "S") kb.thrustBack = false;
-
-  if (k === "q" || k === "Q") kb.strafeLeft = false;
-  if (k === "e" || k === "E") kb.strafeRight = false;
-
-  if (k === "Shift") kb.boost = false;
-  if (k === "Control") kb.shoot = false;
-  if (k === "x" || k === "X") kb.brake = false;
+  const token = keyToken(e);
+  if (token && pressed.delete(token)) syncHeld();
 }
 
 function clearKeys(resetGamepad = true) {
@@ -151,6 +148,7 @@ function clearKeys(resetGamepad = true) {
   touchPointers.clear();
   touchLaunchEdge = false;
   boostLaunchPointer = null;
+  pressed.clear();
   for (const k of Object.keys(kb)) kb[k] = false;
   for (const k of Object.keys(state.keys))
     state.keys[k] = typeof state.keys[k] === "number" ? 0 : false;
@@ -255,6 +253,8 @@ async function bindTouchControls() {
 }
 
 function pollGamepad() {
+  // A controller button being rebound (ui/settingsPanel.js) must not also pause or go fullscreen.
+  if (state.ui.bindCapture) { gamepad.suspend(); return null; }
   const gp = gamepad.poll(navigator.getGamepads?.() || [], {
     active: inputFocused && !document.hidden,
     gameplayActive: !state.ui.paused,
@@ -269,6 +269,7 @@ function pollGamepad() {
     });
   if (gp.minimapEdge && state.mode !== "arena")
     state.ui.showMinimap = !state.ui.showMinimap;
+  if (gp.cameraEdge) switchCamera();
   return gp;
 }
 
@@ -357,6 +358,17 @@ export function pumpInput() {
     out.brake = out.brake || t.brake;
     out.boost = out.boost || t.boost;
   }
+
+  // What is driving the ship this frame, for the run's `client` tag (systems/runClient.js).
+  // Counted here, while flying, so the tag is what was used, not a guess at the end.
+  const tiltOn = !!state.input.touch.useTilt;
+  runClient.sample({
+    tilt: tiltOn,
+    tiltAxis: tiltOn && Math.abs(state.input.touch.turnAxis || 0) > 0.001,
+    pad: gamepadDriving(gp),
+    touch: Object.values(touch).some(Boolean) || (!!state.input.touch.active && (touchInput.thrust > 0 || touchInput.back > 0 || Math.abs(touchInput.strafe) > 0.01 || Math.abs(touchInput.turn) > 0.001 || !!touchInput.brake || !!touchInput.boost)),
+    keys: HOLD_ACTIONS.some((action) => kb[action]),
+  });
 
   // Auto fire (Settings): hold fire while something breakable is ahead of the nose.
   if (!out.shoot && flightSettings().autoFire && state.mode === "roadmap") {

@@ -9,7 +9,8 @@ import { FLIGHT_CONFIG, advanceFlight, rechargeBoost } from "../systems/flight.j
 import { WEAPON_CONFIG, fireWeapon, coolWeapon, projectileFrom } from "../systems/weapons.js";
 import { constrainToTrack, createTrackProgress, updateTrackProgress, isLapReady, isInsideTrack, portalCoordinates } from "../track.js";
 import { damagePlayer, predictAim, segmentHitsCircle } from "../systems/environment.js";
-import { PLAYER_HULL, shipTouchesCircle, pushShipOutOfCircle, shotHitsShip } from "../hull.js";
+import { PLAYER_HULL, makeHull, shipTouchesCircle, pushShipOutOfCircle, shotHitsShip } from "../hull.js";
+import { buildStats, buildHull, applyBuildStats } from "../shipStats.js";
 import { WEEKLY_LEVEL, WEEKLY_RULES as R, bouncerPosition } from "./layout.js";
 
 // Frozen rules: the playtest lab never changes a weekly run.
@@ -23,8 +24,21 @@ export const WEEKLY_CONFIG = Object.freeze({ ...FLIGHT_CONFIG, ...WEAPON_CONFIG,
 //  2 (SDW2 logs): the ship is its real body (engine/shipHull.js) for rails,
 //    rocks, mines and shots; a shard is collected when the body touches the
 //    drawn shard (SHARD_TOUCH) or, as before, within SHARD_PICKUP of centre.
-export const WEEKLY_PHYSICS = Object.freeze({ CIRCLE: 1, HULL: 2, CURRENT: 2 });
-const physicsOf = (scene) => (scene.physics === WEEKLY_PHYSICS.CIRCLE ? WEEKLY_PHYSICS.CIRCLE : WEEKLY_PHYSICS.HULL);
+//  3 (SDW3 logs): a garage build (engine/shipStats.js). The body is the
+//    build's own outline (engine/shipHulls.js) and its stats scale top speed,
+//    thrust, boost, brake and sideways grip. The log names the build. Used
+//    only on events that allow builds; the standard ship stays on physics 2.
+export const WEEKLY_PHYSICS = Object.freeze({ CIRCLE: 1, HULL: 2, BUILD: 3, CURRENT: 2 });
+const physicsOf = (scene) => (scene.physics === WEEKLY_PHYSICS.CIRCLE ? WEEKLY_PHYSICS.CIRCLE : scene.physics === WEEKLY_PHYSICS.BUILD ? WEEKLY_PHYSICS.BUILD : WEEKLY_PHYSICS.HULL);
+// The ship's body is a polygon on every physics but the first.
+const hasHull = (scene) => physicsOf(scene) !== WEEKLY_PHYSICS.CIRCLE;
+const hullOf = (scene) => scene.hull || PLAYER_HULL;
+const configOf = (scene) => scene.config || WEEKLY_CONFIG;
+const buildHulls = new Map(); // build key -> hull shape (describing a hull samples 720 directions)
+function hullForBuild(ship) {
+  if (!buildHulls.has(ship)) buildHulls.set(ship, makeHull(buildHull(ship)));
+  return buildHulls.get(ship);
+}
 
 // Input frame bits.
 export const BIT = Object.freeze({ LEFT: 1, RIGHT: 2, BOOST: 4, BRAKE: 8, SHOOT: 16, STRAFE_L: 32, STRAFE_R: 64, LAUNCH: 128 });
@@ -83,13 +97,18 @@ export function sameFrame(a, b) {
 /**
  * A fresh attempt on a layout: the ship on the grid, nothing started.
  * physics: WEEKLY_PHYSICS.CURRENT (the hull) unless replaying an older log.
+ * ship: a garage build key ("needle:0-1-2-0"), required for and only used by
+ * WEEKLY_PHYSICS.BUILD.
  */
-export function createWeeklyScene(layout, { physics = WEEKLY_PHYSICS.CURRENT } = {}) {
+export function createWeeklyScene(layout, { physics = WEEKLY_PHYSICS.CURRENT, ship = null } = {}) {
   const C = WEEKLY_CONFIG;
   const { start } = layout;
-  if (physics !== WEEKLY_PHYSICS.CIRCLE && physics !== WEEKLY_PHYSICS.HULL) throw new RangeError(`Unknown weekly physics: ${physics}`);
+  if (physics !== WEEKLY_PHYSICS.CIRCLE && physics !== WEEKLY_PHYSICS.HULL && physics !== WEEKLY_PHYSICS.BUILD) throw new RangeError(`Unknown weekly physics: ${physics}`);
+  const build = physics === WEEKLY_PHYSICS.BUILD ? buildStats(ship) : null;
+  if (physics === WEEKLY_PHYSICS.BUILD && !build) throw new RangeError(`Unknown ship build: ${ship}`);
   return {
     physics,
+    ...(build ? { ship, stats: build, hull: hullForBuild(ship), config: applyBuildStats(C, build) } : {}),
     level: WEEKLY_LEVEL,
     weekly: layout.event,
     layout,
@@ -141,7 +160,7 @@ function launch(scene) {
 }
 
 function resolveBouncers(scene, p, events) {
-  if (physicsOf(scene) === WEEKLY_PHYSICS.HULL) return resolveBouncersHull(scene, p, events);
+  if (hasHull(scene)) return resolveBouncersHull(scene, p, events);
   const r = WEEKLY_CONFIG.PLAYER_RADIUS;
   for (const b of scene.hazards) {
     if (b.hp <= 0) continue;
@@ -162,7 +181,7 @@ function resolveBouncers(scene, p, events) {
 function resolveBouncersHull(scene, p, events) {
   for (const b of scene.hazards) {
     if (b.hp <= 0) continue;
-    const c = pushShipOutOfCircle(p, b.x, b.y, b.radius);
+    const c = pushShipOutOfCircle(p, b.x, b.y, b.radius, { hull: hullOf(scene) });
     if (!c) continue;
     const dot = (p.vx - (b.vx || 0)) * c.nx + (p.vy - (b.vy || 0)) * c.ny;
     if (dot < 0) { p.vx -= 1.35 * dot * c.nx; p.vy -= 1.35 * dot * c.ny; }
@@ -200,7 +219,7 @@ function updateSentries(scene, p, events) {
 
 function updateShots(scene, p, events) {
   const pr = WEEKLY_CONFIG.PLAYER_RADIUS;
-  const hull = physicsOf(scene) === WEEKLY_PHYSICS.HULL;
+  const hull = hasHull(scene);
   const live = scene.hazards.filter((b) => b.hp > 0);
   for (let i = scene.enemyShots.length - 1; i >= 0; i--) {
     const s = scene.enemyShots[i];
@@ -208,7 +227,7 @@ function updateShots(scene, p, events) {
     s.x += s.vx * R.STEP; s.y += s.vy * R.STEP; s.life -= R.STEP;
     let gone = s.life <= 0;
     if (!gone && live.some((b) => segmentHitsCircle(s.prevX, s.prevY, s.x, s.y, b.x, b.y, b.radius))) gone = true;
-    if (!gone && (hull ? shotHitsShip(p, s.prevX, s.prevY, s.x, s.y) : segmentHitsCircle(s.prevX, s.prevY, s.x, s.y, p.x, p.y, pr))) {
+    if (!gone && (hull ? shotHitsShip(p, s.prevX, s.prevY, s.x, s.y, hullOf(scene)) : segmentHitsCircle(s.prevX, s.prevY, s.x, s.y, p.x, p.y, pr))) {
       if (damagePlayer(p, s.damage)) events.push({ type: "shot" });
       gone = true;
     }
@@ -265,15 +284,16 @@ export function stepWeekly(scene, frame = NEUTRAL) {
     hits: (outward) => outward >= R.WALL_STUN_FROM && p.stunTimer <= 0,
     onImpact: () => { p.stunTimer = R.WALL_STUN; scene.wallHits++; events.push({ type: "wall" }); },
   };
-  const hull = physicsOf(scene) === WEEKLY_PHYSICS.HULL;
-  const body = hull ? PLAYER_HULL : C.PLAYER_RADIUS;
+  const hull = hasHull(scene);
+  const H = hullOf(scene);
+  const body = hull ? H : C.PLAYER_RADIUS;
   advanceFlight(R.STEP, scene, p, keys, {
     onFuelUse: (amount) => { scene.fuel = Math.max(0, scene.fuel - amount); },
     constrain: (player, prev) => { constrainToTrack(scene.track, player, prev, body, rails); },
-  }, C);
+  }, configOf(scene));
   // Stationary mines: contact is the end of the attempt.
   for (const m of scene.mines) {
-    if (hull ? shipTouchesCircle(p, m.x, m.y, m.radius) : Math.hypot(p.x - m.x, p.y - m.y) < m.radius + C.PLAYER_RADIUS) {
+    if (hull ? shipTouchesCircle(p, m.x, m.y, m.radius, H) : Math.hypot(p.x - m.x, p.y - m.y) < m.radius + C.PLAYER_RADIUS) {
       scene.dead = "mine";
       events.push({ type: "dead", cause: "mine", id: m.id });
       return events;
@@ -283,7 +303,7 @@ export function stepWeekly(scene, frame = NEUTRAL) {
   updateTrackProgress(scene, previous);
   for (const s of scene.shardList) {
     if (scene.shards.has(s.id)) continue;
-    if (Math.hypot(p.x - s.x, p.y - s.y) <= R.SHARD_PICKUP || (hull && shipTouchesCircle(p, s.x, s.y, R.SHARD_TOUCH))) {
+    if (Math.hypot(p.x - s.x, p.y - s.y) <= R.SHARD_PICKUP || (hull && shipTouchesCircle(p, s.x, s.y, R.SHARD_TOUCH, H))) {
       scene.shards.add(s.id);
       scene.flux = Math.min(100, scene.flux + 8);
       events.push({ type: "shard", id: s.id, count: scene.shards.size, total: scene.shardList.length });

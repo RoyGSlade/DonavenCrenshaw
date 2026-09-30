@@ -9,20 +9,24 @@
 //          numbers in base 36 (turn may be negative).
 // The prefix is the physics the run was flown under (sim.js WEEKLY_PHYSICS):
 //   SDW1 — physics 1, the circle hitbox (every run before the hull);
-//   SDW2 — physics 2, the ship's real body (what the game records now).
+//   SDW2 — physics 2, the ship's real body (what the game records now);
+//   SDW3 — physics 3, a garage build: one extra field at the end names it
+//          ("SDW3|…|<runs>|needle:0-1-2-0"), and the replay flies that build.
 // A log always replays under its own physics, so old times never move.
 import { createWeeklyScene, stepWeekly, sameFrame, WEEKLY_PHYSICS } from "./sim.js";
+import { isBuild } from "../shipStats.js";
 
-export const LOG_PREFIXES = Object.freeze({ SDW1: WEEKLY_PHYSICS.CIRCLE, SDW2: WEEKLY_PHYSICS.HULL });
-const PREFIX_FOR = Object.freeze({ [WEEKLY_PHYSICS.CIRCLE]: "SDW1", [WEEKLY_PHYSICS.HULL]: "SDW2" });
+export const LOG_PREFIXES = Object.freeze({ SDW1: WEEKLY_PHYSICS.CIRCLE, SDW2: WEEKLY_PHYSICS.HULL, SDW3: WEEKLY_PHYSICS.BUILD });
+const PREFIX_FOR = Object.freeze({ [WEEKLY_PHYSICS.CIRCLE]: "SDW1", [WEEKLY_PHYSICS.HULL]: "SDW2", [WEEKLY_PHYSICS.BUILD]: "SDW3" });
 /** The prefix new recordings get (the current physics). */
 export const LOG_PREFIX = PREFIX_FOR[WEEKLY_PHYSICS.CURRENT];
 export const GHOST_EVERY = 4; // one ghost pose per 4 steps (30 a second)
 
 /** physics: the version the frames were flown under (default: the current one). */
-export function encodeInputLog({ eventId, version, frames, finishMs, physics = WEEKLY_PHYSICS.CURRENT }) {
+export function encodeInputLog({ eventId, version, frames, finishMs, physics = WEEKLY_PHYSICS.CURRENT, ship = null }) {
   const prefix = PREFIX_FOR[physics];
   if (!prefix) throw new RangeError(`Unknown weekly physics: ${physics}`);
+  if (physics === WEEKLY_PHYSICS.BUILD && !isBuild(ship)) throw new RangeError(`Unknown ship build: ${ship}`);
   const runs = [];
   for (const f of frames) {
     const last = runs.at(-1);
@@ -30,15 +34,21 @@ export function encodeInputLog({ eventId, version, frames, finishMs, physics = W
     else runs.push({ n: 1, f });
   }
   const body = runs.map(({ n, f }) => [n, f.turn, f.thrust, f.back, f.strafe, f.bits].map((v) => v.toString(36)).join(",")).join(";");
-  return [prefix, eventId, version, frames.length, Math.round(finishMs ?? 0), body].join("|");
+  const fields = [prefix, eventId, version, frames.length, Math.round(finishMs ?? 0), body];
+  if (physics === WEEKLY_PHYSICS.BUILD) fields.push(ship);
+  return fields.join("|");
 }
 
 /** { eventId, version, steps, finishMs, frames, physics } or null for anything malformed. */
 export function decodeInputLog(text) {
   if (typeof text !== "string" || text.length > 262144) return null;
   const parts = text.split("|");
-  if (parts.length !== 6 || !Object.hasOwn(LOG_PREFIXES, parts[0])) return null;
-  const [, eventId, version, steps, finishMs, body] = parts;
+  if (!Object.hasOwn(LOG_PREFIXES, parts[0])) return null;
+  const physics = LOG_PREFIXES[parts[0]];
+  // A build log carries its build as a seventh field; the others have six.
+  if (parts.length !== (physics === WEEKLY_PHYSICS.BUILD ? 7 : 6)) return null;
+  const [, eventId, version, steps, finishMs, body, ship = null] = parts;
+  if (physics === WEEKLY_PHYSICS.BUILD && !isBuild(ship)) return null;
   const frames = [];
   for (const run of body ? body.split(";") : []) {
     const v = run.split(",").map((s) => parseInt(s, 36));
@@ -49,7 +59,7 @@ export function decodeInputLog(text) {
     for (let i = 0; i < n; i++) frames.push(f);
   }
   if (frames.length !== Number(steps)) return null;
-  return { eventId, version: Number(version), steps: Number(steps), finishMs: Number(finishMs), frames, physics: LOG_PREFIXES[parts[0]] };
+  return { eventId, version: Number(version), steps: Number(steps), finishMs: Number(finishMs), frames, physics, ...(ship ? { ship } : {}) };
 }
 
 /**
@@ -59,10 +69,10 @@ export function decodeInputLog(text) {
  * The physics comes from the log (its prefix); a frames object without one
  * replays under options.physics, else the current physics.
  */
-export function replayInputLog(layout, log, { physics = WEEKLY_PHYSICS.CURRENT } = {}) {
+export function replayInputLog(layout, log, { physics = WEEKLY_PHYSICS.CURRENT, ship = null } = {}) {
   const decoded = typeof log === "string" ? decodeInputLog(log) : log;
   if (!decoded) return { ok: false, error: "malformed" };
-  const scene = createWeeklyScene(layout, { physics: decoded.physics ?? physics });
+  const scene = createWeeklyScene(layout, { physics: decoded.physics ?? physics, ship: decoded.ship ?? ship });
   const poses = [];
   let i = 0;
   for (const frame of decoded.frames) {
@@ -77,6 +87,7 @@ export function replayInputLog(layout, log, { physics = WEEKLY_PHYSICS.CURRENT }
   return {
     ok: true,
     physics: scene.physics,
+    ...(scene.ship ? { ship: scene.ship } : {}),
     finished: scene.finished,
     finishMs,
     dead: scene.dead,

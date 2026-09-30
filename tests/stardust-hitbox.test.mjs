@@ -246,3 +246,128 @@ test('the debug overlay outlines the hull and the pickup shapes without touching
   drawHitboxDebug(ctx, { ...scene, weekly: {}, physics: 1, shardList: [], mines: [] }, 40);
   assert.equal(calls.filter((c) => c[0] === 'lineTo').length, 0);
 });
+
+test("ship builds: stats stay inside their limits, the cockpit never changes stats, and physics 3 replays exactly", async () => {
+  const S = await import("../projects/Space-Shooter/engine/shipStats.js");
+  const { createWeeklyLayout } = await import("../projects/Space-Shooter/engine/weekly/layout.js");
+  const { WEEKLY_EVENTS } = await import("../projects/Space-Shooter/tracks/weekly.js");
+  const { createWeeklyScene, stepWeekly, WEEKLY_PHYSICS, WEEKLY_CONFIG } = await import("../projects/Space-Shooter/engine/weekly/sim.js");
+  const { encodeInputLog, decodeInputLog, replayInputLog } = await import("../projects/Space-Shooter/engine/weekly/replay.js");
+  const { flyWeeklyLap } = await import("../projects/Space-Shooter/engine/weekly/pilot.js");
+  assert.equal(S.ALL_BUILDS.length, 57);
+  for (const key of S.ALL_BUILDS) {
+    const stats = S.buildStats(key);
+    for (const [stat, [lo, hi]] of Object.entries(S.STAT_LIMITS)) assert.ok(stats[stat] >= lo && stats[stat] <= hi, `${key} ${stat} ${stats[stat]}`);
+    const hull = S.buildHull(key);
+    assert.ok(hull.length >= 12 && hull.length <= 28, `${key} has ${hull.length} vertices`);
+    // Same ship with another cockpit: same stats, same outline.
+    const b = S.parseBuild(key);
+    for (const other of S.ALL_BUILDS) {
+      const o = S.parseBuild(other);
+      if (o.family === b.family && o.body === b.body && o.wings === b.wings && o.engines === b.engines) {
+        assert.deepEqual(S.buildStats(other), stats);
+        // The Courier cockpits reshape the nose; in the other families the cockpit sits inside the body.
+        if (b.family !== "courier") assert.equal(S.buildHull(other), hull);
+      }
+    }
+  }
+  // The owner's table: the standard courier is 100 across the board, the thin
+  // Needle is the fast drifty extreme and the broad Manta the grippy slow one.
+  assert.deepEqual(S.buildStats("courier:0-0-0-0"), { topSpeed: 1, accel: 1, grip: 1, boost: 1, brake: 1 });
+  assert.deepEqual(S.buildStats("needle:0-0-0-0"), { topSpeed: 1.2, accel: 0.85, grip: 0.8, boost: 1, brake: 1 });
+  // Every twin-blade Needle keeps some grip, and its parts move it.
+  const lance = S.ALL_BUILDS.filter((k) => /^needle:\d-0-/.test(k)).map((k) => S.buildStats(k).grip);
+  assert.equal(Math.min(...lance), 0.8);
+  assert.equal(Math.max(...lance), 0.94);
+  assert.deepEqual(S.buildStats("manta:2-1-0-0"), { topSpeed: 0.8, accel: 1.15, grip: 1.25, boost: 1, brake: 1 });
+  assert.equal(S.buildStats("wisp:0-0-0-0").boost, 1.1);
+  for (const bad of [null, "", "needle", "needle:1-0-0-0", "needle:0-0-0-0 ", "ghost:0-0-0-0", "needle:0-0-0-9"]) {
+    assert.equal(S.buildStats(bad), null);
+    assert.equal(S.isBuild(bad), false);
+  }
+  // Top speed is 12 to 18 around the standard 15; the driftiest build has no dampening at all.
+  assert.equal(WEEKLY_CONFIG.MAX_SPEED, 15);
+  assert.ok(Math.abs(S.applyBuildStats(WEEKLY_CONFIG, S.buildStats("needle:0-0-0-0")).MAX_SPEED - 18) < 1e-9);
+  assert.ok(Math.abs(S.applyBuildStats(WEEKLY_CONFIG, S.buildStats("manta:2-1-0-0")).MAX_SPEED - 12) < 1e-9);
+  // Every build has some dampening; the least is the twin-blade Needle's.
+  for (const key of S.ALL_BUILDS) assert.ok(S.applyBuildStats(WEEKLY_CONFIG, S.buildStats(key)).LATERAL_DAMP > 0, key);
+
+  const layout = createWeeklyLayout(WEEKLY_EVENTS[0]);
+  // A build scene needs a real build, and the standard physics ignores one.
+  assert.throws(() => createWeeklyScene(layout, { physics: WEEKLY_PHYSICS.BUILD }), /Unknown ship build/);
+  assert.throws(() => createWeeklyScene(layout, { physics: WEEKLY_PHYSICS.BUILD, ship: "needle:1-1-1-1" }), /Unknown ship build/);
+  const standard = createWeeklyScene(layout, { ship: "needle:0-0-0-0" });
+  assert.equal(standard.ship, undefined);
+  assert.equal(standard.hull, undefined);
+  // Grip: sliding sideways with no thrust, a grippy build sheds the slide and
+  // the driftiest one keeps it.
+  const slide = (ship) => {
+    const scene = createWeeklyScene(layout, { physics: WEEKLY_PHYSICS.BUILD, ship });
+    scene.lockedInStart = false; scene.launched = true;
+    const a = scene.player.angle;
+    scene.player.vx = -Math.sin(a) * 2; scene.player.vy = Math.cos(a) * 2; // pure sideways
+    for (let i = 0; i < 30; i++) stepWeekly(scene, { turn: 0, thrust: 0, back: 0, strafe: 0, bits: 0 });
+    return Math.abs(-scene.player.vx * Math.sin(a) + scene.player.vy * Math.cos(a));
+  };
+  assert.ok(slide("manta:2-1-0-0") < slide("courier:0-0-0-0"), "more grip, less slide");
+  assert.ok(slide("courier:0-0-0-0") < slide("needle:0-0-0-0"), "less grip, more slide");
+  // Sizes on top of the garage framing: twin-blade Needles 1.5x, every Manta 1.4x, every Wisp 1.25x.
+  assert.equal(S.buildScale("needle:0-0-0-0"), 1.5);
+  assert.equal(S.buildScale("needle:0-1-0-0"), 1);
+  assert.equal(S.buildScale("manta:2-1-2-1"), 1.4);
+  assert.equal(S.buildScale("wisp:0-0-0-0"), 1.25);
+  assert.equal(S.buildScale("courier:0-0-0-0"), 1);
+  const H = await import("../projects/Space-Shooter/engine/shipHulls.js");
+  const raw = H.HULLS[H.BUILD_HULL["manta:0-0-0-0"]];
+  S.buildHull("manta:0-0-0-0").forEach(([x, y], i) => { assert.ok(Math.abs(x - raw[i][0] * 1.4) < 1e-4 && Math.abs(y - raw[i][1] * 1.4) < 1e-4, "the Manta outline is the traced one at 1.4x"); });
+  assert.ok(Math.abs(S.buildHullSize("manta:0-0-0-0").area - H.HULL_METRICS[H.BUILD_HULL["manta:0-0-0-0"]].area * 1.96) < 1e-3);
+  // A flown build lap records its build and replays to the same millisecond.
+  const lap = flyWeeklyLap(layout, { physics: WEEKLY_PHYSICS.BUILD, ship: "wisp:0-0-0-0" });
+  assert.ok(lap.finished, `the pilot finishes in a Wisp (dead: ${lap.dead})`);
+  const log = encodeInputLog({ eventId: layout.event.id, version: layout.event.version, frames: lap.frames, finishMs: lap.time, physics: WEEKLY_PHYSICS.BUILD, ship: "wisp:0-0-0-0" });
+  assert.match(log, /^SDW3\|.*\|wisp:0-0-0-0$/);
+  assert.equal(decodeInputLog(log).ship, "wisp:0-0-0-0");
+  const replay = replayInputLog(layout, log);
+  assert.equal(replay.matches, true);
+  assert.equal(replay.ship, "wisp:0-0-0-0");
+  // The same inputs in another build do not land on the same time.
+  const other = replayInputLog(layout, log.replace(/wisp:0-0-0-0$/, "needle:0-1-0-0"));
+  assert.equal(other.matches, false);
+  // A build log with a missing or made-up build is refused; standard logs never carry one.
+  assert.equal(decodeInputLog(log.replace(/\|wisp:0-0-0-0$/, "")), null);
+  assert.equal(decodeInputLog(log.replace(/wisp:0-0-0-0$/, "manta:9-9-9-9")), null);
+  assert.equal(decodeInputLog(log.replace(/^SDW3/, "SDW2")), null);
+  assert.throws(() => encodeInputLog({ eventId: "x", version: 1, frames: [], finishMs: 0, physics: WEEKLY_PHYSICS.BUILD }), /Unknown ship build/);
+});
+
+test("which build a run flies: standard unless the event allows builds or a preview asks", async () => {
+  const { buildForRun, equippedBuild } = await import("../projects/Space-Shooter/systems/shipBuild.js");
+  const store = (value) => ({ getItem: () => (value === undefined ? null : JSON.stringify(value)) });
+  const needle = { family: "needle", parts: { body: 0, wings: 1, cockpit: 2, engines: 0 } };
+  assert.equal(equippedBuild(store(needle)), "needle:0-1-2-0");
+  assert.equal(equippedBuild(store(undefined)), null);
+  assert.equal(equippedBuild(store({ family: "needle", parts: { body: 1, wings: 9, cockpit: 0, engines: 0 } })), null);
+  assert.equal(equippedBuild({ getItem: () => "{not json" }), null);
+  // A ranked flight on an ordinary event is always the standard ship, whatever is equipped or asked for.
+  assert.equal(buildForRun({ id: "weekly-01" }, { preview: false, search: "?ship=needle:0-0-0-0", storage: store(needle) }), null);
+  // A preview flight can test any real build from the address bar.
+  assert.equal(buildForRun({ id: "weekly-01" }, { preview: true, search: "?ship=needle:0-0-0-0", storage: store(needle) }), "needle:0-0-0-0");
+  assert.equal(buildForRun({ id: "weekly-01" }, { preview: true, search: "?ship=needle:7-7-7-7", storage: store(needle) }), null);
+  // ...or the ship equipped in the garage.
+  assert.equal(buildForRun({ id: "weekly-01" }, { preview: true, search: "?ship=equipped", storage: store(needle) }), "needle:0-1-2-0");
+  assert.equal(buildForRun({ id: "weekly-01" }, { preview: false, search: "?ship=equipped", storage: store(needle) }), null);
+  // An event that allows builds flies the equipped ship.
+  assert.equal(buildForRun({ id: "weekly-02", ships: "builds" }, { preview: false, search: "", storage: store(needle) }), "needle:0-1-2-0");
+  assert.equal(buildForRun({ id: "weekly-02", ships: "builds" }, { preview: false, search: "", storage: store(undefined) }), null);
+});
+
+test("stat points: the standard ship is 50 on every stat, the ends of each range are 0 and 100", async () => {
+  const S = await import("../projects/Space-Shooter/engine/shipStats.js");
+  assert.deepEqual(S.statPoints(S.buildStats("courier:0-0-0-0")), { topSpeed: 50, accel: 50, grip: 50, boost: 50, brake: 50 });
+  // The twin-blade Needle at its extremes: fastest, weakest thrust, least grip.
+  assert.deepEqual(S.statPoints(S.buildStats("needle:0-0-0-0")), { topSpeed: 100, accel: 0, grip: 10, boost: 50, brake: 50 });
+  assert.equal(S.statPoints(S.buildStats("needle:2-0-0-1")).grip, 38);
+  assert.deepEqual(S.statPoints(S.buildStats("manta:2-1-0-0")), { topSpeed: 0, accel: 100, grip: 100, boost: 50, brake: 50 });
+  for (const key of S.ALL_BUILDS) for (const v of Object.values(S.statPoints(S.buildStats(key)))) assert.ok(Number.isInteger(v) && v >= 0 && v <= 100);
+  assert.deepEqual(S.STAT_NAMES.map(([id]) => id), ["topSpeed", "accel", "grip", "boost", "brake"]);
+});

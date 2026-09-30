@@ -12,6 +12,8 @@ import { toast } from '../ui/hud.js';
 import { CUSTOM_BOARD, activeCustomTrack } from './customTrack.js';
 import { setWeeklyGhost, currentWeeklySession } from '../engine/modes/weekly.js';
 import { setFailBoard } from '../ui/failScreen.js';
+import { runClient } from './runClient.js';
+import { startHubSync } from './hubSyncLive.js';
 import { finishScreenToken, isCurrentFinish, updateFinishScreen, setFinishNote } from '../ui/finishScreen.js';
 
 const ACCOUNT_URL = new URL('../../account/', document.baseURI).href;
@@ -22,7 +24,8 @@ const WEEKLY_URL = new URL('../../stardust/weekly/', document.baseURI).href;
 const MAX_LOG = 250000;
 const CIRCUIT_NAME = Object.fromEntries(CIRCUITS);
 
-const recorder = createRunRecorder();
+// Every finish request says how the run was flown (device, input, build, ship).
+const recorder = createRunRecorder({ client: () => runClient.current() });
 const byId = (id) => document.getElementById(id);
 
 // The challenge link this page was opened with, and what the hub said about it.
@@ -297,9 +300,12 @@ async function paintBoard() {
 // told plainly while it can't.
 export async function initRunSaving() {
   if (!recorder.enabled) return;
+  // The equipped ship, flight settings and designs go to the account of a signed-in pilot.
+  const sync = startHubSync(recorder);
   const refresh = async () => {
     await recorder.connect();
     paintPlayer();
+    sync.onSession().catch(() => {});
     challengeLoad = loadChallenge().catch(() => {});
     await Promise.all([
       recorder.reachable ? paintBoard() : null,
@@ -315,6 +321,7 @@ export async function initRunSaving() {
 
   window.addEventListener('stardust:runStart', async () => {
     const mine = ++launches;
+    runClient.begin();
     paintEnd(null);
     paintBreakdown(null);
     paintSocial(null);
@@ -341,6 +348,7 @@ export async function initRunSaving() {
   window.addEventListener('stardust:customRunStart', async (event) => {
     launches += 1;
     flight = null;
+    runClient.begin();
     paintEnd(null);
     paintBreakdown(null);
     paintSocial(null);
@@ -377,9 +385,11 @@ export async function initRunSaving() {
   // hub. The leaderboard's #1 flies along as a ghost once it's been fetched.
   let ghostFor = null;
   window.addEventListener('stardust:weeklyAttempt', async (event) => {
-    const { eventId, version, preview } = event.detail || {};
+    const { eventId, version, preview, build, appearance } = event.detail || {};
     launches += 1;
     flight = null;
+    // The ship and build the attempt was started with; a preview never reaches the hub.
+    runClient.begin({ build, appearance });
     paintEnd(null);
     paintBreakdown(null);
     paintSocial(null);
@@ -387,7 +397,7 @@ export async function initRunSaving() {
       ghostFor = `${eventId}.${version}`;
       recorder.ghost(eventId, { rank: 1 }).then((top) => {
         if (!top || currentWeeklySession()?.event?.id !== eventId) return;
-        setWeeklyGhost('top', { log: top.inputLog, label: `#1 ${top.displayName || top.username} ${clock(top.timeMs)}`, color: '#ffd166' });
+        setWeeklyGhost('top', { log: top.inputLog, label: `#1 ${top.displayName || top.username} ${clock(top.timeMs)}`, color: '#ffd166', appearance: top.appearance, build: top.build });
       }).catch(() => {});
     }
     if (preview) { recorder.abandon(); return; }

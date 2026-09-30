@@ -36,6 +36,13 @@ function describe(points) {
  */
 export const PLAYER_HULL = Object.freeze({ kind: "hull", points: SHIP_HULL, body: SHIP_BODY, ...describe(SHIP_HULL) });
 
+/** A hull shape for any outline (ship-local [x, y] points, as in shipHull.js): a garage build's body. */
+export function makeHull(points) {
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  for (const [x, y] of points) { minX = Math.min(minX, x); maxX = Math.max(maxX, x); minY = Math.min(minY, y); maxY = Math.max(maxY, y); }
+  return Object.freeze({ kind: "hull", points, body: Object.freeze({ width: maxX - minX, length: maxY - minY }), ...describe(points) });
+}
+
 export const isHullShape = (shape) => !!shape && typeof shape === "object" && shape.kind === "hull";
 
 /** The hull's vertices in world cells for a ship at (x, y) facing `angle`. */

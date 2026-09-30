@@ -192,6 +192,10 @@ export function boardRows(entries, meUsername) {
         avatarPreset: entry.avatarPreset ?? null,
         avatarUrl: entry.avatarUrl ?? null,
         title: entry.title && typeof entry.title === 'object' ? entry.title : null,
+        // Optional extras from the hub: the ship { build, family } and the device { device, input, build }
+        // the time was flown on. Rows without them show nothing extra (ship-info.js).
+        ship: entry.ship && typeof entry.ship === 'object' ? entry.ship : null,
+        client: entry.client && typeof entry.client === 'object' ? entry.client : null,
         isMe: Boolean(entry.isMe || (meUsername && entry.username === meUsername))
     }));
 }
@@ -356,6 +360,12 @@ export function socialApi(hub) {
         avatars: () => hub('/avatars'),
         setAvatar: (preset) => hub('/users/me/avatar', { method: 'PUT', body: { preset: preset || null } }),
         setProfilePublic: (profilePublic) => hub('/users/profile', { method: 'PUT', body: { profilePublic: Boolean(profilePublic) } }),
+        // One section of the public profile at a time; the hub changes only the keys sent.
+        setProfileShow: (section, shown) => hub('/users/profile', { method: 'PUT', body: { profileShow: { [section]: Boolean(shown) } } }),
+        account: () => hub('/users/me'),
+        // The equipped ship (404 no_ship when none) and the pilot's published designs.
+        myShip: () => hub('/stardust/ship'),
+        liveries: (artist) => hub(`/stardust/liveries${artist ? `?artist=${id(artist)}` : ''}`),
         profile: (username) => hub(`/profiles/${id(username)}`),
         // Weekly events and their comments.
         event: (eventId) => hub(`/games/stardust/events/${id(eventId)}`),

@@ -1,5 +1,7 @@
 /** Weekly time-trial visuals: mines, sentries, shots, ghosts, stun and the speed warning. Never mutates simulation. */
 import { drawCourier, drawExplosion } from './stardustVfx.js';
+import { ghostSprite } from './ghostShip.js';
+import { state } from '../state.js';
 import { WEEKLY_RULES } from '../engine/weekly/layout.js';
 import { WEEKLY_CONFIG } from '../engine/weekly/sim.js';
 
@@ -68,9 +70,14 @@ export function drawWeeklyWorld(ctx, scene, unit, time, { ghosts = [], shipImg =
   // Ghosts: translucent ships with a name tag.
   for (const g of ghosts) {
     ctx.save(); ctx.globalAlpha = 0.34;
-    drawCourier(ctx, { x: g.x, y: g.y, angle: g.angle, vx: 0, vy: 0, hp: 100, maxHp: 100 }, { paused: true }, {}, unit, shipImg, time, 0.66);
+    // A ghost flown in a custom ship is drawn as that ship (and at that build's size);
+    // until it is painted, and for one with no ship on record, it is the standard sprite.
+    const sprite = ghostSprite(g.ghost);
+    drawCourier(ctx, { x: g.x, y: g.y, angle: g.angle, vx: 0, vy: 0, hp: 100, maxHp: 100, standardShip: true, appearanceCanvas: sprite, buildKey: sprite ? g.ghost.build : null }, { paused: true }, {}, unit, shipImg, time, 0.66);
     ctx.globalAlpha = 0.8; ctx.fillStyle = g.color; ctx.font = `${Math.max(10, unit * 0.32)}px Consolas, monospace`; ctx.textAlign = 'center';
-    ctx.fillText(g.label, g.x * unit, (g.y - 0.9) * unit);
+    const turn = state.gfx?.camera?.viewRot || 0;
+    ctx.translate(g.x * unit, g.y * unit); ctx.rotate(-turn);
+    ctx.fillText(g.label, 0, -0.9 * unit);
     ctx.restore();
   }
   // Stun: a flickering ring around the ship.

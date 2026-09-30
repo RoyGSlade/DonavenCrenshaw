@@ -197,3 +197,13 @@
   .sd-pf-row { grid-template-columns: minmax(0, 1fr) auto 7ch; gap: 10px; }
 }
 @media (prefers-reduced-motion: reduce) { .sd-weekly-banner { transition: none; } .sd-weekly-banner:hover { transform: none; } }
+
+/* Profile page: sections that exist share the row; a lone one fills it, so hidden sections leave no holes. */
+.sd-pf-grid { display: flex; flex-wrap: wrap; }
+.sd-pf-grid > .sd-pf-panel { flex: 1 1 min(100%, 320px); }
+.sd-pf-grid > .sd-pf-wide { flex-basis: 100%; }
+.sd-page .sd-pf-bare { margin: 22px 0 0; padding: 16px 18px; border: 1px dashed var(--sd-line-strong); border-radius: 4px; color: var(--sd-text); }
+.sd-page .sd-pf-bare a { color: var(--sd-ice); text-underline-offset: 4px; }
+.sd-pf-only { margin-left: 10px; padding: 2px 7px; border: 1px solid var(--sd-line-strong); border-radius: 3px; font-size: .58rem; letter-spacing: .14em; color: var(--sd-muted); cursor: help; }
+.sd-pf-ship .ship-card { grid-template-columns: minmax(0, 11rem) minmax(0, 1fr); }
+@media (max-width: 560px) { .sd-pf-ship .ship-card { grid-template-columns: minmax(0, 1fr); } }
