@@ -221,11 +221,21 @@ function flightStep(dt, sceneState, player, keys, env, config) {
 
   if (fuelUse > 0 && env.onFuelUse) env.onFuelUse(fuelUse);
 
-  updateFlux(sceneState, player, dt, !!keys.brake);
+  updateFlux(sceneState, player, dt, !!keys.brake, config.BRAKE_SCALE ?? 1);
 
   // friction + speed cap
   player.vx *= Math.pow(config.FRICTION, dt);
   player.vy *= Math.pow(config.FRICTION, dt);
+  // Ship builds (engine/shipStats.js): inertial dampeners bleed off sideways
+  // slide relative to the nose. Configs without LATERAL_DAMP skip this, so the
+  // standard ship's arithmetic is untouched.
+  if (config.LATERAL_DAMP > 0) {
+    const c = Math.cos(player.angle), s = Math.sin(player.angle);
+    const forward = player.vx * c + player.vy * s;
+    const lateral = (-player.vx * s + player.vy * c) * Math.exp(-config.LATERAL_DAMP * dt);
+    player.vx = forward * c - lateral * s;
+    player.vy = forward * s + lateral * c;
+  }
   const speed = Math.hypot(player.vx, player.vy);
   if (speed > config.MAX_SPEED) {
     const s = config.MAX_SPEED / speed;
@@ -256,12 +266,12 @@ function flightStep(dt, sceneState, player, keys, env, config) {
   env.constrain?.(player, previous);
 }
 
-export function updateFlux(scene, player, dt, braking = false) {
+export function updateFlux(scene, player, dt, braking = false, brakeScale = 1) {
   let flux = scene.flux || 0;
   const speed = Math.hypot(player.vx, player.vy);
   if (braking && flux > 0 && speed > 0.1) {
     const powered = Math.min(dt, flux / 25);
-    const retention = Math.exp(-5 * powered);
+    const retention = Math.exp(-5 * powered * brakeScale);
     player.vx *= retention;
     player.vy *= retention;
     flux -= powered * 25;

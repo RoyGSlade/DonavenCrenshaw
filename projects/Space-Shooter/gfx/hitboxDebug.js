@@ -48,7 +48,7 @@ export function drawHitboxDebug(ctx, scene, unit) {
   // The ship: its hull (solid) and the old centre circle (dashed).
   ring(ctx, player.x, player.y, config.PLAYER_RADIUS, unit, COLORS.circle, circleOnly ? null : [unit * 0.04, unit * 0.05]);
   if (!circleOnly) {
-    const poly = shipHull(player);
+    const poly = shipHull(player, scene.hull || PLAYER_HULL);
     ctx.setLineDash([]);
     ctx.strokeStyle = COLORS.hull;
     ctx.fillStyle = "rgba(57,255,159,.12)";
@@ -60,7 +60,7 @@ export function drawHitboxDebug(ctx, scene, unit) {
     for (const p of poly) ctx.fillRect(p.x * unit - 1.5, p.y * unit - 1.5, 3, 3);
     // Nearest rail: the deepest hull point and the rail's outward normal.
     if (scene.track) {
-      const c = hullLaneContact(scene.track, player.x, player.y, player.angle, PLAYER_HULL);
+      const c = hullLaneContact(scene.track, player.x, player.y, player.angle, scene.hull || PLAYER_HULL);
       if (c.depth > -0.3 && (c.nx || c.ny)) {
         ctx.strokeStyle = COLORS.contact;
         ctx.fillStyle = COLORS.contact;

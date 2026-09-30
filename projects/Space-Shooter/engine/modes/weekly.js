@@ -7,7 +7,8 @@
 //   stardust:weeklyRunComplete  { eventId, version, totalMs, inputLog, preview, personalBest, previousMs, title }
 import { state, config } from "../../state.js";
 import { createWeeklyLayout, WEEKLY_RULES } from "../weekly/layout.js";
-import { createWeeklyScene, stepWeekly, frameFromKeys, sceneMs, BIT } from "../weekly/sim.js";
+import { createWeeklyScene, stepWeekly, frameFromKeys, sceneMs, BIT, WEEKLY_PHYSICS } from "../weekly/sim.js";
+import { buildForRun } from "../../systems/shipBuild.js";
 import { encodeInputLog, replayInputLog, ghostPose } from "../weekly/replay.js";
 import { nearestTrackPoint } from "../track.js";
 import { formatMs } from "../../data.js";
@@ -77,7 +78,14 @@ function buildAttempt() {
   state.gfx.camera.zoom = WEEKLY_ZOOM;
   state.gfx.camera._baseZoom = WEEKLY_ZOOM;
   resizeCanvas();
-  const scene = createWeeklyScene(session.layout);
+  // A garage build flies its own hitbox and stats where the event allows it
+  // (or on a preview flight asked for with ?ship=); otherwise the standard ship.
+  const ship = buildForRun(session.event, { preview: session.preview });
+  const scene = createWeeklyScene(session.layout, ship ? { physics: WEEKLY_PHYSICS.BUILD, ship } : {});
+  if (ship && session.attempts === 0) {
+    const pct = (v) => `${v >= 1 ? "+" : ""}${Math.round((v - 1) * 100)}%`;
+    toast(`Test build ${ship}: top speed ${pct(scene.stats.topSpeed)}, thrust ${pct(scene.stats.accel)}, grip ${pct(scene.stats.grip)}`, 5000);
+  }
   Object.assign(scene, {
     activeMs: 0, timerRunning: false, t0: 0, countdownT: 0, completed: false,
     stuckTimer: 0, showLaunchHint: false, nearestShardTarget: null, acc: 0, wreck: null,
@@ -231,7 +239,7 @@ function finish(lv) {
   const ms = Math.round(lv.finishMs);
   lv.activeMs = ms;
   state.run.totalActiveMs = ms;
-  const inputLog = encodeInputLog({ eventId: event.id, version: event.version, frames: session.frames, finishMs: lv.finishMs, physics: lv.physics });
+  const inputLog = encodeInputLog({ eventId: event.id, version: event.version, frames: session.frames, finishMs: lv.finishMs, physics: lv.physics, ship: lv.ship });
   const previous = readLocalBest(event);
   const personalBest = !previous || ms < previous.ms;
   if (personalBest) {

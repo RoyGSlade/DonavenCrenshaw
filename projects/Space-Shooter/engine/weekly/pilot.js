@@ -12,8 +12,8 @@ import { PLAYER_HULL } from "../hull.js";
  * the circle, i.e. 0.54 clear of the ship's edge, and the same 0.54 clear of
  * the hull's farthest point (its bounding radius) for the real body.
  */
-export function pilotMargin(physics = WEEKLY_PHYSICS.CURRENT) {
-  const reach = physics === WEEKLY_PHYSICS.HULL ? PLAYER_HULL.radius : WEEKLY_CONFIG.PLAYER_RADIUS;
+export function pilotMargin(physics = WEEKLY_PHYSICS.CURRENT, hull = PLAYER_HULL) {
+  const reach = physics === WEEKLY_PHYSICS.CIRCLE ? WEEKLY_CONFIG.PLAYER_RADIUS : hull.radius;
   return 0.75 - WEEKLY_CONFIG.PLAYER_RADIUS + reach;
 }
 
@@ -88,11 +88,14 @@ export function pilotSpeeds(line, { cruise = 11, grip = 3.2, accel = 3, brake = 
  * Fly the layout with the scripted pilot. Returns { scene, frames, finished,
  * time, dead, events, physics } — frames are exactly what a player's
  * recording holds. physics: the weekly physics to fly (default: current).
+ * ship: a garage build key for WEEKLY_PHYSICS.BUILD; the pilot then plans
+ * its speeds from the build's stats (top speed, thrust, grip).
  */
-export function flyWeeklyLap(layout, { maxSeconds = R.PILOT_SECONDS, speeds = {}, physics = WEEKLY_PHYSICS.CURRENT, line: lineOptions = {} } = {}) {
-  const scene = createWeeklyScene(layout, { physics });
-  const line = pilotLine(layout, { margin: pilotMargin(physics), ...lineOptions });
-  const v = pilotSpeeds(line, speeds);
+export function flyWeeklyLap(layout, { maxSeconds = R.PILOT_SECONDS, speeds = {}, physics = WEEKLY_PHYSICS.CURRENT, ship = null, line: lineOptions = {} } = {}) {
+  const scene = createWeeklyScene(layout, { physics, ship });
+  const line = pilotLine(layout, { margin: pilotMargin(physics, scene.hull || PLAYER_HULL), ...lineOptions });
+  const st = scene.stats;
+  const v = pilotSpeeds(line, st ? { cruise: 11 * st.topSpeed, accel: 3 * st.accel, grip: 3.2 * st.grip, brake: 2.2 * st.brake, ...speeds } : speeds);
   const n = line.length;
   const frames = [];
   const counts = {};
@@ -136,7 +139,7 @@ export function flyWeeklyLap(layout, { maxSeconds = R.PILOT_SECONDS, speeds = {}
     for (const e of events) counts[e.type] = (counts[e.type] || 0) + 1;
     if (scene.finished || scene.dead) break;
   }
-  return { scene, frames, finished: scene.finished, time: scene.finishMs, dead: scene.dead, events: counts, line, physics };
+  return { scene, frames, finished: scene.finished, time: scene.finishMs, dead: scene.dead, events: counts, line, physics, ...(scene.ship ? { ship: scene.ship } : {}) };
 }
 
 export { WEEKLY_CONFIG };
