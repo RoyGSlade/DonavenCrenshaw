@@ -306,21 +306,30 @@ test("ship builds: stats stay inside their limits, the cockpit never changes sta
   };
   assert.ok(slide("manta:2-1-0-0") < slide("courier:0-0-0-0"), "more grip, less slide");
   assert.ok(slide("courier:0-0-0-0") < slide("needle:0-0-0-0"), "less grip, more slide");
+  // Sizes on top of the garage framing: twin-blade Needles 1.75x, every Manta 1.4x.
+  assert.equal(S.buildScale("needle:0-0-0-0"), 1.75);
+  assert.equal(S.buildScale("needle:0-1-0-0"), 1);
+  assert.equal(S.buildScale("manta:2-1-2-1"), 1.4);
+  assert.equal(S.buildScale("wisp:0-0-0-0"), 1);
+  const H = await import("../projects/Space-Shooter/engine/shipHulls.js");
+  const raw = H.HULLS[H.BUILD_HULL["manta:0-0-0-0"]];
+  S.buildHull("manta:0-0-0-0").forEach(([x, y], i) => { assert.ok(Math.abs(x - raw[i][0] * 1.4) < 1e-4 && Math.abs(y - raw[i][1] * 1.4) < 1e-4, "the Manta outline is the traced one at 1.4x"); });
+  assert.ok(Math.abs(S.buildHullSize("manta:0-0-0-0").area - H.HULL_METRICS[H.BUILD_HULL["manta:0-0-0-0"]].area * 1.96) < 1e-3);
   // A flown build lap records its build and replays to the same millisecond.
-  const lap = flyWeeklyLap(layout, { physics: WEEKLY_PHYSICS.BUILD, ship: "manta:0-0-0-0" });
-  assert.ok(lap.finished, `the pilot finishes in a Manta (dead: ${lap.dead})`);
-  const log = encodeInputLog({ eventId: layout.event.id, version: layout.event.version, frames: lap.frames, finishMs: lap.time, physics: WEEKLY_PHYSICS.BUILD, ship: "manta:0-0-0-0" });
-  assert.match(log, /^SDW3\|.*\|manta:0-0-0-0$/);
-  assert.equal(decodeInputLog(log).ship, "manta:0-0-0-0");
+  const lap = flyWeeklyLap(layout, { physics: WEEKLY_PHYSICS.BUILD, ship: "wisp:0-0-0-0" });
+  assert.ok(lap.finished, `the pilot finishes in a Wisp (dead: ${lap.dead})`);
+  const log = encodeInputLog({ eventId: layout.event.id, version: layout.event.version, frames: lap.frames, finishMs: lap.time, physics: WEEKLY_PHYSICS.BUILD, ship: "wisp:0-0-0-0" });
+  assert.match(log, /^SDW3\|.*\|wisp:0-0-0-0$/);
+  assert.equal(decodeInputLog(log).ship, "wisp:0-0-0-0");
   const replay = replayInputLog(layout, log);
   assert.equal(replay.matches, true);
-  assert.equal(replay.ship, "manta:0-0-0-0");
+  assert.equal(replay.ship, "wisp:0-0-0-0");
   // The same inputs in another build do not land on the same time.
-  const other = replayInputLog(layout, log.replace(/manta:0-0-0-0$/, "needle:0-1-0-0"));
+  const other = replayInputLog(layout, log.replace(/wisp:0-0-0-0$/, "needle:0-1-0-0"));
   assert.equal(other.matches, false);
   // A build log with a missing or made-up build is refused; standard logs never carry one.
-  assert.equal(decodeInputLog(log.replace(/\|manta:0-0-0-0$/, "")), null);
-  assert.equal(decodeInputLog(log.replace(/manta:0-0-0-0$/, "manta:9-9-9-9")), null);
+  assert.equal(decodeInputLog(log.replace(/\|wisp:0-0-0-0$/, "")), null);
+  assert.equal(decodeInputLog(log.replace(/wisp:0-0-0-0$/, "manta:9-9-9-9")), null);
   assert.equal(decodeInputLog(log.replace(/^SDW3/, "SDW2")), null);
   assert.throws(() => encodeInputLog({ eventId: "x", version: 1, frames: [], finishMs: 0, physics: WEEKLY_PHYSICS.BUILD }), /Unknown ship build/);
 });
