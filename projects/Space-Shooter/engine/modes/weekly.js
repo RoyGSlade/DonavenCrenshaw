@@ -8,7 +8,11 @@
 import { state, config } from "../../state.js";
 import { createWeeklyLayout, WEEKLY_RULES } from "../weekly/layout.js";
 import { createWeeklyScene, stepWeekly, frameFromKeys, sceneMs, BIT, WEEKLY_PHYSICS } from "../weekly/sim.js";
-import { buildForRun } from "../../systems/shipBuild.js";
+import { buildForRun, equippedBuild } from "../../systems/shipBuild.js";
+import { setFlightBuild, clearFlightBuild } from "../../systems/shipAppearance.js";
+import { parseBuild } from "../shipStats.js";
+// A test build that is not the equipped ship is drawn as itself for the run.
+globalThis.addEventListener?.("stardust:runQuit", () => clearFlightBuild());
 import { encodeInputLog, replayInputLog, ghostPose } from "../weekly/replay.js";
 import { nearestTrackPoint } from "../track.js";
 import { formatMs } from "../../data.js";
@@ -81,6 +85,10 @@ function buildAttempt() {
   // A garage build flies its own hitbox and stats where the event allows it
   // (or on a preview flight asked for with ?ship=); otherwise the standard ship.
   const ship = buildForRun(session.event, { preview: session.preview });
+  if (ship && ship !== equippedBuild()) {
+    const b = parseBuild(ship);
+    setFlightBuild(b.family, { body: b.body, wings: b.wings, cockpit: b.cockpit, engines: b.engines }).catch(() => clearFlightBuild());
+  } else clearFlightBuild();
   const scene = createWeeklyScene(session.layout, ship ? { physics: WEEKLY_PHYSICS.BUILD, ship } : {});
   if (ship && session.attempts === 0) {
     const pct = (v) => `${v >= 1 ? "+" : ""}${Math.round((v - 1) * 100)}%`;

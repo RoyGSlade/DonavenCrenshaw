@@ -432,16 +432,33 @@ export function renderAppearance(value, unused = null, size = 768) {
   ctx.restore();
   return c;
 }
+// A test build flown on a preview (?ship=needle:2-0-0-1) is drawn as that
+// build without touching the saved, equipped ship: same paint and decals when
+// it is the equipped family, the family's preset otherwise.
+let flight = null, flightCanvas = null;
+export async function setFlightBuild(family, parts) {
+  await loadShipKits();
+  const base = equipped && equipped.family === family ? structuredClone(equipped) : presetAppearance(family);
+  base.parts = { ...parts };
+  const a = resolveAvailableAppearance(base);
+  flightCanvas = renderAppearance(a);
+  flight = a;
+}
+export function clearFlightBuild() {
+  flight = null;
+  flightCanvas = null;
+}
 export function getCourierAppearance() {
-  return equippedCanvas;
+  return flightCanvas || equippedCanvas;
 }
 const courierPorts = [
   { x: -0.13, y: 0.38, width: 0.13 },
   { x: 0.13, y: 0.38, width: 0.13 },
 ];
 export function getCourierExhaustPorts() {
-  const ports = (equipped && kits?.[equipped.family]?.engines[equipped.parts.engines]?.ports) || courierPorts;
-  const layout = equipped && kits ? assemblyLayout(equipped) : null;
+  const ship = flight || equipped;
+  const ports = (ship && kits?.[ship.family]?.engines[ship.parts.engines]?.ports) || courierPorts;
+  const layout = ship && kits ? assemblyLayout(ship) : null;
   if (!layout) return ports;
   // Decals use the fitted ship canvas, and exhaust must follow the same transform.
   return ports.map((p) => ({
