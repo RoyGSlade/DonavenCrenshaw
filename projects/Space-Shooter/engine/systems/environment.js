@@ -1,5 +1,6 @@
 import { config } from "../../state.js";
 import { isInsideTrack } from "../track.js";
+import { PLAYER_HULL, isHullShape, pushShipOutOfCircle, shotHitsShip } from "../hull.js";
 /** Pure environmental simulation, shared by gameplay and deterministic tests. */
 export function motionPosition(entity, time) {
   const m = entity.motion;
@@ -41,17 +42,38 @@ export function damagePlayer(player, amount) {
   player.invulnTimer = 0.65;
   return true;
 }
-export function resolveHazards(scene, player) {
+/**
+ * Rocks and gravity-well cores push the ship out, bounce it and hurt it.
+ * body: the ship's real hull (PLAYER_HULL, the default) or a radius in cells
+ * for the original centre circle.
+ */
+export function resolveHazards(scene, player, body = PLAYER_HULL) {
   let hit = false;
   for (const obstacle of [
     ...(scene.hazards || []),
     ...(scene.gravityWells || []),
   ]) {
     if (obstacle.hp <= 0) continue;
+    if (isHullShape(body)) {
+      // The body is pushed clear along the normal at its contact point.
+      const c = pushShipOutOfCircle(player, obstacle.x, obstacle.y, obstacle.radius, { hull: body });
+      if (!c) continue;
+      const dot =
+        (player.vx - (obstacle.vx || 0)) * c.nx +
+        (player.vy - (obstacle.vy || 0)) * c.ny;
+      if (dot < 0) {
+        player.vx -= 1.35 * dot * c.nx;
+        player.vy -= 1.35 * dot * c.ny;
+      }
+      if (Math.abs(dot) > 1.5)
+        hit = damagePlayer(player, Math.min(18, 5 + Math.abs(dot) * 1.4)) || hit;
+      continue;
+    }
+    const radius = typeof body === "number" ? body : config.PLAYER_RADIUS;
     let dx = player.x - obstacle.x,
       dy = player.y - obstacle.y;
     const distance = Math.hypot(dx, dy),
-      minDistance = obstacle.radius + config.PLAYER_RADIUS;
+      minDistance = obstacle.radius + radius;
     if (distance >= minDistance) continue;
     const nx = distance > 1e-6 ? dx / distance : 1,
       ny = distance > 1e-6 ? dy / distance : 0;
@@ -156,14 +178,16 @@ export function resolveRoadmapProjectiles(scene, projectiles) {
   for (let i = projectiles.length - 1; i >= 0; i--) {
     const shot = projectiles[i];
     const hits = (target) =>
-      segmentHitsCircle(
+      target === scene.player
+        ? shotHitsShip(target, shot.prevX ?? shot.x, shot.prevY ?? shot.y, shot.x, shot.y)
+        : segmentHitsCircle(
         shot.prevX ?? shot.x,
         shot.prevY ?? shot.y,
         shot.x,
         shot.y,
         target.x,
         target.y,
-        target === scene.player ? config.PLAYER_RADIUS : target.radius || 0.38,
+        target.radius || 0.38,
       );
     const obstacle = obstacles.find(hits);
     let consumed =

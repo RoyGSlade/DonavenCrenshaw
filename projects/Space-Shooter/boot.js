@@ -7,6 +7,7 @@ import { parseLab, labConfig } from './systems/lab.js';
 import { initLab } from './systems/labUi.js';
 import { initCustomTrackUi } from './systems/customTrackUi.js';
 import { initWeeklyUi } from './systems/weeklyUi.js';
+import { initFlightUi } from './ui/flightUi.js';
 const status = document.getElementById('boot-status');
 const button = document.getElementById('starmap-start-btn');
 // ?lab=... swaps in playtest rules. Such a session never saves runs.
@@ -16,6 +17,7 @@ initAudioUnlock();
 let ready = false;
 try {
   await initStarmap(document.getElementById('starmap-canvas'));
+  initFlightUi();
   status.textContent = 'FLIGHT SYSTEMS READY / KEYBOARD · GAMEPAD · TOUCH';
   button.disabled = false;
   button.textContent = 'Launch expedition  →';

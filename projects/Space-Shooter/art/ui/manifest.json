@@ -1,0 +1,21 @@
+{
+  "available": [
+    "bar-hull-frame",
+    "boost-pip-empty",
+    "boost-pip-full",
+    "btn-boost",
+    "btn-brake",
+    "btn-pressed-ring",
+    "gauge-fuel",
+    "gauge-needle",
+    "gauge-speed",
+    "icon-settings",
+    "joystick-base",
+    "joystick-knob",
+    "shard-slot-empty",
+    "shard-slot-full",
+    "steering-wheel",
+    "title-card-frame",
+    "topbar-panel"
+  ]
+}

@@ -4,15 +4,25 @@
 // simulation must land on the same finish time; the ghost is that replay's
 // flight path.
 //
-// Format:  SDW1|<eventId>|<version>|<steps>|<finishMs>|<runs>
+// Format:  SDW2|<eventId>|<version>|<steps>|<finishMs>|<runs>
 //   runs:  "<count>,<turn>,<thrust>,<back>,<strafe>,<bits>" joined by ";",
 //          numbers in base 36 (turn may be negative).
-import { createWeeklyScene, stepWeekly, sameFrame } from "./sim.js";
+// The prefix is the physics the run was flown under (sim.js WEEKLY_PHYSICS):
+//   SDW1 — physics 1, the circle hitbox (every run before the hull);
+//   SDW2 — physics 2, the ship's real body (what the game records now).
+// A log always replays under its own physics, so old times never move.
+import { createWeeklyScene, stepWeekly, sameFrame, WEEKLY_PHYSICS } from "./sim.js";
 
-export const LOG_PREFIX = "SDW1";
+export const LOG_PREFIXES = Object.freeze({ SDW1: WEEKLY_PHYSICS.CIRCLE, SDW2: WEEKLY_PHYSICS.HULL });
+const PREFIX_FOR = Object.freeze({ [WEEKLY_PHYSICS.CIRCLE]: "SDW1", [WEEKLY_PHYSICS.HULL]: "SDW2" });
+/** The prefix new recordings get (the current physics). */
+export const LOG_PREFIX = PREFIX_FOR[WEEKLY_PHYSICS.CURRENT];
 export const GHOST_EVERY = 4; // one ghost pose per 4 steps (30 a second)
 
-export function encodeInputLog({ eventId, version, frames, finishMs }) {
+/** physics: the version the frames were flown under (default: the current one). */
+export function encodeInputLog({ eventId, version, frames, finishMs, physics = WEEKLY_PHYSICS.CURRENT }) {
+  const prefix = PREFIX_FOR[physics];
+  if (!prefix) throw new RangeError(`Unknown weekly physics: ${physics}`);
   const runs = [];
   for (const f of frames) {
     const last = runs.at(-1);
@@ -20,14 +30,14 @@ export function encodeInputLog({ eventId, version, frames, finishMs }) {
     else runs.push({ n: 1, f });
   }
   const body = runs.map(({ n, f }) => [n, f.turn, f.thrust, f.back, f.strafe, f.bits].map((v) => v.toString(36)).join(",")).join(";");
-  return [LOG_PREFIX, eventId, version, frames.length, Math.round(finishMs ?? 0), body].join("|");
+  return [prefix, eventId, version, frames.length, Math.round(finishMs ?? 0), body].join("|");
 }
 
-/** { eventId, version, steps, finishMs, frames } or null for anything malformed. */
+/** { eventId, version, steps, finishMs, frames, physics } or null for anything malformed. */
 export function decodeInputLog(text) {
   if (typeof text !== "string" || text.length > 262144) return null;
   const parts = text.split("|");
-  if (parts.length !== 6 || parts[0] !== LOG_PREFIX) return null;
+  if (parts.length !== 6 || !Object.hasOwn(LOG_PREFIXES, parts[0])) return null;
   const [, eventId, version, steps, finishMs, body] = parts;
   const frames = [];
   for (const run of body ? body.split(";") : []) {
@@ -39,18 +49,20 @@ export function decodeInputLog(text) {
     for (let i = 0; i < n; i++) frames.push(f);
   }
   if (frames.length !== Number(steps)) return null;
-  return { eventId, version: Number(version), steps: Number(steps), finishMs: Number(finishMs), frames };
+  return { eventId, version: Number(version), steps: Number(steps), finishMs: Number(finishMs), frames, physics: LOG_PREFIXES[parts[0]] };
 }
 
 /**
  * Fly a log through a fresh scene of `layout`. Returns { finished, finishMs,
  * dead, steps, poses } where poses is [x, y, angle] every GHOST_EVERY steps.
  * matches: the replay finished within a millisecond of the log's own time.
+ * The physics comes from the log (its prefix); a frames object without one
+ * replays under options.physics, else the current physics.
  */
-export function replayInputLog(layout, log) {
+export function replayInputLog(layout, log, { physics = WEEKLY_PHYSICS.CURRENT } = {}) {
   const decoded = typeof log === "string" ? decodeInputLog(log) : log;
   if (!decoded) return { ok: false, error: "malformed" };
-  const scene = createWeeklyScene(layout);
+  const scene = createWeeklyScene(layout, { physics: decoded.physics ?? physics });
   const poses = [];
   let i = 0;
   for (const frame of decoded.frames) {
@@ -64,6 +76,7 @@ export function replayInputLog(layout, log) {
   const finishMs = scene.finished ? scene.finishMs : null;
   return {
     ok: true,
+    physics: scene.physics,
     finished: scene.finished,
     finishMs,
     dead: scene.dead,

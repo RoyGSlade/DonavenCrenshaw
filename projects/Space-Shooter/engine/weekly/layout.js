@@ -14,6 +14,7 @@ export const WEEKLY_RULES = Object.freeze({
   WALL_STUN_FROM: 0.35,         // outward speed that counts as a hit, not a scrape
   MINE_RADIUS: 0.42,
   SHARD_PICKUP: 0.7,            // ship centre to shard centre
+  SHARD_TOUCH: 0.31,            // physics 2: the drawn shard (0.95 × 0.66 cell diamond, half-height 0.31); touching it with the body counts
   STATION_PICKUP: 1.2,
   SENTRY_RANGE: 11,
   SENTRY_MIN_SPEED: 4.5,        // slower than this in range and the sentry fires

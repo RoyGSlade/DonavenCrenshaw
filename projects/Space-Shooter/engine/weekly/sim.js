@@ -9,10 +9,22 @@ import { FLIGHT_CONFIG, advanceFlight, rechargeBoost } from "../systems/flight.j
 import { WEAPON_CONFIG, fireWeapon, coolWeapon, projectileFrom } from "../systems/weapons.js";
 import { constrainToTrack, createTrackProgress, updateTrackProgress, isLapReady, isInsideTrack, portalCoordinates } from "../track.js";
 import { damagePlayer, predictAim, segmentHitsCircle } from "../systems/environment.js";
+import { PLAYER_HULL, shipTouchesCircle, pushShipOutOfCircle, shotHitsShip } from "../hull.js";
 import { WEEKLY_LEVEL, WEEKLY_RULES as R, bouncerPosition } from "./layout.js";
 
 // Frozen rules: the playtest lab never changes a weekly run.
 export const WEEKLY_CONFIG = Object.freeze({ ...FLIGHT_CONFIG, ...WEAPON_CONFIG, MAX_HP: 100, MAX_TANK: 100 });
+
+// Physics versions. A recorded run replays under the rules it was flown with
+// (replay.js picks the version from the log's prefix), so changing how the
+// ship collides never changes a time already on the board.
+//  1 (SDW1 logs): the ship is a circle of WEEKLY_CONFIG.PLAYER_RADIUS for
+//    rails, rocks, mines and shots; shards within SHARD_PICKUP of its centre.
+//  2 (SDW2 logs): the ship is its real body (engine/shipHull.js) for rails,
+//    rocks, mines and shots; a shard is collected when the body touches the
+//    drawn shard (SHARD_TOUCH) or, as before, within SHARD_PICKUP of centre.
+export const WEEKLY_PHYSICS = Object.freeze({ CIRCLE: 1, HULL: 2, CURRENT: 2 });
+const physicsOf = (scene) => (scene.physics === WEEKLY_PHYSICS.CIRCLE ? WEEKLY_PHYSICS.CIRCLE : WEEKLY_PHYSICS.HULL);
 
 // Input frame bits.
 export const BIT = Object.freeze({ LEFT: 1, RIGHT: 2, BOOST: 4, BRAKE: 8, SHOOT: 16, STRAFE_L: 32, STRAFE_R: 64, LAUNCH: 128 });
@@ -68,11 +80,16 @@ export function sameFrame(a, b) {
   return a.turn === b.turn && a.thrust === b.thrust && a.back === b.back && a.strafe === b.strafe && a.bits === b.bits;
 }
 
-/** A fresh attempt on a layout: the ship on the grid, nothing started. */
-export function createWeeklyScene(layout) {
+/**
+ * A fresh attempt on a layout: the ship on the grid, nothing started.
+ * physics: WEEKLY_PHYSICS.CURRENT (the hull) unless replaying an older log.
+ */
+export function createWeeklyScene(layout, { physics = WEEKLY_PHYSICS.CURRENT } = {}) {
   const C = WEEKLY_CONFIG;
   const { start } = layout;
+  if (physics !== WEEKLY_PHYSICS.CIRCLE && physics !== WEEKLY_PHYSICS.HULL) throw new RangeError(`Unknown weekly physics: ${physics}`);
   return {
+    physics,
     level: WEEKLY_LEVEL,
     weekly: layout.event,
     layout,
@@ -124,6 +141,7 @@ function launch(scene) {
 }
 
 function resolveBouncers(scene, p, events) {
+  if (physicsOf(scene) === WEEKLY_PHYSICS.HULL) return resolveBouncersHull(scene, p, events);
   const r = WEEKLY_CONFIG.PLAYER_RADIUS;
   for (const b of scene.hazards) {
     if (b.hp <= 0) continue;
@@ -134,6 +152,20 @@ function resolveBouncers(scene, p, events) {
     p.y = b.y + ny * (min + 0.001);
     const dot = (p.vx - (b.vx || 0)) * nx + (p.vy - (b.vy || 0)) * ny;
     if (dot < 0) { p.vx -= 1.35 * dot * nx; p.vy -= 1.35 * dot * ny; }
+    const hurt = Math.max(Math.abs(dot), 2);
+    if (damagePlayer(p, Math.min(20, 6 + hurt * 1.4))) events.push({ type: "rock" });
+  }
+}
+
+// Physics 2: the same bounce and damage, pushing the real body clear of the
+// rock with the normal at the contact point.
+function resolveBouncersHull(scene, p, events) {
+  for (const b of scene.hazards) {
+    if (b.hp <= 0) continue;
+    const c = pushShipOutOfCircle(p, b.x, b.y, b.radius);
+    if (!c) continue;
+    const dot = (p.vx - (b.vx || 0)) * c.nx + (p.vy - (b.vy || 0)) * c.ny;
+    if (dot < 0) { p.vx -= 1.35 * dot * c.nx; p.vy -= 1.35 * dot * c.ny; }
     const hurt = Math.max(Math.abs(dot), 2);
     if (damagePlayer(p, Math.min(20, 6 + hurt * 1.4))) events.push({ type: "rock" });
   }
@@ -168,6 +200,7 @@ function updateSentries(scene, p, events) {
 
 function updateShots(scene, p, events) {
   const pr = WEEKLY_CONFIG.PLAYER_RADIUS;
+  const hull = physicsOf(scene) === WEEKLY_PHYSICS.HULL;
   const live = scene.hazards.filter((b) => b.hp > 0);
   for (let i = scene.enemyShots.length - 1; i >= 0; i--) {
     const s = scene.enemyShots[i];
@@ -175,7 +208,7 @@ function updateShots(scene, p, events) {
     s.x += s.vx * R.STEP; s.y += s.vy * R.STEP; s.life -= R.STEP;
     let gone = s.life <= 0;
     if (!gone && live.some((b) => segmentHitsCircle(s.prevX, s.prevY, s.x, s.y, b.x, b.y, b.radius))) gone = true;
-    if (!gone && segmentHitsCircle(s.prevX, s.prevY, s.x, s.y, p.x, p.y, pr)) {
+    if (!gone && (hull ? shotHitsShip(p, s.prevX, s.prevY, s.x, s.y) : segmentHitsCircle(s.prevX, s.prevY, s.x, s.y, p.x, p.y, pr))) {
       if (damagePlayer(p, s.damage)) events.push({ type: "shot" });
       gone = true;
     }
@@ -232,13 +265,15 @@ export function stepWeekly(scene, frame = NEUTRAL) {
     hits: (outward) => outward >= R.WALL_STUN_FROM && p.stunTimer <= 0,
     onImpact: () => { p.stunTimer = R.WALL_STUN; scene.wallHits++; events.push({ type: "wall" }); },
   };
+  const hull = physicsOf(scene) === WEEKLY_PHYSICS.HULL;
+  const body = hull ? PLAYER_HULL : C.PLAYER_RADIUS;
   advanceFlight(R.STEP, scene, p, keys, {
     onFuelUse: (amount) => { scene.fuel = Math.max(0, scene.fuel - amount); },
-    constrain: (player, prev) => { constrainToTrack(scene.track, player, prev, C.PLAYER_RADIUS, rails); },
+    constrain: (player, prev) => { constrainToTrack(scene.track, player, prev, body, rails); },
   }, C);
   // Stationary mines: contact is the end of the attempt.
   for (const m of scene.mines) {
-    if (Math.hypot(p.x - m.x, p.y - m.y) < m.radius + C.PLAYER_RADIUS) {
+    if (hull ? shipTouchesCircle(p, m.x, m.y, m.radius) : Math.hypot(p.x - m.x, p.y - m.y) < m.radius + C.PLAYER_RADIUS) {
       scene.dead = "mine";
       events.push({ type: "dead", cause: "mine", id: m.id });
       return events;
@@ -248,7 +283,7 @@ export function stepWeekly(scene, frame = NEUTRAL) {
   updateTrackProgress(scene, previous);
   for (const s of scene.shardList) {
     if (scene.shards.has(s.id)) continue;
-    if (Math.hypot(p.x - s.x, p.y - s.y) <= R.SHARD_PICKUP) {
+    if (Math.hypot(p.x - s.x, p.y - s.y) <= R.SHARD_PICKUP || (hull && shipTouchesCircle(p, s.x, s.y, R.SHARD_TOUCH))) {
       scene.shards.add(s.id);
       scene.flux = Math.min(100, scene.flux + 8);
       events.push({ type: "shard", id: s.id, count: scene.shards.size, total: scene.shardList.length });

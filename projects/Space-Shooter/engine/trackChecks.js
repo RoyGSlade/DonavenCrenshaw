@@ -14,9 +14,12 @@ import {
   isLapReady,
   constrainToTrack,
   portalCoordinates,
+  crossedFinishLine,
+  isHullInsideTrack,
 } from "./track.js";
 import { state, config } from "../state.js";
-import { handlePlayerMovement } from "./systems/movement.js";
+import { handleShipMovement } from "./shipMovement.js";
+import { PLAYER_HULL } from "./hull.js";
 import {
   applyGravity,
   resolveHazards,
@@ -24,7 +27,7 @@ import {
   updateDrones,
   resolveRoadmapProjectiles,
 } from "./systems/environment.js";
-import { hasRequiredShards } from "./rules.js";
+import { hasRequiredShards, touchesSignal } from "./rules.js";
 
 export const TRACK_RULES = Object.freeze({
   GRID_W: 48,
@@ -132,7 +135,10 @@ export function checkTrackLayout(layout, source = null) {
   const problems = [];
   const warnings = [];
   const track = layout.track;
-  const radius = config.PLAYER_RADIUS;
+  // The ship is its real body (engine/hull.js). Where a check needs one
+  // radius it takes the body's bounding radius (0.54: the ship fits there
+  // facing any way), except for the racing line below.
+  const radius = PLAYER_HULL.radius;
   if (!(track.width >= R.MIN_WIDTH)) problems.push(problem("narrow", `The lane is too narrow (${track.width}). Make it at least ${R.MIN_WIDTH} wide.`));
   if (!(track.length > R.MIN_LENGTH)) problems.push(problem("short", `The lap is too short (${round(track.length)} cells). Make it longer than ${R.MIN_LENGTH}.`));
   track.points.forEach((point, i) => {
@@ -152,12 +158,18 @@ export function checkTrackLayout(layout, source = null) {
     if (!(h.sizeScale >= 0.75 && h.sizeScale <= 1.25) || h.radius !== h.baseRadius * h.sizeScale)
       problems.push(problem("rock-size", `The rock on segment ${h.segment} has an unexpected size.`));
   }
-  // The racing line the careful pilot follows must not run through a rock.
+  // The racing line the careful pilot follows must not run through a rock:
+  // a rock closer to the line than the body's least reach (0.25; the old
+  // circle was 0.21) is hit whichever way the ship is turned.
+  // The line is a polyline the pilot rounds off by more than the body's
+  // half-span, so a nose-first 0.43 half-span here would only flag rocks the
+  // pilot's real path clears (Alpha Relay segment 10, Dustfall segment 4).
+  const lineReach = PLAYER_HULL.minReach;
   const route = layout.safeRoute;
   for (const h of layout.hazards) {
     let best = Infinity;
     for (let i = 0; i + 1 < route.length; i++) best = Math.min(best, segmentDistance(h, route[i], route[i + 1]));
-    if (best <= h.radius + radius)
+    if (best <= h.radius + lineReach)
       problems.push(problem("rock-on-line", `The rock on segment ${h.segment} sits on the racing line near ${at(h)}. Move the corner or the rock.`));
   }
   if (source?.rocks) {
@@ -213,14 +225,17 @@ export function sceneForLayout(layout, level = CUSTOM_LEVEL) {
 
 /**
  * Closed-loop careful pilot: only turn/thrust inputs, real hazards, gravity,
- * enemies and rails, following the layout's safe route at a modest speed.
+ * enemies and rails (all against the ship's real body, as the game flies),
+ * following the layout's safe route at a modest speed.
  * route/finish let a test fly another line (the Iron Veil rear entry).
  * Returns { scene, time, finished, leftLane }.
  */
 export function flyCarefulLap(layout, { level = CUSTOM_LEVEL, route = null, finish = null, maxSeconds = TRACK_RULES.PILOT_SECONDS } = {}) {
   const scene = sceneForLayout(layout, level),
     player = scene.player;
-  const path = route ? route(scene) : scene.safeRoute;
+  // The safe route ends on the finish line; one more point just past it makes the pilot cross.
+  const g = scene.track.portal;
+  const path = route ? route(scene) : [...scene.safeRoute, { x: g.x + g.tx * 1.5, y: g.y + g.ty * 1.5 }];
   state.mode = "roadmap";
   state.ui.countdownActive = false;
   state.gfx.particles = [];
@@ -258,12 +273,12 @@ export function flyCarefulLap(layout, { level = CUSTOM_LEVEL, route = null, fini
     const previous = { x: player.x, y: player.y };
     updateHazards(scene, 1 / 120);
     applyGravity(player, scene.gravityWells, 1 / 120);
-    handlePlayerMovement(1 / 120, scene, player, {
+    handleShipMovement(1 / 120, scene, player, {
       // FUEL_BURN_SCALE is 1 outside the playtest lab, as in the game.
       onFuelUse: (amount) => (scene.fuel -= amount * (config.FUEL_BURN_SCALE ?? 1)),
     });
     resolveHazards(scene, player);
-    constrainToTrack(scene.track, player, previous, config.PLAYER_RADIUS);
+    constrainToTrack(scene.track, player, previous, PLAYER_HULL);
     updateTrackProgress(scene, previous);
     player.invulnTimer = Math.max(0, player.invulnTimer - 1 / 120);
     updateDrones(scene, player, shots, 1 / 120);
@@ -278,21 +293,18 @@ export function flyCarefulLap(layout, { level = CUSTOM_LEVEL, route = null, fini
     }
     resolveRoadmapProjectiles(scene, shots);
     for (const node of scene.nodes.filter((n) => n.kind === "planet"))
-      if (Math.hypot(player.x - node.x - 0.5, player.y - node.y - 0.5) <= config.PLANET_RADIUS + config.PLAYER_RADIUS)
-        scene.shards.add(node.id);
+      if (touchesSignal(player, node)) scene.shards.add(node.id);
     scene.activeMs = time * 1000;
     const relative = portalCoordinates(scene.track, player);
-    const ordinary =
-      isLapReady(scene) &&
-      hasRequiredShards(scene) &&
-      Math.hypot(relative.forward, relative.lateral) <= config.GATE_RADIUS &&
-      relative.forward < -0.12 &&
-      relative.velocity > 0.15;
+    const crossed = crossedFinishLine(scene.track, previous, player) !== null;
+    // No portal: the lap ends on a forward crossing of the full-width finish line.
+    const ordinary = isLapReady(scene) && hasRequiredShards(scene) && crossed;
     if (finish ? finish(scene, ordinary) : ordinary) {
       finished = true;
       break;
     }
-    if (!isInsideTrack(scene.track, player.x, player.y, config.PLAYER_RADIUS)) leftLane = true;
+    // The rails keep the body 0.002 inside; a millimetre of slack for rounding.
+    if (!isHullInsideTrack(scene.track, player.x, player.y, player.angle, PLAYER_HULL, 1e-3)) leftLane = true;
   }
   return { scene, time, finished, leftLane };
 }

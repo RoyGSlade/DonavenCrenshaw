@@ -15,7 +15,8 @@ export function drawWeeklyWorld(ctx, scene, unit, time, { ghosts = [], shipImg =
     const pulse = reducedMotion ? 0.5 : 0.5 + 0.5 * Math.sin(time * 5 + m.x);
     ctx.save(); ctx.translate(x, y);
     // The halo is the kill radius (mine + ship), so what glows is what kills.
-    const kill = (m.radius + WEEKLY_CONFIG.PLAYER_RADIUS) * unit;
+    // Hull physics: the ship's body touching the mine kills, so the halo is the mine itself.
+    const kill = (m.radius + (scene.physics === 1 ? WEEKLY_CONFIG.PLAYER_RADIUS : 0.06)) * unit;
     ctx.fillStyle = `rgba(255,70,55,${0.10 + pulse * 0.12})`; circle(ctx, 0, 0, kill); ctx.fill();
     ctx.strokeStyle = '#ff7a66'; ctx.lineWidth = Math.max(1, unit * 0.035);
     for (let i = 0; i < 8; i++) { const a = i * TAU / 8 + time * 0.4; ctx.beginPath(); ctx.moveTo(Math.cos(a) * r * 0.7, Math.sin(a) * r * 0.7); ctx.lineTo(Math.cos(a) * r * 1.35, Math.sin(a) * r * 1.35); ctx.stroke(); }
@@ -89,13 +90,14 @@ export function drawWeeklyHud(ctx, W, H, scene) {
   const speed = Math.hypot(p.vx, p.vy);
   const engaged = scene.sentries.some((s) => s.engaged);
   const danger = scene.sentries.some((s) => s.slow || s.state === 'telegraph');
-  const y = W < 600 ? 146 : 72;
+  // Below the HUD's top bar; the speed itself is on the speed gauge.
+  const y = H < 500 ? 96 : 118;
   ctx.save();
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.font = '12px Consolas, monospace';
   ctx.fillStyle = engaged ? (danger ? '#ff8a5c' : '#ffd39a') : 'rgba(200,225,235,.75)';
   const floor = WEEKLY_RULES.SENTRY_MIN_SPEED;
-  ctx.fillText(`SPEED ${speed.toFixed(1)}${engaged ? `  ·  SENTRY FLOOR ${floor.toFixed(1)}` : ''}`, W / 2, y);
+  if (engaged) ctx.fillText(`SENTRY RANGE · KEEP ${floor.toFixed(1)}+ (NOW ${speed.toFixed(1)})`, W / 2, y);
   if (danger) {
     ctx.font = 'bold 18px Saira, sans-serif';
     ctx.fillStyle = '#ff7a5c'; ctx.shadowColor = '#000'; ctx.shadowBlur = 6;

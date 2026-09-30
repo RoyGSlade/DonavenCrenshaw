@@ -254,6 +254,14 @@ export function createRunRecorder({ config = runtimeConfig, fetchImpl = globalTh
       return mine === generation && result ? { board, ...result } : null;
     },
 
+    // Your place on a board and the pilots around it (signed in): the hub's
+    // around-me answer, or null.
+    async around(board, span = 1) {
+      if (!base || !player) return null;
+      const res = await call(`${base}/boards/${encodeURIComponent(board)}/around-me?span=${span}`);
+      return res.ok && res.data && typeof res.data === 'object' ? res.data : null;
+    },
+
     // A leaderboard ghost: { username, displayName, timeMs, inputLog, rank } or
     // null. rank picks a public place; me: true is the signed-in player's best.
     async ghost(board, { rank = 1, me = false } = {}) {

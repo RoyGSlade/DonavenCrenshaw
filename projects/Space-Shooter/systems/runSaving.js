@@ -11,6 +11,8 @@ import {
 import { toast } from '../ui/hud.js';
 import { CUSTOM_BOARD, activeCustomTrack } from './customTrack.js';
 import { setWeeklyGhost, currentWeeklySession } from '../engine/modes/weekly.js';
+import { setFailBoard } from '../ui/failScreen.js';
+import { finishScreenToken, isCurrentFinish, updateFinishScreen, setFinishNote } from '../ui/finishScreen.js';
 
 const ACCOUNT_URL = new URL('../../account/', document.baseURI).href;
 const BOARDS_URL = new URL('../../stardust/#fastest-runs', document.baseURI).href;
@@ -143,6 +145,18 @@ function paintEnd(content) {
     out.append(list);
   }
   out.hidden = false;
+  setFinishNote(head.textContent);
+}
+
+async function paintFinishPlacement(result, board, token, previousMs = null) {
+  if (!isCurrentFinish(token)) return;
+  const playerName = name(recorder.player) || 'You';
+  // Fetch neighbours before the animation so a late fetch cannot replace the
+  // nameplate halfway through its climb. The accepted rank still works offline.
+  const around = !result.staff && result.best?.rank ? await recorder.around(board, 1).catch(() => null) : null;
+  if (!isCurrentFinish(token)) return;
+  const rows = around?.me?.rank === result.best?.rank ? (around.entries || []).map((e) => ({ rank: e.rank, name: name(e), timeMs: e.timeMs, isMe: !!e.isMe })) : [];
+  updateFinishScreen({ result, playerName, rows, previousMs }, token);
 }
 
 function paintBreakdown(totalMs) {
@@ -335,6 +349,7 @@ export async function initRunSaving() {
     paintPlayer();
   });
   window.addEventListener('stardust:customRunComplete', async (event) => {
+    const token = finishScreenToken();
     const { totalMs, title = 'Custom track', preview } = event.detail || {};
     paintBreakdown(null);
     paintSocial(null);
@@ -347,9 +362,13 @@ export async function initRunSaving() {
     }
     paintEnd('Saving your time…');
     const result = await recorder.finishBoardRun(totalMs);
+    if (!isCurrentFinish(token)) return;
     if (!result) { paintEnd('This run started before you signed in, so it wasn’t saved. The next one will be.'); return; }
     if (result.status === 'unsaved' || result.status === 'error') { paintEnd(`Your time: ${clock(totalMs)}. ${describeResult(result, title)}`); return; }
-    if (result.status === 'accepted') paintEnd([`${describeResult(result, title)} `, link('See the leaderboard', CUSTOM_URL)]);
+    if (result.status === 'accepted') {
+      paintEnd([`${describeResult(result, title)} `, link('See the leaderboard', CUSTOM_URL)]);
+      paintFinishPlacement(result, CUSTOM_BOARD, token);
+    }
     else paintEnd(describeResult(result, title));
   });
 
@@ -376,11 +395,12 @@ export async function initRunSaving() {
     paintPlayer();
   });
   window.addEventListener('stardust:weeklyRunComplete', async (event) => {
+    const token = finishScreenToken();
     const { eventId, totalMs, inputLog, preview, personalBest, previousMs, title = 'Weekly track' } = event.detail || {};
     paintBreakdown(null);
     paintSocial(null);
     const local = personalBest && previousMs != null ? ` New best on this browser (was ${clock(previousMs)}).` : '';
-    if (preview) { paintEnd(`Preview — not saved. Your time: ${clock(totalMs)}.${local}`); return; }
+    if (preview) { paintEnd(`Preview flight — not submitted to the leaderboard.${local}`); return; }
     if (recorder.reachable && recorder.boardsKnown && recorder.version(eventId) == null) { paintEnd(`Your time: ${clock(totalMs)}. This week’s board isn’t on the leaderboard yet, so it wasn’t saved.${local}`); return; }
     if (!recorder.player) {
       if (!recorder.reachable) paintEnd(`Your time: ${clock(totalMs)}. The leaderboard was offline, so it wasn’t saved.${local}`);
@@ -390,12 +410,35 @@ export async function initRunSaving() {
     paintEnd('Saving your time…');
     const extra = typeof inputLog === 'string' && inputLog.length <= MAX_LOG ? { inputLog } : {};
     const result = await recorder.finishBoardRun(totalMs, extra);
+    if (!isCurrentFinish(token)) return;
     if (!result) { paintEnd('This attempt started before you signed in, so it wasn’t saved. The next one will be.'); return; }
     if (result.status === 'unsaved' || result.status === 'error') { paintEnd(`Your time: ${clock(totalMs)}. ${describeResult(result, title)}`); return; }
     if (result.status === 'accepted') {
       const line = result.staff ? `${title}: ${clock(result.timeMs ?? totalMs)} saved as a dev time (not ranked).` : describeResult(result, title);
       paintEnd([`${line} `, link('Weekly leaderboard', WEEKLY_URL)]);
+      paintFinishPlacement(result, eventId, token);
     } else paintEnd(describeResult(result, title));
+  });
+
+  // The attempt-over screen's board: the pilot above you, you, the pilot below.
+  window.addEventListener('stardust:weeklyFailed', async () => {
+    const board = currentWeeklySession()?.event?.id;
+    if (!board) return;
+    const name = (e) => e.displayName || e.username;
+    if (recorder.player) {
+      const around = await recorder.around(board, 1).catch(() => null);
+      if (around?.me) {
+        const rows = around.entries.filter((e) => Math.abs(e.rank - around.me.rank) <= 1).map((e) => ({ rank: e.rank, name: name(e), timeMs: e.timeMs, isMe: !!e.isMe }));
+        setFailBoard(rows, around.next ? `${clock(around.next.gapMs)} to catch #${around.next.rank} ${around.next.displayName}.` : 'You lead the board.');
+        return;
+      }
+    }
+    const top = await recorder.board(board, 3).catch(() => null);
+    const rows = (top || []).map((e) => ({ rank: e.rank, name: name(e), timeMs: e.timeMs }));
+    const note = !recorder.reachable ? 'The board is offline right now.'
+      : !recorder.player ? 'Guest flight: sign in and your finished laps go on the board.'
+        : rows.length ? 'No time on the board yet: finish a lap to place.' : 'Nobody on the board yet. Finish a lap and it’s yours.';
+    setFailBoard(rows, note);
   });
 
   window.addEventListener('stardust:levelStart', (event) => recorder.startLevel(event.detail?.level));
@@ -425,6 +468,8 @@ export async function initRunSaving() {
   });
 
   window.addEventListener('roadmap:runComplete', async (event) => {
+    const token = finishScreenToken();
+    const previousMs = flight?.pb?.timeMs;
     const totalMs = event.detail?.totalMs;
     paintBreakdown(totalMs);
     paintSocial(null);
@@ -439,6 +484,7 @@ export async function initRunSaving() {
     }
     paintEnd('Saving your time…');
     const result = await recorder.finishRun(totalMs);
+    if (!isCurrentFinish(token)) return;
     if (!result) { paintEnd('This run started before you signed in, so it wasn’t saved. The next one will be.'); return; }
     if (result.status === 'unsaved' || result.status === 'error') { paintEnd(`Your time: ${clock(totalMs)}. ${describeResult(result, 'Full network')}`); return; }
     paintBoard().catch(() => {});
@@ -446,6 +492,7 @@ export async function initRunSaving() {
       const summary = finishSummary(result);
       paintEnd({ headline: [`${summary.headline} `, link('See the leaderboard', BOARDS_URL)], lines: summary.lines });
       paintChallengeActions(result);
+      paintFinishPlacement(result, 'full', token, previousMs);
       // The next launch compares against the new best.
       loadProfile().catch(() => {});
     } else {

@@ -1,0 +1,248 @@
+// The ship's exact-body hitbox: the hull traced from the sprite, the polygon
+// maths, the rails (swept, rotation, notches), rocks, shots, pickups and the
+// debug overlay. The weekly's physics versions are in stardust-weekly.test.mjs.
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { SHIP_HULL, SHIP_BODY } from '../projects/Space-Shooter/engine/shipHull.js';
+import {
+  PLAYER_HULL, hullWorld, pointInPolygon, polygonCircle, segmentHitsPolygon,
+  shipTouchesCircle, pushShipOutOfCircle, shotHitsShip,
+} from '../projects/Space-Shooter/engine/hull.js';
+import {
+  createTrack, nearestTrackPoint, pointOnTrack, constrainToTrack, hullLaneContact,
+  isHullInsideTrack, laneNotches, isInsideTrack,
+} from '../projects/Space-Shooter/engine/track.js';
+import { createLevelLayout } from '../projects/Space-Shooter/engine/levels.js';
+import { resolveHazards, resolveRoadmapProjectiles } from '../projects/Space-Shooter/engine/systems/environment.js';
+import { touchesSignal } from '../projects/Space-Shooter/engine/rules.js';
+import { config } from '../projects/Space-Shooter/state.js';
+import { drawHitboxDebug } from '../projects/Space-Shooter/gfx/hitboxDebug.js';
+import { traceHull } from '../scripts/generate-stardust-ship-hull.mjs';
+
+const extent = (i) => [Math.min(...SHIP_HULL.map((v) => v[i])), Math.max(...SHIP_HULL.map((v) => v[i]))];
+
+test('the hull is the sprite: 16-28 vertices spanning the measured 0.87 x 0.95 body', () => {
+  assert.ok(SHIP_HULL.length >= 16 && SHIP_HULL.length <= 28, `${SHIP_HULL.length} vertices`);
+  const [minX, maxX] = extent(0), [minY, maxY] = extent(1);
+  assert.ok(Math.abs(maxX - minX - 0.87) < 0.02, `width ${(maxX - minX).toFixed(3)}`);
+  assert.ok(Math.abs(maxY - minY - 0.95) < 0.02, `length ${(maxY - minY).toFixed(3)}`);
+  assert.ok(Math.abs(SHIP_BODY.width - 0.87) < 0.01 && Math.abs(SHIP_BODY.length - 0.95) < 0.01);
+  // The outline keeps the body's tips: within 0.03 of the measured extents.
+  assert.ok(SHIP_BODY.width - (maxX - minX) < 0.03 && SHIP_BODY.length - (maxY - minY) < 0.03);
+  // Nose forward (+y) and wing tips out to both sides.
+  assert.ok(maxY > 0.45 && minY < -0.4 && minX < -0.4 && maxX > 0.4);
+  // Traced at the size the ship is drawn (drawCourier: 1.6 * SHIP_VISUAL_SCALE cells).
+  assert.ok(Math.abs(SHIP_BODY.spriteCells - 1.6 * config.SHIP_VISUAL_SCALE) < 1e-4, 'regenerate the hull after changing the ship\'s draw size');
+});
+
+test('the committed hull matches a fresh trace of art/player-ship.png', () => {
+  const fresh = traceHull();
+  assert.deepEqual(fresh.verts, SHIP_HULL.map((v) => [...v]), 'run node scripts/generate-stardust-ship-hull.mjs');
+});
+
+test('the hull is a simple counter-clockwise outline around the ship centre', () => {
+  const poly = SHIP_HULL.map(([x, y]) => ({ x, y }));
+  const area = poly.reduce((s, p, i) => { const q = poly[(i + 1) % poly.length]; return s + p.x * q.y - q.x * p.y; }, 0) / 2;
+  assert.ok(area > 0.15, `area ${area.toFixed(3)} (counter-clockwise, x right / y forward)`);
+  assert.ok(pointInPolygon(poly, 0, 0), 'the centre is inside the body');
+  const side = (p, q, r) => Math.sign((q.x - p.x) * (r.y - p.y) - (q.y - p.y) * (r.x - p.x));
+  for (let i = 0; i < poly.length; i++)
+    for (let j = i + 2; j < poly.length; j++) {
+      if (i === 0 && j === poly.length - 1) continue; // neighbours through the wrap
+      const [a, b, c, d] = [poly[i], poly[(i + 1) % poly.length], poly[j], poly[(j + 1) % poly.length]];
+      const cross = side(a, b, c) * side(a, b, d) <= 0 && side(c, d, a) * side(c, d, b) <= 0;
+      assert.ok(!cross, `edges ${i} and ${j} cross`);
+    }
+  assert.ok(PLAYER_HULL.radius > 0.5 && PLAYER_HULL.radius < 0.56);
+  assert.ok(PLAYER_HULL.minReach > config.PLAYER_RADIUS, 'the body reaches past the old circle in every direction');
+});
+
+test('in the world the nose points along the heading and the right wing to its right', () => {
+  const noseLocal = SHIP_HULL.reduce((a, b) => (b[1] > a[1] ? b : a));
+  const tipLocal = SHIP_HULL.reduce((a, b) => (b[0] > a[0] ? b : a));
+  const i = SHIP_HULL.indexOf(noseLocal), k = SHIP_HULL.indexOf(tipLocal);
+  // Facing +x: nose at +x, right wing at +y (the canvas y points down).
+  let w = hullWorld(10, 5, 0);
+  assert.ok(Math.abs(w[i].x - (10 + noseLocal[1])) < 1e-12 && Math.abs(w[i].y - (5 + noseLocal[0])) < 1e-12);
+  assert.ok(w[k].y > 5.4);
+  // Facing +y (down the screen): nose at +y, right wing at -x.
+  w = hullWorld(10, 5, Math.PI / 2);
+  assert.ok(Math.abs(w[i].y - (5 + noseLocal[1])) < 1e-9);
+  assert.ok(w[k].x < 9.6);
+});
+
+test('polygon vs circle: exact overlap, depth and the separating normal', () => {
+  const ship = { x: 0, y: 0, angle: 0 };
+  const poly = hullWorld(0, 0, 0);
+  // Ahead of the nose, apart then touching.
+  assert.equal(polygonCircle(poly, PLAYER_HULL.nose + 0.3, 0, 0.29), null);
+  const c = polygonCircle(poly, PLAYER_HULL.nose + 0.3, 0, 0.35);
+  assert.ok(c && Math.abs(c.depth - 0.05) < 0.02, JSON.stringify(c));
+  assert.ok(c.nx < -0.9, 'the ship is pushed back, away from the circle');
+  // Circle centre inside the body: depth is radius + distance to the outline.
+  const inside = polygonCircle(poly, 0, 0, 0.1);
+  assert.ok(inside.depth > 0.1);
+  // Pushing out clears it.
+  const pushed = { ...ship, vx: 0, vy: 0 };
+  const hit = pushShipOutOfCircle(pushed, 0.3, 0.1, 0.4);
+  assert.ok(hit && !shipTouchesCircle(pushed, 0.3, 0.1, 0.4));
+});
+
+test('shots hit the wings and the nose, not the empty corners of the old sprite square', () => {
+  const ship = { x: 5, y: 5, angle: -Math.PI / 2 }; // nose up the screen
+  // A shot grazing the right wing tip, far outside the old 0.21 circle.
+  const tip = hullWorld(5, 5, ship.angle).reduce((a, b) => (b.x > a.x ? b : a));
+  assert.ok(Math.hypot(tip.x - 5, tip.y - 5) > 0.4);
+  assert.ok(shotHitsShip(ship, tip.x - 0.02, tip.y - 1, tip.x - 0.02, tip.y + 1));
+  assert.ok(!shotHitsShip(ship, tip.x + 0.05, tip.y - 1, tip.x + 0.05, tip.y + 1));
+  // Sprite corner (inside the drawn square, outside the body): a miss.
+  assert.ok(!shotHitsShip(ship, 5.45, 4.45, 5.5, 4.5));
+  // The main game's drone shots use the same body.
+  const scene = { player: { ...ship, hp: 100, invulnTimer: 0 }, hazards: [], gravityWells: [], drones: [] };
+  const shots = [{ owner: 'enemy', prevX: tip.x - 0.02, prevY: tip.y - 1, x: tip.x - 0.02, y: tip.y + 1, damage: 10 }];
+  resolveRoadmapProjectiles(scene, shots);
+  assert.equal(shots.length, 0);
+  assert.equal(scene.player.hp, 90);
+});
+
+test('rocks meet the body: a wing tip clips a rock the old circle missed', () => {
+  const ship = { x: 10, y: 10, vx: 0, vy: 3, angle: 0, hp: 100, invulnTimer: 0 }; // facing +x, drifting +y
+  const tip = hullWorld(10, 10, 0).reduce((a, b) => (b.y > a.y ? b : a));
+  const rock = { x: tip.x, y: tip.y + 0.95, radius: 1, hp: 100 };
+  assert.ok(Math.hypot(rock.x - 10, rock.y - 10) > rock.radius + config.PLAYER_RADIUS, 'clear of the old circle');
+  const scene = { hazards: [rock], gravityWells: [] };
+  resolveHazards(scene, ship);
+  assert.ok(!shipTouchesCircle(ship, rock.x, rock.y, rock.radius), 'pushed clear');
+  assert.ok(ship.vy < 0, 'bounced off');
+  assert.ok(ship.hp < 100, 'a 3-cell/s hit hurts');
+  // The old circle is still there for callers that ask for it.
+  const old = { x: 10, y: 10, vx: 0, vy: 3, angle: 0, hp: 100, invulnTimer: 0 };
+  resolveHazards({ hazards: [{ ...rock }], gravityWells: [] }, old, config.PLAYER_RADIUS);
+  assert.equal(old.vy, 3);
+});
+
+test('signals: touching the drawn shard with a wing tip collects it; the old centre radius still does', () => {
+  const node = { kind: 'planet', x: 9.5, y: 9.5 }; // centre (10, 10)
+  const [tx, ty] = PLAYER_HULL.points.reduce((a, b) => (b[0] > a[0] ? b : a));
+  // Facing +x the right wing tip is at (x + ty, y + tx).
+  const wing = { x: 10 - ty, y: 10 - tx - config.PLANET_RADIUS + 0.02, angle: 0 };
+  assert.ok(Math.hypot(wing.x - 10, wing.y - 10) > config.PLANET_RADIUS + config.PLAYER_RADIUS);
+  assert.ok(touchesSignal(wing, node));
+  assert.ok(!touchesSignal({ ...wing, y: wing.y - 0.05 }, node));
+  assert.ok(touchesSignal({ x: 10.5, y: 10, angle: Math.PI / 4 }, node));
+});
+
+test('lane contact: the deepest hull point and the rail normal', () => {
+  const track = createTrack([[4, 4], [40, 4], [40, 28], [4, 28]], 6, 'box');
+  // On the top straight (y = 4, rails at y = 1 and 7), nose toward the outer rail (-y).
+  const c = hullLaneContact(track, 20, 1.3, -Math.PI / 2);
+  assert.ok(c.depth > 0.15, `nose ${c.depth.toFixed(3)} past the rail`);
+  assert.ok(Math.abs(c.ny + 1) < 1e-9 && Math.abs(c.nx) < 1e-9, 'outward normal is -y');
+  assert.ok(Math.abs(c.py - (1.3 - PLAYER_HULL.nose)) < 1e-9, 'deepest point is the nose');
+  assert.ok(Math.abs(c.depth - (PLAYER_HULL.nose - 0.3)) < 1e-9);
+  // Far from the rails: a quick, negative answer.
+  assert.ok(hullLaneContact(track, 20, 4, 0).depth < 0);
+  assert.ok(isHullInsideTrack(track, 20, 4, 1.3));
+});
+
+test('inner corners: a rail tip poking between two hull vertices is caught', () => {
+  const track = createTrack([[4, 4], [40, 4], [40, 28], [4, 28]], 6, 'box');
+  const notches = laneNotches(track);
+  assert.equal(notches.length, 4);
+  assert.ok(notches.some((n) => Math.abs(n.x - 37) < 1e-9 && Math.abs(n.y - 7) < 1e-9), JSON.stringify(notches));
+  const n = notches.find((q) => Math.abs(q.x - 37) < 1e-9);
+  // Find a pose where every vertex is on the lane but the corner is inside the body.
+  let found = null;
+  for (let a = 0; a < 64 && !found; a++)
+    for (let dx = -0.5; dx <= 0.5 && !found; dx += 0.02)
+      for (let dy = -0.5; dy <= 0.5 && !found; dy += 0.02) {
+        const angle = (a / 64) * Math.PI * 2, x = n.x + dx, y = n.y + dy;
+        const poly = hullWorld(x, y, angle);
+        if (!pointInPolygon(poly, n.x, n.y)) continue;
+        if (poly.every((p) => nearestTrackPoint(track, p.x, p.y).distance <= 3)) found = { x, y, angle };
+      }
+  assert.ok(found, 'such a pose exists for this hull');
+  const c = hullLaneContact(track, found.x, found.y, found.angle);
+  assert.ok(c.depth > 0, 'the notch counts as outside');
+  assert.ok(!isHullInsideTrack(track, found.x, found.y, found.angle));
+});
+
+test('hull rails: a cross-infield move is blocked, the whole body stays on the lane', () => {
+  const track = createLevelLayout(1).track;
+  const previous = { x: 25, y: 25 }, player = { x: 24, y: 5, vx: 0, vy: -15, angle: -Math.PI / 2 };
+  assert.ok(isInsideTrack(track, player.x, player.y, PLAYER_HULL.radius), 'the end point alone is on a lane');
+  assert.equal(constrainToTrack(track, player, previous, PLAYER_HULL), true);
+  assert.ok(player.y > 20);
+  assert.ok(isHullInsideTrack(track, player.x, player.y, player.angle));
+  assert.ok(player.vy > 0, 'bounced back');
+});
+
+test('hull rails: turning into a rail pushes the ship off it instead of through', () => {
+  const track = createTrack([[4, 4], [40, 4], [40, 28], [4, 28]], 6, 'box');
+  // Flying +x along the top straight, the right wing tip just inside the lower rail (y = 7).
+  const y = 7 - PLAYER_HULL.halfSpan - 0.01;
+  const player = { x: 20, y, vx: 4, vy: 0, angle: 0 };
+  assert.ok(isHullInsideTrack(track, player.x, player.y, player.angle));
+  // A hard turn right: the nose swings into the rail within one step.
+  player.angle = Math.PI / 2;
+  const previous = { x: 20, y };
+  player.x += player.vx / 120;
+  assert.ok(!isHullInsideTrack(track, player.x, player.y, player.angle), 'the turn alone would cross the rail');
+  assert.equal(constrainToTrack(track, player, previous, PLAYER_HULL), true);
+  assert.ok(isHullInsideTrack(track, player.x, player.y, player.angle), 'resolved');
+  assert.ok(player.y < y - (PLAYER_HULL.nose - PLAYER_HULL.halfSpan) + 0.01, 'moved off the rail');
+  assert.ok(player.x > 20, 'and kept its motion along the rail');
+  assert.ok(player.boundaryContact > 0);
+});
+
+test('hull rails keep the stun and impact models, acting at the deepest hull point', () => {
+  const track = createTrack([[4, 4], [40, 4], [40, 28], [4, 28]], 6, 'box');
+  const hits = [];
+  // Head-on into the lower rail, nose first, at 12 cells/s.
+  const make = () => ({ x: 20, y: 6.6, vx: 0, vy: 12, angle: Math.PI / 2 });
+  const lab = make();
+  const previous = { x: 20, y: 6.4 };
+  assert.equal(constrainToTrack(track, lab, previous, PLAYER_HULL, { model: 'impact', onImpact: (h) => hits.push(h) }), true);
+  assert.equal(hits.length, 1);
+  assert.ok(hits[0].damage > 0, 'a 12-unit head-on hit damages the hull');
+  assert.ok(lab.vy < 0);
+  assert.ok(isHullInsideTrack(track, lab.x, lab.y, lab.angle));
+  const stunned = [];
+  const weekly = make();
+  constrainToTrack(track, weekly, previous, PLAYER_HULL, { model: 'stun', keep: 0.5, hits: (o) => o >= 0.35, onImpact: (e) => stunned.push(e) });
+  assert.equal(stunned.length, 1);
+  assert.ok(Math.abs(stunned[0].impact - 12) < 1e-9, 'outward speed along the rail normal at the nose');
+  // Nose at the rail: the body stops a nose-length short, not a circle-radius short.
+  assert.ok(Math.abs(weekly.y + PLAYER_HULL.nose - 7) < 0.01, `nose at ${(weekly.y + PLAYER_HULL.nose).toFixed(3)}`);
+});
+
+test('every circuit start pose fits the lane, and so does a lap of centreline poses', () => {
+  for (let level = 1; level <= 5; level++) {
+    const track = createLevelLayout(level).track;
+    for (let d = 0; d < track.length; d += 0.5) {
+      const p = pointOnTrack(track, d);
+      assert.ok(isHullInsideTrack(track, p.x, p.y, Math.atan2(p.ty, p.tx)), `L${level} at ${d}`);
+    }
+  }
+});
+
+test('the debug overlay outlines the hull and the pickup shapes without touching the scene', () => {
+  const calls = [];
+  const ctx = new Proxy({}, {
+    get: (target, key) => (key in target ? target[key] : (...args) => calls.push([key, ...args])),
+    set: (target, key, value) => { target[key] = value; return true; },
+  });
+  const layout = createLevelLayout(1);
+  const scene = { ...layout, player: { x: layout.track.portal.x, y: layout.track.portal.y, angle: 0 }, shards: new Set() };
+  const before = JSON.stringify(scene.player);
+  drawHitboxDebug(ctx, scene, 40);
+  assert.equal(JSON.stringify(scene.player), before);
+  assert.equal(calls.filter((c) => c[0] === 'lineTo').length, SHIP_HULL.length - 1, 'the hull outline');
+  const signals = layout.nodes.filter((n) => n.kind === 'planet').length;
+  assert.ok(calls.filter((c) => c[0] === 'arc').length >= signals * 2 + 1, 'signal rings and the old circle');
+  assert.equal(calls.filter((c) => c[0] === 'save').length, calls.filter((c) => c[0] === 'restore').length);
+  // A weekly scene on physics 1 shows the circle only.
+  calls.length = 0;
+  drawHitboxDebug(ctx, { ...scene, weekly: {}, physics: 1, shardList: [], mines: [] }, 40);
+  assert.equal(calls.filter((c) => c[0] === 'lineTo').length, 0);
+});

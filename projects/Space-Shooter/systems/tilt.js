@@ -10,8 +10,11 @@ const controller = createTiltController({ onChange(status) {
 } });
 export const enableTiltControls = () => controller.enable();
 export const disableTiltControls = () => controller.disable();
+/** Recenter (Recenter button today; meant to be called at the start line too). Safe mid-race. */
 export const calibrateTiltControls = () => controller.calibrate();
 export const getTiltState = () => controller.getState();
+/** Live roll/neutral/confidence/source for on-phone tuning (see docs/stardust/TILT.md). */
+export const getTiltDebug = () => controller.getDebug();
 export function getTiltAxis() {
   state.input.touch.turnAxis = controller.getAxis();
   return state.input.touch.turnAxis;

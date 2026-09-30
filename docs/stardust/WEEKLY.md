@@ -61,8 +61,14 @@ it reaches the physics, live and in replays alike, and recorded. The log is
 text:
 
 ```
-SDW1|<eventId>|<version>|<steps>|<finishMs>|<n,turn,thrust,back,strafe,bits;…>
+SDW2|<eventId>|<version>|<steps>|<finishMs>|<n,turn,thrust,back,strafe,bits;…>
 ```
+
+The prefix is the physics the run was flown under: **SDW1** = the original
+circle hitbox (runs set before 2026-09-29's hull change), **SDW2** = the
+exact ship body (`engine/shipHull.js`, traced from the sprite; view it with
+`?debug=hitbox`). A replay always uses its own log's physics, so older runs
+and their ghosts stay exact.
 
 run-length encoded, numbers in base 36. A keyboard lap is ~40–80 KB; the hub
 takes up to 256 KB and the game leaves the log off anything longer. Replaying

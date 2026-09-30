@@ -1,5 +1,6 @@
 import { state, config } from "../state.js";
 import { isLapReady, portalCoordinates } from "./track.js";
+import { shipTouchesCircle } from "./hull.js";
 export function findNearestShard() {
   const lv = state.run?.current;
   if (!lv) return;
@@ -19,6 +20,19 @@ export function findNearestShard() {
           title: "Next checkpoint",
         }
       : nextSignal || lv.nodes.find((n) => n.kind === "gate") || null;
+}
+/**
+ * A signal is collected when the ship's body touches the drawn shard (a
+ * circle of PLANET_RADIUS, its drawn half-height) — a wing tip counts — or,
+ * as before the hull, when the ship's centre is within PLANET_RADIUS +
+ * PLAYER_RADIUS of it. Never less generous than the old circle.
+ */
+export function touchesSignal(player, node) {
+  const x = node.x + 0.5, y = node.y + 0.5;
+  return (
+    Math.hypot(player.x - x, player.y - y) <= config.PLANET_RADIUS + config.PLAYER_RADIUS ||
+    shipTouchesCircle(player, x, y, config.PLANET_RADIUS)
+  );
 }
 export function addPenalty(ms) {
   if (!state.run?.current) return;

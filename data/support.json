@@ -14,7 +14,21 @@
   ],
   "goals": [],
   "voting": {"status":"draft","enabled":null,"policy":null,"note":"Decided, not live: one feature vote per signed-in account per month, independent of any payment. This is not sponsor voting. Do not describe it on public pages until accounts and voting ship."},
-  "discord": {"status":"draft","url":null,"accessRules":null,"moderationRules":null},
+  "discord": {
+    "status": "live",
+    "url": "https://discord.gg/qjntnnd9cD",
+    "accessRules": [
+      "Be decent. This is a community, not a comment section.",
+      "Keep it SFW. No adult content.",
+      "Discord's own Terms of Service and Community Guidelines apply on top of these."
+    ],
+    "moderationRules": [
+      "No harassment, no hate. Zero tolerance.",
+      "No spam. Self-promo goes in the designated channel and nowhere else.",
+      "The owner's calls are final."
+    ]
+  },
+  "x": {"url": null},
   "merch": {"status":"backlogged","available":false,"note":"Merch is not part of the first redesign."},
   "fundingUse": ["Free-software polishing and releases", "Compute, hosting, signing, and testing", "Future server infrastructure", "Project-specific development needs"]
 }

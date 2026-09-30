@@ -19,6 +19,8 @@ import { startCountdown } from "../lifecycle.js";
 import { clearCameraPan, resetWeeklyCamera } from "../systems/camera.js";
 import { spawnExhaust, updateParticles } from "../systems/particles.js";
 import { playMusic, playSoundEffectThrottled } from "../../audio.js";
+import { showFailScreen } from "../../ui/failScreen.js";
+import { quitRun } from "../modeManager.js";
 
 const STEP = WEEKLY_RULES.STEP;
 const RETRY_COUNTDOWN = 1.5;
@@ -32,22 +34,9 @@ let session = null;
 const ghosts = new Map();
 let ghostsVisible = true;
 
-function storage() {
-  try { return window.localStorage; } catch { return null; }
-}
-const bestKey = (event) => `stardust.weekly.${event.id}.v${event.version}.best`;
-
-/** This browser's best on an event: { ms, log } or null. */
-export function readLocalBest(event, store = storage()) {
-  try {
-    const raw = store?.getItem(bestKey(event));
-    const best = raw ? JSON.parse(raw) : null;
-    return best && Number.isFinite(best.ms) && typeof best.log === "string" ? best : null;
-  } catch { return null; }
-}
-function saveLocalBest(event, best, store = storage()) {
-  try { store?.setItem(bestKey(event), JSON.stringify(best)); } catch { /* private window */ }
-}
+// This browser's best per event lives in engine/weekly/localBest.js.
+import { readLocalBest, saveLocalBest } from "../weekly/localBest.js";
+export { readLocalBest };
 
 /** Add or replace a ghost from an input log; it is replayed once here. */
 export function setWeeklyGhost(id, { log, label, color = "#9fe8ff", layout = session?.layout } = {}) {
@@ -111,11 +100,6 @@ function restartAttempt() {
   startCountdown(RETRY_COUNTDOWN, state.run.current);
 }
 
-const DEATH = {
-  mine: "Mine contact. Ship destroyed.",
-  hull: "Hull breached.",
-  fuel: "Out of fuel.",
-};
 
 function react(lv, e) {
   switch (e.type) {
@@ -162,11 +146,18 @@ function updateTarget(lv) {
 export function updateWeekly(dt) {
   const lv = state.run?.current;
   if (!lv || lv.completed || !session) return;
-  if (state.ui.paused || state.ui.showStartOverlay || state.ui.showEndOverlay) return;
+  if (state.ui.paused || state.ui.showStartOverlay || state.ui.showEndOverlay || state.ui.showFailOverlay) return;
   if (lv.wreck) {
     lv.wreck.t += dt;
     updateParticles(dt);
-    if (lv.wreck.t >= WRECK_SECONDS) restartAttempt();
+    // After the explosion: the attempt-over screen (retry, hangar, nearby pilots).
+    if (lv.wreck.t >= WRECK_SECONDS && !lv.wreck.shown) {
+      lv.wreck.shown = true;
+      showFailScreen(
+        { cause: lv.wreck.cause, ms: sceneMs(lv), shards: lv.shards.size, total: lv.shardList.length, eventTitle: `Week ${session.event.week} · ${session.event.title}` },
+        { onRetry: () => restartAttempt(), onHangar: () => quitRun() },
+      );
+    }
     return;
   }
   if (state.ui.countdownActive) {
@@ -197,7 +188,6 @@ export function updateWeekly(dt) {
     if (lv.dead) {
       lv.wreck = { x: lv.player.x, y: lv.player.y, t: 0, cause: lv.dead };
       state.ui.screenshake = 0.45;
-      toast(`${DEATH[lv.dead] || "Ship lost."} Back to the grid.`, 2000);
       return;
     }
   }
@@ -241,7 +231,7 @@ function finish(lv) {
   const ms = Math.round(lv.finishMs);
   lv.activeMs = ms;
   state.run.totalActiveMs = ms;
-  const inputLog = encodeInputLog({ eventId: event.id, version: event.version, frames: session.frames, finishMs: lv.finishMs });
+  const inputLog = encodeInputLog({ eventId: event.id, version: event.version, frames: session.frames, finishMs: lv.finishMs, physics: lv.physics });
   const previous = readLocalBest(event);
   const personalBest = !previous || ms < previous.ms;
   if (personalBest) {
@@ -252,7 +242,7 @@ function finish(lv) {
   toast(`${title}: ${formatMs(ms)}${personalBest && previous ? " — new personal best!" : ""}`, 3500);
   if (document.fullscreenElement) { try { document.exitFullscreen().catch(() => {}); } catch { /* ignore */ } }
   stopEngine();
-  openEndOverlay(formatMs(ms), { kind: "weekly", title, preview });
+  openEndOverlay(formatMs(ms), { kind: "weekly", title, preview, previousMs: previous?.ms ?? null });
   window.dispatchEvent(new CustomEvent("stardust:weeklyRunComplete", {
     detail: { eventId: event.id, version: event.version, totalMs: ms, inputLog, preview, personalBest, previousMs: previous?.ms ?? null, title, wallHits: lv.wallHits },
   }));

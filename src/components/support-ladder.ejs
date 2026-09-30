@@ -1,0 +1,68 @@
+<%
+  // The support ladder: make an account, follow along, then (only if you want to)
+  // sponsor. Every URL comes from data (support.json, site.json). A link whose URL
+  // is missing or not http(s) is not rendered, so there are no dead links.
+  //   variant: 'full' (section with cards) or 'compact' (footer strip).
+  const ladderVariant = (typeof variant !== 'undefined' && variant === 'compact') ? 'compact' : 'full';
+  const ladderSupport = (data && data.support) || {};
+  const ladderSocial = (site && site.social) || {};
+  const ladderUrl = (value) => (typeof value === 'string' && /^https?:\/\/\S+$/i.test(value.trim()) ? value.trim() : null);
+  const ladderChannel = (id) => {
+    const channel = (ladderSupport.channels || []).find((item) => item.id === id && item.publicationStatus === 'published');
+    return channel ? ladderUrl(channel.url) : null;
+  };
+  const ladderDiscord = ladderSupport.discord && ladderSupport.discord.status === 'live' ? ladderUrl(ladderSupport.discord.url) : null;
+  const ladderX = ladderUrl(ladderSupport.x && ladderSupport.x.url);
+  const ladderGithub = ladderUrl(ladderSupport.github && ladderSupport.github.url) || ladderUrl(ladderSocial.github);
+  const ladderFollow = [['Discord', ladderDiscord], ['X', ladderX], ['GitHub', ladderGithub]].filter(([, url]) => url);
+  const ladderSponsors = ladderChannel('github-sponsors');
+  const ladderKofi = ladderChannel('ko-fi');
+  let ladderStep = 0;
+  const ladderNum = (pad) => { ladderStep += 1; return pad ? String(ladderStep).padStart(2, '0') : String(ladderStep); };
+  const ladderTitleId = `support-ladder-${ladderVariant}-title`;
+%>
+<% if (ladderVariant === 'compact') { %>
+<section class="support-ladder support-ladder--compact" aria-label="Ways to join in">
+    <ol class="support-ladder-steps mono">
+        <li><span class="support-ladder-num" aria-hidden="true"><%= ladderNum(false) %></span><a href="<%= siteLink('account') %>">Make an account</a> <span class="support-ladder-note">Save your runs, get on the leaderboard.</span></li>
+        <% if (ladderFollow.length) { %><li><span class="support-ladder-num" aria-hidden="true"><%= ladderNum(false) %></span><span>Follow along:</span> <% ladderFollow.forEach(([label, url], i) => { %><a href="<%= url %>" target="_blank" rel="noopener noreferrer"><%= label %></a><%= i < ladderFollow.length - 1 ? ' · ' : '' %><% }); %></li><% } %>
+        <% if (ladderSponsors || ladderKofi) { %><li><span class="support-ladder-num" aria-hidden="true"><%= ladderNum(false) %></span><span>Want to do more?</span> <% if (ladderSponsors) { %><a href="<%= ladderSponsors %>" target="_blank" rel="noopener noreferrer">Become a GitHub Sponsor</a><% } %><% if (ladderSponsors && ladderKofi) { %> · <% } %><% if (ladderKofi) { %><a href="<%= ladderKofi %>" target="_blank" rel="noopener noreferrer">One-time on Ko-fi</a><% } %></li><% } %>
+    </ol>
+</section>
+<% } else { %>
+<section class="support-ladder support-ladder--full" aria-labelledby="<%= ladderTitleId %>">
+    <div class="support-ladder-head">
+        <h2 id="<%= ladderTitleId %>" class="support-ladder-title">Join in</h2>
+        <p class="support-ladder-sub">Three steps, each one optional. Everything stays free to play.</p>
+    </div>
+    <ol class="support-ladder-steps">
+        <li class="support-ladder-rung">
+            <span class="support-ladder-num mono" aria-hidden="true"><%= ladderNum(true) %></span>
+            <h3>Make an account</h3>
+            <p>Save your runs and show up on the leaderboard.</p>
+            <a class="btn-noir btn-noir--solid" href="<%= siteLink('account') %>">Make an account</a>
+        </li>
+        <% if (ladderFollow.length) { %>
+        <li class="support-ladder-rung">
+            <span class="support-ladder-num mono" aria-hidden="true"><%= ladderNum(true) %></span>
+            <h3>Follow along</h3>
+            <p>News, new builds and the odd rant, wherever you already hang out.</p>
+            <div class="support-ladder-actions">
+                <% ladderFollow.forEach(([label, url]) => { %><a class="btn-noir" href="<%= url %>" target="_blank" rel="noopener noreferrer"><%= label %></a><% }); %>
+            </div>
+        </li>
+        <% } %>
+        <% if (ladderSponsors || ladderKofi) { %>
+        <li class="support-ladder-rung">
+            <span class="support-ladder-num mono" aria-hidden="true"><%= ladderNum(true) %></span>
+            <h3>Want to do more?</h3>
+            <p>Sponsor the work. It keeps the games and free software coming and buys no perks.</p>
+            <div class="support-ladder-actions">
+                <% if (ladderSponsors) { %><a class="btn-noir" href="<%= ladderSponsors %>" target="_blank" rel="noopener noreferrer">Become a GitHub Sponsor</a><% } %>
+                <% if (ladderKofi) { %><a class="btn-noir" href="<%= ladderKofi %>" target="_blank" rel="noopener noreferrer">One-time on Ko-fi</a><% } %>
+            </div>
+        </li>
+        <% } %>
+    </ol>
+</section>
+<% } %>

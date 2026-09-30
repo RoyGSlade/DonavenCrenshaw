@@ -1,4 +1,5 @@
 /** Closed racing-corridor geometry. All positions and widths are world-cell units. */
+import { PLAYER_HULL, isHullShape, hullWorld, pointInPolygon, closestOnPolygon } from "./hull.js";
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 export function nearestTrackPoint(track, x, y) {
   let best = null;
@@ -133,12 +134,169 @@ export function railImpact(outward) {
   };
 }
 
+// The velocity response to touching a rail whose outward normal is (nx, ny).
+// Shared by the circle and the hull; the arithmetic is exactly the original
+// circle code's, so SDW1 weekly replays stay bit-for-bit.
+function railResponse(player, nx, ny, rails) {
+  const outward = player.vx * nx + player.vy * ny;
+  if (rails?.model === "impact" && outward > 0) {
+    const hit = railImpact(outward);
+    const alongX = player.vx - outward * nx,
+      alongY = player.vy - outward * ny;
+    player.vx = alongX * hit.keep - outward * 0.25 * nx;
+    player.vy = alongY * hit.keep - outward * 0.25 * ny;
+    rails.onImpact?.(hit);
+  } else if (rails?.model === "stun" && outward > 0) {
+    // Weekly rails: a real hit halves the ship's speed (the caller stuns
+    // the controls); a scrape, or a touch while already stunned, just slides.
+    const alongX = player.vx - outward * nx,
+      alongY = player.vy - outward * ny;
+    const keep = rails.hits(outward) ? rails.keep : 1;
+    player.vx = (alongX - outward * 0.2 * nx) * keep;
+    player.vy = (alongY - outward * 0.2 * ny) * keep;
+    if (keep !== 1) rails.onImpact?.({ impact: outward });
+  } else if (outward > 0) {
+    player.vx -= outward * 1.25 * nx;
+    player.vy -= outward * 1.25 * ny;
+  }
+}
+
+// Inner corners of the lane: where the two inside rails of a corner meet,
+// the only places where the lane's edge points into the lane, so the only
+// places a rail can poke between two hull vertices. Cached per track.
+const notchCache = new WeakMap();
+export function laneNotches(track) {
+  let notches = notchCache.get(track);
+  if (notches) return notches;
+  notches = [];
+  const n = track.segments.length, half = track.width / 2;
+  for (let i = 0; i < n; i++) {
+    const a = track.segments[(i - 1 + n) % n], b = track.segments[i];
+    const cross = a.tx * b.ty - a.ty * b.tx, dot = a.tx * b.tx + a.ty * b.ty;
+    if (Math.abs(cross) < 1e-6 && dot > 0) continue; // straight on
+    const side = Math.sign(cross) || 1;
+    // Inside normals of both segments; the notch is on their bisector.
+    let ux = side * (-a.ty - b.ty), uy = side * (a.tx + b.tx);
+    const m = Math.hypot(ux, uy);
+    if (m < 1e-6) continue; // a hairpin reversal: no single notch
+    ux /= m; uy /= m;
+    const cosHalf = Math.max(0.05, ux * side * -a.ty + uy * side * a.tx);
+    const x = b.x + ux * (half / cosHalf), y = b.y + uy * (half / cosHalf);
+    // Only where it really is on the lane's edge (not covered by other lane).
+    if (nearestTrackPoint(track, x, y).distance >= half - 1e-6) notches.push({ x, y });
+  }
+  notchCache.set(track, notches);
+  return notches;
+}
+
+/**
+ * How far a hull pokes out of the lane at (x, y) facing `angle`:
+ * { depth, nx, ny, px, py }. depth > 0 is outside by that much at (px, py)
+ * (the deepest hull point), and (nx, ny) is the rail's outward normal there.
+ * depth <= 0 means the whole body is on the lane. The lane is every point
+ * within width/2 of the centreline; its edge is straight rails, round outer
+ * corners and sharp inner corners, so testing the hull's vertices plus the
+ * inner-corner notches against the polygon is exact.
+ */
+export function hullLaneContact(track, x, y, angle = 0, hull = PLAYER_HULL) {
+  const half = track.width / 2;
+  const centre = nearestTrackPoint(track, x, y);
+  // Far from both rails: the bounding circle is on the lane, so is the hull.
+  if (centre.distance + hull.radius <= half) return { depth: centre.distance + hull.radius - half, nx: 0, ny: 0, px: x, py: y };
+  const poly = hullWorld(x, y, angle, hull);
+  let best = null;
+  for (const p of poly) {
+    const q = nearestTrackPoint(track, p.x, p.y);
+    const depth = q.distance - half;
+    if (!best || depth > best.depth) {
+      const d = q.distance || 1;
+      best = { depth, nx: (p.x - q.x) / d, ny: (p.y - q.y) / d, px: p.x, py: p.y };
+    }
+  }
+  for (const notch of laneNotches(track)) {
+    if (Math.hypot(notch.x - x, notch.y - y) >= hull.radius || !pointInPolygon(poly, notch.x, notch.y)) continue;
+    // The inner corner is inside the body: the hull must slide off it.
+    const q = closestOnPolygon(poly, notch.x, notch.y);
+    if (q.d > best.depth) {
+      const d = q.d || 1;
+      best = { depth: q.d, nx: (q.x - notch.x) / d, ny: (q.y - notch.y) / d, px: q.x, py: q.y };
+    }
+  }
+  return best;
+}
+
+export function isHullInsideTrack(track, x, y, angle = 0, hull = PLAYER_HULL, slack = 1e-7) {
+  return hullLaneContact(track, x, y, angle, hull).depth <= slack;
+}
+
+/** Lane containment for a body that is a circle of `shape` cells or a hull. */
+export function isBodyInsideTrack(track, body, shape) {
+  return isHullShape(shape) ? isHullInsideTrack(track, body.x, body.y, body.angle, shape) : isInsideTrack(track, body.x, body.y, shape || 0);
+}
+
+/**
+ * The hull version of constrainToTrack. Same swept, no-tunnelling rails, with
+ * the whole body instead of a centre circle:
+ *  1. rotation (or a rock's push) can leave the body through a rail before the
+ *     ship even moves: the start of the move is pushed back onto the lane
+ *     first, along the deepest point's normal, and the ship keeps its motion;
+ *  2. the move is swept at the ship's final angle and clipped at the first
+ *     touch, found by bisection like the circle;
+ *  3. the rails model responds with the normal at the deepest hull point.
+ */
+function constrainHullToTrack(track, player, previous, hull, rails) {
+  const angle = player.angle || 0;
+  const EPS = 1e-7;
+  let sx = previous.x, sy = previous.y;
+  const contacts = [];
+  let start = hullLaneContact(track, sx, sy, angle, hull);
+  for (let k = 0; k < 6 && start.depth > EPS; k++) {
+    if (!contacts.length) contacts.push(start);
+    sx -= start.nx * (start.depth + 0.002);
+    sy -= start.ny * (start.depth + 0.002);
+    start = hullLaneContact(track, sx, sy, angle, hull);
+  }
+  const tx = player.x + (sx - previous.x), ty = player.y + (sy - previous.y);
+  const dx = tx - sx, dy = ty - sy;
+  const inside = (t) => hullLaneContact(track, sx + dx * t, sy + dy * t, angle, hull).depth <= EPS;
+  const steps = Math.max(1, Math.ceil(Math.hypot(dx, dy) / 0.12));
+  let safe = 0, blocked = false;
+  for (let i = 1; i <= steps; i++) {
+    const t = i / steps;
+    if (inside(t)) { safe = t; continue; }
+    let low = safe, high = t;
+    for (let n = 0; n < 14; n++) {
+      const mid = (low + high) / 2;
+      if (inside(mid)) low = mid;
+      else high = mid;
+    }
+    contacts.push(hullLaneContact(track, sx + dx * high, sy + dy * high, angle, hull));
+    player.x = sx + dx * low;
+    player.y = sy + dy * low;
+    blocked = true;
+    break;
+  }
+  if (!blocked) { player.x = tx; player.y = ty; }
+  if (!contacts.length) return false;
+  for (const c of contacts) railResponse(player, c.nx, c.ny, rails);
+  const last = contacts.at(-1);
+  // Move slightly inward so a tangent drift cannot become stuck to a rail by rounding.
+  player.x -= last.nx * 0.002;
+  player.y -= last.ny * 0.002;
+  player.boundaryContact = 0.12;
+  return true;
+}
+
 /**
  * Clip the entire swept move, not just its endpoint, so boosts cannot cross an infield.
+ * shape: the ship's radius in cells (a circle: the original rails, kept exactly
+ * for SDW1 weekly replays and the lab) or a hull shape (engine/hull.js,
+ * PLAYER_HULL: the ship's real body).
  * rails: optional { model: "impact", onImpact({ impact, damage }) } for the playtest lab,
  * or { model: "stun", keep, hits(outward), onImpact({ impact }) } for the weekly tracks.
  */
 export function constrainToTrack(track, player, previous, radius, rails = null) {
+  if (isHullShape(radius)) return constrainHullToTrack(track, player, previous, radius, rails);
   const dx = player.x - previous.x,
     dy = player.y - previous.y;
   const steps = Math.max(1, Math.ceil(Math.hypot(dx, dy) / 0.12));
@@ -171,27 +329,7 @@ export function constrainToTrack(track, player, previous, radius, rails = null) 
     const nearest = nearestTrackPoint(track, player.x, player.y);
     const nx = (player.x - nearest.x) / (nearest.distance || 1),
       ny = (player.y - nearest.y) / (nearest.distance || 1);
-    const outward = player.vx * nx + player.vy * ny;
-    if (rails?.model === "impact" && outward > 0) {
-      const hit = railImpact(outward);
-      const alongX = player.vx - outward * nx,
-        alongY = player.vy - outward * ny;
-      player.vx = alongX * hit.keep - outward * 0.25 * nx;
-      player.vy = alongY * hit.keep - outward * 0.25 * ny;
-      rails.onImpact?.(hit);
-    } else if (rails?.model === "stun" && outward > 0) {
-      // Weekly rails: a real hit halves the ship's speed (the caller stuns
-      // the controls); a scrape, or a touch while already stunned, just slides.
-      const alongX = player.vx - outward * nx,
-        alongY = player.vy - outward * ny;
-      const keep = rails.hits(outward) ? rails.keep : 1;
-      player.vx = (alongX - outward * 0.2 * nx) * keep;
-      player.vy = (alongY - outward * 0.2 * ny) * keep;
-      if (keep !== 1) rails.onImpact?.({ impact: outward });
-    } else if (outward > 0) {
-      player.vx -= outward * 1.25 * nx;
-      player.vy -= outward * 1.25 * ny;
-    }
+    railResponse(player, nx, ny, rails);
     // Move slightly inward so a tangent drift cannot become stuck to a rail by rounding.
     player.x -= nx * 0.002;
     player.y -= ny * 0.002;
@@ -247,6 +385,21 @@ export function isLapReady(scene) {
     progress.distance >= track.length * 0.65
   );
 }
+/**
+ * The finish: a forward crossing of point 0's full-width start/finish line
+ * between two positions (no portal). Returns the fraction of the move where
+ * it crossed, or null.
+ */
+export function crossedFinishLine(track, previous, current) {
+  const g = track.portal;
+  const before = (previous.x - g.x) * g.tx + (previous.y - g.y) * g.ty;
+  const after = (current.x - g.x) * g.tx + (current.y - g.y) * g.ty;
+  if (!(before < 0 && after >= 0)) return null;
+  const t = after > before ? -before / (after - before) : 1;
+  const x = previous.x + (current.x - previous.x) * t, y = previous.y + (current.y - previous.y) * t;
+  return Math.abs((x - g.x) * g.nx + (y - g.y) * g.ny) <= track.width / 2 ? t : null;
+}
+
 /** Signed portal coordinates: forward is race direction, lateral is across the lane. */
 export function portalCoordinates(track, player) {
   const gate = track.portal,

@@ -1,10 +1,8 @@
 import { state, config } from "../../state.js";
 import { toast, blinkFuel } from "../../ui/hud.js";
-import { isBacksideArenaEntry } from "../rules.js";
+import { isBacksideArenaEntry, touchesSignal } from "../rules.js";
 import { runtimeConfig } from "../../runtime-config.js";
 import { requestArenaEnterFromBack } from "../api.js";
-import { isLapReady, portalCoordinates } from "../track.js";
-import { tryFinishLevel } from "../modes/roadmap.js";
 import { labHooks } from "../../systems/lab.js";
 export function checkCollisionsAndInteractions() {
   const lv = state.run?.current;
@@ -24,7 +22,7 @@ export function checkCollisionsAndInteractions() {
       }
     } else if (
       node.kind === "planet" &&
-      d <= config.PLANET_RADIUS + config.PLAYER_RADIUS &&
+      touchesSignal(lv.player, node) &&
       !lv.shards.has(node.id)
     ) {
       lv.shards.add(node.id);
@@ -40,16 +38,8 @@ export function checkCollisionsAndInteractions() {
         requestArenaEnterFromBack();
         return;
       }
-      // Launching on this portal is harmless; every checkpoint must be passed first.
-      const relative = portalCoordinates(lv.track, lv.player);
-      if (
-        isLapReady(lv) &&
-        relative.forward < -0.12 &&
-        relative.velocity > 0.15
-      ) {
-        tryFinishLevel();
-        return;
-      }
+      // The finish is the start/finish line itself (engine/modes/roadmap.js);
+      // the hidden gate node only keeps the dormant rear-entry secret.
     }
   }
 }
