@@ -338,6 +338,9 @@ test("which build a run flies: standard unless the event allows builds or a prev
   // A preview flight can test any real build from the address bar.
   assert.equal(buildForRun({ id: "weekly-01" }, { preview: true, search: "?ship=needle:0-0-0-0", storage: store(needle) }), "needle:0-0-0-0");
   assert.equal(buildForRun({ id: "weekly-01" }, { preview: true, search: "?ship=needle:7-7-7-7", storage: store(needle) }), null);
+  // ...or the ship equipped in the garage.
+  assert.equal(buildForRun({ id: "weekly-01" }, { preview: true, search: "?ship=equipped", storage: store(needle) }), "needle:0-1-2-0");
+  assert.equal(buildForRun({ id: "weekly-01" }, { preview: false, search: "?ship=equipped", storage: store(needle) }), null);
   // An event that allows builds flies the equipped ship.
   assert.equal(buildForRun({ id: "weekly-02", ships: "builds" }, { preview: false, search: "", storage: store(needle) }), "needle:0-1-2-0");
   assert.equal(buildForRun({ id: "weekly-02", ships: "builds" }, { preview: false, search: "", storage: store(undefined) }), null);

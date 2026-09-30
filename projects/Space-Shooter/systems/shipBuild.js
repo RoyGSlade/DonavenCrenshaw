@@ -4,7 +4,8 @@
 //   - an event marked `ships: "builds"` in tracks/weekly.js flies the equipped
 //     garage ship;
 //   - a preview flight (never submitted) flies `?ship=needle:0-1-0-0` from the
-//     address bar, for testing the stat table.
+//     address bar, or `?ship=equipped` for the ship equipped in the garage, for
+//     testing the stat table.
 // Everywhere else the ship is the standard one, whatever it looks like.
 import { isBuild, buildKey } from '../engine/shipStats.js';
 
@@ -24,6 +25,7 @@ export function equippedBuild(storage = globalThis.localStorage) {
 export function buildForRun(event, { preview = false, search = globalThis.location?.search || '', storage } = {}) {
   if (preview) {
     const asked = new URLSearchParams(search).get('ship');
+    if (asked === 'equipped') return equippedBuild(storage);
     if (asked && isBuild(asked)) return asked;
   }
   return event?.ships === 'builds' ? equippedBuild(storage) : null;
