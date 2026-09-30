@@ -5,6 +5,7 @@
 // published by the build as scripts/avatars.js.
 
 import { AVATARS } from './avatars.js';
+import { deviceBadge, shipChipEl } from './ship-ui.js';
 import { avatarIndex, avatarSrc, monogram, profilePath, titleChip } from './profile.js';
 
 const INDEX = avatarIndex(AVATARS);
@@ -78,6 +79,11 @@ export function createPilotUi({ base = window.SITE_BASE || '/', hub = '' } = {})
             who.append(name(pilot, { className: 'sd-pilot' }));
             const badge = chip(row.title);
             if (badge) who.append(' ', badge);
+            // The ship family and the device flown on, when the hub sent them.
+            const ship = shipChipEl(row.ship);
+            if (ship) who.append(' ', ship);
+            const device = deviceBadge(row.client);
+            if (device) who.append(' ', device);
             const more = extra ? extra(row, i) : null;
             if (more) who.append(' ', ...[].concat(more));
             li.append(

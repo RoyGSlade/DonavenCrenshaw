@@ -6,6 +6,7 @@
 // scripts/avatars.js, and callers pass it in here.
 
 import { isUsername, clock, nameOf } from './social.js';
+import { shipFamily } from './ship-info.js';
 
 function normaliseBase(base) {
     const value = String(base || '/').trim();
@@ -135,12 +136,21 @@ const ordinal = (n) => {
 };
 export { ordinal };
 
-// GET /profiles/:username, shaped for the page. `isPublic` false with no
-// details means the private card; the owner viewing their own private
-// profile still gets everything, flagged with `ownPrivate`.
+// The sections a profile can show, in the order the page draws them. Each maps to
+// the key the pilot switches on the account page (profileShow).
+export const PROFILE_SECTIONS = ['bio', 'titles', 'bests', 'dogfight', 'events', 'ship'];
+
+// GET /profiles/:username, shaped for the page. The hub sends a section only
+// when the viewer may see it, so a missing key means hidden and `has` says which
+// sections exist. A section that is shown but has nothing in it (no titles yet,
+// no bio) counts as absent too: the page never draws a heading over nothing.
+//
+// The owner gets every section, plus `profileShow`. `onlyYou` then lists the
+// sections other pilots can't see (the switch is off, or the profile is
+// private and the section isn't event results).
 export function profileView(data) {
     const p = data || {};
-    const detailed = Array.isArray(p.titles) || Boolean(p.stardust) || Boolean(p.dogfight) || typeof p.bio === 'string';
+    const owner = Boolean(p.profileShow) && typeof p.profileShow === 'object';
     const bests = (Array.isArray(p.stardust?.bests) ? p.stardust.bests : [])
         .filter((b) => b && typeof b.timeMs === 'number')
         .slice()
@@ -158,19 +168,40 @@ export function profileView(data) {
         .map((d) => ({ board: d.board, name: d.name || d.board, time: clock(d.timeMs), date: d.setAt ? String(d.setAt).slice(0, 10) : '' })) : [];
     const wins = Number(p.dogfight?.wins) || 0;
     const losses = Number(p.dogfight?.losses) || 0;
+    const bio = typeof p.bio === 'string' ? p.bio.trim() : '';
+    const titles = sortTitles(p.titles).map(titleChip).filter(Boolean);
+    const ship = p.ship && typeof p.ship === 'object' && shipFamily(p.ship) ? p.ship : null;
+    const has = {
+        bio: Boolean(bio),
+        titles: titles.length > 0,
+        bests: bests.length > 0,
+        dogfight: Boolean(p.dogfight) && wins + losses > 0,
+        events: events.length > 0,
+        ship: Boolean(ship)
+    };
+    const detailed = Array.isArray(p.titles) || Boolean(p.stardust) || Boolean(p.dogfight) || typeof p.bio === 'string';
+    const onlyYou = owner
+        ? PROFILE_SECTIONS.filter((key) => has[key] && (p.profileShow[key] === false || (!p.isPublic && key !== 'events')))
+        : [];
     return {
         username: p.username,
         name: nameOf(p) || p.username || '',
         chip: titleChip(p.title),
         joined: joinedText(p.joinedAt),
         isPublic: Boolean(p.isPublic),
-        showDetails: Boolean(p.isPublic) || detailed,
-        ownPrivate: !p.isPublic && detailed,
-        bio: typeof p.bio === 'string' ? p.bio : '',
-        titles: sortTitles(p.titles).map(titleChip).filter(Boolean),
+        isOwner: owner,
+        showDetails: Boolean(p.isPublic) || detailed || Boolean(ship),
+        ownPrivate: !p.isPublic && (owner || detailed),
+        bio,
+        titles,
         bests,
         dogfight: p.dogfight ? { wins, losses, text: `${wins}–${losses}`, played: wins + losses } : null,
         events,
+        ship,
+        has,
+        // Anything at all to show under the card?
+        any: PROFILE_SECTIONS.some((key) => has[key]),
+        onlyYou,
         staff: Boolean(p.staff),
         devTimes
     };

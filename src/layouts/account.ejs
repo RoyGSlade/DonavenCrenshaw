@@ -114,7 +114,7 @@
 
                     <%# Avatar, title and profile visibility: how the pilot shows up on boards, comments and /u/. %>
                     <section class="noir-card noir-card--lit acct-card acct-pilot" id="pilot-card" aria-labelledby="acct-pilot-title">
-                        <div class="acct-card-head"><h2 id="acct-pilot-title" class="acct-card-title mono">Pilot card</h2><a class="acct-link mono" href="u/" data-acct-profile-link>Public profile →</a></div>
+                        <div class="acct-card-head"><h2 id="acct-pilot-title" class="acct-card-title mono">Pilot card</h2></div>
                         <p class="acct-hint acct-pilot-hint">How you appear on leaderboards, in comments and on your profile.</p>
                         <div class="acct-pilot-grid">
                             <fieldset class="acct-fieldset acct-avatars">
@@ -133,13 +133,54 @@
                                         <ul class="acct-locked-list" data-acct-locked-list></ul>
                                     </details>
                                 </fieldset>
-                                <div class="acct-public">
-                                    <label class="acct-switch"><input type="checkbox" role="switch" data-acct-public aria-describedby="acct-public-hint"><span class="acct-switch-track" aria-hidden="true"></span><span class="acct-switch-label">Public profile</span></label>
-                                    <p class="acct-hint" id="acct-public-hint">On: anyone with your profile link sees your bio, titles, Stardust bests and Dogfight record. Off: only your name, avatar, title and weekly placements.</p>
-                                    <p class="acct-status" role="status" data-acct-status="public"></p>
-                                </div>
                             </div>
                         </div>
+                    </section>
+
+                    <%# The equipped ship, drawn from its appearance by the game's own renderer (scripts/ship-ui.js). No pictures are stored or uploaded. %>
+                    <section class="noir-card acct-card acct-ship" id="ship" aria-labelledby="acct-ship-title">
+                        <div class="acct-card-head"><h2 id="acct-ship-title" class="acct-card-title mono">Your ship</h2><a class="acct-link mono" data-acct-play-link href="games/stardust/">Customize in the game →</a></div>
+                        <div class="acct-ship-body">
+                            <div class="ship-slot" data-acct-ship></div>
+                            <p class="acct-hint acct-ship-hint" data-acct-ship-hint>The ship you fly in Stardust. Change its parts and paint in the game's garage; it shows here, on your public profile if you choose, and as a small tag on leaderboard rows.</p>
+                        </div>
+                        <p class="acct-status" role="status" data-acct-status="ship"></p>
+                    </section>
+
+                    <section class="noir-card acct-card" id="ship-designs" aria-labelledby="acct-livery-title">
+                        <div class="acct-card-head"><h2 id="acct-livery-title" class="acct-card-title mono">Your ship designs</h2><a class="acct-link mono" data-acct-livery-link href="games/stardust/">Creator profile →</a></div>
+                        <p class="acct-hint">Published liveries belong to your profile. Other pilots can download their editable layers and leave comments.</p>
+                        <div class="acct-liveries" data-acct-liveries></div>
+                        <p class="acct-empty" data-acct-livery-status role="status" hidden></p>
+                    </section>
+
+                    <%# What other pilots see on /u/: the master switch, then one switch per section. Each saves on its own. %>
+                    <section class="noir-card acct-card acct-visibility" id="public-profile" aria-labelledby="acct-visibility-title">
+                        <div class="acct-card-head"><h2 id="acct-visibility-title" class="acct-card-title mono">Public profile</h2><a class="acct-link mono" href="u/" data-acct-profile-link>View my public profile →</a></div>
+                        <div class="acct-public">
+                            <label class="acct-switch"><input type="checkbox" role="switch" data-acct-public aria-describedby="acct-public-hint"><span class="acct-switch-track" aria-hidden="true"></span><span class="acct-switch-label">Public profile</span></label>
+                            <p class="acct-hint" id="acct-public-hint">On: anyone with your profile link sees the sections you leave on below. Off: only your name, avatar, title and, if you leave it on, your weekly placements.</p>
+                            <p class="acct-status" role="status" data-acct-status="public"></p>
+                        </div>
+                        <fieldset class="acct-fieldset acct-show" data-acct-show>
+                            <legend class="acct-sub-title mono">What your profile shows</legend>
+                            <p class="acct-hint acct-show-lock" id="acct-show-lock" data-acct-show-lock hidden>Your profile is private, so these are switched off for everyone else. Turn on Public profile to choose. Event results are the exception: they follow their own switch either way.</p>
+                            <ul class="acct-show-list">
+                                <% [['bio', 'Bio', 'The short bio from your profile.'],
+                                    ['titles', 'Titles', 'Every title you have earned.'],
+                                    ['bests', 'Best times', 'Your best time and rank on each Stardust board.'],
+                                    ['dogfight', 'Dogfight record', 'Your Dogfight wins and losses.'],
+                                    ['events', 'Event results', 'Weekly placements. These show even while your profile is private.'],
+                                    ['ship', 'Ship', 'The ship you have equipped, drawn from the garage.'],
+                                    ['devices', 'Device badges', 'A small icon on leaderboard rows for the device and controls you flew with.']].forEach(([key, label, hint]) => { %>
+                                <li class="acct-show-row" data-acct-show-row="<%= key %>">
+                                    <label class="acct-switch"><input type="checkbox" role="switch" data-acct-show-key="<%= key %>" aria-describedby="acct-show-<%= key %>-hint"><span class="acct-switch-track" aria-hidden="true"></span><span class="acct-switch-label"><%= label %></span></label>
+                                    <p class="acct-hint" id="acct-show-<%= key %>-hint"><%= hint %></p>
+                                </li>
+                                <% }) %>
+                            </ul>
+                            <p class="acct-status" role="status" data-acct-status="show"></p>
+                        </fieldset>
                     </section>
 
                     <div class="acct-grid">

@@ -62,3 +62,84 @@
 
 .pilot-link { color: inherit; text-decoration: none; }
 .pilot-link:hover, .pilot-link:focus-visible { text-decoration: underline; text-underline-offset: 4px; }
+
+/* Ships and devices (scripts/ship-ui.js). The site is dark-only, so these are tuned for that. */
+
+/* Leaderboard row: the ship family, square-cornered so it reads differently from a title chip. */
+.sd-ship-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.12rem 0.42rem 0.1rem;
+    border: 1px solid rgba(169, 220, 255, 0.32);
+    border-radius: 3px;
+    color: #b9d6ea;
+    font: 600 0.58rem/1.35 var(--font-mono, ui-monospace, monospace);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    vertical-align: 0.12em;
+}
+.sd-board .sd-ship-chip { margin-left: 4px; }
+
+/* Device badge: an icon button. title gives the hover text, aria-label the name, a tap opens the tip. */
+.sd-device-wrap { position: relative; display: inline-block; vertical-align: -0.2em; margin-left: 4px; }
+.sd-device {
+    display: inline-grid;
+    place-items: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    margin: -0.3rem 0;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    background: transparent;
+    color: #9db3c4;
+    cursor: pointer;
+}
+.sd-device:hover { color: #e6f5ff; border-color: rgba(169, 220, 255, 0.28); }
+.sd-device:focus-visible { outline: 2px solid #a9dcff; outline-offset: 1px; color: #e6f5ff; }
+.sd-device[aria-expanded="true"] { color: #e6f5ff; border-color: rgba(169, 220, 255, 0.4); background: rgba(169, 220, 255, 0.08); }
+.sd-device svg { display: block; }
+.sd-device-tip {
+    position: absolute;
+    z-index: 5;
+    top: calc(100% + 2px);
+    left: 0;
+    width: max-content;
+    max-width: min(17rem, 72vw);
+    padding: 0.35rem 0.6rem;
+    border: 1px solid rgba(169, 220, 255, 0.4);
+    border-radius: 4px;
+    background: #07111b;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55);
+    color: #e3eef6;
+    font: 0.72rem/1.4 var(--font-mono, ui-monospace, monospace);
+    letter-spacing: 0.02em;
+    text-transform: none;
+    white-space: normal;
+}
+.sd-device-tip[hidden] { display: none; }
+
+/* A drawn ship: the game's renderer output with its build underneath. */
+.ship-card { display: grid; grid-template-columns: minmax(0, 14rem) minmax(0, 1fr); align-items: center; gap: 1rem 1.75rem; }
+.ship-art {
+    display: grid;
+    place-items: center;
+    aspect-ratio: 1;
+    border: 1px solid rgba(169, 220, 255, 0.18);
+    border-radius: 6px;
+    background: radial-gradient(ellipse 70% 60% at 50% 45%, rgba(88, 160, 214, 0.2), rgba(3, 7, 11, 0.85) 75%);
+    overflow: hidden;
+}
+.ship-canvas { display: block; width: 100%; height: auto; }
+.ship-art-text { padding: 0.5rem; font: 600 0.8rem var(--font-mono, ui-monospace, monospace); letter-spacing: 0.2em; text-transform: uppercase; color: #b9d6ea; text-align: center; }
+.ship-card[data-state="loading"] .ship-art-text { opacity: 0.55; }
+.ship-copy { display: grid; gap: 0.35rem; min-width: 0; }
+.ship-copy p { margin: 0; }
+.ship-card .ship-family { font: 600 1.05rem var(--font-mono, ui-monospace, monospace); letter-spacing: 0.16em; text-transform: uppercase; color: #e6f5ff; }
+.ship-card .ship-parts { font-size: 0.82rem; line-height: 1.6; color: #9db3c4; overflow-wrap: anywhere; }
+@media (max-width: 560px) {
+    .ship-card { grid-template-columns: minmax(0, 1fr); justify-items: start; }
+    .ship-art { width: min(100%, 16rem); }
+}
+@media (prefers-reduced-motion: reduce) { .sd-device { transition: none; } }
