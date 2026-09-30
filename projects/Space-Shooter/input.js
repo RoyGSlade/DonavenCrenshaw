@@ -9,6 +9,7 @@ import { touchInput } from "./ui/touchPad.js";
 import { wantsAutoFire } from "./systems/autofire.js";
 import { flightSettings, updateFlightSettings, binds } from "./systems/flightSettings.js";
 import { keyToken, mouseToken } from "./systems/keybinds.js";
+import { runClient, gamepadDriving } from "./systems/runClient.js";
 export { gamepadMapping };
 const gamepad = createGamepadReader({
   stickDeadzone: config.GAMEPAD?.STICK_DEADZONE ?? 0.2,
@@ -357,6 +358,17 @@ export function pumpInput() {
     out.brake = out.brake || t.brake;
     out.boost = out.boost || t.boost;
   }
+
+  // What is driving the ship this frame, for the run's `client` tag (systems/runClient.js).
+  // Counted here, while flying, so the tag is what was used, not a guess at the end.
+  const tiltOn = !!state.input.touch.useTilt;
+  runClient.sample({
+    tilt: tiltOn,
+    tiltAxis: tiltOn && Math.abs(state.input.touch.turnAxis || 0) > 0.001,
+    pad: gamepadDriving(gp),
+    touch: Object.values(touch).some(Boolean) || (!!state.input.touch.active && (touchInput.thrust > 0 || touchInput.back > 0 || Math.abs(touchInput.strafe) > 0.01 || Math.abs(touchInput.turn) > 0.001 || !!touchInput.brake || !!touchInput.boost)),
+    keys: HOLD_ACTIONS.some((action) => kb[action]),
+  });
 
   // Auto fire (Settings): hold fire while something breakable is ahead of the nose.
   if (!out.shoot && flightSettings().autoFire && state.mode === "roadmap") {

@@ -8,11 +8,15 @@
 // Nothing here can stop or slow the game: every call is best-effort.
 import { runtimeConfig } from '../runtime-config.js';
 import { validateBackendUrl } from './backend.js';
+import { ghostShip } from './runClient.js';
 
 // Level n of the game is LEVEL_BOARDS[n - 1] on the hub, in rules.json order.
 export const LEVEL_BOARDS = ['alpha-relay', 'beacon-prime', 'dustfall-station', 'nether-crossing', 'iron-veil'];
 
-export function createRunRecorder({ config = runtimeConfig, fetchImpl = globalThis.fetch?.bind(globalThis) } = {}) {
+// client: () => { device, input, build?, appearance? } | null, how the run was flown
+// (systems/runClient.js). It is read when a run is finished and sent on every
+// finish request; a hub that does not know the field ignores it.
+export function createRunRecorder({ config = runtimeConfig, fetchImpl = globalThis.fetch?.bind(globalThis), client = null } = {}) {
   let base = null;
   try { base = validateBackendUrl(config.backendBaseUrl); } catch { base = null; }
   const origin = base ? new URL(base).origin : null;
@@ -110,7 +114,9 @@ export function createRunRecorder({ config = runtimeConfig, fetchImpl = globalTh
     const { runId, error } = await runPromise;
     if (error === 'guest') return null;
     if (!runId) return { status: 'unsaved', reasons: [error] };
-    const res = await call(`${base}/runs/${encodeURIComponent(runId)}/finish`, { method: 'POST', body });
+    let tag = null;
+    try { tag = client?.() || null; } catch { tag = null; }
+    const res = await call(`${base}/runs/${encodeURIComponent(runId)}/finish`, { method: 'POST', body: tag && Object.keys(tag).length ? { ...body, client: tag } : body });
     return res.ok ? res.data : { status: 'error', reasons: [res.data?.code || res.data?.error || 'unreachable'] };
   }
 
@@ -130,6 +136,19 @@ export function createRunRecorder({ config = runtimeConfig, fetchImpl = globalTh
     // Whether the hub's board list was read, so a missing board really is missing.
     get boardsKnown() { return versions != null; },
     connect,
+
+    // Any other hub call on the same terms as the run calls (session cookie, short
+    // timeout, never throws): { ok, status, data }. path is from the hub's origin
+    // (/api/stardust/ship); the game's own routes (saves) are gamePath('/saves/x').
+    // A 401 means the session ended, so the recorder
+    // stops treating the pilot as signed in.
+    async api(path, options) {
+      if (!base) return { ok: false, status: 0, data: null };
+      const res = await call(`${origin}${path}`, options);
+      if (res.status === 401) player = null;
+      return res;
+    },
+    gamePath(path) { return base ? `${new URL(base).pathname.replace(/\/$/, '')}${path}` : null; },
 
     // The signed-in player's progress (bests with full-run splits), or null.
     async profile() {
@@ -268,7 +287,8 @@ export function createRunRecorder({ config = runtimeConfig, fetchImpl = globalTh
       if (!base) return null;
       const q = me ? 'me=1' : `rank=${encodeURIComponent(rank)}`;
       const res = await call(`${base}/boards/${encodeURIComponent(board)}/ghost?${q}`);
-      return res.ok && typeof res.data?.inputLog === 'string' ? res.data : null;
+      // The ship the ghost was flown in rides along when the hub has it: { appearance, build }.
+      return res.ok && typeof res.data?.inputLog === 'string' ? { ...res.data, ...ghostShip(res.data) } : null;
     },
 
     abandon() {

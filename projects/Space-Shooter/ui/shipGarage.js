@@ -21,6 +21,7 @@ import {
   getEquippedAppearance,
   renderAppearance,
   equipAppearance,
+  unequipAppearance,
   availablePartIndices,
 } from '../systems/shipAppearance.js';
 import {
@@ -85,7 +86,7 @@ export function initShipGarage() {
      '',
    )}</div></div><div class="garage-sliders">${ranges.map(([id, name, min, max, step]) => `<label class="garage-slider">${name}<output id="garage-decal-${id}-value"></output><input aria-label="Decal ${name.toLowerCase()}" id="garage-decal-${id}" type="range" min="${min}" max="${max}" step="${step}"></label>`).join('')}</div></div></div></div>
  <div class="garage-panel" id="garage-panel-designs" role="tabpanel" aria-labelledby="garage-tab-designs" hidden><div class="garage-design-grid"><div><p class="garage-caption">Save a reusable livery, apply it to another hull, or export its editable layers.</p><label class="garage-field">Design name<input id="garage-design-name" maxlength="60" value="My livery"></label><div class="garage-design-actions"><button type="button" id="garage-save">Save locally</button><button type="button" id="garage-export">Export design</button><button type="button" id="garage-publish">Publish to my profile</button></div><label class="garage-file">Import editable design<input id="garage-import" type="file" accept="application/json,.json"></label><div id="garage-library"></div></div><div><p id="garage-account" class="garage-caption">Community designs use your Stardust account.</p><div class="garage-community-tools"><input id="garage-artist" aria-label="Creator username" placeholder="Creator username"><button type="button" id="garage-browse">Browse designs</button><button type="button" id="garage-my-profile">My profile</button></div><div id="garage-gallery"></div><div id="garage-design-detail" hidden></div><details id="garage-dev-api" hidden><summary>Local development Hub</summary><input id="garage-api" aria-label="Development API origin" placeholder="http://127.0.0.1:4183"><button type="button" id="garage-connect">Connect</button><form id="garage-sign-in"><input name="email" type="email" autocomplete="username" placeholder="Test account email" aria-label="Email" required><input name="password" type="password" autocomplete="current-password" placeholder="Password" aria-label="Password" required><button>Sign in</button></form></details></div></div></div>
- </section><footer class="garage-footer"><p id="garage-status" class="garage-status" role="status">Loading ship parts…</p><div class="garage-footer-actions"><button id="garage-cancel" type="button">Cancel</button><button id="garage-equip" type="button" class="primary" disabled>Equip ship</button></div></footer></div>`;
+ </section><footer class="garage-footer"><p id="garage-status" class="garage-status" role="status">Loading ship parts…</p><div class="garage-footer-actions"><button id="garage-standard" type="button">Standard ship</button><button id="garage-cancel" type="button">Cancel</button><button id="garage-equip" type="button" class="primary" disabled>Equip ship</button></div></footer></div>`;
   document.body.append(dialog);
   const find = (s) => dialog.querySelector(s),
     preview = find('#garage-preview'),
@@ -403,6 +404,13 @@ export function initShipGarage() {
       e.preventDefault();
       find(`#garage-${e.key.toLowerCase() === 'y' || e.shiftKey ? 'redo' : 'undo'}`).click();
     }
+  });
+  // Back to the standard ship (also clears it from a signed-in pilot's account).
+  find('#garage-standard').addEventListener('click', () => {
+    if (!ready) return;
+    if (!getEquippedAppearance()) { setStatus('You are already flying the standard ship.'); return; }
+    unequipAppearance();
+    close();
   });
   equip.addEventListener('click', () => {
     if (!ready) return;

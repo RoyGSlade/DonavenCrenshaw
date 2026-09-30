@@ -62,11 +62,11 @@ function leaveChallenge() {
 }
 // The last launch, so "Fly again" repeats it: the network or the custom track.
 let lastLaunch = { kind: 'network', preview: false };
-/** Leave the hangar and fly: { kind: 'network' | 'custom' | 'weekly', preview, event }. */
+/** Leave the hangar and fly: { kind: 'network' | 'custom' | 'weekly', preview, event, ship }. ship: 'equipped' flies a weekly preview as the equipped garage build. */
 export function launchRun(options = {}) {
   dismissFinishScreen();
   const kind = ['custom', 'weekly'].includes(options.kind) ? options.kind : 'network';
-  lastLaunch = { kind, preview: !!options.preview, event: kind === 'weekly' ? options.event : null };
+  lastLaunch = { kind, preview: !!options.preview, event: kind === 'weekly' ? options.event : null, ship: kind === 'weekly' && options.preview ? options.ship || null : null };
   hide('starmap-start');
   hide('starmap-end');
   state.ui.showStartOverlay = false;

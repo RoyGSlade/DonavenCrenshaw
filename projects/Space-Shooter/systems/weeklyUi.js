@@ -7,6 +7,7 @@ import { readLocalBest, toggleWeeklyGhosts } from '../engine/modes/weekly.js';
 import { launchRun } from '../ui/overlays.js';
 import { formatMs } from '../data.js';
 import { state } from '../state.js';
+import { equippedBuild } from './shipBuild.js';
 
 const byId = (id) => document.getElementById(id);
 
@@ -14,6 +15,7 @@ export function initWeeklyUi({ ready = true, lab = null } = {}) {
   const card = byId('weekly-card');
   const button = byId('weekly-btn');
   const note = byId('weekly-note');
+  const practiceButton = byId('weekly-practice-btn');
   if (!card || !button || !note) return;
   const query = parseWeeklyQuery(location.search);
   const event = query.event || currentWeekly();
@@ -44,6 +46,13 @@ export function initWeeklyUi({ ready = true, lab = null } = {}) {
     if (status.state === 'upcoming') lines.push(`Opens ${status.opensText}. Study the layout on the weekly page.`);
     if (status.state === 'live') lines.push(`Closes in ${status.countdown.label} (${status.closesText}).`);
     if (status.state === 'closed') lines.push('Final standings and the champion are on the weekly page.');
+    // "Practice in your ship": a preview flight (never submitted) as the equipped garage build.
+    const build = practiceButton ? equippedBuild() : null;
+    if (practiceButton) {
+      practiceButton.hidden = !build;
+      practiceButton.disabled = !(ready && (status.state === 'live' || preview));
+    }
+    if (build) lines.push(`Practice flies your ${build.split(':')[0]} build and is never submitted.${event.ships === 'builds' ? '' : ' Ranked flights use the standard ship.'}`);
     const best = readLocalBest(event);
     if (best) lines.push(`Your best on this browser: ${formatMs(best.ms)}. It flies with you as a ghost (G toggles ghosts).`);
     note.textContent = lines.join(' ');
@@ -57,6 +66,12 @@ export function initWeeklyUi({ ready = true, lab = null } = {}) {
     if (!flyable) return;
     launchRun({ kind: 'weekly', event, preview: preview || status.state !== 'live' });
   });
+  practiceButton?.addEventListener('click', () => {
+    const { flyable } = paint();
+    if (!flyable || !equippedBuild()) return;
+    launchRun({ kind: 'weekly', event, preview: true, ship: 'equipped' });
+  });
+  window.addEventListener('stardust:appearance-changed', () => paint());
   window.addEventListener('keydown', (e) => {
     if ((e.key === 'g' || e.key === 'G') && state.run?.kind === 'weekly' && !e.repeat && !e.ctrlKey && !e.metaKey) toggleWeeklyGhosts();
   });
