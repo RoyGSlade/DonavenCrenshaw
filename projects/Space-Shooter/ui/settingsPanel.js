@@ -1,4 +1,4 @@
-// Flight settings inside the pause panel, in tabs: Camera, Controls, Keys,
+// Flight settings shared by the hangar and pause menu: Camera, Controls, Keys,
 // Controller and HUD. Every value lives in systems/flightSettings.js (saved per
 // device, carried in share codes); this file only draws and edits them.
 import { state } from '../state.js';
@@ -82,7 +82,10 @@ let capture = null;   // { kind: 'key' | 'pad', action, slot, button, stop }
 function paint() {
   if (!box) return;
   const s = flightSettings();
-  for (const b of box.querySelectorAll('[data-tab]')) { const on = b.dataset.tab === tab; b.classList.toggle('is-on', on); b.setAttribute('aria-selected', String(on)); }
+  const layoutButton = box.querySelector('[data-fx="edit"]');
+  layoutButton.disabled = !state.run;
+  layoutButton.title = state.run ? 'Arrange the HUD over your paused flight' : 'Start a flight to arrange its HUD and touch controls';
+  for (const b of box.querySelectorAll('[data-tab]')) { const on = b.dataset.tab === tab; b.classList.toggle('is-on', on); b.setAttribute('aria-selected', String(on)); b.tabIndex = on ? 0 : -1; }
   for (const p of box.querySelectorAll('[data-pane]')) p.hidden = p.dataset.pane !== tab;
   for (const [, id, , , list, group, key, defaults, format] of STEPPERS) {
     const index = Number.isInteger(s[group]?.[key]) && s[group][key] >= 0 && s[group][key] < list.length ? s[group][key] : defaults[key];
@@ -205,12 +208,22 @@ async function pasteSettingsCode() {
 
 /** Build the panel into the pause overlay. onEditLayout starts the layout editor; onChange runs after any edit. */
 export function buildFlightSettings({ onEditLayout, onChange }) {
-  const panel = document.querySelector('#starmap-pause .panel');
+  const panel = document.getElementById('flight-settings-slot');
   if (!panel || panel.querySelector('.fx-settings-panel')) return;
   box = document.createElement('div');
   box.className = 'fx-settings-panel';
   box.innerHTML = markup();
-  panel.insertBefore(box, panel.querySelector('.actions'));
+  panel.append(box);
+  box.querySelector('.fx-tabs').addEventListener('keydown', event => {
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+    event.preventDefault();
+    endCapture();
+    const index = TABS.findIndex(([id]) => id === tab);
+    const next = event.key === 'Home' ? 0 : event.key === 'End' ? TABS.length - 1 : (index + (event.key === 'ArrowRight' ? 1 : -1) + TABS.length) % TABS.length;
+    tab = TABS[next][0];
+    paint();
+    box.querySelector(`[data-tab="${tab}"]`).focus();
+  });
   box.addEventListener('click', (event) => {
     const t = event.target;
     const tabBtn = t.closest('[data-tab]');
@@ -243,12 +256,12 @@ export function buildFlightSettings({ onEditLayout, onChange }) {
     else if (action === 'pad-reset') updateFlightSettings((s) => { const d = defaultBinds(); s.binds = { ...s.binds, pad: d.pad, sticks: d.sticks }; });
     else if (action === 'copy-code') { copySettingsCode(); return; }
     else if (action === 'paste-code') { pasteSettingsCode().then(() => onChange?.()); return; }
-    else if (action === 'edit') { onEditLayout?.(); return; }
+    else if (action === 'edit') { if (state.run) onEditLayout?.(); return; }
     onChange?.();
   });
-  // Leaving the pause panel drops a half-finished rebind.
-  new MutationObserver(() => { if (document.getElementById('starmap-pause')?.classList.contains('hidden')) endCapture(); })
-    .observe(document.getElementById('starmap-pause'), { attributes: true, attributeFilter: ['class'] });
+  // Closing settings drops a half-finished rebind; reopening refreshes layout availability.
+  new MutationObserver(() => { if (document.getElementById('starmap-settings')?.classList.contains('hidden')) endCapture(); else paint(); })
+    .observe(document.getElementById('starmap-settings'), { attributes: true, attributeFilter: ['class'] });
   window.addEventListener('stardust:flightSettings', paint);
   window.addEventListener('stardust:syncStatus', paint);
   paint();

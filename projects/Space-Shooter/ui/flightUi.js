@@ -11,7 +11,7 @@ import { initLayout, applyLayout, startEditing, isEditingLayout } from './layout
 import { flightSettings, updateFlightSettings, isTouchDevice } from '../systems/flightSettings.js';
 import { buildFlightSettings } from './settingsPanel.js';
 import { subscribeTilt, calibrateTiltControls, getTiltState } from '../systems/tilt.js';
-import { openPauseOverlay, closePauseOverlay } from './overlays.js';
+import { openPauseOverlay, closePauseOverlay, closeSettingsOverlay } from './overlays.js';
 import { toast } from './hud.js';
 import { initPadMenu } from './padMenu.js';
 
@@ -37,7 +37,7 @@ export function initFlightUi() {
   buildFlightSettings({
     onChange: applyMinimapSetting,
     // Stay paused, hide the panel, edit over the frozen flight.
-    onEditLayout: () => { document.getElementById('starmap-pause')?.classList.add('hidden'); startEditing(); },
+    onEditLayout: () => { closeSettingsOverlay(); document.getElementById('starmap-pause')?.classList.add('hidden'); startEditing(); },
   });
   initPadMenu();
   subscribeTilt((tilt) => setWheelHidden(tilt.enabled));

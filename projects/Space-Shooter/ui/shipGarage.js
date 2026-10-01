@@ -113,6 +113,7 @@ export function initShipGarage() {
     user = null,
     detail = null,
     communityTicket = 0;
+  let returnFocus = opener;
   const selectedLayer = () => draft.layers.find((l) => l.id === selected);
   const reduced = () =>
     state.settings?.reducedMotion || matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -348,6 +349,7 @@ export function initShipGarage() {
   }
   async function open() {
     if (dialog.open) return;
+    returnFocus = document.activeElement?.closest('#starmap-start') ? document.activeElement : opener;
     const ticket = ++generation;
     draft = getEquippedAppearance() || presetAppearance();
     history = [];
@@ -387,7 +389,7 @@ export function initShipGarage() {
     dialog.close();
     document.body.classList.remove('garage-open');
     closing = false;
-    opener.focus();
+    (returnFocus?.isConnected ? returnFocus : opener).focus({ preventScroll: true });
   }
   for (const s of ['.garage-close', '#garage-cancel']) find(s).addEventListener('click', close);
   dialog.addEventListener('cancel', (e) => {
