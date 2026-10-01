@@ -8,14 +8,14 @@ page_kind: "underplain-home"
 lead_game: "stardust"
 hero_kicker: "FREE BROWSER GAME · EARLY BUILD"
 hero_title: "Race your friends in Stardust."
-hero_sub: "Fly five drift circuits in your browser, set a time, and dare your friends to beat it."
+hero_sub: "Build your ship, fly five drift circuits, and chase the weekly leaderboard. Set a time and dare your friends to beat it."
 ---
 
 <div class="container stack-gap-lg home-page-content">
   <section class="section-block" aria-labelledby="current-state">
     <div class="section-header">
-      <div><h2 id="current-state" class="section-title section-label">Current state</h2><p class="section-desc">What works, what doesn't yet, and what I'm building next.</p></div>
-      <time class="section-subtitle mono" datetime="2026-09-27">2026-09-27</time>
+      <div><h2 id="current-state" class="section-title section-label">Current state</h2><p class="section-desc">What's playable now, where the limits are, and how to join in.</p></div>
+      <time class="section-subtitle mono" datetime="2026-10-01">2026-10-01</time>
     </div>
     <div class="stat-row">
       <article class="noir-card stat-tile">
@@ -23,21 +23,21 @@ hero_sub: "Fly five drift circuits in your browser, set a time, and dare your fr
           <svg viewBox="0 0 24 24" focusable="false"><path d="m5 12 4 4L19 6" /></svg>
         </span>
         <h3 class="stat-number metal-text">Shipped</h3>
-        <p>Stardust has five circuits, accounts and a live leaderboard, plus private Dogfight rooms for one-on-one and casual three-player matches. BetterFingers Alpha 3 is out as a signed Windows installer.</p>
+        <p>Stardust now has a four-family ship garage, custom builds in ranked runs, weekly time trials with ghosts, friend challenges and tunable controls. Five circuits and private Dogfight rooms are ready to play. BetterFingers Alpha 3 has its signed Windows installer.</p>
       </article>
       <article class="noir-card stat-tile">
         <span class="icon-ring" aria-hidden="true">
           <svg viewBox="0 0 24 24" focusable="false"><path d="M12 4 21 20H3L12 4Z" /><path d="M12 9v5m0 3v.01" /></svg>
         </span>
         <h3 class="stat-number metal-text">Boundary</h3>
-        <p>Both games are early builds. In Dogfight, pilots joining someone else's room can feel lag, so I'm fixing guest responsiveness before promoting it. Leaderboard times are checked for plausibility, not replayed.</p>
+        <p>These are early builds. Dogfight is browser-hosted, so connection quality matters. Three-player matches are casual. Stardust leaderboard times are checked for plausibility, not verified by replay.</p>
       </article>
       <article class="noir-card stat-tile">
         <span class="icon-ring" aria-hidden="true">
           <svg viewBox="0 0 24 24" focusable="false"><path d="M4 12h14" /><path d="m13 7 5 5-5 5" /></svg>
         </span>
-        <h3 class="stat-number metal-text">Next</h3>
-        <p>Friend challenges: find a friend's time, beat it, and send them a link to take it back.</p>
+        <h3 class="stat-number metal-text">Join in</h3>
+        <p><a href="games/stardust/">Build a ship and fly a run</a>, <a href="stardust/weekly/">try the weekly track</a>, or send a friend your full-network challenge. Sign in before flying to put your time on the board.</p>
       </article>
     </div>
   </section>

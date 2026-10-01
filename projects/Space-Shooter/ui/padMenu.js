@@ -14,6 +14,8 @@ let suspended = false;
 export function setPadMenuSuspended(on) { suspended = !!on; }
 
 function panel() {
+  const dialog = document.querySelector('dialog[open]');
+  if (dialog) return dialog;
   const open = [...document.querySelectorAll('.overlay-panel:not(.hidden)')].filter((p) => p.getClientRects().length);
   return open.at(-1) || null;
 }
@@ -62,6 +64,14 @@ function press(node) {
 }
 
 function back(root) {
+  if (root.id === 'starmap-start') {
+    root.querySelector('details[open]')?.removeAttribute('open');
+    return;
+  }
+  if (root.matches('dialog[open]')) {
+    root.querySelector('.garage-close')?.click();
+    return;
+  }
   const cancel = root.querySelector('#starmap-resume-btn, #settings-cancel-btn, [data-fail="hangar"], #starmap-end-menu-btn');
   if (cancel && root.id !== 'starmap-start') cancel.click();
 }

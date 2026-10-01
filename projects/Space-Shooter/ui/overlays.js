@@ -16,6 +16,7 @@ const show = id => el(id)?.classList.remove('hidden');
 const hide = id => el(id)?.classList.add('hidden');
 let initialized = false;
 let settingsReturnPaused = false;
+let settingsOpener = null;
 let seal = null;
 let sealInterval = 0;
 let sequence = [];
@@ -64,6 +65,8 @@ function leaveChallenge() {
 let lastLaunch = { kind: 'network', preview: false };
 /** Leave the hangar and fly: { kind: 'network' | 'custom' | 'weekly', preview, event, ship }. ship: 'equipped' flies a weekly preview as the equipped garage build. */
 export function launchRun(options = {}) {
+  // The first activation hides the launch screen; queued taps must not start another run.
+  if (!state.ui.showStartOverlay && !state.ui.showEndOverlay) return;
   dismissFinishScreen();
   const kind = ['custom', 'weekly'].includes(options.kind) ? options.kind : 'network';
   lastLaunch = { kind, preview: !!options.preview, event: kind === 'weekly' ? options.event : null, ship: kind === 'weekly' && options.preview ? options.ship || null : null };
@@ -144,10 +147,16 @@ export function initOverlays() {
   try { const saved = JSON.parse(localStorage.getItem('starmap.settings') || '{}'); if (saved && typeof saved === 'object') applySettings(saved); } catch { }
 }
 function trapOverlayFocus(event) {
+  if (document.querySelector('dialog[open]')) return;
+  if (event.key === 'Escape' && state.ui.showSettingsOverlay && !document.querySelector('[data-bind-key].is-waiting, [data-bind-pad].is-waiting')) {
+    event.preventDefault();
+    el('settings-cancel-btn')?.click();
+    return;
+  }
   if (event.key !== 'Tab') return;
   const panel = [...document.querySelectorAll('.overlay-panel:not(.hidden)')].at(-1);
   if (!panel) return;
-  const targets = [...panel.querySelectorAll('button:not(:disabled), a[href], input, summary')].filter(node => node.getClientRects().length);
+  const targets = [...panel.querySelectorAll('button:not(:disabled), a[href], input, summary')].filter(node => node.getClientRects().length && node.tabIndex >= 0);
   if (!targets.length) return;
   const first = targets[0], last = targets.at(-1);
   if (event.shiftKey && (document.activeElement === first || !panel.contains(document.activeElement))) { last.focus(); event.preventDefault(); }
@@ -162,6 +171,7 @@ export async function openStartOverlay() {
   state.ui.paused = true;
   setTouchControls(false);
   hide('flight-briefing'); hide('flight-controls'); hide('mission-tracker');
+  el('starmap-start-btn')?.focus({ preventScroll: true });
   const discoveries = readDiscoveries();
   const remembered = discoveries['Stardust Remembers'];
   if (el('local-discoveries')) el('local-discoveries').textContent = remembered ? '✦ Stardust Remembers — discovered on this browser.' : '';
@@ -186,6 +196,8 @@ export function openEndOverlay(formattedTime, { kind = 'network', title = 'Custo
 export function closeEndOverlay() { dismissFinishScreen(); hide('starmap-end'); state.ui.showEndOverlay = false; }
 export function openSettingsOverlay(event) {
   event?.preventDefault?.();
+  if (state.ui.showSettingsOverlay) return;
+  settingsOpener = event?.currentTarget || document.activeElement;
   settingsReturnPaused = state.ui.paused;
   pauseTimer(); state.ui.paused = true; state.ui.showSettingsOverlay = true; setTouchControls(false);
   for (const [id, label, value] of [['setting-music-vol','setting-music-val',state.settings.musicVolume], ['setting-sfx-vol','setting-sfx-val',state.settings.sfxVolume]]) {
@@ -193,11 +205,13 @@ export function openSettingsOverlay(event) {
   }
   el('setting-invert-thrust').checked = !!state.settings.invertThrustAxis;
   el('setting-reduced-motion').checked = !!state.settings.reducedMotion;
-  show('starmap-settings'); el('setting-music-vol').focus();
+  show('starmap-settings');
+  el('starmap-settings')?.querySelector('.fx-tabs button, #settings-save-btn')?.focus();
 }
 export function closeSettingsOverlay() {
   hide('starmap-settings'); state.ui.showSettingsOverlay = false; state.ui.paused = settingsReturnPaused; syncTouchControls();
-  if (state.ui.showStartOverlay) el('starmap-start-btn').focus();
+  if (settingsOpener?.isConnected && settingsOpener.getClientRects().length) settingsOpener.focus({ preventScroll: true });
+  else if (state.ui.showStartOverlay) el('starmap-start-btn').focus();
   else if (state.ui.paused) el('starmap-resume-btn').focus();
   else focusFlight();
 }

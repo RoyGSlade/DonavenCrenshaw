@@ -1,0 +1,163 @@
+/* A compact launch desk: flight first, ship and setup within reach. */
+.start-screen { align-items: start; padding: 24px clamp(18px, 4vw, 58px); }
+.start-frame { max-width: 1120px; margin: 0 auto; }
+.masthead { padding-bottom: 18px; gap: 12px; }
+.hero-grid { grid-template-columns: 1.25fr 1fr; gap: 44px; padding: 30px 0 26px; align-items: start; }
+.hero-copy .eyebrow { margin-bottom: 14px; }
+.hero-copy h1 { font-size: clamp(52px, 5.8vw, 82px); margin: 0 0 12px; }
+.hero-copy .intro { font-size: 20px; margin: 0 0 22px; }
+.network-card { padding: 20px; border: 1px solid #81e6df66; border-radius: 10px; background: linear-gradient(125deg, #153039b0, #0c1824); }
+.network-heading { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; }
+.network-card h2, .hangar-ship-heading h2, .hangar-modes h2 { margin: 0; font-size: 20px; letter-spacing: -.025em; }
+.hangar-tag { font: 9px Consolas, monospace; letter-spacing: .06em; color: var(--cyan); }
+.network-card > p { color: var(--muted); font-size: 13px; margin: 10px 0 16px; max-width: 400px; }
+.network-card .primary { width: 100%; min-height: 52px; font-size: 16px; text-align: left; padding-inline: 18px; }
+.network-card .launch-hint { font-size: 11px; margin: 10px 0 0; }
+.hangar-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 20px; margin: 14px 0; }
+.hangar-tools button { min-height: 44px; padding: 10px 14px; }
+.hangar-tools a { display: inline-flex; align-items: center; min-height: 44px; font-size: 12px; text-decoration: underline; text-underline-offset: 4px; }
+.hangar-controls, .hangar-circuits, .sound-settings { border: 1px solid var(--line); border-radius: 7px; }
+.hangar-controls summary, .hangar-circuits summary, .sound-settings summary { cursor: pointer; min-height: 44px; padding: 12px 14px; font-size: 12px; }
+.hangar-controls summary span, .hangar-circuits summary span { margin-left: 12px; font-size: 10px; color: var(--muted); }
+.hangar-control-grid { display: grid; gap: 12px; padding: 0 14px; }
+.hangar-control-grid p { font-size: 12px; margin: 0; color: var(--muted); }
+.hangar-control-grid strong { display: block; color: var(--cyan); }
+.hangar-control-note { font-size: 11px; color: var(--muted); padding: 0 14px 12px; margin: 10px 0 0; }
+.hero-copy .boot-status { margin: 10px 0 0; min-height: 0; }
+.hero-copy .discovery-note { margin: 8px 0 0; font-size: 11px; line-height: 1.6; }
+.hero-copy .discovery-note:empty { display: none; }
+.hangar-ship-panel { border: 1px solid var(--line); background: radial-gradient(ellipse at 50% 35%, #163342aa, #08121c55 70%); border-radius: 12px; overflow: hidden; }
+.hangar-ship-heading { padding: 20px 20px 0; }
+.hangar-ship-heading .eyebrow { margin: 0 0 8px; font-size: 10px; }
+.hangar-ship-panel .orbital-display { height: 290px; position: relative; width: 100%; opacity: 1; top: auto; right: auto; }
+.hangar-ship-panel .orbit-one { width: 270px; height: 270px; }
+.hangar-ship-panel .orbit-two { width: 220px; height: 220px; }
+.hangar-ship-panel .orbit-three { width: 145px; height: 145px; }
+.hangar-ship-panel .planet-core { width: 100px; height: 100px; }
+.hangar-ship-panel .chart-bottom { right: 20px; bottom: 8px; }
+.hangar-ship-actions { padding: 16px 20px 20px; }
+.hangar-ship-actions button { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 46px; color: var(--cyan); border-color: #81e6df66; }
+.hangar-ship-actions p { font-size: 11px; color: var(--muted); margin: 8px 0 0; }
+.hangar-section-head { display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: baseline; margin-bottom: 12px; }
+.hangar-section-head h2 { font-size: 15px; }
+.hangar-section-head > span { color: var(--muted); font-size: 11px; }
+.hangar-mode-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.hangar-mode-grid .weekly-card, .hangar-mode-grid .custom-track-card, .dogfight-card { margin: 0; max-width: none; padding: 18px; border-radius: 9px; box-shadow: none; }
+.hangar-mode-grid .weekly-card { grid-template-columns: 64px 1fr; gap: 8px 14px; }
+.hangar-mode-grid .weekly-card[data-state=live] { border-color: #ffb86b77; box-shadow: none; }
+.hangar-mode-grid .weekly-map { width: 64px; height: 98px; grid-row: 1; }
+.hangar-mode-grid .weekly-actions { grid-column: 1 / -1; }
+.hangar-mode-grid #weekly-btn { background: #251b12; border-color: #ffb86b88; color: #ffd6a3; min-height: 44px; font-size: 12px; white-space: normal; }
+.hangar-mode-grid .weekly-copy p:not(.eyebrow) { font-size: 11px; }
+.hangar-mode-grid .weekly-note { font-size: 10px; line-height: 1.5; }
+.dogfight-card { border: 1px solid #6b557e77; background: linear-gradient(130deg,#211b30cc,#0b1622); display: flex; flex-direction: column; gap: 12px; }
+.dogfight-card .eyebrow { color: #d4bbef !important; margin: 0 0 6px; font-size: 10px; }
+.dogfight-card h2 { margin: 0; }
+.dogfight-card p:not(.eyebrow) { color: var(--muted); font-size: 12px; margin: 8px 0 0; }
+.dogfight-card .mode-link { min-height: 44px; align-self: start; margin-top: auto; gap: 20px; }
+.dogfight-card .mode-footnote { font-size: 10px !important; margin: 0 !important; }
+.hangar-board { margin: 20px 0 0; }
+.hangar-circuits { margin-top: 18px; }
+.hangar-circuits .sector-strip { margin: 0 12px 12px; }
+.start-footer { padding: 18px 0 4px; gap: 18px; align-items: center; font-size: 10px; }
+.start-footer a { min-height: 44px; display: inline-flex; align-items: center; }
+.mobile-menu-controls { display: none; }
+body.fx-touch-device .mobile-menu-controls { display: block; }
+#starmap-settings .panel { width: min(740px, 100%); }
+#starmap-settings { place-items: start center; }
+#starmap-settings .panel { margin-block: auto; }
+#starmap-settings .panel h2 { margin-bottom: 10px; }
+.settings-save-note { font-size: 12px !important; }
+.sound-settings { margin-top: 14px; padding: 0 14px; }
+.sound-settings summary { padding-inline: 0; }
+#starmap-settings .actions { margin-top: 20px; }
+@media (max-width: 760px) {
+  .hero-grid { gap: 20px; grid-template-columns: 1.3fr 1fr; }
+  .hero-copy h1 { font-size: 54px; }
+  .hero-copy .intro { font-size: 16px; }
+  .hangar-ship-panel .orbital-display { height: 220px; }
+  .hangar-ship-panel .orbit-one { width: 205px; height: 205px; }
+  .hangar-ship-panel .orbit-two { width: 165px; height: 165px; }
+  .hangar-ship-panel .orbit-three { width: 110px; height: 110px; }
+  .network-card, .hangar-ship-heading, .hangar-ship-actions { padding: 14px; }
+  .hangar-tag { font-size: 8px; }
+  .masthead { flex-wrap: wrap; }
+}
+@media (max-width: 560px) {
+  .start-screen { padding: 18px 16px; }
+  .hero-grid { grid-template-columns: 1fr; padding: 22px 0; gap: 16px; }
+  .hero-copy h1 { font-size: 60px; }
+  .hero-copy .intro { margin-bottom: 16px; }
+  .hangar-ship-panel { display: grid; grid-template-columns: 1fr; }
+  .hangar-ship-panel .orbital-display { display: none; }
+  .hangar-ship-heading { padding-bottom: 0; }
+  .hangar-ship-heading h2 { font-size: 17px; }
+  .hangar-ship-actions { padding-top: 12px; }
+  .hangar-mode-grid { grid-template-columns: 1fr; }
+  .hangar-mode-grid .weekly-actions { flex-direction: column; align-items: stretch; }
+  .hangar-mode-grid .weekly-actions a { min-height: 44px; display: flex; align-items: center; }
+  .dogfight-card .mode-link { align-self: stretch; }
+  .hangar-controls summary span, .hangar-circuits summary span { display: block; margin: 6px 0 0; }
+  .start-footer { flex-wrap: wrap; }
+  .start-footer span { display: none; }
+  #starmap-settings .panel { padding: 18px; }
+  #starmap-settings .fx-tabs button, #starmap-settings .fx-stepper button, #starmap-settings .fx-binds button { min-height: 44px; }
+  #starmap-settings .fx-stepper button { min-width: 44px; }
+  #starmap-settings .actions > button { flex: 1 1 auto; min-height: 44px; }
+}
+@media (max-height: 500px) and (min-width: 561px) {
+  .start-screen { padding: 12px 24px; }
+  .masthead { padding-bottom: 10px; }
+  .hero-grid { padding: 14px 0; gap: 28px; }
+  .hero-copy .eyebrow { margin-bottom: 10px; }
+  .hero-copy h1 { font-size: 42px; margin-bottom: 8px; }
+  .hero-copy .intro { font-size: 16px; margin-bottom: 14px; }
+  .network-card { padding: 14px; }
+  .network-card > p { font-size: 12px; margin: 8px 0 12px; }
+  .network-card .launch-hint { margin-top: 8px; }
+  .hangar-ship-panel .orbital-display { height: 130px; }
+  .hangar-ship-panel .orbit-one { width: 125px; height: 125px; }
+  .hangar-ship-panel .orbit-two { width: 100px; height: 100px; }
+  .hangar-ship-panel .orbit-three { width: 75px; height: 75px; }
+  .hangar-ship-panel .chart-bottom { display: none; }
+  .hangar-ship-heading { padding-top: 14px; }
+  .hangar-ship-actions { padding-top: 10px; padding-bottom: 14px; }
+}
+
+/* Weekly standings share the masthead; relay status stays independently visible. */
+.start-screen { grid-template-columns: minmax(0, 1fr); }
+.start-frame { min-width: 0; }
+.masthead { flex-wrap: wrap; }
+.masthead .wordmark, .masthead .status-chip { flex-shrink: 0; }
+.weekly-ticker { flex: 1 0 100%; min-width: 0; max-width: 100%; border-top: 1px solid var(--line); padding-top: 12px; }
+.weekly-ticker-head { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 14px; font: 11px Consolas, monospace; color: var(--muted); }
+.weekly-ticker-head h2 { margin: 0; font: bold 11px Consolas, monospace; letter-spacing: .08em; color: var(--orange); }
+#weekly-ticker-status { flex: 1 1 240px; line-height: 1.6; }
+.weekly-ticker-head a { display: inline-flex; gap: 8px; align-items: center; min-height: 44px; color: var(--cyan); text-underline-offset: 4px; }
+.weekly-ticker-head button { min-height: 44px; padding: 8px 12px; font-size: 11px; }
+.weekly-ticker-viewport { overflow: hidden; border: 1px solid var(--line); border-radius: 6px; background: #0c1924; }
+.weekly-ticker-viewport:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; }
+.weekly-ticker-track { display: flex; width: max-content; animation: weekly-scroll var(--ticker-duration, 40s) linear infinite; }
+.weekly-ticker-list { list-style: none; margin: 0; padding: 0; display: flex; align-items: center; flex-shrink: 0; min-width: var(--ticker-width, 0px); }
+.weekly-ticker-list li { display: flex; align-items: baseline; gap: 10px; padding: 14px 22px; border-right: 1px solid var(--line); font-size: 13px; white-space: nowrap; }
+.ticker-rank { color: var(--orange); font: 12px Consolas, monospace; }
+.ticker-name { color: var(--text); }
+.ticker-time { color: var(--cyan); font: 13px Consolas, monospace; font-variant-numeric: tabular-nums; }
+.weekly-ticker:hover .weekly-ticker-track, .weekly-ticker:focus-within .weekly-ticker-track,
+.weekly-ticker[data-suspended=true] .weekly-ticker-track { animation-play-state: paused; }
+@keyframes weekly-scroll { to { transform: translateX(-50%); } }
+.weekly-ticker[data-paused=true] .weekly-ticker-track, body.reduced-motion .weekly-ticker-track { animation: none; transform: none; width: 100%; }
+.weekly-ticker[data-paused=true] .weekly-ticker-list, body.reduced-motion .weekly-ticker-list { min-width: 0; width: 100%; flex-wrap: wrap; }
+.weekly-ticker[data-paused=true] [data-ticker-copy], body.reduced-motion [data-ticker-copy], body.reduced-motion #weekly-ticker-pause { display: none; }
+.weekly-ticker[data-paused=true] .weekly-ticker-list li, body.reduced-motion .weekly-ticker-list li { white-space: normal; flex-wrap: wrap; overflow-wrap: anywhere; }
+@media (prefers-reduced-motion: reduce) {
+  .weekly-ticker-track { animation: none; transform: none; width: 100%; }
+  .weekly-ticker-list { min-width: 0; width: 100%; flex-wrap: wrap; }
+  .weekly-ticker [data-ticker-copy], #weekly-ticker-pause { display: none; }
+  .weekly-ticker-list li { white-space: normal; flex-wrap: wrap; overflow-wrap: anywhere; }
+}
+@media (max-width: 560px) {
+  #weekly-ticker-status { flex-basis: calc(100% - 130px); font-size: 10px; }
+  .weekly-ticker-head { gap: 4px 10px; }
+  .weekly-ticker-list li { font-size: 12px; padding: 12px 16px; }
+}

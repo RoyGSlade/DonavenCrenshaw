@@ -8,6 +8,7 @@ import { initLab } from './systems/labUi.js';
 import { initCustomTrackUi } from './systems/customTrackUi.js';
 import { initWeeklyUi } from './systems/weeklyUi.js';
 import { initFlightUi } from './ui/flightUi.js';
+import { initHangar } from './ui/hangar.js';
 const status = document.getElementById('boot-status');
 const button = document.getElementById('starmap-start-btn');
 // ?lab=... swaps in playtest rules. Such a session never saves runs.
@@ -18,9 +19,11 @@ let ready = false;
 try {
   await initStarmap(document.getElementById('starmap-canvas'));
   initFlightUi();
+  initHangar();
   status.textContent = 'FLIGHT SYSTEMS READY / KEYBOARD · GAMEPAD · TOUCH';
   button.disabled = false;
-  button.textContent = 'Launch expedition  →';
+  button.textContent = 'Fly five circuits →';
+  button.focus({ preventScroll: true });
   ready = true;
 } catch (error) {
   status.textContent = 'Flight systems could not load. Reload this page to retry.';

@@ -15,6 +15,7 @@
   <link rel="stylesheet" href="./ui/shipGarage.css">
   <link rel="stylesheet" href="./ui/finishScreen.css">
   <link rel="stylesheet" href="./ui/flightUi.css">
+  <link rel="stylesheet" href="./ui/hangar.css">
 </head>
 <body>
   <canvas id="starmap-canvas" aria-label="Stardust space flight game"></canvas>
@@ -27,24 +28,47 @@
 
   <section id="starmap-start" class="overlay-panel start-screen" aria-labelledby="game-title">
     <div class="start-frame">
-      <header class="masthead"><span class="wordmark">INFINITE AGES <b>/</b> FLIGHT DIVISION</span><span id="connection-status" class="status-chip">LOCAL FLIGHT</span></header>
+      <header class="masthead">
+        <span class="wordmark">INFINITE AGES <b>/</b> THE HANGAR</span>
+        <span id="connection-status" class="status-chip">LOCAL FLIGHT</span>
+        <section id="weekly-ticker" class="weekly-ticker" aria-labelledby="weekly-ticker-title" data-state="loading">
+          <div class="weekly-ticker-head"><h2 id="weekly-ticker-title">WEEKLY TOP 10</h2><span id="weekly-ticker-status" role="status">Loading weekly standings…</span><button id="weekly-ticker-pause" type="button" aria-pressed="false" hidden>Pause ticker</button><a id="weekly-ticker-link" href="../../stardust/weekly/#weekly-board">Full leaderboard <span aria-hidden="true">↗</span></a></div>
+          <div id="weekly-ticker-viewport" class="weekly-ticker-viewport" tabindex="0" aria-label="Weekly standings. Scrolling pauses while focused." hidden><div id="weekly-ticker-track" class="weekly-ticker-track"><ol id="weekly-ticker-list" class="weekly-ticker-list"></ol></div></div>
+        </section>
+      </header>
       <div class="hero-grid">
         <div class="hero-copy">
-          <p class="eyebrow">A MOMENTUM-DRIVEN SPACE ODYSSEY</p>
-          <h1 id="game-title">STAR<span>DUST</span><i>05 / THE GATE NETWORK</i></h1>
-          <p class="intro">Find your line.<br>Master the drift.</p>
-          <p class="description">Five circuits through the debris. Launch from the portal, hunt the apex shards, and bring your ship home in one piece.</p>
-          <div class="actions"><button id="starmap-start-btn" class="primary" disabled>Preparing ship…</button><button id="starmap-settings-btn-start">Flight settings</button><a class="mode-link" href="./dogfight/">Dogfight 1v1 ↗</a></div><section id="weekly-card" class="weekly-card" aria-labelledby="weekly-title" data-state="upcoming" hidden><img id="weekly-map" class="weekly-map" alt="Weekly track layout" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="><div class="weekly-copy"><p class="eyebrow" id="weekly-eyebrow">WEEKLY TIME TRIAL</p><h2 id="weekly-title">Weekly track<small id="weekly-sub"></small></h2><p id="weekly-blurb">Collect every shard, then cross the finish line. Fastest this week takes the champion title; the top 3 get early access to Stardust: Planetfall.</p></div><div class="weekly-actions"><button id="weekly-btn" type="button" disabled>Weekly track</button><button id="weekly-practice-btn" type="button" hidden>Practice in your ship</button><a id="weekly-page-link" href="../../stardust/weekly/">Leaderboard &amp; comments ↗</a></div><p id="weekly-note" class="weekly-note" role="status" hidden></p><p id="weekly-save" class="weekly-note" hidden></p></section><section id="custom-track-card" class="custom-track-card" aria-labelledby="custom-track-title" data-state="locked" hidden><div class="custom-track-copy"><p class="eyebrow">NEW / CUSTOM TRACK</p><h2 id="custom-track-title">Custom Track</h2><p id="custom-track-blurb">One lap with its own leaderboard. Not part of the full network, its splits or its medals.</p></div><button id="custom-track-btn" type="button" disabled>Custom track</button><p id="custom-track-note" class="custom-track-note" role="status" hidden></p><p id="custom-track-save" class="custom-track-note" hidden></p></section>
-          <div class="mobile-menu-controls"><div class="mobile-device-actions"><button type="button" data-fullscreen>Fullscreen</button><button type="button" data-tilt-enable aria-pressed="false">Enable tilt</button><button type="button" data-tilt-recenter disabled>Recenter</button></div><p class="mobile-status" data-mobile-status role="status">Tilt is off. Use ◀ / ▶ to steer.</p><p class="mobile-help">Tilt to steer, or use ◀ / ▶. GAS and REVERSE on the left; FIRE, BRAKE and BOOST on the right. BOOST launches from the portal.</p></div><p id="boot-status" class="boot-status" role="status">Loading flight systems…</p>
-          <p id="local-discoveries" class="discovery-note"></p>
+          <p class="eyebrow">PICK A LINE. MAKE IT YOURS.</p>
+          <h1 id="game-title">STAR<span>DUST</span></h1>
+          <p class="intro">Your ship. Your time to beat.</p>
+          <section class="network-card" aria-labelledby="network-title">
+            <div class="network-heading"><h2 id="network-title">Fly the full network</h2><span class="hangar-tag">SOLO / 5 CIRCUITS</span></div>
+            <p>Start at Alpha Relay. Collect the shards, clear each circuit, and chase your best time.</p>
+            <button id="starmap-start-btn" class="primary" type="button" disabled>Preparing ship…</button>
+            <p class="launch-hint">Guests can play straight away. Sign in before flying to save a ranked time.</p>
+          </section>
+          <div class="hangar-tools"><button id="starmap-settings-btn-start" type="button">Controls &amp; settings</button><a id="hangar-account-link" href="../../account/">Pilot account ↗</a></div>
+          <details class="hangar-controls"><summary>How to fly <span>Keyboard · controller · touch</span></summary>
+            <div class="hangar-control-grid"><p><strong>Keyboard</strong>W/S thrust · A/D turn · Space launch<br>Shift boost · X brake · Ctrl fire · Esc pause</p><p><strong>Controller</strong>Left stick move · Right stick turn<br>A launch · LB boost · RB brake · Back pause</p><p><strong>Touch</strong>Turn your phone sideways. Use the on-screen stick and wheel; Boost launches from the portal.</p></div>
+            <p class="hangar-control-note">These are the defaults. Rebind keys, tune the camera or arrange touch controls in Controls &amp; settings. Controller menus: D-pad / left stick to move, A to select, B to go back.</p>
+          </details>
+          <p id="boot-status" class="boot-status" role="status">Loading flight systems.</p>
           <p id="challenge-note" class="discovery-note challenge-note" role="status" hidden></p>
           <p id="leaderboard-note" class="discovery-note leaderboard-note" hidden></p>
+          <p id="local-discoveries" class="discovery-note"></p>
         </div>
-        <div class="orbital-display"><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><div class="orbit orbit-three"></div><div class="planet-core"></div><button id="hangar-ship" class="hero-ship-control" type="button" aria-label="Rotate courier ship" aria-describedby="hangar-ship-hint"><img class="hero-ship" src="./art/player-ship.png" alt="" draggable="false"></button><span class="chart-label chart-top">ALPHA RELAY / 001</span><span id="hangar-ship-hint" class="chart-label chart-bottom">DRAG TO SPIN · ARROWS ROTATE · HOME RESETS</span><span class="chart-coordinate">32 : 18<br>RELAY NETWORK</span></div>
+        <section class="hangar-ship-panel" aria-labelledby="hangar-equipped-name">
+          <div class="hangar-ship-heading"><p class="eyebrow">EQUIPPED SHIP</p><h2 id="hangar-equipped-name">Standard Courier</h2></div>
+          <div class="orbital-display"><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><div class="orbit orbit-three"></div><div class="planet-core"></div><button id="hangar-ship" class="hero-ship-control" type="button" aria-label="Customize ship" aria-describedby="hangar-ship-hint"><img class="hero-ship" src="./art/player-ship.png" alt="" draggable="false"></button><span id="hangar-ship-hint" class="chart-label chart-bottom">DRAG TO SPIN · CLICK TO CUSTOMIZE</span></div>
+          <div class="hangar-ship-actions"><button id="hangar-garage-btn" type="button">Ship garage <span aria-hidden="true">→</span></button><p id="hangar-equipped-note">Ready to fly. Customize whenever you like.</p></div>
+        </section>
       </div>
+      <section class="hangar-modes" aria-labelledby="hangar-modes-title"><div class="hangar-section-head"><h2 id="hangar-modes-title">Try another flight</h2><span>Solo time trials · private friend rooms</span></div><div class="hangar-mode-grid"><section id="weekly-card" class="weekly-card" aria-labelledby="weekly-title" data-state="upcoming" hidden><img id="weekly-map" class="weekly-map" alt="Weekly track layout" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="><div class="weekly-copy"><p class="eyebrow" id="weekly-eyebrow">WEEKLY TIME TRIAL</p><h2 id="weekly-title">Weekly track<small id="weekly-sub"></small></h2><p id="weekly-blurb">One lap. Collect every shard and cross the finish line. Fastest this week takes the champion title; the top 3 get early access to Stardust: Planetfall.</p></div><div class="weekly-actions"><button id="weekly-btn" type="button" disabled>Weekly track</button><button id="weekly-practice-btn" type="button" hidden>Practice in your ship</button><a id="weekly-page-link" href="../../stardust/weekly/">Leaderboard &amp; comments ↗</a></div><p id="weekly-note" class="weekly-note" role="status" hidden></p><p id="weekly-save" class="weekly-note" hidden></p></section><section id="custom-track-card" class="custom-track-card" aria-labelledby="custom-track-title" data-state="locked" hidden><div class="custom-track-copy"><p class="eyebrow">NEW / CUSTOM TRACK</p><h2 id="custom-track-title">Custom Track</h2><p id="custom-track-blurb">One lap with its own leaderboard. Not part of the full network, its splits or its medals.</p></div><button id="custom-track-btn" type="button" disabled>Custom track</button><p id="custom-track-note" class="custom-track-note" role="status" hidden></p><p id="custom-track-save" class="custom-track-note" hidden></p></section>
+        <section class="dogfight-card" aria-labelledby="hangar-dogfight-title"><div><p class="eyebrow">MULTIPLAYER / PRIVATE ROOMS</p><h2 id="hangar-dogfight-title">Dogfight with friends</h2><p>A duel or casual three-player free-for-all. Create a room or join with a friend's code.</p></div><a class="mode-link" href="./dogfight/">Open Dogfight <span aria-hidden="true">↗</span></a><p class="mode-footnote">Light, Medium or Heavy ships · room setup on the next screen</p></section>
+      </div></section>
       <section class="hangar-board" id="hangar-board" aria-labelledby="hangar-board-title" hidden><div class="hangar-board-head"><h2 id="hangar-board-title">TOP PILOTS <b>/</b> FULL NETWORK</h2><span id="hangar-board-live" class="hangar-board-live">LIVE</span><a href="../../stardust/#fastest-runs">FULL LEADERBOARD ↗</a></div><ol id="hangar-board-list"></ol><p id="hangar-board-empty" class="hangar-board-empty" hidden>No saved runs yet. The first signed-in pilot to finish all five circuits takes the top spot.</p></section>
-      <div class="sector-strip" aria-label="Stardust circuits"><span><b>01 / ALPHA</b> Alpha Relay<small>The Coil Relay</small></span><span><b>02 / BEACON</b> Beacon Prime<small>Fast transitions</small></span><span><b>03 / DUSTFALL</b> Dustfall Station<small>Speed and chicanes</small></span><span><b>04 / NETHER</b> Nether Crossing<small>The Harbour Needle</small></span><span><b>05 / IRON VEIL</b> Iron Veil<small>The Veil Sweep</small></span></div>
-      <footer class="start-footer"><span>W/S THRUST · A/D TURN · SPACE LAUNCH · SHIFT BOOST</span><a href="./credits.html">CREDITS</a><a href="../../stardust/">STARDUST HOME ↗</a></footer>
+      <details class="hangar-circuits"><summary>The five circuits <span>Alpha Relay → Iron Veil</span></summary><div class="sector-strip" aria-label="Stardust circuits"><span><b>01 / ALPHA</b>Alpha Relay<small>The Coil Relay</small></span><span><b>02 / BEACON</b>Beacon Prime<small>Fast transitions</small></span><span><b>03 / DUSTFALL</b>Dustfall Station<small>Speed and chicanes</small></span><span><b>04 / NETHER</b>Nether Crossing<small>The Harbour Needle</small></span><span><b>05 / IRON VEIL</b>Iron Veil<small>The Veil Sweep</small></span></div></details>
+      <footer class="start-footer"><a href="../../stardust/">← Stardust home</a><span>KEYBOARD · GAMEPAD · TOUCH</span><a href="./credits.html">Credits</a></footer>
     </div>
   </section>
   <section id="starmap-pause" class="overlay-panel hidden" aria-labelledby="pause-title">
@@ -54,13 +78,13 @@
     <div class="panel"><p class="eyebrow">TRANSMISSION RECEIVED</p><h2 id="starmap-end-title">Network complete</h2><p id="starmap-end-lede">All five circuits, one run. Fly again and beat your time.</p><div id="starmap-end-breakdown" class="end-breakdown" hidden></div><div id="starmap-end-save" class="end-save" role="status" hidden></div><div class="actions"><button id="starmap-again-btn" class="primary">Fly again</button><button id="starmap-end-menu-btn">Return to hangar</button></div><div id="starmap-end-social" class="end-social" hidden></div></div>
   </section>
   <section id="starmap-settings" class="overlay-panel hidden" aria-labelledby="settings-title">
-    <div class="panel"><p class="eyebrow">SHIP CONFIGURATION</p><h2 id="settings-title">Flight settings</h2>
+    <div class="panel"><p class="eyebrow">MAKE THE COCKPIT FIT YOU</p><h2 id="settings-title">Controls &amp; settings</h2><p class="settings-save-note">Flight controls save as you change them. Sound and comfort settings save with Done.</p><div id="flight-settings-slot"></div><details class="sound-settings"><summary>Sound &amp; comfort</summary>
       <label class="setting-row">Music <span id="setting-music-val">100%</span><input id="setting-music-vol" type="range" min="0" max="1" step="0.01" value="1"></label>
       <label class="setting-row">Effects <span id="setting-sfx-val">100%</span><input id="setting-sfx-vol" type="range" min="0" max="1" step="0.01" value="1"></label>
       <label class="check-row"><input id="setting-invert-thrust" type="checkbox"> Invert thrust axis</label>
       <label class="check-row"><input id="setting-reduced-motion" type="checkbox"> Reduce camera shake and decorative motion</label>
       <div class="mobile-menu-controls"><div class="mobile-device-actions"><button type="button" data-fullscreen>Fullscreen</button><button type="button" data-tilt-enable aria-pressed="false">Enable tilt</button><button type="button" data-tilt-recenter disabled>Recenter</button></div><p class="mobile-status" data-mobile-status role="status">Tilt is off. Use ◀ / ▶ to steer.</p></div>
-      <div class="actions"><button id="settings-save-btn" class="primary">Save settings</button><button id="settings-cancel-btn">Cancel</button></div>
+      </details><div class="actions"><button id="settings-save-btn" class="primary">Done</button><button id="settings-cancel-btn">Close without saving sound</button></div>
     </div>
   </section>
   <section id="starmap-victory" class="overlay-panel hidden" aria-labelledby="victory-title">
