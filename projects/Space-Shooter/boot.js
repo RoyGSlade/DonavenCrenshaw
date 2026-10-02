@@ -9,6 +9,7 @@ import { initCustomTrackUi } from './systems/customTrackUi.js';
 import { initWeeklyUi } from './systems/weeklyUi.js';
 import { initFlightUi } from './ui/flightUi.js';
 import { initHangar } from './ui/hangar.js';
+import { initShareImport } from './ui/shareImport.js';
 const status = document.getElementById('boot-status');
 const button = document.getElementById('starmap-start-btn');
 // ?lab=... swaps in playtest rules. Such a session never saves runs.
@@ -30,6 +31,8 @@ try {
   button.textContent = 'Loading failed';
   console.error('Stardust initialization failed', error);
 }
+// A leaderboard link (?import=ship|settings&from=<pilot>) offers that pilot's ship or settings.
+if (ready) initShareImport().catch(error => console.warn('Stardust: could not copy that setup', error));
 // The custom track card: countdown until release, then its own one-lap run.
 try { initCustomTrackUi({ ready, lab }); } catch (error) { console.error('Stardust: custom track unavailable', error); }
 // The weekly time trial card: countdown to the opening, then to the close.

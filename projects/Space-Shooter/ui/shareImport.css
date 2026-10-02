@@ -1,0 +1,35 @@
+/* The "copy this pilot's settings" prompt (ui/shareImport.js) and the garage's copied-ship banner. */
+.share-import {
+  width: min(560px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  padding: 0;
+  border: 1px solid var(--line);
+  border-top: 2px solid var(--cyan);
+  border-radius: 6px;
+  background: #101c2bfa;
+  color: var(--text);
+  box-shadow: 0 30px 100px #000a;
+  overflow: auto;
+}
+.share-import::backdrop { background: #030810d0; backdrop-filter: blur(6px); }
+.share-import-body { padding: 26px 28px 22px; }
+.share-import-body h2 { margin: 10px 0 12px; font-size: 24px; line-height: 1.2; letter-spacing: -0.03em; font-weight: 600; }
+.share-import-body .eyebrow { margin: 0; font-size: 10px; }
+.share-import-lead { margin: 0 0 14px; font-size: 14px; color: var(--muted); }
+.share-import-changes { list-style: none; margin: 0 0 14px; padding: 0; border: 1px solid #2a415288; border-radius: 4px; background: #0b1622; max-height: 44dvh; overflow: auto; }
+.share-import-changes:empty { display: none; }
+.share-import-changes li { display: flex; justify-content: space-between; gap: 16px; padding: 9px 12px; border-bottom: 1px solid #2a415255; font-size: 13px; }
+.share-import-changes li:last-child { border-bottom: 0; }
+.share-import-changes li span { color: var(--muted); }
+.share-import-changes li b { font: 600 12px Consolas, monospace; color: var(--cyan); text-align: right; overflow-wrap: anywhere; }
+.share-import-note { margin: 0 0 4px; font-size: 12px; color: #8eadba; }
+.share-import-note:empty { display: none; }
+.share-import-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; margin-top: 18px; }
+.share-import-actions button { padding: 11px 18px; font-size: 12px; }
+@media (max-width: 560px) {
+  .share-import-body { padding: 20px 18px 16px; }
+  .share-import-body h2 { font-size: 20px; }
+  .share-import-changes li { flex-direction: column; gap: 2px; }
+  .share-import-changes li b { text-align: left; }
+  .share-import-actions button { flex: 1; }
+}

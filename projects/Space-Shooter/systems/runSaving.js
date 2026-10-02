@@ -12,15 +12,17 @@ import {
 import { toast } from '../ui/hud.js';
 import { CUSTOM_BOARD, activeCustomTrack } from './customTrack.js';
 import { setWeeklyGhost, currentWeeklySession } from '../engine/modes/weekly.js';
+import { parseVsQuery } from './weekly.js';
 import { setFailBoard } from '../ui/failScreen.js';
-import { runClient } from './runClient.js';
+import { runClient, snapshotAppearance } from './runClient.js';
 import { startHubSync } from './hubSyncLive.js';
-import { finishScreenToken, isCurrentFinish, updateFinishScreen, setFinishNote } from '../ui/finishScreen.js';
+import { finishScreenToken, isCurrentFinish, updateFinishScreen, setFinishNote, setShareSource } from '../ui/finishScreen.js';
 
 const ACCOUNT_URL = new URL('../../account/', document.baseURI).href;
 const BOARDS_URL = new URL('../../stardust/#fastest-runs', document.baseURI).href;
 const CUSTOM_URL = new URL('../../stardust/#custom-track', document.baseURI).href;
 const WEEKLY_URL = new URL('../../stardust/weekly/', document.baseURI).href;
+const GAME_URL = new URL('./', document.baseURI).href;
 // The hub stores up to 256 KB of input log; a longer one is sent without it.
 const MAX_LOG = 250000;
 const CIRCUIT_NAME = Object.fromEntries(CIRCUITS);
@@ -28,6 +30,36 @@ const CIRCUIT_NAME = Object.fromEntries(CIRCUITS);
 // Every finish request says how the run was flown (device, input, build, ship).
 const recorder = createRunRecorder({ client: () => runClient.current() });
 const byId = (id) => document.getElementById(id);
+
+// What the finish screen's Share button needs to know about the run just flown
+// (systems/shareCard.js builds the card and the link from it). A hub link, which
+// unfurls with a picture, only goes out for a time the hub accepted; a guest or an
+// unsaved run shares the site's weekly page or the game, with the time in the text.
+// A circuit run makes its challenge link now, when the pilot taps Share, not before.
+async function shareInfo({ kind, timeMs, result }) {
+  const player = recorder.player;
+  const accepted = result?.status === 'accepted' && !result.staff;
+  const base = {
+    hubOrigin: recorder.hubOrigin, weeklyUrl: WEEKLY_URL, gameUrl: GAME_URL,
+    pilotName: player ? name(player) : null, username: player?.username ?? null, ranked: Boolean(accepted && player),
+    rank: accepted && Number.isInteger(result.best?.rank) ? result.best.rank : null,
+  };
+  if (kind === 'weekly') {
+    const session = currentWeeklySession();
+    const event = session?.event;
+    if (!event) return null;
+    // The link races the pilot's best on the board, so the card shows that time.
+    const time = accepted && Number.isFinite(result.best?.timeMs) ? result.best.timeMs : timeMs;
+    return { ...base, kind: 'weekly', eventId: event.id, trackName: event.title, kicker: `Weekly time trial · Week ${event.week}`, timeMs: time, appearance: session.appearance };
+  }
+  if (kind === 'network') {
+    const run = recorder.lastRun;
+    const make = accepted && player && run ? async () => (await recorder.createChallenge({ runId: run.runId }).catch(() => null))?.challenge?.id ?? null : null;
+    return { ...base, kind: 'network', trackName: '', kicker: 'Full run · all five circuits', timeMs: run?.timeMs ?? timeMs, appearance: snapshotAppearance(), challenge: make };
+  }
+  return null;
+}
+setShareSource(shareInfo);
 
 // The challenge link this page was opened with, and what the hub said about it.
 const challengeId = parseChallengeId(location.search);
@@ -385,6 +417,17 @@ export async function initRunSaving() {
   // crash) opens a fresh run on the event's board; a preview never touches the
   // hub. The leaderboard's #1 flies along as a ghost once it's been fetched.
   let ghostFor = null;
+  // ?vs=<username> (a share card's link): that pilot's best flies along as the ghost to beat.
+  const vs = parseVsQuery(location.search);
+  const racing = { top: null, vs: null };
+  // Both ghosts at once unless they are the same pilot; the vs one wins the tie.
+  const showGhosts = () => {
+    const same = racing.top && racing.vs && racing.top.username.toLowerCase() === racing.vs.username.toLowerCase();
+    if (racing.vs) setWeeklyGhost('vs', { log: racing.vs.inputLog, label: `${racing.vs.displayName || racing.vs.username} ${clock(racing.vs.timeMs)}`, color: '#ff9f6b', appearance: racing.vs.appearance, build: racing.vs.build });
+    if (racing.top && !same) setWeeklyGhost('top', { log: racing.top.inputLog, label: `#1 ${racing.top.displayName || racing.top.username} ${clock(racing.top.timeMs)}`, color: '#ffd166', appearance: racing.top.appearance, build: racing.top.build });
+    // The vs pilot is the leader: one ghost, not two on top of each other (no log removes it).
+    else if (same) setWeeklyGhost('top', {});
+  };
   window.addEventListener('stardust:weeklyAttempt', async (event) => {
     const { eventId, version, preview, build, appearance } = event.detail || {};
     launches += 1;
@@ -396,10 +439,23 @@ export async function initRunSaving() {
     paintSocial(null);
     if (ghostFor !== `${eventId}.${version}`) {
       ghostFor = `${eventId}.${version}`;
+      racing.top = null;
+      racing.vs = null;
+      const current = () => currentWeeklySession()?.event?.id === eventId;
       recorder.ghost(eventId, { rank: 1 }).then((top) => {
-        if (!top || currentWeeklySession()?.event?.id !== eventId) return;
-        setWeeklyGhost('top', { log: top.inputLog, label: `#1 ${top.displayName || top.username} ${clock(top.timeMs)}`, color: '#ffd166', appearance: top.appearance, build: top.build });
+        if (!top || !current()) return;
+        racing.top = top;
+        showGhosts();
       }).catch(() => {});
+      if (vs) {
+        recorder.ghost(eventId, { user: vs }).then((ghost) => {
+          if (!current()) return;
+          if (!ghost) { toast(`${vs}’s ghost isn’t available. Flying the leaderboard ghost.`, 4200); return; }
+          racing.vs = ghost;
+          showGhosts();
+          toast(`Racing ${ghost.displayName || ghost.username}’s ghost: ${clock(ghost.timeMs)}`, 4200);
+        }).catch(() => {});
+      }
     }
     if (preview) { recorder.abandon(); return; }
     await recorder.startBoardRun(eventId, { version }).catch(() => null);

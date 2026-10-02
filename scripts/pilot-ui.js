@@ -5,7 +5,7 @@
 // published by the build as scripts/avatars.js.
 
 import { AVATARS } from './avatars.js';
-import { deviceBadge, shipChipEl } from './ship-ui.js';
+import { deviceBadge, shipChipEl, shareMenu } from './ship-ui.js';
 import { avatarIndex, avatarSrc, monogram, profilePath, titleChip } from './profile.js';
 
 const INDEX = avatarIndex(AVATARS);
@@ -91,11 +91,21 @@ export function createPilotUi({ base = window.SITE_BASE || '/', hub = '' } = {})
                 avatar(pilot, { size: 'sm' }),
                 who,
                 el('span', 'sd-time', row.time),
-                el('span', 'sd-date', row.date || '')
+                el('span', 'sd-date', row.date || ''),
+                // Always a cell, so rows with and without the Copy menu keep their columns.
+                shareCell(row, pilot)
             );
             ol.append(li);
         });
         return ol;
+    }
+
+    // "Copy" menu: fly this pilot's ship, use their settings. Empty for a row that offers neither.
+    function shareCell(row, pilot) {
+        const cell = el('span', 'sd-share-cell');
+        const menu = shareMenu(row, { base, name: pilot.displayName || pilot.username });
+        if (menu) cell.append(menu);
+        return cell;
     }
 
     return { avatar, name, chip, boardList, avatars };

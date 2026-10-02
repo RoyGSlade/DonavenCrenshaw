@@ -8,7 +8,7 @@
 // game's own code (games/stardust/systems/weekly.js), the single source of
 // truth. Everything the hub returns is written with textContent.
 
-import { boardRows, signInPath, accountPath, createHub, socialApi } from './social.js';
+import { boardRows, signInPath, accountPath, createHub, socialApi, readVsParam } from './social.js';
 import { weeklyBoardText, weeklyBoardMeta, commentRows, commentProblem, countdownParts, countdownWords, COMMENT_MAX } from './profile.js';
 import { createPilotUi, el } from './pilot-ui.js';
 
@@ -130,6 +130,34 @@ async function initPage(root) {
         });
     }
 
+    // ?vs=<username> (a shared card): say whose ghost is waiting, and carry the name into the
+    // game so it races that pilot. The board fills in their time when they are on it.
+    const vs = readVsParam(location.search);
+    const vsNote = $('[data-wk-vs]');
+    const withVs = (href) => {
+        try { const url = new URL(href, location.href); url.searchParams.set('vs', vs); return url.href; } catch { return href; }
+    };
+    function paintVs(rows = []) {
+        if (!vs || !vsNote) return;
+        const row = rows.find((r) => String(r.username).toLowerCase() === vs.toLowerCase());
+        const who = row?.name || vs;
+        vsNote.textContent = row ? `${who} flew ${row.time} (#${row.rank}). Fly ${event?.title || 'the track'} and their ghost races you.` : `${who} challenged you. Fly ${event?.title || 'the track'} and their ghost races you.`;
+        vsNote.hidden = false;
+    }
+    if (vs) {
+        paintVs();
+        play.href = withVs(play.href);
+        for (const a of document.querySelectorAll('[data-sd-guest]')) a.href = withVs(a.href);
+        // Sign-in links come back to the game (next=<path>), so the name rides along inside next.
+        for (const a of document.querySelectorAll('.sd-gate-actions a')) {
+            try {
+                const url = new URL(a.href);
+                const next = url.searchParams.get('next');
+                if (next) { url.searchParams.set('next', `${next}${next.includes('?') ? '&' : '?'}vs=${encodeURIComponent(vs)}`); a.href = url.href; }
+            } catch { /* leave the link as it is */ }
+        }
+    }
+
     // Guests who press Play are told their time won't count and offered sign-in
     // first; signed-in pilots, and everyone while the hub is asleep, go straight in.
     const gate = document.querySelector('[data-sd-gate]');
@@ -175,6 +203,7 @@ async function initPage(root) {
         const rows = boardRows(res.data.entries, me?.username);
         const empty = weeklyBoardText(state, rows.length);
         list.replaceChildren(empty ? el('p', 'sd-empty', empty) : ui.boardList(rows, { podium }));
+        paintVs(rows);
     }
 
     // --- Comments ---

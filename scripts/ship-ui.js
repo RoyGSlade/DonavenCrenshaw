@@ -8,7 +8,7 @@
 //
 // Everything from the hub is written with textContent or as an attribute value.
 
-import { clientBadge, shipChip, shipSummary, DEVICE_ICON } from './ship-info.js';
+import { clientBadge, shipChip, shipSummary, shareActions, DEVICE_ICON } from './ship-info.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -218,4 +218,44 @@ export function deviceBadge(client) {
     watchOutside();
     wrap.append(button, tip);
     return wrap;
+}
+
+// --- Copying a pilot's setup ---------------------------------------------------------------
+
+let menuListening = false;
+function closeShareMenus(except = null) {
+    for (const menu of document.querySelectorAll('.sd-share-menu[open]')) if (menu !== except) menu.open = false;
+}
+function watchShareMenus() {
+    if (menuListening) return;
+    menuListening = true;
+    document.addEventListener('click', (event) => { if (!event.target.closest?.('.sd-share-menu')) closeShareMenus(); });
+    document.addEventListener('keydown', (event) => {
+        if (event.key !== 'Escape') return;
+        const open = document.querySelector('.sd-share-menu[open]');
+        if (!open) return;
+        open.open = false;
+        open.querySelector('summary')?.focus();
+    });
+}
+
+// The "Copy" menu on a leaderboard row: "Fly this ship" and/or "Use their settings"
+// (scripts/ship-info.js shareActions). Plain links to the game, which asks before it
+// changes anything. null when the row offers neither. `name` is for the screen reader.
+export function shareMenu(row, { base, name } = {}) {
+    const actions = shareActions(row, base);
+    if (!actions.length) return null;
+    const menu = node('details', 'sd-share-menu');
+    const toggle = node('summary', 'sd-share-toggle', 'Copy');
+    toggle.setAttribute('aria-label', `Copy ${name || row.username}'s ${actions.map((a) => (a.kind === 'ship' ? 'ship' : 'settings')).join(' or ')}`);
+    const list = node('div', 'sd-share-list');
+    for (const action of actions) {
+        const link = node('a', 'sd-share-link', action.label);
+        link.href = action.href;
+        list.append(link);
+    }
+    menu.append(toggle, list);
+    menu.addEventListener('toggle', () => { if (menu.open) closeShareMenus(menu); });
+    watchShareMenus();
+    return menu;
 }

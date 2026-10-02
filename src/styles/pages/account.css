@@ -268,3 +268,11 @@
     .acct-card .acct-show-row .acct-hint { padding-left: 0; }
 }
 .acct-card-head { flex-wrap: wrap; }
+
+/* Discord: link state and the roles it earns. */
+.acct-discord .acct-discord-roles { margin: var(--space-4) 0; }
+.acct-discord-state { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3) var(--space-5); }
+.acct-discord-linked { margin: 0; color: var(--text-muted); }
+.acct-discord-linked strong { color: var(--text-main); font-weight: 600; overflow-wrap: anywhere; }
+.acct-discord-actions { display: flex; flex-wrap: wrap; gap: var(--space-3); }
+.acct-discord-actions .btn-noir { min-height: 2.5rem; padding: 0.5rem 0.9rem; font-size: 0.68rem; }

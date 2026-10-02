@@ -162,7 +162,7 @@ test('each profile switch saves on its own: only that key is sent', async () => 
 
 test('the account page has one switch per section the hub knows, and no upload or free text for ships', () => {
   const page = read('src/layouts/account.ejs');
-  for (const key of ['bio', 'titles', 'bests', 'dogfight', 'events', 'ship', 'devices']) {
+  for (const key of ['bio', 'titles', 'bests', 'dogfight', 'events', 'ship', 'devices', 'settings']) {
     assert.ok(page.includes(`'${key}'`), `${key} has a switch`);
   }
   assert.match(page, /data-acct-show-key/);

@@ -16,6 +16,7 @@ import { setPadMenuSuspended } from './padMenu.js';
 import { getSyncStatus, syncStatusText } from '../systems/hubSyncLive.js';
 import { controllerMarkup, initControllerPanel, endControllerTest } from './controllerPanel.js';
 import { controllerSnapshot, standardController } from '../systems/controllerDevices.js';
+import { readUndo, undoImportedSettings } from '../systems/shareImport.js';
 
 const TABS = [['pad', 'Controller'], ['camera', 'Camera'], ['controls', 'Controls'], ['keys', 'Keys'], ['hud', 'HUD'], ['sound', 'Sound & comfort']];
 
@@ -78,6 +79,7 @@ function markup() {
       ${steppers('hud')}
       ${row('HUD &amp; controls layout', '', '<button type="button" data-fx="edit">Edit layout</button>')}
       ${row('Share settings', 'camera, controls, keys, layout', '<div class="fx-stepper"><button type="button" data-fx="copy-code">Copy code</button><button type="button" data-fx="paste-code">Paste code</button></div>')}
+      ${row('Copied settings', 'put back what you had before the last copy', '<button type="button" data-fx="undo-import">Undo</button>', 'fx-undo-row')}
       <p class="fx-pane-note" data-fx-sync role="status"></p>
     </div>
     <div class="fx-pane" data-pane="sound"><div class="fx-pane-heading"><h3>Sound &amp; comfort</h3><p>Preview the volume here. Done saves these settings.</p></div></div>`;
@@ -107,6 +109,11 @@ function paint() {
   // Whether these settings (and your ship and designs) are kept on your account.
   const syncLine = box.querySelector('[data-fx-sync]');
   if (syncLine) { const status = getSyncStatus(); syncLine.textContent = syncStatusText(status); syncLine.dataset.status = status; }
+  // Only after settings were copied from a leaderboard link (ui/shareImport.js).
+  const undo = readUndo();
+  const undoRow = box.querySelector('.fx-undo-row');
+  undoRow.hidden = !undo;
+  if (undo) undoRow.querySelector('small').textContent = `put back what you had before ${undo.from ? `${undo.from}'s settings` : 'the last copy'}`;
   // Tilt only exists on touch devices.
   for (const r of box.querySelectorAll('.fx-tilt-row')) r.hidden = !isTouchDevice();
   for (const b of box.querySelectorAll('[data-bind-key]')) {
@@ -279,6 +286,7 @@ export function buildFlightSettings({ onEditLayout, onChange }) {
     else if (action === 'keys-reset') updateFlightSettings((s) => { s.binds = { ...s.binds, keys: defaultBinds().keys }; });
     else if (action === 'pad-reset') updateFlightSettings((s) => { const d = defaultBinds(); s.binds = { ...s.binds, pad: d.pad, sticks: d.sticks }; });
     else if (action === 'copy-code') { copySettingsCode(); return; }
+    else if (action === 'undo-import') { toast(undoImportedSettings() ? 'Your previous settings are back.' : 'Nothing to undo.', 3000); onChange?.(); return; }
     else if (action === 'paste-code') { pasteSettingsCode().then(() => onChange?.()); return; }
     else if (action === 'edit') { if (state.run) onEditLayout?.(); return; }
     onChange?.();

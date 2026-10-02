@@ -47,6 +47,9 @@
 }
 .sd-page .sd-wk-tagline { margin: 0 0 26px; font-size: clamp(1.05rem, 1.8vw, 1.3rem); color: var(--sd-text); }
 
+.sd-page .sd-wk-vs { margin: -10px 0 22px; padding: 12px 16px; border-left: 3px solid #ff9f6b; background: rgba(255, 159, 107, .09); font-size: .98rem; color: var(--sd-ice); }
+.sd-page .sd-wk-vs[hidden] { display: none; }
+
 .sd-wk-clock { display: grid; gap: 10px; padding: 18px 0 20px; border-block: 1px solid var(--sd-line); }
 .sd-page .sd-wk-clock-label { margin: 0; font: 700 .7rem var(--font-mono); letter-spacing: .22em; text-transform: uppercase; color: var(--sd-frost); }
 .sd-wk-clock[data-state="live"] .sd-wk-clock-label { color: #7ee2b8; }
@@ -206,4 +209,6 @@
 .sd-page .sd-pf-bare a { color: var(--sd-ice); text-underline-offset: 4px; }
 .sd-pf-only { margin-left: 10px; padding: 2px 7px; border: 1px solid var(--sd-line-strong); border-radius: 3px; font-size: .58rem; letter-spacing: .14em; color: var(--sd-muted); cursor: help; }
 .sd-pf-ship .ship-card { grid-template-columns: minmax(0, 11rem) minmax(0, 1fr); }
+.sd-pf-ship .ship-actions { margin: 14px 0 0; }
+.sd-pf-ship .ship-actions .sd-btn { display: inline-flex; align-items: center; text-decoration: none; }
 @media (max-width: 560px) { .sd-pf-ship .ship-card { grid-template-columns: minmax(0, 1fr); } }

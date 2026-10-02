@@ -1,4 +1,5 @@
 import { createStatChart } from './shipStatsChart.js';
+import { toast } from './hud.js';
 import { buildKey } from '../engine/shipStats.js';
 import { state } from '../state.js';
 import {
@@ -23,7 +24,10 @@ import {
   equipAppearance,
   unequipAppearance,
   availablePartIndices,
+  resolveAvailableAppearance,
 } from '../systems/shipAppearance.js';
+import { encodeShipCode, decodeShipCode, shipCodeProblem, importedShipName } from '../systems/shipShare.js';
+import { LIBRARY_LIMIT, sameAppearance } from '../systems/hubSync.js';
 import {
   readLibrary,
   saveDesign,
@@ -85,7 +89,7 @@ export function initShipGarage() {
    .join(
      '',
    )}</div></div><div class="garage-sliders">${ranges.map(([id, name, min, max, step]) => `<label class="garage-slider">${name}<output id="garage-decal-${id}-value"></output><input aria-label="Decal ${name.toLowerCase()}" id="garage-decal-${id}" type="range" min="${min}" max="${max}" step="${step}"></label>`).join('')}</div></div></div></div>
- <div class="garage-panel" id="garage-panel-designs" role="tabpanel" aria-labelledby="garage-tab-designs" hidden><div class="garage-design-grid"><div><p class="garage-caption">Save a reusable livery, apply it to another hull, or export its editable layers.</p><label class="garage-field">Design name<input id="garage-design-name" maxlength="60" value="My livery"></label><div class="garage-design-actions"><button type="button" id="garage-save">Save locally</button><button type="button" id="garage-export">Export design</button><button type="button" id="garage-publish">Publish to my profile</button></div><label class="garage-file">Import editable design<input id="garage-import" type="file" accept="application/json,.json"></label><div id="garage-library"></div></div><div><p id="garage-account" class="garage-caption">Community designs use your Stardust account.</p><div class="garage-community-tools"><input id="garage-artist" aria-label="Creator username" placeholder="Creator username"><button type="button" id="garage-browse">Browse designs</button><button type="button" id="garage-my-profile">My profile</button></div><div id="garage-gallery"></div><div id="garage-design-detail" hidden></div><details id="garage-dev-api" hidden><summary>Local development Hub</summary><input id="garage-api" aria-label="Development API origin" placeholder="http://127.0.0.1:4183"><button type="button" id="garage-connect">Connect</button><form id="garage-sign-in"><input name="email" type="email" autocomplete="username" placeholder="Test account email" aria-label="Email" required><input name="password" type="password" autocomplete="current-password" placeholder="Password" aria-label="Password" required><button>Sign in</button></form></details></div></div></div>
+ <div class="garage-panel" id="garage-panel-designs" role="tabpanel" aria-labelledby="garage-tab-designs" hidden><div class="garage-design-grid"><div><p class="garage-caption">Save a reusable livery, apply it to another hull, or export its editable layers.</p><label class="garage-field">Design name<input id="garage-design-name" maxlength="60" value="My livery"></label><div class="garage-design-actions"><button type="button" id="garage-save">Save locally</button><button type="button" id="garage-export">Export design</button><button type="button" id="garage-publish">Publish to my profile</button></div><label class="garage-field">Ship code<input id="garage-code" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Paste an SDS1- code"></label><div class="garage-design-actions"><button type="button" id="garage-code-copy">Copy ship code</button><button type="button" id="garage-code-use">Use this code</button></div><label class="garage-file">Import editable design<input id="garage-import" type="file" accept="application/json,.json"></label><div id="garage-library"></div></div><div><p id="garage-account" class="garage-caption">Community designs use your Stardust account.</p><div class="garage-community-tools"><input id="garage-artist" aria-label="Creator username" placeholder="Creator username"><button type="button" id="garage-browse">Browse designs</button><button type="button" id="garage-my-profile">My profile</button></div><div id="garage-gallery"></div><div id="garage-design-detail" hidden></div><details id="garage-dev-api" hidden><summary>Local development Hub</summary><input id="garage-api" aria-label="Development API origin" placeholder="http://127.0.0.1:4183"><button type="button" id="garage-connect">Connect</button><form id="garage-sign-in"><input name="email" type="email" autocomplete="username" placeholder="Test account email" aria-label="Email" required><input name="password" type="password" autocomplete="current-password" placeholder="Password" aria-label="Password" required><button>Sign in</button></form></details></div></div></div>
  </section><footer class="garage-footer"><p id="garage-status" class="garage-status" role="status">Loading ship parts…</p><div class="garage-footer-actions"><button id="garage-standard" type="button">Standard ship</button><button id="garage-cancel" type="button">Cancel</button><button id="garage-equip" type="button" class="primary" disabled>Equip ship</button></div></footer></div>`;
   document.body.append(dialog);
   const find = (s) => dialog.querySelector(s),
@@ -112,7 +116,9 @@ export function initShipGarage() {
     future = [],
     user = null,
     detail = null,
-    communityTicket = 0;
+    communityTicket = 0,
+    // { name, from } while a copied ship (a leaderboard link or a pasted code) is on the stage.
+    importing = null;
   let returnFocus = opener;
   const selectedLayer = () => draft.layers.find((l) => l.id === selected);
   const reduced = () =>
@@ -382,6 +388,7 @@ export function initShipGarage() {
     closing = true;
     generation++;
     communityTicket++;
+    leaveImport();
     find('#garage-gallery').dataset.view = 'closed';
     stopSpin();
     release();
@@ -391,7 +398,9 @@ export function initShipGarage() {
     closing = false;
     (returnFocus?.isConnected ? returnFocus : opener).focus({ preventScroll: true });
   }
-  for (const s of ['.garage-close', '#garage-cancel']) find(s).addEventListener('click', close);
+  find('.garage-close').addEventListener('click', close);
+  // While a copied ship is on the stage this button is "Keep my ship".
+  find('#garage-cancel').addEventListener('click', () => (importing ? keepImported() : close()));
   dialog.addEventListener('cancel', (e) => {
     e.preventDefault();
     close();
@@ -417,7 +426,10 @@ export function initShipGarage() {
   equip.addEventListener('click', () => {
     if (!ready) return;
     try {
+      // A copied ship never replaces yours quietly: yours is kept as a design first.
+      const saved = importing ? saveImported(true) : '';
       const persisted = equipAppearance(draft);
+      if (saved) toast(saved, 4500);
       window.dispatchEvent(new CustomEvent('stardust:garage-equipped', { detail: { persisted } }));
       if (persisted) close();
       else
@@ -1113,6 +1125,98 @@ export function initShipGarage() {
       }
     });
   }
+  // --- Copying a ship (a leaderboard "Fly this ship" link, or a pasted ship code) ---
+  // The copy goes on the stage as a draft, never straight onto the ship. The pilot picks:
+  // Equip (it becomes the ship, and the one it replaces is kept as a design) or Keep my
+  // ship (the copy is saved as a design and nothing else changes). Closing discards it.
+  const titleText = { eyebrow: find('.garage-header .eyebrow').textContent, heading: find('#garage-title').textContent };
+  function leaveImport() {
+    importing = null;
+    delete dialog.dataset.importing;
+    find('.garage-header .eyebrow').textContent = titleText.eyebrow;
+    find('#garage-title').textContent = titleText.heading;
+    find('#garage-standard').hidden = false;
+    find('#garage-cancel').textContent = 'Cancel';
+    equip.textContent = 'Equip ship';
+  }
+  function beginImport({ appearance, name, from }) {
+    const a = resolveAvailableAppearance(appearance);
+    if (!a) { setStatus('That ship could not be loaded.'); return false; }
+    // Parts the garage does not offer yet fall back to the first; say so rather than pass it off as the original.
+    const adjusted = buildKey({ family: a.family, ...a.parts }) !== buildKey({ family: appearance.family, ...appearance.parts });
+    remember();
+    draft = a;
+    selected = draft.layers.at(-1)?.id;
+    generation++;
+    importing = { name, from };
+    find('#garage-design-name').value = name;
+    // The header says what this is, so the copy is never mistaken for the pilot's own ship.
+    dialog.dataset.importing = 'true';
+    find('.garage-header .eyebrow').textContent = from ? `STARDUST / COPIED FROM ${from.toUpperCase()}` : 'STARDUST / SHARED SHIP';
+    find('#garage-title').textContent = name;
+    find('#garage-standard').hidden = true;
+    find('#garage-cancel').textContent = 'Keep my ship';
+    equip.textContent = 'Equip';
+    equip.disabled = !ready;
+    parts();
+    layerList();
+    paint();
+    const full = readLibrary().length >= LIBRARY_LIMIT;
+    setStatus([
+      adjusted ? 'Some parts of this ship are not available yet, so they were swapped for the first ones.' : 'Nothing has changed on your ship yet.',
+      full ? 'Your design library is full, so this copy will not be saved. Delete a design first to keep it.' : 'Equip it to fly it, or keep yours. Either way a copy is saved in Designs.',
+    ].join(' '));
+    return true;
+  }
+  // What saving the copy writes to the library, said out loud. Returns the sentence to show.
+  function saveImported(equipping) {
+    const library = readLibrary();
+    const mine = equipping ? getEquippedAppearance() : null;
+    const keepMine = Boolean(mine) && !library.some((d) => sameAppearance(d.appearance, mine));
+    const duplicate = library.some((d) => sameAppearance(d.appearance, draft));
+    let room = LIBRARY_LIMIT - library.length;
+    const notes = [];
+    if (keepMine) {
+      if (room > 0) { saveDesign('My previous ship', mine); room--; notes.push('Your previous ship is saved in Designs.'); }
+      else notes.push('Your design library is full, so your previous ship was not saved.');
+    }
+    if (!duplicate) {
+      if (room > 0) { saveDesign(importing.name, draft); notes.push(`${importing.name} is saved in Designs.`); }
+      else notes.push('Your design library is full, so this copy was not saved as a design.');
+    }
+    return notes.join(' ');
+  }
+  function keepImported() {
+    const saved = saveImported(false);
+    toast(`Your ship is unchanged. ${saved}`.trim(), 4000);
+    close();
+  }
+  async function openImport(detail) {
+    await start();
+    if (!ready) return;
+    await open();
+    beginImport(detail);
+  }
+  window.addEventListener('stardust:import-ship', (e) => { openImport(e.detail).catch((error) => setStatus(error.message)); });
+  find('#garage-code-copy').addEventListener('click', async () => {
+    const code = encodeShipCode(draft);
+    const field = find('#garage-code');
+    if (!code) { setStatus('This design cannot be turned into a code.'); return; }
+    field.value = code;
+    try {
+      await navigator.clipboard.writeText(code);
+      setStatus('Ship code copied. Paste it in Discord or a message; anyone can use it here under Designs.');
+    } catch {
+      field.select();
+      setStatus('Your ship code is in the box. Select it to copy.');
+    }
+  });
+  find('#garage-code-use').addEventListener('click', () => {
+    const field = find('#garage-code');
+    const copied = decodeShipCode(field.value);
+    if (!copied) { setStatus(field.value.trim() ? shipCodeProblem(field.value) : 'Paste a ship code first.'); return; }
+    if (beginImport({ appearance: copied, name: importedShipName(copied.family), from: null })) field.value = '';
+  });
   // The part images are large (about 18 MB). A pilot flying the standard ship
   // does not download them until they open the garage; a pilot with a saved
   // custom ship needs them at start to draw it.

@@ -36,9 +36,16 @@ export function parseWeeklyQuery(search) {
   return { event, preview, focus: !!event };
 }
 
-/** The game link for an event, relative to the site root. */
-export function weeklyGameUrl(event) {
-  return `games/stardust/?weekly=${encodeURIComponent(event.id)}`;
+/** ?vs=<username> on a game or weekly-page URL: the pilot whose ghost to race. Usernames are 3-20 of A-Z a-z 0-9 _ -; anything else is ignored. */
+export function parseVsQuery(search) {
+  let value = '';
+  try { value = (new URLSearchParams(search || '').get('vs') || '').trim(); } catch { value = ''; }
+  return /^[A-Za-z0-9_-]{3,20}$/.test(value) ? value : null;
+}
+
+/** The game link for an event, relative to the site root. With `vs`, it also races that pilot's ghost. */
+export function weeklyGameUrl(event, vs = null) {
+  return `games/stardust/?weekly=${encodeURIComponent(event.id)}${vs ? `&vs=${encodeURIComponent(vs)}` : ''}`;
 }
 
 const f = (n) => Math.round(n * 100) / 100;
