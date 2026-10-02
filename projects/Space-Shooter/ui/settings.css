@@ -1,0 +1,86 @@
+/* Settings belong to the same quiet, cyan cockpit as the hangar. */
+#starmap-settings { align-items: start; padding: clamp(12px, 3vw, 36px); overflow-y: auto; scroll-padding: 20px 0 140px; }
+#starmap-settings button, #starmap-settings input, #starmap-settings select { scroll-margin-block: 20px 140px; }
+#starmap-settings > .panel > .eyebrow { margin: 0 0 6px; font-size: 10px; line-height: 1.3; }
+#starmap-settings > .panel { width: min(940px, 100%); max-width: 940px; margin: auto; padding: clamp(18px, 3vw, 30px); text-align: left; border-radius: 16px; border-color: #527482; background: linear-gradient(145deg, #132630, #0a1420 65%); box-shadow: 0 24px 90px #0008; }
+#starmap-settings h2 { margin: 5px 0 10px; font-size: clamp(26px, 4vw, 36px); letter-spacing: -.035em; }
+#starmap-settings h3 { margin: 0; font-size: 18px; letter-spacing: -.02em; color: #edf5f6; }
+#starmap-settings h4 { margin: 0; font-size: 14px; color: #edf5f6; }
+#starmap-settings .settings-save-note { color: #acc3cf; font-size: 13px; line-height: 1.6; margin: 0 0 22px; }
+#starmap-settings button, #starmap-settings select { min-height: 42px; border-radius: 7px; font: inherit; font-size: 13px; }
+#starmap-settings button:focus-visible, #starmap-settings input:focus-visible, #starmap-settings select:focus-visible, #starmap-settings .pad-focus { outline: 2px solid #b8fff8; outline-offset: 3px; }
+#starmap-settings .fx-settings-panel { display: grid; grid-template-columns: 148px minmax(0, 1fr); gap: 24px; margin: 0; padding: 0; border: 0; background: none; }
+#starmap-settings .fx-tabs { position: sticky; top: 0; align-self: start; display: flex; flex-direction: column; gap: 6px; margin: 0; padding: 6px; border-radius: 10px; background: #08121dcc; }
+#starmap-settings .fx-tabs button { flex: none; text-align: left; padding: 12px; border-color: transparent; color: #b6cbd5; background: transparent; }
+#starmap-settings .fx-tabs button.is-on { color: #d7fff7; background: #81e6df16; border-color: #81e6df55; box-shadow: inset 3px 0 #81e6df; }
+#starmap-settings .fx-pane { min-width: 0; }
+#starmap-settings .fx-pane-heading { margin: 0 0 14px; }
+#starmap-settings .fx-pane-heading > p { font-size: 13px; color: #acc3cf; line-height: 1.5; margin: 7px 0; }
+#starmap-settings .fx-pane-note { margin: 10px 0 14px; color: #acc3cf; font-size: 12px; line-height: 1.6; }
+#starmap-settings .fx-set-row { min-height: 60px; gap: 14px; padding: 12px 0; border-bottom: 1px solid #36556566; font-size: 14px; }
+#starmap-settings .fx-set-row > span { min-width: 0; }
+#starmap-settings .fx-set-row small { display: block; margin-top: 4px; font-size: 12px; color: #acc3cf; line-height: 1.5; }
+#starmap-settings .fx-stepper { flex-shrink: 0; }
+#starmap-settings .fx-stepper output { min-width: 54px; color: #d7fff7; font-size: 13px; }
+#starmap-settings .fx-binds { flex-shrink: 0; }
+#starmap-settings .fx-bind-clear { min-width: 42px; }
+#starmap-settings > .panel > .actions { position: sticky; bottom: -1px; display: flex; flex-wrap: wrap; gap: 10px; margin: 24px -2px -2px; padding: 16px 2px 2px; border-top: 1px solid #52748288; background: #0a1420f5; z-index: 2; }
+#starmap-settings .actions button { padding: 11px 18px; }
+#starmap-settings .actions button:last-child { color: #b6cbd5; background: transparent; }
+#starmap-settings .sound-settings { border: 0; }
+#starmap-settings .sound-settings > summary { display: none; }
+#starmap-settings .sound-settings .setting-row { padding: 14px 0; margin: 0; font-size: 14px; }
+#starmap-settings .sound-settings .check-row { padding: 12px 0; margin: 0; font-size: 14px; line-height: 1.6; }
+#starmap-settings input[type=checkbox] { width: 20px; height: 20px; accent-color: #81e6df; }
+#starmap-settings input[type=range] { accent-color: #81e6df; min-height: 32px; cursor: pointer; width: 100%; }
+.controller-card { padding: 20px; border: 1px solid #81e6df55; border-radius: 12px; background: linear-gradient(115deg, #15363b99, #0b1b28); }
+.controller-heading, .controller-test-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+#starmap-settings .controller-heading .eyebrow { font-size: 10px; margin: 0 0 5px; letter-spacing: .12em; }
+.controller-badge { display: inline-block; color: #ffd6a3; border: 1px solid #b78b5566; border-radius: 20px; padding: 6px 10px; font-size: 11px; }
+.controller-badge[data-state=ready] { color: #b8f6dc; border-color: #66c4a766; background: #66c4a714; }
+#starmap-settings .controller-name { color: #b8f6dc; font: 12px/1.6 Consolas, monospace; margin: 12px 0 0; overflow-wrap: anywhere; }
+#starmap-settings .controller-status { font-size: 13px; line-height: 1.65; color: #d5e3e9; margin: 14px 0; }
+.controller-device-label { display: block; font-size: 12px; margin-bottom: 6px; color: #acc3cf; }
+#controller-device { width: 100%; max-width: 100%; min-width: 0; color: #e1f0f4; background: #071520; border: 1px solid #527482; padding: 10px; text-overflow: ellipsis; }
+.controller-test-head { margin-top: 18px; }
+.controller-sticks { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin: 14px 0; }
+.controller-stick { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.controller-stick-face { position: relative; flex: 0 0 82px; height: 82px; border-radius: 50%; border: 1px solid #527482; background: linear-gradient(transparent 49%, #52748277 49%, #52748277 51%, transparent 51%), linear-gradient(90deg, transparent 49%, #52748277 49%, #52748277 51%, transparent 51%), #071520; }
+.controller-dead-ring { position: absolute; width: var(--deadzone, 20%); height: var(--deadzone, 20%); top: 50%; left: 50%; transform: translate(-50%, -50%); border: 1px dashed #81e6df88; background: #81e6df16; border-radius: 50%; }
+.controller-stick-dot { position: absolute; top: 50%; left: 50%; width: 12px; height: 12px; margin: -6px; border-radius: 50%; background: #81e6df; transform: translate(var(--stick-x, 0px), var(--stick-y, 0px)); }
+.controller-stick strong { display: block; font-size: 12px; color: #edf5f6; margin-bottom: 4px; }
+.controller-stick output, .controller-stick small { display: block; font: 11px/1.7 Consolas, monospace; color: #acc3cf; white-space: nowrap; }
+.controller-stick small { color: #b8f6dc; }
+.controller-triggers { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.controller-triggers label { color: #d5e3e9; font-size: 12px; }
+.controller-triggers output { display: block; color: #acc3cf; font: 11px/1.7 Consolas, monospace; }
+.controller-triggers meter { width: 100%; height: 12px; accent-color: #81e6df; }
+.controller-buttons { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 14px; }
+.controller-buttons span { font: 10px/1.4 Consolas, monospace; color: #acc3cf; padding: 5px 7px; border: 1px solid #52748277; border-radius: 4px; }
+.controller-buttons .is-down { color: #081520; background: #81e6df; border-color: #81e6df; }
+.controller-tuning { margin: 20px 0 26px; }
+.controller-range { display: grid; grid-template-columns: 1fr auto; gap: 6px 14px; margin-top: 18px; }
+.controller-range > label { font-size: 14px; color: #edf5f6; }
+.controller-range > output { color: #b8f6dc; font: 13px Consolas, monospace; }
+#starmap-settings .controller-range > p { grid-column: 1 / -1; color: #acc3cf; font-size: 12px; line-height: 1.5; margin: 0; }
+.controller-range > input { grid-column: 1 / -1; }
+.hangar-controller-status { color: #acc3cf; font-size: 12px; margin: -2px 0 16px; overflow-wrap: anywhere; }
+.controller-flight-warning { position: fixed; top: 76px; left: 50%; transform: translateX(-50%); z-index: 40; width: min(520px, calc(100% - 32px)); padding: 12px 16px; border: 1px solid #d0a76c; border-radius: 8px; background: #10202af5; color: #ffe0b5; font-size: 13px; line-height: 1.55; pointer-events: none; }
+.controller-flight-warning[hidden] { display: none; }
+@media (max-width: 700px) {
+  #starmap-settings .fx-settings-panel { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  #starmap-settings .fx-tabs { position: static; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  #starmap-settings .fx-tabs button { text-align: center; padding: 10px 5px; font-size: 12px; }
+  #starmap-settings .fx-tabs button.is-on { box-shadow: inset 0 -2px #81e6df; }
+  #starmap-settings .fx-set-row { font-size: 13px; }
+  #starmap-settings .fx-bind { min-width: 68px; }
+  .controller-card { padding: 14px; }
+  .controller-sticks { gap: 10px; }
+  .controller-stick { gap: 6px; }
+  .controller-stick-face { flex-basis: 72px; height: 72px; }
+  #starmap-settings .actions { flex-direction: column; }
+  #starmap-settings .actions button { width: 100%; }
+}
+@media (max-width: 380px) { #starmap-settings .fx-set-row { flex-wrap: wrap; } }
+@media (prefers-reduced-motion: reduce) { #starmap-settings *, .controller-flight-warning { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
+body.reduced-motion #starmap-settings * { animation: none !important; transition: none !important; scroll-behavior: auto !important; }

@@ -3,6 +3,8 @@
 // HUD/controls layout for touch and for desktop. Stored in this browser only;
 // phone and desktop keep their own.
 import { normalizeBinds, defaultBinds, KEY_ACTIONS, PAD_ACTIONS, DEFAULT_KEYS, DEFAULT_PAD, STICK_LAYOUTS } from './keybinds.js';
+import { CONTROLLER_DEFAULTS, normalizeControllerTuning } from './controllerTuning.js';
+export { CONTROLLER_DEFAULTS, CONTROLLER_LIMITS } from './controllerTuning.js';
 
 const KEY = 'stardust.flight.v1';
 
@@ -46,6 +48,7 @@ function defaults(touch) {
     cameraMode: 'track',
     camera: { ...CAMERA_DEFAULTS },
     binds: defaultBinds(),
+    controller: { ...CONTROLLER_DEFAULTS },
     tilt: { ...TILT_DEFAULTS },
     introSeen: {},
     layouts: { touch: null, desktop: null },
@@ -71,6 +74,7 @@ export function flightSettings() {
         tilt: { ...base.tilt, ...(saved.tilt || {}) },
         camera: { ...base.camera, ...(saved.camera || {}) },
         binds: normalizeBinds(saved.binds),
+        controller: normalizeControllerTuning(saved.controller),
         introSeen: { ...(saved.introSeen || {}) },
         layouts: { ...base.layouts, ...(saved.layouts || {}) },
       };
@@ -87,6 +91,7 @@ export function saveFlightSettings() {
 
 export function updateFlightSettings(mutate) {
   mutate(flightSettings());
+  flightSettings().controller = normalizeControllerTuning(flightSettings().controller);
   saveFlightSettings();
   globalThis.dispatchEvent?.(new CustomEvent('stardust:flightSettings'));
 }
@@ -109,6 +114,7 @@ export const cameraTuning = (settings = flightSettings()) => ({
 });
 /** The player's key and controller bindings (always complete and valid). */
 export const binds = () => flightSettings().binds;
+export const controllerTuning = () => normalizeControllerTuning(flightSettings().controller);
 export const minimapZoom = () => MINIMAP_ZOOMS[Math.max(0, Math.min(MINIMAP_ZOOMS.length - 1, flightSettings().minimap.zoomIndex | 0))];
 export const minimapIconScale = () => ICON_SCALES[Math.max(0, Math.min(ICON_SCALES.length - 1, flightSettings().minimap.iconIndex | 0))];
 
@@ -141,6 +147,8 @@ export function encodeSettingsCode(settings = flightSettings()) {
   if (Object.keys(keys).length) data.k = keys;
   if (Object.keys(pad).length) data.g = pad;
   if (b.sticks !== 'split') data.s = STICK_LAYOUTS.indexOf(b.sticks);
+  const tuning = normalizeControllerTuning(settings.controller);
+  data.ct = [tuning.stickDeadzone, tuning.triggerDeadzone, tuning.sensitivity];
   return CODE_PREFIX + btoa(JSON.stringify(data)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
@@ -170,6 +178,10 @@ export function decodeSettingsCode(code) {
     // Codes made before the camera setting existed carry no "c": leave the camera alone.
     const cameraMode = data.c === 1 ? 'behind' : data.c === 0 ? 'track' : undefined;
     const out = { minimap: { show: data.m[0] === 1, zoomIndex, iconIndex }, autoFire: data.a === 1, tilt: { deadIndex, maxIndex, sensIndex }, layouts, ...(cameraMode ? { cameraMode } : {}) };
+    if (data.ct !== undefined) {
+      if (!Array.isArray(data.ct) || data.ct.length !== 3 || !data.ct.every(Number.isFinite)) return null;
+      out.controller = normalizeControllerTuning({ stickDeadzone: data.ct[0], triggerDeadzone: data.ct[1], sensitivity: data.ct[2] });
+    }
     // Camera tuning and bindings arrived later; a code without them leaves them alone.
     if (Array.isArray(data.cs)) {
       const lists = [CAMERA_FOVS, CAMERA_DISTANCES, CAMERA_STIFFNESS, CAMERA_SWIVELS, CAMERA_TRANSITIONS];
@@ -198,6 +210,7 @@ export function applySettingsCode(code) {
     if (next.cameraMode) s.cameraMode = next.cameraMode;
     if (next.camera) s.camera = next.camera;
     if (next.binds) s.binds = next.binds;
+    if (next.controller) s.controller = next.controller;
     s.layouts = { ...(s.layouts || {}), ...next.layouts };
   });
   return true;

@@ -457,6 +457,11 @@ test(
       );
       await page.evaluate(() => window.dispatchEvent(new Event("focus")));
     }
+    // The shared selector now requires activation/choice followed by neutral.
+    for (const page of [host, guest]) await page.evaluate(async () => {
+      (await import('../systems/controllerDevices.js')).selectController(2);
+      window.__dogfightDiag();
+    });
     await host.waitForTimeout(80);
     const configure = async (page, axes, buttons = {}) =>
       page.evaluate(

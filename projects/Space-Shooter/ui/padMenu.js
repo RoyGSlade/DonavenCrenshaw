@@ -4,14 +4,20 @@
 // B goes back. It runs on its own animation frame, because the game loop is
 // stopped on some of these screens.
 const REPEAT_DELAY = 360, REPEAT_EVERY = 120, STICK = 0.55;
+import { controllerSnapshot, standardController } from '../systems/controllerDevices.js';
+import { controllerTuning } from '../systems/flightSettings.js';
 const FOCUSABLE = 'button:not(:disabled), a[href], input:not([disabled]), select:not([disabled]), summary';
 
 let held = {};        // direction -> { since, last }
 let lastButtons = {};
 let current = null;
-let suspended = false;
+const suspensions = new Set();
+let lastRevision = -1, lastRoot = null, awaitingRelease = false;
 /** While a controller button is being rebound, presses must not drive the menu. */
-export function setPadMenuSuspended(on) { suspended = !!on; }
+export function setPadMenuSuspended(on, reason = 'capture') {
+  if (on) suspensions.add(reason);
+  else if (suspensions.delete(reason)) awaitingRelease = true;
+}
 
 function panel() {
   const dialog = document.querySelector('dialog[open]');
@@ -59,6 +65,7 @@ function step(list, from, dir) {
 
 function press(node) {
   if (!node) return;
+  if (node.matches('select')) return; // Left/right chooses; keep the browser popup closed.
   if (node.matches('input[type=checkbox]')) { node.click(); return; }
   node.click();
 }
@@ -77,6 +84,11 @@ function back(root) {
 }
 
 function adjustRange(node, sign) {
+  if (node?.matches('select')) {
+    node.selectedIndex = Math.min(node.options.length - 1, Math.max(0, node.selectedIndex + sign));
+    node.dispatchEvent(new Event('change', { bubbles: true }));
+    return true;
+  }
   if (!node?.matches('input[type=range]')) return false;
   const stepSize = Number(node.step) || (Number(node.max) - Number(node.min)) / 20 || 0.05;
   node.value = String(Math.min(Number(node.max), Math.max(Number(node.min), Number(node.value) + sign * stepSize)));
@@ -87,29 +99,43 @@ function adjustRange(node, sign) {
 
 function tick(now) {
   requestAnimationFrame(tick);
-  const pads = navigator.getGamepads?.() || [];
-  const pad = [...pads].find((p) => p?.connected);
+  const snapshot = controllerSnapshot();
+  const pad = snapshot.pad;
   const root = panel();
-  if (!pad || !root) {
+  if (!pad || !root || !snapshot.active || !snapshot.activated || !standardController(pad)) {
     held = {};
+    lastButtons = {}; awaitingRelease = true;
     if (!root && current) { current.classList.remove('pad-focus'); current = null; }
     return;
   }
   const btn = (i) => !!pad.buttons?.[i]?.pressed;
-  // Keep tracking A and B so the press that ends a rebind is not taken as a click.
-  if (suspended) { lastButtons = { a: btn(0), b: btn(1) }; held = {}; return; }
   const ax = pad.axes?.[0] || 0, ay = pad.axes?.[1] || 0;
+  const threshold = Math.max(STICK, controllerTuning().stickDeadzone);
+  if (lastRevision !== snapshot.revision || lastRoot !== root) {
+    lastRevision = snapshot.revision; lastRoot = root; awaitingRelease = true; held = {}; lastButtons = {};
+  }
+  if (awaitingRelease) {
+    // Activation and held directions after a dialog/focus change cannot click
+    // a newly opened screen. Stick drift below the menu threshold is harmless.
+    if (!Array.from(pad.buttons || []).some(b => b?.pressed || b?.value > 0.5) && Math.abs(ax) < threshold && Math.abs(ay) < threshold) awaitingRelease = false;
+    return;
+  }
+  // Keep tracking A and B so the press that ends a rebind is not taken as a click.
+  if (suspensions.size) { lastButtons = { a: btn(0), b: btn(1) }; held = {}; return; }
   const dirs = {
-    up: btn(12) || ay < -STICK,
-    down: btn(13) || ay > STICK,
-    left: btn(14) || ax < -STICK,
-    right: btn(15) || ax > STICK,
+    up: btn(12) || ay < -threshold,
+    down: btn(13) || ay > threshold,
+    left: btn(14) || ax < -threshold,
+    right: btn(15) || ax > threshold,
   };
   const list = targets(root);
   if (current && !list.includes(current)) mark(null);
   // Start from whatever the screen already focused (Resume, Retry, Fly again).
   const active = document.activeElement;
-  if (!current && list.includes(active) && (Object.values(dirs).some(Boolean) || btn(0))) { current = active; active.classList.add('pad-focus'); }
+  if (list.includes(active) && current !== active && (Object.values(dirs).some(Boolean) || btn(0))) {
+    if (current) current.classList.remove('pad-focus');
+    current = active; active.classList.add('pad-focus');
+  }
   for (const [dir, on] of Object.entries(dirs)) {
     if (!on) { delete held[dir]; continue; }
     const h = held[dir];
@@ -132,5 +158,7 @@ export function initPadMenu() {
   started = true;
   // A mouse or touch takes over: drop the controller highlight.
   window.addEventListener('pointerdown', () => { if (current) { current.classList.remove('pad-focus'); current = null; } }, { passive: true });
+  window.addEventListener('blur', () => { awaitingRelease = true; held = {}; lastButtons = {}; });
+  document.addEventListener('visibilitychange', () => { if (document.hidden) { awaitingRelease = true; held = {}; lastButtons = {}; } });
   requestAnimationFrame(tick);
 }

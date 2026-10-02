@@ -137,7 +137,11 @@ test(
       );
       assert.match(await page.locator("#hp2").textContent(), /100/);
     }
-    await host.waitForTimeout(80); // Neutral sample arms the shared gamepad reader after round reset.
+    for (const page of pages) await page.evaluate(async () => {
+      (await import('../systems/controllerDevices.js')).selectController(0);
+      window.__ffaDiag();
+    });
+    await host.waitForTimeout(80); // Choice and neutral sample arm the shared gamepad reader.
     const before = (await diag(host)).ships;
     await pad(orange, { strafe: 0.7 });
     await pad(violet, { thrust: 0.7 });

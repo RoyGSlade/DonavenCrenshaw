@@ -14,8 +14,10 @@ import {
 import { toast } from './hud.js';
 import { setPadMenuSuspended } from './padMenu.js';
 import { getSyncStatus, syncStatusText } from '../systems/hubSyncLive.js';
+import { controllerMarkup, initControllerPanel, endControllerTest } from './controllerPanel.js';
+import { controllerSnapshot, standardController } from '../systems/controllerDevices.js';
 
-const TABS = [['camera', 'Camera'], ['controls', 'Controls'], ['keys', 'Keys'], ['pad', 'Controller'], ['hud', 'HUD']];
+const TABS = [['pad', 'Controller'], ['camera', 'Camera'], ['controls', 'Controls'], ['keys', 'Keys'], ['hud', 'HUD'], ['sound', 'Sound & comfort']];
 
 // Stepped settings: [tab, id, label, hint, list, group, key, defaults, format, touchOnly]
 const STEPPERS = [
@@ -32,7 +34,7 @@ const STEPPERS = [
 ];
 
 const esc = (text) => String(text).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-const row = (label, hint, control, cls = '') => `<div class="fx-set-row ${cls}"><span>${label}${hint ? ` <small>(${hint})</small>` : ''}</span>${control}</div>`;
+const row = (label, hint, control, cls = '') => `<div class="fx-set-row ${cls}"><span>${label}${hint ? `<small>${hint}</small>` : ''}</span>${control}</div>`;
 const stepper = ([, id, label, hint, , , , , , touchOnly]) => row(label, hint,
   `<div class="fx-stepper"><button type="button" data-fx="${id}-" aria-label="${esc(label)}: lower">−</button><output data-fx-out="${id}"></output><button type="button" data-fx="${id}+" aria-label="${esc(label)}: higher">+</button></div>`, touchOnly ? 'fx-tilt-row' : '');
 
@@ -43,40 +45,46 @@ function markup() {
   const padRows = PAD_ACTIONS.map(([action, label]) => row(label, '',
     `<div class="fx-binds"><button type="button" class="fx-bind" data-bind-pad="${action}"></button><button type="button" class="fx-bind-clear" data-clear-pad="${action}" aria-label="Unbind ${esc(label)}">×</button></div>`)).join('');
   return `
-    <p class="eyebrow">FLIGHT SETTINGS</p>
-    <div class="fx-tabs" role="tablist">${TABS.map(([id, label]) => `<button type="button" role="tab" data-tab="${id}">${label}</button>`).join('')}</div>
+    <div class="fx-tabs" role="tablist" aria-label="Settings categories">${TABS.map(([id, label]) => `<button type="button" role="tab" id="settings-tab-${id}" aria-controls="settings-pane-${id}" data-tab="${id}">${label}</button>`).join('')}</div>
     <div class="fx-pane" data-pane="camera">
+      <div class="fx-pane-heading"><h3>Your view of the track</h3><p>Set how the camera follows your ship.</p></div>
       ${row('Camera', 'behind ship: the view turns with you', '<button type="button" data-fx="camera"></button>')}
       ${steppers('camera')}
       ${row('Camera defaults', '', '<button type="button" data-fx="camera-reset">Reset</button>')}
     </div>
     <div class="fx-pane" data-pane="controls">
+      <div class="fx-pane-heading"><h3>Flight assists &amp; tilt</h3><p>Keep firing simple, or tune phone steering.</p></div>
       ${row('Auto fire', 'shoots breakable targets ahead', '<button type="button" data-fx="autofire"></button>')}
       ${steppers('controls')}
       <p class="fx-pane-note">Keys and controller buttons have their own tabs. The mouse can fire or boost, never steer.</p>
     </div>
     <div class="fx-pane" data-pane="keys">
+      <div class="fx-pane-heading"><h3>Keyboard &amp; mouse</h3><p>Two slots per action. A key belongs to one action at a time.</p></div>
       <p class="fx-pane-note">Pick a slot, then press a key or mouse button. Esc cancels, Backspace clears. Esc always pauses.</p>
       ${keyRows}
       ${row('Key defaults', '', '<button type="button" data-fx="keys-reset">Reset</button>')}
     </div>
     <div class="fx-pane" data-pane="pad">
+      ${controllerMarkup()}
+      <div class="fx-pane-heading"><h3>Controller bindings</h3><p>Choose the stick layout and buttons that suit you.</p></div>
       ${row('Sticks', '', '<button type="button" data-fx="sticks"></button>')}
       <p class="fx-pane-note">Pick an action, then press a controller button. Menus always use the D-pad or left stick, A and B.</p>
       ${padRows}
-      ${row('Controller defaults', '', '<button type="button" data-fx="pad-reset">Reset</button>')}
+      ${row('Reset controller bindings', 'restores buttons and stick layout; keeps your tuning', '<button type="button" data-fx="pad-reset">Reset bindings</button>')}
     </div>
     <div class="fx-pane" data-pane="hud">
+      <div class="fx-pane-heading"><h3>Instruments &amp; layout</h3><p>Keep the information you need within reach.</p></div>
       ${row('Minimap', '', '<button type="button" data-fx="map-toggle"></button>')}
       ${steppers('hud')}
       ${row('HUD &amp; controls layout', '', '<button type="button" data-fx="edit">Edit layout</button>')}
       ${row('Share settings', 'camera, controls, keys, layout', '<div class="fx-stepper"><button type="button" data-fx="copy-code">Copy code</button><button type="button" data-fx="paste-code">Paste code</button></div>')}
       <p class="fx-pane-note" data-fx-sync role="status"></p>
-    </div>`;
+    </div>
+    <div class="fx-pane" data-pane="sound"><div class="fx-pane-heading"><h3>Sound &amp; comfort</h3><p>Preview the volume here. Done saves these settings.</p></div></div>`;
 }
 
 let box = null;
-let tab = 'camera';
+let tab = 'pad';
 let capture = null;   // { kind: 'key' | 'pad', action, slot, button, stop }
 
 function paint() {
@@ -165,13 +173,16 @@ function captureKey(button) {
 
 function capturePad(button) {
   endCapture();
+  endControllerTest();
   const action = button.dataset.bindPad;
   let raf = 0, released = false;
+  let revision = controllerSnapshot().revision;
   const started = performance.now();
   const onKey = (e) => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); endCapture(); } };
   const poll = () => {
     raf = requestAnimationFrame(poll);
-    const pad = [...(navigator.getGamepads?.() || [])].find((p) => p?.connected);
+    const snapshot = controllerSnapshot(), pad = snapshot.pad;
+    if (!snapshot.active || snapshot.revision !== revision || (pad && !standardController(pad))) { toast('Controller changed or game lost focus. Choose the action again.', 2400); return endCapture(); }
     if (performance.now() - started > 10000) { toast(pad ? 'No button pressed.' : 'No controller found. Press a button on it first.', 2400); return endCapture(); }
     if (!pad) return;
     const down = [];
@@ -214,12 +225,25 @@ export function buildFlightSettings({ onEditLayout, onChange }) {
   box.className = 'fx-settings-panel';
   box.innerHTML = markup();
   panel.append(box);
+  for (const pane of box.querySelectorAll('[data-pane]')) {
+    pane.id = `settings-pane-${pane.dataset.pane}`;
+    pane.setAttribute('role', 'tabpanel');
+    pane.setAttribute('aria-labelledby', `settings-tab-${pane.dataset.pane}`);
+  }
+  const sound = document.querySelector('.sound-settings');
+  if (sound) { sound.open = true; box.querySelector('[data-pane="sound"]').append(sound); }
+  initControllerPanel(box);
+  const tabLayout = window.matchMedia('(max-width: 700px)');
+  const orientTabs = () => box.querySelector('.fx-tabs').setAttribute('aria-orientation', tabLayout.matches ? 'horizontal' : 'vertical');
+  tabLayout.addEventListener('change', orientTabs);
+  orientTabs();
   box.querySelector('.fx-tabs').addEventListener('keydown', event => {
-    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+    if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) return;
     event.preventDefault();
     endCapture();
+    endControllerTest();
     const index = TABS.findIndex(([id]) => id === tab);
-    const next = event.key === 'Home' ? 0 : event.key === 'End' ? TABS.length - 1 : (index + (event.key === 'ArrowRight' ? 1 : -1) + TABS.length) % TABS.length;
+    const next = event.key === 'Home' ? 0 : event.key === 'End' ? TABS.length - 1 : (index + (['ArrowRight', 'ArrowDown'].includes(event.key) ? 1 : -1) + TABS.length) % TABS.length;
     tab = TABS[next][0];
     paint();
     box.querySelector(`[data-tab="${tab}"]`).focus();
@@ -227,7 +251,7 @@ export function buildFlightSettings({ onEditLayout, onChange }) {
   box.addEventListener('click', (event) => {
     const t = event.target;
     const tabBtn = t.closest('[data-tab]');
-    if (tabBtn) { endCapture(); tab = tabBtn.dataset.tab; return paint(); }
+    if (tabBtn) { endCapture(); endControllerTest(); tab = tabBtn.dataset.tab; return paint(); }
     const keyBtn = t.closest('[data-bind-key]');
     if (keyBtn) return capture?.button === keyBtn ? endCapture() : captureKey(keyBtn);
     const padBtn = t.closest('[data-bind-pad]');
@@ -264,6 +288,9 @@ export function buildFlightSettings({ onEditLayout, onChange }) {
     .observe(document.getElementById('starmap-settings'), { attributes: true, attributeFilter: ['class'] });
   window.addEventListener('stardust:flightSettings', paint);
   window.addEventListener('stardust:syncStatus', paint);
+  window.addEventListener('blur', endCapture);
+  window.addEventListener('stardust:controller-selected', endCapture);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) endCapture(); });
   paint();
 }
 

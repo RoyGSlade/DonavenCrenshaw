@@ -70,7 +70,24 @@ document.addEventListener("visibilitychange", () => {
 });
 
 import { createGamepadReader } from "../systems/gamepad.js";
-const gamepad = createGamepadReader();
+import { selectedController, controllerRevision, reportControllerState, controllerSnapshot, standardController } from "../systems/controllerDevices.js";
+import { binds, controllerTuning } from "../systems/flightSettings.js";
+const gamepad = createGamepadReader({ getPad: selectedController, getRevision: controllerRevision, getBindings: binds, getTuning: controllerTuning });
+let controllerStatusAt = 0;
+function updateControllerStatus(now) {
+  if (now - controllerStatusAt < 250) return;
+  controllerStatusAt = now;
+  const snapshot = controllerSnapshot(), pad = snapshot.pad, guard = gamepad.getState();
+  const text = !snapshot.available ? 'Controller access unavailable in this browser.'
+    : !snapshot.active ? 'Controller paused: click the game and release controls.'
+    : !pad && snapshot.preference ? 'Chosen controller disconnected. Reconnect it or choose another in hangar settings.'
+    : !pad ? ''
+    : !standardController(pad) ? 'Controller has no standard mapping. Use the raw test in hangar settings, standard mode or keyboard/touch.'
+    : !snapshot.activated ? 'Controller detected: press a button to activate, then release controls.'
+    : guard.awaitingNeutral ? `Controller waiting for neutral: release ${guard.blocking.length ? guard.blocking.join(', ') : 'sticks and buttons'}. Tune drift in hangar settings.`
+    : `Controller ready: ${pad.id || 'standard gamepad'}`;
+  for (const node of document.querySelectorAll('[data-controller-status]')) if (node.textContent !== text) node.textContent = text;
+}
 let inputFocused = true;
 const $ = (id) => document.getElementById(id),
   canvas = $("arena"),
@@ -199,9 +216,10 @@ watchFullscreen(() => {
     : "Fullscreen";
 });
 function controls() {
-  const gp = gamepad.poll(navigator.getGamepads?.() || [], {
+  const gp = gamepad.poll([], {
     active: inputFocused && !document.hidden,
   });
+  reportControllerState(gamepad.getState());
   if (gp.fullscreenEdge)
     toggleMobileFullscreen().then((result) => {
       if (!result.ok) $("tilt-status").textContent = result.message;
@@ -1358,6 +1376,7 @@ function frame(now) {
     }
   }
   render(now);
+  updateControllerStatus(now);
   updatePausePanel(now);
   if (awayAt.size) renderSeats(now);
   requestAnimationFrame(frame);

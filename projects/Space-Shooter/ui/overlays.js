@@ -156,7 +156,7 @@ function trapOverlayFocus(event) {
   if (event.key !== 'Tab') return;
   const panel = [...document.querySelectorAll('.overlay-panel:not(.hidden)')].at(-1);
   if (!panel) return;
-  const targets = [...panel.querySelectorAll('button:not(:disabled), a[href], input, summary')].filter(node => node.getClientRects().length && node.tabIndex >= 0);
+  const targets = [...panel.querySelectorAll('button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), summary')].filter(node => node.getClientRects().length && node.tabIndex >= 0);
   if (!targets.length) return;
   const first = targets[0], last = targets.at(-1);
   if (event.shiftKey && (document.activeElement === first || !panel.contains(document.activeElement))) { last.focus(); event.preventDefault(); }
@@ -206,7 +206,7 @@ export function openSettingsOverlay(event) {
   el('setting-invert-thrust').checked = !!state.settings.invertThrustAxis;
   el('setting-reduced-motion').checked = !!state.settings.reducedMotion;
   show('starmap-settings');
-  el('starmap-settings')?.querySelector('.fx-tabs button, #settings-save-btn')?.focus();
+  el('starmap-settings')?.querySelector('.fx-tabs [aria-selected="true"], #settings-save-btn')?.focus();
 }
 export function closeSettingsOverlay() {
   hide('starmap-settings'); state.ui.showSettingsOverlay = false; state.ui.paused = settingsReturnPaused; syncTouchControls();
