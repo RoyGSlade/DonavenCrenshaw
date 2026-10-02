@@ -211,9 +211,17 @@ async function initPublicDir() {
     });
     if (fs.existsSync(path.join(ROOT_DIR, 'scripts'))) {
         await fs.ensureDir(path.join(PUBLIC_DIR, 'scripts'));
-        for (const filename of ['script.js', 'smoke.js', 'light-engine.js', 'account.js', 'stardust-boards.js', 'stardust-challenge.js', 'social.js', 'share.js', 'profile.js', 'pilot-ui.js', 'stardust-weekly.js', 'pilot-profile.js', 'ship-info.js', 'ship-ui.js']) {
+        for (const filename of ['script.js', 'smoke.js', 'light-engine.js', 'account.js', 'visits.js', 'stardust-boards.js', 'stardust-challenge.js', 'social.js', 'share.js', 'profile.js', 'pilot-ui.js', 'stardust-weekly.js', 'pilot-profile.js', 'ship-info.js', 'ship-ui.js']) {
             await copyIfPresent(path.join(ROOT_DIR, 'scripts', filename), path.join(PUBLIC_DIR, 'scripts', filename));
         }
+    }
+    // The game page is copied, not rendered from head.ejs, so it gets the visit
+    // counter here (scripts/visits.js). It is the page that matters most.
+    const gamePage = path.join(PUBLIC_DIR, 'games', 'stardust', 'index.html');
+    if (fs.existsSync(gamePage)) {
+        const html = await fs.readFile(gamePage, 'utf-8');
+        const tag = `<script type="module" src="../../scripts/visits.js" data-visits-hub="${HUB_URL}"></script>`;
+        if (!html.includes('data-visits-hub')) await fs.writeFile(gamePage, html.replace('</body>', `  ${tag}\n</body>`));
     }
 }
 

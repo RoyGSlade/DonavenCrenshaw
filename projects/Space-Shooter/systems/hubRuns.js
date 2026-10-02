@@ -128,6 +128,8 @@ export function createRunRecorder({ config = runtimeConfig, fetchImpl = globalTh
       return res.ok && Array.isArray(res.data?.entries) ? res.data.entries : null;
     },
     get player() { return player; },
+    // The hub's origin (https://api.donavencrenshaw.com), or null with no hub: where share links point.
+    get hubOrigin() { return origin; },
     get enabled() { return Boolean(base); },
     // Whether the last connect() reached the hub at all.
     get reachable() { return reachable; },
@@ -282,10 +284,11 @@ export function createRunRecorder({ config = runtimeConfig, fetchImpl = globalTh
     },
 
     // A leaderboard ghost: { username, displayName, timeMs, inputLog, rank } or
-    // null. rank picks a public place; me: true is the signed-in player's best.
-    async ghost(board, { rank = 1, me = false } = {}) {
+    // null. rank picks a public place; user: that pilot's best (a "vs" link);
+    // me: true is the signed-in player's best.
+    async ghost(board, { rank = 1, me = false, user = null } = {}) {
       if (!base) return null;
-      const q = me ? 'me=1' : `rank=${encodeURIComponent(rank)}`;
+      const q = me ? 'me=1' : user ? `user=${encodeURIComponent(user)}` : `rank=${encodeURIComponent(rank)}`;
       const res = await call(`${base}/boards/${encodeURIComponent(board)}/ghost?${q}`);
       // The ship the ghost was flown in rides along when the hub has it: { appearance, build }.
       return res.ok && typeof res.data?.inputLog === 'string' ? { ...res.data, ...ghostShip(res.data) } : null;

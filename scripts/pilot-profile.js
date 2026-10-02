@@ -12,6 +12,7 @@ import { readProfileName, profileView, PROFILE_SECTIONS } from './profile.js';
 import { createHub, socialApi } from './social.js';
 import { createPilotUi, el } from './pilot-ui.js';
 import { paintShip } from './ship-ui.js';
+import { shareActions } from './ship-info.js';
 
 const root = document.querySelector('[data-pilot-profile]');
 const tag = document.querySelector('script[data-hub]');
@@ -104,6 +105,10 @@ function run(page) {
         const shipSlot = $('[data-pf-ship]');
         if (has.ship) paintShip(shipSlot, p.ship, { size: 256, base: BASE }).catch(() => {});
         else shipSlot.replaceChildren();
+        // "Fly this ship" opens the game with a copy of it to equip or keep (never on your own profile).
+        const fly = shareActions({ username: p.username, ship: p.ship, isMe: p.isOwner }, BASE).find((action) => action.kind === 'ship');
+        $('[data-pf-ship-action]').hidden = !(has.ship && fly);
+        if (fly) $('[data-pf-fly-ship]').href = fly.href;
 
         section('bests', has.bests);
         $('[data-pf-bests]').replaceChildren(...p.bests.map((b) => row([['sd-pf-cell-name', b.name], ['sd-pf-cell-time', b.time], ['sd-pf-cell-rank', b.rank]])));

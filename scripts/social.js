@@ -93,6 +93,12 @@ export function readChallengeId(search) {
     return CHALLENGE_ID.test(value) ? value : null;
 }
 
+// ?vs=<username> on the weekly page: whose ghost to race. Exact usernames only.
+export function readVsParam(search) {
+    const value = (new URLSearchParams(search || '').get('vs') || '').trim();
+    return USERNAME.test(value) ? value : null;
+}
+
 // What someone typed into "Add a friend": a username, @username, or a pasted
 // invite link. Returns the username, or null when it can't be one.
 export function cleanUsername(input) {
@@ -195,6 +201,8 @@ export function boardRows(entries, meUsername) {
         // Optional extras from the hub: the ship { build, family } and the device { device, input, build }
         // the time was flown on. Rows without them show nothing extra (ship-info.js).
         ship: entry.ship && typeof entry.ship === 'object' ? entry.ship : null,
+        // True when the pilot lets others copy their flight settings (an opt-in on their account page).
+        hasSettings: entry.hasSettings === true,
         client: entry.client && typeof entry.client === 'object' ? entry.client : null,
         isMe: Boolean(entry.isMe || (meUsername && entry.username === meUsername))
     }));
@@ -363,6 +371,10 @@ export function socialApi(hub) {
         // One section of the public profile at a time; the hub changes only the keys sent.
         setProfileShow: (section, shown) => hub('/users/profile', { method: 'PUT', body: { profileShow: { [section]: Boolean(shown) } } }),
         account: () => hub('/users/me'),
+        // Discord linking. status answers { enabled } so the card can hide itself; linking is a
+        // browser navigation to discordLinkUrl(), and unlinking answers { discord, rolesRemoved }.
+        discordStatus: () => hub('/discord/status'),
+        unlinkDiscord: () => hub('/discord/link', { method: 'DELETE' }),
         // The equipped ship (404 no_ship when none) and the pilot's published designs.
         myShip: () => hub('/stardust/ship'),
         liveries: (artist) => hub(`/stardust/liveries${artist ? `?artist=${id(artist)}` : ''}`),
@@ -373,4 +385,47 @@ export function socialApi(hub) {
         postComment: (page, text) => hub('/feedback', { method: 'POST', body: { page, text } }),
         deleteComment: (commentId) => hub(`/feedback/${id(commentId)}`, { method: 'DELETE' })
     };
+}
+
+// --- Discord ---------------------------------------------------------------------------
+
+export const DISCORD_INVITE = 'https://discord.gg/qjntnnd9cD';
+
+// The roles the bot can give a linked pilot, as shown on the account page.
+export const DISCORD_ROLES = [
+    ['Pilot', 'Finish any Stardust run while signed in.'],
+    ['Weekly Finisher', 'Set a time on the weekly that is live now.'],
+    ['Podium and Weekly Champion', 'Place top three, or first, on the last weekly. Staff dev times never place.'],
+    ['Needle, Manta, Wisp or Courier Pilot', 'The family of your equipped ship, only while your profile shows your ship.']
+];
+
+// Where the "Link Discord" button goes: the hub starts the OAuth flow and sends the
+// pilot back to returnUrl (a page on this site) with ?discord=<code> added.
+export function discordLinkUrl(hubOrigin, returnUrl) {
+    const base = String(hubOrigin || '').replace(/\/+$/, '');
+    return `${base}/api/discord/link?return=${encodeURIComponent(returnUrl)}`;
+}
+
+const DISCORD_RESULTS = {
+    linked: ['ok', 'Discord linked. Your roles usually arrive within 15 minutes.'],
+    denied: ['info', 'You cancelled on Discord, so nothing was linked.'],
+    state_invalid: ['error', 'That link attempt expired. Press Link Discord to start again.'],
+    signin_required: ['error', 'Sign in first, then link Discord.'],
+    wrong_account: ['error', 'You are signed in as a different account than the one that started the link. Press Link Discord to try again.'],
+    already_linked: ['error', 'That Discord account is already linked to another account here. Unlink it there first, or use a different Discord account.'],
+    exchange_failed: ['error', 'Discord didn’t accept the link. Try again.'],
+    discord_unreachable: ['error', 'Discord isn’t answering. Try again in a few minutes.']
+};
+
+// What ?discord=<code> on the account page means: { kind, text } or null for an unknown code.
+export function discordResult(code) {
+    const found = Object.hasOwn(DISCORD_RESULTS, code) ? DISCORD_RESULTS[code] : null;
+    return found ? { kind: found[0], text: found[1] } : null;
+}
+
+// What to say after DELETE /discord/link answered with `data`.
+export function discordUnlinkText(data) {
+    if (data?.rolesRemoved === true) return 'Unlinked. Your Stardust roles were removed from the server.';
+    if (data?.rolesRemoved === false) return 'Unlinked. Discord didn’t answer, so a role may still show on the server; ask in the Discord and it will be removed.';
+    return 'Unlinked.';
 }

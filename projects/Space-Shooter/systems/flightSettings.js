@@ -199,8 +199,12 @@ export function decodeSettingsCode(code) {
   } catch { return null; }
 }
 
-/** Apply a pasted code. Layouts the code does not carry are left as they are. Returns false for a bad code. */
-export function applySettingsCode(code) {
+/**
+ * Apply a pasted code. Layouts the code does not carry are left as they are, unless
+ * replaceLayouts is set (an undo, which must put the old settings back exactly).
+ * Returns false for a bad code.
+ */
+export function applySettingsCode(code, { replaceLayouts = false } = {}) {
   const next = decodeSettingsCode(code);
   if (!next) return false;
   updateFlightSettings((s) => {
@@ -211,7 +215,7 @@ export function applySettingsCode(code) {
     if (next.camera) s.camera = next.camera;
     if (next.binds) s.binds = next.binds;
     if (next.controller) s.controller = next.controller;
-    s.layouts = { ...(s.layouts || {}), ...next.layouts };
+    s.layouts = replaceLayouts ? { desktop: null, 'touch-landscape': null, 'touch-portrait': null, ...next.layouts } : { ...(s.layouts || {}), ...next.layouts };
   });
   return true;
 }

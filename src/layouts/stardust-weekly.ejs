@@ -32,6 +32,7 @@
                 <div class="sd-wk-hero-copy">
                     <h1 class="sd-wk-title"><span class="sd-wk-kicker">Weekly time trial · Week <%= wk.week %> ·</span> <span class="sd-wk-name"><%= wk.title %></span></h1>
                     <p class="sd-wk-tagline"><%= wk.tagline %></p>
+                    <p class="sd-wk-vs" role="status" data-wk-vs hidden></p>
 
                     <div class="sd-wk-clock" role="group" aria-labelledby="sd-wk-clock-label" data-wk-clock data-state="<%= wk.state %>">
                         <p class="sd-wk-clock-label" id="sd-wk-clock-label" data-wk-clock-label><%= wk.state === 'upcoming' ? 'Opens' : wk.state === 'live' ? 'Open now · closes' : 'Closed' %></p>

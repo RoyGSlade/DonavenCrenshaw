@@ -812,3 +812,12 @@
   .garage-stats-row { display: block; margin: 0; font: 9px Consolas, monospace; letter-spacing: 0.06em; color: #91b8bd; white-space: nowrap; }
   .garage-stats-row b { color: #ffd6a3; font-size: 10px; }
 }
+
+/* A copied ship on the stage (leaderboard "Fly this ship" link or a pasted ship code): the header names it. */
+.ship-garage[data-importing] .garage-header {
+  border-bottom-color: #69f3ec88;
+  box-shadow: inset 3px 0 0 #69f3ec;
+}
+.ship-garage[data-importing] .garage-header h2 {
+  overflow-wrap: anywhere;
+}

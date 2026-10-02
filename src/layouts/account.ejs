@@ -164,7 +164,7 @@
                         </div>
                         <fieldset class="acct-fieldset acct-show" data-acct-show>
                             <legend class="acct-sub-title mono">What your profile shows</legend>
-                            <p class="acct-hint acct-show-lock" id="acct-show-lock" data-acct-show-lock hidden>Your profile is private, so these are switched off for everyone else. Turn on Public profile to choose. Event results are the exception: they follow their own switch either way.</p>
+                            <p class="acct-hint acct-show-lock" id="acct-show-lock" data-acct-show-lock hidden>Your profile is private, so these are switched off for everyone else. Turn on Public profile to choose. Event results and Flight settings are the exceptions: they follow their own switch either way.</p>
                             <ul class="acct-show-list">
                                 <% [['bio', 'Bio', 'The short bio from your profile.'],
                                     ['titles', 'Titles', 'Every title you have earned.'],
@@ -172,7 +172,8 @@
                                     ['dogfight', 'Dogfight record', 'Your Dogfight wins and losses.'],
                                     ['events', 'Event results', 'Weekly placements. These show even while your profile is private.'],
                                     ['ship', 'Ship', 'The ship you have equipped, drawn from the garage.'],
-                                    ['devices', 'Device badges', 'A small icon on leaderboard rows for the device and controls you flew with.']].forEach(([key, label, hint]) => { %>
+                                    ['devices', 'Device badges', 'A small icon on leaderboard rows for the device and controls you flew with.'],
+                                    ['settings', 'Flight settings', 'Let others copy my flight settings from the leaderboards. Off until you switch it on. Shares your camera, controls, key and controller bindings and HUD layout, nothing about your account. Works even while your profile is private.']].forEach(([key, label, hint]) => { %>
                                 <li class="acct-show-row" data-acct-show-row="<%= key %>">
                                     <label class="acct-switch"><input type="checkbox" role="switch" data-acct-show-key="<%= key %>" aria-describedby="acct-show-<%= key %>-hint"><span class="acct-switch-track" aria-hidden="true"></span><span class="acct-switch-label"><%= label %></span></label>
                                     <p class="acct-hint" id="acct-show-<%= key %>-hint"><%= hint %></p>
@@ -181,6 +182,26 @@
                             </ul>
                             <p class="acct-status" role="status" data-acct-status="show"></p>
                         </fieldset>
+                    </section>
+
+                    <%# Discord: link the account so the bot can give Stardust roles on the owner's server. The card stays hidden unless the hub says Discord is switched on (scripts/account.js loadDiscord). %>
+                    <section class="noir-card acct-card acct-discord" id="discord" aria-labelledby="acct-discord-title" data-acct-discord hidden>
+                        <div class="acct-card-head"><h2 id="acct-discord-title" class="acct-card-title mono">Discord</h2><a class="acct-link mono" href="https://discord.gg/qjntnnd9cD" rel="noopener noreferrer" data-acct-discord-join>Join the Discord →</a></div>
+                        <p class="acct-hint acct-discord-hint">Link your Discord account and a bot on Donaven's server gives you Stardust roles. It only asks Discord who you are: no messages, no servers, no email. Unlink any time and the roles come off.</p>
+                        <ul class="acct-list acct-discord-roles">
+                            <li><strong>Pilot.</strong> Finish any Stardust run while signed in.</li>
+                            <li><strong>Weekly Finisher.</strong> Set a time on the weekly that is live now.</li>
+                            <li><strong>Podium and Weekly Champion.</strong> Place top three, or first, on the last weekly. Staff dev times never place.</li>
+                            <li><strong>Needle, Manta, Wisp or Courier Pilot.</strong> The family of your equipped ship, only while your profile shows your ship.</li>
+                        </ul>
+                        <div class="acct-discord-state">
+                            <p class="acct-discord-linked" data-acct-discord-linked hidden>Linked as <strong data-acct-discord-name></strong></p>
+                            <div class="acct-discord-actions" data-acct-discord-actions>
+                                <a class="btn-noir btn-noir--solid" href="#" data-acct-discord-link>Link Discord</a>
+                                <button class="btn-noir" type="button" data-acct-discord-unlink hidden>Unlink</button>
+                            </div>
+                        </div>
+                        <p class="acct-status" role="status" data-acct-status="discord"></p>
                     </section>
 
                     <div class="acct-grid">

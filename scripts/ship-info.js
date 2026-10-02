@@ -64,6 +64,31 @@ export function shipSummary(ship, choices = null) {
     };
 }
 
+// --- Copying a pilot's setup -------------------------------------------------------------
+
+// The hub's username rule (api/lib/accounts.js); anything else gets no link.
+const USERNAME = /^[A-Za-z0-9_-]{3,20}$/;
+const normaliseBase = (base) => {
+    const value = String(base || '/').trim();
+    const lead = value.startsWith('/') ? value : `/${value}`;
+    return lead.endsWith('/') ? lead : `${lead}/`;
+};
+
+// The buttons on a leaderboard row: "Fly this ship" for a row that shows a public
+// ship, "Use their settings" for a pilot who opted in (hasSettings). Each links to
+// the game with an import the game offers (and never applies without a click):
+//   <base>games/stardust/?import=ship&from=<username>
+// Not on your own row, and none for a username the hub could not have issued.
+export function shareActions(row, base = '/') {
+    const username = typeof row?.username === 'string' ? row.username : '';
+    if (!USERNAME.test(username) || row.isMe) return [];
+    const href = (kind) => `${normaliseBase(base)}games/stardust/?import=${kind}&from=${encodeURIComponent(username)}`;
+    const actions = [];
+    if (shipChip(row.ship)) actions.push({ kind: 'ship', label: 'Fly this ship', href: href('ship') });
+    if (row.hasSettings === true) actions.push({ kind: 'settings', label: 'Use their settings', href: href('settings') });
+    return actions;
+}
+
 // --- Device badges -------------------------------------------------------------------
 
 const DEVICE_WORD = Object.freeze({ desktop: 'desktop', phone: 'phone', tablet: 'tablet' });

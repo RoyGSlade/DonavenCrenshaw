@@ -3,6 +3,9 @@ import { clock } from './flightHud.js';
 
 let session = null;
 let serial = 0;
+// runSaving.js says what a Share tap needs to know about the run (who, which board, the link).
+let shareSource = null;
+export function setShareSource(source) { shareSource = source; }
 let animations = [];
 const $ = (id) => document.getElementById(id);
 const wings = new URL('../art/ui/finish-wings.svg', import.meta.url).href;
@@ -51,6 +54,16 @@ function build() {
   grid.append(hero, board);
   panel.insertBefore(grid, $('starmap-end-breakdown'));
   $('starmap-again-btn').textContent = 'Fly again →';
+  // Share sits beside "Fly again". The card is only drawn when it is tapped (systems/shareCard.js loads then).
+  const share = node('button', 'finish-share', 'Share');
+  share.id = 'finish-share-btn';
+  share.type = 'button';
+  share.addEventListener('click', onShare);
+  $('starmap-again-btn').after(share);
+  const statusLine = node('p', 'finish-share-status');
+  statusLine.id = 'finish-share-status';
+  statusLine.setAttribute('role', 'status');
+  panel.querySelector('.actions').append(statusLine);
   // Existing saving, splits, social actions and controller focus stay intact.
   const breakdown = $('starmap-end-breakdown');
   const details = node('details', 'finish-details');
@@ -85,6 +98,49 @@ function celebrateBest() {
   animate(crest, [{ transform: 'scale(.65)', filter: 'drop-shadow(0 0 0 #ffd173)' }, { transform: 'scale(1.08)', offset: .55, filter: 'drop-shadow(0 0 24px #ffd173)' }, { transform: 'none', filter: 'drop-shadow(0 0 12px #ffd17322)' }], { duration: 1000, easing: 'cubic-bezier(.16,1,.3,1)' });
 }
 
+function shareStatus(text) { $('finish-share-status').textContent = text || ''; }
+
+// Share: build the card for this finish (once), then send it. A browser that wants a fresher
+// tap than the card took to make (Safari) keeps the finished card and sends it on the next tap.
+async function onShare() {
+  const button = $('finish-share-btn');
+  if (!session || button.disabled) return;
+  const mine = session;
+  if (mine.prepared) { await send(mine); return; }
+  button.disabled = true;
+  button.textContent = 'Making your card…';
+  shareStatus('');
+  try {
+    const lib = await import('../systems/shareCard.js');
+    const info = await shareSource?.({ kind: mine.kind, title: mine.title, timeMs: mine.timeMs, result: mine.result });
+    if (!info) throw new Error('No run to share');
+    mine.prepared = await lib.assembleShare(info);
+    mine.sendShare = lib.sendShare;
+  } catch {
+    if (session === mine) { shareStatus('Couldn’t make the card. Try again.'); button.textContent = 'Share'; button.disabled = false; }
+    return;
+  }
+  if (session !== mine) return;
+  button.disabled = false;
+  button.textContent = 'Share';
+  await send(mine);
+}
+
+async function send(mine) {
+  const button = $('finish-share-btn');
+  const { outcome, copied } = await mine.sendShare(mine.prepared);
+  if (session !== mine) return;
+  button.textContent = outcome === 'blocked' ? 'Send card' : 'Share';
+  const link = mine.prepared.link;
+  shareStatus({
+    shared: 'Shared.',
+    cancelled: '',
+    blocked: 'Your card is ready. Tap Send card to share it.',
+    downloaded: copied ? 'Card saved and link copied. Post both.' :`Card saved. Copy this link to go with it: ${link}`,
+  }[outcome]);
+  button.focus({ preventScroll: true });
+}
+
 // Called before the completion event writes browser-local bests.
 export function showFinishScreen({ timeMs, kind = 'network', title = 'Custom track', preview = false, previousMs } = {}) {
   build();
@@ -92,7 +148,13 @@ export function showFinishScreen({ timeMs, kind = 'network', title = 'Custom tra
   if (previousMs === undefined && kind !== 'weekly') {
     try { previousMs = JSON.parse(localStorage.getItem('stardust.localBests.v1') || '{}')[kind === 'network' ? 'full' : 'custom'] ?? null; } catch { previousMs = null; }
   }
-  session = { id: ++serial, timeMs, previousMs, kind, title, preview, result: null, climbed: false };
+  session = { id: ++serial, timeMs, previousMs, kind, title, preview, result: null, climbed: false, saving: false, prepared: null };
+  // A practice flight is never submitted and the custom track has no board: nothing to brag about.
+  const share = $('finish-share-btn');
+  share.hidden = preview || kind === 'custom';
+  share.disabled = false;
+  share.textContent = 'Share';
+  shareStatus('');
   paintHero();
   celebrateBest();
   $('finish-board-status').textContent = preview ? 'LOCAL FLIGHT' : 'AWAITING RESULT';
@@ -109,6 +171,9 @@ export const isCurrentFinish = (token) => !!session && token === session.id && !
 
 export function setFinishNote(note) {
   if (!isCurrentFinish(finishScreenToken()) || session.result) return;
+  // The hub's verdict is still coming: Share waits for it, so the card carries the real rank.
+  session.saving = /Saving/.test(note);
+  $('finish-share-btn').disabled = session.saving;
   $('finish-board-note').textContent = note;
   $('finish-board-status').textContent = /Saving/.test(note) ? 'VERIFYING TIME' : 'LOCAL FLIGHT';
 }
@@ -116,6 +181,8 @@ export function setFinishNote(note) {
 export function updateFinishScreen({ result, playerName = 'You', rows = [], previousMs, note } = {}, token = finishScreenToken()) {
   if (!isCurrentFinish(token)) return;
   session.result = result;
+  session.saving = false;
+  $('finish-share-btn').disabled = false;
   // The pre-launch hub PB can differ from this browser's record. Only use it
   // when no local comparison exists; keep the displayed comparison labelled.
   if (session.previousMs == null && Number.isFinite(previousMs)) {

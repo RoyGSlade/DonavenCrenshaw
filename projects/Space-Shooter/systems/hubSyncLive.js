@@ -7,6 +7,8 @@ import { getEquippedAppearance, equipAppearance, initCourierAppearance } from '.
 
 const STATE_KEY = 'stardust.sync.v1';
 let current = null;
+// The first account sync of this page, once it has started (see whenAccountSynced).
+let firstSync = null;
 
 const store = {
   read() { try { return JSON.parse(localStorage.getItem(STATE_KEY)) || {}; } catch { return {}; } },
@@ -28,6 +30,13 @@ export function startHubSync(recorder) {
     ship: { get: () => getEquippedAppearance(), prepare: () => initCourierAppearance(), equip: (appearance) => equipAppearance(appearance) },
     emit,
   });
+  // Remember the page's first sync, so a copied ship or settings is not applied underneath it.
+  const onSession = current.onSession;
+  current.onSession = (...args) => {
+    const done = onSession.apply(current, args);
+    if (!firstSync) { firstSync = Promise.resolve(done).catch(() => {}); window.dispatchEvent(new Event('stardust:sync-started')); }
+    return done;
+  };
   window.addEventListener('stardust:flightSettings', () => current.settingsChanged());
   window.addEventListener('stardust:library-changed', () => current.libraryChanged());
   window.addEventListener('stardust:appearance-changed', () => current.shipChanged());
@@ -35,6 +44,17 @@ export function startHubSync(recorder) {
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') current.flush(); });
   window.addEventListener('pagehide', () => current.flush());
   return current;
+}
+
+/**
+ * Resolves once the page's first account sync has finished, or after timeoutMs (a page
+ * that does not sync just waits that long). The account's copy of the settings can replace
+ * this browser's during that sync, so a prompt that changes them waits for it.
+ */
+export function whenAccountSynced(timeoutMs = 3500) {
+  const waitFor = (promise) => Promise.race([promise, new Promise((resolve) => setTimeout(resolve, timeoutMs))]);
+  if (firstSync) return waitFor(firstSync);
+  return waitFor(new Promise((resolve) => window.addEventListener('stardust:sync-started', () => resolve(firstSync), { once: true })));
 }
 
 /** 'saved' | 'saving' | 'guest' | 'offline' | 'no-slot' | 'local' (not syncing on this page). */

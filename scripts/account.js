@@ -12,7 +12,7 @@
 import {
     BOARDS, clock, nameOf, medalLabel, medalLine, splitRows, readFriendParam, inviteState,
     requestSentText, problemText, cleanUsername, inviteLink, inviteMessage, challengeRow, challengePath,
-    createHub, socialApi
+    createHub, socialApi, discordLinkUrl, discordResult, discordUnlinkText
 } from './social.js';
 import { createShareBox } from './share.js';
 import { profilePath, lockedTitles, sortTitles, rarityLabel } from './profile.js';
@@ -151,6 +151,7 @@ function runAccountPage(root, first) {
         loadShip();
         loadLiveries();
         loadVisibility();
+        loadDiscord();
     }
 
     function signedOut(message) {
@@ -374,11 +375,15 @@ function runAccountPage(root, first) {
 
     // --- Public profile: the master switch and one switch per section -------------------------
 
-    const SHOW_LABELS = { bio: 'Bio', titles: 'Titles', bests: 'Best times', dogfight: 'Dogfight record', events: 'Event results', ship: 'Ship', devices: 'Device badges' };
+    const SHOW_LABELS = { bio: 'Bio', titles: 'Titles', bests: 'Best times', dogfight: 'Dogfight record', events: 'Event results', ship: 'Ship', devices: 'Device badges', settings: 'Flight settings' };
+    // Flight settings are opt-in (the hub treats a missing key as off) and, like Event results, do not need a public profile.
+    const OPT_IN = ['settings'];
+    const STANDALONE = ['events', 'settings'];
     const saving = new Set();
 
-    // Switches show what is saved; a missing key means shown (the hub's default).
-    // While the profile is private every switch but Event results is off the table.
+    // Switches show what is saved; a missing key means shown (the hub's default),
+    // except OPT_IN sections, which stay off until switched on.
+    // While the profile is private every switch but Event results and Flight settings is off the table.
     function paintVisibility() {
         if (!user) return;
         const isPublic = Boolean(user.profilePublic);
@@ -386,8 +391,8 @@ function runAccountPage(root, first) {
         $('[data-acct-public]').checked = isPublic;
         for (const input of $$('[data-acct-show-key]')) {
             const key = input.dataset.acctShowKey;
-            if (!saving.has(key)) input.checked = show[key] !== false;
-            const locked = !isPublic && key !== 'events';
+            if (!saving.has(key)) input.checked = OPT_IN.includes(key) ? show[key] === true : show[key] !== false;
+            const locked = !isPublic && !STANDALONE.includes(key);
             input.disabled = saving.has(key) || locked;
             input.closest('[data-acct-show-row]').classList.toggle('is-locked', locked);
         }
@@ -446,6 +451,71 @@ function runAccountPage(root, first) {
             note('show', `Saved. ${label} ${wanted ? 'will show' : 'is hidden'}.`, 'ok');
         });
     }
+
+    // --- Discord -------------------------------------------------------------------------------
+
+    // The card exists only while the hub says Discord is switched on. Linking is a
+    // plain navigation: the hub sends the pilot to Discord and back here with
+    // ?discord=<code>, which is read once and then removed from the address.
+    let discordOn = false;
+    function paintDiscord() {
+        const card = $('[data-acct-discord]');
+        card.hidden = !(user && discordOn);
+        if (card.hidden) return;
+        const linked = Boolean(user.discord?.linked);
+        $('[data-acct-discord-linked]').hidden = !linked;
+        $('[data-acct-discord-name]').textContent = user.discord?.name || 'your Discord account';
+        const link = $('[data-acct-discord-link]');
+        link.hidden = linked;
+        link.href = discordLinkUrl(HUB, `${location.origin}${BASE}account/#discord`);
+        $('[data-acct-discord-unlink]').hidden = !linked;
+    }
+
+    async function loadDiscord() {
+        discordOn = false;
+        paintDiscord();
+        const code = new URLSearchParams(location.search).get('discord');
+        if (code) {
+            const url = new URL(location.href);
+            url.searchParams.delete('discord');
+            history.replaceState(history.state, '', url.pathname + url.search + url.hash);
+        }
+        const res = await api.discordStatus();
+        if (!user || !res.ok || res.data?.enabled !== true) return;
+        discordOn = true;
+        // The session carries the link state; GET /users/me is the fresher word after the round trip.
+        const mine = await api.account();
+        const fresh = mine.ok ? (mine.data?.user || mine.data) : null;
+        if (user && fresh?.discord && typeof fresh.discord === 'object') user.discord = fresh.discord;
+        paintDiscord();
+        const result = code ? discordResult(code) : null;
+        if (result) {
+            note('discord', result.text, result.kind);
+            $('[data-acct-discord]').scrollIntoView?.({ block: 'nearest' });
+        }
+    }
+
+    $('[data-acct-discord-unlink]').addEventListener('click', (e) => {
+        const actions = $('[data-acct-discord-actions]');
+        const unlinkButton = e.currentTarget;
+        const linkButton = $('[data-acct-discord-link]');
+        confirmStep(actions, 'Unlink Discord and remove your Stardust roles?', 'Unlink', async (ev) => {
+            const yes = ev.currentTarget;
+            yes.disabled = true;
+            const res = await api.unlinkDiscord();
+            if (res.signedOut) return signedOut('Your session ended. Sign in again.');
+            if (!res.ok) {
+                yes.disabled = false;
+                note('discord', problemText(res, 'Couldn’t unlink Discord. Try again.'), 'error');
+                return;
+            }
+            user = { ...user, discord: { linked: false, name: null, linkedAt: null } };
+            // confirmStep swapped the buttons for its question; put the originals back before painting.
+            actions.replaceChildren(linkButton, unlinkButton);
+            paintDiscord();
+            note('discord', discordUnlinkText(res.data), 'ok');
+        });
+    });
 
     // --- Your ship and your designs -------------------------------------------------------------
 
@@ -629,7 +699,7 @@ function runAccountPage(root, first) {
     // Unfriend and block ask first, in place of the row's buttons.
     function confirmStep(actions, question, yesLabel, onYes) {
         const before = [...actions.childNodes];
-        const keep = () => { actions.replaceChildren(...before); before[0]?.focus(); };
+        const keep = () => { actions.replaceChildren(...before); before.find((node) => typeof node.focus === 'function')?.focus(); };
         const yes = button(yesLabel, onYes, { danger: true });
         actions.replaceChildren(el('span', 'acct-confirm-q', question), yes, button('Keep', keep));
         yes.focus();

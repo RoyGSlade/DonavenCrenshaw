@@ -39,6 +39,11 @@
 .finish-panel .actions { justify-content: center; margin-top: 22px; }
 .finish-panel .actions button { min-height: 48px; min-width: 170px; }
 .finish-is-best .actions .primary { background: #ffd173; border-color: #ffd173; color: #231808; }
+.finish-share { border-color: #ffd173; color: #ffe6a2; }
+.finish-share:disabled { opacity: .55; cursor: progress; }
+.finish-share[hidden] { display: none; }
+.finish-share-status { flex: 1 0 100%; margin: 0; font: 12px/1.5 Consolas, monospace; color: #adc4cb; text-align: center; overflow-wrap: anywhere; }
+.finish-share-status:empty { display: none; }
 .finish-details { margin-top: 20px; border-top: 1px solid #81e6df25; padding-top: 12px; }
 .finish-details summary { cursor: pointer; color: #9dbac3; font: 12px Consolas, monospace; padding: 8px 0; }
 @media (max-width: 700px) {
