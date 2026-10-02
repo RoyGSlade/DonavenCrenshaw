@@ -1,5 +1,5 @@
 /* Settings belong to the same quiet, cyan cockpit as the hangar. */
-#starmap-settings { align-items: start; padding: clamp(12px, 3vw, 36px); overflow-y: auto; scroll-padding: 20px 0 140px; }
+#starmap-settings { align-items: start; padding: max(clamp(12px, 3vw, 36px), env(safe-area-inset-top, 0px)) max(clamp(12px, 3vw, 36px), env(safe-area-inset-right, 0px)) max(clamp(12px, 3vw, 36px), env(safe-area-inset-bottom, 0px)) max(clamp(12px, 3vw, 36px), env(safe-area-inset-left, 0px)); overflow-y: auto; scroll-padding: 20px 0 140px; }
 #starmap-settings button, #starmap-settings input, #starmap-settings select { scroll-margin-block: 20px 140px; }
 #starmap-settings > .panel > .eyebrow { margin: 0 0 6px; font-size: 10px; line-height: 1.3; }
 #starmap-settings > .panel { width: min(940px, 100%); max-width: 940px; margin: auto; padding: clamp(18px, 3vw, 30px); text-align: left; border-radius: 16px; border-color: #527482; background: linear-gradient(145deg, #132630, #0a1420 65%); box-shadow: 0 24px 90px #0008; }
@@ -24,7 +24,7 @@
 #starmap-settings .fx-stepper output { min-width: 54px; color: #d7fff7; font-size: 13px; }
 #starmap-settings .fx-binds { flex-shrink: 0; }
 #starmap-settings .fx-bind-clear { min-width: 42px; }
-#starmap-settings > .panel > .actions { position: sticky; bottom: -1px; display: flex; flex-wrap: wrap; gap: 10px; margin: 24px -2px -2px; padding: 16px 2px 2px; border-top: 1px solid #52748288; background: #0a1420f5; z-index: 2; }
+#starmap-settings > .panel > .actions { position: sticky; bottom: env(safe-area-inset-bottom, 0px); display: flex; flex-wrap: wrap; gap: 10px; margin: 24px -2px -2px; padding: 16px 2px 2px; border-top: 1px solid #52748288; background: #0a1420f5; z-index: 2; }
 #starmap-settings .actions button { padding: 11px 18px; }
 #starmap-settings .actions button:last-child { color: #b6cbd5; background: transparent; }
 #starmap-settings .sound-settings { border: 0; }
@@ -80,6 +80,12 @@
   .controller-stick-face { flex-basis: 72px; height: 72px; }
   #starmap-settings .actions { flex-direction: column; }
   #starmap-settings .actions button { width: 100%; }
+}
+@media (orientation: landscape) and (max-height: 500px) {
+  #starmap-settings { scroll-padding-bottom: 88px; }
+  #starmap-settings button, #starmap-settings input, #starmap-settings select { scroll-margin-bottom: 88px; }
+  #starmap-settings > .panel > .actions { flex-direction: row; flex-wrap: nowrap; gap: 8px; margin-top: 16px; padding-top: 10px; }
+  #starmap-settings .actions button { width: auto; min-height: 44px; }
 }
 @media (max-width: 380px) { #starmap-settings .fx-set-row { flex-wrap: wrap; } }
 @media (prefers-reduced-motion: reduce) { #starmap-settings *, .controller-flight-warning { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
