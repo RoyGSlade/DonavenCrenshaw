@@ -1,4 +1,5 @@
 /** Standard Gamepad mapping shared by both flight modes; no DOM or navigator dependency. */
+import { normalizeControllerTuning, controllerAxis, standardController } from './controllerTuning.js';
 export const gamepadMapping = {
   BUTTONS: {
     LAUNCH: 0,
@@ -59,9 +60,11 @@ export function createGamepadReader({
   stickDeadzone = 0.2,
   triggerDeadzone = 0.08,
   getBindings = null,
+  getTuning = null,
+  getPad = null,
+  getRevision = () => 0,
 } = {}) {
-  const dz = finite(stickDeadzone, 0, 1),
-    tdz = finite(triggerDeadzone, 0, 1);
+  let identity = null, blocking = [], unsupported = false;
   let index = null,
     awaitingNeutral = false,
     boostToggle = false,
@@ -82,8 +85,13 @@ export function createGamepadReader({
     const connected = Array.from(pads || []).filter(
       (p) => p && p.connected !== false,
     );
-    let pad = connected.find((p) => p.index === index);
-    if (!pad) {
+    let pad = getPad ? getPad() : connected.find((p) => p.index === index);
+    if (getPad) {
+      const nextIdentity = pad ? `${pad.index}:${pad.id || ''}:${getRevision()}` : null;
+      if (nextIdentity !== identity) { suspend(); identity = nextIdentity; }
+      index = pad?.index ?? null;
+    }
+    if (!pad && !getPad) {
       if (index !== null) suspend();
       pad = connected[0];
       index = pad?.index ?? null;
@@ -92,11 +100,14 @@ export function createGamepadReader({
       suspend();
       return neutral();
     }
-    if (!pad) return neutral();
+    if (!pad) { blocking = []; unsupported = false; return neutral(); }
+    unsupported = !standardController(pad);
+    if (unsupported) { suspend(); blocking = ['Standard mapping unavailable']; return neutral(); }
+    const tuning = normalizeControllerTuning(getTuning?.() || { stickDeadzone, triggerDeadzone });
+    const tdz = tuning.triggerDeadzone;
     const buttons = resolve(getBindings?.());
     const axis = (i) => {
-      const v = finite(pad.axes?.[i], -1, 1);
-      return Math.abs(v) < dz ? 0 : v;
+      return controllerAxis(pad.axes?.[i], tuning);
     };
     const value = (i) =>
       i == null ? 0 : finite(
@@ -122,17 +133,16 @@ export function createGamepadReader({
       camera: pressed(buttons.camera),
       y: pressed(buttons.boostToggle),
     };
-    const anyHeld =
-      lx !== 0 ||
-      ly !== 0 ||
-      rx !== 0 ||
-      gas > 0 ||
-      reverse > 0 ||
-      value(buttons.shoot) > tdz ||
-      value(buttons.trap) > tdz ||
-      pressed(buttons.brake) ||
-      pressed(buttons.boostHold) ||
-      Object.values(now).some(Boolean);
+    blocking = [];
+    if (lx || ly) blocking.push('Left stick');
+    if (rx) blocking.push('Right stick');
+    if (gas || reverse) blocking.push('Thrust / reverse button');
+    if (value(buttons.shoot) > tdz) blocking.push('Fire button / trigger');
+    if (value(buttons.trap) > tdz) blocking.push('Trap button / trigger');
+    if (pressed(buttons.brake)) blocking.push('Brake button');
+    if (pressed(buttons.boostHold)) blocking.push('Boost button');
+    if (Object.values(now).some(Boolean)) blocking.push('Launch / menu button');
+    const anyHeld = blocking.length > 0;
     if (awaitingNeutral) {
       if (!anyHeld) {
         awaitingNeutral = false;
@@ -147,14 +157,14 @@ export function createGamepadReader({
     const result = {
       thrust: thrustStrength > 0,
       thrustBack: backStrength > 0,
-      strafeLeft: strafeAxis < -dz,
-      strafeRight: strafeAxis > dz,
-      turnLeft: turnAxis < -dz,
-      turnRight: turnAxis > dz,
+      strafeLeft: strafeAxis < 0,
+      strafeRight: strafeAxis > 0,
+      turnLeft: turnAxis < 0,
+      turnRight: turnAxis > 0,
       thrustStrength,
       backStrength,
       strafeStrength: Math.abs(strafeAxis) * 0.6,
-      strafe: Math.abs(strafeAxis) > dz ? strafeAxis * 0.6 : 0,
+      strafe: strafeAxis * 0.6,
       turnStrength: turnAxis,
       boost: pressed(buttons.boostHold) || boostToggle,
       shoot: value(buttons.shoot) > tdz,
@@ -178,6 +188,6 @@ export function createGamepadReader({
     poll,
     suspend,
     disconnect,
-    getState: () => ({ index, awaitingNeutral, boostToggle }),
+    getState: () => ({ index, awaitingNeutral, boostToggle, unsupported, blocking: awaitingNeutral ? blocking : [] }),
   };
 }

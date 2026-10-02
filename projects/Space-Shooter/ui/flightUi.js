@@ -14,6 +14,8 @@ import { subscribeTilt, calibrateTiltControls, getTiltState } from '../systems/t
 import { openPauseOverlay, closePauseOverlay, closeSettingsOverlay } from './overlays.js';
 import { toast } from './hud.js';
 import { initPadMenu } from './padMenu.js';
+import { selectedController, standardController } from '../systems/controllerDevices.js';
+import { controllerTuning } from '../systems/flightSettings.js';
 
 let root = null;
 let lastPadUse = -Infinity, lastTouch = -Infinity, padNotified = false;
@@ -68,10 +70,9 @@ let lastWord = '';
 export function updateFlightUi(dt) {
   if (!root) return;
   // A gamepad in use hides the touch controls; a touch brings them back.
-  const pads = navigator.getGamepads?.() || [];
-  for (const pad of pads) {
-    if (!pad) continue;
-    if (pad.axes?.some((a) => Math.abs(a) > 0.35) || pad.buttons?.some((b) => b?.pressed)) {
+  const pad = selectedController();
+  if (standardController(pad)) {
+    if (pad.axes?.some((a) => Math.abs(a) > Math.max(0.35, controllerTuning().stickDeadzone)) || pad.buttons?.some((b) => b?.pressed)) {
       lastPadUse = performance.now();
       if (!padNotified && isTouchDevice()) {
         padNotified = true;

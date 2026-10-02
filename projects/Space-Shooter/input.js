@@ -7,7 +7,8 @@ import { createGamepadReader, gamepadMapping } from "./systems/gamepad.js";
 import { toast } from "./ui/hud.js";
 import { touchInput } from "./ui/touchPad.js";
 import { wantsAutoFire } from "./systems/autofire.js";
-import { flightSettings, updateFlightSettings, binds } from "./systems/flightSettings.js";
+import { flightSettings, updateFlightSettings, binds, controllerTuning } from "./systems/flightSettings.js";
+import { selectedController, controllerRevision, reportControllerState } from "./systems/controllerDevices.js";
 import { keyToken, mouseToken } from "./systems/keybinds.js";
 import { runClient, gamepadDriving } from "./systems/runClient.js";
 export { gamepadMapping };
@@ -15,6 +16,9 @@ const gamepad = createGamepadReader({
   stickDeadzone: config.GAMEPAD?.STICK_DEADZONE ?? 0.2,
   triggerDeadzone: config.GAMEPAD?.TRIGGER_DEADZONE ?? 0.08,
   getBindings: binds,
+  getTuning: controllerTuning,
+  getPad: selectedController,
+  getRevision: controllerRevision,
 });
 let inputFocused = true;
 let isBound = false;
@@ -86,6 +90,7 @@ export async function bindInput() {
     inputFocused = true;
   });
   window.addEventListener("stardust:clear-input", clearKeys);
+  window.addEventListener("stardust:controller-selected", clearKeys);
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) clearKeys();
   });
@@ -144,6 +149,7 @@ function onKeyUp(e) {
 
 function clearKeys(resetGamepad = true) {
   if (resetGamepad !== false) gamepad.suspend();
+  reportControllerState(gamepad.getState());
   for (const key of Object.keys(touch)) touch[key] = false;
   touchPointers.clear();
   touchLaunchEdge = false;
@@ -255,10 +261,11 @@ async function bindTouchControls() {
 function pollGamepad() {
   // A controller button being rebound (ui/settingsPanel.js) must not also pause or go fullscreen.
   if (state.ui.bindCapture) { gamepad.suspend(); return null; }
-  const gp = gamepad.poll(navigator.getGamepads?.() || [], {
+  const gp = gamepad.poll([], {
     active: inputFocused && !document.hidden,
     gameplayActive: !state.ui.paused,
   });
+  reportControllerState(gamepad.getState());
   if (gp.pauseEdge && state.mode !== "arena") {
     if (!state.ui.paused) openPauseOverlay();
     else closePauseOverlay();

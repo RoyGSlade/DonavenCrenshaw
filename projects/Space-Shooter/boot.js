@@ -20,7 +20,7 @@ try {
   await initStarmap(document.getElementById('starmap-canvas'));
   initFlightUi();
   initHangar();
-  status.textContent = 'FLIGHT SYSTEMS READY / KEYBOARD · GAMEPAD · TOUCH';
+  status.textContent = 'FLIGHT SYSTEMS READY · Controller detection: Controls & settings → Controller';
   button.disabled = false;
   button.textContent = 'Fly five circuits →';
   button.focus({ preventScroll: true });

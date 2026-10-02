@@ -210,6 +210,8 @@ test('controller pause accepts Back to resume but never queues Y boost while pau
   const controller = {index:0,connected:true,axes:[0,0,0],buttons:Array.from({length:17},()=>({value:0,pressed:false}))};
   pads=[controller];pumpInput();
   const button=(index,down)=>{controller.buttons[index]={value:down?1:0,pressed:down};pumpInput();};
+  // A fresh activation followed by neutral arms the selected controller.
+  button(0,true);button(0,false);
   button(8,true);button(8,false);
   assert.equal(state.ui.paused,true);
   button(3,true);button(3,false);
