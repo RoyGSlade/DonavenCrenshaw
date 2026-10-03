@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-02T18:09:22.318Z",
+  "generatedAt": "2026-10-03T04:19:29.395Z",
   "stardust": {
     "leaderboard": [
       {
@@ -11,21 +11,21 @@
       },
       {
         "rank": 2,
+        "name": "debo",
+        "timeMs": 147000,
+        "setAt": "2026-10-03T04:19:17.212Z"
+      },
+      {
+        "rank": 3,
         "name": "DwarvenEx",
         "timeMs": 147454,
         "setAt": "2026-09-27T16:32:18.969Z"
       },
       {
-        "rank": 3,
+        "rank": 4,
         "name": "Antwon",
         "timeMs": 157584,
         "setAt": "2026-09-28T14:56:23.601Z"
-      },
-      {
-        "rank": 4,
-        "name": "debo",
-        "timeMs": 217799,
-        "setAt": "2026-09-27T08:36:55.644Z"
       },
       {
         "rank": 5,
