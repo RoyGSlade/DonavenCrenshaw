@@ -8,6 +8,7 @@ import { CUSTOM_TRACK } from '../projects/Space-Shooter/tracks/custom-track.js';
 import { releaseText, isCustomTrackLive } from '../projects/Space-Shooter/systems/customTrack.js';
 import { checkTrack } from '../projects/Space-Shooter/engine/trackChecks.js';
 import { currentWeekly, weeklyStatus, weeklyGameUrl, weeklyPreviewSvg } from '../projects/Space-Shooter/systems/weekly.js';
+import { buildSponsorWall } from './sponsors.mjs';
 
 const ROOT_DIR = path.resolve('.');
 const SRC_DIR = path.join(ROOT_DIR, 'src');
@@ -516,6 +517,7 @@ async function main() {
     const updates = validateUpdates(await readJson('updates.json', { required: true }));
     const redirects = await readJson('redirects.json', { required: true });
     const hubSnapshot = validateHubSnapshot(await readJson('hub-snapshot.json'));
+    const sponsorWall = buildSponsorWall(await readJson('sponsors.json'), { basePath: site.basePath });
     const components = await loadComponents();
 
     await initPublicDir();
@@ -530,7 +532,7 @@ async function main() {
     const weekly = await weeklyData();
     console.log(`[HUB] ${HUB_URL}`);
     if (weekly) console.log(`[WEEKLY] ${weekly.id} ${weekly.title}: ${weekly.state} at build time -> ${weekly.layout}`);
-    const data = { branches, products, support, updates, hubSnapshot, customTrack: customTrackData(), weekly, avatars, importedProjects, importedWarnings: projectImport.warnings };
+    const data = { branches, products, support, sponsorWall, updates, hubSnapshot, customTrack: customTrackData(), weekly, avatars, importedProjects, importedWarnings: projectImport.warnings };
     const postsData = [];
     const generatedPaths = [];
     const redirectEntries = [];

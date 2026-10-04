@@ -7,6 +7,7 @@ hero_title: "Support"
 hero_sub: "Help keep the games and free software coming."
 hero_scene: "desk"
 discord_rules: true
+sponsor_wall: true
 ---
 
 <section class="section-block support-why" aria-labelledby="what-support-pays-for">

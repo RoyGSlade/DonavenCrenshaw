@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { cleanSponsors } from './sponsors.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -261,6 +262,26 @@ function validateSupport(support) {
     return { errors, channelIds };
 }
 
+// data/sponsors.json is written by scripts/sync-sponsors.mjs. Every row must survive
+// cleanSponsors() unchanged in count, and no row may carry an email.
+function validateSponsors(file) {
+    console.log('[CHECK] Validating sponsors...');
+    let errors = 0;
+    if (!file || file.schemaVersion !== 1 || !Array.isArray(file.sponsors)) {
+        console.error('  sponsors.json needs schemaVersion 1 and a sponsors array');
+        return 1;
+    }
+    if (cleanSponsors(file.sponsors).length !== file.sponsors.length) {
+        console.error('  sponsors.json has a row with a bad login, tier, or a duplicate');
+        errors += 1;
+    }
+    if (/e-?mail/i.test(JSON.stringify(file))) {
+        console.error('  sponsors.json must not contain email addresses');
+        errors += 1;
+    }
+    return errors;
+}
+
 function validateRedirects(redirects) {
     console.log(`[CHECK] Validating ${redirects.length} redirects...`);
     const sources = new Set();
@@ -291,6 +312,7 @@ const products = loadJSON('products.json');
 const updates = loadJSON('updates.json');
 const support = loadJSON('support.json');
 const redirects = loadJSON('redirects.json');
+const sponsorErrors = validateSponsors(loadJSON('sponsors.json'));
 
 const siteErrors = validateSite(site);
 const supportResult = validateSupport(support);
@@ -299,7 +321,7 @@ const branchResult = validateBranches(branches, productResult.ids);
 const updateErrors = validateUpdates(updates);
 const redirectErrors = validateRedirects(redirects);
 
-const totalErrors = siteErrors + supportResult.errors + productResult.errors + branchResult.errors + updateErrors + redirectErrors;
+const totalErrors = siteErrors + supportResult.errors + productResult.errors + branchResult.errors + updateErrors + redirectErrors + sponsorErrors;
 if (totalErrors > 0) {
     console.error(`\n[FAIL] Validation failed with ${totalErrors} errors.`);
     process.exit(1);
