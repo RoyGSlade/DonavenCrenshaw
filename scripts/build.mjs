@@ -444,6 +444,27 @@ async function buildRedirectMap(site, rawRedirects, generatedPaths, redirectEntr
     console.log(`[REDIRECTS] generated ${generated} static redirect target(s)`);
 }
 
+// sitemap.xml and robots.txt for search engines: every generated page that is
+// not a redirect stub and not marked noindex, plus the game page (copied, not
+// rendered). Run after all pages and redirects are written.
+async function buildSitemap(site, generatedPaths) {
+    const pages = new Set(['games/stardust/index.html']);
+    for (const rel of generatedPaths) if (rel.endsWith('.html') && rel !== '404.html') pages.add(rel);
+    const urls = [];
+    for (const rel of [...pages].sort()) {
+        const file = path.join(PUBLIC_DIR, rel);
+        if (!fs.existsSync(file)) continue;
+        const html = await fs.readFile(file, 'utf-8');
+        if (/<meta name="robots" content="noindex/i.test(html) || /http-equiv="refresh"/i.test(html)) continue;
+        urls.push(routeUrl(site, rel.replace(/(^|\/)index\.html$/, '')));
+    }
+    const entries = urls.map((u) => `  <url><loc>${u}</loc></url>`).join('\n');
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${entries}\n</urlset>\n`;
+    await fs.writeFile(path.join(PUBLIC_DIR, 'sitemap.xml'), xml);
+    await fs.writeFile(path.join(PUBLIC_DIR, 'robots.txt'), `User-agent: *\nAllow: /\n\nSitemap: ${routeUrl(site, '')}sitemap.xml\n`);
+    console.log(`[SITEMAP] ${urls.length} pages`);
+}
+
 async function build404(components, site, data) {
     const frontmatter = {
         title: 'Page not found',
@@ -522,6 +543,7 @@ async function main() {
     });
     await buildRedirectMap(site, redirects, generatedPaths, redirectEntries);
     await build404(components, site, data);
+    await buildSitemap(site, generatedPaths);
     console.log(`[PUBLISHED LOGS] ${postsData.length}`);
     console.log(`--- BUILD COMPLETE (${products.length} products, ${branches.length} branches, ${generatedPaths.length} content routes) ---`);
 }

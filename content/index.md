@@ -1,6 +1,6 @@
 ---
 layout: "home"
-title: "Donaven Crenshaw — Stardust, games and free software"
+title: "Stardust, games and free software"
 description: "Race your friends in Stardust, a free browser game by Donaven Crenshaw, then try the Kingdoms & Caravans playtest and underplain's free software."
 branch: "underplain"
 skin: "underplain"

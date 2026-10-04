@@ -1,5 +1,5 @@
 ---
-title: "Kingdoms & Caravans — Build, supply, survive"
+title: "Kingdoms & Caravans city-builder playtest"
 layout: "kingdoms"
 description: "A small city. Two invasions. Build a working settlement, keep its people fed, and hold the castle. Download the free early Windows playtest."
 branch: "infinite-ages"

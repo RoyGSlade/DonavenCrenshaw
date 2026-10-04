@@ -1,5 +1,5 @@
 ---
-title: "Stardust: Planetfall — early access preview"
+title: "Stardust: Planetfall early access"
 layout: "planetfall"
 description: "See real early-build screenshots from Stardust: Planetfall. The top three signed-in pilots in the Week 1 Gantry Drop time trial earn early access."
 branch: "stardust"

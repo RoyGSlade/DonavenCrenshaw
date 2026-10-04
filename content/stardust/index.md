@@ -1,11 +1,11 @@
 ---
-title: "Stardust — build your ship, chase the fastest time"
+title: "Stardust: free browser space racer"
 layout: "stardust"
-description: "Build your ship, race five drift circuits, chase weekly ghosts and challenge your friends. Free in your browser, with a ship garage, leaderboards and Dogfight."
+description: "A free browser space racing game: build your ship, fly the weekly time trial, race ghosts and climb the leaderboards. Best with a keyboard or controller."
 branch: "stardust"
 skin: "stardust"
 page_kind: "game-browser"
-ogImage: "assets/images/stardust/iron-veil.webp"
+ogImage: "assets/images/social/stardust-card.png"
 ---
 
 <header class="sd-hero">

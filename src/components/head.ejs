@@ -3,7 +3,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <% const pageTitle = page.title === site.name ? site.name : `${page.title} | ${site.name}`; %>
     <% const description = page.description || site.description; %>
-    <% const image = frontmatter.ogImage ? assetUrl(frontmatter.ogImage) : null; %>
+    <% const image = assetUrl(frontmatter.ogImage || 'assets/images/social/stardust-card.png'); %>
     <title><%= pageTitle %></title>
     <% if (description) { %><meta name="description" content="<%= description %>"><% } %>
     <% if (frontmatter.noindex) { %><meta name="robots" content="noindex, follow"><% } %>

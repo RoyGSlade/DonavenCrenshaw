@@ -6,5 +6,5 @@ branch: "stardust"
 skin: "stardust"
 page_kind: "game-challenge"
 noindex: true
-ogImage: "assets/images/stardust/iron-veil.webp"
+ogImage: "assets/images/social/stardust-card.png"
 ---
