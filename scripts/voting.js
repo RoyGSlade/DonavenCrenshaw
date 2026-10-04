@@ -3,6 +3,7 @@ const root = document.querySelector('#voting-polls');
 const HUB = document.querySelector('script[data-voting-hub]')?.dataset.votingHub;
 const status = document.querySelector('#voting-status');
 const admin = document.querySelector('#voting-admin');
+const managing = document.body.dataset.votingMode === 'manage';
 const accountUrl = `${window.SITE_ROOT || '/'}account/?next=${encodeURIComponent(window.location.pathname)}`;
 let signedIn = false;
 
@@ -103,15 +104,20 @@ async function load() {
     signedIn = data.account.signedIn;
     const signIn = document.querySelector('#voting-signin');
     if (signIn) signIn.hidden = signedIn;
-    root.replaceChildren(...data.polls.map(pollCard));
-    status.textContent = data.polls.length ? (signedIn ? 'You are signed in. Each poll has its own vote.' : 'View results here. Sign in to vote in an open poll.') : 'No polls have been opened yet. Check back when I open one.';
+    if (root) root.replaceChildren(...data.polls.map(pollCard));
+    status.textContent = managing
+        ? (data.account.admin ? 'Owner access confirmed. Review private drafts before opening them.' : signedIn ? 'Poll management is available only to the owner.' : 'Sign in with the owner account to manage polls.')
+        : data.polls.length ? (signedIn ? 'You are signed in. Each poll has its own vote.' : 'View results here. Sign in to vote in an open poll.') : 'No polls have been opened yet. Check back when I open one.';
     status.tabIndex = -1;
-    admin.hidden = !data.account.admin;
-    if (data.account.admin) {
+    const manageLink = document.querySelector('#voting-manage-link');
+    if (manageLink) manageLink.hidden = !data.account.admin;
+    if (admin) admin.hidden = !data.account.admin;
+    if (admin && data.account.admin) {
         const drafts = await call('/admin/polls');
         document.querySelector('#voting-admin-polls').replaceChildren(...drafts.polls.map(adminPoll));
     }
     const sponsor = document.querySelector('#voting-sponsor');
+    if (!sponsor) return;
     sponsor.hidden = true;
     if (signedIn) {
         try {
@@ -133,4 +139,4 @@ document.querySelector('#voting-draft')?.addEventListener('submit', async event 
     } catch (error) { message.textContent = error.message; }
     finally { button.disabled = false; }
 });
-if (root && HUB) load().catch(error => { status.textContent = error.name === 'TimeoutError' ? 'Polls took too long to load. Refresh to try again.' : error.message; });
+if (status && HUB) load().catch(error => { status.textContent = error.name === 'TimeoutError' ? 'Polls took too long to load. Refresh to try again.' : error.message; });

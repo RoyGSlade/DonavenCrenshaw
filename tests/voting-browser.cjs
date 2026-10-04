@@ -27,19 +27,19 @@ exports.browserQa = async function ({ base, users, prisma, siteOrigin, check }) 
   try {
     browser = await chromium.launch({ headless: true });
     const contexts = [];
-    async function pageFor(user, width = 390) {
+    async function pageFor(user, width = 390, route = 'community/') {
       const context = await browser.newContext({ viewport: { width, height: 844 }, deviceScaleFactor: 1 }); contexts.push(context);
       await context.route('**/*', route => /^http:\/\/127\.0\.0\.1:\d+\//.test(route.request().url()) ? route.continue() : route.abort());
       if (user) await context.addCookies([{ name: 'token', value: users[user].cookie.slice(6), url: base, httpOnly: true, sameSite: 'Lax' }]);
       const page = await context.newPage(); const errors = [];
       page.on('pageerror', error => errors.push(error.message));
-      await page.goto(`${siteOrigin}/voting/`); await page.waitForFunction(() => !document.querySelector('#voting-status').textContent.startsWith('Loading'));
+      await page.goto(`${siteOrigin}/${route}`); await page.waitForFunction(() => !/^(Loading|Checking)/.test(document.querySelector('#voting-status').textContent));
       return { page, errors };
     }
     let browserPoll;
     const title = 'Synthetic browser review — fixture only';
     const attack = '<img src=x onerror="window.fixtureExecuted=true">';
-    const owner = await pageFor('owner');
+    const owner = await pageFor('owner',390,'community/manage/');
     await check('real mobile owner UI saves private draft, reviews and explicitly opens', async () => {
       await owner.page.locator('#voting-admin').waitFor({ state: 'visible' });
       await owner.page.locator('#poll-title').fill(title);
@@ -50,6 +50,8 @@ exports.browserQa = async function ({ base, users, prisma, siteOrigin, check }) 
       await card.waitFor(); assert.match(await card.textContent(), /DRAFT/);
       const guestDraft = await pageFor(); assert.equal(await guestDraft.page.locator('#voting-polls').getByText(title).count(), 0);
       owner.page.once('dialog', dialog => dialog.accept()); await card.getByRole('button', { name: 'Open this poll' }).click();
+      await card.getByText('OPEN', { exact:true }).waitFor();
+      await owner.page.goto(`${siteOrigin}/community/`);
       const open = owner.page.locator('#voting-polls article').filter({ hasText: title }); await open.waitFor();
       browserPoll = await open.getAttribute('data-poll-id');
       assert.equal(await prisma.priorityBallot.count({ where: { pollId: browserPoll } }), 0);

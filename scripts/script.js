@@ -6,6 +6,7 @@ function currentSection(pathname = window.location.pathname) {
     const routeSegments = new Set([
         'now',
         'voting',
+        'community',
         'privacy',
         'underplain',
         'crenshaw-systems',

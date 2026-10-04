@@ -1,14 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
 <%- components.head %>
-<body class="site-shell skin-<%= page.skin %> voting-page" data-branch="<%= page.branch %>">
+<body class="site-shell skin-<%= page.skin %> voting-page" data-branch="<%= page.branch %>" data-voting-mode="public">
     <a class="skip-link" href="#main-content">Skip to main content</a>
     <%- components.nav %>
     <div class="content-wrapper">
         <main id="main-content" class="page-shell" tabindex="-1">
             <div class="container page-content voting-content">
+                <h1 class="section-title">Community</h1>
+                <section aria-labelledby="voting-title">
                 <p class="mono voting-eyebrow">COMMUNITY INPUT</p>
-                <h1 class="section-title">Development votes</h1>
+                <h2 id="voting-title" class="section-title">Development votes</h2>
                 <p class="voting-intro">Help me choose what to focus on next.</p>
                 <div class="noir-card voting-rules">
                     <p>I open polls with priorities I can reasonably consider. Each account gets <strong>one equal vote per poll</strong>. A confirmed vote is final for that poll; a new poll gives you a new vote.</p>
@@ -16,27 +18,18 @@
                     <p>Only totals are public. Your choice is visible to you and stored with your account. <a href="<%= siteRoot %>privacy/#development-votes">Voting privacy</a>.</p>
                 </div>
                 <p id="voting-status" role="status" aria-live="polite">Loading polls…</p>
-                <p id="voting-signin"><a href="<%= siteRoot %>account/?next=<%= encodeURIComponent(siteRoot + 'voting/') %>">Sign in with your existing account</a> to vote when a poll is open.</p>
+                <p id="voting-signin"><a href="<%= siteRoot %>account/?next=<%= encodeURIComponent(siteRoot + 'community/') %>">Sign in with your existing account</a> to vote when a poll is open.</p>
                 <noscript><p>Enable JavaScript to load polls and vote. <a href="<%= siteRoot %>account/">Your existing account</a> is used to sign in.</p></noscript>
+                <p id="voting-manage-link" hidden><a href="<%= siteLink('community/manage') %>">Manage polls</a></p>
                 <div id="voting-polls" aria-label="Development polls"></div>
                 <p id="voting-sponsor" class="voting-fine" hidden></p>
-                <section id="voting-admin" class="noir-card voting-admin" aria-labelledby="voting-admin-title" hidden>
-                    <h2 id="voting-admin-title">Manage polls</h2>
-                    <p>Create a draft, review it, then open it when you choose. Drafts are private. Closed polls stay closed.</p>
-                    <form id="voting-draft">
-                        <label for="poll-title">Poll title</label>
-                        <input id="poll-title" name="title" required maxlength="120" autocomplete="off">
-                        <label for="poll-description">What this choice influences</label>
-                        <textarea id="poll-description" name="description" required maxlength="1500" rows="3"></textarea>
-                        <label for="poll-options">Feasible priorities, one per line (2–8)</label>
-                        <textarea id="poll-options" name="options" required maxlength="1295" rows="5" aria-describedby="poll-options-help"></textarea>
-                        <p id="poll-options-help" class="voting-fine">Each option can have up to 160 characters. No automatic poll schedule is set.</p>
-                        <button class="btn-noir" type="submit">Save private draft</button>
-                        <p id="voting-admin-status" role="status" aria-live="polite"></p>
-                    </form>
-                    <div id="voting-admin-polls"></div>
-                </section>
+
                 <p class="voting-fine">One account is not proof of one person. Account and request limits reduce abuse; they cannot prevent someone creating multiple accounts.</p>
+                </section>
+                <section class="community-work" aria-labelledby="community-work-title">
+                    <h2 id="community-work-title" class="section-title">What I'm working on</h2>
+                    <%- content %>
+                </section>
             </div>
         </main>
         <%- components.footer %>

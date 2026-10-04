@@ -25,3 +25,5 @@
 .voting-admin button { justify-self: start; }
 .voting-admin article { border-top: 1px solid #718391; margin-top: 1.5rem; padding-top: 1.5rem; }
 .voting-page [hidden] { display: none !important; }
+
+.community-work { margin-top: 4rem; padding-top: 2rem; border-top: 1px solid var(--line-hair); }

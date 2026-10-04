@@ -189,8 +189,10 @@ function runAccountPage(root, first) {
         back.className = 'acct-fine';
         back.textContent = returnPath().includes('/challenge/')
             ? "You'll go straight back to the challenge after signing in."
-            : returnPath().includes('/voting/')
-                ? 'You\'ll return to Development votes after signing in.'
+            : returnPath().includes('/community/manage/')
+                ? "You'll return to poll management after signing in."
+                : /\/(?:community|voting)\//.test(returnPath())
+                    ? "You'll return to Community after signing in."
                 : 'You\'ll go straight back to the game after signing in.';
         for (const form of $$('[data-acct-form="signin"], [data-acct-form="signup"]')) form.append(back.cloneNode(true));
     }

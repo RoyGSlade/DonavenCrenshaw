@@ -24,29 +24,35 @@ function activeLinks(html, pathname) {
   vm.runInNewContext(behavior,{document,window:{location:{pathname}},URL});
   return links.filter(link=>link.attributes['aria-current'] === 'page').map(link=>link.dataset.route);
 }
-test('Voting and Privacy normal navigation resolves at root and a deployed subpath',()=>{
+test('Community and Privacy normal navigation resolves at root and a deployed subpath',()=>{
   for(const base of ['/','/DonavenCrenshaw/']){
     const html=render(base);
-    assert.ok(html.includes(`href="${base}voting/" data-route="voting"`));
+    assert.ok(html.includes(`href="${base}community/" data-route="community"`));
     assert.ok(html.includes(`href="${base}privacy/" data-route="privacy"`));
     assert.ok(!html.includes('data-route="now"'));
-    for(const route of ['voting','privacy']) assert.deepEqual(activeLinks(html,base+route+'/'),[route]);
+    for(const route of ['community','privacy']) assert.deepEqual(activeLinks(html,base+route+'/'),[route]);
+    assert.deepEqual(activeLinks(html,base+'community/manage/'),['community']);
     assert.deepEqual(activeLinks(html,base+'now/'),[]);
   }
 });
-test('footer Privacy link and archived Now content remain available',()=>{
+test('footer Privacy and legacy Now route remain available with work content in Community',()=>{
   const footer=read('src/components/footer.ejs');
   assert.ok(footer.includes("siteLink('privacy')"));
-  assert.ok(read('content/now.md').includes('---'));
+  assert.ok(read('content/now.md').includes('redirect: "community"'));
+  assert.ok(read('content/voting.md').includes('redirect: "community"'));
+  assert.ok(read('content/community.md').includes('class="now-page"'));
+  assert.ok(read('content/community.md').includes('Try the current builds'));
 });
 test('guest voting sign-in and voting privacy use the deployed base',()=>{
   const syntax=spawnSync(process.execPath,['--check',fileURLToPath(new URL('../scripts/account.js',import.meta.url))],{encoding:'utf8'});
   assert.equal(syntax.status,0,syntax.stderr);
   new vm.Script(read('scripts/voting.js'));
   for (const siteRoot of ['/','/DonavenCrenshaw/']) {
-    const html=ejs.render(read('src/layouts/voting.ejs'), {siteRoot, components:{head:'',nav:'',footer:''}, page:{skin:'default',branch:'community'}});
-    assert.ok(html.includes(`href="${siteRoot}account/?next=${encodeURIComponent(siteRoot+'voting/')}"`));
+    const html=ejs.render(read('src/layouts/voting.ejs'), {siteRoot, siteLink:route=>siteRoot+route+'/', content:'Retained work content', components:{head:'',nav:'',footer:''}, page:{skin:'default',branch:'community'}});
+    assert.ok(html.includes(`href="${siteRoot}account/?next=${encodeURIComponent(siteRoot+'community/')}"`));
     assert.ok(html.includes(`href="${siteRoot}privacy/#development-votes"`));
     assert.ok(html.includes('to vote when a poll is open.'));
+    assert.ok(html.indexOf('id="voting-polls"')<html.indexOf('Retained work content'));
+    assert.ok(!html.includes('id="voting-draft"'));
   }
 });
