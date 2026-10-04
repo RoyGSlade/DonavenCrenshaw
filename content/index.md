@@ -1,7 +1,7 @@
 ---
 layout: "home"
-title: "Donaven Crenshaw — Stardust, games and free software"
-description: "Race your friends in Stardust, a free browser game by Donaven Crenshaw, then try the Kingdoms & Caravans playtest and underplain's free software."
+title: "Build freedom: games and free software"
+description: "Accessible tools, creative games, and useful automation by Donaven Crenshaw. Play Stardust, explore Kingdoms & Caravans, and try BetterFingers."
 branch: "underplain"
 skin: "underplain"
 page_kind: "underplain-home"
@@ -9,6 +9,10 @@ lead_game: "stardust"
 hero_kicker: "FREE BROWSER GAME · EARLY BUILD"
 hero_title: "Race your friends in Stardust."
 hero_sub: "Build your ship, fly five drift circuits, and chase the weekly leaderboard. Set a time and dare your friends to beat it."
+mission_title: "Build freedom."
+mission_sub: "Accessible tools, creative games, and useful automation. Built to give you more control over your time, creativity, and everyday life."
+ogImage: "assets/images/stardust/alpha-relay-flight.webp"
+ogImageAlt: "Stardust gameplay: the courier ship flying the Alpha Relay circuit."
 ---
 
 <div class="container stack-gap-lg home-page-content">
@@ -46,7 +50,7 @@ hero_sub: "Build your ship, fly five drift circuits, and chase the weekly leader
     <div class="section-header"><div><h2 id="underplain-mission" class="section-title section-label">Why underplain exists</h2><p class="section-desc">Useful software should respect your time, your machine, and your choices.</p></div></div>
     <div class="noir-card reading-text">
       <p>underplain is my home for free software: practical tools released with their status, limits, source, and evidence visible.</p>
-      <p>The goal is not a pile of half-finished ideas. It is a small set of tools that remove tedious work, avoid unnecessary subscriptions, and keep people close to their data and decisions.</p>
+      <p>Building freedom starts with small, useful things: less tedious work, fewer unnecessary subscriptions, and more control over your data and decisions.</p>
       <p><a class="hero-link mono" href="underplain/index.html">ENTER UNDERPLAIN →</a></p>
     </div>
   </section>

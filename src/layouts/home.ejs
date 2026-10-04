@@ -12,7 +12,7 @@
             <% const betterFingersImage = betterFingers && betterFingers.showcase && betterFingers.showcase.slides[0] && betterFingers.showcase.slides[0].media[0]; %>
             <% const betterFingersRelease = betterFingers && betterFingers.project.links.find((link) => link.type === 'documentation'); %>
             <%
-              // The lead game owns the first screen. Times come from the committed hub
+              // The mission introduces the existing game showcase. Times come from the committed hub
               // snapshot, so the homepage never waits on (or breaks with) the hub.
               const snap = data.hubSnapshot;
               const podium = snap ? snap.leaderboard.slice(0, 3) : [];
@@ -22,6 +22,14 @@
                 return `${Math.floor(t / 60000)}:${two(Math.floor(t / 1000) % 60)}.${two(Math.floor((t % 1000) / 10))}`;
               };
             %>
+            <section class="container home-mission" aria-labelledby="home-mission-title">
+                <div class="home-mission-copy">
+                    <p class="section-label">DONAVEN CRENSHAW · GAMES &amp; FREE SOFTWARE</p>
+                    <h1 id="home-mission-title"><%= frontmatter.mission_title %></h1>
+                    <p class="home-mission-lede"><%= frontmatter.mission_sub %></p>
+                </div>
+                <a class="hero-link mono" href="<%= siteRoot %>about/#build-freedom">WHY I BUILD <span aria-hidden="true">→</span></a>
+            </section>
             <% if (frontmatter.lead_game === 'stardust') { %>
                 <section class="container home-stardust-lead" aria-labelledby="stardust-lead-title">
                     <div class="home-stardust-copy">
@@ -36,7 +44,7 @@
                         </a>
                         <% } %>
                         <p class="section-label"><%= frontmatter.hero_kicker %></p>
-                        <h1 id="stardust-lead-title"><%= frontmatter.hero_title %></h1>
+                        <h2 id="stardust-lead-title"><%= frontmatter.hero_title %></h2>
                         <p class="home-stardust-lede"><%= frontmatter.hero_sub %></p>
                         <div class="home-stardust-actions">
                             <a class="sd-cta home-stardust-play" href="<%= siteRoot %>games/stardust/">PLAY STARDUST</a>
@@ -68,7 +76,7 @@
                     <p class="section-label">PLAYABLE NOW · EARLY GAME BUILD</p>
                     <h2 id="kingdoms-caravans-spotlight-title">Kingdoms &amp; Caravans</h2>
                     <p class="section-desc">Build a growing city, move logs into planks, and keep food in reserve while two raider waves approach. It is an unfinished, unsigned Windows friend playtest focused on city supply, housing, and defense.</p>
-                    <p><a class="btn btn-primary" href="<%= siteRoot %>kingdoms-caravans/">EXPLORE THE PLAYTEST</a> <a class="btn-noir" href="https://github.com/RoyGSlade/KingdomsAndCaravans/releases/tag/v0.3.2" rel="noopener noreferrer">RELEASE NOTES</a></p>
+                    <p class="game-spotlight-actions"><a class="btn btn-primary" href="<%= siteRoot %>kingdoms-caravans/">EXPLORE THE PLAYTEST</a> <a class="btn-noir" href="https://github.com/RoyGSlade/KingdomsAndCaravans/releases/tag/v0.3.2" rel="noopener noreferrer">RELEASE NOTES</a></p>
                 </div>
             </section>
             <% if (betterFingers) { %>

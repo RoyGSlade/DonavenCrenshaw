@@ -4,7 +4,51 @@
     gap: clamp(3rem, 7vw, 6rem);
 }
 
-/* Stardust leads the first screen: pitch and Play on the left, real gameplay and the
+/* Keep the mission compact so real projects follow immediately. */
+.home-mission {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    justify-content: space-between;
+    gap: 1rem 2rem;
+    padding-top: clamp(1.5rem, 4vw, 3rem);
+    padding-bottom: 0.5rem;
+}
+
+.home-mission-copy {
+    flex: 1 1 32rem;
+    min-width: 0;
+}
+
+.home-mission .section-label {
+    margin: 0 0 0.75rem;
+    color: var(--text-soft);
+}
+
+.home-mission h1 {
+    margin: 0;
+    color: var(--text-main);
+    font-size: clamp(2.5rem, 5vw, 4.2rem);
+    line-height: 1.05;
+    letter-spacing: -0.045em;
+    text-transform: none;
+}
+
+.home-mission-lede {
+    max-width: 60ch;
+    margin: 0.9rem 0 0;
+    color: var(--text-soft);
+    font-size: clamp(1rem, 1.4vw, 1.15rem);
+    line-height: 1.65;
+}
+
+.home-mission > .hero-link {
+    flex: 0 0 auto;
+    padding-block: 0.75rem;
+    color: var(--text-soft);
+}
+
+/* Stardust: pitch and Play on the left, real gameplay and the
    current times to beat on the right. Colors follow the Stardust landing page. */
 .home-stardust-lead {
     --sd-ice: #e6f5ff;
@@ -36,7 +80,7 @@
     color: var(--sd-frost);
 }
 
-.home-stardust-copy h1 {
+.home-stardust-copy h2 {
     margin: 0;
     color: var(--sd-ice);
     font-size: clamp(2.6rem, 6vw, 4.8rem);
@@ -148,7 +192,7 @@
 
 .home-betterfingers-spotlight {
     display: grid;
-    grid-template-columns: minmax(0, 1.3fr) minmax(18rem, 0.7fr);
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
     gap: clamp(1.4rem, 4vw, 3.2rem);
     align-items: center;
     margin-top: clamp(2rem, 5vw, 4rem);
@@ -208,13 +252,14 @@
 
 .home-betterfingers-copy {
     display: grid;
+    min-width: 0;
     gap: 1rem;
     align-content: center;
 }
 
 .home-betterfingers-copy h2 {
     margin: 0;
-    font-size: clamp(2.8rem, 7vw, 5.9rem);
+    font-size: clamp(2.3rem, 3.8vw, 3.8rem);
     line-height: 0.9;
     letter-spacing: -0.055em;
 }
@@ -244,6 +289,10 @@
 .imported-home-section {
     margin-top: clamp(3rem, 7vw, 6rem);
     margin-bottom: clamp(3rem, 7vw, 6rem);
+}
+
+.imported-home-section .imported-update {
+    padding: clamp(1.25rem, 3vw, 2rem);
 }
 
 .home-page-content .section-block {
@@ -339,7 +388,7 @@
     }
 
     .home-betterfingers-copy h2 {
-        font-size: clamp(2.7rem, 16vw, 4.5rem);
+        font-size: clamp(2rem, 11vw, 3.8rem);
     }
 
     .home-betterfingers-actions > * {

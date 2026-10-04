@@ -145,7 +145,34 @@ for (const file of htmlFiles) {
 }
 
 const home = fs.existsSync(routeFile('/')) ? fs.readFileSync(routeFile('/'), 'utf8') : '';
+const sitemapFile = path.join(PUBLIC, 'sitemap.xml');
+const robotsFile = path.join(PUBLIC, 'robots.txt');
+const sitemap = fs.existsSync(sitemapFile) ? fs.readFileSync(sitemapFile, 'utf8') : '';
+const robots = fs.existsSync(robotsFile) ? fs.readFileSync(robotsFile, 'utf8') : '';
+const origin = 'https://donavencrenshaw.com';
+const descriptions = new Set();
+for (const route of ['/', '/about/']) {
+    const html = fs.existsSync(routeFile(route)) ? fs.readFileSync(routeFile(route), 'utf8') : '';
+    const canonical = `${origin}${SITE_BASE}${route.replace(/^\//, '')}`;
+    if (!html.includes(`rel="canonical" href="${canonical}"`)) failures.push(`${route} is missing its production canonical`);
+    if (/name="robots" content="[^"]*noindex/i.test(html)) failures.push(`${route} must be indexable`);
+    const description = html.match(/name="description" content="([^"]+)"/)?.[1];
+    if (!description || descriptions.has(description)) failures.push(`${route} needs its own accurate description`);
+    descriptions.add(description);
+    for (const marker of ['property="og:image"', 'name="twitter:image"', 'property="og:image:alt"', 'name="twitter:image:alt"']) {
+        if (!html.includes(marker)) failures.push(`${route} is missing ${marker}`);
+    }
+    if (!html.includes(`property="og:url" content="${canonical}"`)) failures.push(`${route} social URL must match its canonical`);
+    if (!sitemap.includes(`<loc>${canonical}</loc>`)) failures.push(`${route} is missing from sitemap.xml`);
+    const metadata = (html.match(/<head>[\s\S]*?<\/head>/i)?.[0] || '').replace(/<script\b(?![^>]*application\/ld\+json)[\s\S]*?<\/script>/gi, '');
+    if (/localhost|127\.0\.0\.1/i.test(metadata)) failures.push(`${route} leaks a local URL into search/social metadata`);
+}
+if (!robots.includes(`Sitemap: ${origin}${SITE_BASE}sitemap.xml`)) failures.push('robots.txt must advertise the production sitemap');
+for (const url of sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)) {
+    if (!url[1].startsWith(`${origin}${SITE_BASE}`) || /\/(account|u)\/$/.test(url[1])) failures.push(`invalid sitemap URL: ${url[1]}`);
+}
 const primaryNav = home.match(/<nav class="site-nav"[\s\S]*?<\/nav>/i)?.[0] || '';
+if (!primaryNav.includes('aria-label="Donaven Crenshaw home"') || !primaryNav.includes('BUILD FREEDOM')) failures.push('primary brand must identify Donaven Crenshaw and Build freedom');
 for (const label of ['Now', 'underplain', 'BetterFingers', 'GetFast', 'PDFManager', 'Infinite Ages', 'Infinite Ages TTRPG', 'Infinite Ages Evolved', 'Build Log', 'About', 'Contact']) {
     // Nav labels may be bare (>Label</a>) or wrapped (<span class="nav-label">Label</span></a>).
     if (!primaryNav.includes(`>${label}</a>`) && !primaryNav.includes(`>${label}</span>`)) failures.push(`primary navigation is missing ${label}`);
@@ -154,8 +181,11 @@ if (primaryNav.includes('data-route="projects"')) failures.push('primary navigat
 if (![...primaryNav.matchAll(/<a\b[^>]*>/gi)].some(([tag]) => /data-route="kingdoms-caravans"/i.test(tag) && /href="[^\"]*kingdoms-caravans\//i.test(tag))) failures.push('primary navigation is missing a direct Kingdoms & Caravans link');
 if (/Crenshaw Systems|Service process|data-nav-group="crenshaw-systems"/i.test(primaryNav)) failures.push('primary navigation still promotes the hidden business branch');
 const stardustLead = home.match(/<section\b[^>]*class="[^"]*home-stardust-lead[^"]*"[\s\S]*?<\/section>/i)?.[0] || '';
-if (!stardustLead) failures.push('homepage does not lead with Stardust');
-if (!/<h1\b/i.test(stardustLead)) failures.push('homepage Stardust lead does not own the page heading');
+const mission = home.match(/<section\b[^>]*class="[^"]*home-mission[^"]*"[\s\S]*?<\/section>/i)?.[0] || '';
+if (!/<h1\b[^>]*>Build freedom\.<\/h1>/i.test(mission)) failures.push('homepage mission must own the Build freedom heading');
+if (!/href="[^"]*about\/#build-freedom"/i.test(mission)) failures.push('homepage mission must link to the fuller About mission');
+if (!stardustLead || home.indexOf(mission) > home.indexOf(stardustLead)) failures.push('homepage must show Stardust immediately after its mission');
+if (!/<h2\b/i.test(stardustLead)) failures.push('homepage Stardust showcase needs a second-level heading');
 if (!/href="[^"]*games\/stardust\/"[^>]*>PLAY STARDUST</i.test(stardustLead)) failures.push('homepage Stardust lead is missing a direct Play link');
 if (!/signed in[\s\S]*leaderboard/i.test(stardustLead)) failures.push('homepage Stardust lead does not say which runs count');
 const leadIndex = home.search(/home-stardust-lead/i);
@@ -164,7 +194,7 @@ const betterFingersIndex = home.search(/home-betterfingers-spotlight/i);
 if (!(leadIndex >= 0 && kingdomsIndex > leadIndex && (betterFingersIndex < 0 || betterFingersIndex > kingdomsIndex))) failures.push('homepage order must be Stardust, then Kingdoms & Caravans, then BetterFingers');
 if (!/UNDERPLAIN · FEATURED RELEASE/i.test(home)) failures.push('homepage no longer labels BetterFingers as underplain free software');
 if (!/home-betterfingers-spotlight/i.test(home) || !/assets\/projects\/betterfingers\/showcase\/complete-workflow\.png/i.test(home)) failures.push('homepage is missing the BetterFingers visual spotlight');
-if (!/href="\/projects\/betterfingers\/"/i.test(home)) failures.push('homepage spotlight does not link to BetterFingers');
+if (!home.includes(`href="${SITE_BASE}projects/betterfingers/"`)) failures.push('homepage spotlight does not link to BetterFingers');
 if (!/<section\b[^>]*class="[^"]*game-spotlight[^"]*"[\s\S]*href="[^\"]*kingdoms-caravans\//i.test(home)) failures.push('homepage is missing the Kingdoms & Caravans game spotlight/link');
 // Pin the reviewed current-state snapshot; the visible date must match its metadata.
 if (!/<time\b[^>]*datetime="2026-10-01"[^>]*>2026-10-01<\/time>/i.test(home)) failures.push('homepage current-state snapshot must be dated 2026-10-01');
