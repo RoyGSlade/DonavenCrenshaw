@@ -273,12 +273,29 @@ test(
     );
     await guest.locator("#enable-tilt").click();
     // Browser sensor emulation proves wiring, not physical iPhone/Android motion support.
-    await guest.evaluate(() =>
-      window.dispatchEvent(
-        new DeviceOrientationEvent("deviceorientation", { beta: 0, gamma: 0 }),
-      ),
-    );
+    // Describe a phone held 30 degrees back from upright, then rotated like a
+    // steering wheel. Convert screen-frame gravity to W3C device-frame angles:
+    // mobile Chromium rotates the screen to landscape but beta/gamma do not rotate.
+    const orient = (roll) => guest.evaluate((roll) => {
+      const radians = Math.PI / 180;
+      const pitch = 30 * radians, turn = roll * radians;
+      const s = { x: -Math.sin(turn) * Math.cos(pitch), y: Math.cos(turn) * Math.cos(pitch), z: Math.sin(pitch) };
+      const angle = ((screen.orientation?.angle ?? window.orientation ?? 0) + 360) % 360;
+      const up = angle === 90 ? { x: s.y, y: -s.x, z: s.z }
+        : angle === 180 ? { x: -s.x, y: -s.y, z: s.z }
+        : angle === 270 ? { x: -s.y, y: s.x, z: s.z } : s;
+      window.dispatchEvent(new DeviceOrientationEvent("deviceorientation", {
+        beta: Math.asin(up.y) / radians,
+        gamma: Math.atan2(-up.x, up.z) / radians,
+      }));
+    }, roll);
+    // Enabled alone is not calibrated: supply steady neutral samples first.
+    for (let i = 0; i < 12; i++) {
+      await orient(0);
+      await guest.waitForTimeout(30);
+    }
     await guest.waitForFunction(() => window.__dogfightDiag().tilt.enabled);
+    assert.equal((await guest.evaluate(() => window.__dogfightDiag().controls)).turn, 0);
     const cdp = await context.newCDPSession(guest);
     const point = (box, id) => ({
       x: box.x + box.width / 2,
@@ -290,14 +307,8 @@ test(
       touchPoints: [point(boxes.gas, 1), point(boxes.fire, 2)],
     });
     for (let i = 0; i < 6; i++) {
-      await guest.evaluate(() =>
-        window.dispatchEvent(
-          new DeviceOrientationEvent("deviceorientation", {
-            beta: 20,
-            gamma: 20,
-          }),
-        ),
-      );
+      // Between the 3-degree dead zone and 40-degree full lock.
+      await orient(20);
       await guest.waitForTimeout(30);
     }
     assert.ok(
