@@ -9,6 +9,8 @@
     <% if (frontmatter.noindex) { %><meta name="robots" content="noindex, follow"><% } %>
     <% if (page.url && !frontmatter.noindex) { %><link rel="canonical" href="<%= page.url %>"><% } %>
     <% if (image) { %><meta property="og:image" content="<%= image %>"><meta name="twitter:image" content="<%= image %>"><% } %>
+    <% if (image && frontmatter.ogImageAlt) { %><meta property="og:image:alt" content="<%= frontmatter.ogImageAlt %>"><meta name="twitter:image:alt" content="<%= frontmatter.ogImageAlt %>"><% } %>
+    <meta property="og:site_name" content="<%= site.name %>">
     <meta property="og:title" content="<%= pageTitle %>">
     <meta property="og:description" content="<%= description %>">
     <meta property="og:type" content="<%= frontmatter.ogType || 'website' %>">

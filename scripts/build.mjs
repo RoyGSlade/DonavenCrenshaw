@@ -486,6 +486,26 @@ async function buildImportedProjects(site, components, data, generatedPaths) {
     }
 }
 
+async function buildCrawlerFiles(site, generatedPaths) {
+    // Use the final rendered pages: redirects and noindex account/profile shells
+    // stay out, and every included URL matches that page's canonical metadata.
+    const urls = new Set();
+    for (const relative of generatedPaths) {
+        const html = await fs.readFile(path.join(PUBLIC_DIR, relative), 'utf8');
+        if (/http-equiv="refresh"|name="robots" content="[^"]*noindex/i.test(html)) continue;
+        const canonical = html.match(/rel="canonical" href="([^"]+)"/i)?.[1];
+        if (!canonical) continue;
+        const url = new URL(canonical);
+        if (url.origin !== new URL(site.domain).origin) throw new Error(`[SEO ERROR] Off-site canonical in ${relative}`);
+        urls.add(url.href);
+    }
+    const entries = [...urls].sort().map(url => `  <url><loc>${escapeAttribute(url)}</loc></url>`).join('\n');
+    await fs.writeFile(path.join(PUBLIC_DIR, 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${entries}\n</urlset>\n`);
+    const sitemap = new URL(`${site.basePath}sitemap.xml`, `${site.domain}/`).href;
+    await fs.writeFile(path.join(PUBLIC_DIR, 'robots.txt'), `User-agent: *\nAllow: /\nSitemap: ${sitemap}\n`);
+    console.log(`[SEO] ${urls.size} canonical indexable URLs in sitemap.xml`);
+}
+
 async function main() {
     console.log('--- STARTING STATIC SITE BUILD ---');
     const site = validateSite(await readJson('site.json', { required: true }));
@@ -522,6 +542,7 @@ async function main() {
     });
     await buildRedirectMap(site, redirects, generatedPaths, redirectEntries);
     await build404(components, site, data);
+    await buildCrawlerFiles(site, generatedPaths);
     console.log(`[PUBLISHED LOGS] ${postsData.length}`);
     console.log(`--- BUILD COMPLETE (${products.length} products, ${branches.length} branches, ${generatedPaths.length} content routes) ---`);
 }
