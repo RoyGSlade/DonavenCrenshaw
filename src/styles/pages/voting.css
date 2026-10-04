@@ -1,0 +1,26 @@
+.voting-content { max-width: 58rem; padding-block: 3rem; }
+.voting-eyebrow { color: var(--accent, #9cc9e9); }
+.voting-intro { font-size: 1.25rem; margin-block: 1rem 2rem; }
+.voting-rules, .voting-poll, .voting-admin { padding: clamp(1rem, 4vw, 2rem); margin-block: 1.5rem; }
+.voting-page p { line-height: 1.65; }
+.voting-page h2, .voting-page h3 { overflow-wrap: anywhere; }
+.voting-state { font-family: var(--font-mono, monospace); color: #bfd9ee; font-size: .85rem; }
+.voting-poll fieldset { border: 0; padding: 0; margin-block: 1.5rem; min-width: 0; }
+.voting-choice { display: flex; gap: .75rem; align-items: flex-start; min-height: 48px; padding: .85rem; margin-block: .5rem; border: 1px solid #718391; border-radius: .4rem; cursor: pointer; overflow-wrap: anywhere; }
+.voting-choice:has(input:checked) { border-color: #c1e5ff; background: #192d3a; }
+.voting-choice input { flex-shrink: 0; margin-top: .3rem; width: 1.1rem; height: 1.1rem; }
+.voting-page input:focus-visible, .voting-page textarea:focus-visible, .voting-page button:focus-visible, .voting-page a:focus-visible { outline: 3px solid #c1e5ff; outline-offset: 4px; }
+.voting-page button { min-height: 48px; white-space: normal; }
+.voting-page button:disabled { opacity: .65; cursor: wait; }
+.voting-confirm { display: flex; gap: .7rem; margin-block: 1.2rem; align-items: flex-start; }
+.voting-confirm input { margin: .3rem 0 0; flex-shrink: 0; width: 1.1rem; height: 1.1rem; padding: 0; }
+.voting-confirm span { min-width: 0; flex: 1; }
+.voting-results { list-style: none; padding: 0; }
+.voting-results li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .4rem 1rem; margin-block: 1.1rem; overflow-wrap: anywhere; }
+.voting-results meter { grid-column: 1 / -1; width: 100%; height: .65rem; }
+.voting-fine { color: #b7c4cf; font-size: .9rem; }
+.voting-admin form { display: grid; gap: .75rem; }
+.voting-admin input, .voting-admin textarea { width: 100%; box-sizing: border-box; background: #0c1520; color: #f0f5f9; border: 1px solid #718391; border-radius: .3rem; padding: .8rem; font: inherit; }
+.voting-admin button { justify-self: start; }
+.voting-admin article { border-top: 1px solid #718391; margin-top: 1.5rem; padding-top: 1.5rem; }
+.voting-page [hidden] { display: none !important; }

@@ -211,7 +211,7 @@ async function initPublicDir() {
     });
     if (fs.existsSync(path.join(ROOT_DIR, 'scripts'))) {
         await fs.ensureDir(path.join(PUBLIC_DIR, 'scripts'));
-        for (const filename of ['script.js', 'smoke.js', 'light-engine.js', 'account.js', 'visits.js', 'stardust-boards.js', 'stardust-challenge.js', 'social.js', 'share.js', 'profile.js', 'pilot-ui.js', 'stardust-weekly.js', 'pilot-profile.js', 'ship-info.js', 'ship-ui.js']) {
+        for (const filename of ['script.js', 'smoke.js', 'light-engine.js', 'account.js', 'voting.js', 'visits.js', 'stardust-boards.js', 'stardust-challenge.js', 'social.js', 'share.js', 'profile.js', 'pilot-ui.js', 'stardust-weekly.js', 'pilot-profile.js', 'ship-info.js', 'ship-ui.js']) {
             await copyIfPresent(path.join(ROOT_DIR, 'scripts', filename), path.join(PUBLIC_DIR, 'scripts', filename));
         }
     }

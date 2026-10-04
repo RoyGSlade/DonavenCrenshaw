@@ -24,6 +24,7 @@
     <script type="application/ld+json"><%- JSON.stringify(jsonLd) %></script>
     <link rel="stylesheet" href="<%= siteRoot %>styles/styles.css">
     <script type="module" src="<%= siteRoot %>scripts/account.js" data-hub="<%= hubUrl %>"></script>
+    <% if (frontmatter.page_kind === 'voting') { %><script type="module" src="<%= siteRoot %>scripts/voting.js" data-voting-hub="<%= hubUrl %>"></script><% } %>
     <script type="module" src="<%= siteRoot %>scripts/visits.js" data-visits-hub="<%= hubUrl %>"></script>
     <script>window.SITE_ROOT = <%- JSON.stringify(siteRoot) %>; window.SITE_BASE = <%- JSON.stringify(site.basePath) %>;</script>
 </head>

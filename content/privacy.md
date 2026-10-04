@@ -36,6 +36,12 @@ Accounts are optional. Every page and every game works without one.
 
 Dogfight rooms connect through the same server and exist only while a match is being played. If both pilots are signed in, the server records who won and who lost; nothing else about the match is kept, and rounds with a guest are not recorded at all.
 
+<h2 id="development-votes">Development votes</h2>
+
+When voting is enabled, each account can submit one final choice per poll opened by Donaven. The Hub stores the poll, your account id, your choice and the submission time. Poll options and aggregate counts are public; voter names and individual choices are not published. Your own confirmed choice is shown only in your signed-in view. Deleting your account deletes its votes and reduces the totals. Server operators can access records to administer the service; they are not anonymous to the server.
+
+No extra identity data or device fingerprint is collected for voting. An account is not proof of one person, so these totals are community input rather than a verified election. GitHub sponsor verification is not enabled yet. It will not add voting weight or display private sponsorships publicly.
+
 ### Discord
 
 Linking Discord is optional, and every page and game works without it. It lets a bot on Donaven's Discord server give you Stardust roles.
