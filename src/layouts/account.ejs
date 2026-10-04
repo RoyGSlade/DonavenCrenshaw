@@ -99,6 +99,14 @@
                         </div>
                     </section>
 
+                    <section class="noir-card noir-card--lit acct-card" data-email-verification aria-label="Email confirmation">
+                        <h2 class="acct-card-title mono" data-email-verification-state></h2>
+                        <button class="btn-noir" type="button" data-email-verification-request>Send confirmation email</button>
+                        <button class="btn-noir btn-noir--solid" type="button" data-email-verification-confirm hidden>Confirm my email</button>
+                        <a class="btn-noir" href="<%= siteLink('community') %>">Community</a>
+                        <p class="acct-status" role="status" data-email-verification-feedback></p>
+                    </section>
+
                     <section class="noir-card noir-card--lit acct-card acct-invite" aria-labelledby="acct-invite-title" data-acct-invite hidden>
                         <h2 id="acct-invite-title" class="acct-card-title mono">Friend invite</h2>
                         <p class="acct-invite-q" data-acct-invite-text></p>

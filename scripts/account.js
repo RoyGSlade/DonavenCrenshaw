@@ -19,6 +19,9 @@ import { profilePath, lockedTitles, sortTitles, rarityLabel } from './profile.js
 import { createPilotUi } from './pilot-ui.js';
 import { paintShip, shipThumb } from './ship-ui.js';
 import { familyName } from './ship-info.js';
+import { emailConfirmationToken, createEmailVerificationUi } from './email-verification.js';
+
+let verificationToken = emailConfirmationToken(location, history);
 
 const tag = document.querySelector('script[data-hub]');
 const HUB = (tag?.dataset.hub || 'https://api.donavencrenshaw.com').replace(/\/+$/, '');
@@ -78,10 +81,19 @@ function runAccountPage(root, first) {
     const $ = (sel, scope = root) => scope.querySelector(sel);
     const $$ = (sel, scope = root) => [...scope.querySelectorAll(sel)];
     let user = first.user;
+    const paintEmailVerification = createEmailVerificationUi({ root, hub: HUB, token: verificationToken });
+    verificationToken = null;
+    window.addEventListener('hashchange', async () => {
+        if (!location.hash.startsWith('#verify=')) return;
+        paintEmailVerification.setToken?.(emailConfirmationToken(location, history));
+        const refreshed = await api.session();
+        if (refreshed.ok && refreshed.data?.user) { user = refreshed.data.user; fillMember(); }
+    });
 
     let fresh = false;
 
     function show(view) {
+        if (view === 'guest') paintEmailVerification(null);
         root.dataset.view = view;
         for (const el of $$('[data-view-only]')) el.hidden = el.dataset.viewOnly !== view;
         const title = $('[data-acct-title]');
@@ -238,6 +250,7 @@ function runAccountPage(root, first) {
     // --- Member ---------------------------------------------------------------
 
     function fillMember() {
+        paintEmailVerification(user);
         const name = displayName(user);
         paintIdentity();
         $('[data-acct-name]').textContent = name;

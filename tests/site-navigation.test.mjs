@@ -46,12 +46,13 @@ test('footer Privacy and legacy Now route remain available with work content in 
 test('guest voting sign-in and voting privacy use the deployed base',()=>{
   const syntax=spawnSync(process.execPath,['--check',fileURLToPath(new URL('../scripts/account.js',import.meta.url))],{encoding:'utf8'});
   assert.equal(syntax.status,0,syntax.stderr);
-  new vm.Script(read('scripts/voting.js'));
+  const votingSyntax=spawnSync(process.execPath,['--check',fileURLToPath(new URL('../scripts/voting.js',import.meta.url))],{encoding:'utf8'});
+  assert.equal(votingSyntax.status,0,votingSyntax.stderr);
   for (const siteRoot of ['/','/DonavenCrenshaw/']) {
     const html=ejs.render(read('src/layouts/voting.ejs'), {siteRoot, siteLink:route=>siteRoot+route+'/', content:'Retained work content', components:{head:'',nav:'',footer:''}, page:{skin:'default',branch:'community'}});
     assert.ok(html.includes(`href="${siteRoot}account/?next=${encodeURIComponent(siteRoot+'community/')}"`));
-    assert.ok(html.includes(`href="${siteRoot}privacy/#development-votes"`));
-    assert.ok(html.includes('to vote when a poll is open.'));
+    assert.ok(!html.includes('class="voting-rules"'));
+    assert.ok(!html.includes('Voting privacy'));
     assert.ok(html.indexOf('id="voting-polls"')<html.indexOf('Retained work content'));
     assert.ok(!html.includes('id="voting-draft"'));
   }

@@ -7,24 +7,15 @@
     <div class="content-wrapper">
         <main id="main-content" class="page-shell" tabindex="-1">
             <div class="container page-content voting-content">
-                <h1 class="section-title">Community</h1>
+                <h1 class="section-label community-kicker">Community</h1>
                 <section aria-labelledby="voting-title">
-                <p class="mono voting-eyebrow">COMMUNITY INPUT</p>
-                <h2 id="voting-title" class="section-title">Development votes</h2>
-                <p class="voting-intro">Help me choose what to focus on next.</p>
-                <div class="noir-card voting-rules">
-                    <p>I open polls with priorities I can reasonably consider. Each account gets <strong>one equal vote per poll</strong>. A confirmed vote is final for that poll; a new poll gives you a new vote.</p>
-                    <p>Results guide my decisions. They do not promise a feature, a release date or that the winner will be built. Supporting the work does not add votes or buy roadmap control.</p>
-                    <p>Only totals are public. Your choice is visible to you and stored with your account. <a href="<%= siteRoot %>privacy/#development-votes">Voting privacy</a>.</p>
-                </div>
+                <h2 id="voting-title" class="poll-section-title">What should we build next?</h2>
                 <p id="voting-status" role="status" aria-live="polite">Loading polls…</p>
-                <p id="voting-signin"><a href="<%= siteRoot %>account/?next=<%= encodeURIComponent(siteRoot + 'community/') %>">Sign in with your existing account</a> to vote when a poll is open.</p>
+                <p id="voting-signin"><a href="<%= siteRoot %>account/?next=<%= encodeURIComponent(siteRoot + 'community/') %>">Sign in with your existing account</a></p>
                 <noscript><p>Enable JavaScript to load polls and vote. <a href="<%= siteRoot %>account/">Your existing account</a> is used to sign in.</p></noscript>
                 <p id="voting-manage-link" hidden><a href="<%= siteLink('community/manage') %>">Manage polls</a></p>
                 <div id="voting-polls" aria-label="Development polls"></div>
-                <p id="voting-sponsor" class="voting-fine" hidden></p>
 
-                <p class="voting-fine">One account is not proof of one person. Account and request limits reduce abuse; they cannot prevent someone creating multiple accounts.</p>
                 </section>
                 <section class="community-work" aria-labelledby="community-work-title">
                     <h2 id="community-work-title" class="section-title">What I'm working on</h2>

@@ -1,3 +1,4 @@
+import { createPollCarousel, timeLabel } from './voting-carousel.js';
 // Uses the existing HttpOnly Hub account cookie. No vote or identity in storage.
 const root = document.querySelector('#voting-polls');
 const HUB = document.querySelector('script[data-voting-hub]')?.dataset.votingHub;
@@ -6,6 +7,7 @@ const admin = document.querySelector('#voting-admin');
 const managing = document.body.dataset.votingMode === 'manage';
 const accountUrl = `${window.SITE_ROOT || '/'}account/?next=${encodeURIComponent(window.location.pathname)}`;
 let signedIn = false;
+const carouselState = new Map();
 
 function node(tag, text, className) {
     const el = document.createElement(tag);
@@ -22,77 +24,38 @@ async function call(path, body) {
     const data = await response.json();
     if (!response.ok) {
         const error = new Error(response.status === 401 ? 'Your session ended. Sign in again to vote.' : data.error || 'Could not complete the request. Try again.');
-        error.status = response.status; throw error;
+        error.status = response.status; error.code = data.code; throw error;
     }
     return data;
 }
-function results(poll, card) {
-    card.append(node('h3', `Results · ${poll.totalVotes} ${poll.totalVotes === 1 ? 'vote' : 'votes'}`));
-    const list = node('ul', undefined, 'voting-results');
-    for (const option of poll.options) {
-        const row = node('li');
-        row.append(node('span', option.label), node('span', `${option.votes} · ${poll.totalVotes ? Math.round(option.votes * 100 / poll.totalVotes) : 0}%`));
-        const meter = node('meter'); meter.min = 0; meter.max = Math.max(poll.totalVotes, 1); meter.value = option.votes;
-        meter.setAttribute('aria-label', `${option.label}: ${option.votes} of ${poll.totalVotes} votes`);
-        row.append(meter); list.append(row);
-    }
-    card.append(list);
-}
 function pollCard(poll) {
-    const card = node('article', undefined, 'noir-card voting-poll');
-    card.dataset.pollId = poll.id;
-    const heading = node('h2', poll.title); heading.id = `poll-${poll.id}`;
-    card.setAttribute('aria-labelledby', heading.id);
-    card.append(node('p', poll.state === 'OPEN' ? 'OPEN FOR VOTES' : 'CLOSED', 'voting-state'), heading, node('p', poll.description, 'voting-description'));
-    if (poll.ownVote) {
-        const chosen = poll.options.find(o => o.id === poll.ownVote);
-        card.append(node('p', `Your confirmed vote: ${chosen?.label || 'Recorded'}. This choice is final for this poll.`));
-    } else if (poll.state === 'OPEN' && signedIn) {
-        const form = node('form');
-        const field = node('fieldset'); field.append(node('legend', 'Choose one development priority'));
-        for (const option of poll.options) {
-            const label = node('label', undefined, 'voting-choice');
-            const input = node('input'); input.type = 'radio'; input.name = 'optionId'; input.value = option.id; input.required = true;
-            label.append(input, node('span', option.label)); field.append(label);
-        }
-        const label = node('label', undefined, 'voting-confirm');
-        const confirm = node('input'); confirm.type = 'checkbox'; confirm.required = true;
-        label.append(confirm, node('span', 'I understand my confirmed vote is final for this poll.'));
-        const button = node('button', 'Confirm my one vote', 'btn-noir'); button.type = 'submit';
-        const message = node('p'); message.setAttribute('role', 'status'); message.setAttribute('aria-live', 'polite'); message.tabIndex = -1;
-        form.append(field, label, button, message);
-        form.addEventListener('submit', async event => {
-            event.preventDefault(); if (!form.reportValidity()) return;
-            const optionId = new FormData(form).get('optionId');
-            button.disabled = true; field.disabled = true; confirm.disabled = true;
-            message.textContent = 'Saving your vote…';
-            try { await call(`/polls/${poll.id}/ballot`, { optionId, confirmed: true }); await load(); status.textContent = 'Your vote is recorded. Thank you.'; status.focus(); }
-            catch (error) {
-                message.textContent = error.message;
-                if (error.status === 401) { const link = node('a', ' Sign in'); link.href = accountUrl; message.append(link); }
-                message.focus();
-                button.disabled = false; field.disabled = false; confirm.disabled = false;
-            }
-        });
-        card.append(form);
-    } else if (poll.state === 'OPEN') {
-        const p = node('p'); const link = node('a', 'Sign in with your existing account to vote'); link.href = accountUrl;
-        p.append(link); card.append(p);
-    }
-    results(poll, card); return card;
+    if (!carouselState.has(poll.id)) carouselState.set(poll.id,{index:0,selected:null});
+    return createPollCarousel(poll,{signedIn,accountUrl,state:carouselState.get(poll.id),base:window.SITE_ROOT||'/',
+        submit:async optionId=>{
+            const result=await call(`/polls/${poll.id}/ballot`, {optionId,confirmed:true});
+            const previous=root.querySelector(`[data-poll-id="${poll.id}"]`);
+            if(previous){previous.dispose?.();previous.replaceWith(pollCard(result.poll));}
+        },
+        expired:load, report:message=>{status.hidden=false;status.textContent=message;status.focus();}});
 }
 function adminPoll(poll) {
-    const card = node('article'); card.append(node('h3', poll.title), node('p', poll.state, 'voting-state'), node('p', poll.description, 'voting-description'));
+    const card = node('article'); card.append(node('h3', poll.title), node('p', poll.state, 'voting-state'), node('p', timeLabel(poll), 'voting-fine'), node('p', poll.description, 'voting-description'));
     const options = node('ol'); poll.options.forEach(o => options.append(node('li', o.label))); card.append(options);
     if (poll.state !== 'CLOSED') {
         const action = poll.state === 'DRAFT' ? 'open' : 'close';
         const button = node('button', action === 'open' ? 'Open this poll' : 'Close this poll', 'btn-noir'); button.type = 'button';
         const message = node('p'); message.setAttribute('role', 'status');
+        let duration;
+        if (action === 'open') {
+            const label=node('label','Vote duration');duration=node('select');duration.id=`duration-${poll.id}`;label.htmlFor=duration.id;
+            for(const [value,text] of [['','Not set (manual close)'],['60','1 hour'],['360','6 hours'],['720','12 hours'],['1440','1 day'],['2880','2 days'],['10080','7 days']]) {const option=node('option',text);option.value=value;duration.append(option);}
+            card.append(label,duration);
+        }
         button.addEventListener('click', async () => {
-            const prompt = action === 'open' ? `Open “${poll.title}” to account votes? Review these priorities first; votes will be final.` : `Close “${poll.title}”? No further votes can be submitted and this poll cannot reopen.`;
+            const prompt = action === 'open' ? `Open “${poll.title}” to account votes? Review these priorities first; votes will be final. ${duration?.value ? `Voting lasts ${Number(duration.value)/60} hours.` : 'No closing time is set.'}` : `Close “${poll.title}”? No further votes can be submitted and this poll cannot reopen.`;
             if (!window.confirm(prompt)) return;
             button.disabled = true;
-            try { await call(`/admin/polls/${poll.id}/${action}`, {}); await load(); }
+            try { await call(`/admin/polls/${poll.id}/${action}`, action === 'open' && duration.value ? {durationMinutes:Number(duration.value)} : {}); await load(); }
             catch (error) { message.textContent = error.message; button.disabled = false; }
         });
         card.append(button, message);
@@ -103,11 +66,12 @@ async function load() {
     const data = await call('/polls');
     signedIn = data.account.signedIn;
     const signIn = document.querySelector('#voting-signin');
-    if (signIn) signIn.hidden = signedIn;
-    if (root) root.replaceChildren(...data.polls.map(pollCard));
+    if (signIn) signIn.hidden = signedIn || !!(root && data.polls.length);
+    if (root) { root.querySelectorAll('.poll-carousel').forEach(card=>card.dispose?.()); root.replaceChildren(...data.polls.map(pollCard)); }
     status.textContent = managing
         ? (data.account.admin ? 'Owner access confirmed. Review private drafts before opening them.' : signedIn ? 'Poll management is available only to the owner.' : 'Sign in with the owner account to manage polls.')
         : data.polls.length ? (signedIn ? 'You are signed in. Each poll has its own vote.' : 'View results here. Sign in to vote in an open poll.') : 'No polls have been opened yet. Check back when I open one.';
+    status.hidden = !managing && data.polls.length > 0;
     status.tabIndex = -1;
     const manageLink = document.querySelector('#voting-manage-link');
     if (manageLink) manageLink.hidden = !data.account.admin;
@@ -139,4 +103,4 @@ document.querySelector('#voting-draft')?.addEventListener('submit', async event 
     } catch (error) { message.textContent = error.message; }
     finally { button.disabled = false; }
 });
-if (status && HUB) load().catch(error => { status.textContent = error.name === 'TimeoutError' ? 'Polls took too long to load. Refresh to try again.' : error.message; });
+if (status && HUB) load().catch(error => { status.hidden=false; status.textContent = error.name === 'TimeoutError' ? 'Polls took too long to load. Refresh to try again.' : error.message; });

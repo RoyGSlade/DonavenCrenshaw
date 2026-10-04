@@ -77,7 +77,7 @@ test('the account page wires the Discord card: layout hooks exist and the script
 
 test('the privacy notice has the Discord subsection under Accounts and a fresh date', () => {
   const text = fs.readFileSync(new URL('../content/privacy.md', import.meta.url), 'utf8');
-  assert.match(text, /^date: "2026-10-02"$/m);
+  assert.match(text, /^date: "2026-10-04"$/m);
   const accounts = text.indexOf('<h2 id="accounts">');
   const discord = text.indexOf('### Discord');
   const next = text.indexOf('## underplain products');

@@ -22,6 +22,7 @@ exports.navigationQa = async function({browser,base,output,authenticate,authenti
   const privacy=()=>page.locator('.nav-links a[data-route="privacy"]');
   async function readyVoting() { await page.waitForFunction(()=>!/^(Loading|Checking)/.test(document.querySelector('#voting-status').textContent)); }
   async function menu() { const toggle=page.locator('.nav-toggle'); if(await toggle.isVisible() && await toggle.getAttribute('aria-expanded')!=='true') await toggle.click(); }
+  async function guestSignIn() {const card=page.locator('#voting-polls article').first();if(await card.count()){await card.getByRole('button',{name:'Vote and results',exact:true}).click();return card.getByRole('link',{name:/^Sign in/});}return page.locator('#voting-signin a');}
   async function privacyDestination(hash='') {
     await page.waitForURL(url('privacy/')+hash);
     await page.getByRole('heading',{name:'Privacy',exact:true,level:1}).waitFor();
@@ -42,7 +43,7 @@ exports.navigationQa = async function({browser,base,output,authenticate,authenti
       assert.ok(await page.evaluate(()=>!!(document.querySelector('#voting-polls').compareDocumentPosition(document.querySelector('.now-page'))&Node.DOCUMENT_POSITION_FOLLOWING)));
       assert.equal(await page.locator('#voting-manage-link').isVisible(),false);
       assert.equal(await page.locator('#voting-admin').isVisible(),false);
-      assert.ok(await page.locator('#voting-signin').isVisible());
+      if(!(await page.locator('#voting-polls article').count()))assert.ok(await page.locator('#voting-signin').isVisible());
       if(!(await page.locator('#voting-polls article').count())) assert.match(await page.locator('#voting-status').textContent(),/No polls have been opened yet/);
       await menu(); await privacy().focus(); await page.keyboard.press('Enter'); await privacyDestination();
       if(width<960) assert.equal(await page.locator('.nav-toggle').getAttribute('aria-expanded'),'false');
@@ -56,9 +57,9 @@ exports.navigationQa = async function({browser,base,output,authenticate,authenti
     assert.equal(await page.locator('.nav-toggle').evaluate(el=>el===document.activeElement),true);
     await page.locator('.footer-links').getByRole('link',{name:'Privacy',exact:true}).click(); await privacyDestination();
     await page.goto(url('community/')); await readyVoting();
-    await page.getByRole('link',{name:'Voting privacy',exact:true}).click(); await privacyDestination('#development-votes');
+    await menu(); await privacy().click(); await privacyDestination();
     await page.goto(url('community/')); await readyVoting();
-    const signIn=page.locator('#voting-signin a');
+    const signIn=await guestSignIn();
     assert.equal(await signIn.getAttribute('href'),new URL(url('account/')).pathname+'?next='+encodeURIComponent(new URL(url('community/')).pathname));
     await signIn.click(); await page.locator('[data-acct-form="signin"]').waitFor({state:'visible'});
     assert.ok((await page.locator('[data-acct-form="signin"]').textContent()).includes("You'll return to Community after signing in."));
@@ -78,7 +79,7 @@ exports.navigationQa = async function({browser,base,output,authenticate,authenti
     if(authenticate) {
       await page.goto(url('community/')); await readyVoting();
       const publicIds=await page.locator('#voting-polls article').evaluateAll(cards=>cards.map(card=>card.dataset.pollId));
-      await page.locator('#voting-signin a').click();
+      await (await guestSignIn()).click();
       await authenticate(page); await page.waitForURL(url('community/')); await readyVoting();
       await page.locator('#voting-manage-link a').click(); await page.waitForURL(url('community/manage/'));
       await page.locator('#voting-admin').waitFor({state:'visible'});
