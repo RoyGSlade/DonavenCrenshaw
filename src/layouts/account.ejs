@@ -14,6 +14,9 @@
                     <p class="acct-lede" data-acct-lede>One account for the games and tools on this site. Sign in and every Stardust circuit you finish goes on the leaderboard.</p>
                 </header>
 
+                <p><a href="<%= siteRoot %>community/">Community votes</a> · One equal vote per account in each poll I open.</p>
+                <p><a href="<%= siteLink('privacy') %>#accounts">Privacy and account data</a></p>
+
                 <noscript><div class="noir-card acct-card"><p>Accounts need JavaScript. Everything else on this site works without it.</p></div></noscript>
 
                 <div class="acct-state noir-card" data-view-only="loading" role="status"><span class="acct-pulse" aria-hidden="true"></span><p class="mono">Checking your session…</p></div>
@@ -60,7 +63,7 @@
                             <p class="acct-hint" id="acct-password-hint">At least 10 characters, with a letter and a number.</p>
                             <p class="acct-status" role="alert" data-acct-status></p>
                             <button class="btn-noir btn-noir--solid" type="submit">Create account</button>
-                            <p class="acct-fine">By creating an account you agree to the <a href="privacy/">privacy notice</a>. Opt-in updates only. No forced tracking.</p>
+                            <p class="acct-fine">By creating an account you agree to the <a href="<%= siteLink('privacy') %>">privacy notice</a>. Opt-in updates only. No forced tracking.</p>
                         </form>
                     </section>
 
@@ -69,13 +72,13 @@
                             <h2 class="acct-card-title mono">What it's for</h2>
                             <ul class="acct-list">
                                 <li><strong>Your name on the boards.</strong> Only signed-in runs count. Every finished circuit, and every full run of all five, is saved with its rank.</li>
-                                <li><strong>Dogfight wins.</strong> When you and your opponent are both signed in, every win counts on your account.</li>
+                                <li><strong>Dogfight wins.</strong> When you and your opponent are both signed in, every win counts as a casual account record. New Dogfight titles are paused until combat can be verified. Existing titles remain yours.</li>
                                 <li><strong>A profile.</strong> A display name and a short bio, nothing more.</li>
                             </ul>
                         </div>
                         <div class="noir-card acct-card">
                             <h2 class="acct-card-title mono">What's kept</h2>
-                            <p>Your email, username, a salted password hash, your profile, your Stardust times and your Dogfight record, on a server in Northern Nevada. Delete the account and it's gone. <a href="privacy/#accounts">Details</a>.</p>
+                            <p>Your email, username, a salted password hash, your profile, your Stardust times and your Dogfight record, on a server in Northern Nevada. Delete the account and it's gone. <a href="<%= siteLink('privacy') %>#accounts">Details</a>.</p>
                         </div>
                     </aside>
                 </div>
@@ -94,6 +97,14 @@
                             <a class="btn-noir" href="u/" data-acct-profile-link>View my public profile</a>
                             <button class="btn-noir" type="button" data-acct-signout>Sign out</button>
                         </div>
+                    </section>
+
+                    <section class="noir-card noir-card--lit acct-card" data-email-verification aria-label="Email confirmation">
+                        <h2 class="acct-card-title mono" data-email-verification-state></h2>
+                        <button class="btn-noir" type="button" data-email-verification-request>Send confirmation email</button>
+                        <button class="btn-noir btn-noir--solid" type="button" data-email-verification-confirm hidden>Confirm my email</button>
+                        <a class="btn-noir" href="<%= siteLink('community') %>">Community</a>
+                        <p class="acct-status" role="status" data-email-verification-feedback></p>
                     </section>
 
                     <section class="noir-card noir-card--lit acct-card acct-invite" aria-labelledby="acct-invite-title" data-acct-invite hidden>
@@ -191,7 +202,7 @@
                         <ul class="acct-list acct-discord-roles">
                             <li><strong>Pilot.</strong> Finish any Stardust run while signed in.</li>
                             <li><strong>Weekly Finisher.</strong> Set a time on the weekly that is live now.</li>
-                            <li><strong>Podium and Weekly Champion.</strong> Place top three, or first, on the last weekly. Staff dev times never place.</li>
+                            <li><strong>Podium and Weekly Champion.</strong> Place top three, or first, with a verified or reviewed result on the last weekly. Provisional times cannot grant new competitive roles. Staff dev times never place.</li>
                             <li><strong>Needle, Manta, Wisp or Courier Pilot.</strong> The family of your equipped ship, only while your profile shows your ship.</li>
                         </ul>
                         <div class="acct-discord-state">
@@ -217,7 +228,7 @@
 
                         <section class="noir-card acct-card acct-wide acct-challenges" id="challenges" aria-labelledby="acct-ch-title">
                             <div class="acct-card-head"><h2 id="acct-ch-title" class="acct-card-title mono">Challenges</h2><a class="acct-link mono" href="stardust/#fastest-runs">Leaderboard →</a></div>
-                            <p class="acct-hint acct-ch-hint">A challenge is one fixed full run for someone to beat. Send one from the game after a full run; it stays open for 14 days. Times are casual: checked for plausibility, not replayed.</p>
+                            <p class="acct-hint acct-ch-hint">A challenge is one fixed full run for someone to beat. Send one from the game after a full run; it stays open for 14 days. Times are casual: provisional and checked for plausibility. New account achievements, titles and competitive rewards require gameplay verification or review; local discoveries and puzzles remain playable.</p>
                             <div class="acct-ch-cols">
                                 <section aria-labelledby="acct-inbox-title">
                                     <h3 id="acct-inbox-title" class="acct-sub-title mono">Inbox</h3>

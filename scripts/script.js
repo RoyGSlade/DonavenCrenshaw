@@ -5,6 +5,9 @@ function currentSection(pathname = window.location.pathname) {
     if (segments[0] === 'projects' && segments[1] === 'betterfingers') return 'underplain';
     const routeSegments = new Set([
         'now',
+        'voting',
+        'community',
+        'privacy',
         'underplain',
         'crenshaw-systems',
         'infinite-ages',

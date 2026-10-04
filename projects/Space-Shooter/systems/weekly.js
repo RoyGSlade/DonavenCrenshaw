@@ -14,6 +14,7 @@ export { WEEKLY_EVENTS, currentWeekly, weeklyById };
  *   closed    after closesAt: results only
  */
 export function weeklyStatus(event, now = Date.now()) {
+  if (event?.enabled === false) return { state: 'pending', countdown: null, opensText: releaseText(event?.opensAt), closesText: releaseText(event?.closesAt) };
   const open = releaseCountdown(event?.opensAt, now);
   const close = releaseCountdown(event?.closesAt, now);
   const opensText = releaseText(event?.opensAt);

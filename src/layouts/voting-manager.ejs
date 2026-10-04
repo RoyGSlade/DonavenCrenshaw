@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<%- components.head %>
+<body class="site-shell skin-<%= page.skin %> voting-page" data-branch="<%= page.branch %>" data-voting-mode="manage">
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+    <%- components.nav %>
+    <div class="content-wrapper">
+        <main id="main-content" class="page-shell" tabindex="-1">
+            <div class="container page-content voting-content">
+                <h1 class="section-title">Manage development polls</h1>
+                <p><a href="<%= siteLink('community') %>">View the Community voting page</a></p>
+                <p id="voting-status" role="status" aria-live="polite">Checking owner access…</p>
+                <p id="voting-signin"><a href="<%= siteRoot %>account/?next=<%= encodeURIComponent(siteRoot + 'community/manage/') %>">Sign in with the owner account</a></p>
+                <noscript><p>Enable JavaScript to check your account and manage polls.</p></noscript>
+                <%- include('voting-admin') %>
+            </div>
+        </main>
+        <%- components.footer %>
+    </div>
+    <script src="<%= siteRoot %>scripts/script.js"></script>
+    <script src="<%= siteRoot %>scripts/light-engine.js"></script>
+</body>
+</html>

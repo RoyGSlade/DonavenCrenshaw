@@ -1,0 +1,16 @@
+<section id="voting-admin" class="noir-card voting-admin" aria-labelledby="voting-admin-title" hidden>
+                    <h2 id="voting-admin-title">Manage polls</h2>
+                    <p>Create a draft, review it, then open it when you choose. Drafts are private. Closed polls stay closed.</p>
+                    <form id="voting-draft">
+                        <label for="poll-title">Poll title</label>
+                        <input id="poll-title" name="title" required maxlength="120" autocomplete="off">
+                        <label for="poll-description">What this choice influences</label>
+                        <textarea id="poll-description" name="description" required maxlength="1500" rows="3"></textarea>
+                        <label for="poll-options">Feasible priorities, one per line (2–8)</label>
+                        <textarea id="poll-options" name="options" required maxlength="1295" rows="5" aria-describedby="poll-options-help"></textarea>
+                        <p id="poll-options-help" class="voting-fine">Each option can have up to 160 characters. No automatic poll schedule is set.</p>
+                        <button class="btn-noir" type="submit">Save private draft</button>
+                        <p id="voting-admin-status" role="status" aria-live="polite"></p>
+                    </form>
+                    <div id="voting-admin-polls"></div>
+                </section>

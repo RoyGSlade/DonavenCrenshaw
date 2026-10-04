@@ -10,6 +10,7 @@ import { buildArena, updateArena } from './modes/arena.js';
 import { startWeekly, updateWeekly } from './modes/weekly.js';
 import { ensureEngineRunning } from './core.js';
 import { startCountdown } from './lifecycle.js';
+import { canLaunchWeeklyMode } from '../systems/weeklyAccess.js';
 export { startCountdown } from './lifecycle.js';
 // NEW: Explicit mode transition functions
 export function enterArena() {
@@ -46,6 +47,11 @@ export function updateCurrentMode(dt) {
 // `event` (engine/modes/weekly.js). preview (custom/weekly) is never saved.
 // ship: 'equipped' flies a weekly preview as the equipped garage build (see startWeekly).
 export function startNewRun({ kind = 'network', preview = false, event = null, ship = null } = {}) {
+  if (!canLaunchWeeklyMode({ kind, event, preview })) {
+    toast('This mode is retired or awaiting release. Fly the current weekly track.');
+    openStartOverlay();
+    return false;
+  }
   // Ensure engine loop is active (may have been stopped after a completed run)
   ensureEngineRunning();
   // Clear any lingering end overlay from prior run

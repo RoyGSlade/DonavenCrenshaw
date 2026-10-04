@@ -141,3 +141,9 @@ test('results read plainly', () => {
   assert.match(describeResult({ status: 'rejected', reasons: ['below-floor'] }, 'Iron Veil'), /not counted \(faster than the circuit allows\)/);
   assert.equal(describeResult(null, 'x'), null);
 });
+
+
+test('provisional finish stays saved and clearly explains withheld account rewards', () => {
+  const line = describeResult({status:'accepted',verification:'provisional',rewardEligible:false,timeMs:45000,personalBest:true,best:{rank:1}}, 'Weekly');
+  assert.match(line,/new best/);assert.match(line,/#1/);assert.match(line,/Provisional time/);assert.match(line,/gameplay is not verified/);assert.match(line,/rewards are paused/);
+});

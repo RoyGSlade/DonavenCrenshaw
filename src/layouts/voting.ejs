@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<%- components.head %>
+<body class="site-shell skin-<%= page.skin %> voting-page" data-branch="<%= page.branch %>" data-voting-mode="public">
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+    <%- components.nav %>
+    <div class="content-wrapper">
+        <main id="main-content" class="page-shell" tabindex="-1">
+            <div class="container page-content voting-content">
+                <h1 class="section-label community-kicker">Community</h1>
+                <section aria-labelledby="voting-title">
+                <h2 id="voting-title" class="poll-section-title">What should we build next?</h2>
+                <p id="voting-status" role="status" aria-live="polite">Loading polls…</p>
+                <p id="voting-signin"><a href="<%= siteRoot %>account/?next=<%= encodeURIComponent(siteRoot + 'community/') %>">Sign in with your existing account</a></p>
+                <noscript><p>Enable JavaScript to load polls and vote. <a href="<%= siteRoot %>account/">Your existing account</a> is used to sign in.</p></noscript>
+                <p id="voting-manage-link" hidden><a href="<%= siteLink('community/manage') %>">Manage polls</a></p>
+                <div id="voting-polls" aria-label="Development polls"></div>
+
+                </section>
+                <section class="community-work" aria-labelledby="community-work-title">
+                    <h2 id="community-work-title" class="section-title">What I'm working on</h2>
+                    <%- content %>
+                </section>
+            </div>
+        </main>
+        <%- components.footer %>
+    </div>
+    <script src="<%= siteRoot %>scripts/script.js"></script>
+    <script src="<%= siteRoot %>scripts/light-engine.js"></script>
+</body>
+</html>
