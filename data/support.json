@@ -1,16 +1,17 @@
 {
   "schemaVersion": 1,
   "owner": "donaven-crenshaw",
-  "reviewedAt": "2026-07-31",
+  "reviewedAt": "2026-10-04",
   "publicationStatus": "published",
   "channels": [
-    {"id":"github-sponsors","name":"GitHub Sponsors","kind":"recurring","owner":"donaven-crenshaw","reviewedAt":"2026-07-31","publicationStatus":"published","url":"https://github.com/sponsors/RoyGSlade","description":"Primary recurring support channel for underplain."},
-    {"id":"ko-fi","name":"Ko-fi","kind":"one-time","owner":"donaven-crenshaw","reviewedAt":"2026-07-31","publicationStatus":"published","url":"https://ko-fi.com/democratizegm","description":"One-time donations and future merch support."}
+    {"id":"github-sponsors","name":"GitHub Sponsors","kind":"recurring","owner":"donaven-crenshaw","reviewedAt":"2026-10-04","publicationStatus":"published","url":"https://github.com/sponsors/RoyGSlade","description":"Primary recurring support channel for underplain."},
+    {"id":"ko-fi","name":"Ko-fi","kind":"one-time","owner":"donaven-crenshaw","reviewedAt":"2026-10-04","publicationStatus":"published","url":"https://ko-fi.com/democratizegm","description":"One-time donations and future merch support."}
   ],
   "tiers": [
-    {"id":"supporter","name":"Supporter","amountUSD":5,"cadence":"monthly","owner":"donaven-crenshaw","reviewedAt":"2026-07-31","publicationStatus":"published"},
-    {"id":"builder","name":"Builder","amountUSD":15,"cadence":"monthly","owner":"donaven-crenshaw","reviewedAt":"2026-07-31","publicationStatus":"published"},
-    {"id":"sustainer","name":"Sustainer","amountUSD":50,"cadence":"monthly","owner":"donaven-crenshaw","reviewedAt":"2026-07-31","publicationStatus":"published"}
+    {"id":"monthly-5","name":"$5 a month","amountUSD":5,"cadence":"monthly","owner":"donaven-crenshaw","reviewedAt":"2026-10-04","publicationStatus":"published"},
+    {"id":"one-time-10","name":"$10 one time","amountUSD":10,"cadence":"one-time","owner":"donaven-crenshaw","reviewedAt":"2026-10-04","publicationStatus":"published"},
+    {"id":"monthly-25","name":"$25 a month","amountUSD":25,"cadence":"monthly","owner":"donaven-crenshaw","reviewedAt":"2026-10-04","publicationStatus":"published"},
+    {"id":"monthly-100","name":"$100 a month","amountUSD":100,"cadence":"monthly","owner":"donaven-crenshaw","reviewedAt":"2026-10-04","publicationStatus":"published"}
   ],
   "goals": [],
   "voting": {"status":"draft","enabled":null,"policy":null,"note":"Decided, not live: one feature vote per signed-in account per month, independent of any payment. This is not sponsor voting. Do not describe it on public pages until accounts and voting ship."},

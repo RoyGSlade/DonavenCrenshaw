@@ -12,11 +12,22 @@
     margin-bottom: 1rem;
 }
 
-.support-channel-grid,
-.support-tier-grid {
+.support-channel-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 1.25rem;
+}
+
+.support-tier-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1.25rem;
+}
+
+@media (max-width: 70rem) {
+    .support-tier-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
 }
 
 .support-channel-card,
