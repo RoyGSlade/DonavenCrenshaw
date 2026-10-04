@@ -3,7 +3,7 @@ const root = document.querySelector('#voting-polls');
 const HUB = document.querySelector('script[data-voting-hub]')?.dataset.votingHub;
 const status = document.querySelector('#voting-status');
 const admin = document.querySelector('#voting-admin');
-const accountUrl = `${window.SITE_ROOT || '/'}account/`;
+const accountUrl = `${window.SITE_ROOT || '/'}account/?next=${encodeURIComponent(window.location.pathname)}`;
 let signedIn = false;
 
 function node(tag, text, className) {
@@ -101,6 +101,8 @@ function adminPoll(poll) {
 async function load() {
     const data = await call('/polls');
     signedIn = data.account.signedIn;
+    const signIn = document.querySelector('#voting-signin');
+    if (signIn) signIn.hidden = signedIn;
     root.replaceChildren(...data.polls.map(pollCard));
     status.textContent = data.polls.length ? (signedIn ? 'You are signed in. Each poll has its own vote.' : 'View results here. Sign in to vote in an open poll.') : 'No polls have been opened yet. Check back when I open one.';
     status.tabIndex = -1;

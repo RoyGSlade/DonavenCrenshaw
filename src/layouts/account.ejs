@@ -15,6 +15,7 @@
                 </header>
 
                 <p><a href="<%= siteRoot %>voting/">Development votes</a> · One equal vote per account in each poll I open.</p>
+                <p><a href="<%= siteLink('privacy') %>#accounts">Privacy and account data</a></p>
 
                 <noscript><div class="noir-card acct-card"><p>Accounts need JavaScript. Everything else on this site works without it.</p></div></noscript>
 
@@ -62,7 +63,7 @@
                             <p class="acct-hint" id="acct-password-hint">At least 10 characters, with a letter and a number.</p>
                             <p class="acct-status" role="alert" data-acct-status></p>
                             <button class="btn-noir btn-noir--solid" type="submit">Create account</button>
-                            <p class="acct-fine">By creating an account you agree to the <a href="privacy/">privacy notice</a>. Opt-in updates only. No forced tracking.</p>
+                            <p class="acct-fine">By creating an account you agree to the <a href="<%= siteLink('privacy') %>">privacy notice</a>. Opt-in updates only. No forced tracking.</p>
                         </form>
                     </section>
 
@@ -77,7 +78,7 @@
                         </div>
                         <div class="noir-card acct-card">
                             <h2 class="acct-card-title mono">What's kept</h2>
-                            <p>Your email, username, a salted password hash, your profile, your Stardust times and your Dogfight record, on a server in Northern Nevada. Delete the account and it's gone. <a href="privacy/#accounts">Details</a>.</p>
+                            <p>Your email, username, a salted password hash, your profile, your Stardust times and your Dogfight record, on a server in Northern Nevada. Delete the account and it's gone. <a href="<%= siteLink('privacy') %>#accounts">Details</a>.</p>
                         </div>
                     </aside>
                 </div>

@@ -27,6 +27,7 @@ const requiredRoutes = [
     '/stardust/weekly/',
     '/u/',
     '/account/',
+    '/voting/',
     '/build-log/',
     '/support/',
     '/about/',
@@ -173,11 +174,12 @@ for (const url of sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)) {
 }
 const primaryNav = home.match(/<nav class="site-nav"[\s\S]*?<\/nav>/i)?.[0] || '';
 if (!primaryNav.includes('aria-label="Donaven Crenshaw home"') || !primaryNav.includes('BUILD FREEDOM')) failures.push('primary brand must identify Donaven Crenshaw and Build freedom');
-for (const label of ['Now', 'underplain', 'BetterFingers', 'GetFast', 'PDFManager', 'Infinite Ages', 'Infinite Ages TTRPG', 'Infinite Ages Evolved', 'Build Log', 'About', 'Contact']) {
+for (const label of ['Voting', 'Privacy', 'underplain', 'BetterFingers', 'GetFast', 'PDFManager', 'Infinite Ages', 'Infinite Ages TTRPG', 'Infinite Ages Evolved', 'Build Log', 'About', 'Contact']) {
     // Nav labels may be bare (>Label</a>) or wrapped (<span class="nav-label">Label</span></a>).
     if (!primaryNav.includes(`>${label}</a>`) && !primaryNav.includes(`>${label}</span>`)) failures.push(`primary navigation is missing ${label}`);
 }
 if (primaryNav.includes('data-route="projects"')) failures.push('primary navigation still contains the retired Projects item');
+if (primaryNav.includes('data-route="now"')) failures.push('primary navigation must use Voting in place of Now');
 if (![...primaryNav.matchAll(/<a\b[^>]*>/gi)].some(([tag]) => /data-route="kingdoms-caravans"/i.test(tag) && /href="[^\"]*kingdoms-caravans\//i.test(tag))) failures.push('primary navigation is missing a direct Kingdoms & Caravans link');
 if (/Crenshaw Systems|Service process|data-nav-group="crenshaw-systems"/i.test(primaryNav)) failures.push('primary navigation still promotes the hidden business branch');
 const stardustLead = home.match(/<section\b[^>]*class="[^"]*home-stardust-lead[^"]*"[\s\S]*?<\/section>/i)?.[0] || '';

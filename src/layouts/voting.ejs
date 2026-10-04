@@ -16,6 +16,7 @@
                     <p>Only totals are public. Your choice is visible to you and stored with your account. <a href="<%= siteRoot %>privacy/#development-votes">Voting privacy</a>.</p>
                 </div>
                 <p id="voting-status" role="status" aria-live="polite">Loading polls…</p>
+                <p id="voting-signin"><a href="<%= siteRoot %>account/?next=<%= encodeURIComponent(siteRoot + 'voting/') %>">Sign in with your existing account</a> to vote when a poll is open.</p>
                 <noscript><p>Enable JavaScript to load polls and vote. <a href="<%= siteRoot %>account/">Your existing account</a> is used to sign in.</p></noscript>
                 <div id="voting-polls" aria-label="Development polls"></div>
                 <p id="voting-sponsor" class="voting-fine" hidden></p>
