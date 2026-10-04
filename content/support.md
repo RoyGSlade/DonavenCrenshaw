@@ -15,6 +15,7 @@ discord_rules: true
     <p>Art, music and sound for the games. The new game ideas I'm trying out. And sometimes, honestly, just the Red Bull in my hand while I build.</p>
     <p><strong>Shipped lately:</strong> <a href="stardust/">Stardust</a> with a weekly time trial, ghosts, a ship garage with real flight stats, leaderboards, friend challenges, shareable result cards and Dogfight rooms; the <a href="kingdoms-caravans/">Kingdoms &amp; Caravans</a> friend playtest; <a href="projects/betterfingers/">BetterFingers</a> Alpha 3.</p>
     <p><strong>Next:</strong> the next Stardust weekly track, and more polish on the free software.</p>
+    <p><strong>The monthly goal: about $45.</strong> Roughly $40 of that is code-signing, so Windows trusts the free installers, and about $5 is the power for the old laptop that runs the hub (accounts, leaderboards and the weekly boards). Anything beyond it goes to the art, music and sound above. If it never gets there, nothing here gets paywalled.</p>
     <p>Everything stays free to play. Support never buys an advantage, a cosmetic or early access.</p>
   </div>
 </section>

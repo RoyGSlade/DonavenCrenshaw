@@ -13,7 +13,9 @@
     {"id":"monthly-25","name":"$25 a month","amountUSD":25,"cadence":"monthly","owner":"donaven-crenshaw","reviewedAt":"2026-10-04","publicationStatus":"published"},
     {"id":"monthly-100","name":"$100 a month","amountUSD":100,"cadence":"monthly","owner":"donaven-crenshaw","reviewedAt":"2026-10-04","publicationStatus":"published"}
   ],
-  "goals": [],
+  "goals": [
+    {"id":"infrastructure-monthly","name":"Keep the free parts running","amountUSD":45,"cadence":"monthly","note":"About $40 code-signing and about $5 hub power, as stated by the owner on 2026-10-04.","owner":"donaven-crenshaw","reviewedAt":"2026-10-04","publicationStatus":"published"}
+  ],
   "voting": {"status":"draft","enabled":null,"policy":null,"note":"Decided, not live: one feature vote per signed-in account per month, independent of any payment. This is not sponsor voting. Do not describe it on public pages until accounts and voting ship."},
   "discord": {
     "status": "live",
