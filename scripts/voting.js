@@ -45,17 +45,30 @@ function adminPoll(poll) {
         const action = poll.state === 'DRAFT' ? 'open' : 'close';
         const button = node('button', action === 'open' ? 'Open this poll' : 'Close this poll', 'btn-noir'); button.type = 'button';
         const message = node('p'); message.setAttribute('role', 'status');
-        let duration;
+        let duration, closeAt;
         if (action === 'open') {
             const label=node('label','Vote duration');duration=node('select');duration.id=`duration-${poll.id}`;label.htmlFor=duration.id;
-            for(const [value,text] of [['','Not set (manual close)'],['60','1 hour'],['360','6 hours'],['720','12 hours'],['1440','1 day'],['2880','2 days'],['10080','7 days']]) {const option=node('option',text);option.value=value;duration.append(option);}
-            card.append(label,duration);
+            for(const [value,text] of [['','Not set (manual close)'],['60','1 hour'],['360','6 hours'],['720','12 hours'],['1440','1 day'],['2880','2 days'],['10080','7 days'],['custom','Until a date and time…']]) {const option=node('option',text);option.value=value;duration.append(option);}
+            // A chosen closing moment becomes a duration; the server still sets the deadline from its own clock.
+            const atLabel=node('label','Close at (your local time)');closeAt=node('input');closeAt.type='datetime-local';closeAt.id=`closes-${poll.id}`;atLabel.htmlFor=closeAt.id;
+            atLabel.hidden=closeAt.hidden=true;
+            duration.addEventListener('change',()=>{atLabel.hidden=closeAt.hidden=duration.value!=='custom';});
+            card.append(label,duration,atLabel,closeAt);
         }
+        const minutes = () => {
+            if (!duration?.value) return null;
+            if (duration.value !== 'custom') return Number(duration.value);
+            const at = new Date(closeAt.value).getTime();
+            return Number.isFinite(at) ? Math.round((at - Date.now()) / 60000) : NaN;
+        };
         button.addEventListener('click', async () => {
-            const prompt = action === 'open' ? `Open “${poll.title}” to account votes? Review these priorities first; votes will be final. ${duration?.value ? `Voting lasts ${Number(duration.value)/60} hours.` : 'No closing time is set.'}` : `Close “${poll.title}”? No further votes can be submitted and this poll cannot reopen.`;
+            const length = action === 'open' ? minutes() : null;
+            if (length !== null && !(length >= 5 && length <= 10080)) { message.textContent = 'Pick a closing time between 5 minutes and 7 days from now.'; return; }
+            const closing = duration?.value === 'custom' ? `Voting closes ${new Date(closeAt.value).toLocaleString()}.` : `Voting lasts ${length/60} hours.`;
+            const prompt = action === 'open' ? `Open “${poll.title}” to account votes? Review these priorities first; votes will be final. ${length !== null ? closing : 'No closing time is set.'}` : `Close “${poll.title}”? No further votes can be submitted and this poll cannot reopen.`;
             if (!window.confirm(prompt)) return;
             button.disabled = true;
-            try { await call(`/admin/polls/${poll.id}/${action}`, action === 'open' && duration.value ? {durationMinutes:Number(duration.value)} : {}); await load(); }
+            try { await call(`/admin/polls/${poll.id}/${action}`, length !== null ? {durationMinutes:length} : {}); await load(); }
             catch (error) { message.textContent = error.message; button.disabled = false; }
         });
         card.append(button, message);
