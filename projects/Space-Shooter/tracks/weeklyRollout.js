@@ -5,7 +5,8 @@ export const WEEKLY_ROLLOUT = {
   eventId: 'weekly-02',
   opensAt: '2026-10-06T15:00:00-07:00',
   exclusiveAt: '2026-10-06T19:00:00-07:00',
-  closesAt: '2026-10-13T19:00:00-07:00',
+  // Focus a1f45c71: weekly close 14:45 Pacific, next weekly opens 15:00.
+  closesAt: '2026-10-13T14:45:00-07:00',
   overlapBoards: ['weekly-01'],
   legacyBoards: ['full', 'alpha-relay', 'beacon-prime', 'dustfall-station', 'nether-crossing', 'iron-veil', 'custom-track'],
 };

@@ -6,16 +6,24 @@ The Relay Switchback handoff remains an unapproved draft outside this catalog.
 The earlier request for two alternatives is superseded by the Oct 4 owner
 handoff that the owner will build the track Monday.
 
-## Timing awaiting Focus confirmation
+## Timing from the owner's live Focus reply
 
 The original card says Week 2 opens Tuesday Oct 6 at 7 PM Pacific. Its newer
 Oct 4 Claude note records the owner-approved 3 PM opening, Gantry closing at
 7 PM and a four-hour overlap. The delegated request also says “deadline Tue
 7 PM.” The card has no due field or statement that this changes the launch.
-Do not interpret that deadline as a launch change. Focus question `a1f45c71`
-asks the owner whether 7 PM is a development deadline or a changed launch,
-and whether the Oct 13 close remains 7 PM. Until answered, do not activate
-retirement or release flags.
+Do not interpret that deadline as a launch change. Live Focus item
+`a1f45c71-74a2-44b9-bf76-dfb03a5ae2b0` was answered October 4 at 17:04:41 UTC:
+"No week 2 will close at 245pm and week 3 will open at 3pm this is what the
+weekly releases will look like consistently". In the question's October 13
+context, Week 2 closes Tuesday October 13 at 2:45 PM Pacific and Week 3 opens
+at 3 PM. Preserve this recurring 2:45 close/3 PM open pattern in future weekly
+candidates, using America/Los_Angeles civil time and the applicable UTC offset.
+The reply does not explicitly change October 6's opening. The earlier recorded
+owner-approved 3 PM opening and Gantry's 7 PM close remain separate evidence.
+The meaning of the pasted development "Tue7PM" deadline remains ambiguous,
+but October 13's close is resolved and must not be asked again. No release or
+retirement is activated by this timing reconciliation.
 
 | Boundary in the disabled candidate | Pacific (PDT, UTC−07:00) | UTC |
 | --- | --- | --- |
@@ -23,17 +31,19 @@ retirement or release flags.
 | Last first-poll window / proposed Week 2 opening | Tue Oct 6, 3 PM | Oct 6, 22:00 |
 | Gantry closes; overlap ends | Tue Oct 6, 7 PM | Oct 7, 02:00 |
 | Week 1 finalization earliest, with existing 180-minute finish grace | Tue Oct 6, 10 PM | Oct 7, 05:00 |
-| Proposed Week 2 close | Tue Oct 13, 7 PM | Oct 14, 02:00 |
-| Week 2 finalization earliest | Tue Oct 13, 10 PM | Oct 14, 05:00 |
+| Owner-resolved Week 2 close | Tue Oct 13, 2:45 PM | Oct 13, 21:45 |
+| Next weekly opening pattern (Week 3, not activated here) | Tue Oct 13, 3 PM | Oct 13, 22:00 |
+| Week 2 finalization earliest | Tue Oct 13, 5:45 PM | Oct 14, 00:45 |
 
-An opening at 3 PM and closing the following Tuesday at 7 PM is seven days
-and four hours. The UI uses the explicit dates rather than claiming exactly
-seven days.
+An opening at 3 PM and closing the following Tuesday at 2:45 PM is six days,
+23 hours and 45 minutes. The UI uses explicit dates. The 15-minute gap before
+the next weekly opening is independent of the existing three-hour finish grace.
 
 ## Owner and reviewer release checklist
 
-1. Confirm the window in Focus. If the owner changes it, update all mirrored
-   dates before activation, then repeat boundary tests. No retirement before
+1. Keep the resolved October 13 close and future weekly cadence. If the owner
+   changes the opening or another window boundary, update all mirrored dates
+   before activation, then repeat boundary tests. No retirement before
    the confirmed opening. Existing Gantry runs may finish within the existing
    grace period; new starts stop exactly at its close.
 2. Receive the owner's track/title/version. Put its authored geometry in

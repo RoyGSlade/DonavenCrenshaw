@@ -13,6 +13,8 @@ const w2 = { ...WEEK2_DRAFT, enabled: true, track: w1.track };
 const liveRollout = { ...WEEKLY_ROLLOUT, enabled: true };
 
 test('draft and retirement stay disabled; no owner track is guessed', () => {
+  assert.equal(new Date(WEEK2_DRAFT.closesAt).toISOString(), '2026-10-13T21:45:00.000Z');
+  assert.equal(new Date(WEEK2_DRAFT.opensAt).toISOString(), '2026-10-06T22:00:00.000Z');
   assert.equal(WEEK2_DRAFT.enabled, false);
   assert.equal(WEEK2_DRAFT.track, null);
   assert.equal(WEEKLY_ROLLOUT.enabled, false);
