@@ -148,7 +148,9 @@
 
 .home-betterfingers-spotlight {
     display: grid;
-    grid-template-columns: minmax(0, 1.3fr) minmax(18rem, 0.7fr);
+    /* Equal halves, both allowed to shrink: the copy must never be pushed out
+       of the card by the screenshot or by its own big heading. */
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: clamp(1.4rem, 4vw, 3.2rem);
     align-items: center;
     margin-top: clamp(2rem, 5vw, 4rem);
@@ -208,15 +210,19 @@
 
 .home-betterfingers-copy {
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    min-width: 0;
     gap: 1rem;
     align-content: center;
 }
 
 .home-betterfingers-copy h2 {
     margin: 0;
-    font-size: clamp(2.8rem, 7vw, 5.9rem);
+    /* One long word: sized to the half-width column so it never overflows. */
+    font-size: clamp(2.4rem, 4.3vw, 4.4rem);
     line-height: 0.9;
     letter-spacing: -0.055em;
+    overflow-wrap: break-word;
 }
 
 .home-betterfingers-copy p {
@@ -339,7 +345,7 @@
     }
 
     .home-betterfingers-copy h2 {
-        font-size: clamp(2.7rem, 16vw, 4.5rem);
+        font-size: clamp(2.4rem, 13vw, 4.5rem);
     }
 
     .home-betterfingers-actions > * {
