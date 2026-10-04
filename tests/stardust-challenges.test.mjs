@@ -379,3 +379,9 @@ test('a circuit toast adds a better medal and any achievement on a second line',
   );
   assert.equal(circuitLine({ status: 'accepted', timeMs: 20000, personalBest: false, best: { rank: 4 }, medal: { earned: 'bronze', improved: false } }, 'Iron Veil'), 'Iron Veil: saved 0:20.00 · #4');
 });
+
+
+test('provisional challenge finish retains casual standings with clear reward notice', () => {
+  const summary=finishSummary({status:'accepted',verification:'provisional',rewardEligible:false,timeMs:200000,personalBest:true,best:{rank:1}});
+  assert.match(summary.headline,/personal best/);assert.ok(summary.lines.some(line=>line.includes('rewards are paused')));
+});

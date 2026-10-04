@@ -352,6 +352,7 @@ export function describeResult(result, name) {
     const line = result.personalBest ? `${name}: new best ${clock(result.timeMs)}${rank}` : `${name}: saved ${clock(result.timeMs)}${rank}`;
     // A better circuit medal and any achievement are worth a second line.
     const extras = [];
+    if (result.verification === 'provisional' || result.rewardEligible === false) extras.push('Provisional time: gameplay is not verified. New account rewards are paused.');
     if (result.medal?.improved && result.medal.earned && !result.medal.gauntlet) {
       extras.push(`${result.medal.earned[0].toUpperCase()}${result.medal.earned.slice(1)} medal!`);
     }

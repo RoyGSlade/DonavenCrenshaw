@@ -47,7 +47,7 @@
                         <a class="sd-text-link" href="#weekly-board">Leaderboard ↓</a>
                         <a class="sd-text-link" href="#weekly-rules">Rules ↓</a>
                     </div>
-                    <p class="sd-small">One lap, every shard. Only runs flown while <a href="account/?next=<%= next %>">signed in</a> go on the board.</p>
+                    <p class="sd-small">One lap, every shard. Times are provisional: timing checks do not verify gameplay. Only runs flown while <a href="account/?next=<%= next %>">signed in</a> go on the board.</p>
                 </div>
 
                 <aside class="sd-wk-rewards" aria-labelledby="sd-wk-rewards-title">
@@ -57,7 +57,7 @@
                             <span class="sd-wk-place">1st</span>
                             <div>
                                 <p class="sd-wk-reward-name"><span class="pilot-chip pilot-chip--unique"><%= rewards.championTitle || 'Weekly Champion' %></span></p>
-                                <p class="sd-wk-reward-copy">The fastest time when the week closes. One pilot holds it, for good.</p>
+                                <p class="sd-wk-reward-copy">The fastest verified or reviewed time after the week closes. One pilot holds it, for good.</p>
                             </div>
                         </li>
                         <li class="sd-wk-reward">
@@ -84,7 +84,7 @@
                         <ol class="sd-wk-rule-list">
                             <li>Collect every shard, then cross the finish line.</li>
                             <li>The fastest time this week earns the <strong><%= rewards.championTitle || 'Champion' %></strong> title.</li>
-                            <li>The top <%= podium %> get early access to <strong>Stardust: Planetfall</strong>.</li>
+                            <li>The top <%= podium %> verified or reviewed results get early access to <strong>Stardust: Planetfall</strong>.</li>
                             <li>You have 7 days to set your fastest time.</li>
                         </ol>
                         <p class="sd-wk-goodluck">Good luck, pilots.</p>
@@ -109,7 +109,7 @@
                 <div id="sd-wk-board-list" aria-live="polite" data-wk-board-list>
                     <p class="sd-empty"><%= wk.state === 'upcoming' ? 'Board opens with the track.' : 'The board loads from the hub. With JavaScript off, open the game to see your time.' %></p>
                 </div>
-                <p class="sd-board-note">The top <%= podium %> when the board closes get early access to Planetfall. Only signed-in runs count, and staff times are never ranked.</p>
+                <p class="sd-board-note">Awards are paused while results await gameplay verification or review. Provisional standings stay visible; existing rewards remain held. Only signed-in runs count, and staff times are never ranked.</p>
             </section>
 
             <section class="sd-section sd-wk-comments" id="comments" aria-labelledby="sd-wk-comments-title">
