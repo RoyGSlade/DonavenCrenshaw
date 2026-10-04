@@ -42,7 +42,7 @@ function pollCard(poll) {
     card.dataset.pollId = poll.id;
     const heading = node('h2', poll.title); heading.id = `poll-${poll.id}`;
     card.setAttribute('aria-labelledby', heading.id);
-    card.append(node('p', poll.state === 'OPEN' ? 'OPEN FOR VOTES' : 'CLOSED', 'voting-state'), heading, node('p', poll.description));
+    card.append(node('p', poll.state === 'OPEN' ? 'OPEN FOR VOTES' : 'CLOSED', 'voting-state'), heading, node('p', poll.description, 'voting-description'));
     if (poll.ownVote) {
         const chosen = poll.options.find(o => o.id === poll.ownVote);
         card.append(node('p', `Your confirmed vote: ${chosen?.label || 'Recorded'}. This choice is final for this poll.`));
@@ -81,7 +81,7 @@ function pollCard(poll) {
     results(poll, card); return card;
 }
 function adminPoll(poll) {
-    const card = node('article'); card.append(node('h3', poll.title), node('p', poll.state, 'voting-state'), node('p', poll.description));
+    const card = node('article'); card.append(node('h3', poll.title), node('p', poll.state, 'voting-state'), node('p', poll.description, 'voting-description'));
     const options = node('ol'); poll.options.forEach(o => options.append(node('li', o.label))); card.append(options);
     if (poll.state !== 'CLOSED') {
         const action = poll.state === 'DRAFT' ? 'open' : 'close';

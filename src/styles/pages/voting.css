@@ -3,6 +3,7 @@
 .voting-intro { font-size: 1.25rem; margin-block: 1rem 2rem; }
 .voting-rules, .voting-poll, .voting-admin { padding: clamp(1rem, 4vw, 2rem); margin-block: 1.5rem; }
 .voting-page p { line-height: 1.65; }
+.voting-description { white-space: pre-line; }
 .voting-page h2, .voting-page h3 { overflow-wrap: anywhere; }
 .voting-state { font-family: var(--font-mono, monospace); color: #bfd9ee; font-size: .85rem; }
 .voting-poll fieldset { border: 0; padding: 0; margin-block: 1.5rem; min-width: 0; }
