@@ -1,0 +1,35 @@
+<%
+  // The sponsor wall at the top of /support/. Rows come from data/sponsors.json through
+  // buildSponsorWall() (scripts/sponsors.mjs): public GitHub sponsors only, tiers biggest
+  // first. Every value is HTML-escaped when printed, and there is no email anywhere in the data.
+  const wall = (data && data.sponsorWall) || { total: 0, groups: [] };
+  const wallSupport = (data && data.support) || {};
+  const wallChannel = (wallSupport.channels || []).find((channel) => channel.id === 'github-sponsors');
+  const wallSponsorUrl = wallChannel && /^https:\/\/\S+$/.test(wallChannel.url || '') ? wallChannel.url : null;
+%>
+<section class="sponsor-wall" id="sponsors" aria-labelledby="sponsor-wall-title">
+    <p class="mono sponsor-wall-kicker">The people keeping this free</p>
+    <h2 id="sponsor-wall-title" class="sponsor-wall-title">Sponsors</h2>
+    <% if (!wall.total) { %>
+        <div class="noir-card noir-card--lit sponsor-wall-empty">
+            <p class="sponsor-wall-empty-line">Nobody’s on the wall yet. Be the first name here.</p>
+            <% if (wallSponsorUrl) { %><p><a class="btn-noir btn-noir--solid" href="<%= wallSponsorUrl %>" target="_blank" rel="noopener noreferrer">Sponsor on GitHub</a></p><% } %>
+        </div>
+    <% } else { %>
+        <% wall.groups.forEach((group) => { %>
+            <div class="sponsor-tier sponsor-tier--<%= group.key %>">
+                <h3 class="sponsor-tier-label mono"><%= group.label %></h3>
+                <ul class="sponsor-list">
+                    <% group.items.forEach((sponsor) => { %>
+                        <li class="sponsor-plate">
+                            <a class="sponsor-name" href="<%= sponsor.githubUrl %>" target="_blank" rel="noopener noreferrer"><%= sponsor.name %></a>
+                            <span class="mono sponsor-meta">@<%= sponsor.login %><% if (sponsor.since) { %> · since <%= sponsor.since %><% } %></span>
+                            <% if (sponsor.profileUrl) { %><a class="sponsor-profile mono" href="<%= sponsor.profileUrl %>">Pilot profile →</a><% } %>
+                        </li>
+                    <% }); %>
+                </ul>
+            </div>
+        <% }); %>
+        <% if (wallSponsorUrl) { %><p class="sponsor-wall-join"><a class="btn-noir" href="<%= wallSponsorUrl %>" target="_blank" rel="noopener noreferrer">Join them</a></p><% } %>
+    <% } %>
+</section>

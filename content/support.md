@@ -7,14 +7,16 @@ hero_title: "Support"
 hero_sub: "Help keep the games and free software coming."
 hero_scene: "desk"
 discord_rules: true
+sponsor_wall: true
 ---
 
 <section class="section-block support-why" aria-labelledby="what-support-pays-for">
   <div class="section-header"><div><h2 id="what-support-pays-for" class="section-title">What your support pays for</h2></div></div>
   <div class="noir-card noir-card--lit reading-text">
     <p>Art, music and sound for the games. The new game ideas I'm trying out. And sometimes, honestly, just the Red Bull in my hand while I build.</p>
-    <p><strong>Shipped lately:</strong> <a href="stardust/">Stardust</a> with five circuits, leaderboards and Dogfight rooms; the <a href="kingdoms-caravans/">Kingdoms &amp; Caravans</a> friend playtest; <a href="projects/betterfingers/">BetterFingers</a> Alpha 3.</p>
-    <p><strong>Next:</strong> friend challenges and medals in Stardust, then a custom track.</p>
+    <p><strong>Shipped lately:</strong> <a href="stardust/">Stardust</a> with a weekly time trial, ghosts, a ship garage with real flight stats, leaderboards, friend challenges, shareable result cards and Dogfight rooms; the <a href="kingdoms-caravans/">Kingdoms &amp; Caravans</a> friend playtest; <a href="projects/betterfingers/">BetterFingers</a> Alpha 3.</p>
+    <p><strong>Next:</strong> the next Stardust weekly track, and more polish on the free software.</p>
+    <p><strong>The monthly goal: about $45.</strong> Roughly $40 of that is code-signing, so Windows trusts the free installers, and about $5 is the power for the old laptop that runs the hub (accounts, leaderboards and the weekly boards). Anything beyond it goes to the art, music and sound above. If it never gets there, nothing here gets paywalled.</p>
     <p>Everything stays free to play. Support never buys an advantage, a cosmetic or early access.</p>
   </div>
 </section>
@@ -44,18 +46,22 @@ discord_rules: true
   <div class="support-tier-grid">
     <article class="noir-card noir-card--lit support-tier-card">
       <span class="icon-ring" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="12" cy="12" r="8" /><path d="M12 8v8M15 10c-.5-.7-1.2-1-2.2-1h-.8c-1.1 0-2 .7-2 1.7s.9 1.7 2 1.7h.4c1.1 0 2 .7 2 1.7s-.9 1.7-2 1.7h-.8c-1 0-1.7-.3-2.2-1" /></svg></span>
-      <ul class="support-tier-list"><li><strong>$5 Supporter</strong> — a simple recurring way to keep the work going.</li></ul>
+      <ul class="support-tier-list"><li><strong>$5 a month</strong> — a simple recurring way to keep the work going. You get the Sponsor badge on your GitHub profile.</li></ul>
     </article>
     <article class="noir-card noir-card--lit support-tier-card">
       <span class="icon-ring" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M5 9h14v10H5zM8 9V6h8v3M8 13h8" /></svg></span>
-      <ul class="support-tier-list"><li><strong>$15 Builder</strong> — helps cover the steady work of testing, documentation, and releases.</li></ul>
+      <ul class="support-tier-list"><li><strong>$10 one time</strong> — a one-off thank-you. You get a mention in a release’s notes.</li></ul>
+    </article>
+    <article class="noir-card noir-card--lit support-tier-card">
+      <span class="icon-ring" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M5 9h14v10H5zM8 9V6h8v3M8 13h8" /></svg></span>
+      <ul class="support-tier-list"><li><strong>$25 a month</strong> — helps cover the steady work of testing, documentation and releases. Your name or logo goes in a project README.</li></ul>
     </article>
     <article class="noir-card noir-card--lit support-tier-card">
       <span class="icon-ring" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M12 4 20 8v8l-8 4-8-4V8l8-4Z" /><path d="m4 8 8 4 8-4M12 12v8" /></svg></span>
-      <ul class="support-tier-list"><li><strong>$50 Sustainer</strong> — helps provide more room for focused development and infrastructure.</li></ul>
+      <ul class="support-tier-list"><li><strong>$100 a month</strong> — helps provide room for focused development and infrastructure. Your name or logo goes on this website.</li></ul>
     </article>
   </div>
-  <div class="noir-card support-boundaries"><p>These names describe support amounts, not ownership or control. There is no voting mechanic on this page. A contribution does not buy roadmap authority, a guaranteed feature, a deadline, or a private product edition.</p></div>
+  <div class="noir-card support-boundaries"><p>These are the amounts GitHub Sponsors offers, and the recognition above is all that comes with them. Recognition is a thank-you, not ownership or control: it changes nothing about what anyone can play, use or access. There is no voting mechanic on this page. A contribution does not buy roadmap authority, a guaranteed feature, a deadline, or a private product edition.</p></div>
 </section>
 
 <div class="noir-card support-pledge"><p>Support should remain useful even when no extra perk exists.</p></div>

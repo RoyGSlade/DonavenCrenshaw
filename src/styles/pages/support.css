@@ -12,11 +12,22 @@
     margin-bottom: 1rem;
 }
 
-.support-channel-grid,
-.support-tier-grid {
+.support-channel-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 1.25rem;
+}
+
+.support-tier-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1.25rem;
+}
+
+@media (max-width: 70rem) {
+    .support-tier-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
 }
 
 .support-channel-card,
@@ -101,6 +112,155 @@
 @media (max-width: 52rem) {
     .support-channel-grid,
     .support-tier-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* -------------------------------------------------------------------------
+   Sponsor wall (src/components/sponsor-wall.ejs): big names for big tiers,
+   quiet for small ones. Recognition only; it changes nothing about access.
+   ------------------------------------------------------------------------- */
+
+.sponsor-wall {
+    margin-bottom: clamp(2.5rem, 6vw, 4.5rem);
+}
+
+.sponsor-wall-kicker {
+    margin: 0 0 0.35rem;
+    color: var(--neon);
+    font-size: 0.75rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+}
+
+.sponsor-wall-title {
+    margin: 0 0 clamp(1.1rem, 3vw, 2rem);
+    font-size: clamp(3.4rem, 11vw, 9rem);
+    line-height: 0.88;
+    letter-spacing: -0.06em;
+    text-transform: uppercase;
+    overflow-wrap: anywhere;
+}
+
+.sponsor-wall-empty-line {
+    margin: 0 0 1rem;
+    font-size: clamp(1.15rem, 2.4vw, 1.6rem);
+    color: var(--text-main);
+}
+
+.sponsor-tier {
+    margin-top: clamp(1.4rem, 3vw, 2.2rem);
+}
+
+.sponsor-tier-label {
+    margin: 0 0 0.75rem;
+    color: var(--text-soft);
+    font-size: 0.78rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+}
+
+.sponsor-list {
+    display: grid;
+    gap: 1rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.sponsor-plate {
+    display: grid;
+    gap: 0.35rem;
+    min-width: 0;
+    padding: 1rem 1.2rem;
+    border: 1px solid var(--line-hair);
+    border-radius: var(--radius-soft);
+    background: var(--bg-panel);
+}
+
+.sponsor-name {
+    color: var(--text-main);
+    font-weight: 800;
+    line-height: 1.05;
+    text-decoration: none;
+    overflow-wrap: anywhere;
+}
+
+.sponsor-name:hover,
+.sponsor-name:focus-visible {
+    text-decoration: underline;
+}
+
+.sponsor-meta,
+.sponsor-profile {
+    color: var(--text-soft);
+    font-size: 0.74rem;
+    letter-spacing: 0.08em;
+}
+
+.sponsor-profile {
+    color: var(--neon);
+}
+
+/* $100: the loudest. One per row on phones, two across above. */
+.sponsor-tier--top .sponsor-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.sponsor-tier--top .sponsor-plate {
+    padding: clamp(1.3rem, 3vw, 2.1rem);
+    border-color: color-mix(in srgb, var(--neon) 60%, var(--line-hair));
+    background:
+        linear-gradient(135deg, color-mix(in srgb, var(--neon) 16%, transparent), transparent 55%),
+        var(--bg-panel);
+    box-shadow: var(--shadow-high);
+}
+
+.sponsor-tier--top .sponsor-name {
+    font-size: clamp(2rem, 5vw, 3.6rem);
+    letter-spacing: -0.04em;
+}
+
+.sponsor-tier--mid .sponsor-list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.sponsor-tier--mid .sponsor-plate {
+    border-color: color-mix(in srgb, var(--neon) 32%, var(--line-hair));
+}
+
+.sponsor-tier--mid .sponsor-name {
+    font-size: clamp(1.4rem, 2.8vw, 2rem);
+    letter-spacing: -0.03em;
+}
+
+.sponsor-tier--base .sponsor-list,
+.sponsor-tier--thanks .sponsor-list {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.sponsor-tier--base .sponsor-name,
+.sponsor-tier--thanks .sponsor-name {
+    font-size: 1.1rem;
+}
+
+.sponsor-wall-join {
+    margin: clamp(1.4rem, 3vw, 2.2rem) 0 0;
+}
+
+@media (max-width: 70rem) {
+    .sponsor-tier--mid .sponsor-list,
+    .sponsor-tier--base .sponsor-list,
+    .sponsor-tier--thanks .sponsor-list {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 40rem) {
+    .sponsor-tier--top .sponsor-list,
+    .sponsor-tier--mid .sponsor-list,
+    .sponsor-tier--base .sponsor-list,
+    .sponsor-tier--thanks .sponsor-list {
         grid-template-columns: 1fr;
     }
 }

@@ -16,6 +16,7 @@
                         <% if (frontmatter.status) { %><span>Status: <%= frontmatter.status %></span><% } %>
                     </div>
                 <% } %>
+                <% if (frontmatter.sponsor_wall) { %><%- include('sponsor-wall') %><% } %>
                 <div class="page-copy"><%- content %></div>
                 <% if (frontmatter.discord_rules) { %><%- include('discord-rules') %><% } %>
             </div>
