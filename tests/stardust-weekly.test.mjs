@@ -57,7 +57,7 @@ test("the hub's rules and titles agree with the game (when the hub repo sits alo
     assert.equal(Date.parse(level.closesAt), Date.parse(e.closesAt), `${e.id} closes at the same moment on both sides`);
     assert.equal(level.network, false);
     assert.equal(level.staffHidden, true, 'the owner\'s dev times stay off the public board');
-    assert.equal(level.replay, 'store');
+    assert.equal(level.replay, e.week === 2 ? 'verify' : 'store');
     assert.ok(level.minTimeMs < lap.time, 'the hub floor is below a careful lap');
     const hubEvent = rules.events.find((x) => x.id === e.id);
     assert.ok(hubEvent && hubEvent.board === e.id, `hub has the ${e.id} event`);

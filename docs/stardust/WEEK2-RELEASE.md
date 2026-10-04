@@ -41,16 +41,21 @@ seven days.
    score and replay exactly; review phone screenshots. The navigation test's
    intercepted Gantry geometry is only a test fixture and proves none of the
    selected track's playability. No owner track is selected by these PRs.
-3. Set the Hub `weekly-02` time floor from verified track evidence, its display
+3. Bind the exact same owner-authored event geometry/version in the Hub's
+   `api/games/stardust/replay/catalog.json`; its track is currently null. Set
+   the Hub `weekly-02` time floor from verified track evidence, its display
    name and matching version. Keep one board for standard and custom ships.
    The Hub validator rejects rollout activation with a disabled event/board,
-   a zero floor, mismatched dates or a pending track name. The site also holds
+   a zero floor, mismatched dates, a pending track name or missing trusted
+   replay geometry/version. The site also holds
    retirement when the catalog lacks an enabled track.
-4. Reconcile open site PR 30 (`056f4ac`) and Hub PR 19 (`0ea336e`) if merged first.
-   Preserve their account/community hardening. Reward verification must retain
-   the explicit Week 1-only exception; Week 2 keeps the reviewed/replayed award
-   gate. Do not globally mark timed runs as verified. This candidate starts
-   from site main `7fed706` (Claude PR 31 already merged) and Hub main `1e92761`.
+4. This integration candidate already includes site PR 30 (`056f4ac`) and
+   Hub PR 19 (`0ea336e`), alongside site main `7fed706` (merged Claude PR 31).
+   Preserve those account/community/F3 protections. All events are strict by
+   default, including unannotated events, with the sole explicit Stardust
+   Week 1 exception. Never globally mark timed runs as verified. Existing
+   independent foundation PRs 32/20 remain unchanged; coordinate which exact
+   candidate is reviewed before an owner merge.
 5. Finish the Week 1 results page and review pending entitlement wording. The
    permanent `/stardust/weekly/week-1/` archive uses the Week 1 event regardless
    of the featured week. Its standings, awards, ghosts, local bests and account
@@ -59,9 +64,12 @@ seven days.
    early-access entitlements. Codes are delivered later by the owner.
 6. Run `npm run test:site`, `npm run test:stardust`, the full root build,
    `npm run verify:site` and `npm run check:privacy`. In Hub/api run `npm test`
-   and **every** `test/integration/*.mjs` against a fresh migrated test database;
+   and every executable `test/integration/*.mjs` flow against a fresh migrated test database;
    do not omit the existing `hasSettings` contract. The new rollout flow needs
-   `HUB_WEEK2_TEST_FIXTURE=1`, a loopback test database and UTC, like CI.
+   `HUB_WEEK2_TEST_FIXTURE=1`, a loopback test database and UTC, like CI. Also
+   run the preserved security flow in fresh `security_test` and the isolated
+   priority-polls backend/browser fixture. `synthetic-proof.mjs` and
+   `livery-preview.mjs` are fixture helpers, not pass/fail flows.
 7. Review the exact site and Hub commit digests in a Focus approval. After
    approval, enable the site draft/rollout and Hub level/event/rollout together
    in reviewed commits. Rebuild the public pages at the confirmed opening so
@@ -83,6 +91,13 @@ including pilots outside the podium. Staff, banned users, rejected attempts
 and another weekly/old-version run cannot substitute. Week 2 finalization
 waits for all eligible accepted results to be reviewed or replayed.
 
+The server now verifies actual standard/custom input recordings through its
+pinned deterministic weekly physics. Operational capacity/timeout errors
+preserve accepted provisional results and defer awards; simulation mismatches
+reject results. Missing trusted owner geometry prevents activation. A safe
+owner retry recomputes stored pending logs rather than trusting a human label;
+the paired Hub checklist documents its read-only default and apply gate.
+
 After finalization, export the public final event response and run:
 
 ```sh
@@ -103,5 +118,8 @@ browser script `scripts/test-stardust-week2-browser.mjs` runs 12 phone
 navigation checks with all external HTTPS blocked, and screenshots disabled
 release, overlap and Gantry retirement. It does not modify release config.
 The Hub real-Postgres rollout flow checks 17 award invariants and historical
-run retention alongside all five existing integration flows. No schema
-migration or historical data deletion is required.
+run retention alongside all five existing integration flows. The replay flow
+checks 12 actual HTTP/worker/Prisma/CLI invariants using recorded standard and
+custom laps. It executes the finalization CLI for deferred (exit 2), finalized
+and already-finalized branches. The integration preserves PR 19's additive
+migrations; Week 2 adds no schema migration or historical data deletion.

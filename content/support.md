@@ -62,6 +62,7 @@ sponsor_wall: true
     </article>
   </div>
   <div class="noir-card support-boundaries"><p>These are the amounts GitHub Sponsors offers, and the recognition above is all that comes with them. Recognition is a thank-you, not ownership or control: it changes nothing about what anyone can play, use or access. There is no voting mechanic on this page. A contribution does not buy roadmap authority, a guaranteed feature, a deadline, or a private product edition.</p></div>
+<p><a href="community/">Community development votes</a> are open to all accounts when I open a poll. Each account gets one equal vote, regardless of support.</p>
 </section>
 
 <div class="noir-card support-pledge"><p>Support should remain useful even when no extra perk exists.</p></div>

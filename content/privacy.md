@@ -11,7 +11,7 @@ date: "2026-10-04"
 
 This is a static website published from the repository. Optional accounts, game results and the Dogfight relay run on a small server Donaven operates at `api.donavencrenshaw.com` (see [Accounts](#accounts)). The site has no third-party analytics or advertising trackers, and it loads nothing from third-party hosts. It does count visits on that same server, in a way that identifies no one (see [Visit counts](#visit-counts)).
 
-Updates are opt-in. There is no newsletter and no email list, and the site sends no email at all. If you want news, the community Discord and the social accounts linked in the footer are where it goes; following either is your choice, and nothing on this site subscribes you to anything.
+Updates are opt-in. There is no newsletter, marketing email or email list. Optional Community voting email confirmation uses only a message you request, once an owner-configured mail provider is available (see [Community voting](#development-votes)). If you want news, the community Discord and the social accounts linked in the footer are where it goes; following either is your choice, and nothing on this site subscribes you to anything.
 
 The Stardust browser game keeps your sound and control settings in your browser's local storage. As a guest they never leave your device, and clearing site data removes them. Signed in, your flight settings, ship and designs are also saved to your account (see [Accounts](#accounts)).
 
@@ -22,7 +22,7 @@ When you follow an external link—such as GitHub, GitHub Sponsors, Ko-fi, Disco
 Accounts are optional. Every page and every game works without one.
 
 - **What is stored:** your email address, your username, a bcrypt hash of your password (never the password itself), and anything you add to your profile: a display name, a short bio, a Discord username. Stardust runs you finish while signed in (times, circuit splits and the game build), and your Dogfight wins and losses against other signed-in pilots are stored with the account too. Guest runs never leave your browser.
-- **Where:** in a database on a server in Northern Nevada, on an encrypted disk, with encrypted backups. Nothing is sold or shared, and nothing is sent to an email or marketing service. No emails are sent at all.
+- **Where:** in a database on a server in Northern Nevada, on an encrypted disk, with encrypted backups. Account data is not sold or shared for marketing. If you request Community voting email confirmation after a mail provider is configured, that provider receives your address and the confirmation message, as described below.
 - **Cookie:** signing in sets one cookie, `token`, on `api.donavencrenshaw.com`. It is HttpOnly (page scripts can't read it), sent only over HTTPS, and lasts 30 days. It exists only to keep you signed in. Signing out removes it; changing your password or choosing *Sign out everywhere* ends every session at once.
 - **Friends:** friend requests you send and receive, your friends, and pilots you have blocked. Anyone who knows your exact username can send you a request; nothing happens until you accept it. A block is never announced to the other pilot.
 - **Challenges:** challenge links you make (which of your runs, or a friend's, is the target, and who it was sent to, if anyone), and which of your runs were flown against a challenge.
@@ -36,6 +36,20 @@ Accounts are optional. Every page and every game works without one.
 - **Logs:** the server keeps short-lived request logs, including IP addresses, to limit abuse such as password guessing. A few account actions (such as a rejected run or a new challenge link) are also noted in an event log to spot abuse; deleting your account detaches those notes from it.
 
 Dogfight rooms connect through the same server and exist only while a match is being played. If both pilots are signed in, the server records who won and who lost; nothing else about the match is kept, and rounds with a guest are not recorded at all.
+
+<h2 id="development-votes">Development votes</h2>
+
+A poll may have an owner-selected closing time. The server sets that deadline when the owner opens the poll and refuses new votes once it passes; a manual close can end it sooner. A countdown is a display of that server deadline, not a client-side permission to vote.
+
+Results guide development decisions. They do not guarantee a feature, release date or that the highest total will be implemented. Sponsorship buys no extra votes or roadmap control.
+
+When voting is enabled, each account can submit one final choice per poll opened by Donaven. The Hub stores the poll, your account id, your choice and the submission time. Poll options and aggregate counts are public; voter names and individual choices are not published. Your own confirmed choice is shown only in your signed-in view. Deleting your account deletes its votes and reduces the totals. Server operators can access records to administer the service; they are not anonymous to the server.
+
+When the voting safeguards are enabled, you must confirm the email already on your account. A random, single-use confirmation link expires after 30 minutes. The Hub keeps its hash, account/email binding and request/expiry times, and deletes the challenge when used or when your email changes. The mail provider receives your address and the confirmation message; no marketing subscription is added.
+
+The safeguards allow up to five accounts to vote from the same verified public IP address in each poll. Shared Wi-Fi, workplaces and mobile networks can share an address, so this can also limit legitimate voters. The Hub stores a keyed, poll-specific digest and a consumed-slot count, rather than adding raw IP addresses to ballot records. Deleting an account removes its ballot but does not free a network slot. Operators can delete network counters after a poll permanently closes. Changing networks, IPv6 addresses or email addresses can bypass parts of these checks; they do not prove one account is one person. No device fingerprint or new identity document is collected.
+
+GitHub sponsor verification is not enabled yet. It will not add voting weight or display private sponsorships publicly.
 
 ### Discord
 

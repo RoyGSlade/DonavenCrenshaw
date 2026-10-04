@@ -1,13 +1,15 @@
 ---
 title: "About"
 layout: "default"
-description: "About Donaven Crenshaw: games, free software, and the long, uneven road of building them."
+description: "Why Donaven Crenshaw builds accessible tools and creative games: more freedom over time, creativity, and everyday life."
 branch: "parent"
 skin: "parent"
 page_kind: "founder"
 hero_title: "About"
-hero_kicker: "I am Donaven Crenshaw. I build games and free software, and I keep coming back to it."
+hero_kicker: "I am Donaven Crenshaw. I build games and free software to give people more room to live and create."
 hero_scene: "desk"
+ogImage: "assets/noir/hero-desk.jpg"
+ogImageAlt: "The site's illustrated workspace with a glowing ring on the monitor and circuit traces on the wall."
 ---
 
 <div class="about-page">
@@ -17,16 +19,31 @@ hero_scene: "desk"
         <p class="section-label">FOUNDER</p>
         <h2>Donaven Crenshaw</h2>
         <p>I make games and useful free software. Right now that means Stardust, a browser racer you can play with your friends, Kingdoms &amp; Caravans, a city-builder in early playtest, and BetterFingers, a local-first dictation app that started as an accessibility tool.</p>
+        <p>My work comes in bursts, and the project history has gaps. But I keep coming back. This site shows what works, what is unfinished, and what I am working on next.</p>
+        <p><a class="hero-link mono" href="projects/">EXPLORE THE PROJECTS <span aria-hidden="true">→</span></a></p>
       </div>
     </article>
-    <article class="noir-card noir-card--lit about-mission">
-      <p class="section-label">THE HONEST VERSION</p>
+    <article class="noir-card noir-card--lit about-mission" aria-labelledby="build-freedom">
+      <p class="section-label">WHY I BUILD</p>
+      <h2 id="build-freedom">Build freedom.</h2>
       <div class="reading-text">
-        <p>My work comes in bursts. I get an idea and build hard for a few weeks, then life gets in the way, or I get overexcited about the next idea, or something breaks and I get fed up and walk away for a while. My project history has gaps you could fly a ship through.</p>
-        <p>But I always come back. Building things that make people happy is the part of me that doesn't switch off, and every return starts a little further along than the last one.</p>
-        <p>So this site shows the real state of things: what works, what doesn't yet, and what I'm working on next, instead of polished promises.</p>
+        <p>I want ordinary people to have more freedom over their money, time, creativity, and everyday life. Technology should make a good life more accessible.</p>
+        <p>For me, that starts with tools that remove tedious work and games that give people room to play, imagine, and spend time together. Software, AI, and automation are the ways I am working toward it today.</p>
+        <p>I want the same freedom for my own family: security, time together, and more choices. The aim is to build something sustainable by giving more value than I take.</p>
+        <p class="about-ethos">Give more value than I take. Take care of my family. Keep going.</p>
       </div>
     </article>
+  </section>
+
+  <section class="section-block about-support" aria-labelledby="keep-building">
+    <div class="section-header">
+      <div><p class="section-label">KEEP THE WORK GOING</p><h2 id="keep-building" class="section-title">What support makes possible</h2></div>
+    </div>
+    <div class="noir-card reading-text">
+      <p>Using the tools, playing the games, and sending useful feedback help me make them better. Voluntary financial support helps cover hosting, compute, signing, testing, and releases, and makes more time for focused development possible.</p>
+      <p>It does not buy an advantage, a guaranteed feature, or a deadline. Bigger infrastructure is a future ambition; the work here is the games and tools you can explore today.</p>
+      <p><a class="hero-link mono" href="support/">WAYS TO SUPPORT <span aria-hidden="true">→</span></a> <a class="hero-link mono" href="contact/">SEND FEEDBACK <span aria-hidden="true">→</span></a></p>
+    </div>
   </section>
 
   <section class="section-block about-story" aria-labelledby="story-so-far">

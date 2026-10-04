@@ -194,7 +194,7 @@ function structuredData(site, page, frontmatter) {
     return { '@context': 'https://schema.org', '@graph': graph };
 }
 
-async function initPublicDir() {
+async function initPublicDir(site) {
     await fs.remove(PUBLIC_DIR);
     await fs.ensureDir(PUBLIC_DIR);
     const copyIfPresent = async (source, destination) => {
@@ -210,9 +210,14 @@ async function initPublicDir() {
         filter: (candidate) => !path.relative(ROOT_DIR, candidate).split(path.sep)
             .some((part) => part.startsWith('.') || /^(evidence|provenance)$/i.test(part) || /provenance\.json$/i.test(part))
     });
+    // The copied game has production metadata; keep its canonical and social
+    // URL aligned with the same deployment base as the rendered site pages.
+    const gameEntry = path.join(PUBLIC_DIR, 'games', 'stardust', 'index.html');
+    const gameHtml = await fs.readFile(gameEntry, 'utf8');
+    await fs.writeFile(gameEntry, gameHtml.replaceAll('https://donavencrenshaw.com/games/stardust/', routeUrl(site, 'games/stardust/')));
     if (fs.existsSync(path.join(ROOT_DIR, 'scripts'))) {
         await fs.ensureDir(path.join(PUBLIC_DIR, 'scripts'));
-        for (const filename of ['script.js', 'smoke.js', 'light-engine.js', 'account.js', 'visits.js', 'stardust-boards.js', 'stardust-challenge.js', 'social.js', 'share.js', 'profile.js', 'pilot-ui.js', 'stardust-weekly.js', 'pilot-profile.js', 'ship-info.js', 'ship-ui.js']) {
+        for (const filename of ['script.js', 'smoke.js', 'light-engine.js', 'account.js', 'email-verification.js', 'voting.js', 'voting-carousel.js', 'visits.js', 'stardust-boards.js', 'stardust-challenge.js', 'social.js', 'share.js', 'profile.js', 'pilot-ui.js', 'stardust-weekly.js', 'pilot-profile.js', 'ship-info.js', 'ship-ui.js']) {
             await copyIfPresent(path.join(ROOT_DIR, 'scripts', filename), path.join(PUBLIC_DIR, 'scripts', filename));
         }
     }
@@ -458,9 +463,12 @@ async function buildSitemap(site, generatedPaths) {
         if (!fs.existsSync(file)) continue;
         const html = await fs.readFile(file, 'utf-8');
         if (/<meta name="robots" content="noindex/i.test(html) || /http-equiv="refresh"/i.test(html)) continue;
-        urls.push(routeUrl(site, rel.replace(/(^|\/)index\.html$/, '')));
+        const canonical = html.match(/rel="canonical" href="([^"]+)"/i)?.[1];
+        const url = canonical ? new URL(canonical) : new URL(routeUrl(site, rel.replace(/(^|\/)index\.html$/, '')));
+        if (url.origin !== new URL(site.domain).origin) throw new Error(`[SEO ERROR] Off-site canonical in ${rel}`);
+        urls.push(url.href);
     }
-    const entries = urls.map((u) => `  <url><loc>${u}</loc></url>`).join('\n');
+    const entries = [...new Set(urls)].sort().map((u) => `  <url><loc>${escapeAttribute(u)}</loc></url>`).join('\n');
     const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${entries}\n</urlset>\n`;
     await fs.writeFile(path.join(PUBLIC_DIR, 'sitemap.xml'), xml);
     await fs.writeFile(path.join(PUBLIC_DIR, 'robots.txt'), `User-agent: *\nAllow: /\n\nSitemap: ${routeUrl(site, '')}sitemap.xml\n`);
@@ -521,7 +529,7 @@ async function main() {
     const sponsorWall = buildSponsorWall(await readJson('sponsors.json'), { basePath: site.basePath });
     const components = await loadComponents();
 
-    await initPublicDir();
+    await initPublicDir(site);
     const projectImport = await importProjectSources({ root: ROOT_DIR, outputDir: PUBLIC_DIR });
     const importedProjects = projectImport.sources.map((source) => ({
         ...source,

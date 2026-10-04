@@ -1,5 +1,5 @@
 ---
-title: "Community"
+title: "Community votes"
 layout: "default"
 redirect: "community"
 ---

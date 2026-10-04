@@ -137,6 +137,7 @@ export function finishSummary(result) {
   }
 
   const lines = [];
+  if (result.verification === 'provisional' || result.rewardEligible === false) lines.push('Provisional time: gameplay is not verified. New account rewards are paused.');
   const friends = result.friends;
   if (friends) {
     if (result.personalBest && friends.overtaken?.length) lines.push(`You passed ${nameList(friends.overtaken)}.`);
