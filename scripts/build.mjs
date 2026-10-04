@@ -7,7 +7,7 @@ import { importProjectSources } from './projectSources.mjs';
 import { CUSTOM_TRACK } from '../projects/Space-Shooter/tracks/custom-track.js';
 import { releaseText, isCustomTrackLive } from '../projects/Space-Shooter/systems/customTrack.js';
 import { checkTrack } from '../projects/Space-Shooter/engine/trackChecks.js';
-import { currentWeekly, weeklyStatus, weeklyGameUrl, weeklyPreviewSvg } from '../projects/Space-Shooter/systems/weekly.js';
+import { currentWeekly, weeklyById, weeklyStatus, weeklyGameUrl, weeklyPreviewSvg } from '../projects/Space-Shooter/systems/weekly.js';
 import { buildSponsorWall } from './sponsors.mjs';
 
 const ROOT_DIR = path.resolve('.');
@@ -288,8 +288,8 @@ async function avatarData() {
 // The current weekly time trial (projects/Space-Shooter/tracks/weekly.js): the
 // words the page is built with, so it reads right without JavaScript, and its
 // layout picture at assets/images/stardust/weekly/<id>-layout.svg.
-async function weeklyData(now = Date.now()) {
-    const event = currentWeekly(now);
+async function weeklyData(now = Date.now(), eventId = null) {
+    const event = eventId ? weeklyById(eventId) : currentWeekly(now);
     if (!event) return null;
     const status = weeklyStatus(event, now);
     const layout = `assets/images/stardust/weekly/${event.id}-layout.svg`;
@@ -350,7 +350,8 @@ async function buildAllContent(dirPath, subDir = '', components, site, data, pos
             const isRootIndex = fileName === 'index' && subDir === '';
             const route = isRootIndex ? '' : path.posix.join(subDir, fileName !== 'index' ? fileName : '');
             const outDir = isRootIndex ? PUBLIC_DIR : path.join(PUBLIC_DIR, route);
-            const context = renderContext(site, frontmatter, route, data);
+            const pageData = frontmatter.weeklyEvent ? { ...data, weekly: await weeklyData(Date.now(), frontmatter.weeklyEvent) } : data;
+            const context = renderContext(site, frontmatter, route, pageData);
             const renderedComponents = {
                 nav: ejs.render(components.nav, context),
                 footer: ejs.render(components.footer, context, { views: [COMPONENTS_DIR] }),

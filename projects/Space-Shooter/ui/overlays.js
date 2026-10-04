@@ -11,6 +11,7 @@ import { toggleFullscreen } from './graphics.js';
 import { watchFullscreen } from '../systems/mobileControls.js';
 import { isMobileViewport } from '../utils/view.js';
 import { showFinishScreen, dismissFinishScreen } from './finishScreen.js';
+import { canLaunchWeeklyMode } from '../systems/weeklyAccess.js';
 const el = id => document.getElementById(id);
 const show = id => el(id)?.classList.remove('hidden');
 const hide = id => el(id)?.classList.add('hidden');
@@ -65,6 +66,7 @@ function leaveChallenge() {
 let lastLaunch = { kind: 'network', preview: false };
 /** Leave the hangar and fly: { kind: 'network' | 'custom' | 'weekly', preview, event, ship }. ship: 'equipped' flies a weekly preview as the equipped garage build. */
 export function launchRun(options = {}) {
+  if (!canLaunchWeeklyMode(options)) { toast('This mode is retired or awaiting release. Fly the current weekly track.'); return; }
   // The first activation hides the launch screen; queued taps must not start another run.
   if (!state.ui.showStartOverlay && !state.ui.showEndOverlay) return;
   dismissFinishScreen();

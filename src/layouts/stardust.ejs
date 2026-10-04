@@ -32,7 +32,7 @@
                 <span class="sd-wb-tag">Weekly time trial</span>
                 <span class="sd-wb-main">
                     <span class="sd-wb-title">Week <%= wk.week %> · <%= wk.title %></span>
-                    <span class="sd-wb-copy">One lap, every shard. Fastest time wins the <%= (wk.rewards && wk.rewards.championTitle) || 'Champion' %> title; the top <%= (wk.rewards && wk.rewards.podiumSize) || 3 %> get early access to Stardust: Planetfall.</span>
+                    <span class="sd-wb-copy">One lap, every shard. Fastest time wins the <%= (wk.rewards && wk.rewards.championTitle) || 'Champion' %> title; <%= wk.week === 1 ? "the top 3 earn pending Planetfall early-access entitlements (codes later), and all eligible finishers earn Challenger." : "the winner gets a hull variant named after them, each podium place has its own title, and both-week finishers earn Week 2 Hero." %></span>
                 </span>
                 <span class="sd-wb-side">
                     <span class="sd-wb-status" data-sd-weekly-status><%= wk.state === 'upcoming' ? `Opens ${wk.opensText}` : wk.state === 'live' ? `Live · closes ${wk.closesText}` : 'Closed · see the results' %></span>
@@ -58,7 +58,7 @@
                 <div class="sd-weekly-slot-grid">
                     <a class="sd-weekly-slot-map" href="stardust/weekly/"><img src="<%= wk.layout %>" alt="<%= wk.title %> layout: start/finish, checkpoints and <%= wk.shards %> numbered shards, obstacles hidden" width="<%= wk.layoutWidth %>" height="<%= wk.layoutHeight %>" loading="lazy"></a>
                     <div>
-                        <p class="sd-copy"><strong>Week <%= wk.week %> · <%= wk.title %>.</strong> A new hand-built track every week, outside the five-circuit network. Collect every shard, then cross the finish line: no portal. Mines, bouncing asteroids and corner sentries that shoot slow ships. Fastest time when the week closes takes the <%= (wk.rewards && wk.rewards.championTitle) || 'champion' %> title; the top <%= (wk.rewards && wk.rewards.podiumSize) || 3 %> get early access to Stardust: Planetfall.</p>
+                        <p class="sd-copy"><strong>Week <%= wk.week %> · <%= wk.title %>.</strong> A new hand-built track every week, outside the five-circuit network. Collect every shard, then cross the finish line: no portal. Mines, bouncing asteroids and corner sentries that shoot slow ships. Fastest time when the week closes takes the <%= (wk.rewards && wk.rewards.championTitle) || 'champion' %> title; <%= wk.week === 1 ? "the top 3 earn pending Planetfall early-access entitlements (codes later), and all eligible finishers earn Challenger." : "the winner gets a hull variant named after them, each podium place has its own title, and both-week finishers earn Week 2 Hero." %></p>
                         <p class="sd-custom-status"><strong data-sd-weekly-status><%= wk.state === 'upcoming' ? `Opens ${wk.opensText}` : wk.state === 'live' ? `Live · closes ${wk.closesText}` : 'Closed · see the results' %></strong></p>
                         <div class="sd-actions">
                             <a class="sd-cta" href="stardust/weekly/"><span data-sd-weekly-go><%= wk.state === 'live' ? 'Fly it now' : wk.state === 'closed' ? 'Results' : 'See the track' %></span> <span aria-hidden="true">→</span></a>

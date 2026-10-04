@@ -57,18 +57,20 @@
                             <span class="sd-wk-place">1st</span>
                             <div>
                                 <p class="sd-wk-reward-name"><span class="pilot-chip pilot-chip--unique"><%= rewards.championTitle || 'Weekly Champion' %></span></p>
-                                <p class="sd-wk-reward-copy">The fastest time when the week closes. One pilot holds it, for good.</p>
+                                <p class="sd-wk-reward-copy"><%= wk.week === 2 ? 'An existing hull variant named after the winner, prepared after final results.' : 'The fastest eligible time when the week closes. One pilot holds it, for good.' %></p>
                             </div>
                         </li>
-                        <li class="sd-wk-reward">
-                            <span class="sd-wk-place">Top <%= podium %></span>
-                            <div>
-                                <p class="sd-wk-reward-name"><span class="pilot-chip pilot-chip--legendary"><%= rewards.podiumTitle || 'Podium' %></span></p>
-                                <p class="sd-wk-reward-copy"><strong>Early access to Stardust: Planetfall</strong>, and the title to show for it.</p>
-                            </div>
-                        </li>
+                        <% if (wk.week === 1) { %>
+                        <li class="sd-wk-reward"><span class="sd-wk-place">Top <%= podium %></span><div><p class="sd-wk-reward-name"><span class="pilot-chip pilot-chip--legendary"><%= rewards.podiumTitle %></span></p><p class="sd-wk-reward-copy"><strong>Pending early-access entitlement to Stardust: Planetfall</strong>. Codes will be delivered later.</p></div></li>
+                        <li class="sd-wk-reward"><span class="sd-wk-place">All finishers</span><div><p class="sd-wk-reward-name"><%= rewards.participationTitle || 'Challenger' %></p><p class="sd-wk-reward-copy">Every eligible participant with an accepted finish.</p></div></li>
+                        <% } else { %>
+                        <% for (const place of rewards.placements || []) { %>
+                        <li class="sd-wk-reward"><span class="sd-wk-place"><%= place.rank === 2 ? '2nd' : '3rd' %></span><div><p class="sd-wk-reward-name"><%= place.title %></p><p class="sd-wk-reward-copy">One permanent title for this place.</p></div></li>
+                        <% } %>
+                        <li class="sd-wk-reward"><span class="sd-wk-place">Both weeks</span><div><p class="sd-wk-reward-name">Week 2 Hero</p><p class="sd-wk-reward-copy">Eligible accepted finishes in both Week 1 and Week 2.</p></div></li>
+                        <% } %>
                     </ol>
-                        <p class="sd-wk-reward-note">Titles are permanent. They’re awarded when the board closes on <time datetime="<%= wk.closesAt %>"><%= short(wk.closesText) %></time>. <a href="stardust/planetfall/">See the Planetfall screenshots →</a></p>
+                        <p class="sd-wk-reward-note">Titles are permanent. Results finalize after the board closes on <time datetime="<%= wk.closesAt %>"><%= short(wk.closesText) %></time> and runs in flight finish. <%= wk.week === 1 ? 'Week 1 has the owner-approved verification exception.' : 'Week 2 rewards await reviewed or replayed results.' %></p>
                 </aside>
             </header>
 
@@ -84,8 +86,8 @@
                         <ol class="sd-wk-rule-list">
                             <li>Collect every shard, then cross the finish line.</li>
                             <li>The fastest time this week earns the <strong><%= rewards.championTitle || 'Champion' %></strong> title.</li>
-                            <li>The top <%= podium %> get early access to <strong>Stardust: Planetfall</strong>.</li>
-                            <li>You have 7 days to set your fastest time.</li>
+                            <li><%= wk.week === 1 ? `The top ${podium} earn a pending Planetfall early-access entitlement. Codes arrive later.` : 'Each podium place has its own title. Finish both weeks for Week 2 Hero.' %></li>
+                            <li>Set your fastest time inside the opening and closing window above.</li>
                         </ol>
                         <p class="sd-wk-goodluck">Good luck, pilots.</p>
 
@@ -109,7 +111,7 @@
                 <div id="sd-wk-board-list" aria-live="polite" data-wk-board-list>
                     <p class="sd-empty"><%= wk.state === 'upcoming' ? 'Board opens with the track.' : 'The board loads from the hub. With JavaScript off, open the game to see your time.' %></p>
                 </div>
-                <p class="sd-board-note">The top <%= podium %> when the board closes get early access to Planetfall. Only signed-in runs count, and staff times are never ranked.</p>
+                <p class="sd-board-note">Only signed-in eligible runs count, and staff times are never ranked. Custom ships use this same leaderboard. <a href="stardust/weekly/week-1/">Week 1 standings and rewards</a> remain available after Gantry retires.</p>
             </section>
 
             <section class="sd-section sd-wk-comments" id="comments" aria-labelledby="sd-wk-comments-title">

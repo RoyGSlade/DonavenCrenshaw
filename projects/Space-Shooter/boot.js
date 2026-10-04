@@ -10,6 +10,7 @@ import { initWeeklyUi } from './systems/weeklyUi.js';
 import { initFlightUi } from './ui/flightUi.js';
 import { initHangar } from './ui/hangar.js';
 import { initShareImport } from './ui/shareImport.js';
+import { initWeeklyNavigation } from './systems/weeklyNavigation.js';
 const status = document.getElementById('boot-status');
 const button = document.getElementById('starmap-start-btn');
 // ?lab=... swaps in playtest rules. Such a session never saves runs.
@@ -37,6 +38,7 @@ if (ready) initShareImport().catch(error => console.warn('Stardust: could not co
 try { initCustomTrackUi({ ready, lab }); } catch (error) { console.error('Stardust: custom track unavailable', error); }
 // The weekly time trial card: countdown to the opening, then to the close.
 try { initWeeklyUi({ ready, lab }); } catch (error) { console.error('Stardust: weekly track unavailable', error); }
+initWeeklyNavigation();
 if (lab) {
   initLab(lab);
 } else {

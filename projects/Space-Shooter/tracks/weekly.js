@@ -23,6 +23,7 @@
 //
 // opensAt/closesAt are ISO 8601 with an offset. The hub enforces the same
 // window on its board, so change both together.
+import { WEEK2_DRAFT } from './weeklyRollout.js';
 export const WEEKLY_EVENTS = [
   {
     id: 'weekly-01',
@@ -39,6 +40,9 @@ export const WEEKLY_EVENTS = [
       podiumTitle: 'Planetfall Vanguard',
       podiumSize: 3,
       entitlement: 'planetfall-early-access',
+      entitlementDelivery: 'pending',
+      participation: 'weekly-01-challenger',
+      participationTitle: 'Challenger',
     },
     commentsPage: 'stardust-weekly-01',
     music: 'level3',
@@ -139,18 +143,21 @@ export const WEEKLY_EVENTS = [
       ],
     },
   },
+  WEEK2_DRAFT,
 ];
 
 /**
- * The event the game and the site feature at `now`: the latest one whose week
- * has started (opensAt minus 7 days, so next week's track is teased while this
- * one runs out), or the first if none has.
+ * Feature the newest live event during an overlap. A disabled or incomplete
+ * owner draft cannot replace a playable week. Otherwise show the next event,
+ * then the most recent archive when no event is live or upcoming.
  */
-export function currentWeekly(now = Date.now()) {
-  const week = 7 * 86400000;
-  let pick = WEEKLY_EVENTS[0];
-  for (const event of WEEKLY_EVENTS) if (Date.parse(event.opensAt) - week <= now) pick = event;
-  return pick;
+export function currentWeekly(now = Date.now(), events = WEEKLY_EVENTS) {
+  const ready = events.filter((e) => e.enabled !== false && e.track);
+  const byOpen = (a, b) => Date.parse(a.opensAt) - Date.parse(b.opensAt);
+  const live = ready.filter((e) => Date.parse(e.opensAt) <= now && now < Date.parse(e.closesAt)).sort(byOpen);
+  if (live.length) return live.at(-1);
+  const upcoming = ready.filter((e) => now < Date.parse(e.opensAt)).sort(byOpen);
+  return upcoming[0] || ready.sort(byOpen).at(-1) || null;
 }
 
 export function weeklyById(id) {
