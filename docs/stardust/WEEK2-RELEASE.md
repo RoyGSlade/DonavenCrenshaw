@@ -59,13 +59,15 @@ the next weekly opening is independent of the existing three-hour finish grace.
    a zero floor, mismatched dates, a pending track name or missing trusted
    replay geometry/version. The site also holds
    retirement when the catalog lacks an enabled track.
-4. This integration candidate already includes site PR 30 (`056f4ac`) and
-   Hub PR 19 (`0ea336e`), alongside site main `7fed706` (merged Claude PR 31).
-   Preserve those account/community/F3 protections. All events are strict by
-   default, including unannotated events, with the sole explicit Stardust
-   Week 1 exception. Never globally mark timed runs as verified. Existing
-   independent foundation PRs 32/20 remain unchanged; coordinate which exact
-   candidate is reviewed before an owner merge.
+4. This candidate is reconciled with latest site main
+   `913dc9d1d395730f63e851a13482f3ac9a72cd8b` and Hub main
+   `a4840844815587e01fb5ee8b658939bd683d781b`. Preserve live branded Google
+   Workspace confirmation, confirmed-email voting without an IP cap, privacy
+   copy and owner-selectable poll closing times alongside account/community/F3
+   protections and merged Claude SEO/sponsor/BetterFingers work. Site PRs
+   29/30/32 are closed; the old PR30 conflict gate is retired. All event awards
+   remain strict by default except the sole explicit Stardust Week1 exception.
+   Review the freshly tested exact draft33/Hub21 heads before an owner merge.
 5. Finish the Week 1 results page and review pending entitlement wording. The
    permanent `/stardust/weekly/week-1/` archive uses the Week 1 event regardless
    of the featured week. Its standings, awards, ghosts, local bests and account
@@ -90,6 +92,12 @@ the next weekly opening is independent of the existing three-hour finish grace.
 8. Owner merges and deploys after approval. Hub deployment uses the owner's
    established `scripts/update.sh` workflow. These draft PRs authorize no merge,
    deployment, live award run, scheduling change or production deletion.
+
+The owner's live development poll closes October 6 at 18:59:40 PDT
+(October 7 01:59:40 UTC), approximately7 PM. That poll deadline is independent
+of Week2's October6 15:00 PDT opening and does not change the weekly window.
+No poll, email/provider secret, ingress or production configuration is changed
+by this integration check; browser mail and poll tests use synthetic fixtures.
 
 ## Week 2 rewards and delivery
 
