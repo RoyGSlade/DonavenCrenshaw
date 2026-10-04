@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-03T19:19:39.228Z",
+  "generatedAt": "2026-10-04T18:55:01.955Z",
   "stardust": {
     "leaderboard": [
       {
@@ -38,6 +38,47 @@
         "name": "CrispyNacho",
         "timeMs": 375421,
         "setAt": "2026-09-27T08:15:50.496Z"
+      }
+    ]
+  },
+  "weekly": {
+    "id": "weekly-01",
+    "name": "Week 1 — Gantry Drop",
+    "status": "live",
+    "opensAt": "2026-09-29T19:00:00-07:00",
+    "closesAt": "2026-10-06T19:00:00-07:00",
+    "leaderboard": [
+      {
+        "rank": 1,
+        "name": "CrispyNacho",
+        "title": null,
+        "avatarPreset": null,
+        "timeMs": 112521,
+        "setAt": "2026-10-01T06:26:49.381Z"
+      },
+      {
+        "rank": 2,
+        "name": "Debo",
+        "title": null,
+        "avatarPreset": null,
+        "timeMs": 113839,
+        "setAt": "2026-10-03T05:03:14.458Z"
+      },
+      {
+        "rank": 3,
+        "name": "Phyllo",
+        "title": null,
+        "avatarPreset": "pilot-sol",
+        "timeMs": 122040,
+        "setAt": "2026-09-30T02:52:02.364Z"
+      },
+      {
+        "rank": 4,
+        "name": "Antwon",
+        "title": null,
+        "avatarPreset": null,
+        "timeMs": 168559,
+        "setAt": "2026-09-30T14:06:13.303Z"
       }
     ]
   },
