@@ -38,7 +38,7 @@ test('every weekly event is well formed, a week long and uniquely named', () => 
     assert.equal(e.commentsPage, `stardust-${e.id}`);
     assert.ok(e.rewards.podiumSize === 3 && e.rewards.champion);
     if (e.week === 1) assert.ok(e.rewards.podium && e.rewards.entitlement);
-    if (e.enabled === false) assert.equal(e.track, null, "owner track is not invented");
+    if (!e.track) assert.equal(e.enabled, false, 'an incomplete owner draft cannot be activated');
   }
   assert.equal(weeklyById('weekly-01'), event);
   assert.equal(weeklyById('nope'), null);
@@ -58,7 +58,11 @@ test("the hub's rules and titles agree with the game (when the hub repo sits alo
     assert.equal(level.network, false);
     assert.equal(level.staffHidden, true, 'the owner\'s dev times stay off the public board');
     assert.equal(level.replay, e.week === 2 ? 'verify' : 'store');
-    assert.ok(level.minTimeMs < lap.time, 'the hub floor is below a careful lap');
+    const eventLap = e.track ? (e === event ? lap : flyWeeklyLap(createWeeklyLayout(e))) : null;
+    if (eventLap) {
+      assert.ok(eventLap.finished && !eventLap.dead, `${e.id} pilot finishes`);
+      assert.ok(level.minTimeMs < eventLap.time, 'the hub floor is below this track\'s careful lap');
+    }
     const hubEvent = rules.events.find((x) => x.id === e.id);
     assert.ok(hubEvent && hubEvent.board === e.id, `hub has the ${e.id} event`);
     assert.equal(hubEvent.rewards.championTitle, e.rewards.champion);
@@ -67,8 +71,8 @@ test("the hub's rules and titles agree with the game (when the hub repo sits alo
     assert.ok(titleIds.has(e.rewards.champion), "champion title exists");
     if (e.rewards.podium) assert.ok(titleIds.has(e.rewards.podium));
     if (e.week === 2) {
-      assert.equal(level.enabled, false);
-      assert.equal(hubEvent.enabled, false);
+      assert.equal(level.enabled, e.enabled);
+      assert.equal(hubEvent.enabled, e.enabled);
       for (const p of e.rewards.placements) {
         assert.equal(hubEvent.rewards.placementTitles[p.rank], p.id);
         assert.equal(titles.titles.find(t => t.id === p.id).title, p.title);

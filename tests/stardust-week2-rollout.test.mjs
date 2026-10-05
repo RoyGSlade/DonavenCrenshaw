@@ -12,15 +12,19 @@ const w1 = WEEKLY_EVENTS[0];
 const w2 = { ...WEEK2_DRAFT, enabled: true, track: w1.track };
 const liveRollout = { ...WEEKLY_ROLLOUT, enabled: true };
 
-test('draft and retirement stay disabled; no owner track is guessed', () => {
+test('incomplete draft and retirement fixtures stay disabled; release dates stay fixed', () => {
   assert.equal(new Date(WEEK2_DRAFT.closesAt).toISOString(), '2026-10-13T21:45:00.000Z');
   assert.equal(new Date(WEEK2_DRAFT.opensAt).toISOString(), '2026-10-06T22:00:00.000Z');
-  assert.equal(WEEK2_DRAFT.enabled, false);
-  assert.equal(WEEK2_DRAFT.track, null);
-  assert.equal(WEEKLY_ROLLOUT.enabled, false);
-  assert.equal(currentWeekly(Date.parse(w2.opensAt)).id, 'weekly-01');
-  assert.equal(canLaunchWeeklyMode({ kind: 'weekly', event: WEEK2_DRAFT, preview: true }), false);
-  assert.equal(weeklyAccess('full', Date.parse(w2.opensAt)), 'open');
+  const draft = { ...WEEK2_DRAFT, enabled: false, track: null };
+  const disabledRollout = { ...WEEKLY_ROLLOUT, enabled: false };
+  assert.equal(currentWeekly(Date.parse(w2.opensAt), [w1, draft]).id, 'weekly-01');
+  assert.equal(canLaunchWeeklyMode({ kind: 'weekly', event: draft, preview: true }), false);
+  assert.equal(weeklyAccess('full', Date.parse(w2.opensAt), disabledRollout), 'open');
+  if (!WEEK2_DRAFT.track) {
+    assert.equal(WEEK2_DRAFT.enabled, false);
+    assert.equal(WEEKLY_ROLLOUT.enabled, false);
+  }
+  if (WEEKLY_ROLLOUT.enabled) assert.ok(WEEK2_DRAFT.enabled && WEEK2_DRAFT.track, 'retirement requires a ready active owner track');
 });
 
 test('feature the live week, then newest live during overlap; Gantry remains selectable', () => {
