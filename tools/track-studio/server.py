@@ -111,7 +111,8 @@ def parse_command(value: str | None) -> list[str] | None:
 
 class Config:
     def __init__(self, *, root: Path, data: Path, owner: str | None, dev_no_auth: bool = False,
-                 converter=None, lhc=None, card: str | None = None, repo_target: str | None = None):
+                 converter=None, lhc=None, card: str | None = None, repo_target: str | None = None,
+                 refine_agent: str = "codex"):
         self.root = Path(root).resolve()
         self.data = Path(data).resolve()
         self.owner = (owner or "").strip().lower() or None
@@ -120,6 +121,8 @@ class Config:
         self.lhc = lhc
         self.card = card
         self.repo_target = repo_target
+        # Codex's edit sandbox can run the converter; Claude's edit tier only allows git commands.
+        self.refine_agent = refine_agent if refine_agent in ("codex", "claude") else "codex"
 
 
 # ---------------------------------------------------------------------------
@@ -989,7 +992,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         sketch_rel = self.store.save_sketch(sketch) if sketch else None
         next_n = self.store.next_number(versions)
         prompt = refine_prompt(self.cfg, self.store, version, notes or "(no written notes; see the new sketch)", sketch_rel, next_n)
-        args = ["request", "add", "--to", "claude", "--tier", "edit",
+        args = ["request", "add", "--to", self.cfg.refine_agent, "--tier", "edit",
                 "--repo", self.cfg.repo_target or str(self.cfg.root)]
         parsed = lhc_with_text_file(self.cfg, args, "--prompt-file", prompt, ["--json"])
         req = {"id": "r" + secrets.token_hex(4), "kind": "refine", "status": "pending", "created": now_iso(),
@@ -1129,7 +1132,7 @@ def main(argv=None) -> int:
         return 2
     cfg = Config(root=root, data=Path(args.data), owner=args.owner, dev_no_auth=args.dev_no_auth,
                  converter=parse_command(args.converter), lhc=parse_command(args.lhc),
-                 card=args.card, repo_target=args.repo_target)
+                 card=args.card, repo_target=args.repo_target, refine_agent=args.refine_agent)
     server = StudioServer(("127.0.0.1", args.port), cfg)
     if cfg.dev_no_auth:
         log("WARNING: --dev-no-auth is on; anyone who can reach this port is the owner.")

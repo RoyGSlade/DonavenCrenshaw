@@ -430,7 +430,7 @@ class RefineTests(Base):
         call = self.h.lhc_calls()[-1]
         self.assertEqual(call["cmd"], ["request", "add"])
         f = call["flags"]
-        self.assertEqual((f["to"], f["tier"], f["repo"]), ("claude", "edit", "studio-repo"))
+        self.assertEqual((f["to"], f["tier"], f["repo"]), ("codex", "edit", "studio-repo"))
         prompt = f["_prompt-file-text"]
         for needle in ("Corner 3 is brutal, widen it.", "drafts/w2-v1.json", "versions.json", "runs/w2-v1.jsonl",
                        "add-version", "--source agent", "--from-version 1", "3 short lines", "#SAVE-01",
