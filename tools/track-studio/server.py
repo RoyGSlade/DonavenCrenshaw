@@ -1103,6 +1103,7 @@ def build_serve_parser() -> argparse.ArgumentParser:
     p.add_argument("--card", help="LHC card id to cite in requests")
     p.add_argument("--repo-target", help="LHC registered repo path/id for requests (default: --root)")
     p.add_argument("--converter", help="converter command (default: node scripts/stardust/sketch-to-weekly.mjs)")
+    p.add_argument("--refine-agent", choices=("codex", "claude"), default="codex", help="agent for refine requests (default codex)")
     return p
 
 
