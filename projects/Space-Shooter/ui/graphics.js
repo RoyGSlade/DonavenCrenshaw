@@ -17,6 +17,7 @@ import { drawWeeklyWorld, drawWeeklyHud } from '../gfx/weeklyVfx.js';
 import { ghostPosesNow } from '../engine/modes/weekly.js';
 import { updateFlightUi } from './flightUi.js';
 import { drawHitboxDebug } from '../gfx/hitboxDebug.js';
+import { ensure3d, render3dActive, draw3d } from '../gfx3d/index.js';
 // ?debug=hitbox outlines the ship's exact body and the pickup shapes.
 const DEBUG_HITBOX = new URLSearchParams(globalThis.location?.search || '').get('debug') === 'hitbox';
 
@@ -183,10 +184,16 @@ export function render() {
 
   // Clear and draw static bg
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.drawImage(bufferCanvas, 0, 0);
+  // 3D look (gfx3d/): a WebGL canvas underneath draws the weekly world; this
+  // canvas stays transparent there and keeps only the HUD and overlays.
+  const lv3d = mode === 'roadmap' ? state.run?.current : null;
+  ensure3d();
+  const in3d = render3dActive(lv3d);
+  if (in3d) draw3d({ lv: lv3d, pose: lv3d.viewPlayer || lv3d.player, keys: state.keys, cam2d: state.gfx.camera, ghosts: ghostPosesNow(), time: state.gfx.visualTime || 0, dt, width: W, height: H });
+  else ctx.drawImage(bufferCanvas, 0, 0);
 
   // Optional starfield
-  if (config.STARFIELD?.ENABLED) {
+  if (config.STARFIELD?.ENABLED && !in3d) {
     const player = state.arena?.player || state.run?.current?.player || null;
     let vxPx = 0, vyPx = 0;
     if (player) {
@@ -214,7 +221,7 @@ export function render() {
   ctx.translate(-cam.x * cellW, -cam.y * cellH);
 
   if (mode === 'roadmap') {
-    if (hasRun()) drawRoadmap(ctx);
+    if (hasRun() && !in3d) drawRoadmap(ctx);
   } else if (mode === 'arena') {
     if (hasRun()) drawArena(ctx);
   }

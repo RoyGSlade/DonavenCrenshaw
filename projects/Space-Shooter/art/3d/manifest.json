@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "units": "One unit is one sim cell. Models face +X (the sim's angle 0), up is +Y, origin at the hull centre.",
+  "ships": {},
+  "props": {}
+}

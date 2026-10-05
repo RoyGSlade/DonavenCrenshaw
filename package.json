@@ -44,5 +44,8 @@
     "bugs": {
         "url": "https://github.com/RoyGSlade/DonavenCrenshaw/issues"
     },
-    "homepage": "https://github.com/RoyGSlade/DonavenCrenshaw#readme"
+    "homepage": "https://github.com/RoyGSlade/DonavenCrenshaw#readme",
+    "devDependencies": {
+        "three": "0.186.0"
+    }
 }
