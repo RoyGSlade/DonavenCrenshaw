@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#050506">
+<meta name="robots" content="noindex, nofollow">
+<title>Track Studio</title>
+<link rel="stylesheet" href="/studio/studio.css">
+</head>
+<body>
+<header class="top">
+  <h1>Track Studio</h1>
+  <p id="conn" class="conn" role="status" aria-live="polite">Connecting&hellip;</p>
+</header>
+
+<main class="layout">
+  <section class="card how" aria-labelledby="how-h">
+    <h2 id="how-h">How it works</h2>
+    <ol class="steps">
+      <li><b>Sketch</b> a loop with your finger and tap Make track.</li>
+      <li><b>Playtest</b> it on your laptop with the controller.</li>
+      <li>Send <b>notes</b> or a new sketch to refine it.</li>
+      <li><b>Approve</b> the version you want to ship.</li>
+    </ol>
+    <p class="deadline">Approve by Tue Oct 6, 12 PM PT for the 3 PM launch.</p>
+    <p id="lhc-banner" class="banner warn" hidden>Agent requests are offline: LHC is not set up on the studio server. Sketching and playtesting still work.</p>
+  </section>
+
+  <section class="card pad" aria-labelledby="pad-h">
+    <h2 id="pad-h">1. Sketch your track</h2>
+
+    <div class="tools" role="group" aria-label="Sketch tools">
+      <button type="button" class="tool" data-tool="draw" aria-pressed="true">Draw</button>
+      <button type="button" class="tool" data-tool="start" aria-pressed="false">Set start</button>
+      <button type="button" id="undo" class="plain">Undo</button>
+      <button type="button" id="clear" class="plain">Clear</button>
+    </div>
+    <div class="tools marks" role="group" aria-label="Mark tools">
+      <button type="button" class="tool mark landmark" data-tool="landmark" aria-pressed="false"><i aria-hidden="true">L</i> Landmark</button>
+      <button type="button" class="tool mark fast" data-tool="fast" aria-pressed="false"><i aria-hidden="true">F</i> Fast</button>
+      <button type="button" class="tool mark tight" data-tool="tight" aria-pressed="false"><i aria-hidden="true">T</i> Tight</button>
+      <button type="button" class="tool mark hazard" data-tool="hazard" aria-pressed="false"><i aria-hidden="true">H</i> Hazard</button>
+      <button type="button" class="tool mark calm" data-tool="calm" aria-pressed="false"><i aria-hidden="true">C</i> Calm</button>
+    </div>
+
+    <div class="canvas-wrap">
+      <canvas id="canvas" role="img" aria-label="Sketch pad. Draw one loop with your finger."></canvas>
+    </div>
+    <p id="pad-hint" class="hint"></p>
+    <p id="pad-msg" class="msg" role="status" aria-live="polite"></p>
+
+    <div id="note-box" class="notebox" hidden>
+      <label for="mark-note" id="mark-note-label">Note for this mark (optional)</label>
+      <div class="row">
+        <input id="mark-note" type="text" maxlength="140" autocomplete="off">
+        <button type="button" id="mark-note-done" class="plain">Done</button>
+      </div>
+    </div>
+    <ul id="mark-list" class="chips" aria-label="Marks on your track"></ul>
+
+    <fieldset class="seg">
+      <legend>Difficulty</legend>
+      <label><input type="radio" name="difficulty" value="easy"><span>Easy</span></label>
+      <label><input type="radio" name="difficulty" value="normal" checked><span>Normal</span></label>
+      <label><input type="radio" name="difficulty" value="hard"><span>Hard</span></label>
+    </fieldset>
+
+    <label for="title">Track name (optional)</label>
+    <input id="title" type="text" maxlength="60" autocomplete="off" placeholder="Gantry Drop">
+    <label for="landmark">Landmark (optional)</label>
+    <input id="landmark" type="text" maxlength="60" autocomplete="off" placeholder="The Long Drop">
+    <label for="ideas">Name ideas (optional)</label>
+    <textarea id="ideas" rows="2" maxlength="1500" placeholder="Words, vibes, places&hellip;"></textarea>
+    <button type="button" id="names" class="plain wide">Ask for 8 name ideas</button>
+    <p id="names-msg" class="msg" role="status" aria-live="polite"></p>
+    <label for="notes">Notes for this track (optional)</label>
+    <textarea id="notes" rows="3" maxlength="4000" placeholder="What should it feel like?"></textarea>
+
+    <button type="button" id="make" class="primary wide">Make track</button>
+    <p id="make-msg" class="msg" role="status" aria-live="polite"></p>
+  </section>
+
+  <section class="card versions" aria-labelledby="ver-h">
+    <h2 id="ver-h">2. Versions</h2>
+    <p id="ver-empty" class="hint">No tracks yet. Sketch one and tap Make track.</p>
+    <ul id="versions" class="vlist"></ul>
+  </section>
+</main>
+
+<script src="/studio/studio.js"></script>
+</body>
+</html>
