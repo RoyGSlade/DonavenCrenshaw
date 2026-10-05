@@ -4,10 +4,10 @@ import { SHIP_STYLES } from '../systems/shipLivery.js';
 import { initWeeklyTicker } from './weeklyTicker.js';
 
 let initialized = false;
-export function initHangar() {
+export function initHangar({ studio = false } = {}) {
   if (initialized) return;
   initialized = true;
-  initWeeklyTicker();
+  if (!studio) initWeeklyTicker();
   document.getElementById('hangar-garage-btn')?.addEventListener('click', () => {
     window.dispatchEvent(new Event('stardust:open-garage'));
   });

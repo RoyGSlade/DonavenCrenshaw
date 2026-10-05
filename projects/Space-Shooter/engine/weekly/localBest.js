@@ -5,11 +5,14 @@
 // HUD and the weekly mode can both read it.
 import { cleanAppearance } from "../../systems/shipLivery.js";
 import { isBuild } from "../shipStats.js";
+import { studioDraft } from "../../systems/weeklyStudio.js";
 
 function storage() {
   try { return globalThis.localStorage || null; } catch { return null; }
 }
-const bestKey = (event) => `stardust.weekly.${event.id}.v${event.version}.best`;
+const bestKey = (event) => studioDraft(event)
+  ? `stardust.studio.${encodeURIComponent(studioDraft(event).draftId)}.v${event.version}.best`
+  : `stardust.weekly.${event.id}.v${event.version}.best`;
 
 /** A best to store. The ship snapshot is cleaned, and left out when there is none. */
 export function makeLocalBest({ ms, log, at = new Date().toISOString(), appearance = null, build = null }) {

@@ -7,7 +7,9 @@ import { resizeCanvas } from '../ui/graphics.js';
 import { buildLevel, pauseTimer, updateRoadmap } from './modes/roadmap.js';
 import { CUSTOM_LEVEL } from './levels.js';
 import { buildArena, updateArena } from './modes/arena.js';
-import { startWeekly, updateWeekly } from './modes/weekly.js';
+import { startWeekly, updateWeekly, abortWeeklyAttempt } from './modes/weekly.js';
+import { studioDraft } from '../systems/weeklyStudio.js';
+import { hideFailScreen } from '../ui/failScreen.js';
 import { ensureEngineRunning } from './core.js';
 import { startCountdown } from './lifecycle.js';
 import { canLaunchWeeklyMode } from '../systems/weeklyAccess.js';
@@ -47,6 +49,7 @@ export function updateCurrentMode(dt) {
 // `event` (engine/modes/weekly.js). preview (custom/weekly) is never saved.
 // ship: 'equipped' flies a weekly preview as the equipped garage build (see startWeekly).
 export function startNewRun({ kind = 'network', preview = false, event = null, ship = null } = {}) {
+  if (kind === 'weekly' && studioDraft(event)) preview = true;
   if (!canLaunchWeeklyMode({ kind, event, preview })) {
     toast('This mode is retired or awaiting release. Fly the current weekly track.');
     openStartOverlay();
@@ -86,6 +89,7 @@ export function startNewRun({ kind = 'network', preview = false, event = null, s
 }
 
 export function retryRun() {
+  abortWeeklyAttempt('retry');
   // If no run exists, simply start a new one
   if (!state.run) {
     startNewRun();
@@ -99,6 +103,9 @@ export function retryRun() {
 }
 
 export function quitRun() {
+  const playtest = !!studioDraft(state.run?.event);
+  abortWeeklyAttempt('abort');
+  if (playtest) { hideFailScreen(); closeEndOverlay(); }
   state.mode = 'roadmap';
   state.arena = null;
   state.gfx.projectiles = [];

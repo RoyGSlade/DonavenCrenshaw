@@ -10,7 +10,7 @@ const element = () => ({
   dataset: {},
   pause: noOp,
   play: () => Promise.resolve(),
-  classList: { toggle: noOp, add: noOp, remove: noOp },
+  classList: { toggle: noOp, add: noOp, remove: noOp, contains: () => false },
 });
 const canvas = element();
 globalThis.document = {
@@ -18,7 +18,7 @@ globalThis.document = {
   querySelector: () => null,
   addEventListener: noOp,
   createElement: element,
-  body: { classList: { toggle: noOp } },
+  body: { classList: { toggle: noOp, contains: () => false } },
   fullscreenElement: null,
 };
 globalThis.window = {
@@ -50,6 +50,15 @@ const { retryRun, exitArena } = await import(
   "../projects/Space-Shooter/engine/modeManager.js"
 );
 const { getMusicStatus } = await import("../projects/Space-Shooter/audio.js");
+const { startNewRun, quitRun } = await import('../projects/Space-Shooter/engine/modeManager.js');
+const { updateWeekly, currentWeeklySession } = await import('../projects/Space-Shooter/engine/modes/weekly.js');
+const { loadStudioDraft } = await import('../projects/Space-Shooter/systems/weeklyStudio.js');
+const { WEEKLY_EVENTS } = await import('../projects/Space-Shooter/tracks/weekly.js');
+const { createWeeklyLayout } = await import('../projects/Space-Shooter/engine/weekly/layout.js');
+const { flyWeeklyLap } = await import('../projects/Space-Shooter/engine/weekly/pilot.js');
+const { keysFromFrame, BIT } = await import('../projects/Space-Shooter/engine/weekly/sim.js');
+const { readLocalBest } = await import('../projects/Space-Shooter/engine/weekly/localBest.js');
+const { replayInputLog } = await import('../projects/Space-Shooter/engine/weekly/replay.js');
 function reset() {
   state.mode = "roadmap";
   state.arena = null;
@@ -104,6 +113,52 @@ test("real mode import graph, launch, pause and retry preserve intended lifecycl
   assert.equal(state.run.current.trackProgress.distance, 0);
   assert.equal(state.ui.countdownActive, true);
 });
+
+test('studio launch forces preview; wreck/retry/menu report once and retain draft selection', async () => {
+  reset();
+  const source = structuredClone(WEEKLY_EVENTS[0]); source.enabled = false;
+  const draft = await loadStudioDraft('/studio/drafts/owner.json', async () => ({ ok: true, json: async () => source }));
+  const requests = [], events = [];
+  const oldFetch = globalThis.fetch, oldDispatch = window.dispatchEvent;
+  globalThis.fetch = (url, options) => { requests.push({ url, body: JSON.parse(options.body) }); return Promise.resolve({ ok: true }); };
+  window.dispatchEvent = (e) => events.push(e);
+  try {
+    startNewRun({ kind: 'weekly', event: draft }); // Even a missing preview flag is safe.
+    assert.equal(state.run.preview, true);
+    assert.equal(currentWeeklySession().preview, true);
+    assert.equal(events.find((e) => e.type === 'stardust:weeklyAttempt').detail.preview, true);
+    state.ui.countdownActive = false;
+    state.keys.launch = true;
+    updateWeekly(1 / 120);
+    assert.equal(state.run.current.launched, true);
+    const mine = state.run.current.mines[0];
+    Object.assign(state.run.current.player, { x: mine.x, y: mine.y, vx: 0, vy: 0 });
+    updateWeekly(1 / 120);
+    assert.equal(state.run.current.dead, 'mine');
+    assert.equal(requests.length, 1);
+    assert.equal(requests[0].url, '/studio/api/runs');
+    assert.equal(requests[0].body.finished, false);
+    assert.equal(requests[0].body.reason, 'mine');
+    assert.ok(requests[0].body.ms > 0);
+    retryRun();
+    assert.equal(requests.length, 1, 'retry after wreck cannot double report');
+    assert.equal(state.run.event, draft);
+    assert.equal(state.run.preview, true);
+    retryRun();
+    assert.equal(requests.length, 2);
+    assert.equal(requests[1].body.reason, 'retry');
+    quitRun();
+    assert.equal(requests.length, 3);
+    assert.equal(requests[2].body.reason, 'abort');
+    assert.equal(state.ui.showStartOverlay, true);
+    assert.equal(state.run, null);
+    assert.equal(currentWeeklySession().event, draft, 'the next playtest launches the same loaded event');
+  } finally { globalThis.fetch = oldFetch; window.dispatchEvent = oldDispatch; }
+});
+
+// A live-loop finished-lap test was dropped: driving updateWeekly with scripted pilot frames
+// wrecks on the shipped Week 1 track too, so it tests the harness, not the playtest.
+// Finished-run payloads are covered in stardust-weekly-studio.test.mjs.
 test("fuel failure retains spent time and adds penalty instead of resetting secret timer", () => {
   reset();
   buildLevel(5);

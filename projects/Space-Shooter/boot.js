@@ -11,17 +11,19 @@ import { initFlightUi } from './ui/flightUi.js';
 import { initHangar } from './ui/hangar.js';
 import { initShareImport } from './ui/shareImport.js';
 import { initWeeklyNavigation } from './systems/weeklyNavigation.js';
+import { parseStudioQuery } from './systems/weeklyStudio.js';
 const status = document.getElementById('boot-status');
 const button = document.getElementById('starmap-start-btn');
 // ?lab=... swaps in playtest rules. Such a session never saves runs.
 const lab = parseLab(location.search);
+const studio = parseStudioQuery(location.search);
 if (lab) Object.assign(config, labConfig(lab));
 initAudioUnlock();
 let ready = false;
 try {
   await initStarmap(document.getElementById('starmap-canvas'));
   initFlightUi();
-  initHangar();
+  initHangar({ studio: studio.requested });
   status.textContent = 'FLIGHT SYSTEMS READY · Controller detection: Controls & settings → Controller';
   button.disabled = false;
   button.textContent = 'Fly five circuits →';
@@ -33,13 +35,15 @@ try {
   console.error('Stardust initialization failed', error);
 }
 // A leaderboard link (?import=ship|settings&from=<pilot>) offers that pilot's ship or settings.
-if (ready) initShareImport().catch(error => console.warn('Stardust: could not copy that setup', error));
+if (ready && !studio.requested) initShareImport().catch(error => console.warn('Stardust: could not copy that setup', error));
 // The custom track card: countdown until release, then its own one-lap run.
-try { initCustomTrackUi({ ready, lab }); } catch (error) { console.error('Stardust: custom track unavailable', error); }
+try { if (!studio.requested) initCustomTrackUi({ ready, lab }); } catch (error) { console.error('Stardust: custom track unavailable', error); }
 // The weekly time trial card: countdown to the opening, then to the close.
-try { initWeeklyUi({ ready, lab }); } catch (error) { console.error('Stardust: weekly track unavailable', error); }
-initWeeklyNavigation();
-if (lab) {
+try { await initWeeklyUi({ ready, lab }); } catch (error) { console.error('Stardust: weekly track unavailable', error); }
+if (!studio.requested) initWeeklyNavigation();
+if (studio.requested) {
+  // Draft sessions never initialize the hub, ranked saving or online ghosts.
+} else if (lab) {
   initLab(lab);
 } else {
   checkBackend().then(result => {

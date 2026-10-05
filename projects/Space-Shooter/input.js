@@ -1,6 +1,8 @@
 // src/roadmap/input.js
 import { state, config } from "./state.js";
 import { openPauseOverlay, closePauseOverlay } from "./ui/overlays.js";
+import { quitRun } from "./engine/modeManager.js";
+import { studioDraft } from "./systems/weeklyStudio.js";
 import { toggleFullscreen } from "./ui/graphics.js";
 import { getTiltAxis } from "./systems/tilt.js";
 import { createGamepadReader, gamepadMapping } from "./systems/gamepad.js";
@@ -267,7 +269,8 @@ function pollGamepad() {
   });
   reportControllerState(gamepad.getState());
   if (gp.pauseEdge && state.mode !== "arena") {
-    if (!state.ui.paused) openPauseOverlay();
+    if (studioDraft(state.run?.event)) quitRun();
+    else if (!state.ui.paused) openPauseOverlay();
     else closePauseOverlay();
   }
   if (gp.fullscreenEdge)
@@ -297,7 +300,7 @@ export function pumpInput() {
     return;
   }
   const gp = pollGamepad();
-  if (state.ui.paused) {
+  if (state.ui.paused || state.ui.showStartOverlay) {
     clearKeys(false);
     return;
   }
