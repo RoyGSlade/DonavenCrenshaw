@@ -14,7 +14,7 @@ exports.browserQa=async function({base,users,prisma,siteOrigin,call,check,guardC
   const title='Synthetic carousel review - fixture only';
   const choices=['Stardust: two-player co-op prototype','Kingdoms & Caravans: refreshed playable build','Stardust: build and share your ship'];
   async function pageFor(user,width=390,route='community/') {
-    const context=await browser.newContext({viewport:{width,height:844},hasTouch:true});contexts.push(context);
+    const context=await browser.newContext({viewport:{width,height:844},hasTouch:true,timezoneId:'America/Los_Angeles'});contexts.push(context);
     await context.route('**/*',r=>/^http:\/\/127\.0\.0\.1:\d+\//.test(r.request().url())?r.continue():r.abort());
     if(user)await context.addCookies([{name:'token',value:users[user].cookie.slice(6),url:base,httpOnly:true,sameSite:'Lax'}]);
     const page=await context.newPage();page.on('pageerror',error=>errors.push(error.message));await page.goto(siteOrigin+'/'+route);
@@ -32,6 +32,30 @@ exports.browserQa=async function({base,users,prisma,siteOrigin,call,check,guardC
       await card.getByLabel('Vote duration').selectOption('60');owner.once('dialog',dialog=>dialog.accept());await card.getByRole('button',{name:'Open this poll'}).click();await card.getByText('OPEN',{exact:true}).waitFor();
       await owner.goto(siteOrigin+'/community/');await cardFor(owner).waitFor();browserPoll=await cardFor(owner).getAttribute('data-poll-id');
       const poll=await prisma.priorityPoll.findUnique({where:{id:browserPoll}});assert.equal(poll.closesAt-poll.openedAt,3600000);
+    });
+    await check('owner-selected Pacific poll close becomes a server deadline and rejects an invalid time',async()=>{
+      await owner.goto(siteOrigin+'/community/manage/');await owner.locator('#voting-admin').waitFor({state:'visible'});
+      const customTitle='Synthetic chosen closing time - fixture only';
+      await owner.locator('#poll-title').fill(customTitle);await owner.locator('#poll-description').fill('Local-only release integration check.');
+      await owner.locator('#poll-options').fill('Fixture A\nFixture B');await owner.getByRole('button',{name:'Save private draft'}).click();
+      const card=owner.locator('#voting-admin-polls article').filter({hasText:customTitle});await card.waitFor();
+      await card.getByLabel('Vote duration').selectOption('custom');
+      const close=card.getByLabel('Close at (your local time)');await close.fill('2000-01-01T00:00');
+      await card.getByRole('button',{name:'Open this poll'}).click();
+      await card.getByText('Pick a closing time between 5 minutes and 7 days from now.',{exact:true}).waitFor();
+      const draft=await prisma.priorityPoll.findFirst({where:{title:customTitle}});assert.equal(draft.state,'DRAFT');
+      const chosen=await owner.evaluate(()=>{
+        const date=new Date(Date.now()+30*60000);date.setSeconds(0,0);
+        const pad=n=>String(n).padStart(2,'0');
+        return {text:`${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`,time:date.getTime()};
+      });
+      await close.fill(chosen.text);let prompt;
+      owner.once('dialog',dialog=>{prompt=dialog.message();return dialog.accept();});
+      await card.getByRole('button',{name:'Open this poll'}).click();await card.getByText('OPEN',{exact:true}).waitFor();
+      const poll=await prisma.priorityPoll.findUnique({where:{id:draft.id}});
+      assert.match(prompt,/Voting closes/);assert.ok(Math.abs(poll.closesAt.getTime()-chosen.time)<60000,'minute-rounded duration stays within one minute of chosen Pacific instant');
+      assert.ok(poll.closesAt>poll.openedAt);await card.screenshot({path:path.join(output,'custom-poll-close-phone.png')});
+      await call('POST',`/api/admin/polls/${poll.id}/close`,'owner',{});
     });
     const voter=await pageFor('mod');
     await check('visual proposals, keyboard and real touch swipe reach the final slide',async()=>{
