@@ -17,6 +17,7 @@ import { getSyncStatus, syncStatusText } from '../systems/hubSyncLive.js';
 import { controllerMarkup, initControllerPanel, endControllerTest } from './controllerPanel.js';
 import { controllerSnapshot, standardController } from '../systems/controllerDevices.js';
 import { readUndo, undoImportedSettings } from '../systems/shareImport.js';
+import { readRenderMode, renderModeSource, chooseRenderMode, RENDER_EVENT } from '../gfx3d/mode.js';
 
 const TABS = [['pad', 'Controller'], ['camera', 'Camera'], ['controls', 'Controls'], ['keys', 'Keys'], ['hud', 'HUD'], ['sound', 'Sound & comfort']];
 
@@ -51,6 +52,7 @@ function markup() {
       <div class="fx-pane-heading"><h3>Your view of the track</h3><p>Set how the camera follows your ship.</p></div>
       ${row('Camera', 'behind ship: the view turns with you', '<button type="button" data-fx="camera"></button>')}
       ${steppers('camera')}
+      ${row('3D view (beta)', '<span data-fx-3d-hint>same flight, drawn in 3D</span>', '<button type="button" data-fx="render3d"></button>')}
       ${row('Camera defaults', '', '<button type="button" data-fx="camera-reset">Reset</button>')}
     </div>
     <div class="fx-pane" data-pane="controls">
@@ -103,6 +105,7 @@ function paint() {
   }
   const toggle = (id, on, text) => { const b = box.querySelector(`[data-fx="${id}"]`); b.textContent = text; b.setAttribute('aria-pressed', String(on)); };
   toggle('camera', s.cameraMode === 'behind', s.cameraMode === 'behind' ? 'Behind ship' : 'Track view');
+  paint3dToggle(toggle);
   toggle('autofire', s.autoFire, s.autoFire ? 'On' : 'Off');
   toggle('map-toggle', s.minimap.show, s.minimap.show ? 'On' : 'Off');
   toggle('sticks', s.binds.sticks === 'left-turn', s.binds.sticks === 'left-turn' ? 'Left turns · right strafes' : 'Left moves · right turns');
@@ -131,6 +134,21 @@ function paint() {
   if (hint) hint.textContent = keyHint(s.binds);
   const pauseHint = document.querySelector('#starmap-pause .panel > p:not(.eyebrow):not(.fx-pane-note)');
   if (pauseHint) pauseHint.textContent = keyHint(s.binds, KEY_ACTIONS.map(([a]) => a));
+}
+
+// The 3D view (beta) switch. Rendering only: it never changes how the ship flies.
+// A ?render= link wins for the page, so the switch says so instead of lying.
+function paint3dToggle(toggle) {
+  const on = readRenderMode() === '3d';
+  toggle('render3d', on, on ? 'On' : 'Off');
+  const button = box.querySelector('[data-fx="render3d"]');
+  const hint = box.querySelector('[data-fx-3d-hint]');
+  const source = renderModeSource();
+  const status = document.documentElement.dataset.render3d;
+  button.disabled = source === 'link';
+  if (source === 'link') hint.textContent = 'set by the link you opened; remove ?render= to use this switch';
+  else if (on && status === 'failed') hint.textContent = "this device can't run it, so you're flying in 2D";
+  else hint.textContent = 'same flight, drawn in 3D. Starts in the background; falls back to 2D if it cannot run';
 }
 
 // --- Rebinding -------------------------------------------------------------------
@@ -279,6 +297,13 @@ export function buildFlightSettings({ onEditLayout, onChange }) {
       });
     }
     else if (action === 'camera') updateFlightSettings((s) => { s.cameraMode = s.cameraMode === 'behind' ? 'track' : 'behind'; });
+    else if (action === 'render3d') {
+      const next = readRenderMode() === '3d' ? '2d' : '3d';
+      const kept = chooseRenderMode(next);
+      toast(next === '3d' ? (kept ? '3D view on. Back to 2D any time here.' : '3D view on for this session only (browser storage is blocked).') : '3D view off. Back to the 2D look.', 2600);
+      paint();
+      return;
+    }
     else if (action === 'camera-reset') updateFlightSettings((s) => { s.camera = { ...CAMERA_DEFAULTS }; });
     else if (action === 'autofire') updateFlightSettings((s) => { s.autoFire = !s.autoFire; });
     else if (action === 'map-toggle') updateFlightSettings((s) => { s.minimap.show = !s.minimap.show; });
@@ -295,6 +320,7 @@ export function buildFlightSettings({ onEditLayout, onChange }) {
   new MutationObserver(() => { if (document.getElementById('starmap-settings')?.classList.contains('hidden')) endCapture(); else paint(); })
     .observe(document.getElementById('starmap-settings'), { attributes: true, attributeFilter: ['class'] });
   window.addEventListener('stardust:flightSettings', paint);
+  window.addEventListener(RENDER_EVENT, paint);
   window.addEventListener('stardust:syncStatus', paint);
   window.addEventListener('blur', endCapture);
   window.addEventListener('stardust:controller-selected', endCapture);

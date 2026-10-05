@@ -8,6 +8,7 @@
         "dev:dogfight": "node scripts/serve-stardust-dogfight.mjs",
         "build:stardust": "node scripts/build-stardust.mjs",
         "test:stardust": "node --test tests/stardust-*.test.mjs",
+        "qa:3d": "node scripts/stardust/qa-3d.mjs",
         "dev": "node scripts/dev.mjs",
         "build": "node scripts/build.mjs",
         "validate": "node scripts/validateData.js",

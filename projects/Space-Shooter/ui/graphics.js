@@ -17,7 +17,7 @@ import { drawWeeklyWorld, drawWeeklyHud } from '../gfx/weeklyVfx.js';
 import { ghostPosesNow } from '../engine/modes/weekly.js';
 import { updateFlightUi } from './flightUi.js';
 import { drawHitboxDebug } from '../gfx/hitboxDebug.js';
-import { ensure3d, render3dActive, draw3d } from '../gfx3d/index.js';
+import { readRenderMode, RENDER_EVENT } from '../gfx3d/mode.js';
 // ?debug=hitbox outlines the ship's exact body and the pickup shapes.
 const DEBUG_HITBOX = new URLSearchParams(globalThis.location?.search || '').get('debug') === 'hitbox';
 
@@ -155,6 +155,90 @@ export function drawCrashOverlay(ctx, e) {
   ctx.restore();
 }
 
+
+// ----------------------- 3D look bridge (gfx3d/) -----------------------
+// The 3D renderer is loaded on demand and only when the mode asks for it, so a
+// 2D player never downloads it and a 3D module that fails to load (blocked,
+// offline, a bad deploy) leaves the 2D game exactly as it was. Anything that
+// goes wrong switches 3D off for the rest of the page load; 2D carries on.
+const bridge3d = { mod: null, loading: false, broken: false, lost: false, canvas: null, status: '' };
+
+function setStatus3d(status) {
+  if (bridge3d.status === status) return;
+  bridge3d.status = status;
+  try { document.documentElement.dataset.render3d = status; window.dispatchEvent(new CustomEvent(RENDER_EVENT, { detail: { status } })); } catch { /* no DOM */ }
+}
+
+function breakBridge3d(why) {
+  if (bridge3d.broken) return;
+  bridge3d.broken = true;
+  console.warn('[3d] falling back to 2D:', why);
+  try { bridge3d.mod?.teardown?.(); } catch { /* best effort */ }
+  bridge3d.canvas?.remove?.();
+  bridge3d.canvas = null;
+  setStatus3d('failed');
+}
+
+// Ask for a throwaway WebGL context before downloading ~2 MB of renderer: no WebGL
+// (old GPU, blocked, remote desktop) means 2D straight away and a quiet console.
+function webglAvailable() {
+  try {
+    const probe = document.createElement('canvas');
+    const gl = probe.getContext('webgl2') || probe.getContext('webgl');
+    if (!gl) return false;
+    gl.getExtension('WEBGL_lose_context')?.loseContext();
+    return true;
+  } catch { return false; }
+}
+
+function load3d() {
+  if (bridge3d.mod || bridge3d.loading || bridge3d.broken) return;
+  if (!webglAvailable()) return breakBridge3d('WebGL is not available on this device');
+  bridge3d.loading = true;
+  import('../gfx3d/index.js')
+    .then((mod) => { bridge3d.mod = mod; })
+    .catch((error) => breakBridge3d(error?.message || error))
+    .finally(() => { bridge3d.loading = false; });
+}
+
+// The WebGL canvas sits under the 2D one. Lost GPU context (driver reset, too
+// many contexts, laptop GPU switch) means a frozen frame, so go back to 2D.
+function watch3dCanvas() {
+  const canvas = document.getElementById('starmap-canvas-3d');
+  if (!canvas || canvas === bridge3d.canvas) return canvas;
+  bridge3d.canvas = canvas;
+  canvas.addEventListener('webglcontextlost', (event) => { event.preventDefault(); breakBridge3d('WebGL context lost'); });
+  return canvas;
+}
+
+/** True when this frame is drawn by the 3D renderer. Starts it in the background when wanted. */
+function frame3d(lv, drawArgs) {
+  const wanted = readRenderMode() === '3d' && !bridge3d.broken;
+  if (!wanted) {
+    // Switched back to 2D (or never asked): free the GPU side and hide whatever is left.
+    try { bridge3d.mod?.teardown?.(); } catch { /* best effort */ }
+    const canvas = document.getElementById('starmap-canvas-3d');
+    if (canvas && canvas.style.display !== 'none') canvas.style.display = 'none';
+    bridge3d.canvas = null;
+    setStatus3d(bridge3d.broken ? 'failed' : 'off');
+    return false;
+  }
+  load3d();
+  const mod = bridge3d.mod;
+  if (!mod) return false;
+  try { mod.ensure3d(); } catch (error) { breakBridge3d(error?.message || error); return false; }
+  const canvas = watch3dCanvas();
+  const status = mod.render3dStatus?.();
+  if (status?.failed) { breakBridge3d('renderer failed to start'); return false; }
+  const active = !!canvas && mod.render3dActive(lv);
+  // Not racing (menus, other modes), or nothing to draw yet: hide it and stop rendering.
+  if (canvas) { const show = active ? '' : 'none'; if (canvas.style.display !== show) canvas.style.display = show; }
+  setStatus3d(active ? 'active' : 'idle');
+  if (!active) return false;
+  Promise.resolve(mod.draw3d({ lv, ...drawArgs() })).catch((error) => breakBridge3d(error?.message || error));
+  return true;
+}
+
 // ----------------------------- Render --------------------------------
 export function render() {
   // Only resize when DPR or element size actually changes
@@ -187,10 +271,8 @@ export function render() {
   // 3D look (gfx3d/): a WebGL canvas underneath draws the weekly world; this
   // canvas stays transparent there and keeps only the HUD and overlays.
   const lv3d = mode === 'roadmap' ? state.run?.current : null;
-  ensure3d();
-  const in3d = render3dActive(lv3d);
-  if (in3d) draw3d({ lv: lv3d, pose: lv3d.viewPlayer || lv3d.player, keys: state.keys, cam2d: state.gfx.camera, ghosts: ghostPosesNow(), time: state.gfx.visualTime || 0, dt, width: W, height: H });
-  else ctx.drawImage(bufferCanvas, 0, 0);
+  const in3d = frame3d(lv3d, () => ({ pose: lv3d.viewPlayer || lv3d.player, keys: state.keys, cam2d: state.gfx.camera, ghosts: ghostPosesNow(), time: state.gfx.visualTime || 0, dt, width: W, height: H }));
+  if (!in3d) ctx.drawImage(bufferCanvas, 0, 0);
 
   // Optional starfield
   if (config.STARFIELD?.ENABLED && !in3d) {
