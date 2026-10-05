@@ -173,7 +173,7 @@ export async function openStartOverlay() {
   state.ui.paused = true;
   setTouchControls(false);
   hide('flight-briefing'); hide('flight-controls'); hide('mission-tracker');
-  el('starmap-start-btn')?.focus({ preventScroll: true });
+  el(document.body.classList.contains?.('studio-playtest') ? 'weekly-btn' : 'starmap-start-btn')?.focus({ preventScroll: true });
   const discoveries = readDiscoveries();
   const remembered = discoveries['Stardust Remembers'];
   if (el('local-discoveries')) el('local-discoveries').textContent = remembered ? '✦ Stardust Remembers — discovered on this browser.' : '';

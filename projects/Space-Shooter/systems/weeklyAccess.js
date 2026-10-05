@@ -1,4 +1,5 @@
 import { WEEK2_DRAFT, WEEKLY_ROLLOUT } from '../tracks/weeklyRollout.js';
+import { studioDraft } from './weeklyStudio.js';
 
 /** Pure, injectable release gate. History remains readable; only new play is gated. */
 export function weeklyAccess(board, now = Date.now(), rollout = WEEKLY_ROLLOUT) {
@@ -12,6 +13,7 @@ export function weeklyAccess(board, now = Date.now(), rollout = WEEKLY_ROLLOUT) 
 }
 
 export function canLaunchWeeklyMode({ kind = 'network', event = null, preview = false } = {}, now = Date.now()) {
+  if (kind === 'weekly' && preview && studioDraft(event)) return true;
   const board = kind === 'weekly' ? event?.id : kind === 'custom' ? 'custom-track' : kind === 'network' ? 'full' : kind;
   if (weeklyAccess(board, now) !== 'open') return false;
   if (kind !== 'weekly') return true;

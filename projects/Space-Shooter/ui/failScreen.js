@@ -41,13 +41,14 @@ function build() {
 export const isFailOpen = () => !!el && !el.classList.contains('hidden');
 
 /** Show the screen. onRetry / onHangar are called once, after it closes. */
-export function showFailScreen({ cause, ms, shards, total, eventTitle }, { onRetry, onHangar }) {
+export function showFailScreen({ cause, ms, shards, total, eventTitle, playtest = false }, { onRetry, onHangar }) {
   if (!el) build();
   const [title, why] = CAUSES[cause] || ['SHIP LOST', ''];
   el.querySelector('#fx-fail-title').textContent = title;
   el.querySelector('.fx-fail-why').textContent = why;
   el.querySelector('.fx-fail-stats').textContent = `${eventTitle ? `${eventTitle} · ` : ''}${clock(ms)} into the attempt · ${shards}/${total} shards`;
   setFailBoard(null, '');
+  el.querySelector('[data-fail="hangar"]').textContent = playtest ? 'Playtest start' : 'Return to hangar';
   const close = (next) => () => { hideFailScreen(); handlers = null; next?.(); };
   handlers = { retry: close(onRetry), hangar: close(onHangar) };
   el.classList.remove('hidden');

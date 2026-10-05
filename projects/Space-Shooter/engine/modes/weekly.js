@@ -29,6 +29,7 @@ import { spawnExhaust, updateParticles } from "../systems/particles.js";
 import { playMusic, playSoundEffectThrottled } from "../../audio.js";
 import { showFailScreen } from "../../ui/failScreen.js";
 import { quitRun } from "../modeManager.js";
+import { studioDraft, studioLabel, postStudioRun } from "../../systems/weeklyStudio.js";
 
 const STEP = WEEKLY_RULES.STEP;
 const RETRY_COUNTDOWN = 1.5;
@@ -73,6 +74,7 @@ export function currentWeeklySession() {
 // the same as ?preview=weekly&ship= in the address bar; it only applies to
 // previews, so a ranked attempt can never fly it.
 export function startWeekly(event, { preview = false, ship = null } = {}) {
+  if (studioDraft(event)) preview = true;
   if (session?.event !== event) {
     ghosts.clear();
     session = { event, layout: createWeeklyLayout(event), preview, attempts: 0, frames: [] };
@@ -115,6 +117,7 @@ function buildAttempt() {
   state.run.current = scene;
   state.run.totalActiveMs = 0;
   session.frames = [];
+  session.reported = false;
   session.attempts += 1;
   // What this attempt is flown in, fixed now: a ship changed mid-attempt changes nothing.
   session.build = ship || null;
@@ -127,6 +130,13 @@ function buildAttempt() {
 function restartAttempt() {
   buildAttempt();
   startCountdown(RETRY_COUNTDOWN, state.run.current);
+}
+
+/** Wrecks, retries and menu exits report once per attempt, before replacing it. */
+export function abortWeeklyAttempt(reason = 'abort') {
+  if (!session || !studioDraft(session.event) || session.reported || state.run?.current?.weekly !== session.event) return;
+  session.reported = true;
+  postStudioRun(session.event, { finished: false, ms: sceneMs(state.run.current), reason });
 }
 
 
@@ -183,7 +193,7 @@ export function updateWeekly(dt) {
     if (lv.wreck.t >= WRECK_SECONDS && !lv.wreck.shown) {
       lv.wreck.shown = true;
       showFailScreen(
-        { cause: lv.wreck.cause, ms: sceneMs(lv), shards: lv.shards.size, total: lv.shardList.length, eventTitle: `Week ${session.event.week} · ${session.event.title}` },
+        { cause: lv.wreck.cause, ms: sceneMs(lv), shards: lv.shards.size, total: lv.shardList.length, eventTitle: studioDraft(session.event) ? studioLabel(session.event) : `Week ${session.event.week} · ${session.event.title}`, playtest: !!studioDraft(session.event) },
         { onRetry: () => restartAttempt(), onHangar: () => quitRun() },
       );
     }
@@ -215,6 +225,7 @@ export function updateWeekly(dt) {
     for (const e of events) react(lv, e);
     if (lv.finished) { finish(lv); return; }
     if (lv.dead) {
+      abortWeeklyAttempt(lv.dead);
       lv.wreck = { x: lv.player.x, y: lv.player.y, t: 0, cause: lv.dead };
       state.ui.screenshake = 0.45;
       return;
@@ -264,14 +275,16 @@ function finish(lv) {
   const previous = readLocalBest(event);
   // A practice flight in a garage build (preview + build) is not a time on the
   // standard ship, so it never replaces this browser's best or its ghost.
-  const practice = preview && !!lv.ship;
+  const practice = preview && !!lv.ship && !studioDraft(event);
   const personalBest = !practice && (!previous || ms < previous.ms);
   const { build, appearance } = session;
   if (personalBest) {
     saveLocalBest(event, makeLocalBest({ ms, log: inputLog, appearance, build }));
     setWeeklyGhost("best", { log: inputLog, label: `Your best ${formatMs(ms)}`, color: "#9fe8ff", layout, appearance, build });
   }
-  const title = `Week ${event.week} · ${event.title}`;
+  const title = studioDraft(event) ? studioLabel(event) : `Week ${event.week} · ${event.title}`;
+  session.reported = true;
+  postStudioRun(event, { finished: true, ms, log: inputLog, build });
   toast(`${title}: ${formatMs(ms)}${personalBest && previous ? " — new personal best!" : ""}`, 3500);
   if (document.fullscreenElement) { try { document.exitFullscreen().catch(() => {}); } catch { /* ignore */ } }
   stopEngine();
