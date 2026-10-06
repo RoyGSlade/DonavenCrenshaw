@@ -2,15 +2,22 @@
  * Track skins for the racing lane. Visual only: reads the track, never writes it.
  *
  *   midnight (default, weekly lanes): dark brushed gunmetal deck plates, etched
- *     seams, rivets and service hatches, faint rain streaks, and a dashed cyan
- *     neon strip on each rail throwing a soft underglow onto the space around.
+ *     seams, rivets and service hatches, and a dashed cyan neon strip on each
+ *     rail throwing a soft underglow onto the space around.
  *   classic (?skin=classic, and every non-weekly circuit): the original ribbon.
  *
- * The midnight lane is static per track, so it is painted once per track and
+ * The midnight deck is static per track, so it is painted once per track and
  * zoom bucket into 516 px chunks (512 + a 2 px apron), only for chunks the lane
- * touches, built as the camera reaches them and kept in a small LRU cache. Each
- * frame only blits the visible chunks (plus a slow sheen on capable devices
- * unless reduced motion is on).
+ * touches, built as the camera reaches them and kept in a small LRU cache. No
+ * rain or anything else that should move is baked into the chunks.
+ *
+ * Each frame blits the visible chunks, then animates on top (all of it off
+ * under reduced motion, lighter on the low tier):
+ *   - neon flow: a pulse travelling along each on-screen rail in the race
+ *     direction (an animated lineDashOffset, a few strokes);
+ *   - rain: a pooled screen-space layer of short faint diagonal streaks that
+ *     fall and drift against the camera's motion (two strokes);
+ *   - sheen: a slow specular shimmer, high tier only (one stroke).
  */
 
 export const SKINS = Object.freeze(['midnight', 'classic']);
@@ -27,8 +34,17 @@ export const SKIN_CACHE = Object.freeze({
 
 // low: phones and small-memory devices. high: everything else.
 export const SKIN_TIERS = Object.freeze({
-  low: Object.freeze({ maxDensity: 64, maxChunks: 28, sheen: false }),
-  high: Object.freeze({ maxDensity: 96, maxChunks: 48, sheen: true }),
+  low: Object.freeze({ maxDensity: 64, maxChunks: 28, sheen: false, rain: 40, flowLayers: 1 }),
+  high: Object.freeze({ maxDensity: 96, maxChunks: 48, sheen: true, rain: 90, flowLayers: 2 }),
+});
+
+export const SKIN_ANIM = Object.freeze({
+  RAIN_MAX: 90,           // pool capacity: the biggest tier's drop count
+  RAIN_TILT: 0.32,        // radians off vertical the streaks lean and fall
+  FLOW_SPEED: 6,          // cells per second along the rails, the race direction
+  FLOW_PULSE: 1.6,        // cells lit per pulse
+  FLOW_GAP: 9,            // cells dark between pulses
+  RAIL_V: 0.035,          // centre of the neon strip, cells beyond the deck edge
 });
 
 const NEON = '#3DF2FF';
@@ -147,7 +163,7 @@ function hash(...ints) {
 }
 
 const mix = (a, b, t) => Math.round(a + (b - a) * t);
-function plateTone(t) { return `rgb(${mix(0x2a, 0x4a, t)},${mix(0x2f, 0x52, t)},${mix(0x35, 0x5b, t)})`; }
+function plateTone(t) { return `rgb(${mix(0x23, 0x46, t)},${mix(0x28, 0x4e, t)},${mix(0x2e, 0x57, t)})`; }
 
 // Plates, seams and fittings for every segment, in the segment's own frame
 // (u along the lane, v across), clipped to its share of each corner (the
@@ -186,7 +202,8 @@ function deckPlan(track) {
         const len = 2.4 + hash(i, row, k, 4) * 3.6;
         plates.push({
           u0: u, v0: edges[row], u1: u + len, v1: edges[row + 1],
-          tone: 0.12 + hash(i, row, k, 5) * 0.55,
+          tone: 0.04 + hash(i, row, k, 5) ** 1.4 * 0.62,
+          glint: hash(i, row, k, 15) > 0.45 ? 0.04 + hash(i, row, k, 16) * 0.1 : 0,
           rivets: hash(i, row, k, 6) > 0.3,
           hatch: hash(i, row, k, 7) > 0.62 && len > 3 ? { at: 0.2 + hash(i, row, k, 8) * 0.45, long: hash(i, row, k, 9) > 0.5 } : null,
           tex: [hash(i, row, k, 10) * 200, hash(i, row, k, 11) * 100],
@@ -195,7 +212,7 @@ function deckPlan(track) {
       }
     }
     const bands = [];
-    for (let u = uLo + hash(i, 12) * 10; u < uHi; u += 11 + hash(i, u | 0, 13) * 9) bands.push({ u, a: 0.04 + hash(i, u | 0, 14) * 0.05 });
+    for (let u = uLo + hash(i, 12) * 10; u < uHi; u += 11 + hash(i, u | 0, 13) * 9) bands.push({ u, a: 0.03 + hash(i, u | 0, 14) * 0.08 });
     return { x: s.x, y: s.y, angle: Math.atan2(sin, cos), poly, R, uLo, uHi, bbox, plates, bands };
   });
   plans.set(track, plan);
@@ -232,6 +249,14 @@ function paintSegment(g, seg, pattern) {
       g.save(); g.translate(p.u0, p.v0); g.scale(1 / BRUSH_TEXELS, 1 / BRUSH_TEXELS); g.translate(-p.tex[0], -p.tex[1]);
       g.fillStyle = pattern; g.fillRect(p.tex[0], p.tex[1], du * BRUSH_TEXELS, dv * BRUSH_TEXELS);
       g.restore();
+    }
+    // Some plates catch the light: a soft diagonal highlight across them.
+    if (p.glint) {
+      const grad = g.createLinearGradient(p.u0, p.v0, p.u1, p.v1);
+      grad.addColorStop(0, 'rgba(215,228,240,0)');
+      grad.addColorStop(0.55, `rgba(215,228,240,${p.glint})`);
+      grad.addColorStop(1, 'rgba(215,228,240,0)');
+      g.fillStyle = grad; g.fillRect(p.u0, p.v0, du, dv);
     }
   }
   // Diagonal specular sheen across the plates.
@@ -281,25 +306,6 @@ function paintSegment(g, seg, pattern) {
   g.restore();
 }
 
-// Wet midnight: faint short diagonal streaks, fixed in the world.
-const RAIN = { dx: Math.cos(1.2), dy: Math.sin(1.2) };
-function paintRain(g, x0, y0, x1, y1) {
-  g.lineWidth = 0.018; g.lineCap = 'round';
-  for (const [alpha, bucket] of [[0.07, 0], [0.11, 1], [0.16, 2]]) {
-    g.strokeStyle = `rgba(205,225,240,${alpha})`;
-    g.beginPath();
-    for (let gy = Math.floor(y0) - 1; gy <= y1; gy++) for (let gx = Math.floor(x0) - 1; gx <= x1; gx++) {
-      for (let k = 0; k < 2; k++) {
-        const h = hash(gx, gy, k, 31);
-        if (h > 0.55 || Math.floor(hash(gx, gy, k, 32) * 3) !== bucket) continue;
-        const x = gx + hash(gx, gy, k, 33), y = gy + hash(gx, gy, k, 34), len = 0.16 + hash(gx, gy, k, 35) * 0.3;
-        g.moveTo(x, y); g.lineTo(x + RAIN.dx * len, y + RAIN.dy * len);
-      }
-    }
-    g.stroke();
-  }
-}
-
 function strokeLane(g, track, width, color, dash = null) {
   g.lineWidth = width; g.strokeStyle = color;
   g.setLineDash(dash || []);
@@ -329,7 +335,6 @@ function buildChunk(track, cx, cy, density, chunkWorld) {
     if (b.maxX < rx0 || b.minX > rx1 || b.maxY < ry0 || b.minY > ry1) continue;
     paintSegment(g, seg, pattern);
   }
-  paintRain(g, rx0, ry0, rx1, ry1);
   // Keep only the lane.
   g.globalCompositeOperation = 'destination-in';
   strokeLane(g, track, w, '#000');
@@ -498,15 +503,193 @@ export function drawMidnightLane(ctx, track, unit, { time = 0, reducedMotion = f
     if (chunks.size <= max) break;
     chunks.delete(key); dropChunk(canvas); cache.evicted++;
   }
-  if (tier().sheen && !reducedMotion) drawSheen(ctx, track, unit, view, time);
+  // Everything that moves sits on top of the cached deck. Reduced motion: none of it.
+  frame.flowStrokes = 0; frame.rainStrokes = 0; frame.rainDrops = 0; frame.sheenStrokes = 0;
+  if (reducedMotion) { rain.last = -1; rain.anchored = false; return; }
+  const t = tier();
+  frame.flowStrokes = drawRailFlow(ctx, track, unit, view, time, t.flowLayers);
+  if (t.sheen) { drawSheen(ctx, track, unit, view, time); frame.sheenStrokes = 1; }
+  drawRain(ctx, track, unit, m, W, H, view, time, t.rain);
 }
 
-// A slow wet shimmer sliding across the deck: one gradient stroke per frame.
+// What the last frame's animation drew, for tests and the report.
+const frame = { flowStrokes: 0, rainStrokes: 0, rainDrops: 0, sheenStrokes: 0 };
+
+// ------------------------------ neon flow ----------------------------------
+
+// The dash array is reused every frame (setLineDash copies it).
+const flowDash = [0, 0];
+
+function inView(b, view, margin) {
+  return !(b.maxX < view.minX - margin || b.minX > view.maxX + margin || b.maxY < view.minY - margin || b.minY > view.maxY + margin);
+}
+
+// One segment's share of a rail at signed offset v (cells, + is the segment's
+// left normal), in race order. The inner side of a corner stops at the
+// bisector, the outer side rounds it like the lane's round join, so a run of
+// segments is one continuous subpath and the dash flows through corners.
+function appendRail(ctx, segs, plan, i, v, unit, first) {
+  const s = segs[i], p = plan[i], k = Math.abs(v) / p.R;
+  const startCut = (v < 0 ? p.poly[0][0] : p.poly[3][0]) * k;
+  const endCut = ((v < 0 ? p.poly[1][0] : p.poly[2][0]) - s.length) * k;
+  const u0 = startCut > 0 ? startCut : 0;
+  const u1 = endCut < 0 ? s.length + endCut : s.length;
+  const nx = -s.ty * v, ny = s.tx * v;
+  const x0 = (s.x + s.tx * u0 + nx) * unit, y0 = (s.y + s.ty * u0 + ny) * unit;
+  if (first) ctx.moveTo(x0, y0); else ctx.lineTo(x0, y0);
+  ctx.lineTo((s.x + s.tx * u1 + nx) * unit, (s.y + s.ty * u1 + ny) * unit);
+  if (endCut > 0) {
+    const next = segs[(i + 1) % segs.length], side = Math.sign(v);
+    const a0 = Math.atan2(s.tx * side, -s.ty * side);
+    let turn = Math.atan2(next.tx * side, -next.ty * side) - a0;
+    if (turn > Math.PI) turn -= Math.PI * 2; else if (turn <= -Math.PI) turn += Math.PI * 2;
+    ctx.arc((s.x + s.dx) * unit, (s.y + s.dy) * unit, Math.abs(v) * unit, a0, a0 + turn, turn < 0);
+  }
+}
+
+/**
+ * Pulses travelling along both rails in the race direction: only the runs of
+ * on-screen segments are traced, and the dash offset is set from each run's
+ * distance along the lap so pulses line up and move at FLOW_SPEED.
+ * Returns the number of strokes.
+ */
+function drawRailFlow(ctx, track, unit, view, time, layers) {
+  const segs = track.segments, n = segs?.length;
+  if (!n || !layers) return 0;
+  const plan = deckPlan(track), A = SKIN_ANIM;
+  const v = track.width / 2 + A.RAIL_V, period = A.FLOW_PULSE + A.FLOW_GAP;
+  flowDash[0] = A.FLOW_PULSE * unit; flowDash[1] = A.FLOW_GAP * unit;
+  let strokes = 0;
+  ctx.save();
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  ctx.setLineDash(flowDash);
+  for (let side = -1; side <= 1; side += 2) {
+    let i = 0;
+    while (i < n) {
+      if (!inView(plan[i].bbox, view, 0.5)) { i++; continue; }
+      const runStart = segs[i].start;
+      ctx.beginPath();
+      for (let first = true; i < n && inView(plan[i].bbox, view, 0.5); i++, first = false) appendRail(ctx, segs, plan, i, side * v, unit, first);
+      const phase = ((runStart - time * A.FLOW_SPEED) % period + period) % period;
+      ctx.lineDashOffset = phase * unit;
+      if (layers > 1) { // a soft halo first, high tier only
+        ctx.strokeStyle = 'rgba(61,242,255,.22)'; ctx.lineWidth = 0.2 * unit; ctx.stroke(); strokes++;
+      }
+      ctx.strokeStyle = 'rgba(220,254,255,.85)'; ctx.lineWidth = 0.06 * unit; ctx.stroke(); strokes++;
+    }
+  }
+  ctx.restore();
+  return strokes;
+}
+
+// -------------------------------- rain -------------------------------------
+
+// One pool for the life of the page, sized for the biggest tier. Per drop:
+// x, y (device px), depth (0.35..1: nearer drops are longer, faster and
+// drift more), length (px), lit (1 over a rail's glow).
+const RAIN_STRIDE = 5;
+const rain = { pool: null, allocs: 0, count: 0, W: 0, H: 0, last: -1, anchored: false, ax: 0, ay: 0 };
+// Segments near the view this frame, reused (it only grows to the visible count).
+const nearSegs = [];
+
+function seedRain(count, W, H) {
+  if (!rain.pool) { rain.pool = new Float32Array(SKIN_ANIM.RAIN_MAX * RAIN_STRIDE); rain.allocs++; }
+  const P = rain.pool;
+  for (let k = 0; k < count; k++) {
+    const o = k * RAIN_STRIDE, z = 0.35 + hash(k, 41) * 0.65;
+    P[o] = hash(k, 42) * W; P[o + 1] = hash(k, 43) * H; P[o + 2] = z;
+    P[o + 3] = H * (0.012 + 0.016 * z) * (0.7 + hash(k, 44) * 0.6); P[o + 4] = 0;
+  }
+  rain.count = count; rain.W = W; rain.H = H;
+}
+
+/**
+ * Falling rain in screen space, drawn over the deck and under everything
+ * else. Drops move with the world's on-screen motion scaled by depth
+ * (parallax against the ship), fall along the tilt, wrap at the edges, and
+ * read a little brighter where they cross a rail's glow. Two strokes.
+ */
+function drawRain(ctx, track, unit, m, W, H, view, time, count) {
+  count = Math.min(count | 0, SKIN_ANIM.RAIN_MAX);
+  if (count <= 0) return;
+  if (!rain.pool || rain.count !== count || rain.W !== W || rain.H !== H) { seedRain(count, W, H); rain.anchored = false; }
+  const dt = rain.last >= 0 && time >= rain.last ? Math.min(time - rain.last, 0.1) : 0;
+  rain.last = time;
+  const det = m.a * m.d - m.b * m.c;
+  if (!det) return;
+  // How far the world moved on screen since last frame, at the view centre.
+  const cx = W / 2, cy = H / 2;
+  let shiftX = 0, shiftY = 0;
+  if (rain.anchored) {
+    shiftX = (m.a * rain.ax + m.c * rain.ay) * unit + m.e - cx;
+    shiftY = (m.b * rain.ax + m.d * rain.ay) * unit + m.f - cy;
+    if (shiftX * shiftX + shiftY * shiftY > W * W * 0.04) shiftX = shiftY = 0; // a cut or respawn, not motion
+  }
+  rain.ax = (m.d * (cx - m.e) - m.c * (cy - m.f)) / det / unit;
+  rain.ay = (-m.b * (cx - m.e) + m.a * (cy - m.f)) / det / unit;
+  rain.anchored = true;
+  // Rail glow band, as distance from the lane centre line (cells).
+  const half = track.width / 2, glowIn = half - 0.25, glowOut = half + SKIN_CACHE.GLOW;
+  nearSegs.length = 0;
+  for (let j = 0; j < track.segments.length; j++) {
+    const s = track.segments[j], x1 = s.x + s.dx, y1 = s.y + s.dy;
+    if (Math.max(s.x, x1) + glowOut < view.minX || Math.min(s.x, x1) - glowOut > view.maxX
+      || Math.max(s.y, y1) + glowOut < view.minY || Math.min(s.y, y1) - glowOut > view.maxY) continue;
+    nearSegs.push(s);
+  }
+  const P = rain.pool, tilt = SKIN_ANIM.RAIN_TILT, dirX = Math.sin(tilt), dirY = Math.cos(tilt);
+  const fall = H * 0.9, padX = W * 0.05, padY = H * 0.05, spanX = W + padX * 2, spanY = H + padY * 2;
+  ctx.save();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.lineCap = 'round';
+  ctx.lineWidth = Math.max(1, H / 900);
+  // Pass 1: move every drop, mark the ones over the glow, trace the rest.
+  ctx.beginPath();
+  let lit = 0;
+  for (let k = 0; k < count; k++) {
+    const o = k * RAIN_STRIDE, z = P[o + 2], speed = fall * (0.8 + z);
+    let x = P[o] + shiftX * (0.4 + 0.8 * z) + dirX * speed * dt;
+    let y = P[o + 1] + shiftY * (0.4 + 0.8 * z) + dirY * speed * dt;
+    x = ((x + padX) % spanX + spanX) % spanX - padX;
+    y = ((y + padY) % spanY + spanY) % spanY - padY;
+    P[o] = x; P[o + 1] = y;
+    // Where the drop sits on the deck: is it inside a rail's glow band?
+    const wx = (m.d * (x - m.e) - m.c * (y - m.f)) / det / unit, wy = (-m.b * (x - m.e) + m.a * (y - m.f)) / det / unit;
+    let near = Infinity;
+    for (let j = 0; j < nearSegs.length; j++) { const d = segmentDistance(nearSegs[j], wx, wy); if (d < near) near = d; }
+    const glow = near > glowIn && near < glowOut;
+    P[o + 4] = glow ? 1 : 0;
+    if (glow) { lit++; continue; }
+    const len = P[o + 3];
+    ctx.moveTo(x, y); ctx.lineTo(x + dirX * len, y + dirY * len);
+  }
+  ctx.strokeStyle = 'rgba(200,220,236,.13)'; ctx.stroke();
+  // Pass 2: the drops catching the neon.
+  if (lit) {
+    ctx.beginPath();
+    for (let k = 0; k < count; k++) {
+      const o = k * RAIN_STRIDE;
+      if (!P[o + 4]) continue;
+      const x = P[o], y = P[o + 1], len = P[o + 3];
+      ctx.moveTo(x, y); ctx.lineTo(x + dirX * len, y + dirY * len);
+    }
+    ctx.strokeStyle = 'rgba(150,248,255,.3)'; ctx.stroke();
+  }
+  ctx.restore();
+  frame.rainStrokes = lit ? 2 : 1; frame.rainDrops = count;
+}
+
+/** Animation numbers for tests and the report: last frame's draws and the rain pool. */
+export function skinAnimStats() {
+  return { ...frame, rainPool: rain.pool, rainAllocs: rain.allocs, rainCount: rain.count, rainCapacity: rain.pool ? rain.pool.length / RAIN_STRIDE : 0 };
+}
+
+// A very slow specular shimmer drifting across the deck: one gradient stroke per frame.
 function drawSheen(ctx, track, unit, view, time) {
   const cx = (view.minX + view.maxX) / 2, cy = (view.minY + view.maxY) / 2;
   const span = Math.max(view.maxX - view.minX, view.maxY - view.minY);
   const d = { x: Math.cos(0.7), y: Math.sin(0.7) };
-  const shift = ((time * 0.35) % 1 + 1) % 1;
+  const shift = ((time * 0.03) % 1 + 1) % 1; // a band's width every ~33 s
   const g = ctx.createLinearGradient((cx - d.x * span) * unit, (cy - d.y * span) * unit, (cx + d.x * span) * unit, (cy + d.y * span) * unit);
   const bands = 4;
   for (let i = 0; i <= bands; i++) {
