@@ -20,6 +20,7 @@ import { makeFlowTexture, makeGlowTexture, makeDotTexture, makeHaloTexture, make
 import { mineGeometry, asteroidGeometry, shardGeometry, beamGeometry, dashedRingGeometry, flatDiscGeometry, skyGeometry } from './world/props.js';
 import { buildGate, buildDock, buildSentry, GATE_COLORS } from './world/structures.js';
 import { propFrom, fitProp } from './world/glb.js';
+import { barricadePlacements, buildBarricades } from './world/barricades.js';
 import { Registry } from './world/registry.js';
 
 const SHARD_COLORS = { blue: '#73d9ff', green: '#99e9b2', pink: '#ffa4ca', purple: '#bca5ff' };
@@ -85,6 +86,10 @@ export function createWorld(THREE, layout, assets = {}) {
   const railGlow = new THREE.Mesh(geometryFrom(rails.glow, { color: 4 }), railGlowMat);
   railGlow.renderOrder = 3; railGlow.name = 'rail-glow';
   lane.add(railBody, railGlow);
+  // Barricades along the outside of the rails, when the model is present (decoration only).
+  const barricadeProp = propFrom(assets, 'barricade');
+  const barricades = buildBarricades(THREE, barricadeProp, barricadeProp ? barricadePlacements(rails.runs) : []);
+  lane.add(barricades.group);
 
   // Corner chevrons on tight corners.
   const corners = detectCorners(track.points);
@@ -391,12 +396,13 @@ export function createWorld(THREE, layout, assets = {}) {
   }
 
   function dispose() {
+    barricades.dispose();
     restoreScene();
     group.parent?.remove(group);
     group.clear();
     return R.disposeAll();
   }
 
-  const stats = { corners: corners.length, railLength: rails.railLength, railRuns: rails.runs.length, shards: shards.length, mines: mines.length, bouncers: bouncers.length, sentries: sentries.length, docks: docks.length, customProps: ['fuelStation', 'fuelDock', 'mine', 'asteroid', 'shard', 'sentry'].filter((k) => propFrom(assets, k)) };
+  const stats = { corners: corners.length, railLength: rails.railLength, railRuns: rails.runs.length, shards: shards.length, mines: mines.length, bouncers: bouncers.length, sentries: sentries.length, docks: docks.length, customProps: ['fuelStation', 'fuelDock', 'mine', 'asteroid', 'shard', 'sentry', 'barricade'].filter((k) => propFrom(assets, k)), barricades: barricades.count };
   return { group, update, dispose, stats };
 }

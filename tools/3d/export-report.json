@@ -1,106 +1,7 @@
 {
   "blender": "5.2.1 LTS",
-  "generated": "2026-10-05T17:13:51",
+  "generated": "2026-10-05T17:23:35",
   "models": [
-    {
-      "name": "courier",
-      "kind": "ship",
-      "source": "stardust-ship-families-20260930/approved-families-v3.blend",
-      "sourceSha256": "bb8e81f13712539fcb9d315d3b8c95808b854405764f7ebfa65632b041aec925",
-      "sourceBytes": 50121050,
-      "sourceTriangles": 166101,
-      "sourceObjects": [
-        "Stardust_body-courier",
-        "Stardust_cockpit-courier",
-        "Stardust_engines-courier",
-        "Stardust_wings-courier"
-      ],
-      "postProcess": "gltf-transform quantize (KHR_mesh_quantization)",
-      "note": "Garage Courier default build (courier:0-0-0-0). The only 3D model of the standard ship.",
-      "orientation": "pre-rotation [0, 0, 0] deg (Blender XYZ) so the nose points +Y, then -90 deg about Z so the nose points +X",
-      "hull": "courier",
-      "fit": null,
-      "pivot": "center",
-      "scaleApplied": 0.1288128081984555,
-      "footprint": {
-        "length": 0.7966402471065521,
-        "width": 0.9016017317771912,
-        "height": 0.10237771272659302,
-        "min": [
-          -0.4138201177120209,
-          -0.05118885636329651,
-          -0.4508008658885956
-        ],
-        "max": [
-          0.38282012939453125,
-          0.05118885636329651,
-          0.4508008658885956
-        ],
-        "radius": 0.5160999954668095
-      },
-      "triangles": 29997,
-      "textures": {
-        "Image_0.001": [
-          1024,
-          1024
-        ],
-        "Image_1.001": [
-          1024,
-          1024
-        ],
-        "Image_0.006": [
-          1024,
-          1024
-        ],
-        "Image_1.006": [
-          1024,
-          1024
-        ],
-        "Image_0.009": [
-          1024,
-          1024
-        ],
-        "Image_1.009": [
-          1024,
-          1024
-        ],
-        "Image_0.002": [
-          1024,
-          1024
-        ],
-        "Image_1.002": [
-          1024,
-          1024
-        ]
-      },
-      "attempts": [
-        {
-          "tris": 29997,
-          "tex": 1024,
-          "bytes": 1474124,
-          "rawBytes": 1873996
-        }
-      ],
-      "file": "ships/courier.glb",
-      "bytes": 1474124,
-      "sha256": "80bab89c3fb868f9c79f87f7b0cf5e579d8e35baab14929de0f61770e53e75da",
-      "seconds": 6.5,
-      "hullTarget": {
-        "build": "courier:0-0-0-0",
-        "radius": 0.5161,
-        "halfSpan": 0.4516,
-        "nose": 0.3794,
-        "tail": 0.4104,
-        "width": 0.9032,
-        "length": 0.7898,
-        "buildScale": 1
-      },
-      "hullFit": {
-        "radiusRatio": 0.9999999912164493,
-        "lengthRatio": 1.0086607332318969,
-        "widthRatio": 0.99823043819441
-      }
-    },
     {
       "name": "needle",
       "kind": "ship",
@@ -160,7 +61,7 @@
       "file": "ships/needle.glb",
       "bytes": 1079032,
       "sha256": "f6a666192dc7e9ad06b5579dca03197774b152d033ca4ee1a63472ea7d00296c",
-      "seconds": 16.8,
+      "seconds": 16.9,
       "hullTarget": {
         "build": "needle:0-0-0-0",
         "radius": 0.7265,
@@ -312,7 +213,7 @@
       "file": "ships/wisp.glb",
       "bytes": 1071008,
       "sha256": "dca0f8d4c61c9b14c2bf444e6b935fe56e6ba5e39df8a38400a1c07a4eb41d4e",
-      "seconds": 18.6,
+      "seconds": 18.4,
       "hullTarget": {
         "build": "wisp:0-0-0-0",
         "radius": 0.6968,
@@ -328,6 +229,200 @@
         "lengthRatio": 0.9924592292017331,
         "widthRatio": 0.9938998948682707
       }
+    },
+    {
+      "name": "courier",
+      "kind": "ship",
+      "source": "tools/3d/incoming/ships/courier.glb",
+      "sourceSha256": "f394c290bad2aba58811c8beabced90112925681115abe5aafd46b16844cace7",
+      "sourceBytes": 4513864,
+      "sourceTriangles": 12071,
+      "sourceObjects": [
+        "Mesh_0"
+      ],
+      "postProcess": "gltf-transform quantize (KHR_mesh_quantization)",
+      "note": "Owner drop-in (tools/3d/incoming).",
+      "orientation": "rotation [0, 180, 0] (three axes)",
+      "hull": "courier",
+      "fit": null,
+      "pivot": "center",
+      "scaleApplied": 0.47844263655702424,
+      "footprint": {
+        "length": 0.9085386097431183,
+        "width": 0.7656502723693848,
+        "height": 0.14580588042736053,
+        "min": [
+          -0.46976929903030396,
+          -0.07290294021368027,
+          -0.3828251361846924
+        ],
+        "max": [
+          0.43876931071281433,
+          0.07290294021368027,
+          0.3828251361846924
+        ],
+        "radius": 0.516099989903652
+      },
+      "triangles": 12071,
+      "textures": {
+        "Image_0": [
+          1024,
+          1024
+        ]
+      },
+      "attempts": [
+        {
+          "tris": 12071,
+          "tex": 1024,
+          "bytes": 615980,
+          "rawBytes": 824608
+        }
+      ],
+      "file": "ships/courier.glb",
+      "bytes": 615980,
+      "sha256": "1646f02a793c755c3c3e6255a918bced7d936d420f1cb914c7bfb87cabf9db52",
+      "seconds": 1.1,
+      "hullTarget": {
+        "build": "courier:0-0-0-0",
+        "radius": 0.5161,
+        "halfSpan": 0.4516,
+        "nose": 0.3794,
+        "tail": 0.4104,
+        "width": 0.9032,
+        "length": 0.7898,
+        "buildScale": 1
+      },
+      "hullFit": {
+        "radiusRatio": 0.9999999804372254,
+        "lengthRatio": 1.1503400984339305,
+        "widthRatio": 0.8477084503646864
+      }
+    },
+    {
+      "name": "barricade",
+      "kind": "prop",
+      "source": "tools/3d/incoming/props/barricade.glb",
+      "sourceSha256": "fd239e7c106622b6d28cdbf21bfb407e1e99cd39ca2970073fd00f2823a37b33",
+      "sourceBytes": 11116788,
+      "sourceTriangles": 969,
+      "sourceObjects": [
+        "output_unwrapped"
+      ],
+      "postProcess": "gltf-transform quantize (KHR_mesh_quantization)",
+      "note": "Owner drop-in (tools/3d/incoming).",
+      "orientation": "rotation [0, 0, 0] (three axes)",
+      "hull": null,
+      "fit": {
+        "radius": 0.5
+      },
+      "pivot": "center",
+      "scaleApplied": 0.5207593043104469,
+      "footprint": {
+        "length": 0.9873153567314148,
+        "width": 0.2381812334060669,
+        "height": 0.31026580929756165,
+        "min": [
+          -0.4936576783657074,
+          -0.15513290464878082,
+          -0.11909061670303345
+        ],
+        "max": [
+          0.4936576783657074,
+          0.15513290464878082,
+          0.11909061670303345
+        ],
+        "radius": 0.4999999662534113
+      },
+      "triangles": 969,
+      "textures": {
+        "texture_0": [
+          1024,
+          1024
+        ],
+        "texture_0_metallic_roughness": [
+          1024,
+          1024
+        ],
+        "normal": [
+          1024,
+          1024
+        ]
+      },
+      "attempts": [
+        {
+          "tris": 969,
+          "tex": 1024,
+          "bytes": 356680,
+          "rawBytes": 377556
+        }
+      ],
+      "file": "props/barricade.glb",
+      "bytes": 356680,
+      "sha256": "b57f59f68221e5ff11724e37d8a8eb46dc99465132166269f8d85e380d97f618",
+      "seconds": 1.9
+    },
+    {
+      "name": "fuelStation",
+      "kind": "prop",
+      "source": "tools/3d/incoming/props/fuelStation.glb",
+      "sourceSha256": "e4fc6c493c52f40e916071492d38876e8a3f5b8c1ac5ee28e525484bd4a34cb0",
+      "sourceBytes": 12563260,
+      "sourceTriangles": 5690,
+      "sourceObjects": [
+        "output_unwrapped"
+      ],
+      "postProcess": "gltf-transform quantize (KHR_mesh_quantization)",
+      "note": "Owner drop-in (tools/3d/incoming).",
+      "orientation": "rotation [0, 90, 0] (three axes)",
+      "hull": null,
+      "fit": {
+        "radius": 1.0
+      },
+      "pivot": "bottom",
+      "scaleApplied": 1.1005652068597085,
+      "footprint": {
+        "length": 0.5006250739097595,
+        "width": 1.9992690682411194,
+        "height": 2.089550733566284,
+        "min": [
+          -0.25031253695487976,
+          0.0,
+          -0.9996345639228821
+        ],
+        "max": [
+          0.25031253695487976,
+          2.089550733566284,
+          0.9996345043182373
+        ],
+        "radius": 0.9999999893673347
+      },
+      "triangles": 5690,
+      "textures": {
+        "texture_0": [
+          1024,
+          1024
+        ],
+        "texture_0_metallic_roughness": [
+          1024,
+          1024
+        ],
+        "normal": [
+          1024,
+          1024
+        ]
+      },
+      "attempts": [
+        {
+          "tris": 5690,
+          "tex": 1024,
+          "bytes": 622108,
+          "rawBytes": 721572
+        }
+      ],
+      "file": "props/fuelStation.glb",
+      "bytes": 622108,
+      "sha256": "ea3c9a0280858f5d6d4cf494a245fb14562440890f5a077c138c052abf4b9124",
+      "seconds": 2.0
     }
   ]
 }

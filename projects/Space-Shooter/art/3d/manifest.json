@@ -41,62 +41,20 @@
       },
       "hullFit": {
         "radiusRatio": 1,
-        "lengthRatio": 1.0087,
-        "widthRatio": 0.9982
+        "lengthRatio": 1.1503,
+        "widthRatio": 0.8477
       },
-      "bytes": 1474124,
-      "sha256": "80bab89c3fb868f9c79f87f7b0cf5e579d8e35baab14929de0f61770e53e75da",
-      "triangles": 29997,
-      "vertices": 33336,
-      "materials": 4,
+      "bytes": 615980,
+      "sha256": "1646f02a793c755c3c3e6255a918bced7d936d420f1cb914c7bfb87cabf9db52",
+      "triangles": 12071,
+      "vertices": 17394,
+      "materials": 1,
       "textures": [
         {
           "width": 1024,
           "height": 1024,
           "mime": "image/webp",
-          "bytes": 62290
-        },
-        {
-          "width": 1024,
-          "height": 1024,
-          "mime": "image/webp",
-          "bytes": 112878
-        },
-        {
-          "width": 1024,
-          "height": 1024,
-          "mime": "image/webp",
-          "bytes": 74344
-        },
-        {
-          "width": 1024,
-          "height": 1024,
-          "mime": "image/webp",
-          "bytes": 93522
-        },
-        {
-          "width": 1024,
-          "height": 1024,
-          "mime": "image/webp",
-          "bytes": 26724
-        },
-        {
-          "width": 1024,
-          "height": 1024,
-          "mime": "image/webp",
-          "bytes": 45122
-        },
-        {
-          "width": 1024,
-          "height": 1024,
-          "mime": "image/webp",
-          "bytes": 75472
-        },
-        {
-          "width": 1024,
-          "height": 1024,
-          "mime": "image/webp",
-          "bytes": 131156
+          "bytes": 194022
         }
       ],
       "extensions": [
@@ -104,28 +62,25 @@
         "KHR_mesh_quantization"
       ],
       "size": [
-        0.7966,
-        0.1024,
-        0.9016
+        0.9085,
+        0.1458,
+        0.7657
       ],
       "footprintRadius": 0.5161,
       "provenance": {
-        "source": "stardust-ship-families-20260930/approved-families-v3.blend",
-        "sourceSha256": "bb8e81f13712539fcb9d315d3b8c95808b854405764f7ebfa65632b041aec925",
-        "sourceBytes": 50121050,
-        "sourceTriangles": 166101,
+        "source": "tools/3d/incoming/ships/courier.glb",
+        "sourceSha256": "f394c290bad2aba58811c8beabced90112925681115abe5aafd46b16844cace7",
+        "sourceBytes": 4513864,
+        "sourceTriangles": 12071,
         "sourceObjects": [
-          "Stardust_body-courier",
-          "Stardust_cockpit-courier",
-          "Stardust_engines-courier",
-          "Stardust_wings-courier"
+          "Mesh_0"
         ],
-        "note": "Garage Courier default build (courier:0-0-0-0). The only 3D model of the standard ship.",
-        "orientation": "pre-rotation [0, 0, 0] deg (Blender XYZ) so the nose points +Y, then -90 deg about Z so the nose points +X",
+        "note": "Owner drop-in (tools/3d/incoming).",
+        "orientation": "rotation [0, 180, 0] (three axes)",
         "postProcess": "gltf-transform quantize (KHR_mesh_quantization)",
         "exporter": "tools/3d/export_ships.py",
         "blender": "5.2.1 LTS",
-        "exportedAt": "2026-10-05T17:13:51"
+        "exportedAt": "2026-10-05T17:23:35"
       }
     },
     "needle": {
@@ -207,7 +162,7 @@
         "postProcess": "gltf-transform quantize (KHR_mesh_quantization)",
         "exporter": "tools/3d/export_ships.py",
         "blender": "5.2.1 LTS",
-        "exportedAt": "2026-10-05T17:13:51"
+        "exportedAt": "2026-10-05T17:23:35"
       }
     },
     "manta": {
@@ -289,7 +244,7 @@
         "postProcess": "gltf-transform quantize (KHR_mesh_quantization)",
         "exporter": "tools/3d/export_ships.py",
         "blender": "5.2.1 LTS",
-        "exportedAt": "2026-10-05T17:13:51"
+        "exportedAt": "2026-10-05T17:23:35"
       }
     },
     "wisp": {
@@ -371,9 +326,146 @@
         "postProcess": "gltf-transform quantize (KHR_mesh_quantization)",
         "exporter": "tools/3d/export_ships.py",
         "blender": "5.2.1 LTS",
-        "exportedAt": "2026-10-05T17:13:51"
+        "exportedAt": "2026-10-05T17:23:35"
       }
     }
   },
-  "props": {}
+  "props": {
+    "fuelStation": {
+      "file": "props/fuelStation.glb",
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "offset": [
+        0,
+        0,
+        0
+      ],
+      "pivot": "none",
+      "fit": {
+        "radius": 1
+      },
+      "bytes": 622108,
+      "sha256": "ea3c9a0280858f5d6d4cf494a245fb14562440890f5a077c138c052abf4b9124",
+      "triangles": 5690,
+      "vertices": 8300,
+      "materials": 1,
+      "textures": [
+        {
+          "width": 1024,
+          "height": 1024,
+          "mime": "image/webp",
+          "bytes": 199738
+        },
+        {
+          "width": 1024,
+          "height": 1024,
+          "mime": "image/webp",
+          "bytes": 218218
+        },
+        {
+          "width": 1024,
+          "height": 1024,
+          "mime": "image/webp",
+          "bytes": 1952
+        }
+      ],
+      "extensions": [
+        "EXT_texture_webp",
+        "KHR_mesh_quantization"
+      ],
+      "size": [
+        0.5005,
+        2.0896,
+        1.9993
+      ],
+      "footprintRadius": 1,
+      "provenance": {
+        "source": "tools/3d/incoming/props/fuelStation.glb",
+        "sourceSha256": "e4fc6c493c52f40e916071492d38876e8a3f5b8c1ac5ee28e525484bd4a34cb0",
+        "sourceBytes": 12563260,
+        "sourceTriangles": 5690,
+        "sourceObjects": [
+          "output_unwrapped"
+        ],
+        "note": "Owner drop-in (tools/3d/incoming).",
+        "orientation": "rotation [0, 90, 0] (three axes)",
+        "postProcess": "gltf-transform quantize (KHR_mesh_quantization)",
+        "exporter": "tools/3d/export_ships.py",
+        "blender": "5.2.1 LTS",
+        "exportedAt": "2026-10-05T17:23:35"
+      }
+    },
+    "barricade": {
+      "file": "props/barricade.glb",
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "offset": [
+        0,
+        0,
+        0
+      ],
+      "pivot": "none",
+      "fit": {
+        "radius": 0.5
+      },
+      "bytes": 356680,
+      "sha256": "b57f59f68221e5ff11724e37d8a8eb46dc99465132166269f8d85e380d97f618",
+      "triangles": 969,
+      "vertices": 1745,
+      "materials": 1,
+      "textures": [
+        {
+          "width": 1024,
+          "height": 1024,
+          "mime": "image/webp",
+          "bytes": 133840
+        },
+        {
+          "width": 1024,
+          "height": 1024,
+          "mime": "image/webp",
+          "bytes": 178170
+        },
+        {
+          "width": 1024,
+          "height": 1024,
+          "mime": "image/webp",
+          "bytes": 1952
+        }
+      ],
+      "extensions": [
+        "EXT_texture_webp",
+        "KHR_mesh_quantization"
+      ],
+      "size": [
+        0.9873,
+        0.3103,
+        0.2382
+      ],
+      "footprintRadius": 0.5,
+      "provenance": {
+        "source": "tools/3d/incoming/props/barricade.glb",
+        "sourceSha256": "fd239e7c106622b6d28cdbf21bfb407e1e99cd39ca2970073fd00f2823a37b33",
+        "sourceBytes": 11116788,
+        "sourceTriangles": 969,
+        "sourceObjects": [
+          "output_unwrapped"
+        ],
+        "note": "Owner drop-in (tools/3d/incoming).",
+        "orientation": "rotation [0, 0, 0] (three axes)",
+        "postProcess": "gltf-transform quantize (KHR_mesh_quantization)",
+        "exporter": "tools/3d/export_ships.py",
+        "blender": "5.2.1 LTS",
+        "exportedAt": "2026-10-05T17:23:35"
+      }
+    }
+  }
 }

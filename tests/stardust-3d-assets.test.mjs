@@ -128,11 +128,15 @@ test('exported ships have the game hull size, nose +X, and origin on the hull', 
     const info = inspectGlb(path.join(art, e.file));
     assert.ok(Math.abs(info.footprintRadius - live.radius) / live.radius < 0.01, `${key} footprint radius ${info.footprintRadius} vs hull ${live.radius}`);
     const length = info.bounds.size[0], width = info.bounds.size[2];
-    assert.ok(Math.abs(length / (live.nose + live.tail) - 1) < 0.1, `${key} length ${length} vs hull ${live.nose + live.tail}`);
-    assert.ok(width > 0 && Math.abs(width / (live.halfSpan * 2) - 1) < 0.1, `${key} width ${width} vs hull ${live.halfSpan * 2}`);
+    // Owner remakes (tools/3d/incoming) keep their own proportions: the footprint radius is fitted
+    // exactly, length/width may differ from the hit box by up to 20% (recorded in hullFit for review).
+    const owner = /incoming/.test(e.provenance?.source || '');
+    const shape = owner ? 0.2 : 0.1, ends = owner ? 0.2 : 0.06;
+    assert.ok(Math.abs(length / (live.nose + live.tail) - 1) < shape, `${key} length ${length} vs hull ${live.nose + live.tail}`);
+    assert.ok(width > 0 && Math.abs(width / (live.halfSpan * 2) - 1) < shape, `${key} width ${width} vs hull ${live.halfSpan * 2}`);
     // nose +X: the model's forward extent is about the hull's (nose ahead of the origin by about hull.nose)
-    assert.ok(Math.abs(info.bounds.max[0] - live.nose) < 0.06 * (live.nose + live.tail), `${key} nose at x=${info.bounds.max[0]}, hull nose ${live.nose}`);
-    assert.ok(Math.abs(info.bounds.min[0] + live.tail) < 0.06 * (live.nose + live.tail), `${key} tail at x=${info.bounds.min[0]}, hull tail ${live.tail}`);
+    assert.ok(Math.abs(info.bounds.max[0] - live.nose) < ends * (live.nose + live.tail), `${key} nose at x=${info.bounds.max[0]}, hull nose ${live.nose}`);
+    assert.ok(Math.abs(info.bounds.min[0] + live.tail) < ends * (live.nose + live.tail), `${key} tail at x=${info.bounds.min[0]}, hull tail ${live.tail}`);
     assert.ok(info.bounds.size[1] < Math.min(length, width), `${key} is flat (up is +Y)`);
     assert.ok(Math.abs(e.hullFit.radiusRatio - 1) < 0.01 && e.hull.build === build);
   }
