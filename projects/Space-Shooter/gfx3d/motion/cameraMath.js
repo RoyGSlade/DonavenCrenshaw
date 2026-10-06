@@ -149,6 +149,53 @@ export function stepFollow(f, pose, dt, P = CAMERA_3D) {
   return f;
 }
 
+// ---------------------------------------------------------------- cockpit view
+// A third, 3D-only view: the eye sits just ahead of and above the canopy and
+// looks down the lane, so the hull's own spars frame the track. It rides the
+// ship's heading exactly and, when motion is allowed, a share of the hull's
+// visual bank and pitch (the same rotations ship.js gives the body).
+export const COCKPIT_3D = Object.freeze({
+  FOV: 62,                 // vertical, degrees (measured on the owner's Needle in Blender)
+  NEAR: 0.02,              // cells; the canopy is centimetres below the eye
+  PITCH_DOWN: 2.4,         // degrees below the hull's nose line
+  ROLL_FOLLOW: 0.5,        // share of the hull's visual bank the view takes (0 with reduced motion)
+  PITCH_FOLLOW: 0.5,       // share of the hull's visual pitch
+  SHAKE: 0.35,             // share of the chase camera's shake
+  // Eye for a hull without a measured one: unit-length model space, x forward
+  // from the hull's box centre, y up from it, z starboard.
+  EYE: Object.freeze({ x: 0.05, y: 0.09, z: 0 }),
+});
+
+const rotY = (t) => { const c = Math.cos(t), s = Math.sin(t); return [c, 0, s, 0, 1, 0, -s, 0, c]; };
+const rotX = (t) => { const c = Math.cos(t), s = Math.sin(t); return [1, 0, 0, 0, c, -s, 0, s, c]; };
+const rotZ = (t) => { const c = Math.cos(t), s = Math.sin(t); return [c, -s, 0, s, c, 0, 0, 0, 1]; };
+const mul = (a, b) => {
+  const o = new Array(9);
+  for (let r = 0; r < 3; r++) for (let c = 0; c < 3; c++) o[r * 3 + c] = a[r * 3] * b[c] + a[r * 3 + 1] * b[3 + c] + a[r * 3 + 2] * b[6 + c];
+  return o;
+};
+const apply3 = (m, x, y, z) => [m[0] * x + m[1] * y + m[2] * z, m[3] * x + m[4] * y + m[5] * z, m[6] * x + m[7] * y + m[8] * z];
+
+/**
+ * Place the cockpit eye for a pose. Returns three.js-axis numbers in out:
+ * position (px, py, pz), unit forward (fx, fy, fz) and up (ux, uy, uz).
+ * eye is in unit-length model space; length and hover are the ship's (cells).
+ * The rotation is the ship rig's own: yaw -angle, then bank about the nose
+ * axis, then pitch about the beam, so a banking hull and the view agree.
+ */
+export function placeCockpit({ x, y, angle, length = 1, hover = 0.3, eye = COCKPIT_3D.EYE, bank = 0, pitch = 0, reduced = false }, out = {}, P = COCKPIT_3D) {
+  const roll = reduced ? 0 : bank * P.ROLL_FOLLOW;
+  const tilt = reduced ? 0 : pitch * P.PITCH_FOLLOW;
+  const body = mul(mul(rotY(-angle), rotX(roll)), rotZ(tilt));
+  const [ox, oy, oz] = apply3(body, eye.x * length, eye.y * length, eye.z * length);
+  out.px = x + ox; out.py = hover + oy; out.pz = y + oz;
+  // Look along the nose (+X in model space), dipped by PITCH_DOWN about the beam (+Z).
+  const look = mul(body, rotZ(-P.PITCH_DOWN * RAD));
+  [out.fx, out.fy, out.fz] = apply3(look, 1, 0, 0);
+  [out.ux, out.uy, out.uz] = apply3(look, 0, 1, 0);
+  return out;
+}
+
 /** Screen shake offset (cells) for a decaying amount, deterministic in time. */
 export function shakeOffset(time, amount, out = {}) {
   const a = clamp(amount, 0, 1);

@@ -9,6 +9,8 @@ export const shipInfo = {
   ports: [{ x: -0.42, z: -0.135 }, { x: -0.42, z: 0.135 }], // engine nozzles, ship-local cells (x forward, z starboard)
   glow: 0, boost: 0, strafe: 0, brake: 0, stunned: false, speed: 0, active: false,
   visible: false,
+  // For the cockpit view (camera.js): which hull is flying, its measured eye (or null), and its visual bank/pitch (rad).
+  hullKey: '', eye: null, bank: 0, pitch: 0,
 };
 
 /** World position (sim x, y) of engine port i for a pose, writing into out. */
