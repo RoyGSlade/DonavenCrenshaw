@@ -9,6 +9,10 @@
         "build:stardust": "node scripts/build-stardust.mjs",
         "test:stardust": "node --test tests/stardust-*.test.mjs",
         "qa:3d": "node scripts/stardust/qa-3d.mjs",
+        "assets:3d": "node tools/3d/build.mjs",
+        "assets:3d:incoming": "node tools/3d/build.mjs --incoming",
+        "assets:3d:manifest": "node tools/3d/build.mjs --no-blender",
+        "assets:3d:check": "node tools/3d/build.mjs --check",
         "dev": "node scripts/dev.mjs",
         "build": "node scripts/build.mjs",
         "validate": "node scripts/validateData.js",
@@ -47,6 +51,9 @@
     },
     "homepage": "https://github.com/RoyGSlade/DonavenCrenshaw#readme",
     "devDependencies": {
+        "@gltf-transform/core": "4.5.1",
+        "@gltf-transform/extensions": "4.5.1",
+        "@gltf-transform/functions": "4.5.1",
         "three": "0.186.0"
     }
 }

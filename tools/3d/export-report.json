@@ -1,0 +1,333 @@
+{
+  "blender": "5.2.1 LTS",
+  "generated": "2026-10-05T17:13:51",
+  "models": [
+    {
+      "name": "courier",
+      "kind": "ship",
+      "source": "stardust-ship-families-20260930/approved-families-v3.blend",
+      "sourceSha256": "bb8e81f13712539fcb9d315d3b8c95808b854405764f7ebfa65632b041aec925",
+      "sourceBytes": 50121050,
+      "sourceTriangles": 166101,
+      "sourceObjects": [
+        "Stardust_body-courier",
+        "Stardust_cockpit-courier",
+        "Stardust_engines-courier",
+        "Stardust_wings-courier"
+      ],
+      "postProcess": "gltf-transform quantize (KHR_mesh_quantization)",
+      "note": "Garage Courier default build (courier:0-0-0-0). The only 3D model of the standard ship.",
+      "orientation": "pre-rotation [0, 0, 0] deg (Blender XYZ) so the nose points +Y, then -90 deg about Z so the nose points +X",
+      "hull": "courier",
+      "fit": null,
+      "pivot": "center",
+      "scaleApplied": 0.1288128081984555,
+      "footprint": {
+        "length": 0.7966402471065521,
+        "width": 0.9016017317771912,
+        "height": 0.10237771272659302,
+        "min": [
+          -0.4138201177120209,
+          -0.05118885636329651,
+          -0.4508008658885956
+        ],
+        "max": [
+          0.38282012939453125,
+          0.05118885636329651,
+          0.4508008658885956
+        ],
+        "radius": 0.5160999954668095
+      },
+      "triangles": 29997,
+      "textures": {
+        "Image_0.001": [
+          1024,
+          1024
+        ],
+        "Image_1.001": [
+          1024,
+          1024
+        ],
+        "Image_0.006": [
+          1024,
+          1024
+        ],
+        "Image_1.006": [
+          1024,
+          1024
+        ],
+        "Image_0.009": [
+          1024,
+          1024
+        ],
+        "Image_1.009": [
+          1024,
+          1024
+        ],
+        "Image_0.002": [
+          1024,
+          1024
+        ],
+        "Image_1.002": [
+          1024,
+          1024
+        ]
+      },
+      "attempts": [
+        {
+          "tris": 29997,
+          "tex": 1024,
+          "bytes": 1474124,
+          "rawBytes": 1873996
+        }
+      ],
+      "file": "ships/courier.glb",
+      "bytes": 1474124,
+      "sha256": "80bab89c3fb868f9c79f87f7b0cf5e579d8e35baab14929de0f61770e53e75da",
+      "seconds": 6.5,
+      "hullTarget": {
+        "build": "courier:0-0-0-0",
+        "radius": 0.5161,
+        "halfSpan": 0.4516,
+        "nose": 0.3794,
+        "tail": 0.4104,
+        "width": 0.9032,
+        "length": 0.7898,
+        "buildScale": 1
+      },
+      "hullFit": {
+        "radiusRatio": 0.9999999912164493,
+        "lengthRatio": 1.0086607332318969,
+        "widthRatio": 0.99823043819441
+      }
+    },
+    {
+      "name": "needle",
+      "kind": "ship",
+      "source": "stardust-meshy-ships-20260930/source/needle-source.blend",
+      "sourceSha256": "fea313a6d4d4d7604015ec5fd1d750a355d850134181c749d21eff3e0dfb1b1c",
+      "sourceBytes": 91549617,
+      "sourceTriangles": 966739,
+      "sourceObjects": [
+        "Mesh_0"
+      ],
+      "postProcess": "gltf-transform quantize (KHR_mesh_quantization)",
+      "note": "Needle default build (needle:0-0-0-0): the original textured Meshy Twinspire source, 966,739 tris.",
+      "orientation": "pre-rotation [0, 0, 90] deg (Blender XYZ) so the nose points +Y, then -90 deg about Z so the nose points +X",
+      "hull": "needle",
+      "fit": null,
+      "pivot": "center",
+      "scaleApplied": 0.7595868209689557,
+      "footprint": {
+        "length": 1.4456640481948853,
+        "width": 0.4445483982563019,
+        "height": 0.27089107036590576,
+        "min": [
+          -0.7249820232391357,
+          -0.13544553518295288,
+          -0.22227419912815094
+        ],
+        "max": [
+          0.7206820249557495,
+          0.13544553518295288,
+          0.22227419912815094
+        ],
+        "radius": 0.7264999979788974
+      },
+      "triangles": 29998,
+      "textures": {
+        "Image_0": [
+          1024,
+          1024
+        ],
+        "Image_1": [
+          1024,
+          1024
+        ],
+        "Image_2": [
+          1024,
+          1024
+        ]
+      },
+      "attempts": [
+        {
+          "tris": 29998,
+          "tex": 1024,
+          "bytes": 1079032,
+          "rawBytes": 1379004
+        }
+      ],
+      "file": "ships/needle.glb",
+      "bytes": 1079032,
+      "sha256": "f6a666192dc7e9ad06b5579dca03197774b152d033ca4ee1a63472ea7d00296c",
+      "seconds": 16.8,
+      "hullTarget": {
+        "build": "needle:0-0-0-0",
+        "radius": 0.7265,
+        "halfSpan": 0.2209,
+        "nose": 0.7217,
+        "tail": 0.726,
+        "width": 0.4418,
+        "length": 1.4477,
+        "buildScale": 1.5
+      },
+      "hullFit": {
+        "radiusRatio": 0.999999997218028,
+        "lengthRatio": 0.9985936645678561,
+        "widthRatio": 1.006220910494119
+      }
+    },
+    {
+      "name": "manta",
+      "kind": "ship",
+      "source": "stardust-meshy-ships-20260930/source/manta-source.blend",
+      "sourceSha256": "8e9f5ef57544282c521aea1c0c5be045c1fce5f9f5030a2f34f85a862ec2bdff",
+      "sourceBytes": 90468220,
+      "sourceTriangles": 940876,
+      "sourceObjects": [
+        "Mesh_0"
+      ],
+      "postProcess": "gltf-transform quantize (KHR_mesh_quantization)",
+      "note": "Manta default build (manta:0-0-0-0): the original textured Meshy source.",
+      "orientation": "pre-rotation [0, 0, -90] deg (Blender XYZ) so the nose points +Y, then -90 deg about Z so the nose points +X",
+      "hull": "manta",
+      "fit": null,
+      "pivot": "center",
+      "scaleApplied": 0.7105344197133071,
+      "footprint": {
+        "length": 1.3520134091377258,
+        "width": 1.097246527671814,
+        "height": 0.22715803980827332,
+        "min": [
+          -0.6713566780090332,
+          -0.11357901990413666,
+          -0.548623263835907
+        ],
+        "max": [
+          0.6806567311286926,
+          0.11357901990413666,
+          0.548623263835907
+        ],
+        "radius": 0.782899991637845
+      },
+      "triangles": 30000,
+      "textures": {
+        "Image_0": [
+          1024,
+          1024
+        ],
+        "Image_1": [
+          1024,
+          1024
+        ],
+        "Image_2": [
+          1024,
+          1024
+        ]
+      },
+      "attempts": [
+        {
+          "tris": 30000,
+          "tex": 1024,
+          "bytes": 1140488,
+          "rawBytes": 1429396
+        }
+      ],
+      "file": "ships/manta.glb",
+      "bytes": 1140488,
+      "sha256": "f847069189983e6179c7e50bdf2e640a196fd462ddca09c189df31c17659b61c",
+      "seconds": 16.0,
+      "hullTarget": {
+        "build": "manta:0-0-0-0",
+        "radius": 0.7829,
+        "halfSpan": 0.5544,
+        "nose": 0.6821,
+        "tail": 0.6728,
+        "width": 1.1088,
+        "length": 1.3549,
+        "buildScale": 1.4
+      },
+      "hullFit": {
+        "radiusRatio": 0.9999999893189998,
+        "lengthRatio": 0.9978695174092006,
+        "widthRatio": 0.9895802017242189
+      }
+    },
+    {
+      "name": "wisp",
+      "kind": "ship",
+      "source": "stardust-meshy-ships-20260930/source/wisp-source.blend",
+      "sourceSha256": "afa792c58ec9df69e1e11a1c4c991d4dce1c772e1c6ffc08b39dc797437582cd",
+      "sourceBytes": 100730999,
+      "sourceTriangles": 1066743,
+      "sourceObjects": [
+        "Mesh_0"
+      ],
+      "postProcess": "gltf-transform quantize (KHR_mesh_quantization)",
+      "note": "Wisp default build (wisp:0-0-0-0): the original textured Meshy Azure Wraith source.",
+      "orientation": "pre-rotation [-90, 0, 0] deg (Blender XYZ) so the nose points +Y, then -90 deg about Z so the nose points +X",
+      "hull": "wisp",
+      "fit": null,
+      "pivot": "center",
+      "scaleApplied": 0.6288704248003425,
+      "footprint": {
+        "length": 1.1974020600318909,
+        "width": 1.0740082263946533,
+        "height": 0.39453181624412537,
+        "min": [
+          -0.6018509864807129,
+          -0.19726590812206268,
+          -0.5370041131973267
+        ],
+        "max": [
+          0.595551073551178,
+          0.19726590812206268,
+          0.5370041131973267
+        ],
+        "radius": 0.6968000069365486
+      },
+      "triangles": 29999,
+      "textures": {
+        "Image_0": [
+          1024,
+          1024
+        ],
+        "Image_1": [
+          1024,
+          1024
+        ],
+        "Image_2": [
+          1024,
+          1024
+        ]
+      },
+      "attempts": [
+        {
+          "tris": 29999,
+          "tex": 1024,
+          "bytes": 1071008,
+          "rawBytes": 1344760
+        }
+      ],
+      "file": "ships/wisp.glb",
+      "bytes": 1071008,
+      "sha256": "dca0f8d4c61c9b14c2bf444e6b935fe56e6ba5e39df8a38400a1c07a4eb41d4e",
+      "seconds": 18.6,
+      "hullTarget": {
+        "build": "wisp:0-0-0-0",
+        "radius": 0.6968,
+        "halfSpan": 0.5403,
+        "nose": 0.6001,
+        "tail": 0.6064,
+        "width": 1.0806,
+        "length": 1.2065,
+        "buildScale": 1.25
+      },
+      "hullFit": {
+        "radiusRatio": 1.0000000099548632,
+        "lengthRatio": 0.9924592292017331,
+        "widthRatio": 0.9938998948682707
+      }
+    }
+  ]
+}

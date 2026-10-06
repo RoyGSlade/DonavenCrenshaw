@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#070d17">
+  <title>Stardust — 3D model viewer</title>
+  <meta name="description" content="Unlisted tool for checking a .glb ship or prop at game scale before it goes into Stardust. Files stay on this device.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath fill='%2381e6df' d='M16 1 30 30 16 23 2 30Z'/%3E%3C/svg%3E">
+  <style>
+    :root{color-scheme:dark;--bg:#070d17;--panel:#0d1826;--text:#eaf4f5;--muted:#8fa6b7;--cyan:#81e6df;--orange:#ffad72;--red:#ff8f97;--green:#7ee2b8;--line:#2a4152;font-family:Inter,"Segoe UI",sans-serif}
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5}
+    a{color:var(--cyan)}
+    code{font:12px Consolas,ui-monospace,monospace;color:#cfe9ec;background:#0a1624;padding:1px 4px;border-radius:3px;overflow-wrap:anywhere}
+    button,select,input{font:inherit}
+    button{font-weight:600;font-size:12px;border:1px solid var(--line);border-radius:4px;padding:7px 11px;background:#132232;color:var(--text);cursor:pointer}
+    button:hover{border-color:var(--cyan)}
+    button[aria-pressed=true]{border-color:var(--orange);color:var(--orange)}
+    button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,canvas:focus-visible{outline:3px solid var(--orange);outline-offset:2px}
+    input[type=number],input[type=text],select,textarea{width:100%;color:var(--text);background:#0a1624;border:1px solid var(--line);border-radius:4px;padding:6px 8px}
+    textarea{font:12px/1.45 Consolas,ui-monospace,monospace;resize:vertical;min-height:110px}
+    .v{width:min(1500px,100%);margin:0 auto;padding:16px 16px 40px}
+    .v-head{border-bottom:1px solid var(--line);padding-bottom:12px;margin-bottom:14px}
+    .v-eyebrow{margin:0;font:11px Consolas,monospace;letter-spacing:.14em;color:var(--cyan)}
+    h1{margin:4px 0;font-size:clamp(22px,4vw,30px);letter-spacing:-.03em}
+    .v-lede{margin:0;max-width:80ch;color:var(--muted)}
+    .v-layout{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:16px;align-items:start}
+    @media (max-width:980px){.v-layout{grid-template-columns:1fr}}
+    .v-stage{position:relative;border:1px solid var(--line);border-radius:6px;background:#050a12;overflow:hidden;aspect-ratio:16/10;min-height:300px}
+    .v-stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+    .v-drop{position:absolute;inset:0;display:grid;place-items:center;text-align:center;color:var(--muted);pointer-events:none;padding:20px}
+    .v-drop strong{display:block;color:var(--text);font-size:18px;margin-bottom:4px}
+    .v-drop[hidden]{display:none}
+    .v-stage.dragging{border-color:var(--orange)}
+    .v-inset-label{position:absolute;right:12px;bottom:calc(var(--inset-h,0px) + 14px);font:11px Consolas,monospace;letter-spacing:.08em;color:var(--cyan);pointer-events:none;text-shadow:0 1px 2px #000}
+    .v-inset-frame{position:absolute;right:10px;bottom:10px;border:1px solid var(--cyan);border-radius:4px;pointer-events:none}
+    .v-hud{position:absolute;left:10px;top:8px;font:11px Consolas,monospace;color:var(--muted);pointer-events:none;text-shadow:0 1px 2px #000}
+    .v-panel{border:1px solid var(--line);border-radius:6px;background:var(--panel);padding:12px;margin-bottom:12px}
+    .v-h2{margin:0 0 8px;font:700 11px Consolas,monospace;letter-spacing:.16em;text-transform:uppercase;color:#d7e5e9}
+    .v-row{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+    .v-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+    .v-field label{display:block;font-size:11px;color:var(--muted)}
+    .v-check{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--text);margin:3px 0}
+    .v-check input{accent-color:var(--cyan);margin:0}
+    .v-stats{display:grid;grid-template-columns:auto 1fr;gap:2px 12px;margin:0;font-size:13px}
+    .v-stats dt{color:var(--muted)} .v-stats dd{margin:0;font-family:Consolas,monospace;font-size:12.5px}
+    .ok{color:var(--green)} .bad{color:var(--red)} .warn{color:var(--orange)}
+    .v-notes{margin:8px 0 0;padding-left:18px;font-size:13px}
+    .v-notes li{margin:3px 0}
+    .v-small{font-size:12px;color:var(--muted)}
+    .v-links{display:flex;flex-wrap:wrap;gap:6px 18px;margin:8px 0 0;font-size:13px}
+    .v-fail{padding:24px;border:1px solid var(--red);border-radius:6px;color:var(--red)}
+  </style>
+</head>
+<body>
+  <main class="v" id="main">
+    <header class="v-head">
+      <p class="v-eyebrow">STARDUST / UNLISTED TOOL</p>
+      <h1>3D model viewer</h1>
+      <p class="v-lede">Drop a <code>.glb</code> to see it at game scale: the lane, the hull circle, the nose direction and a chase-camera preview. The file is read on this device and never uploaded. Steps for adding models: <code>docs/stardust/3D-ASSETS.md</code> in the repo.</p>
+      <p class="v-links"><a href="./">← Hangar</a></p>
+    </header>
+    <div class="v-layout">
+      <section aria-label="Model view">
+        <div class="v-stage" id="stage">
+          <canvas id="view" tabindex="0" aria-label="3D model view. Drag to orbit, scroll to zoom, right-drag or shift-drag to pan."></canvas>
+          <div class="v-drop" id="drop"><div><strong>Drop a .glb here</strong>or pick one below. Ships should face +X; the orange arrow shows +X.</div></div>
+          <div class="v-hud" id="hud"></div>
+          <div class="v-inset-frame" id="inset-frame"></div>
+          <div class="v-inset-label" id="inset-label">IN-GAME CHECK</div>
+        </div>
+        <p class="v-small" id="status" role="status">Loading the shipped models list…</p>
+      </section>
+      <aside aria-label="Model details and controls">
+        <div class="v-panel">
+          <h2 class="v-h2">Model</h2>
+          <div class="v-row"><input type="file" id="file" accept=".glb,model/gltf-binary" aria-label="Choose a .glb file"></div>
+          <div class="v-grid" style="grid-template-columns:1fr 1fr">
+            <div class="v-field"><label for="slot">This is the…</label><select id="slot"></select></div>
+            <div class="v-field"><label for="shipped">Or open a shipped model</label><select id="shipped"><option value="">(none)</option></select></div>
+          </div>
+        </div>
+        <div class="v-panel">
+          <h2 class="v-h2">Orientation and size</h2>
+          <p class="v-small" style="margin:0 0 6px">Turn it until the nose points along the orange +X arrow and the top faces up. These become the manifest fields.</p>
+          <div class="v-row" id="rot-buttons"></div>
+          <div class="v-grid">
+            <div class="v-field"><label for="rx">Rotate X °</label><input type="number" id="rx" step="15" value="0"></div>
+            <div class="v-field"><label for="ry">Rotate Y °</label><input type="number" id="ry" step="15" value="0"></div>
+            <div class="v-field"><label for="rz">Rotate Z °</label><input type="number" id="rz" step="15" value="0"></div>
+            <div class="v-field"><label for="pivot">Pivot</label><select id="pivot"><option value="none">keep file origin</option><option value="center">centre bounds</option><option value="bottom">sit on y = 0</option></select></div>
+            <div class="v-field"><label for="fitmode">Fit by</label><select id="fitmode"><option value="radius">footprint radius</option><option value="length">length (X)</option><option value="width">width (Z)</option><option value="height">height (Y)</option><option value="none">no fit</option></select></div>
+            <div class="v-field"><label for="fitval">…equals (cells)</label><input type="number" id="fitval" step="0.01" min="0.01" value="0.52"></div>
+            <div class="v-field"><label for="scale">Extra scale ×</label><input type="number" id="scale" step="0.05" min="0.05" value="1"></div>
+            <div class="v-field"><label for="ox">Offset X</label><input type="number" id="ox" step="0.05" value="0"></div>
+            <div class="v-field"><label for="oz">Offset Z</label><input type="number" id="oz" step="0.05" value="0"></div>
+          </div>
+        </div>
+        <div class="v-panel">
+          <h2 class="v-h2">Game-scale reference</h2>
+          <label class="v-check"><input type="checkbox" id="t-lane" checked> Lane (<input type="number" id="lane" value="6" step="0.5" min="2" max="12" style="width:64px;padding:2px 6px"> cells wide)</label>
+          <label class="v-check"><input type="checkbox" id="t-circle" checked> Hull circle and outline</label>
+          <label class="v-check"><input type="checkbox" id="t-arrow" checked> +X nose arrow</label>
+          <label class="v-check"><input type="checkbox" id="t-bounds"> Bounding box</label>
+          <label class="v-check"><input type="checkbox" id="t-wire"> Wireframe</label>
+          <div class="v-grid" style="grid-template-columns:1fr 1fr;margin-top:6px">
+            <div class="v-field"><label for="hullsel">Compare with hull</label><select id="hullsel"></select></div>
+            <div class="v-field"><label for="insetmode">In-game check view</label><select id="insetmode"><option value="chase">chase camera</option><option value="top">top-down</option></select></div>
+          </div>
+        </div>
+        <div class="v-panel">
+          <h2 class="v-h2">Size and budgets</h2>
+          <dl class="v-stats" id="stats"></dl>
+          <ul class="v-notes" id="notes"></ul>
+        </div>
+        <div class="v-panel">
+          <h2 class="v-h2">Manifest entry</h2>
+          <p class="v-small" style="margin:0 0 6px">Paste into <code>art/3d/manifest.json</code>, or save as <code>tools/3d/incoming/…/&lt;name&gt;.json</code> next to the raw file.</p>
+          <textarea id="out" readonly spellcheck="false"></textarea>
+          <div class="v-row"><button type="button" id="copy">Copy</button><button type="button" id="reset-view">Reset view</button></div>
+        </div>
+      </aside>
+    </div>
+  </main>
+  <script type="module" src="./gfx3d/viewer.js"></script>
+</body>
+</html>
