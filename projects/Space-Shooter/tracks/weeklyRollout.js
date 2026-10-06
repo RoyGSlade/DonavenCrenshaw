@@ -1,32 +1,435 @@
 // Release candidate only. Set enabled after the owner approves the exact track
 // and release window in Focus; mirror this block in the Hub's rules.json.
 export const WEEKLY_ROLLOUT = {
-  enabled: false,
-  eventId: 'weekly-02',
-  opensAt: '2026-10-06T15:00:00-07:00',
-  exclusiveAt: '2026-10-06T19:00:00-07:00',
-  // Focus a1f45c71: weekly close 14:45 Pacific, next weekly opens 15:00.
-  closesAt: '2026-10-13T14:45:00-07:00',
-  overlapBoards: ['weekly-01'],
-  legacyBoards: ['full', 'alpha-relay', 'beacon-prime', 'dustfall-station', 'nether-crossing', 'iron-veil', 'custom-track'],
+  "enabled": true,
+  "eventId": "weekly-02",
+  "opensAt": "2026-10-06T15:00:00-07:00",
+  "exclusiveAt": "2026-10-06T19:00:00-07:00",
+  "closesAt": "2026-10-13T14:45:00-07:00",
+  "overlapBoards": [
+    "weekly-01"
+  ],
+  "legacyBoards": [
+    "full",
+    "alpha-relay",
+    "beacon-prime",
+    "dustfall-station",
+    "nether-crossing",
+    "iron-veil",
+    "custom-track"
+  ]
 };
 
 export const WEEK2_DRAFT = {
-  id: 'weekly-02', week: 2, version: 1, enabled: false,
-  title: 'Owner track pending', tagline: 'One lap. Every shard. One shared leaderboard.',
-  opensAt: WEEKLY_ROLLOUT.opensAt, closesAt: WEEKLY_ROLLOUT.closesAt,
-  commentsPage: 'stardust-weekly-02', music: 'level3', ships: 'builds',
-  rewards: {
-    champion: 'weekly-02-champion', championTitle: 'Week 2 Champion',
-    championEntitlement: 'weekly-02-named-hull',
-    namedHull: { family: 'courier', delivery: 'pending', name: 'Named after the winner' },
-    placements: [
-      { rank: 2, id: 'weekly-02-silver', title: 'nothin wrong with silver' },
-      { rank: 3, id: 'weekly-02-third', title: 'hell you could be fifth' },
+  "id": "weekly-02",
+  "theme": "mall",
+  "week": 2,
+  "version": 1,
+  "enabled": true,
+  "title": "The Abandoned Mall",
+  "tagline": "Dead escalators, falling debris, every shop for itself.",
+  "opensAt": "2026-10-06T15:00:00-07:00",
+  "closesAt": "2026-10-13T14:45:00-07:00",
+  "commentsPage": "stardust-weekly-02",
+  "music": "level3",
+  "ships": "builds",
+  "rewards": {
+    "champion": "weekly-02-champion",
+    "championTitle": "Week 2 Champion",
+    "championEntitlement": "weekly-02-named-hull",
+    "namedHull": {
+      "family": "courier",
+      "delivery": "pending",
+      "name": "Named after the winner"
+    },
+    "placements": [
+      {
+        "rank": 2,
+        "id": "weekly-02-silver",
+        "title": "nothin wrong with silver"
+      },
+      {
+        "rank": 3,
+        "id": "weekly-02-third",
+        "title": "hell you could be fifth"
+      }
     ],
-    crossWeekTitle: 'weekly-02-hero', crossWeekTitleText: 'Week 2 Hero',
-    crossWeekBoards: ['weekly-01', 'weekly-02'], podiumSize: 3,
+    "crossWeekTitle": "weekly-02-hero",
+    "crossWeekTitleText": "Week 2 Hero",
+    "crossWeekBoards": [
+      "weekly-01",
+      "weekly-02"
+    ],
+    "podiumSize": 3
   },
-  // The owner authors/selects the track. No placeholder geometry is flyable.
-  track: null,
+  "track": {
+    "title": "The Abandoned Mall",
+    "landmark": "The Broken Escalator",
+    "width": 5.8,
+    "points": [
+      [
+        15.830407524932113,
+        14.937541582181261
+      ],
+      [
+        22.914347069100153,
+        10.100380438766699
+      ],
+      [
+        59.68499287498561,
+        11.690297388353905
+      ],
+      [
+        95.13352351185559,
+        25.133086147292694
+      ],
+      [
+        97.35085873391182,
+        31.96483600913009
+      ],
+      [
+        80.76577352987626,
+        56.1823518648091
+      ],
+      [
+        140.54872543342321,
+        38.91502638867547
+      ],
+      [
+        220.93237594340403,
+        41.30609684013496
+      ],
+      [
+        228.24361964112714,
+        53.213358887228345
+      ],
+      [
+        216.26788196472418,
+        67.59443174744248
+      ],
+      [
+        223.51642106836312,
+        85.01484789274124
+      ],
+      [
+        210.6824142604333,
+        101.23909880955645
+      ],
+      [
+        157.74965932935675,
+        109.97387698960272
+      ],
+      [
+        141.53100409700048,
+        122.45612154996643
+      ],
+      [
+        208.4006948569514,
+        155.06254407387422
+      ],
+      [
+        199.05883006330654,
+        158.96667113896146
+      ],
+      [
+        162.39819722829196,
+        156.8462918707034
+      ],
+      [
+        89.03046297514683,
+        136.8220743440902
+      ],
+      [
+        39.65843320813483,
+        147.58588139309845
+      ],
+      [
+        32.0932918906156,
+        132.33498473085155
+      ],
+      [
+        20.08256281126391,
+        59.96341839199409
+      ],
+      [
+        10.468324937066036,
+        34.864108681960744
+      ]
+    ],
+    "shards": [
+      {
+        "seg": 1,
+        "t": 0.8463500877507296,
+        "off": 1.2
+      },
+      {
+        "seg": 4,
+        "t": 0.9779885107000096,
+        "off": -1.2
+      },
+      {
+        "seg": 6,
+        "t": 0.20620505199679703,
+        "off": 1.2
+      },
+      {
+        "seg": 8,
+        "t": 0.08798201112197372,
+        "off": -1.2
+      },
+      {
+        "seg": 11,
+        "t": 0.42559716161460615,
+        "off": 1.2
+      },
+      {
+        "seg": 13,
+        "t": 0.37870236844177496,
+        "off": -1.2
+      },
+      {
+        "seg": 15,
+        "t": 0.6292932850634585,
+        "off": 1.2
+      },
+      {
+        "seg": 16,
+        "t": 0.8657657618835298,
+        "off": -1.2
+      },
+      {
+        "seg": 19,
+        "t": 0.023051209387197468,
+        "off": 1.2
+      },
+      {
+        "seg": 20,
+        "t": 0.28965526707742656,
+        "off": -1.2
+      }
+    ],
+    "mines": [
+      {
+        "seg": 1,
+        "t": 0.49999999999999856,
+        "off": 1.3
+      },
+      {
+        "seg": 2,
+        "t": 0.49999999999999933,
+        "off": -1.3
+      },
+      {
+        "seg": 4,
+        "t": 0.5000000000000017,
+        "off": 1.3
+      },
+      {
+        "seg": 5,
+        "t": 0.314281091044804,
+        "off": -1.3
+      },
+      {
+        "seg": 5,
+        "t": 0.4999999999999994,
+        "off": 1.3
+      },
+      {
+        "seg": 5,
+        "t": 0.6857189089551966,
+        "off": -1.3
+      },
+      {
+        "seg": 6,
+        "t": 0.2997393628065243,
+        "off": 1.3
+      },
+      {
+        "seg": 6,
+        "t": 0.4999999999999997,
+        "off": -1.3
+      },
+      {
+        "seg": 6,
+        "t": 0.7002606371934752,
+        "off": 1.3
+      },
+      {
+        "seg": 11,
+        "t": 0.383039502421202,
+        "off": -1.3
+      },
+      {
+        "seg": 11,
+        "t": 0.6169604975787979,
+        "off": 1.3
+      },
+      {
+        "seg": 12,
+        "t": 0.4999999999999934,
+        "off": -1.3
+      },
+      {
+        "seg": 13,
+        "t": 0.42150659183536165,
+        "off": -1.3
+      },
+      {
+        "seg": 13,
+        "t": 0.5784934081646393,
+        "off": 1.3
+      },
+      {
+        "seg": 13,
+        "t": 0.735480224493917,
+        "off": -1.3
+      },
+      {
+        "seg": 15,
+        "t": 0.40595121527685785,
+        "off": 1.3
+      },
+      {
+        "seg": 16,
+        "t": 0.3025961062170013,
+        "off": 1.3
+      },
+      {
+        "seg": 16,
+        "t": 0.5000000000000011,
+        "off": -1.3
+      },
+      {
+        "seg": 16,
+        "t": 0.6974038937829979,
+        "off": 1.3
+      },
+      {
+        "seg": 17,
+        "t": 0.3291581668772384,
+        "off": -1.3
+      },
+      {
+        "seg": 17,
+        "t": 0.5000000000000003,
+        "off": 1.3
+      },
+      {
+        "seg": 17,
+        "t": 0.6708418331227622,
+        "off": -1.3
+      },
+      {
+        "seg": 19,
+        "t": 0.2654294660055425,
+        "off": 1.3
+      },
+      {
+        "seg": 19,
+        "t": 0.4218098220018454,
+        "off": -1.3
+      },
+      {
+        "seg": 19,
+        "t": 0.5781901779981545,
+        "off": 1.3
+      },
+      {
+        "seg": 19,
+        "t": 0.7345705339944575,
+        "off": -1.3
+      },
+      {
+        "seg": 20,
+        "t": 0.49999999999999584,
+        "off": 1.3
+      }
+    ],
+    "bouncers": [
+      {
+        "seg": 13,
+        "t": 0.08064971938260206,
+        "radius": 0.7999999999999999,
+        "speed": 3.3,
+        "phase": 0.9655580000000006
+      },
+      {
+        "seg": 18,
+        "t": 0.3333333333333358,
+        "radius": 0.7999999999999999,
+        "speed": 3.3,
+        "phase": 0.8753880000000009
+      },
+      {
+        "seg": 9,
+        "t": 0.31799390732134936,
+        "radius": 0.7999999999999999,
+        "speed": 3.3,
+        "phase": 0.43769400000000047
+      },
+      {
+        "seg": 10,
+        "t": 0.2900419387308496,
+        "radius": 0.7999999999999999,
+        "speed": 3.3,
+        "phase": 0.8196600000000003
+      },
+      {
+        "seg": 7,
+        "t": 0.3333333333333322,
+        "radius": 0.7999999999999999,
+        "speed": 3.3,
+        "phase": 0.673762
+      },
+      {
+        "seg": 4,
+        "t": 0.2044138035447701,
+        "radius": 0.7999999999999999,
+        "speed": 3.3,
+        "phase": 0.5278640000000001
+      },
+      {
+        "seg": 11,
+        "t": 0.11183888044770111,
+        "radius": 0.7999999999999999,
+        "speed": 3.3,
+        "phase": 0.20162600000000008
+      },
+      {
+        "seg": 1,
+        "t": 0.1630213163552751,
+        "radius": 0.7999999999999999,
+        "speed": 3.3,
+        "phase": 0.381966
+      }
+    ],
+    "sentries": [
+      {
+        "point": 18,
+        "side": "outside"
+      },
+      {
+        "point": 8,
+        "side": "outside"
+      }
+    ],
+    "stations": [
+      {
+        "seg": 6,
+        "t": 0.10740324197350157,
+        "off": 0
+      },
+      {
+        "seg": 13,
+        "t": 0.271901130907262,
+        "off": 0
+      },
+      {
+        "seg": 17,
+        "t": 0.8986482019514888,
+        "off": 0
+      }
+    ]
+  },
+  "landmark": "The Broken Escalator"
 };

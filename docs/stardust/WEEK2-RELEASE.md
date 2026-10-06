@@ -41,6 +41,23 @@ the next weekly opening is independent of the existing three-hour finish grace.
 
 ## Owner and reviewer release checklist
 
+Prepare the approved Track Studio event locally with the paired shipping tool:
+
+```sh
+node scripts/stardust/ship-weekly-track.mjs --draft approved-event.json --title "Track Title" --landmark "Landmark" --floor-ms 45000 --hub ../hub --version 1 --dry-run
+```
+
+Use the evidence-based floor for the approved track; 45000 above is only example
+syntax. Dry-run validates the layout, a full scripted lap and the exact Hub
+replay, and prints both track hashes without writing. Remove `--dry-run` to
+prepare both repos. Dates, rewards and existing activation/retirement flags
+remain intact. `--enable` sets exactly `WEEK2_DRAFT.enabled`,
+`WEEKLY_ROLLOUT.enabled`, Hub `levels[weekly-02].enabled`,
+`events[weekly-02].enabled` and `weeklyRollout.enabled` to true. It neither
+commits nor deploys. The trusted physics manifest binds physics files only and
+is checked, never regenerated for geometry. Review both diffs, run the printed
+checks and finish phone/owner-track review before the existing release approval.
+
 1. Keep the resolved October 13 close and future weekly cadence. If the owner
    changes the opening or another window boundary, update all mirrored dates
    before activation, then repeat boundary tests. No retirement before
