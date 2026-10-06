@@ -80,7 +80,7 @@
         "postProcess": "gltf-transform quantize (KHR_mesh_quantization)",
         "exporter": "tools/3d/export_ships.py",
         "blender": "5.2.1 LTS",
-        "exportedAt": "2026-10-05T17:23:35"
+        "exportedAt": "2026-10-05T21:23:35"
       }
     },
     "needle": {
@@ -111,32 +111,20 @@
       },
       "hullFit": {
         "radiusRatio": 1,
-        "lengthRatio": 0.9986,
-        "widthRatio": 1.0062
+        "lengthRatio": 0.9988,
+        "widthRatio": 0.8921
       },
-      "bytes": 1079032,
-      "sha256": "f6a666192dc7e9ad06b5579dca03197774b152d033ca4ee1a63472ea7d00296c",
-      "triangles": 29998,
-      "vertices": 25006,
+      "bytes": 1001560,
+      "sha256": "dbd5a24732fc2798b2dc7d5b7bbbe2bf18ea5dd0b5d419938237fe23fd0cfd66",
+      "triangles": 29999,
+      "vertices": 27767,
       "materials": 1,
       "textures": [
         {
           "width": 1024,
           "height": 1024,
           "mime": "image/webp",
-          "bytes": 95390
-        },
-        {
-          "width": 1024,
-          "height": 1024,
-          "mime": "image/webp",
-          "bytes": 234226
-        },
-        {
-          "width": 1024,
-          "height": 1024,
-          "mime": "image/webp",
-          "bytes": 67296
+          "bytes": 153508
         }
       ],
       "extensions": [
@@ -144,25 +132,25 @@
         "KHR_mesh_quantization"
       ],
       "size": [
-        1.4457,
-        0.2709,
-        0.4446
+        1.446,
+        0.2157,
+        0.3942
       ],
       "footprintRadius": 0.7265,
       "provenance": {
-        "source": "stardust-meshy-ships-20260930/source/needle-source.blend",
-        "sourceSha256": "fea313a6d4d4d7604015ec5fd1d750a355d850134181c749d21eff3e0dfb1b1c",
-        "sourceBytes": 91549617,
-        "sourceTriangles": 966739,
+        "source": "tools/3d/incoming/ships/needle.glb",
+        "sourceSha256": "713a7151ac2ea7ff6eeae9d4e3fff1659d207a0d0bf634e5236e7f3d10f90d1a",
+        "sourceBytes": 7049936,
+        "sourceTriangles": 56689,
         "sourceObjects": [
-          "Mesh_0"
+          "Mesh0"
         ],
-        "note": "Needle default build (needle:0-0-0-0): the original textured Meshy Twinspire source, 966,739 tris.",
-        "orientation": "pre-rotation [0, 0, 90] deg (Blender XYZ) so the nose points +Y, then -90 deg about Z so the nose points +X",
+        "note": "Owner drop-in (tools/3d/incoming).",
+        "orientation": "rotation [0, 180, 0] (three axes)",
         "postProcess": "gltf-transform quantize (KHR_mesh_quantization)",
         "exporter": "tools/3d/export_ships.py",
         "blender": "5.2.1 LTS",
-        "exportedAt": "2026-10-05T17:23:35"
+        "exportedAt": "2026-10-05T21:23:35"
       }
     },
     "manta": {
@@ -244,7 +232,7 @@
         "postProcess": "gltf-transform quantize (KHR_mesh_quantization)",
         "exporter": "tools/3d/export_ships.py",
         "blender": "5.2.1 LTS",
-        "exportedAt": "2026-10-05T17:23:35"
+        "exportedAt": "2026-10-05T21:23:35"
       }
     },
     "wisp": {
@@ -326,7 +314,7 @@
         "postProcess": "gltf-transform quantize (KHR_mesh_quantization)",
         "exporter": "tools/3d/export_ships.py",
         "blender": "5.2.1 LTS",
-        "exportedAt": "2026-10-05T17:23:35"
+        "exportedAt": "2026-10-05T21:23:35"
       }
     }
   },
@@ -396,7 +384,7 @@
         "postProcess": "gltf-transform quantize (KHR_mesh_quantization)",
         "exporter": "tools/3d/export_ships.py",
         "blender": "5.2.1 LTS",
-        "exportedAt": "2026-10-05T17:23:35"
+        "exportedAt": "2026-10-05T21:23:35"
       }
     },
     "barricade": {
@@ -464,7 +452,7 @@
         "postProcess": "gltf-transform quantize (KHR_mesh_quantization)",
         "exporter": "tools/3d/export_ships.py",
         "blender": "5.2.1 LTS",
-        "exportedAt": "2026-10-05T17:23:35"
+        "exportedAt": "2026-10-05T21:23:35"
       }
     }
   }

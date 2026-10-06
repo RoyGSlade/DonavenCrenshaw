@@ -1,83 +1,7 @@
 {
   "blender": "5.2.1 LTS",
-  "generated": "2026-10-05T17:23:35",
+  "generated": "2026-10-05T21:23:35",
   "models": [
-    {
-      "name": "needle",
-      "kind": "ship",
-      "source": "stardust-meshy-ships-20260930/source/needle-source.blend",
-      "sourceSha256": "fea313a6d4d4d7604015ec5fd1d750a355d850134181c749d21eff3e0dfb1b1c",
-      "sourceBytes": 91549617,
-      "sourceTriangles": 966739,
-      "sourceObjects": [
-        "Mesh_0"
-      ],
-      "postProcess": "gltf-transform quantize (KHR_mesh_quantization)",
-      "note": "Needle default build (needle:0-0-0-0): the original textured Meshy Twinspire source, 966,739 tris.",
-      "orientation": "pre-rotation [0, 0, 90] deg (Blender XYZ) so the nose points +Y, then -90 deg about Z so the nose points +X",
-      "hull": "needle",
-      "fit": null,
-      "pivot": "center",
-      "scaleApplied": 0.7595868209689557,
-      "footprint": {
-        "length": 1.4456640481948853,
-        "width": 0.4445483982563019,
-        "height": 0.27089107036590576,
-        "min": [
-          -0.7249820232391357,
-          -0.13544553518295288,
-          -0.22227419912815094
-        ],
-        "max": [
-          0.7206820249557495,
-          0.13544553518295288,
-          0.22227419912815094
-        ],
-        "radius": 0.7264999979788974
-      },
-      "triangles": 29998,
-      "textures": {
-        "Image_0": [
-          1024,
-          1024
-        ],
-        "Image_1": [
-          1024,
-          1024
-        ],
-        "Image_2": [
-          1024,
-          1024
-        ]
-      },
-      "attempts": [
-        {
-          "tris": 29998,
-          "tex": 1024,
-          "bytes": 1079032,
-          "rawBytes": 1379004
-        }
-      ],
-      "file": "ships/needle.glb",
-      "bytes": 1079032,
-      "sha256": "f6a666192dc7e9ad06b5579dca03197774b152d033ca4ee1a63472ea7d00296c",
-      "seconds": 16.9,
-      "hullTarget": {
-        "build": "needle:0-0-0-0",
-        "radius": 0.7265,
-        "halfSpan": 0.2209,
-        "nose": 0.7217,
-        "tail": 0.726,
-        "width": 0.4418,
-        "length": 1.4477,
-        "buildScale": 1.5
-      },
-      "hullFit": {
-        "radiusRatio": 0.999999997218028,
-        "lengthRatio": 0.9985936645678561,
-        "widthRatio": 1.006220910494119
-      }
-    },
     {
       "name": "manta",
       "kind": "ship",
@@ -137,7 +61,7 @@
       "file": "ships/manta.glb",
       "bytes": 1140488,
       "sha256": "f847069189983e6179c7e50bdf2e640a196fd462ddca09c189df31c17659b61c",
-      "seconds": 16.0,
+      "seconds": 14.9,
       "hullTarget": {
         "build": "manta:0-0-0-0",
         "radius": 0.7829,
@@ -213,7 +137,7 @@
       "file": "ships/wisp.glb",
       "bytes": 1071008,
       "sha256": "dca0f8d4c61c9b14c2bf444e6b935fe56e6ba5e39df8a38400a1c07a4eb41d4e",
-      "seconds": 18.4,
+      "seconds": 19.3,
       "hullTarget": {
         "build": "wisp:0-0-0-0",
         "radius": 0.6968,
@@ -299,6 +223,74 @@
       }
     },
     {
+      "name": "needle",
+      "kind": "ship",
+      "source": "tools/3d/incoming/ships/needle.glb",
+      "sourceSha256": "713a7151ac2ea7ff6eeae9d4e3fff1659d207a0d0bf634e5236e7f3d10f90d1a",
+      "sourceBytes": 7049936,
+      "sourceTriangles": 56689,
+      "sourceObjects": [
+        "Mesh0"
+      ],
+      "postProcess": "gltf-transform quantize (KHR_mesh_quantization)",
+      "note": "Owner drop-in (tools/3d/incoming).",
+      "orientation": "rotation [0, 180, 0] (three axes)",
+      "hull": "needle",
+      "fit": null,
+      "pivot": "center",
+      "scaleApplied": 0.7596711388695158,
+      "footprint": {
+        "length": 1.4460058808326721,
+        "width": 0.394126757979393,
+        "height": 0.21567990630865097,
+        "min": [
+          -0.7251529693603516,
+          -0.10783995687961578,
+          -0.1970633715391159
+        ],
+        "max": [
+          0.7208529114723206,
+          0.10783994942903519,
+          0.1970633864402771
+        ],
+        "radius": 0.726499957210467
+      },
+      "triangles": 29999,
+      "textures": {
+        "texture_0": [
+          1024,
+          1024
+        ]
+      },
+      "attempts": [
+        {
+          "tris": 29999,
+          "tex": 1024,
+          "bytes": 1001560,
+          "rawBytes": 1223580
+        }
+      ],
+      "file": "ships/needle.glb",
+      "bytes": 1001560,
+      "sha256": "dbd5a24732fc2798b2dc7d5b7bbbe2bf18ea5dd0b5d419938237fe23fd0cfd66",
+      "seconds": 1.5,
+      "hullTarget": {
+        "build": "needle:0-0-0-0",
+        "radius": 0.7265,
+        "halfSpan": 0.2209,
+        "nose": 0.7217,
+        "tail": 0.726,
+        "width": 0.4418,
+        "length": 1.4477,
+        "buildScale": 1.5
+      },
+      "hullFit": {
+        "radiusRatio": 0.9999999411018128,
+        "lengthRatio": 0.9988297857516558,
+        "widthRatio": 0.8920931597541716
+      }
+    },
+    {
       "name": "barricade",
       "kind": "prop",
       "source": "tools/3d/incoming/props/barricade.glb",
@@ -359,7 +351,7 @@
       "file": "props/barricade.glb",
       "bytes": 356680,
       "sha256": "b57f59f68221e5ff11724e37d8a8eb46dc99465132166269f8d85e380d97f618",
-      "seconds": 1.9
+      "seconds": 1.7
     },
     {
       "name": "fuelStation",
@@ -422,7 +414,7 @@
       "file": "props/fuelStation.glb",
       "bytes": 622108,
       "sha256": "ea3c9a0280858f5d6d4cf494a245fb14562440890f5a077c138c052abf4b9124",
-      "seconds": 2.0
+      "seconds": 1.8
     }
   ]
 }
