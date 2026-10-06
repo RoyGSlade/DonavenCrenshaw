@@ -94,6 +94,10 @@ function stripComments(text) {
 // constant from the game, add the exact file here with the reason; never anything from engine/ that steps the sim.
 const ALLOWED_OUTSIDE = new Map([
   // ['projects/Space-Shooter/engine/weekly/layout.js', 'why a read-only constant is needed'],
+  ['projects/Space-Shooter/engine/weekly/sim.js', 'WEEKLY_CONFIG.PLAYER_RADIUS: the mine kill-halo radius must match the sim exactly (read-only constant)'],
+  ['projects/Space-Shooter/engine/weekly/layout.js', 'WEEKLY_RULES: pickup/dock radii drawn at the exact sim sizes (read-only constants)'],
+  ['projects/Space-Shooter/engine/shipStats.js', 'buildScale(): pure function, the 3D hull is drawn at the same scale the sim uses'],
+  ['projects/Space-Shooter/state.js', 'gfx3d/motion/prefs.js reads settings.reducedMotion and VIEW_CELLS_H only; the runtime read-only test guards the scene'],
 ]);
 
 function importsOf(code) {

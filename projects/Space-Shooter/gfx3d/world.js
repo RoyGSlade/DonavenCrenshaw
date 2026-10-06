@@ -288,7 +288,7 @@ export function createWorld(THREE, layout, assets = {}) {
   };
   const restoreScene = () => {
     if (!scene) return;
-    scene.background = saved.background; scene.fog = saved.fog;
+    scene.background = saved.background; scene.fog = saved.fog;  // 3d-local: the three.js scene, not the race scene
     scene = null; saved = null;
   };
 
@@ -296,7 +296,7 @@ export function createWorld(THREE, layout, assets = {}) {
   const tmpColor = new THREE.Color(), railBase = new THREE.Color(RAIL_COLOR), railStun = new THREE.Color(RAIL_STUN);
   const lockedColor = new THREE.Color(GATE_COLORS.locked), readyColor = new THREE.Color(GATE_COLORS.ready);
   const nextShardOf = (lv) => {
-    const list = lv.shardList || layout.shards, got = lv.shards || new Set();
+    const list = lv.shardList || layout.shards, got = lv.shards instanceof Set ? lv.shards : new Set();
     const t = lv.nearestShardTarget;
     if (t && t.kind !== 'gate') {
       const hit = list.find((s) => Math.abs(s.x - 0.5 - t.x) < 1e-3 && Math.abs(s.y - 0.5 - t.y) < 1e-3);
@@ -312,7 +312,7 @@ export function createWorld(THREE, layout, assets = {}) {
     const t = calm ? 0 : time;
     const pose = lv.viewPlayer || lv.player;
     if (pose) sky.position.set(pose.x, 0, pose.y);
-    const collected = lv.shards || new Set();
+    const collected = lv.shards instanceof Set ? lv.shards : new Set();
     const all = collected.size >= (lv.shardList || layout.shards).length;
     const pulse = (rate, phase = 0) => (calm ? 0.5 : 0.5 + 0.5 * Math.sin(t * rate + phase));
 

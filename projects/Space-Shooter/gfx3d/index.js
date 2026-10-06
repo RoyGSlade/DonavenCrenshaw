@@ -51,16 +51,17 @@ async function start(host) {
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   const front = host.querySelector?.('#starmap-canvas');
   host.insertBefore(canvas, front || null);
-  const [{ loadAssets }, { createCameraRig }, { createShipRig, createGhostRig }, { createFx }, { createWorld }] = await Promise.all([
-    import('./assets.js'), import('./camera.js'), import('./ship.js'), import('./fx.js'), import('./world.js'),
+  const [{ loadAssets }, { createCameraRig }, { createShipRig, createGhostRig }, { createFx }, { createWorld }, { createShots }] = await Promise.all([
+    import('./assets.js'), import('./camera.js'), import('./ship.js'), import('./fx.js'), import('./world.js'), import('./shots.js'),
   ]);
   const assets = await loadAssets(THREE, new URL('../art/3d/manifest.json', import.meta.url).href);
   const scene = new THREE.Scene();
   const rig = createCameraRig(THREE);
   const ship = createShipRig(THREE, assets);
   const fx = createFx(THREE);
-  scene.add(ship.group, fx.group);
-  state3d = { THREE, renderer, canvas, scene, rig, ship, fx, assets, world: null, layout: null, ghosts: new Map(), createGhostRig, createWorld, ready: true };
+  const shots = createShots(THREE);
+  scene.add(ship.group, fx.group, shots.group);
+  state3d = { THREE, renderer, canvas, scene, rig, ship, fx, shots, assets, world: null, layout: null, ghosts: new Map(), createGhostRig, createWorld, ready: true };
 }
 
 /**
@@ -91,6 +92,7 @@ export function draw3d({ lv, pose, keys, cam2d, ghosts = [], time = 0, dt = 0, w
     s.ship.setVisible(!lv.wreck);
     if (!lv.wreck) s.ship.update(pose, keys, lv, time, dt);
     s.fx.update(lv, pose, keys, time, dt);
+    s.shots.update(lv);
     syncGhosts(s, ghosts, time);
     s.rig.update(lv, pose, cam2d, { width, height }, dt);
     s.renderer.render(s.scene, s.rig.camera);
@@ -117,7 +119,7 @@ export function teardown() {
   const s = state3d;
   state3d = null;
   if (!s) return;
-  try { s.world?.dispose(); s.ship?.dispose(); s.fx?.dispose(); for (const g of s.ghosts.values()) g.dispose(); s.renderer?.dispose(); s.canvas?.remove(); } catch { /* best effort */ }
+  try { s.world?.dispose(); s.ship?.dispose(); s.fx?.dispose(); s.shots?.dispose(); for (const g of s.ghosts.values()) g.dispose(); s.renderer?.dispose(); s.canvas?.remove(); } catch { /* best effort */ }
 }
 
 /** For tests and the debug overlay. */
