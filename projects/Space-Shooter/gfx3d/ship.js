@@ -11,7 +11,7 @@
 import { buildCourier, COURIER } from './motion/courierModel.js';
 import { createEngineRig } from './motion/engineRig.js';
 import { makeRadialTexture } from './motion/glowTexture.js';
-import { pickShipModel, fitModel, ownMaterials, familyOf } from './motion/shipAssets.js';
+import { pickShipModel, fitModel, ownMaterials, familyOf, hullFeatures } from './motion/shipAssets.js';
 import { createMotionState, stepMotion, steerInput, strafeInput, stunShake } from './motion/shipMotion.js';
 import { shipInfo } from './motion/shipInfo.js';
 import { reducedMotion } from './motion/prefs.js';
@@ -30,11 +30,37 @@ function makeHull(THREE, assets, buildKey) {
   if (picked) {
     const fit = fitModel(THREE, picked.object);
     const materials = ownMaterials(fit.root);
-    return { key: picked.key, root: fit.root, ports: fit.ports, materials, ownGeometries: [], custom: true };
+    const features = hullFeatures(picked.key);
+    // A measured nozzle beats fitModel's default pair when the .glb names none.
+    const named = fit.ports.length && fit.ports !== null && picked.object.getObjectByName && hasExhaustNodes(picked.object);
+    const ports = !named && features?.ports ? features.ports.map((p) => ({ x: p.x, y: p.y, z: p.z })) : fit.ports;
+    return { key: picked.key, root: fit.root, ports, materials, ownGeometries: [], custom: true, features };
   }
   const built = buildCourier(THREE);
   const materials = built.materials.map((m) => ({ material: m, emissive: m.emissive ? m.emissive.clone() : null, intensity: m.emissiveIntensity ?? 1 }));
-  return { key: 'procedural', root: built.root, ports: COURIER.PORTS.map((p) => ({ x: p.x, z: p.z, y: 0.045 })), materials, ownGeometries: built.geometries, custom: false };
+  return { key: 'procedural', root: built.root, ports: COURIER.PORTS.map((p) => ({ x: p.x, z: p.z, y: 0.045 })), materials, ownGeometries: built.geometries, custom: false, features: null };
+}
+
+function hasExhaustNodes(object) {
+  let found = false;
+  object.traverse((o) => { if (/exhaust/i.test(o.name || '')) found = true; });
+  return found;
+}
+
+/** Additive sprites for light a hull paints into its texture (HULL_FEATURES glows), in unit-length space. */
+function makeGlows(THREE, texture, glows) {
+  const group = new THREE.Group();
+  const items = [];
+  for (const g of glows || []) {
+    const material = new THREE.SpriteMaterial({ map: texture, color: g.color, transparent: true, opacity: g.opacity, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false });
+    const sprite = new THREE.Sprite(material);
+    sprite.position.set(g.x, g.y, g.z);
+    sprite.scale.setScalar(g.size);
+    sprite.renderOrder = 5;
+    group.add(sprite);
+    items.push({ sprite, material, part: g.part, opacity: g.opacity });
+  }
+  return { group, items, dispose() { for (const i of items) i.material.dispose(); group.removeFromParent(); } };
 }
 
 function disposeHull(hull) {

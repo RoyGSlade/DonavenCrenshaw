@@ -25,6 +25,32 @@ export function pickShipModel(assets, buildKey) {
 
 const DEFAULT_PORTS = [{ x: -0.42, z: -0.135 }, { x: -0.42, z: 0.135 }];
 
+// What a hull's mesh can't say for itself, by family, in the unit-length space
+// fitModel returns (x forward from the box centre, y up, z starboard):
+//   eye    the cockpit view's eye (gfx3d/camera.js); hulls without one use COCKPIT_3D.EYE
+//   ports  engine nozzles, when the .glb has no "exhaust" nodes
+//   glows  light painted into the texture (not emissive), drawn as additive sprites;
+//          part "canopy" hides in the cockpit view, where the eye sits just above the glass
+export const HULL_FEATURES = Object.freeze({
+  // The owner's Needle remake (2026-10-05; exported 1.446 cells long). Eye measured in Blender
+  // 0.13 m ahead of and 0.06 m above the canopy top of the 1.903 m raw ship, scaled 0.7597 into
+  // the export (x -0.184, y 0.155): the canopy top is the mesh's highest point at x -0.285.
+  // Glows found from the texture's painted cyan: one tail nozzle; canopy glass x -0.29..-0.08, top y 0.075.
+  needle: Object.freeze({
+    eye: Object.freeze({ x: -0.127, y: 0.107, z: 0.004 }),
+    ports: Object.freeze([Object.freeze({ x: -0.478, y: -0.011, z: 0.008 })]),
+    glows: Object.freeze([
+      Object.freeze({ part: 'engine', x: -0.49, y: -0.011, z: 0.008, size: 0.12, color: 0x7fe9ff, opacity: 0.85 }),
+      Object.freeze({ part: 'canopy', x: -0.19, y: 0.06, z: 0, size: 0.17, color: 0x6fdcff, opacity: 0.4 }),
+    ]),
+  }),
+});
+
+/** Features for a model key ("needle:0-1-2-0", "needle", ...) or null. */
+export function hullFeatures(key) {
+  return HULL_FEATURES[familyOf(key)] || null;
+}
+
 /**
  * Clone a loaded model into a wrapper scaled so it is 1 cell long along X and
  * centred on the origin (the caller scales the wrapper to the ship's length).
