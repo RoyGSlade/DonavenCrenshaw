@@ -27,3 +27,6 @@ Thumbs.db
 
 # Local shared-worker reports
 .collab-reports/
+
+# Local QA screenshots (npm run qa:3d)
+.shots/
