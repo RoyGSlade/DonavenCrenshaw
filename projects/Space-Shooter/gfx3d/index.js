@@ -51,8 +51,8 @@ async function start(host) {
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   const front = host.querySelector?.('#starmap-canvas');
   host.insertBefore(canvas, front || null);
-  const [{ loadAssets }, { createCameraRig }, { createShipRig, createGhostRig }, { createFx }] = await Promise.all([
-    import('./assets.js'), import('./camera.js'), import('./ship.js'), import('./fx.js'),
+  const [{ loadAssets }, { createCameraRig }, { createShipRig, createGhostRig }, { createFx }, { createWorld }] = await Promise.all([
+    import('./assets.js'), import('./camera.js'), import('./ship.js'), import('./fx.js'), import('./world.js'),
   ]);
   const assets = await loadAssets(THREE, new URL('../art/3d/manifest.json', import.meta.url).href);
   const scene = new THREE.Scene();
@@ -60,7 +60,7 @@ async function start(host) {
   const ship = createShipRig(THREE, assets);
   const fx = createFx(THREE);
   scene.add(ship.group, fx.group);
-  state3d = { THREE, renderer, canvas, scene, rig, ship, fx, assets, world: null, layout: null, ghosts: new Map(), createGhostRig, ready: true };
+  state3d = { THREE, renderer, canvas, scene, rig, ship, fx, assets, world: null, layout: null, ghosts: new Map(), createGhostRig, createWorld, ready: true };
 }
 
 /**
@@ -68,19 +68,25 @@ async function start(host) {
  * interpolated player pose (lv.viewPlayer || lv.player), cam2d the 2D camera
  * (state.gfx.camera), ghosts the ghost poses for this instant.
  */
-export async function draw3d({ lv, pose, keys, cam2d, ghosts = [], time = 0, dt = 0, width, height }) {
+export function draw3d({ lv, pose, keys, cam2d, ghosts = [], time = 0, dt = 0, width, height }) {
   const s = state3d;
   if (!s?.ready) return;
   try {
+    // Synchronous on purpose: world.js is imported once at start, so a new layout
+    // builds exactly one world (an awaited import here stacked several).
     if (s.layout !== lv.layout) {
-      s.world?.dispose();
-      const { createWorld } = await import('./world.js');
-      s.world = createWorld(s.THREE, lv.layout, s.assets);
+      if (s.world) { s.scene.remove(s.world.group); s.world.dispose(); }
       s.layout = lv.layout;
+      s.world = s.createWorld(s.THREE, lv.layout, s.assets);
       s.scene.add(s.world.group);
     }
+    // Browser zoom or a move to another monitor changes the pixel ratio at runtime.
+    const dpr = Math.min(globalThis.devicePixelRatio || 1, 2);
     const size = s.renderer.getSize(new s.THREE.Vector2());
-    if (size.x !== width || size.y !== height) { s.renderer.setSize(width, height, false); s.canvas.style.width = width + 'px'; s.canvas.style.height = height + 'px'; s.rig.resize(width, height); }
+    if (s.renderer.getPixelRatio() !== dpr || size.x !== width || size.y !== height) {
+      s.renderer.setPixelRatio(dpr);
+      s.renderer.setSize(width, height, false); s.canvas.style.width = width + 'px'; s.canvas.style.height = height + 'px'; s.rig.resize(width, height);
+    }
     s.world.update(lv, time, { reducedMotion: !!lv.reducedMotion });
     s.ship.setVisible(!lv.wreck);
     if (!lv.wreck) s.ship.update(pose, keys, lv, time, dt);
