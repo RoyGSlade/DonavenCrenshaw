@@ -22,11 +22,12 @@ export const WEEKLY_ROLLOUT = {
 
 export const WEEK2_DRAFT = {
   "id": "weekly-02",
+  "theme": "mall",
   "week": 2,
   "version": 1,
   "enabled": true,
   "title": "The Abandoned Mall",
-  "tagline": "One lap. Every shard. One shared leaderboard.",
+  "tagline": "Dead escalators, falling debris, every shop for itself.",
   "opensAt": "2026-10-06T15:00:00-07:00",
   "closesAt": "2026-10-13T14:45:00-07:00",
   "commentsPage": "stardust-weekly-02",
