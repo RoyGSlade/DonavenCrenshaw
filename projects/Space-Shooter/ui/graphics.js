@@ -15,6 +15,7 @@ import { isLapReady } from '../engine/track.js';
 import { drawCourier, drawRelayGate, drawShield, drawExplosion, drawFlightEnvironment, drawShard } from '../gfx/stardustVfx.js';
 import { drawWeeklyWorld, drawWeeklyHud } from '../gfx/weeklyVfx.js';
 import { ghostPosesNow } from '../engine/modes/weekly.js';
+import { mallThemeOf, drawMallDistrict, drawMallLane } from '../gfx/mallTheme.js';
 import { updateFlightUi } from './flightUi.js';
 import { drawHitboxDebug } from '../gfx/hitboxDebug.js';
 // ?debug=hitbox outlines the ship's exact body and the pickup shapes.
@@ -325,8 +326,12 @@ function drawArenaEntities() {
 
 function drawRoadmap(ctx) {
   const lv = state.run?.current;
+  // Optional per-event look (weekly `theme`, visual only). Absent for Week 1 and every other track.
+  const mall = mallThemeOf(lv);
+  if (mall) drawMallDistrict(ctx, lv, state.gfx.cellW, { time: state.gfx.visualTime || 0, reducedMotion: !!state.settings?.reducedMotion, viewRot: state.gfx.camera?.viewRot || 0 });
   if (lv?.track) drawCircuit(ctx, lv);
   else { drawPlayfieldSlab(); drawGrid(); }
+  if (mall) drawMallLane(ctx, lv, state.gfx.cellW);
   // The weekly mode draws interpolated poses between its fixed steps (engine/modes/weekly.js).
   drawFlightEnvironment(ctx, {...lv,hazards:lv?.viewHazards || lv?.hazards,reducedMotion:state.settings?.reducedMotion}, state.gfx.cellW, state.gfx.visualTime || 0, assets);
   drawNodes();

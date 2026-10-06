@@ -13,6 +13,8 @@ export const WEEKLY_ROLLOUT = {
 
 export const WEEK2_DRAFT = {
   id: 'weekly-02', week: 2, version: 1, enabled: false,
+  // Optional visual theme ('mall'). Read only by gfx/mallTheme.js; the sim, replay and hub ignore it.
+  theme: 'mall',
   title: 'Owner track pending', tagline: 'One lap. Every shard. One shared leaderboard.',
   opensAt: WEEKLY_ROLLOUT.opensAt, closesAt: WEEKLY_ROLLOUT.closesAt,
   commentsPage: 'stardust-weekly-02', music: 'level3', ships: 'builds',
