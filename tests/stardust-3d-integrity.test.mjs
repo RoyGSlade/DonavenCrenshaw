@@ -80,7 +80,18 @@ test('the protected list names real files (a rename cannot quietly drop the guar
 });
 
 // ---------------------------------------------------------------- source helpers
-const sources = filesUnder(rel(gfx3d)).filter((f) => f.endsWith('.js')).map((f) => ({ file: f, text: readFileSync(path.join(repo, f), 'utf8') }));
+// gfx3d/viewer.js is the standalone GLB viewer page (viewer3d.html). The game never imports it
+// (asserted below), and its own page-local `state`/`scene` would trip the name-based scans.
+const STANDALONE = new Set(['projects/Space-Shooter/gfx3d/viewer.js']);
+test('the game never loads the standalone GLB viewer', () => {
+  for (const f of filesUnder(rel(gfx3d)).filter((x) => x.endsWith('.js') && !STANDALONE.has(x))) {
+    assert.ok(!/viewer\.js/.test(readFileSync(path.join(repo, f), 'utf8')), `${f} must not import the viewer`);
+  }
+  for (const f of ['projects/Space-Shooter/index.html', 'projects/Space-Shooter/ui/graphics.js']) {
+    assert.ok(!/viewer3d|gfx3d\/viewer/.test(readFileSync(path.join(repo, f), 'utf8')), `${f} must not load the viewer`);
+  }
+});
+const sources = filesUnder(rel(gfx3d)).filter((f) => f.endsWith('.js') && !STANDALONE.has(f)).map((f) => ({ file: f, text: readFileSync(path.join(repo, f), 'utf8') }));
 
 /** Code with comments and string-free lines kept, comments removed, so a header that mentions "localStorage" is not a hit. */
 function stripComments(text) {
