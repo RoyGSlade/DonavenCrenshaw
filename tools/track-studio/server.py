@@ -588,8 +588,8 @@ Converter check on this version: ok={report.get('ok')}, autopilot {fmt_ms(pilot.
 
 Do this:
 1. Read drafts/{did}.json, versions.json, the notes above and the laptop run results.
-2. Produce the next version (it will be v{next_n}). Either (a) edit the sketch or parameters and re-run the converter from the site checkout:
-     cd {cfg.root} && {command_text(cfg.converter)} <sketch.json> --title "<title>" --id w2-v{next_n} --version {next_n} > <out.json>
+2. Produce the next version (it will be v{next_n}). Either (a) edit the sketch or parameters and re-run the converter (your working directory is the site checkout):
+     {command_text(cfg.converter)} <sketch.json> --title "<title>" --id w2-v{next_n} --version {next_n} > <out.json>
    or (b) edit the event JSON directly. Keep it valid and finishable by the autopilot, and re-check it with the converter's checks (attach its report). Prefer (a).
 3. Save it as a new version with the studio's own CLI (the file may be the converter's full {{event, report, svg}} output, or a bare event plus --report-file / --svg-file):
      python3 {server} add-version --data {store.data} --root {cfg.root} --from-file <out.json> --source agent --from-version {version['version']} --notes "<one line: what you changed>"
