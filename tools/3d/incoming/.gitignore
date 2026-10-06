@@ -1,0 +1,7 @@
+# Raw Meshy downloads are big and stay local; only the optimized result in art/3d/ is committed.
+*.glb
+*.gltf
+*.bin
+*.webp
+*.png
+*.jpg
