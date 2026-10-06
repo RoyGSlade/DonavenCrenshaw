@@ -32,8 +32,7 @@ function makeHull(THREE, assets, buildKey) {
     const materials = ownMaterials(fit.root);
     const features = hullFeatures(picked.key);
     // A measured nozzle beats fitModel's default pair when the .glb names none.
-    const named = fit.ports.length && fit.ports !== null && picked.object.getObjectByName && hasExhaustNodes(picked.object);
-    const ports = !named && features?.ports ? features.ports.map((p) => ({ x: p.x, y: p.y, z: p.z })) : fit.ports;
+    const ports = features?.ports && !hasExhaustNodes(picked.object) ? features.ports.map((p) => ({ x: p.x, y: p.y, z: p.z })) : fit.ports;
     return { key: picked.key, root: fit.root, ports, materials, ownGeometries: [], custom: true, features };
   }
   const built = buildCourier(THREE);
@@ -137,6 +136,8 @@ export function createShipRig(THREE, assets) {
 
   let hull = null;
   let hullKey = null;
+  let glows = null;
+  let cockpit = false;
   let length = SHIP_LENGTH;
   const state = createMotionState();
   const out = {};
@@ -149,12 +150,17 @@ export function createShipRig(THREE, assets) {
     if (hull && hullKey === wanted) return;
     hullKey = wanted;
     if (hull) { scaler.remove(hull.root); disposeHull(hull); }
+    glows?.dispose();
     hull = makeHull(THREE, assets, buildKey);
     scaler.add(hull.root);
+    glows = hull.features?.glows ? makeGlows(THREE, texture, hull.features.glows) : null;
+    if (glows) scaler.add(glows.group);
     length = SHIP_LENGTH * (buildKey ? buildScale(buildKey) : 1);
     scaler.scale.setScalar(length);
     shipInfo.length = length;
     shipInfo.ports = hull.ports.map((p) => ({ x: p.x * length, z: p.z * length }));
+    shipInfo.hullKey = hull.key;
+    shipInfo.eye = hull.features?.eye || null;
   }
 
   return {
@@ -193,6 +199,12 @@ export function createShipRig(THREE, assets) {
       engines.update(ports, out, time, !reduced);
       const flash = out.stunned ? (reduced ? 0.55 : 0.35 + 0.35 * Math.sin(time * 40) ** 2) : 0;
       flashHull(hull, flash * out.stun);
+      // Painted-on light: the nozzle glow breathes with the engines; the canopy's hides
+      // in the cockpit view, where the eye sits just above the glass.
+      if (glows) for (const g of glows.items) {
+        g.sprite.visible = !(cockpit && g.part === 'canopy');
+        g.material.opacity = g.part === 'engine' ? g.opacity * (0.35 + 0.65 * out.glow) : g.opacity;
+      }
 
       stunRing.visible = out.stunned;
       if (out.stunned) { stunRing.material.opacity = reduced ? 0.7 : 0.45 + 0.4 * Math.sin(time * 40) ** 2; stunRing.scale.setScalar(length * 1.3); }
@@ -210,10 +222,13 @@ export function createShipRig(THREE, assets) {
 
       shipInfo.glow = out.glow; shipInfo.boost = out.boost; shipInfo.strafe = out.strafe; shipInfo.brake = out.brake;
       shipInfo.stunned = out.stunned; shipInfo.speed = out.speed; shipInfo.active = started; shipInfo.hover = HOVER; shipInfo.visible = wasVisible;
+      shipInfo.bank = out.bank; shipInfo.pitch = out.pitch;
     },
     setVisible(v) { group.visible = !!v; wasVisible = !!v; shipInfo.visible = !!v; },
+    setView(view) { cockpit = view === 'cockpit'; },
     dispose() {
       disposeHull(hull);
+      glows?.dispose();
       engines.dispose();
       for (const r of [brakeRing, invulnRing, stunRing]) { r.geometry.dispose(); r.material.dispose(); }
       shadowGeo.dispose(); shadowMat.dispose(); texture.dispose();

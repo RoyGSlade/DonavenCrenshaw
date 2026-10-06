@@ -53,6 +53,7 @@ function markup() {
       ${row('Camera', 'behind ship: the view turns with you', '<button type="button" data-fx="camera"></button>')}
       ${steppers('camera')}
       ${row('3D view (beta)', '<span data-fx-3d-hint>same flight, drawn in 3D</span>', '<button type="button" data-fx="render3d"></button>')}
+      ${row('3D behind-ship camera', 'cockpit: sit just ahead of the canopy', '<button type="button" data-fx="camera3d"></button>', 'fx-3d-row')}
       ${row('Camera defaults', '', '<button type="button" data-fx="camera-reset">Reset</button>')}
     </div>
     <div class="fx-pane" data-pane="controls">
@@ -106,6 +107,8 @@ function paint() {
   const toggle = (id, on, text) => { const b = box.querySelector(`[data-fx="${id}"]`); b.textContent = text; b.setAttribute('aria-pressed', String(on)); };
   toggle('camera', s.cameraMode === 'behind', s.cameraMode === 'behind' ? 'Behind ship' : 'Track view');
   paint3dToggle(toggle);
+  toggle('camera3d', s.camera3d === 'cockpit', s.camera3d === 'cockpit' ? 'Cockpit' : 'Chase');
+  box.querySelector('.fx-3d-row').hidden = readRenderMode() !== '3d';
   toggle('autofire', s.autoFire, s.autoFire ? 'On' : 'Off');
   toggle('map-toggle', s.minimap.show, s.minimap.show ? 'On' : 'Off');
   toggle('sticks', s.binds.sticks === 'left-turn', s.binds.sticks === 'left-turn' ? 'Left turns · right strafes' : 'Left moves · right turns');
@@ -304,6 +307,7 @@ export function buildFlightSettings({ onEditLayout, onChange }) {
       paint();
       return;
     }
+    else if (action === 'camera3d') updateFlightSettings((s) => { s.camera3d = s.camera3d === 'cockpit' ? 'chase' : 'cockpit'; });
     else if (action === 'camera-reset') updateFlightSettings((s) => { s.camera = { ...CAMERA_DEFAULTS }; });
     else if (action === 'autofire') updateFlightSettings((s) => { s.autoFire = !s.autoFire; });
     else if (action === 'map-toggle') updateFlightSettings((s) => { s.minimap.show = !s.minimap.show; });

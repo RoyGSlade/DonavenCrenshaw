@@ -12,9 +12,10 @@
 //
 // Module contracts (each lives in its own file so they can be built in parallel):
 //   world.js   createWorld(THREE, layout)            -> { group, update(scene, time, opts), dispose() }
-//   ship.js    createShipRig(THREE, assets)          -> { group, update(pose, keys, scene, time, dt), setVisible(bool), dispose() }
+//   ship.js    createShipRig(THREE, assets)          -> { group, update(pose, keys, scene, time, dt), setVisible(bool), setView(view), dispose() }
 //              createGhostRig(THREE, assets, color)  -> { group, update(pose, time), dispose() }
-//   camera.js  createCameraRig(THREE)                -> { camera, update(scene, pose, cam2d, viewport, dt), resize(w, h) }
+//   camera.js  createCameraRig(THREE)                -> { camera, update(scene, pose, cam2d, viewport, dt, view), resize(w, h) }
+//              view: 'chase' (default) or 'cockpit' (3D only; the behind-ship slot when the player picks it)
 //   fx.js      createFx(THREE)                       -> { group, update(scene, pose, keys, time, dt), burst(kind, x, y), dispose() }
 //   assets.js  loadAssets(THREE, manifestUrl)        -> Promise<{ ships, props, manifest }>
 import { readRenderMode } from './mode.js';
@@ -67,9 +68,10 @@ async function start(host) {
 /**
  * Draw one frame. lv is the weekly scene (engine/modes/weekly.js), pose the
  * interpolated player pose (lv.viewPlayer || lv.player), cam2d the 2D camera
- * (state.gfx.camera), ghosts the ghost poses for this instant.
+ * (state.gfx.camera), ghosts the ghost poses for this instant, view the 3D
+ * camera ('chase' or 'cockpit').
  */
-export function draw3d({ lv, pose, keys, cam2d, ghosts = [], time = 0, dt = 0, width, height }) {
+export function draw3d({ lv, pose, keys, cam2d, ghosts = [], time = 0, dt = 0, width, height, view = 'chase' }) {
   const s = state3d;
   if (!s?.ready) return;
   try {
@@ -90,11 +92,12 @@ export function draw3d({ lv, pose, keys, cam2d, ghosts = [], time = 0, dt = 0, w
     }
     s.world.update(lv, time, { reducedMotion: !!lv.reducedMotion });
     s.ship.setVisible(!lv.wreck);
+    s.ship.setView(view);
     if (!lv.wreck) s.ship.update(pose, keys, lv, time, dt);
     s.fx.update(lv, pose, keys, time, dt);
     s.shots.update(lv);
     syncGhosts(s, ghosts, time);
-    s.rig.update(lv, pose, cam2d, { width, height }, dt);
+    s.rig.update(lv, pose, cam2d, { width, height }, dt, view);
     s.renderer.render(s.scene, s.rig.camera);
   } catch (error) {
     failed = true;

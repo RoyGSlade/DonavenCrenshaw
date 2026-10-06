@@ -10,17 +10,18 @@ import {
 } from '../projects/Space-Shooter/gfx3d/motion/shipMotion.js';
 import {
   CAMERA_3D, viewBasis, pitchForAnchor, cameraDistance, placeRig, projectGround, pixelNdc2d, lensShift, visibleGround,
-  createFollow, stepFollow, shakeOffset,
+  createFollow, stepFollow, shakeOffset, COCKPIT_3D, placeCockpit,
 } from '../projects/Space-Shooter/gfx3d/motion/cameraMath.js';
 import { createPool, spawn, stepPool, clearPool, ageFrac, lifeAlpha } from '../projects/Space-Shooter/gfx3d/motion/particlePool.js';
 import { createWatch, watchFrame } from '../projects/Space-Shooter/gfx3d/motion/fxWatch.js';
 import { loftPrism, buildCourier, COURIER } from '../projects/Space-Shooter/gfx3d/motion/courierModel.js';
-import { familyOf, pickShipModel, fitModel, ownMaterials } from '../projects/Space-Shooter/gfx3d/motion/shipAssets.js';
+import { familyOf, pickShipModel, fitModel, ownMaterials, HULL_FEATURES, hullFeatures } from '../projects/Space-Shooter/gfx3d/motion/shipAssets.js';
 import { shipInfo, portWorld } from '../projects/Space-Shooter/gfx3d/motion/shipInfo.js';
 import { createShipRig, createGhostRig } from '../projects/Space-Shooter/gfx3d/ship.js';
 import { createCameraRig } from '../projects/Space-Shooter/gfx3d/camera.js';
 import { createFx } from '../projects/Space-Shooter/gfx3d/fx.js';
 import { buildScale } from '../projects/Space-Shooter/engine/shipStats.js';
+import { camera3dView } from '../projects/Space-Shooter/systems/flightSettings.js';
 
 const near = (a, b, eps = 1e-6, msg) => assert.ok(Math.abs(a - b) <= eps, msg || `${a} not within ${eps} of ${b}`);
 
@@ -588,4 +589,108 @@ test('effects: exhaust streams from the engine ports while the engines burn, and
   assert.ok(fx.stats().glow > burning, 'a boost makes more');
   shipInfo.glow = 0; shipInfo.boost = 0;
   fx.dispose();
+});
+
+// -------------------------------------------------------------- cockpit ----
+const RAD = Math.PI / 180;
+
+test('the Needle\'s cockpit eye sits just ahead of and above the canopy top (Blender measurement, unit space)', () => {
+  const eye = hullFeatures('needle:0-1-2-0').eye;
+  assert.equal(eye, HULL_FEATURES.needle.eye);
+  // Canopy top in the 1.446-cell export: x -0.285, y 0.1079; in unit space ÷ 1.446.
+  const canopyX = -0.285 / 1.446, canopyY = 0.1079 / 1.446;
+  near(eye.x - canopyX, 0.13 * 0.7597 / 1.446, 0.01, 'about 0.13 m ahead of the canopy top');
+  near(eye.y - canopyY, 0.06 * 0.7597 / 1.446, 0.01, 'about 0.06 m above it');
+  near(eye.x, -0.242 * 0.7597 / 1.446, 1e-3); near(eye.y, 0.208 * 0.7597 / 1.446, 3e-3);   // y: the two measurements give 0.107 and 0.109 near(eye.z, 0.004, 1e-9);
+  assert.equal(hullFeatures('wisp'), null, 'hulls without a measurement use the generic eye');
+});
+
+test('cockpit lens: 62° vertical, 2.4° down, a near plane that does not clip the spars', () => {
+  assert.equal(COCKPIT_3D.FOV, 62);
+  assert.equal(COCKPIT_3D.PITCH_DOWN, 2.4);
+  assert.ok(COCKPIT_3D.NEAR <= 0.02 && COCKPIT_3D.NEAR < CAMERA_3D.NEAR);
+});
+
+test('the cockpit eye rides the ship\'s heading: position and look direction for a pose', () => {
+  const eye = HULL_FEATURES.needle.eye, L = 1.2, hover = 0.3;
+  const a = placeCockpit({ x: 10, y: 5, angle: 0, length: L, hover, eye });
+  near(a.px, 10 + eye.x * L); near(a.py, hover + eye.y * L); near(a.pz, 5 + eye.z * L);
+  near(a.fx, Math.cos(2.4 * RAD)); near(a.fy, -Math.sin(2.4 * RAD)); near(a.fz, 0);
+  near(a.ux, Math.sin(2.4 * RAD)); near(a.uy, Math.cos(2.4 * RAD)); near(a.uz, 0);
+  // Sim angle +90° points along sim +y, which is three.js +Z; the eye offset turns with it.
+  const b = placeCockpit({ x: 10, y: 5, angle: Math.PI / 2, length: L, hover, eye });
+  near(b.fx, 0); near(b.fz, Math.cos(2.4 * RAD)); near(b.fy, -Math.sin(2.4 * RAD));
+  near(b.px, 10 - eye.z * L); near(b.pz, 5 + eye.x * L);
+  // Bank rolls the view a share of the hull's lean; reduced motion keeps it level.
+  const banked = placeCockpit({ x: 0, y: 0, angle: 0, eye, bank: 0.4 });
+  near(banked.uz, Math.sin(0.4 * COCKPIT_3D.ROLL_FOLLOW) * Math.cos(2.4 * RAD), 1e-9, 'rolls with half the bank (starboard down leans the top to starboard, like the hull)');
+  const calm = placeCockpit({ x: 0, y: 0, angle: 0, eye, bank: 0.4, pitch: 0.1, reduced: true });
+  near(calm.uz, 0); near(calm.fy, -Math.sin(2.4 * RAD));
+  for (const o of [a, b, banked]) { near(Math.hypot(o.fx, o.fy, o.fz), 1); near(o.fx * o.ux + o.fy * o.uy + o.fz * o.uz, 0); }
+});
+
+test('the cockpit camera looks down the lane with no 2D lens shift, and the chase view comes back intact', () => {
+  const rig = createCameraRig(THREE);
+  rig.resize(1920, 1080);
+  const vp = { width: 1920, height: 1080 };
+  const cam2d = { x: 20, y: 10, zoom: 1.15, viewRot: -Math.PI / 2, anchorY: 0.78 };
+  const pose = { x: 20, y: 10, angle: 0, vx: 8, vy: 0, stunTimer: 0 };
+  const saved = { ...shipInfo };
+  Object.assign(shipInfo, { length: 1, hover: 0.3, eye: HULL_FEATURES.needle.eye, bank: 0, pitch: 0 });
+  try {
+    rig.update({}, pose, cam2d, vp, 1 / 60, 'cockpit');
+    rig.camera.updateMatrixWorld(true);
+    const want = placeCockpit({ x: 20, y: 10, angle: 0, length: 1, hover: 0.3, eye: HULL_FEATURES.needle.eye });
+    near(rig.camera.position.x, want.px); near(rig.camera.position.y, want.py); near(rig.camera.position.z, want.pz);
+    near(rig.camera.fov, 62); near(rig.camera.near, COCKPIT_3D.NEAR);
+    const e = rig.camera.projectionMatrix.elements;
+    near(e[8], 0); near(e[9], 0);
+    // The lane centre 20 cells ahead is dead ahead, just below the horizon; the hull's own nose is below centre.
+    const lane = new THREE.Vector3(40, 0, want.pz).project(rig.camera);
+    near(lane.x, 0, 1e-6); assert.ok(lane.y < 0.2 && lane.y > -0.4, `lane at ${lane.y}`);
+    const nose = new THREE.Vector3(20.5, 0.3, 10).project(rig.camera);
+    assert.ok(nose.y < 0 && Math.abs(nose.x) < 0.05 && nose.z < 1, 'the nose is in view below centre');
+    // Wrecked: back to the chase view so the explosion shows.
+    rig.update({ wreck: { x: 20, y: 10 } }, pose, cam2d, vp, 1 / 60, 'cockpit');
+    near(rig.camera.fov, CAMERA_3D.FOV); near(rig.camera.near, CAMERA_3D.NEAR);
+    // And the chase view still pins the ship to its 2D pixel.
+    rig.update({}, pose, cam2d, vp, 1 / 60, 'chase');
+    rig.camera.updateMatrixWorld(true);
+    const v = new THREE.Vector3(pose.x, 0, pose.y).project(rig.camera);
+    const px = pixelNdc2d(cam2d, pose.x, pose.y, 1920, 1080, 18, {});
+    near(v.x, px.x, 1e-6); near(v.y, px.y, 1e-6);
+  } finally { Object.assign(shipInfo, saved); }
+});
+
+test('cockpit is 3D only: it takes the behind-ship slot when chosen, and 2D has no such mode', async () => {
+  assert.equal(camera3dView({ cameraMode: 'behind', camera3d: 'cockpit' }), 'cockpit');
+  assert.equal(camera3dView({ cameraMode: 'track', camera3d: 'cockpit' }), 'chase', 'C still toggles track view');
+  assert.equal(camera3dView({ cameraMode: 'behind', camera3d: 'chase' }), 'chase');
+  assert.equal(camera3dView({ cameraMode: 'behind' }), 'chase', 'old saved settings default to chase');
+  const { readFileSync } = await import('node:fs');
+  const read = (f) => readFileSync(new URL(`../projects/Space-Shooter/${f}`, import.meta.url), 'utf8');
+  // The 2D camera and the C key know only track and behind; the 3D setting is read where draw3d is fed, nowhere else in 2D.
+  for (const f of ['engine/systems/camera.js', 'input.js']) assert.ok(!/cockpit|camera3d/i.test(read(f)), `${f} knows nothing of the cockpit`);
+  const gfx = read('ui/graphics.js');
+  assert.equal((gfx.match(/camera3dView\(/g) || []).length, 1, 'graphics.js reads it once, for draw3d');
+});
+
+test('the Needle flies on its one measured tail nozzle, and its canopy glow hides in the cockpit', () => {
+  const needle = new THREE.Group();
+  needle.add(new THREE.Mesh(new THREE.BoxGeometry(1.446, 0.2, 0.9), new THREE.MeshStandardMaterial()));
+  const rig = createShipRig(THREE, { ships: { needle } });
+  const lv = baseLv({ ship: 'needle' });
+  const pose = { x: 0, y: 0, angle: 0, vx: 0, vy: 0, stunTimer: 0 };
+  rig.update(pose, {}, lv, 0, 1 / 60);
+  assert.equal(shipInfo.ports.length, 1);
+  near(shipInfo.ports[0].x, -0.478 * shipInfo.length, 1e-9);
+  assert.equal(shipInfo.eye, HULL_FEATURES.needle.eye);
+  const sprites = []; rig.group.traverse((o) => { if (o.isSprite) sprites.push(o); });
+  const canopy = sprites.find((o) => Math.abs(o.position.y - 0.06) < 1e-9);
+  assert.ok(canopy?.visible, 'canopy glow shows in the chase view');
+  rig.setView('cockpit'); rig.update(pose, {}, lv, 0.1, 1 / 60);
+  assert.equal(canopy.visible, false);
+  rig.setView('chase'); rig.update(pose, {}, lv, 0.2, 1 / 60);
+  assert.equal(canopy.visible, true);
+  rig.dispose();
 });

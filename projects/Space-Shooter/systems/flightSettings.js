@@ -46,6 +46,9 @@ function defaults(touch) {
     // 'track': the screen keeps the track's orientation. 'behind': the view
     // turns with the ship, so it always points up the screen.
     cameraMode: 'track',
+    // 3D view only: what the behind-ship slot shows. 'chase' is the tilted
+    // chase camera; 'cockpit' puts the eye just ahead of the canopy.
+    camera3d: 'chase',
     camera: { ...CAMERA_DEFAULTS },
     binds: defaultBinds(),
     controller: { ...CONTROLLER_DEFAULTS },
@@ -104,6 +107,8 @@ export const tiltTuning = (settings = flightSettings()) => ({
   expo: pick(TILT_EXPOS, settings.tilt?.sensIndex, TILT_DEFAULTS.sensIndex),
 });
 export const cameraBehind = () => flightSettings().cameraMode === 'behind';
+/** The 3D camera for this frame: 'cockpit' in the behind-ship slot when chosen, else 'chase'. 2D ignores it. */
+export const camera3dView = (settings = flightSettings()) => (settings.cameraMode === 'behind' && settings.camera3d === 'cockpit' ? 'cockpit' : 'chase');
 /** The player's camera tuning: { fov, distance, stiffness, swivel, transition }. */
 export const cameraTuning = (settings = flightSettings()) => ({
   fov: pick(CAMERA_FOVS, settings.camera?.fovIndex, CAMERA_DEFAULTS.fovIndex),

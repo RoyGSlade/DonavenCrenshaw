@@ -18,6 +18,7 @@ import { ghostPosesNow } from '../engine/modes/weekly.js';
 import { updateFlightUi } from './flightUi.js';
 import { drawHitboxDebug } from '../gfx/hitboxDebug.js';
 import { readRenderMode, RENDER_EVENT } from '../gfx3d/mode.js';
+import { camera3dView } from '../systems/flightSettings.js';
 // ?debug=hitbox outlines the ship's exact body and the pickup shapes.
 const DEBUG_HITBOX = new URLSearchParams(globalThis.location?.search || '').get('debug') === 'hitbox';
 
@@ -271,7 +272,9 @@ export function render() {
   // 3D look (gfx3d/): a WebGL canvas underneath draws the weekly world; this
   // canvas stays transparent there and keeps only the HUD and overlays.
   const lv3d = mode === 'roadmap' ? state.run?.current : null;
-  const in3d = frame3d(lv3d, () => ({ pose: lv3d.viewPlayer || lv3d.player, keys: state.keys, cam2d: state.gfx.camera, ghosts: ghostPosesNow(), time: state.gfx.visualTime || 0, dt, width: W, height: H }));
+  const in3d = frame3d(lv3d, () => ({ pose: lv3d.viewPlayer || lv3d.player, keys: state.keys, cam2d: state.gfx.camera, ghosts: ghostPosesNow(), time: state.gfx.visualTime || 0, dt, width: W, height: H,
+    // The intro flythrough keeps the chase camera so the track pan still shows.
+    view: state.gfx.camera?._introHold ? 'chase' : camera3dView() }));
   if (!in3d) ctx.drawImage(bufferCanvas, 0, 0);
 
   // Optional starfield

@@ -12,7 +12,13 @@
 // whether it is the track view or the behind-ship view, so following it is how
 // the 3D view mirrors them. If it is missing (a fresh page, a test) the rig
 // follows the ship itself with its own smoothed look-ahead along its velocity.
-import { CAMERA_3D, cameraDistance, createFollow, lensShift, pitchForAnchor, placeRig, shakeOffset, stepFollow } from './motion/cameraMath.js';
+//
+// view 'cockpit' (3D only, chosen in Settings for the behind-ship slot) instead
+// puts the eye just ahead of the canopy, looking down the lane along the ship's
+// heading; the hull's measured eye comes from motion/shipInfo.js. It has no 2D
+// framing to match, so no lens shift. The wreck goes back to the chase view.
+import { CAMERA_3D, COCKPIT_3D, cameraDistance, createFollow, lensShift, pitchForAnchor, placeCockpit, placeRig, shakeOffset, stepFollow } from './motion/cameraMath.js';
+import { shipInfo } from './motion/shipInfo.js';
 import { reducedMotion, viewCells } from './motion/prefs.js';
 import { easeRate } from './motion/spring.js';
 
@@ -22,6 +28,7 @@ export function createCameraRig(THREE) {
   const camera = new THREE.PerspectiveCamera(CAMERA_3D.FOV, 1, CAMERA_3D.NEAR, CAMERA_3D.FAR);
   const follow = createFollow();
   const placed = {};
+  const eye = {};
   const shift = {};
   const shakeVec = { x: 0, y: 0 };
   const view = { x: 0, y: 0, zoom: 1, viewRot: 0, anchorY: 0.5 };
@@ -32,7 +39,7 @@ export function createCameraRig(THREE) {
   let lastStun = 0, lastWreck = false;
   const target = new THREE.Vector3();
 
-  function apply(W, H, cam, pose, dt, lv) {
+  function apply(W, H, cam, pose, dt, lv, cockpit) {
     const reduced = reducedMotion(lv);
     clock += Math.min(Math.max(dt, 0), 0.1);
 
@@ -44,6 +51,22 @@ export function createCameraRig(THREE) {
     shake *= 1 - easeRate(7, dt);
     if (shake < 0.002) shake = 0;
     if (reduced || shake === 0) { shakeVec.x = shakeVec.y = 0; } else shakeOffset(clock, shake, shakeVec);
+
+    if (cockpit) {
+      placeCockpit({
+        x: pose.x, y: pose.y, angle: pose.angle, length: shipInfo.length, hover: shipInfo.hover,
+        eye: shipInfo.eye || COCKPIT_3D.EYE, bank: shipInfo.bank, pitch: shipInfo.pitch, reduced,
+      }, eye);
+      camera.position.set(eye.px + shakeVec.x * COCKPIT_3D.SHAKE, eye.py, eye.pz + shakeVec.y * COCKPIT_3D.SHAKE);
+      camera.up.set(eye.ux, eye.uy, eye.uz);
+      target.set(camera.position.x + eye.fx, camera.position.y + eye.fy, camera.position.z + eye.fz);
+      camera.lookAt(target);
+      camera.fov = COCKPIT_3D.FOV; camera.near = COCKPIT_3D.NEAR;
+      camera.aspect = W / Math.max(1, H);
+      camera.updateProjectionMatrix();   // rebuilt without the chase view's lens shift
+      return;
+    }
+    camera.fov = CAMERA_3D.FOV; camera.near = CAMERA_3D.NEAR;
 
     const cells = viewCells();
     const zoom = finite(cam.zoom) && cam.zoom > 0.05 ? cam.zoom : 1;
@@ -72,8 +95,9 @@ export function createCameraRig(THREE) {
 
   return {
     camera,
-    update(lv, pose, cam2d, viewport, dt = 0) {
+    update(lv, pose, cam2d, viewport, dt = 0, view = 'chase') {
       const W = viewport?.width || 1, H = viewport?.height || 1;
+      const cockpit = view === 'cockpit' && !lv?.wreck && !!pose && finite(pose.x) && finite(pose.y) && finite(pose.angle);
       let cam = cam2d;
       if (!cam || !finite(cam.x) || !finite(cam.y)) {
         // No 2D camera to mirror: chase the ship with a look-ahead along its velocity.
@@ -82,7 +106,7 @@ export function createCameraRig(THREE) {
         own2d.x = follow.x; own2d.y = follow.y;
         cam = own2d;
       }
-      apply(W, H, cam, pose, dt, lv);
+      apply(W, H, cam, pose, dt, lv, cockpit);
     },
     resize(w, h) {
       aspect = w / Math.max(1, h);
