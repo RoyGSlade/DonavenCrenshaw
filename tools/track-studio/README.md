@@ -24,6 +24,19 @@ and requested items. Draft format: `projects/Space-Shooter/studio/draftV2.js`;
 geometry: `studio/studioGeometry.js`; what the game can fly vs design intent:
 `docs/stardust/TRACK-STUDIO-V2-GAME-SUPPORT.md`.
 
+True to the game's scale: the lane, stamps, shards, obstacle rows, zones and
+the ship are all drawn on one world-to-screen scale, at the sizes the game uses
+(`studio/gameSizes.js`, read from the game code; `tests/stardust-studio-sizes.test.mjs`
+fails if a game constant changes). Sizes the game fixes (mine, sentry, shard,
+fuel dock, gate and start = the lane width) have a locked handle marked "fixed
+in game"; rocks and shard clusters snap inside the range the converter flies;
+design-intent items are free and labelled in cells. A scale bar in the corner
+reads "1 lane width = X cells", and the ship's silhouette shows once it is big
+enough to see. Widths stop at the game's 5.8–8; older drafts wider than 8 load
+as saved and clamp on the first edit (with a one-time note). The Checks sheet
+flags mine rows that block the lane at real size and shards out of real pickup
+reach, and lists the in-game size table.
+
 Gestures: one finger draws; two fingers pan and pinch; a big contact (palm) or
 a late second finger is ignored while drawing; with a stylus the pen draws and
 a finger pans. Long-press a stamp for its properties.

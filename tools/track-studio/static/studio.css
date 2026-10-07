@@ -121,6 +121,9 @@ label.check { display: flex; align-items: center; gap: 12px; font-weight: 500; m
 .sub .stat { padding: 0 10px; min-height: 44px; display: inline-flex; align-items: center; border-radius: 10px; border: 1px dashed var(--edge-strong); white-space: nowrap; }
 .sub .stat.bad { border-color: var(--pink); color: var(--pink); }
 .sub .stat.ok { border-color: var(--cyan); color: var(--cyan); }
+.sub .stat.locked { color: #c6ced6; }
+/* The game's widest lane: a tick at the slider's end (the slider stops there). */
+.slider .gamemax { font-weight: 600; color: var(--cyan); white-space: nowrap; border-left: 2px solid var(--cyan); padding-left: 6px; }
 .sub canvas.graph { width: 260px; height: 48px; border-radius: 8px; border: 1px solid var(--edge); background: #05080c; }
 .sub .palette button { gap: 6px; }
 .sub .swatch { width: 18px; height: 18px; border-radius: 50%; display: inline-block; }
@@ -181,6 +184,11 @@ legend { font-weight: 600; padding: 0; margin-bottom: 8px; }
 .list li { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 10px; background: var(--metal-1); border: 1px solid var(--edge); min-height: 56px; }
 .list li .grow { flex: 1; min-width: 0; }
 .list li .sw { width: 18px; height: 18px; border-radius: 50%; flex: none; }
+.sizes { margin-top: 14px; }
+.sizes summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; font-weight: 600; }
+.sizes table { width: 100%; border-collapse: collapse; }
+.sizes td { padding: 6px 4px; border-top: 1px solid var(--edge); vertical-align: top; }
+.sizes td.num { font-variant-numeric: tabular-nums; white-space: nowrap; color: var(--cyan); }
 .checks li.bad { border-color: var(--pink); }
 .checks li.warn { border-color: var(--orange); }
 .checks li.good { border-color: rgba(127, 224, 168, 0.45); }

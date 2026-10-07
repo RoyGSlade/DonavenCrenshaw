@@ -11,12 +11,17 @@ import {
 import { gameLane } from '/projects/Space-Shooter/studio/sketchToWeekly.js';
 import { createTrack } from '/projects/Space-Shooter/engine/track.js';
 import { createWeeklyLayout, WEEKLY_RULES } from '/projects/Space-Shooter/engine/weekly/layout.js';
+import {
+  SIZES, sizeRule, snapStampSize, trueStampSize, sizeLabel, defaultStampSize, clampLaneWidth, widerThanGame, clampDocWidths,
+  blockedRows, shardReach, sizeTable, scaleBar,
+} from '/projects/Space-Shooter/studio/gameSizes.js';
 import { renderBoard, drawSkinSample, toScreen, toWorldPx, PEN } from './render.js';
 
 const $ = (id) => document.getElementById(id);
 const DOC_KEY = 'trackStudio.v2.doc';
 const PREFS_KEY = 'trackStudio.v2.prefs';
 const REFINE_KEY = 'trackStudio.refine.v1';
+const WIDTH_NOTED_KEY = 'trackStudio.v2.widthNoted';
 const POLL_MS = 15000;
 const STATUS_LABEL = { ready: 'Ready', 'needs-work': 'Needs work', 'agent-working': 'Agent working', 'approval-requested': 'Approval requested' };
 const PAGE_SIZES = [['S', 180], ['M', 260], ['L', 360], ['XL', 520]];
@@ -113,7 +118,7 @@ const S = {
   tool: 'lane',
   mode: { lane: 'draw', width: 'brush', obstacles: 'pen', shards: 'pen', landmarks: 'pen', hazards: 'pen', notes: 'pen', stamp: 'place', select: 'tap' },
   opts: {
-    smooth: 'medium', brushW: 10, brushPx: 30, obstacleType: 'mine', obstacleSpacing: 6, obstacleSize: 0.84, obstacleBehavior: 'static',
+    smooth: 'medium', brushW: WEEKLY_RULES.MAX_WIDTH, brushPx: 30, obstacleType: 'mine', obstacleSpacing: 6, obstacleSize: 0.84, obstacleBehavior: 'static',
     shardSpacing: 12, showRacing: false, zoneType: 'debris', stampType: 'landmark', stampSize: null, snap: 'off', mirror: false,
   },
   view: { scale: 3, ox: 0, oy: 0 },
@@ -140,7 +145,9 @@ function refresh() {
   const lane = doc.lane.points.map(worldOf);
   const closed = doc.lane.closed && lane.length >= 4;
   const out = { page, lane, closed, cum: null, lap: 0, analysis: null, samples: [], uniform: G.isUniformWidth(doc.width), skinTrack: null, start: null,
-    strokes: [], rows: new Map(), stamps: [], markers: [], racing: null, gameLane: null, shards: { explicit: 0, onLane: 0 } };
+    strokes: [], rows: new Map(), stamps: [], markers: [], racing: null, gameLane: null, shards: { explicit: 0, onLane: 0, off: [] },
+    // The one width the game flies: stamps that span the lane and every true-size check use it.
+    gameWidth: clampLaneWidth(doc.width.base), blocked: [], mines: 0, shipStart: null };
   if (lane.length >= 2) {
     out.cum = G.cumulative(lane, closed);
     out.lap = out.cum.at(-1);
@@ -154,6 +161,9 @@ function refresh() {
     const st = doc.lane.start < lane.length ? doc.lane.start : 0;
     const p = G.pointAt(lane, out.cum, out.cum[st] || 0, closed);
     out.start = { x: p.x, y: p.y, tx: p.tx, ty: p.ty, w: G.widthAt(doc.width, out.cum[st] || 0, out.lap) };
+    // The ship waits this far behind the line, facing along the lap (engine/weekly/layout.js).
+    const back = SIZES.startBehind.value;
+    out.shipStart = { x: p.x - p.tx * back, y: p.y - p.ty * back, angle: Math.atan2(p.ty, p.tx) };
   }
   if (closed) {
     try {
@@ -169,8 +179,16 @@ function refresh() {
     out.strokes.push({ stroke: s, world });
     if (s.layer === 'obstacles' || s.layer === 'shards') out.rows.set(s.id, G.pointsAlong(world, s.spacing || (s.layer === 'shards' ? 12 : 6)));
   }
-  for (const s of doc.stamps) out.stamps.push({ stamp: s, world: worldOf([s.x, s.y]), layer: stampLayer(s) });
-  // Shards placed by hand, and how many sit on the lane.
+  for (const s of doc.stamps) {
+    const world = worldOf([s.x, s.y]);
+    let laneAngle = null;
+    if (s.type === 'shards' && lane.length >= 2) {
+      const q = G.nearestOnPolyline(lane, world, closed, out.cum);
+      if (q) laneAngle = Math.atan2(q.ty, q.tx) * 180 / Math.PI;
+    }
+    out.stamps.push({ stamp: s, world, layer: stampLayer(s), laneAngle });
+  }
+  // Shards placed by hand, and how many the ship can reach at the real pickup radius.
   const shardPts = [];
   for (const { stamp, world } of out.stamps) {
     if (stamp.type === 'shard') shardPts.push(world);
@@ -178,11 +196,29 @@ function refresh() {
   }
   for (const s of doc.strokes) if (s.layer === 'shards') shardPts.push(...(out.rows.get(s.id) || []));
   out.shards.explicit = shardPts.length;
+  // Static mines (stamps and rows) at their real radius, for the blocked-lane check.
+  const mines = [];
+  for (const { stamp, world } of out.stamps) if (stamp.type === 'mine' && stamp.behavior === 'static') mines.push(world);
+  for (const s of doc.strokes) if (s.layer === 'obstacles' && s.type === 'mine' && s.behavior === 'static') mines.push(...(out.rows.get(s.id) || []));
+  out.mines = mines.length;
   if (lane.length >= 2) {
+    const reach = shardReach(out.gameWidth);
     for (const p of shardPts) {
       const q = G.nearestOnPolyline(lane, p, closed, out.cum);
-      if (q && Math.abs(q.off) <= G.widthAt(doc.width, q.s, out.lap) / 2 - 0.3) out.shards.onLane++;
+      if (q && Math.abs(q.off) <= reach) out.shards.onLane++;
+      else if (q) out.shards.off.push(p);
     }
+    const r = SIZES.mineRadius.value, half = out.gameWidth / 2;
+    const items = [];
+    for (const p of mines) {
+      const q = G.nearestOnPolyline(lane, p, closed, out.cum);
+      if (q && Math.abs(q.off) < half + r) items.push({ s: q.s, off: q.off, r });
+    }
+    out.blocked = blockedRows(items, out.gameWidth, { lap: closed ? out.lap : Infinity }).map((b) => {
+      const p = G.pointAt(lane, out.cum, b.s, closed);
+      return { ...b, x: p.x, y: p.y };
+    });
+    for (const b of out.blocked) out.markers.push({ x: b.x, y: b.y, kind: 'blocked' });
   }
   D = out;
   D.checks = buildChecks();
@@ -193,11 +229,24 @@ function refresh() {
 function snapshot() { return JSON.stringify(S.doc); }
 function pushUndo(before) {
   if (before === snapshot()) return false;
+  clampOldWidths();
   S.undo.push(before);
   if (S.undo.length > 300) S.undo.shift();
   S.redo = [];
   return true;
 }
+// Older drafts could ask for lanes up to 14 wide. They load and draw as saved;
+// the first edit clamps them to the game's range (in the same undo step) and
+// says so once per design.
+function clampOldWidths() {
+  if (!widerThanGame(S.doc) || !clampDocWidths(S.doc)) return;
+  const noted = load(WIDTH_NOTED_KEY, []);
+  if (Array.isArray(noted) && noted.includes(S.doc.id)) return;
+  store(WIDTH_NOTED_KEY, [...(Array.isArray(noted) ? noted : []), S.doc.id].slice(-200));
+  S.widthNote = `This design was drawn wider than the game allows. Lane widths over ${WEEKLY_RULES.MAX_WIDTH} are now ${WEEKLY_RULES.MAX_WIDTH}, the game's widest. Undo brings them back.`;
+  setTimeout(() => { if (S.widthNote) { toast(S.widthNote, 'bad'); S.widthNote = null; } }, 0);
+}
+
 function mutate(fn, { quiet = false } = {}) {
   const before = snapshot();
   fn(S.doc);
@@ -287,7 +336,7 @@ function selectionBox() {
   for (const id of S.sel) {
     const st = D.stamps.find((x) => x.stamp.id === id);
     if (st) {
-      const r = Math.max(st.stamp.size / 2, 13 / S.view.scale);
+      const r = Math.max(shownRadius(st.stamp), 13 / S.view.scale);
       pts.push([st.world[0] - r, st.world[1] - r], [st.world[0] + r, st.world[1] + r]);
       single = S.sel.size === 1 ? st : null;
       continue;
@@ -301,10 +350,20 @@ function selectionBox() {
   const box = { x: a[0] - 8, y: a[1] - 8, w: c[0] - a[0] + 16, h: c[1] - a[1] + 16 };
   if (single && (S.tool === 'select' || S.tool === 'stamp')) {
     const q = toScreen(S.view, single.world);
-    box.handles = [{ kind: 'rotate', x: q[0], y: box.y - 30 }, { kind: 'scale', x: box.x + box.w + 14, y: box.y + box.h + 14 }];
+    // Sizes the game fixes get a locked handle; ranges and design intent can be scaled.
+    const locked = ['fixed', 'lane'].includes(sizeRule(single.stamp.type, D.gameWidth).kind);
+    box.handles = [{ kind: 'rotate', x: q[0], y: box.y - 30 }, { kind: locked ? 'locked' : 'scale', x: box.x + box.w + 14, y: box.y + box.h + 14 }];
     box.stamp = single.stamp;
+    box.locked = locked;
+    box.sizeLabel = sizeLabel(single.stamp.type, single.stamp.size, D.gameWidth);
   }
   return box;
+}
+
+/** How far a stamp reaches from its centre at its in-game size (cells). */
+function shownRadius(stamp) {
+  const r = trueStampSize(stamp, D.gameWidth) / 2;
+  return stamp.type === 'shards' ? Math.max(SIZES.shardClusterGap.value, r) + SIZES.shardHeight.value / 2 : r;
 }
 
 function frame(t) {
@@ -314,10 +373,12 @@ function frame(t) {
   const game = S.showGame && S.game && S.game.layout ? { layout: S.game.layout, offset: S.game.offset } : null;
   const markers = live && live.markers ? live.markers : D.markers;
   S.box = selectionBox();
+  const area = usable();
   const busy = renderBoard(ctx, {
     W, H, dpr, view: S.view, page: D.page, skin: S.doc.skin, animate: prefs.animate, time: t / 1000,
     lane: live && live.hideLane ? null : lane, layers: S.doc.layers, strokes: D.strokes, stamps: D.stamps, rows: D.rows,
     markers, racing: D.racing, game, live, selected: S.sel, selectionBox: S.box,
+    gameWidth: D.gameWidth, shipStart: D.closed ? D.shipStart : null, legend: { x: area.x, y: area.y + area.h },
   });
   if ((busy || prefs.animate) && followUps-- > 0) requestDraw();
 }
@@ -331,7 +392,7 @@ function hitStamp(pt, { layer = null } = {}) {
   let best = null;
   for (const st of D.stamps) {
     if (!layerOpen(st.layer) || (layer && st.layer !== layer)) continue;
-    const r = Math.max(st.stamp.size / 2, 22 / S.view.scale);
+    const r = Math.max(shownRadius(st.stamp), 22 / S.view.scale); // true size, or a fingertip, whichever is bigger
     const d = Math.hypot(st.world[0] - w[0], st.world[1] - w[1]);
     if (d <= r && (!best || d < best.d)) best = { d, st };
   }
@@ -502,10 +563,14 @@ function startAction(e, pt) {
     const handle = hitHandle(pt);
     // Stamp mode only picks up stamps (so you can stamp inside a zone); Select picks strokes too.
     const onStamp = hitStamp(pt), onStroke = onStamp || tool === 'stamp' ? null : hitStroke(pt);
-    if (handle && S.box && S.box.stamp) {
+    if (handle && handle.kind === 'locked' && S.box && S.box.stamp) {
+      showHint(`${STAMP_TYPES[S.box.stamp.type].label}: ${sizeLabel(S.box.stamp.type, S.box.stamp.size, D.gameWidth)}.`);
+      buzz(4);
+      action.kind = 'none';
+    } else if (handle && S.box && S.box.stamp) {
       action.kind = handle.kind; action.stampId = S.box.stamp.id; action.before = snapshot();
       action.center = toScreen(S.view, worldOf([S.box.stamp.x, S.box.stamp.y]));
-      action.size0 = S.box.stamp.size; action.rot0 = S.box.stamp.rotation;
+      action.size0 = trueStampSize(S.box.stamp, D.gameWidth); action.rot0 = S.box.stamp.rotation;
       action.a0 = Math.atan2(pt[1] - action.center[1], pt[0] - action.center[0]);
       action.d0 = Math.hypot(pt[0] - action.center[0], pt[1] - action.center[1]) || 1;
     } else if (onStamp || onStroke) {
@@ -556,10 +621,11 @@ function moveAction(pt) {
       if (Math.abs(((deg % 15) + 15) % 15) < 3) deg = Math.round(deg / 15) * 15; // soft snap to 15°
       st.rotation = round(((deg + 540) % 360) - 180, 1);
     } else {
-      st.size = round(clamp(action.size0 * Math.hypot(pt[0] - c[0], pt[1] - c[1]) / action.d0, 0.3, 60), 2);
+      // Snaps inside the game's range (rocks, clusters) or to 0.05 cells (design intent).
+      st.size = snapStampSize(st.type, action.size0 * Math.hypot(pt[0] - c[0], pt[1] - c[1]) / action.d0, D.gameWidth);
     }
     S.doc = doc; refresh(); requestDraw();
-    showHint(k === 'rotate' ? `Rotation ${st.rotation}°` : `Size ${st.size} cells`);
+    showHint(k === 'rotate' ? `Rotation ${st.rotation}°` : sizeLabel(st.type, st.size, D.gameWidth));
   }
 }
 
@@ -756,8 +822,8 @@ function commitWidth(hits) {
   let st = G.coveredStretch(hits, D.lap);
   const pad = Math.max(2, S.opts.brushPx / S.view.scale);
   if (((st.s1 - st.s0) % D.lap + D.lap) % D.lap < pad * 2) st = { s0: st.s0 - pad, s1: st.s1 + pad };
-  mutate((d) => { d.width = G.paintWidthSpan(d.width, st.s0, st.s1, S.opts.brushW, D.lap); });
-  toast(`Width ${S.opts.brushW.toFixed(1)} painted${S.opts.brushW > WEEKLY_RULES.MAX_WIDTH ? ' (wider than 8 is design intent for now)' : ''}.`, 'ok');
+  mutate((d) => { d.width = G.paintWidthSpan(d.width, st.s0, st.s1, clampLaneWidth(S.opts.brushW), D.lap); });
+  toast(`Width ${clampLaneWidth(S.opts.brushW).toFixed(1)} painted.`, 'ok');
 }
 
 // ------------------------------------------------------------------ pens and erasers
@@ -817,16 +883,16 @@ function addStamp(type, w, extra = {}) {
   const layer = def.layer;
   if (!layerOpen(layer)) { toast(`The ${LAYERS[layer].label.toLowerCase()} layer is hidden or locked.`, 'bad'); return null; }
   const at = snapWorld(w);
-  const size = extra.size ?? (S.tool === 'stamp' && S.opts.stampSize ? S.opts.stampSize : def.size);
+  // New stamps start at their in-game size (gates and the start line: the lane width the game flies).
+  const asked = extra.size ?? (S.tool === 'stamp' && S.opts.stampSize ? S.opts.stampSize : defaultStampSize(type, D.gameWidth, def.size));
+  const size = snapStampSize(type, asked, D.gameWidth);
   const make = (p) => {
-    const s = { id: uid('s'), type, x: 0, y: 0, size: round(size, 2), rotation: 0, behavior: 'static', ...extra };
+    const s = { id: uid('s'), type, x: 0, y: 0, rotation: 0, behavior: 'static', ...extra, size };
     [s.x, s.y] = pageOfFree(p);
-    s.size = round(size, 2);
     // Gates and the start line sit across the lane.
     if ((type === 'gate' || type === 'start' || type === 'barricade') && D.lane.length >= 2) {
       const q = G.nearestOnPolyline(D.lane, p, D.closed, D.cum);
       if (q) s.rotation = round(Math.atan2(q.ty, q.tx) * 180 / Math.PI + (type === 'barricade' ? 90 : 0), 1);
-      if (type === 'gate' || type === 'start') s.size = round(G.widthAt(S.doc.width, q.s, D.lap) + 1, 2);
     }
     return s;
   };
@@ -945,7 +1011,7 @@ function layShardsOnRacingLine(count) {
   const n = line.length, made = [];
   for (let k = 0; k < count; k++) {
     const p = line[Math.floor(((k + 0.5) / count) * n) % n];
-    const s = { id: uid('s'), type: 'shard', x: 0, y: 0, size: 1, rotation: 0, behavior: 'static' };
+    const s = { id: uid('s'), type: 'shard', x: 0, y: 0, size: STAMP_TYPES.shard.size, rotation: 0, behavior: 'static' };
     [s.x, s.y] = pageOfFree(p);
     made.push(s);
   }
@@ -976,8 +1042,8 @@ function buildChecks() {
     }
     const game = WEEKLY_RULES;
     const wMin = a.minWidth, wMax = a.maxWidth;
-    if (!D.uniform) add('warn', `Width ${wMin.toFixed(1)}–${wMax.toFixed(1)} cells (design intent)`, `The game flies one width for now: ${clamp(d.width.base, game.MIN_WIDTH, game.MAX_WIDTH)} cells. Variable width needs game work.`);
-    else if (d.width.base > game.MAX_WIDTH) add('warn', `Width ${d.width.base} cells`, `The game's widest is ${game.MAX_WIDTH}; it will fly at ${game.MAX_WIDTH}.`);
+    if (wMax > game.MAX_WIDTH) add('warn', `Width up to ${wMax.toFixed(1)} cells: wider than the game allows`, `An older draft. The game's widest is ${game.MAX_WIDTH}; your next edit clamps it to ${game.MAX_WIDTH}.`);
+    else if (!D.uniform) add('warn', `Width ${wMin.toFixed(1)}–${wMax.toFixed(1)} cells (design intent)`, `The game flies one width for now: ${D.gameWidth} cells. Variable width needs game work.`);
     else add('good', `Width ${d.width.base} cells`, `Game range ${game.MIN_WIDTH}–${game.MAX_WIDTH}.`);
     const lap = Math.round(D.lap);
     if (D.closed) {
@@ -989,7 +1055,13 @@ function buildChecks() {
   const sh = D.shards;
   if (!sh.explicit) add('good', 'Shards: automatic', 'No shards drawn, so the converter lays 8–10. Use the Shards pen to place your own.');
   else if (sh.explicit < G.GAME.MIN_SHARDS) add('warn', `${sh.explicit} shard${sh.explicit === 1 ? '' : 's'}: the game needs at least ${G.GAME.MIN_SHARDS}`, 'The converter will add the rest on the centre line.');
-  else add(sh.onLane < sh.explicit ? 'warn' : 'good', `${sh.onLane} of ${sh.explicit} shards reachable on the lane`, sh.onLane < sh.explicit ? 'Shards off the lane get pulled in or left out.' : 'Weekly tracks usually have 8–10.');
+  else if (sh.off.length) add('warn', `${sh.off.length} shard${sh.off.length === 1 ? ' is' : 's are'} out of the ship's reach`,
+    `At real size the ship collects a shard within ${SIZES.shardPickup.value} cells of its centre, or by touching it, so a shard must sit within ${shardReach(D.gameWidth).toFixed(2)} cells of the centre line on a ${D.gameWidth}-wide lane. The converter pulls these in (or leaves them out if far off).`, sh.off[0]);
+  else add('good', `All ${sh.explicit} shards reachable at real pickup size`, 'Weekly tracks usually have 8–10.');
+  if (D.blocked.length) {
+    add('bad', `Mines block the whole lane in ${D.blocked.length} spot${D.blocked.length === 1 ? '' : 's'}`,
+      `At real size (mines ${(2 * SIZES.mineRadius.value).toFixed(2)} across, the ship ${SIZES.shipWidth.value.toFixed(2)} wide) the widest gap there is ${D.blocked[0].gap.toFixed(2)} cells: the ship cannot get through. Space the row out or leave a gap.`, [D.blocked[0].x, D.blocked[0].y]);
+  } else if (D.mines) add('good', 'Every mine row leaves the ship a way through', `Checked at real size: mines ${(2 * SIZES.mineRadius.value).toFixed(2)} across, ship ${SIZES.shipWidth.value.toFixed(2)} wide.`);
   if (D.closed) add('good', `Start/finish ${d.stamps.some((s) => s.type === 'start') ? 'set by your stamp' : 'at your first point'}`,
     `${D.gameLane ? D.gameLane.points.length - 1 : '?'} checkpoints are placed on the corners automatically; a Gate stamp pins another.`, [D.start.x, D.start.y]);
   const g = S.game;
@@ -1065,7 +1137,7 @@ async function saveNow() {
 
 const HINTS = {
   lane: { draw: 'Draw the centre line. Back near the start closes the loop; draw over the lane to reshape it.', erase: 'Rub out part of the lane, then redraw it.', start: 'Tap the lane where the race starts.' },
-  width: { brush: 'Brush along the lane to set its width there. The taper blends it into the rest.' },
+  width: { brush: `Brush along the lane to set its width there (the game flies ${WEEKLY_RULES.MIN_WIDTH}–${WEEKLY_RULES.MAX_WIDTH}). The taper blends it into the rest.` },
   obstacles: { pen: 'Draw a row of obstacles, or tap for one.', erase: 'Rub out obstacles.' },
   shards: { pen: 'Draw a line of shards, or tap for one.', erase: 'Rub out shards.' },
   landmarks: { pen: 'Sketch a landmark, or tap to drop a marker.', erase: 'Rub out landmarks.' },
@@ -1100,13 +1172,30 @@ function seg(options, value, onPick, label) {
 }
 
 /** A slider with begin/commit semantics: live preview while dragging, one undo step on release. */
-function slider({ label, min, max, step, value, fmt, onLive, onCommit }) {
-  const out = h('span', { text: `${label} ${fmt(value)}` });
-  const input = h('input', { type: 'range', min, max, step, value, 'aria-label': label });
+function slider({ label, min, max, step, value, fmt, onLive, onCommit, gameMax = null }) {
+  const shown = clamp(value, min, max);
+  const out = h('span', { text: `${label} ${fmt(shown)}` });
+  const input = h('input', { type: 'range', min, max, step, value: shown, 'aria-label': label });
   let before = null;
   input.addEventListener('input', () => { if (before === null) before = snapshot(); const v = Number(input.value); out.textContent = `${label} ${fmt(v)}`; onLive(v); });
   input.addEventListener('change', () => { const v = Number(input.value); if (onCommit) onCommit(v, before); before = null; });
-  return h('div', { class: 'slider' }, out, input);
+  return h('div', { class: 'slider' }, out, input, gameMax != null ? h('b', { class: 'gamemax', title: 'The game cannot fly a wider lane', text: `game max ${gameMax}` }) : null);
+}
+
+/** Width sliders stop at the game's widest lane and mark it. */
+const WIDTH_RANGE = { min: G.GAME.MIN_WIDTH, max: G.GAME.MAX_WIDTH, step: 0.1, gameMax: G.GAME.MAX_WIDTH };
+
+/**
+ * A size control that tells the truth about the game: a locked "fixed in game"
+ * label where the game has one size, a slider that snaps inside the game's
+ * range where it has one, and a free slider in cells for design intent.
+ */
+function sizeControl(type, value, { label = 'Size', onLive, onCommit }) {
+  const rule = sizeRule(type, D.gameWidth);
+  if (rule.kind === 'fixed' || rule.kind === 'lane') return h('span', { class: 'stat locked', text: `${label ? `${label}: ` : ''}${sizeLabel(type, value, D.gameWidth)}` });
+  const snap = (v) => snapStampSize(type, v, D.gameWidth);
+  return slider({ label, min: rule.min, max: rule.max, step: rule.kind === 'range' ? 0.05 : 0.1, value: snap(value), fmt: (v) => sizeLabel(type, v, D.gameWidth),
+    onLive: (v) => onLive(snap(v)), onCommit: onCommit ? (v, before) => onCommit(snap(v), before) : undefined });
 }
 
 function docSlider(opts) {
@@ -1132,7 +1221,7 @@ function renderSub() {
   graphCanvas = null;
   if (t === 'lane') {
     kids.push(seg([['draw', 'Draw'], ['erase', 'Eraser'], ['start', 'Set start']], m, setMode, 'Lane mode'));
-    kids.push(docSlider({ label: 'Width', min: G.GAME.MIN_WIDTH, max: G.DESIGN.MAX_WIDTH, step: 0.1, value: S.doc.width.base, fmt: (v) => v.toFixed(1), apply: (d, v) => { d.width.base = round(v, 1); } }));
+    kids.push(docSlider({ label: 'Width', ...WIDTH_RANGE, value: S.doc.width.base, fmt: (v) => v.toFixed(1), apply: (d, v) => { d.width.base = round(clampLaneWidth(v), 1); } }));
     kids.push(seg([['low', 'Smooth −'], ['medium', 'Smooth'], ['high', 'Smooth +']], S.opts.smooth, (v) => { S.opts.smooth = v; }, 'Smoothing'));
     if (D.lane.length && !D.closed) kids.push(button('Close loop', closeLoopNow, 'attn'));
     kids.push(button('Auto start', autoStart), button('Reverse', reverseLane));
@@ -1140,16 +1229,17 @@ function renderSub() {
   } else if (t === 'width') {
     graphCanvas = h('canvas', { class: 'graph', 'aria-label': 'Width along the lap' });
     kids.push(graphCanvas);
-    kids.push(optSlider('brushW', { label: 'Brush', min: G.GAME.MIN_WIDTH, max: G.DESIGN.MAX_WIDTH, step: 0.1, fmt: (v) => v.toFixed(1) }));
+    S.opts.brushW = clampLaneWidth(S.opts.brushW);
+    kids.push(optSlider('brushW', { label: 'Brush', ...WIDTH_RANGE, fmt: (v) => v.toFixed(1) }));
     kids.push(docSlider({ label: 'Taper', min: 0, max: 120, step: 1, value: S.doc.width.taper, fmt: (v) => `${v} cells`, apply: (d, v) => { d.width.taper = v; } }));
-    kids.push(docSlider({ label: 'Base', min: G.GAME.MIN_WIDTH, max: G.DESIGN.MAX_WIDTH, step: 0.1, value: S.doc.width.base, fmt: (v) => v.toFixed(1), apply: (d, v) => { d.width.base = round(v, 1); } }));
+    kids.push(docSlider({ label: 'Base', ...WIDTH_RANGE, value: S.doc.width.base, fmt: (v) => v.toFixed(1), apply: (d, v) => { d.width.base = round(clampLaneWidth(v), 1); } }));
     kids.push(optSlider('brushPx', { label: 'Brush size', min: 12, max: 80, step: 2, fmt: (v) => `${v}px` }));
     kids.push(button('Reset widths', () => mutate((d) => { d.width.spans = []; })));
   } else if (t === 'obstacles') {
     kids.push(seg([['pen', 'Pen'], ['erase', 'Eraser']], m, setMode, 'Obstacle mode'));
-    kids.push(seg(OBSTACLE_TYPES.map((k) => [k, OBSTACLE_LABEL[k]]), S.opts.obstacleType, (v) => { S.opts.obstacleType = v; S.opts.obstacleSize = STAMP_TYPES[v].size; }, 'Obstacle type'));
-    kids.push(optSlider('obstacleSpacing', { label: 'Spacing', min: 1, max: 30, step: 0.5, fmt: (v) => `${v}` }));
-    kids.push(optSlider('obstacleSize', { label: 'Size', min: 0.3, max: 6, step: 0.1, fmt: (v) => v.toFixed(1) }));
+    kids.push(seg(OBSTACLE_TYPES.map((k) => [k, OBSTACLE_LABEL[k]]), S.opts.obstacleType, (v) => { S.opts.obstacleType = v; S.opts.obstacleSize = defaultStampSize(v, D.gameWidth, STAMP_TYPES[v].size); }, 'Obstacle type'));
+    kids.push(optSlider('obstacleSpacing', { label: 'Spacing', min: 1, max: 30, step: 0.5, fmt: (v) => `${v} cells` }));
+    kids.push(sizeControl(S.opts.obstacleType, S.opts.obstacleSize, { onLive: (v) => { S.opts.obstacleSize = v; } }));
     kids.push(seg(Object.entries(BEHAVIORS).filter(([k]) => k !== 'triggered').map(([k, v]) => [k, v.split(' ')[0]]), S.opts.obstacleBehavior, (v) => { S.opts.obstacleBehavior = v; }, 'Behaviour'));
     const inGame = STAMP_TYPES[S.opts.obstacleType].game && (S.opts.obstacleBehavior === 'static' || (S.opts.obstacleType === 'rock' && S.opts.obstacleBehavior === 'moving'));
     kids.push(h('span', { class: 'stat' + (inGame ? ' ok' : ''), text: inGame ? 'In game' : 'Design intent (not in game yet)' }));
@@ -1175,8 +1265,8 @@ function renderSub() {
     kids.push(h('div', { class: 'seg palette', role: 'group', 'aria-label': 'Stamp type' },
       STAMP_PALETTE.map((k) => h('button', { type: 'button', 'aria-pressed': String(S.opts.stampType === k), onclick: () => { S.opts.stampType = k; S.opts.stampSize = null; buzz(4); renderSub(); } },
         h('i', { class: 'swatch', style: `background:${PEN[STAMP_TYPES[k].layer]}` }), k === 'request' ? 'Request new (?)' : STAMP_TYPES[k].label))));
-    kids.push(slider({ label: 'Size', min: 0.3, max: 30, step: 0.1, value: S.opts.stampSize ?? STAMP_TYPES[S.opts.stampType].size, fmt: (v) => v.toFixed(1),
-      onLive: (v) => { S.opts.stampSize = v; } }));
+    const type = S.opts.stampType;
+    kids.push(sizeControl(type, S.opts.stampSize ?? defaultStampSize(type, D.gameWidth, STAMP_TYPES[type].size), { onLive: (v) => { S.opts.stampSize = v; } }));
     kids.push(seg([['off', 'Snap off'], ['centre', 'Centre'], ['edge', 'Edge'], ['grid', 'Grid']], S.opts.snap, (v) => { S.opts.snap = v; }, 'Snap'));
     kids.push(h('button', { type: 'button', 'aria-pressed': String(S.opts.mirror), onclick: () => { S.opts.mirror = !S.opts.mirror; renderSub(); } }, 'Mirror'));
     if (S.sel.size === 1) kids.push(button('Properties', () => openProps([...S.sel][0])));
@@ -1288,8 +1378,8 @@ function openProps(id) {
     $('dlg-props-h').textContent = def.label;
     kids.push(h('p', { class: 'muted', text: `Layer: ${LAYERS[def.layer].label}. ${def.game ? 'The game supports it today.' : 'Design intent: not in the game yet.'}` }));
     kids.push(h('label', { text: 'Type' }), h('div', { class: 'chips' }, STAMP_PALETTE.filter((k) => k !== 'request').map((k) =>
-      h('button', { type: 'button', 'aria-pressed': String(st.type === k), onclick: () => { edit((it) => { it.type = k; }); openProps(id); } }, STAMP_TYPES[k].label))));
-    kids.push(propSlider('Size (cells)', 0.3, 60, 0.1, st.size, (it, v) => { it.size = v; }, id));
+      h('button', { type: 'button', 'aria-pressed': String(st.type === k), onclick: () => { edit((it) => { it.type = k; it.size = defaultStampSize(k, D.gameWidth, STAMP_TYPES[k].size); }); openProps(id); } }, STAMP_TYPES[k].label))));
+    kids.push(h('label', { text: 'Size' }), propSize(st.type, st.size, id));
     kids.push(propSlider('Rotation (°)', -180, 180, 1, st.rotation, (it, v) => { it.rotation = v; }, id));
     kids.push(h('label', { text: 'Behaviour' }), h('div', { class: 'chips' }, Object.entries(BEHAVIORS).filter(([k]) => k !== 'triggered').map(([k, label]) =>
       h('button', { type: 'button', 'aria-pressed': String(st.behavior === k), onclick: () => { edit((it) => { it.behavior = k; }); openProps(id); } }, label))));
@@ -1299,9 +1389,9 @@ function openProps(id) {
   } else {
     $('dlg-props-h').textContent = `${LAYERS[sk.layer].label} stroke`;
     if (sk.layer === 'obstacles') {
-      kids.push(h('label', { text: 'Obstacle' }), h('div', { class: 'chips' }, OBSTACLE_TYPES.map((k) => h('button', { type: 'button', 'aria-pressed': String(sk.type === k), onclick: () => { edit((it) => { it.type = k; }); openProps(id); } }, OBSTACLE_LABEL[k]))));
+      kids.push(h('label', { text: 'Obstacle' }), h('div', { class: 'chips' }, OBSTACLE_TYPES.map((k) => h('button', { type: 'button', 'aria-pressed': String(sk.type === k), onclick: () => { edit((it) => { it.type = k; it.size = defaultStampSize(k, D.gameWidth, STAMP_TYPES[k].size); }); openProps(id); } }, OBSTACLE_LABEL[k]))));
       kids.push(propSlider('Spacing (cells)', 1, 30, 0.5, sk.spacing || 6, (it, v) => { it.spacing = v; }, id));
-      kids.push(propSlider('Size (cells)', 0.3, 6, 0.1, sk.size || 0.84, (it, v) => { it.size = v; }, id));
+      kids.push(h('label', { text: 'Size of each' }), propSize(sk.type, sk.size ?? STAMP_TYPES[sk.type].size, id));
       kids.push(h('label', { text: 'Behaviour' }), h('div', { class: 'chips' }, Object.entries(BEHAVIORS).filter(([k]) => k !== 'triggered').map(([k, label]) =>
         h('button', { type: 'button', 'aria-pressed': String(sk.behavior === k), onclick: () => { edit((it) => { it.behavior = k; }); openProps(id); } }, label))));
     } else if (sk.layer === 'shards') {
@@ -1323,6 +1413,16 @@ function propSlider(label, min, max, step, value, apply, id) {
   return h('div', {}, h('label', { text: label }), slider({ label: '', min, max, step, value, fmt: (v) => String(round(v, 2)),
     onLive: (v) => { const it = S.doc.stamps.find((s) => s.id === id) || S.doc.strokes.find((s) => s.id === id); if (it) { apply(it, round(v, 2)); refresh(); requestDraw(); } },
     onCommit: (v, before) => { if (before !== null && pushUndo(before)) changed(); } }));
+}
+
+/** The properties sheet's size: locked, inside the game's range, or free in cells. */
+function propSize(type, value, id) {
+  const find = () => S.doc.stamps.find((s) => s.id === id) || S.doc.strokes.find((s) => s.id === id);
+  return sizeControl(type, value, {
+    label: '',
+    onLive: (v) => { const it = find(); if (it) { it.size = v; refresh(); requestDraw(); } },
+    onCommit: (v, before) => { if (before !== null && pushUndo(before)) changed(); },
+  });
 }
 
 function textField(label, value, onChange) {
@@ -1362,7 +1462,17 @@ function renderChecks() {
       button('Auto start', autoStart),
       h('button', { type: 'button', 'aria-pressed': String(S.showGame), onclick: () => { S.showGame = !S.showGame; updateChrome(); requestDraw(true); renderChecks(); } }, 'Show what the game flies')),
     intent.length ? h('p', { class: 'intent-label', text: 'Design intent (not in game yet)' }) : null,
-    intent.length ? h('ul', { class: 'intent' }, intent.map((t) => h('li', { text: t }))) : null);
+    intent.length ? h('ul', { class: 'intent' }, intent.map((t) => h('li', { text: t }))) : null,
+    sizesTable());
+}
+
+/** The in-game sizes the studio draws and checks with, and where each comes from. */
+function sizesTable() {
+  return h('details', { class: 'sizes' },
+    h('summary', { text: 'In-game sizes (cells)' }),
+    h('p', { class: 'muted', text: 'Everything on the board is drawn at these sizes, on the same scale as the lane.' }),
+    h('table', {}, h('tbody', {}, sizeTable().map((r) => h('tr', {},
+      h('td', { text: r.label }), h('td', { class: 'num', text: String(r.value) }), h('td', { class: 'muted', text: `${r.source}: ${r.constant}` }))))));
 }
 
 // ------------------------------------------------------------------ track sheet
@@ -1807,6 +1917,6 @@ function boot() {
   setInterval(() => { if (!document.hidden) refreshState(); }, POLL_MS);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshState(); else if (S.doc) { clearTimeout(saveTimer); saveNow(); } });
   // Expose a tiny handle for the headless smoke test (read-only use).
-  globalThis.__studio = { S, get D() { return D; }, refresh, fitView };
+  globalThis.__studio = { S, get D() { return D; }, refresh, fitView, mutate, zoomAt, legend: () => scaleBar(S.view.scale, D.gameWidth) };
 }
 boot();

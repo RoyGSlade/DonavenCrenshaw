@@ -12,6 +12,9 @@ import { createWeeklyLayout, WEEKLY_RULES as R, bouncerPosition, cornerInside } 
 import { flyWeeklyLap } from '../engine/weekly/pilot.js';
 import { normalizeDoc, pageSize, STAMP_TYPES, ZONE_TYPES, BEHAVIORS, SKINS } from './draftV2.js';
 import { pointsAlong, isUniformWidth, widthSamples, polygonArea, clampWidth } from './studioGeometry.js';
+import { ROCK_RADIUS, SHARD_CLUSTER_MIN_GAP, SHARD_MERGE } from './gameSizes.js';
+
+export { ROCK_RADIUS, SHARD_CLUSTER_MIN_GAP, SHARD_MERGE };
 
 const finite = (v) => typeof v === 'number' && Number.isFinite(v);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -359,7 +362,7 @@ function placeDesign(doc, toWorld, track) {
     else if (s.type === 'shards') {
       const c = onLane(p, 0.35, 'shards');
       if (c) {
-        const gap = Math.max(1.2, s.size / 2);
+        const gap = Math.max(SHARD_CLUSTER_MIN_GAP, s.size / 2);
         for (const d of [-gap, 0, gap]) {
           const w = pointOnTrack(track, c.along + d, c.off);
           shards.push(onLane([w.x, w.y], 0.35, 'shards'));
@@ -372,8 +375,8 @@ function placeDesign(doc, toWorld, track) {
       else wantsBehaviour('rock', s.behavior, p);
     } else if (s.type === 'sentry') sentries.push(p);
     else if (s.type === 'fuel') stations.push(onLane(p, 1.2, 'fuel docks'));
-    else if (s.type === 'barricade' || s.type === 'debris') { unsupported[s.type]++; if (s.behavior !== 'static') wantsBehaviour(s.type, s.behavior, p); say(s.type, `${STAMP_TYPES[s.type].label}${s.label ? ` "${s.label}"` : ''} (size ${s.size}) ${lapLabel(track, p)}: not in the game yet.`, p); }
-    else if (s.type === 'landmark' || s.type === 'star') say(s.type, `${STAMP_TYPES[s.type].label}${s.label ? ` "${s.label}"` : ''} (size ${s.size}) ${lapLabel(track, p)}.`, p, { size: s.size });
+    else if (s.type === 'barricade' || s.type === 'debris') { unsupported[s.type]++; if (s.behavior !== 'static') wantsBehaviour(s.type, s.behavior, p); say(s.type, `${STAMP_TYPES[s.type].label}${s.label ? ` "${s.label}"` : ''} (${s.size} cells across) ${lapLabel(track, p)}: not in the game yet.`, p); }
+    else if (s.type === 'landmark' || s.type === 'star') say(s.type, `${STAMP_TYPES[s.type].label}${s.label ? ` "${s.label}"` : ''} (${s.size} cells across) ${lapLabel(track, p)}.`, p, { size: s.size });
     else if (s.type === 'text') say('note', `Note ${lapLabel(track, p)}: "${s.note || s.label || ''}"`, p);
     else if (s.type === 'request') {
       const r = doc.requests.find((q) => q.id === s.requestId || q.stampId === s.id);
@@ -412,13 +415,13 @@ function placeDesign(doc, toWorld, track) {
   if (doc.width.base > R.MAX_WIDTH) say('width', `Lane drawn ${doc.width.base} cells wide; the game's widest is ${R.MAX_WIDTH}, so it flies at ${width}.`);
 
   // Supported placements.
-  const shardList = distinct(shards, 1.2).map(strip);
+  const shardList = distinct(shards, SHARD_MERGE).map(strip);
   const mineList = distinct(mines, 1).map(strip).slice(0, 150);
   const stationList = distinct(stations, 4).map(strip);
   const bouncers = [];
   rocks.forEach(({ q, size: rockSize, period }, i) => {
     if (!q) return;
-    const radius = round(clamp(rockSize / 2, 0.4, half - 0.3), 3);
+    const radius = round(clamp(rockSize / 2, ROCK_RADIUS.MIN, half - ROCK_RADIUS.RAIL_GAP), 3);
     const span = half - radius - 0.05;
     const speed = period ? round(clamp((4 * span) / period, 0.5, 12), 3) : 3.2;
     bouncers.push({ seg: q.seg, t: q.t, radius, speed, phase: round((i * 0.381966) % 1) });

@@ -114,7 +114,8 @@ test('widthAt: very wide flows into narrow over the taper, clamped to the game m
   for (let i = 1; i < ws.length; i++) assert.ok(Math.abs(ws[i] - ws[i - 1]) < 0.35, `no jumps (${i})`);
   assert.equal(widthAt({ base: 3, spans: [] }, 0, lap), GAME.MIN_WIDTH, 'never under 5.8');
   assert.equal(widthAt({ base: 7, spans: [{ from: 0, len: 0.5, w: 2 }], taper: 0 }, 10, lap), GAME.MIN_WIDTH);
-  assert.equal(widthAt({ base: 7, spans: [{ from: 0, len: 0.5, w: 40 }], taper: 0 }, 10, lap), DESIGN.MAX_WIDTH);
+  // Older drafts asked for up to 14: they still draw as saved (and clamp to the game's 8 on edit).
+  assert.equal(widthAt({ base: 7, spans: [{ from: 0, len: 0.5, w: 40 }], taper: 0 }, 10, lap), DESIGN.LEGACY_MAX_WIDTH);
   assert.equal(isUniformWidth({ base: 7, spans: [] }), true);
   assert.equal(isUniformWidth(profile), false);
   // Later spans win where they overlap.
@@ -127,11 +128,12 @@ test('paintWidthSpan and coveredStretch: brush strokes become spans, covered one
   const lap = 200;
   let p = { base: 7, taper: 10, spans: [] };
   p = paintWidthSpan(p, 20, 60, 10, lap);
+  assert.equal(p.spans[0].w, GAME.MAX_WIDTH, 'the brush stops at the game\'s widest lane');
   p = paintWidthSpan(p, 30, 40, 6, lap);
   assert.equal(p.spans.length, 2);
-  p = paintWidthSpan(p, 10, 80, 9, lap);
+  p = paintWidthSpan(p, 10, 80, 7.5, lap);
   assert.equal(p.spans.length, 1, 'a span that covers older ones replaces them');
-  assert.deepEqual(p.spans[0], { from: 0.05, len: 0.35, w: 9 });
+  assert.deepEqual(p.spans[0], { from: 0.05, len: 0.35, w: 7.5 });
   assert.deepEqual(coveredStretch([5, 7, 9], lap), { s0: 5, s1: 9 });
   assert.deepEqual(coveredStretch([195, 198, 2, 4], lap), { s0: 195, s1: 4 }, 'wraps over the start');
 });
@@ -237,7 +239,7 @@ test('draft v2: new, normalized and bounded', () => {
   assert.equal(n.lane.start, 0);
   assert.equal(n.width.base, GAME.MIN_WIDTH);
   assert.equal(n.width.taper, 0);
-  assert.deepEqual(n.width.spans, [{ from: 0.25, len: 0.1, w: DESIGN.MAX_WIDTH }]);
+  assert.deepEqual(n.width.spans, [{ from: 0.25, len: 0.1, w: DESIGN.LEGACY_MAX_WIDTH }], 'older wide drafts load as saved');
   assert.equal(n.strokes.length, 1);
   assert.equal(n.strokes[0].type, 'mine');
   assert.equal(n.strokes[0].spacing, 1);

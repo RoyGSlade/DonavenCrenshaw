@@ -4,6 +4,7 @@
 // width, and the same deck clipped to the ribbon when the width varies.
 import { drawMidnightLane, drawClassicLane, finishChecker, skinCacheStats } from '/projects/Space-Shooter/gfx/trackSkin.js';
 import { STAMP_TYPES } from '/projects/Space-Shooter/studio/draftV2.js';
+import { SIZES, SHIP_OUTLINE, trueStampSize, scaleBar, shipVisible, SHARD_CLUSTER_MIN_GAP } from '/projects/Space-Shooter/studio/gameSizes.js';
 
 export const PEN = Object.freeze({
   lane: '#f4f7fb', obstacles: '#ff4fa3', landmarks: '#a98bff', shards: '#3df2ff', hazards: '#ff9a3d', notes: '#9aa3ad',
@@ -11,6 +12,13 @@ export const PEN = Object.freeze({
 const NEON = '#3DF2FF';
 const PINK = '#ff4fa3';
 const FEEL_LETTER = { fast: 'F', tight: 'T', calm: 'C', hazard: 'H' };
+// Everything is drawn at its in-game size on the lane's scale. Things smaller
+// than a fingertip on screen get a hollow locator ring (screen pixels) around
+// them, never a bigger body.
+const LOCATOR_UNDER_PX = 6;
+const LOCATOR_PX = 9;
+const SHARD_HALF = SIZES.shardHeight.value / 2;
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
 /** World cells to screen CSS px. */
 export const toScreen = (view, p) => [view.ox + p[0] * view.scale, view.oy + p[1] * view.scale];
@@ -184,8 +192,8 @@ function drawStroke(ctx, R, st, world, { selected = false } = {}) {
     ctx.strokeStyle = st.layer === 'shards' ? 'rgba(61,242,255,0.35)' : 'rgba(255,79,163,0.35)';
     ctx.lineWidth = 2 * px; ctx.setLineDash([4 * px, 6 * px]); ctx.stroke(); ctx.setLineDash([]);
     for (const p of R.rows.get(st.id) || []) {
-      if (st.layer === 'shards') drawShard(ctx, p[0], p[1], Math.max(0.7, 9 * px));
-      else drawStampIcon(ctx, R, { type: st.type || 'mine', size: st.size || 0.84, rotation: 0, behavior: st.behavior || 'static' }, p, { row: true });
+      if (st.layer === 'shards') { drawShard(ctx, p[0], p[1], SHARD_HALF); locator(ctx, R, p, SHARD_HALF, PEN.shards); }
+      else drawStampIcon(ctx, R, { type: st.type || 'mine', size: trueStampSize({ type: st.type || 'mine', size: st.size }, R.gameWidth), rotation: 0, behavior: st.behavior || 'static' }, p, { row: true });
     }
   } else {
     path(ctx, world, st.closed);
@@ -198,11 +206,35 @@ function drawStroke(ctx, R, st, world, { selected = false } = {}) {
   ctx.restore();
 }
 
+/** The game's shard diamond (gfx/stardustVfx.js): `r` half its height, 0.56 r half its width. */
 function drawShard(ctx, x, y, r) {
   ctx.beginPath();
-  ctx.moveTo(x, y - r); ctx.lineTo(x + r * 0.7, y); ctx.lineTo(x, y + r); ctx.lineTo(x - r * 0.7, y); ctx.closePath();
+  ctx.moveTo(x, y - r); ctx.lineTo(x + r * 0.56, y); ctx.lineTo(x, y + r); ctx.lineTo(x - r * 0.56, y); ctx.closePath();
   ctx.fillStyle = NEON; ctx.fill();
   ctx.strokeStyle = 'rgba(2,24,27,0.9)'; ctx.lineWidth = r * 0.15; ctx.stroke();
+}
+
+/** A hollow screen-size ring round an item too small to see at this zoom (world transform active). */
+function locator(ctx, R, p, r, color) {
+  if (r * R.view.scale >= LOCATOR_UNDER_PX) return;
+  const px = 1 / R.view.scale;
+  ctx.save();
+  ctx.beginPath(); ctx.arc(p[0], p[1], LOCATOR_PX * px, 0, Math.PI * 2);
+  ctx.globalAlpha = 0.75; ctx.strokeStyle = color; ctx.lineWidth = 1.5 * px; ctx.setLineDash([3 * px, 3 * px]); ctx.stroke();
+  ctx.restore();
+}
+
+/** The player ship's hull outline at true size, nose along `angle` (world transform active). */
+export function drawShip(ctx, x, y, angle, { fill = 'rgba(232,238,244,0.85)', stroke = '#3df2ff', px = 0.05 } = {}) {
+  const c = Math.cos(angle), s = Math.sin(angle);
+  ctx.save();
+  ctx.transform(-s, c, c, s, x, y); // ship-local x = right of the heading, y = forward
+  ctx.beginPath();
+  SHIP_OUTLINE.forEach(([hx, hy], i) => (i ? ctx.lineTo(hx, hy) : ctx.moveTo(hx, hy)));
+  ctx.closePath();
+  ctx.fillStyle = fill; ctx.fill();
+  ctx.strokeStyle = stroke; ctx.lineWidth = px; ctx.stroke();
+  ctx.restore();
 }
 
 function starPath(ctx, r) {
@@ -216,30 +248,37 @@ function starPath(ctx, r) {
 
 const BEHAVIOR_GLYPH = { moving: '↔', rotating: '⟳', falling: '↓', timed: '⏱', triggered: '!' };
 
-/** One stamp at world point p. Sizes are cells, but never smaller than a fingertip on screen. */
+/** One stamp at world point p, at its true size in cells (stamp.size is the in-game size). */
 export function drawStampIcon(ctx, R, stamp, p, { row = false, selected = false } = {}) {
   const px = 1 / R.view.scale;
-  const minR = (row ? 6 : 13) * px;
-  const r = Math.max(stamp.size / 2, minR);
+  const r = stamp.size / 2;
+  locator(ctx, R, p, stamp.type === 'shards' ? Math.max(SHARD_CLUSTER_MIN_GAP, r) : r, PEN[STAMP_TYPES[stamp.type]?.layer] || PINK);
   ctx.save();
   ctx.translate(p[0], p[1]);
   ctx.rotate((stamp.rotation || 0) * Math.PI / 180);
   ctx.lineJoin = 'round'; ctx.lineCap = 'round';
   const t = stamp.type;
   const stroke = (color, w = 2) => { ctx.strokeStyle = color; ctx.lineWidth = w * px; ctx.stroke(); };
+  // Outlines stay thin next to small bodies so the body edge is the collision edge.
+  const line = (color, w) => { ctx.strokeStyle = color; ctx.lineWidth = Math.min(w * px, r * 0.3); ctx.stroke(); };
   if (t === 'mine') {
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fillStyle = PINK; ctx.fill();
     ctx.beginPath();
-    for (let k = 0; k < 8; k++) { const a = (k * Math.PI) / 4; ctx.moveTo(Math.cos(a) * r * 0.6, Math.sin(a) * r * 0.6); ctx.lineTo(Math.cos(a) * r * 1.15, Math.sin(a) * r * 1.15); }
-    stroke(PINK, 2);
-    ctx.beginPath(); ctx.arc(0, 0, r * 0.7, 0, Math.PI * 2); ctx.fillStyle = PINK; ctx.fill();
+    for (let k = 0; k < 8; k++) { const a = (k * Math.PI) / 4; ctx.moveTo(Math.cos(a) * r * 0.45, Math.sin(a) * r * 0.45); ctx.lineTo(Math.cos(a) * r * 0.9, Math.sin(a) * r * 0.9); }
+    line('#5a0a31', 1.5);
     ctx.beginPath(); ctx.arc(-r * 0.2, -r * 0.2, r * 0.2, 0, Math.PI * 2); ctx.fillStyle = '#ffd0e6'; ctx.fill();
   } else if (t === 'rock') {
     ctx.beginPath();
-    for (let k = 0; k < 9; k++) { const a = (k * 2 * Math.PI) / 9, rr = r * (0.82 + ((k * 7) % 5) * 0.05); k ? ctx.lineTo(Math.cos(a) * rr, Math.sin(a) * rr) : ctx.moveTo(Math.cos(a) * rr, Math.sin(a) * rr); }
-    ctx.closePath(); ctx.fillStyle = '#6c5f6a'; ctx.fill(); stroke(PINK, 2);
+    for (let k = 0; k < 9; k++) { const a = (k * 2 * Math.PI) / 9, rr = r * (0.84 + ((k * 7) % 5) * 0.04); k ? ctx.lineTo(Math.cos(a) * rr, Math.sin(a) * rr) : ctx.moveTo(Math.cos(a) * rr, Math.sin(a) * rr); }
+    ctx.closePath(); ctx.fillStyle = '#6c5f6a'; ctx.fill(); line(PINK, 2);
   } else if (t === 'sentry') {
-    ctx.beginPath(); ctx.rect(-r * 0.7, -r * 0.7, r * 1.4, r * 1.4); ctx.fillStyle = '#2a1520'; ctx.fill(); stroke(PINK, 2);
-    ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(r * 1.3, 0); stroke(PINK, 4);
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fillStyle = '#2a1520'; ctx.fill(); line(PINK, 2);
+    ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(r * 0.95, 0); line(PINK, 3);
+    if (selected) {
+      // Its real reach: the sentry fires at slow ships inside this circle.
+      ctx.beginPath(); ctx.arc(0, 0, SIZES.sentryRange.value, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(255,79,163,0.5)'; ctx.lineWidth = 1.5 * px; ctx.setLineDash([6 * px, 6 * px]); ctx.stroke(); ctx.setLineDash([]);
+    }
   } else if (t === 'barricade') {
     ctx.beginPath(); ctx.rect(-r, -Math.max(0.35, r * 0.18), r * 2, Math.max(0.7, r * 0.36)); ctx.fillStyle = 'rgba(255,79,163,0.35)'; ctx.fill(); stroke(PINK, 2.5);
     ctx.beginPath(); for (let x = -r; x < r; x += Math.max(r / 3, 6 * px)) { ctx.moveTo(x, r * 0.18); ctx.lineTo(x + r * 0.2, -r * 0.18); } stroke(PINK, 1.5);
@@ -248,17 +287,28 @@ export function drawStampIcon(ctx, R, stamp, p, { row = false, selected = false 
     for (const [dx, dy, s] of [[-0.5, -0.3, 0.45], [0.35, -0.5, 0.35], [0.1, 0.35, 0.5]]) { ctx.moveTo((dx - s / 2) * r, (dy + s / 2) * r); ctx.lineTo(dx * r, (dy - s / 2) * r); ctx.lineTo((dx + s / 2) * r, (dy + s / 2) * r); ctx.closePath(); }
     ctx.fillStyle = 'rgba(255,79,163,0.5)'; ctx.fill(); stroke(PINK, 1.5);
   } else if (t === 'gate') {
+    // A checkpoint line across the whole lane (the game checks lane width / 2 each side).
     ctx.beginPath(); ctx.moveTo(0, -r); ctx.lineTo(0, r); ctx.setLineDash([6 * px, 5 * px]); stroke('#f4f7fb', 2); ctx.setLineDash([]);
-    for (const y of [-r, r]) { ctx.beginPath(); ctx.arc(0, y, Math.max(0.5, 5 * px), 0, Math.PI * 2); ctx.fillStyle = NEON; ctx.fill(); }
+    for (const y of [-r, r]) { ctx.beginPath(); ctx.arc(0, y, 0.2, 0, Math.PI * 2); ctx.fillStyle = NEON; ctx.fill(); }
   } else if (t === 'start') {
-    const squares = 8, across = (2 * r) / squares, d = Math.max(0.5, r * 0.12);
-    for (let i = 0; i < squares; i++) for (let k = 0; k < 2; k++) { ctx.fillStyle = (i + k) % 2 ? '#e8edf1' : '#2a2f35'; ctx.fillRect((k - 1) * d, -r + i * across, d, across); }
+    // The game's start/finish checker: lane width across, three rows deep.
+    const squares = 12, across = (2 * r) / squares, d = SIZES.finishDepth.value / 3;
+    for (let i = 0; i < squares; i++) for (let k = 0; k < 3; k++) { ctx.fillStyle = (i + k) % 2 ? '#e8edf1' : '#2a2f35'; ctx.fillRect((k - 1.5) * d, -r + i * across, d, across); }
   } else if (t === 'fuel') {
-    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); stroke(NEON, 3);
-    ctx.beginPath(); ctx.arc(0, 0, r * 0.6, 0, Math.PI * 2); stroke(NEON, 1.5);
-  } else if (t === 'shards' || t === 'shard') {
-    const k = t === 'shard' ? [[0, 0]] : [[-0.55, 0.15], [0, -0.35], [0.55, 0.15]];
-    for (const [dx, dy] of k) drawShard(ctx, dx * r, dy * r, Math.max(t === 'shard' ? r : r * 0.45, 8 * px));
+    // The dock's pickup circle.
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fillStyle = 'rgba(61,242,255,0.1)'; ctx.fill(); line(NEON, 2);
+    ctx.beginPath(); ctx.arc(0, 0, r * 0.35, 0, Math.PI * 2); line(NEON, 1.5);
+  } else if (t === 'shard') {
+    drawShard(ctx, 0, 0, r);
+    if (SIZES.shardPickup.value * R.view.scale >= 12) {
+      // Its real pickup radius round the ship's centre.
+      ctx.beginPath(); ctx.arc(0, 0, SIZES.shardPickup.value, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(61,242,255,0.45)'; ctx.lineWidth = px; ctx.setLineDash([3 * px, 3 * px]); ctx.stroke(); ctx.setLineDash([]);
+    }
+  } else if (t === 'shards') {
+    // Three shards along the lap, `gap` apart: what the converter lays.
+    const gap = Math.max(SHARD_CLUSTER_MIN_GAP, r);
+    for (const dx of [-gap, 0, gap]) drawShard(ctx, dx, 0, SHARD_HALF);
   } else if (t === 'landmark') {
     ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fillStyle = 'rgba(169,139,255,0.14)'; ctx.fill(); ctx.setLineDash([6 * px, 4 * px]); stroke('#a98bff', 2); ctx.setLineDash([]);
     ctx.beginPath(); ctx.moveTo(-r * 0.35, r * 0.45); ctx.lineTo(0, -r * 0.55); ctx.lineTo(r * 0.35, r * 0.45); ctx.closePath(); ctx.fillStyle = '#a98bff'; ctx.fill();
@@ -297,7 +347,7 @@ export function drawStampIcon(ctx, R, stamp, p, { row = false, selected = false 
   }
   if (selected) {
     ctx.save();
-    ctx.beginPath(); ctx.arc(p[0], p[1], r + 6 * px, 0, Math.PI * 2);
+    ctx.beginPath(); ctx.arc(p[0], p[1], (t === 'shards' ? Math.max(SHARD_CLUSTER_MIN_GAP, r) + SHARD_HALF : r) + 6 * px, 0, Math.PI * 2);
     ctx.strokeStyle = NEON; ctx.lineWidth = 2 * px; ctx.setLineDash([5 * px, 4 * px]); ctx.stroke();
     ctx.restore();
   }
@@ -337,15 +387,15 @@ function drawGame(ctx, R) {
     ctx.beginPath(); ctx.moveTo(c.x + c.ty * reach, c.y - c.tx * reach); ctx.lineTo(c.x - c.ty * reach, c.y + c.tx * reach);
     ctx.strokeStyle = 'rgba(61,242,255,0.45)'; ctx.lineWidth = 1.5 * px; ctx.stroke();
   }
-  for (const m of G.layout.mines) { ctx.beginPath(); ctx.arc(m.x, m.y, Math.max(m.radius, 4 * px), 0, Math.PI * 2); ctx.fillStyle = '#ff5a4e'; ctx.fill(); }
-  for (const s of G.layout.shards) drawShard(ctx, s.x, s.y, Math.max(0.8, 6 * px));
+  for (const m of G.layout.mines) { ctx.beginPath(); ctx.arc(m.x, m.y, m.radius, 0, Math.PI * 2); ctx.fillStyle = '#ff5a4e'; ctx.fill(); locator(ctx, R, [m.x, m.y], m.radius, '#ff5a4e'); }
+  for (const s of G.layout.shards) { drawShard(ctx, s.x, s.y, SHARD_HALF); locator(ctx, R, [s.x, s.y], SHARD_HALF, NEON); }
   for (const b of G.layout.bouncers) {
     ctx.beginPath(); ctx.moveTo(b.originX - b.nx * b.span, b.originY - b.ny * b.span); ctx.lineTo(b.originX + b.nx * b.span, b.originY + b.ny * b.span);
     ctx.strokeStyle = 'rgba(154,171,183,0.6)'; ctx.lineWidth = 1.5 * px; ctx.stroke();
     ctx.beginPath(); ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2); ctx.fillStyle = '#9aabb7'; ctx.fill();
   }
-  for (const s of G.layout.sentries) { ctx.fillStyle = '#ffad72'; ctx.fillRect(s.x - 0.8, s.y - 0.8, 1.6, 1.6); }
-  for (const s of G.layout.stations) { ctx.beginPath(); ctx.arc(s.x, s.y, 1.2, 0, Math.PI * 2); ctx.strokeStyle = '#6ed2e3'; ctx.lineWidth = 0.4; ctx.stroke(); }
+  for (const s of G.layout.sentries) { ctx.beginPath(); ctx.arc(s.x, s.y, s.radius, 0, Math.PI * 2); ctx.fillStyle = '#ffad72'; ctx.fill(); locator(ctx, R, [s.x, s.y], s.radius, '#ffad72'); }
+  for (const s of G.layout.stations) { ctx.beginPath(); ctx.arc(s.x, s.y, SIZES.stationPickup.value, 0, Math.PI * 2); ctx.strokeStyle = '#6ed2e3'; ctx.lineWidth = 2 * px; ctx.stroke(); }
   ctx.restore();
 }
 
@@ -361,10 +411,17 @@ function drawSelection(ctx, R) {
     for (const h of box.handles) {
       ctx.beginPath();
       if (h.kind === 'rotate') ctx.arc(h.x, h.y, 14, 0, Math.PI * 2); else ctx.rect(h.x - 13, h.y - 13, 26, 26);
-      ctx.fillStyle = 'rgba(4,6,10,0.85)'; ctx.fill(); ctx.strokeStyle = NEON; ctx.lineWidth = 2.5; ctx.stroke();
+      ctx.fillStyle = 'rgba(4,6,10,0.85)'; ctx.fill(); ctx.strokeStyle = h.kind === 'locked' ? '#9aa3ad' : NEON; ctx.lineWidth = 2.5; ctx.stroke();
     }
-    ctx.fillStyle = NEON; ctx.font = '700 16px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    for (const h of box.handles) ctx.fillText(h.kind === 'rotate' ? '⟳' : '⤡', h.x, h.y + 1);
+    ctx.font = '700 16px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    for (const h of box.handles) { ctx.fillStyle = h.kind === 'locked' ? '#c6ced6' : NEON; ctx.fillText(h.kind === 'rotate' ? '⟳' : h.kind === 'locked' ? '⊘' : '⤡', h.x, h.y + 1); }
+  }
+  if (box.sizeLabel) {
+    // The size in game units under the box ("0.84 cells across · fixed in game").
+    ctx.font = '600 16px system-ui, sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    const w = ctx.measureText(box.sizeLabel).width, x = clamp(box.x, 6, R.W - w - 18), y = box.y + box.h + 44;
+    ctx.fillStyle = 'rgba(4,6,10,0.85)'; ctx.fillRect(x - 6, y - 13, w + 12, 26);
+    ctx.fillStyle = box.locked ? '#c6ced6' : NEON; ctx.fillText(box.sizeLabel, x, y + 1);
   }
   ctx.restore();
 }
@@ -405,10 +462,58 @@ function drawLive(ctx, R) {
   }
 }
 
+/** The ship on the start grid, at true size, once it is big enough to see. */
+function drawGridShip(ctx, R) {
+  const g = R.shipStart;
+  if (!g || !shipVisible(R.view.scale)) return;
+  worldTransform(ctx, R);
+  drawShip(ctx, g.x, g.y, g.angle, { px: 1.2 / R.view.scale });
+}
+
+/**
+ * The scale bar in the corner: a whole number of lane widths at this zoom
+ * ("1 lane width = 7.0 cells"), and the ship at true size beside it once it is
+ * big enough to see.
+ */
+function drawScaleLegend(ctx, R) {
+  const L = R.legend;
+  if (!L) return;
+  const bar = scaleBar(R.view.scale, R.gameWidth);
+  const ship = shipVisible(R.view.scale), s = R.view.scale;
+  const shipText = ship ? 'Ship' : `Ship ${SIZES.shipLength.value.toFixed(2)} long: zoom in`;
+  screenTransform(ctx, R);
+  ctx.save();
+  ctx.font = '600 16px system-ui, sans-serif'; ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
+  const shipW = ship ? SIZES.shipWidth.value * s + 12 : 0;
+  const textW = Math.max(ctx.measureText(bar.label).width, ctx.measureText(shipText).width + shipW);
+  const hgt = 64 + (ship ? Math.max(0, SIZES.shipLength.value * s - 18) : 0);
+  const w = Math.max(bar.px, textW) + 20, x = L.x, y = L.y - hgt;
+  ctx.fillStyle = 'rgba(4,6,10,0.72)'; ctx.fillRect(x, y, w, hgt);
+  const bx = x + 10, by = y + 12;
+  ctx.strokeStyle = '#e8eef4'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(bx + bar.px, by);
+  const ticks = bar.lanes <= 10 ? bar.lanes : 1;
+  for (let i = 0; i <= ticks; i++) { const tx = bx + (bar.px * i) / ticks, k = i === 0 || i === ticks ? 6 : 3; ctx.moveTo(tx, by - k); ctx.lineTo(tx, by + k); }
+  ctx.stroke();
+  ctx.fillStyle = '#e8eef4'; ctx.fillText(bar.label, bx, by + 20);
+  const sy = by + 42 + (hgt - 64) / 2;
+  ctx.fillStyle = '#9aa7b4'; ctx.fillText(shipText, bx, sy);
+  const sx = bx + ctx.measureText(shipText).width + 6 + shipW / 2;
+  ctx.restore();
+  if (ship) {
+    ctx.save();
+    ctx.setTransform(R.dpr * s, 0, 0, R.dpr * s, R.dpr * sx, R.dpr * sy);
+    drawShip(ctx, 0, 0, -Math.PI / 2, { px: 1.2 / s });
+    ctx.restore();
+  }
+}
+
 /**
  * Draw the board. R: { W, H, dpr, view, page, skin, animate, time, lane, layers,
- * strokes: [{ stroke, world }], stamps: [{ stamp, world }], rows, markers,
- * racing, game, live, selected (Set), selectionBox }.
+ * strokes: [{ stroke, world }], stamps: [{ stamp, world, layer, laneAngle }], rows,
+ * markers, racing, game, live, selected (Set), selectionBox, gameWidth (the lane
+ * width the game flies; sizes that follow the lane use it), shipStart ({ x, y,
+ * angle } on the start grid), legend ({ x, y }: bottom-left of the scale bar) }.
  * Returns true when the skin is still painting chunks (draw again next frame).
  */
 export function renderBoard(ctx, R) {
@@ -429,15 +534,20 @@ export function renderBoard(ctx, R) {
     ctx.strokeStyle = 'rgba(61,242,255,0.8)'; ctx.lineWidth = 2 * px; ctx.setLineDash([3 * px, 6 * px]); ctx.stroke();
     ctx.restore();
   }
-  for (const { stamp, world, layer } of R.stamps) {
+  for (const { stamp, world, layer, laneAngle } of R.stamps) {
     if (!R.layers[layer].visible) continue;
     worldTransform(ctx, R);
-    drawStampIcon(ctx, R, stamp, world, { selected: R.selected.has(stamp.id) });
+    const shown = { ...stamp, size: trueStampSize(stamp, R.gameWidth) };
+    // A shard cluster is laid along the lap, whichever way the stamp was turned.
+    if (stamp.type === 'shards' && Number.isFinite(laneAngle)) shown.rotation = laneAngle;
+    drawStampIcon(ctx, R, shown, world, { selected: R.selected.has(stamp.id) });
   }
+  if (R.layers.lane.visible) drawGridShip(ctx, R);
   if (R.game) drawGame(ctx, R);
   drawLive(ctx, R);
   drawMarkers(ctx, R);
   drawSelection(ctx, R);
+  drawScaleLegend(ctx, R);
   const stats = R.lane && R.lane.skinTrack && R.skin === 'midnight' ? skinCacheStats() : null;
   return !!stats && stats.chunks < Math.min(stats.laneChunks, stats.maxChunks);
 }

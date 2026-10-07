@@ -17,7 +17,8 @@ export const GAME = Object.freeze({
 // sideways, so a corner of radius r is flown at about sqrt(GRIP * r) (the same
 // lateral-grip model the scripted pilot plans with, engine/weekly/pilot.js).
 export const DESIGN = Object.freeze({
-  MAX_WIDTH: 14,          // wider than the game's 8 is design intent
+  MAX_WIDTH: R.MAX_WIDTH, // the brush and sliders stop at the game's widest lane
+  LEGACY_MAX_WIDTH: 14,   // older drafts asked for up to 14: they load and draw as saved, and clamp on edit
   GRIP: 3.2, CRUISE: 11, ACCEL: 3, BRAKE: 2.2, FLOOR: 3.5,
   PILOT_MARGIN: 0.75,     // the racing line stays this far inside the rails
   TIGHT_RADIUS: 3.8,      // FLOOR^2 / GRIP: slower than the floor speed means "too tight"
@@ -239,7 +240,7 @@ export function nearestOnPolyline(points, p, closed = false, cum = cumulative(po
 
 const smoothstep = (x) => { const t = clamp(x, 0, 1); return t * t * (3 - 2 * t); };
 
-export const clampWidth = (w, max = DESIGN.MAX_WIDTH) => clamp(Number.isFinite(w) ? w : GAME.MIN_WIDTH, GAME.MIN_WIDTH, max);
+export const clampWidth = (w, max = DESIGN.LEGACY_MAX_WIDTH) => clamp(Number.isFinite(w) ? w : GAME.MIN_WIDTH, GAME.MIN_WIDTH, max);
 
 /**
  * How much of a span is in force at lap distance s (0..1). The taper is a
@@ -295,7 +296,7 @@ export function paintWidthSpan(profile, s0, s1, w, lap, max = 64) {
     return start + o.len <= len + 1e-9;
   };
   const spans = (profile.spans || []).filter((o) => !covers(o));
-  spans.push({ from: Math.round(from * 1e5) / 1e5, len: Math.round(len * 1e5) / 1e5, w: Math.round(clampWidth(w) * 100) / 100 });
+  spans.push({ from: Math.round(from * 1e5) / 1e5, len: Math.round(len * 1e5) / 1e5, w: Math.round(clampWidth(w, DESIGN.MAX_WIDTH) * 100) / 100 });
   return { ...profile, spans: spans.slice(-max) };
 }
 

@@ -86,7 +86,9 @@ try {
   for (let k = 0; k <= 20; k++) await page.mouse.move(cx + rx + 2, cy - 120 + k * 12, { steps: 2 });
   await page.mouse.up();
   const spans = await page.evaluate(() => __studio.S.doc.width.spans);
-  check('the width brush paints a span', spans.length === 1 && spans[0].w === 10, JSON.stringify(spans));
+  check('the width brush paints a span at the game max', spans.length === 1 && spans[0].w === 8, JSON.stringify(spans));
+  const tick = await page.evaluate(() => [...document.querySelectorAll('#sub .slider')].map((s) => ({ max: s.querySelector('input').max, tick: s.querySelector('.gamemax')?.textContent || '' })));
+  check('width sliders stop at the game max and mark it', tick.filter((t) => t.tick === 'game max 8' && t.max === '8').length === 2, JSON.stringify(tick));
   await page.screenshot({ path: join(shots, '03-width.png') });
 
   // Obstacle pen: a row, then a tap for one mine.
@@ -97,6 +99,20 @@ try {
   await page.mouse.click(cx, cy - ry);
   const obstacles = await page.evaluate(() => ({ strokes: __studio.S.doc.strokes.filter((s) => s.layer === 'obstacles').length, mines: __studio.S.doc.stamps.filter((s) => s.type === 'mine').length }));
   check('obstacle pen: a stroke row and a tapped mine', obstacles.strokes === 1 && obstacles.mines === 1, JSON.stringify(obstacles));
+  const mineSize = await page.evaluate(() => ({ size: __studio.S.doc.stamps.find((s) => s.type === 'mine').size, sub: document.querySelector('#sub .stat.locked')?.textContent || '' }));
+  check('a mine is the game\'s size and its size is locked', mineSize.size === 0.84 && /fixed in game/.test(mineSize.sub), JSON.stringify(mineSize));
+  // Select the mine: the scale handle is locked and the box says why.
+  await page.click('#dock .tool[data-tool="select"]');
+  await page.mouse.click(cx, cy - ry);
+  await page.waitForTimeout(100);
+  const handle = await page.evaluate(() => ({ kinds: (__studio.S.box?.handles || []).map((x) => x.kind), label: __studio.S.box?.sizeLabel }));
+  check('the mine\'s size handle is locked, labelled "fixed in game"', handle.kinds.includes('locked') && !handle.kinds.includes('scale') && /fixed in game/.test(handle.label || ''), JSON.stringify(handle));
+  const legend = await page.evaluate(() => __studio.legend());
+  check('the scale bar reads in lane widths', /lane widths? = \d/.test(legend.label), JSON.stringify(legend));
+  await page.evaluate(() => { __studio.S.sel.clear(); __studio.zoomAt([206, 200], 12); });
+  await page.waitForTimeout(150);
+  await page.screenshot({ path: join(shots, '03b-true-size.png') });
+  await page.click('#fit-btn');
 
   // Hazard zone lasso and a shard line.
   await page.click('#dock .tool[data-tool="hazards"]');
@@ -231,6 +247,18 @@ try {
   check('the game loads the studio draft', gameErrors.length === 0, gameErrors.join(' | '));
   await game2.screenshot({ path: join(shots, '08-game.png') });
   await game2.close();
+  // An older draft drawn wider than the game: loads as saved, clamps on the first edit, says so once.
+  const old = await page.evaluate(() => {
+    const S = __studio.S;
+    S.doc.width = { base: 12, taper: 24, spans: [{ from: 0.1, len: 0.2, w: 13 }] };
+    S.undo = []; __studio.refresh();
+    const loaded = S.doc.width.base;
+    __studio.mutate((d) => { d.title = 'Old wide draft'; });
+    return { loaded, base: S.doc.width.base, span: S.doc.width.spans[0].w };
+  });
+  await page.waitForTimeout(50);
+  const note = await page.evaluate(() => document.getElementById('toast').textContent);
+  check('an old wide draft loads as saved and clamps to 8 on edit, with a note', old.loaded === 12 && old.base === 8 && old.span === 8 && /wider than the game allows/.test(note), JSON.stringify({ ...old, note }));
   check('no page errors during the run', errors.length === 0, errors.slice(0, 3).join(' | '));
 } catch (e) {
   check('smoke run', false, String(e && e.stack || e));

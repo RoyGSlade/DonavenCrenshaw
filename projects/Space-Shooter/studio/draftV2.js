@@ -20,6 +20,7 @@
 import { SKINS, DEFAULT_SKIN } from '../gfx/trackSkin.js';
 import { WEEKLY_EVENTS } from '../tracks/weekly.js';
 import { GAME, DESIGN, polylineLength } from './studioGeometry.js';
+import { defaultStampSize } from './gameSizes.js';
 
 export const DRAFT_VERSION = 2;
 export { SKINS, DEFAULT_SKIN };
@@ -38,19 +39,22 @@ export const LAYERS = Object.freeze({
 export const LAYER_ORDER = Object.freeze(['lane', 'hazards', 'landmarks', 'obstacles', 'shards', 'notes']);
 
 // game: what the converter turns it into today (false: design intent only).
+// size: the default size in cells. Items the game has a size for start at the
+// in-game size (studio/gameSizes.js); design-intent items start at a sketch size.
+const gameSize = (type) => Math.round(defaultStampSize(type, 7) * 1000) / 1000;
 export const STAMP_TYPES = Object.freeze({
   landmark: { label: 'Landmark', layer: 'landmarks', game: false, size: 6 },
   star: { label: 'Star', layer: 'landmarks', game: false, size: 4 },
-  mine: { label: 'Mine', layer: 'obstacles', game: 'mines', size: 0.84 },
-  rock: { label: 'Sweeping rock', layer: 'obstacles', game: 'bouncers', size: 1.6 },
-  sentry: { label: 'Sentry', layer: 'obstacles', game: 'sentries', size: 1.2 },
+  mine: { label: 'Mine', layer: 'obstacles', game: 'mines', size: gameSize('mine') },
+  rock: { label: 'Sweeping rock', layer: 'obstacles', game: 'bouncers', size: gameSize('rock') },
+  sentry: { label: 'Sentry', layer: 'obstacles', game: 'sentries', size: gameSize('sentry') },
   barricade: { label: 'Barricade', layer: 'obstacles', game: false, size: 3 },
   debris: { label: 'Falling debris', layer: 'obstacles', game: false, size: 2 },
-  gate: { label: 'Gate / checkpoint', layer: 'lane', game: 'checkpoint', size: 7 },
-  shards: { label: 'Shard cluster', layer: 'shards', game: 'shards', size: 3 },
-  shard: { label: 'Shard', layer: 'shards', game: 'shards', size: 1 },
-  start: { label: 'Start / finish', layer: 'lane', game: 'start', size: 7 },
-  fuel: { label: 'Fuel dock', layer: 'lane', game: 'stations', size: 2.4 },
+  gate: { label: 'Gate / checkpoint', layer: 'lane', game: 'checkpoint', size: gameSize('gate') },
+  shards: { label: 'Shard cluster', layer: 'shards', game: 'shards', size: gameSize('shards') },
+  shard: { label: 'Shard', layer: 'shards', game: 'shards', size: gameSize('shard') },
+  start: { label: 'Start / finish', layer: 'lane', game: 'start', size: gameSize('start') },
+  fuel: { label: 'Fuel dock', layer: 'lane', game: 'stations', size: gameSize('fuel') },
   fast: { label: 'Feels fast', layer: 'notes', game: 'feel', size: 3 },
   tight: { label: 'Feels tight', layer: 'notes', game: 'feel', size: 3 },
   calm: { label: 'Breather', layer: 'notes', game: 'feel', size: 3 },
@@ -163,10 +167,10 @@ export function normalizeDoc(raw) {
   doc.lane = { points, closed: lane.closed === true && points.length >= 3, start: Number.isInteger(lane.start) && lane.start >= 0 && lane.start < points.length ? lane.start : 0 };
   const width = raw.width || {};
   doc.width = {
-    base: num(width.base, doc.width.base, GAME.MIN_WIDTH, DESIGN.MAX_WIDTH),
+    base: num(width.base, doc.width.base, GAME.MIN_WIDTH, DESIGN.LEGACY_MAX_WIDTH),
     taper: num(width.taper, 24, 0, 400),
     spans: (Array.isArray(width.spans) ? width.spans : []).filter((s) => s && finite(s.from) && finite(s.len) && finite(s.w) && s.len > 0)
-      .slice(-LIMITS.spans).map((s) => ({ from: round(((s.from % 1) + 1) % 1), len: round(clamp(s.len, 0, 1)), w: round(clamp(s.w, GAME.MIN_WIDTH, DESIGN.MAX_WIDTH), 3) })),
+      .slice(-LIMITS.spans).map((s) => ({ from: round(((s.from % 1) + 1) % 1), len: round(clamp(s.len, 0, 1)), w: round(clamp(s.w, GAME.MIN_WIDTH, DESIGN.LEGACY_MAX_WIDTH), 3) })),
   };
   doc.strokes = (Array.isArray(raw.strokes) ? raw.strokes : []).filter((s) => s && STROKE_LAYERS.includes(s.layer)).slice(0, LIMITS.strokes).map((s, i) => {
     const out = { id: idOf(s.id, 'k', i), layer: s.layer, points: cleanPoints(s.points, LIMITS.strokePoints), closed: s.closed === true };
