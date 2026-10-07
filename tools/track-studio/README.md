@@ -10,6 +10,24 @@ security checks only read `public/`, `src/`, `content/`, `scripts/`, `data/`,
 Python 3.12, standard library only. One server file, one page (no external
 resources, no inline scripts).
 
+## v2: the phone design tool
+
+`/studio/` is a full-bleed canvas with a tool dock (Lane, Width, Obstacle,
+Shards, Landmark, Zone, Note, Stamp, Select) and a sub-toolbar for the active
+tool. The lane renders as you draw with the game's own skin code
+(`gfx/trackSkin.js`), closes near its start, and pink markers flag overlaps,
+crossings, too-tight turns and zig-zags live. Checks (top bar) runs the real
+converter and autopilot in a web worker on every edit. Designs autosave to
+`designs/`; **Make** posts the design to `POST /studio/api/make`. **Tracks**
+holds the version cards (playtest, refine, approve, compare, open in editor)
+and requested items. Draft format: `projects/Space-Shooter/studio/draftV2.js`;
+geometry: `studio/studioGeometry.js`; what the game can fly vs design intent:
+`docs/stardust/TRACK-STUDIO-V2-GAME-SUPPORT.md`.
+
+Gestures: one finger draws; two fingers pan and pinch; a big contact (palm) or
+a late second finger is ignored while drawing; with a stylus the pen draws and
+a finger pans. Long-press a stamp for its properties.
+
 ## Flow
 
 1. Phone: open `/studio/`, draw a loop, add marks, tap **Make track**. The server
@@ -41,13 +59,18 @@ python3 tools/track-studio/server.py \
 | --- | --- |
 | `--root` | The site checkout. Served at `/`, and the converter runs with it as cwd. |
 | `--data` | Studio data directory (created if missing). |
-| `--port` | Default 8767. Binds `127.0.0.1` only. |
+| `--port` | Default 8767. Binds `127.0.0.1` unless `--host` says otherwise. |
 | `--owner` | Tailscale login that may use the studio. Required unless `--dev-no-auth`. |
 | `--dev-no-auth` | Local testing only. Skips the owner check. |
 | `--lhc` | The `lhcmemorys` command. A path, a shell-style string, or a JSON list (`'["python3","fake.py"]'`). Omit it and refine, names and approve answer "LHC is not configured" (sketching and playtesting still work). |
 | `--repo-target` | Registered LHC repo path (or `home`) for requests. Defaults to `--root`. |
 | `--card` | LHC card id, quoted in agent prompts (the CLI has no card flag). |
 | `--converter` | Converter command. Default `node scripts/stardust/sketch-to-weekly.mjs`. |
+| `--host` | Bind address, default `127.0.0.1`. Off loopback (a phone preview on the tailnet IP) the header is ignored and every client is identified with `tailscale whois --json <ip>` against `--owner`; `--dev-no-auth` and `0.0.0.0` are refused there. |
+| `--whois` | The whois command (default `tailscale whois --json`). |
+| `--asset-queue` | kauto-3d queue root (`~/kauto-3d/queue`) for visual requests; omit to never queue. |
+| `--asset-game` | Queue entry `game` (default `stardust`). |
+| `--preview` | Running on a copy of the data: approvals are refused. |
 
 ### systemd --user unit
 
@@ -98,6 +121,9 @@ versions.json           list of versions (below)
 sketches/<n>.json       the owner's sketches, as posted
 runs/<draftId>.jsonl    one JSON line per laptop lap (ms, finished, reason, log, build)
 requests.json           filed name-idea requests
+designs/<id>.json       autosaved v2 designs ({savedAt, doc})
+requests/<qid>/         a request's sketch.png and photo
+item-requests.json      "Request something new" records (card, queue status)
 .lock                   short-lived lock file (safe to delete when the server is stopped)
 ```
 
@@ -129,6 +155,11 @@ header; JSON content type plus the Origin check cover it). Errors are
 | `POST /studio/api/refine` | `{fromVersion, notes, sketch?}`: files `lhcmemorys request add --to claude --tier edit --repo <target> --prompt-file <tmp> --json`, records the pending request. 503 with a plain message if LHC is missing or refuses (nothing recorded). |
 | `POST /studio/api/names` | `{ideas}`: files a `--to codex --tier read` request for 8 name + landmark ideas. |
 | `POST /studio/api/runs` | `{draftId, version, ms, finished, log, build}` or `{draftId, version, finished:false, ms, reason}`. Appends to `runs/<id>.jsonl`, keeps best finished ms. |
+| `POST /studio/api/make` | Like `sketches`, for a v2 design (`{sketch: <design>}`, body up to 1.5 MB). The version records `draftVersion`, `skin`, `design` and the converter's `intent`. |
+| `GET /studio/api/sketches/<n>` | The sketch or design a version was made from (Open in editor). |
+| `GET/POST /studio/api/designs`, `GET /studio/api/designs/<id>` | Autosaved designs (open lanes allowed); keeps the newest 200. |
+| `POST /studio/api/requests` | `{request:{title, description, effect, need, type, behavior, form:{size,shape,look}, needs3d, where:{x,y,lap,design,track,stampId}}, sketchPng, photo}` (base64, 3 MB each). Saves to `requests/<id>/`, then `lhcmemorys board add … --kind task --category track-studio --json` and `board note` with the details. The CLI has no image attach yet (only the MCP tool `lhc_board_attach`), so the note says where the sketch PNG is; if `board attach --help` ever succeeds the server attaches it. Visual types also get a kauto-3d queue file (`<YYYYMMDD-HHMMSS>-<slug>.json`, status `queued`, flock on `.lock`). Always 200 once saved; card/queue status is in the record. |
+| `POST /studio/api/requests-retry` | `{id}`: retries the card and/or queue entry. |
 | `POST /studio/api/approve` | `{version}`: files `lhcmemorys inbox approval --from claude --system track-studio --ref <draftId>@<sha12> --digest <sha256 of the draft file> --title ... --preview-file <tmp> --json`. The preview is: title, version, draft id, sha256, best laptop lap, autopilot time, and `Ship this as Week 2 (launch Tue Oct 6, 3 PM PT)`. Refused (409) for versions that need work or already have a request. |
 
 Also served: `/studio/` (page), `/studio/drafts/<id>.json|.svg`, and the site checkout at `/`
@@ -166,5 +197,9 @@ python3 tools/track-studio/server.py --root . --data /tmp/ts --dev-no-auth \
   --converter '["python3","tools/track-studio/testing/fake_converter.py"]'
 ```
 
-`testing/fake_converter.py` and `testing/fake_lhc.py` are stand-ins that follow the
+v2 tests: `node --test tests/stardust-studio-v2.test.mjs` (geometry, taper,
+draft schema, converter v2, skin field). UI smoke in a phone-sized headless
+Chromium: `node tools/track-studio/testing/ui_smoke.mjs <work dir> <path to playwright/index.mjs>`.
+
+`testing/fake_converter.py`, `testing/fake_lhc.py` and `testing/fake_whois.py` are stand-ins that follow the
 contracts above; they are not the real converter or LHC.
