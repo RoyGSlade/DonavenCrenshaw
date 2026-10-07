@@ -49,11 +49,16 @@ export const SKIN_ANIM = Object.freeze({
 
 const NEON = '#3DF2FF';
 
-/** ?skin=classic brings back the original lane; anything else is the default. */
-export function parseSkin(search) {
+/** The skin named by ?skin= in the address bar, or null when there is none (or it is unknown). */
+export function skinFromSearch(search) {
   let value = '';
   try { value = (new URLSearchParams(search || '').get('skin') || '').trim().toLowerCase(); } catch { value = ''; }
-  return SKINS.includes(value) ? value : DEFAULT_SKIN;
+  return SKINS.includes(value) ? value : null;
+}
+
+/** ?skin=classic brings back the original lane; anything else is the default. */
+export function parseSkin(search) {
+  return skinFromSearch(search) ?? DEFAULT_SKIN;
 }
 
 function detectTier() {
@@ -74,26 +79,39 @@ function defaultCanvas(w, h) {
   return null;
 }
 
-const settings = { skin: parseSkin(globalThis.location?.search || ''), tier: null, createCanvas: defaultCanvas };
+// skin: the address bar's ?skin= choice, which wins over a track's own skin;
+// null lets each weekly track pick (event.track.skin), else the default.
+const settings = { skin: skinFromSearch(globalThis.location?.search || ''), tier: null, createCanvas: defaultCanvas };
 
-/** The active skin name. */
-export function trackSkin() { return settings.skin; }
+/** The active skin name (the ?skin= override, else the default). */
+export function trackSkin() { return settings.skin ?? DEFAULT_SKIN; }
 
-/** Tests and tools: switch skin, device tier or canvas factory. Clears the cache. */
+/**
+ * Tests and tools: switch skin, device tier or canvas factory. Clears the cache.
+ * skin: a name acts like ?skin= (it overrides every track); null removes the
+ * override so a weekly track's own `skin` field applies.
+ */
 export function configureTrackSkin({ skin, tier, createCanvas } = {}) {
-  if (skin !== undefined) settings.skin = SKINS.includes(skin) ? skin : DEFAULT_SKIN;
+  if (skin !== undefined) settings.skin = skin === null ? null : SKINS.includes(skin) ? skin : DEFAULT_SKIN;
   if (tier !== undefined) settings.tier = SKIN_TIERS[tier] ? tier : null;
   if (createCanvas !== undefined) { settings.createCanvas = createCanvas || defaultCanvas; brushTexture = null; }
   resetSkinCache();
-  return { skin: settings.skin, tier: currentTierName() };
+  return { skin: trackSkin(), tier: currentTierName() };
 }
 
 function currentTierName() { return settings.tier || (settings.tier = detectTier()); }
 function tier() { return SKIN_TIERS[currentTierName()]; }
 
-/** The skin a scene's lane is drawn with: midnight dresses the weekly lanes only. */
+/**
+ * The skin a scene's lane is drawn with: midnight dresses the weekly lanes only.
+ * A weekly track may name its own skin (event.track.skin, visual only: the
+ * sim, replays and the Hub never read it); ?skin= in the address bar wins.
+ */
 export function laneSkin(scene) {
-  return scene?.weekly && settings.skin === 'midnight' ? 'midnight' : 'classic';
+  if (!scene?.weekly) return 'classic';
+  const own = scene.weekly.track?.skin;
+  const skin = settings.skin ?? (SKINS.includes(own) ? own : DEFAULT_SKIN);
+  return skin === 'midnight' ? 'midnight' : 'classic';
 }
 
 /** The screen backdrop behind the world for a lane skin. */

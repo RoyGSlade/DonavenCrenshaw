@@ -3,6 +3,9 @@
 import { createWeeklyLayout, WEEKLY_RULES } from '../engine/weekly/layout.js';
 
 const STUDIO = Symbol('weekly studio draft');
+// The lane skins a draft may name (gfx/trackSkin.js SKINS; a test keeps them equal).
+// Listed here so the engine's imports of this file never pull in the renderer.
+export const DRAFT_SKINS = Object.freeze(['midnight', 'classic']);
 export const studioDraft = (event) => event?.[STUDIO] || null;
 
 /** A canonical root-relative path only. No URLs, traversal, encoding or queries. */
@@ -47,6 +50,8 @@ export function validateDraftEvent(event) {
       || !track.points.every((p) => Array.isArray(p) && p.length === 2 && p.every(finite))) {
     throw new Error('Invalid draft track title, width or points.');
   }
+  // Optional and visual only (gfx/trackSkin.js): the lane skin this track asks for.
+  if (track.skin != null && !DRAFT_SKINS.includes(track.skin)) throw new Error('Invalid draft track skin.');
   const index = (v) => Number.isInteger(v) && v >= 0 && v < track.points.length;
   for (const key of ['shards', 'mines', 'bouncers', 'sentries', 'stations']) {
     if (key === 'stations' && track[key] == null) continue;

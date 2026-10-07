@@ -1,8 +1,17 @@
 // Phone stroke -> weekly preview. Pure and bounded: no DOM, clock or randomness.
+//
+// Two inputs: a v1 sketch (one loop plus marks) and a v2 studio design
+// (studio/draftV2.js: lane, width profile, skin, layers of strokes and stamps,
+// requests). For v2 the converter emits only what the game supports today
+// (one lane width, mines, sweeping rocks, corner sentries, fuel docks, shards,
+// checkpoints, the start and the skin) and returns everything else as
+// `intent`: design intent the refine agents and the owner can see.
 import { WEEKLY_EVENTS } from '../tracks/weekly.js';
 import { createTrack, pointOnTrack } from '../engine/track.js';
-import { createWeeklyLayout, WEEKLY_RULES as R, bouncerPosition } from '../engine/weekly/layout.js';
+import { createWeeklyLayout, WEEKLY_RULES as R, bouncerPosition, cornerInside } from '../engine/weekly/layout.js';
 import { flyWeeklyLap } from '../engine/weekly/pilot.js';
+import { normalizeDoc, pageSize, STAMP_TYPES, ZONE_TYPES, BEHAVIORS, SKINS } from './draftV2.js';
+import { pointsAlong, isUniformWidth, widthSamples, polygonArea, clampWidth } from './studioGeometry.js';
 
 const finite = (v) => typeof v === 'number' && Number.isFinite(v);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -110,11 +119,19 @@ function cleanStroke(sketch) {
     const a = points[longest], b = points[(longest + 1) % points.length];
     points.splice(longest + 1, 0, [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2]);
   }
-  const length = lapLength(points), multiplier = BASE_LENGTH * (sketch.scale ?? 1) / length;
+  // v1 scales every loop to the Gantry Drop lap; a v2 design has a fixed page
+  // scale (cells per unit of the page's long side), so what you draw is what you fly.
+  const length = lapLength(points);
+  const multiplier = sketch.cellsPerUnit ? sketch.cellsPerUnit * extent : BASE_LENGTH * (sketch.scale ?? 1) / length;
   if (!finite(multiplier) || multiplier < 0.001 || multiplier > 1e9) throw new TypeError('Scale is outside the supported numeric range.');
   const world = points.map(([x, y]) => [10 + x * multiplier, 10 + y * multiplier]);
   const marks = (sketch.marks || []).map((m) => ({ ...m, position: normalized[m.at].map((v) => 10 + v * multiplier) }));
-  return { points: world, marks };
+  // Any other page point into the same world frame (v2 stamps and strokes).
+  const toWorld = ([x, y]) => {
+    const [ax, ay] = sketch.aspect >= 1 ? [x, y / sketch.aspect] : [x * sketch.aspect, y];
+    return [10 + (ax - minX) / extent * multiplier, 10 + (ay - minY) / extent * multiplier];
+  };
+  return { points: world, marks, toWorld };
 }
 
 function crossing(a, b, c, d) {
@@ -185,7 +202,11 @@ function turnAngles(track) {
   });
 }
 
-function populate(event, sketch, marks) {
+// opts (v2): shards / stations are explicit placements (null: place them
+// automatically, as v1 always does); hazards false skips the automatic mines,
+// rocks and sentries.
+function populate(event, sketch, marks, opts = {}) {
+  const { shards = null, stations = null, hazards = true } = opts;
   const source = event.track, track = createTrack(source.points, source.width, source.title);
   const level = { easy: 0, normal: 1, hard: 2 }[sketch.difficulty ?? 'normal'];
   const angles = turnAngles(track);
@@ -208,9 +229,11 @@ function populate(event, sketch, marks) {
     return pointOnTrack(track, s.start + s.length * p.t, p.off);
   };
   const count = 8 + level;
-  for (let i = 0; i < count; i++) source.shards.push(placement(track, (i + 0.5) * track.length / count, (i % 2 ? -1 : 1) * 1.2));
-  for (const fraction of [0.24, 0.54, 0.82]) source.stations.push(placement(track, fraction * track.length));
-  if (track.length > BASE_LENGTH * 4) return;
+  if (shards) source.shards.push(...shards);
+  else for (let i = 0; i < count; i++) source.shards.push(placement(track, (i + 0.5) * track.length / count, (i % 2 ? -1 : 1) * 1.2));
+  if (stations) source.stations.push(...stations);
+  else for (const fraction of [0.24, 0.54, 0.82]) source.stations.push(placement(track, fraction * track.length));
+  if (track.length > BASE_LENGTH * 4 || !hazards) return;
   let sequence = 0;
   for (const s of track.segments) {
     if (s.length < 18) continue;
@@ -245,19 +268,213 @@ function populate(event, sketch, marks) {
   }
 }
 
+const FEEL = new Set(['fast', 'tight', 'calm', 'hazard']);
+
+/**
+ * A v2 design to the v1-shaped sketch the pipeline cleans (lane loop, start,
+ * feel marks, gates as pinned checkpoints) plus the page scale.
+ */
+function prepareDesign(raw) {
+  const doc = normalizeDoc(raw);
+  if (!doc.lane.closed || doc.lane.points.length < 4) throw new TypeError('Close the lane loop before making a track.');
+  const points = doc.lane.points.map(([x, y]) => [clamp(x, 0, 1), clamp(y, 0, 1)]);
+  const a = doc.page.aspect;
+  const ac = ([x, y]) => (a >= 1 ? [x, y / a] : [x * a, y]);
+  const lane = points.map(ac);
+  const nearestIndex = (p) => {
+    const q = ac(p);
+    let best = 0, bd = Infinity;
+    lane.forEach((r, i) => { const d = dist(q, r); if (d < bd) { bd = d; best = i; } });
+    return best;
+  };
+  const startStamp = doc.stamps.find((s) => s.type === 'start');
+  const start = startStamp ? nearestIndex([startStamp.x, startStamp.y]) : doc.lane.start;
+  const marks = [], notes = [];
+  let pins = 0;
+  for (const s of doc.stamps) {
+    const kind = FEEL.has(s.type) ? s.type : s.type === 'gate' ? 'tight' : null;
+    if (!kind) continue;
+    if (kind === 'tight' && ++pins > 27) { notes.push('Kept the first 27 gates and tight marks (the game has at most 28 pinned points).'); continue; }
+    marks.push({ at: nearestIndex([s.x, s.y]), kind, ...(s.label ? { note: s.label } : {}) });
+  }
+  return { doc, notes, sketch: { version: 1, points, start, aspect: a, difficulty: doc.difficulty, marks, cellsPerUnit: doc.page.cells } };
+}
+
+// Nearest lane position of a world point: { seg, t, off, along, distance }, off + to the right.
+function projectOnTrack(track, p) {
+  let best = null;
+  for (const s of track.segments) {
+    const q = projection(p, [s.x, s.y], [s.x + s.dx, s.y + s.dy]);
+    if (!best || q.distance < best.distance) {
+      const x = s.x + s.dx * q.t, y = s.y + s.dy * q.t;
+      best = { seg: s.index, t: q.t, distance: q.distance, along: s.start + s.length * q.t, off: (p[0] - x) * -s.ty + (p[1] - y) * s.tx };
+    }
+  }
+  return best;
+}
+
+const round = (v, k = 4) => Math.round(v * 10 ** k) / 10 ** k;
+const lapLabel = (track, p) => `${Math.round(projectOnTrack(track, p).along / track.length * 100)}% round the lap`;
+const centroid = (pts) => [pts.reduce((s, p) => s + p[0], 0) / pts.length, pts.reduce((s, p) => s + p[1], 0) / pts.length];
+
+/**
+ * The design's explicit placements on the cleaned track, and its design intent.
+ * Only what the game supports is placed; off-lane items are left out (noted).
+ */
+function placeDesign(doc, toWorld, track) {
+  const width = track.width, half = width / 2, notes = [], intent = [];
+  const dropped = {};
+  const drop = (what) => { dropped[what] = (dropped[what] || 0) + 1; };
+  const onLane = (p, keep, what) => {
+    const q = projectOnTrack(track, p);
+    if (Math.abs(q.off) > half + 2) { drop(what); return null; }
+    return { seg: q.seg, t: round(clamp(q.t, 0, 1)), off: round(clamp(q.off, -(half - keep), half - keep), 3), along: q.along };
+  };
+  const distinct = (list, gap) => {
+    const out = [];
+    for (const item of list) {
+      if (!item) continue;
+      const w = pointOnTrack(track, item.along, item.off);
+      if (out.some((o) => Math.hypot(o.w.x - w.x, o.w.y - w.y) < gap)) continue;
+      out.push({ item, w });
+    }
+    return out.map((o) => o.item);
+  };
+  const strip = ({ along, ...rest }) => rest;
+  const world = (s) => toWorld([s.x, s.y]);
+  const strokeWorld = (s) => s.points.map(toWorld);
+  const say = (kind, text, at, extra = {}) => { if (intent.length < 80) intent.push({ kind, text, ...(at ? { at: at.map((v) => round(v, 2)), lap: round(projectOnTrack(track, at).along / track.length, 3) } : {}), ...extra }); };
+  const unsupported = { barricade: 0, debris: 0 };
+  const behaviourNotes = new Map();
+  const wantsBehaviour = (type, behavior, at) => {
+    const key = `${type}:${behavior}`;
+    if (!behaviourNotes.has(key)) behaviourNotes.set(key, { type, behavior, count: 0, at });
+    behaviourNotes.get(key).count++;
+  };
+
+  const shards = [], mines = [], rocks = [], sentries = [], stations = [];
+  for (const s of doc.stamps) {
+    const p = world(s);
+    if (s.type === 'shard') shards.push(onLane(p, 0.35, 'shards'));
+    else if (s.type === 'shards') {
+      const c = onLane(p, 0.35, 'shards');
+      if (c) {
+        const gap = Math.max(1.2, s.size / 2);
+        for (const d of [-gap, 0, gap]) {
+          const w = pointOnTrack(track, c.along + d, c.off);
+          shards.push(onLane([w.x, w.y], 0.35, 'shards'));
+        }
+      }
+    } else if (s.type === 'mine') {
+      if (s.behavior === 'static') mines.push(onLane(p, 0.5, 'mines')); else wantsBehaviour('mine', s.behavior, p);
+    } else if (s.type === 'rock') {
+      if (s.behavior === 'static' || s.behavior === 'moving') rocks.push({ q: onLane(p, 0, 'rocks'), size: s.size, period: s.period });
+      else wantsBehaviour('rock', s.behavior, p);
+    } else if (s.type === 'sentry') sentries.push(p);
+    else if (s.type === 'fuel') stations.push(onLane(p, 1.2, 'fuel docks'));
+    else if (s.type === 'barricade' || s.type === 'debris') { unsupported[s.type]++; if (s.behavior !== 'static') wantsBehaviour(s.type, s.behavior, p); say(s.type, `${STAMP_TYPES[s.type].label}${s.label ? ` "${s.label}"` : ''} (size ${s.size}) ${lapLabel(track, p)}: not in the game yet.`, p); }
+    else if (s.type === 'landmark' || s.type === 'star') say(s.type, `${STAMP_TYPES[s.type].label}${s.label ? ` "${s.label}"` : ''} (size ${s.size}) ${lapLabel(track, p)}.`, p, { size: s.size });
+    else if (s.type === 'text') say('note', `Note ${lapLabel(track, p)}: "${s.note || s.label || ''}"`, p);
+    else if (s.type === 'request') {
+      const r = doc.requests.find((q) => q.id === s.requestId || q.stampId === s.id);
+      say('request', `Requested item${r ? ` "${r.title}" (${r.type}, ${r.behavior}${r.cardRef ? `, card ${r.cardRef}` : ''})` : ''} ${lapLabel(track, p)}.`, p);
+    }
+  }
+  let scribbles = 0;
+  for (const s of doc.strokes) {
+    const pts = strokeWorld(s);
+    if (!pts.length) continue;
+    if (s.layer === 'shards') for (const p of pointsAlong(pts, s.spacing)) shards.push(onLane(p, 0.35, 'shards'));
+    else if (s.layer === 'obstacles') {
+      const row = pointsAlong(pts, s.spacing);
+      if (s.type === 'mine') { if (s.behavior === 'static') for (const p of row) mines.push(onLane(p, 0.5, 'mines')); else wantsBehaviour('mine', s.behavior, centroid(pts)); }
+      else if (s.type === 'rock') { if (s.behavior === 'static' || s.behavior === 'moving') for (const p of row) rocks.push({ q: onLane(p, 0, 'rocks'), size: s.size }); else wantsBehaviour('rock', s.behavior, centroid(pts)); }
+      else if (s.type === 'sentry') sentries.push(...row);
+      else { unsupported[s.type] += row.length; say(s.type, `A row of ${row.length} ${STAMP_TYPES[s.type].label.toLowerCase()} ${lapLabel(track, centroid(pts))}${s.behavior !== 'static' ? `, ${BEHAVIORS[s.behavior].toLowerCase()}` : ''}: not in the game yet.`, centroid(pts), { poly: pts.filter((_, i) => i % Math.ceil(pts.length / 40) === 0).map((p) => p.map((v) => round(v, 2))) }); }
+    } else if (s.layer === 'hazards') {
+      const area = Math.round(polygonArea(pts));
+      say('zone', `Hazard zone: ${ZONE_TYPES[s.type]}${s.label ? ` "${s.label}"` : ''}, about ${area} square cells, ${lapLabel(track, centroid(pts))}: not in the game yet.`, centroid(pts),
+        { zone: s.type, poly: pts.filter((_, i) => i % Math.ceil(pts.length / 40) === 0).map((p) => p.map((v) => round(v, 2))) });
+    } else if (s.layer === 'landmarks') say('landmark', `Landmark sketch${s.label ? ` "${s.label}"` : ''} ${lapLabel(track, centroid(pts))}.`, centroid(pts));
+    else if (s.layer === 'notes') { scribbles++; if (s.label) say('note', `Note ${lapLabel(track, centroid(pts))}: "${s.label}"`, centroid(pts)); }
+  }
+  if (scribbles) say('note', `${scribbles} note scribble${scribbles === 1 ? '' : 's'} on the design (open it in the studio to see them).`);
+  for (const b of behaviourNotes.values()) say('behaviour', `${b.count} ${b.type}${b.count === 1 ? '' : 's'} meant to be ${BEHAVIORS[b.behavior].toLowerCase()}: not in the game yet, left out.`, b.at);
+  // Width: the game flies one width.
+  const size = pageSize(doc);
+  const laneWorld = doc.lane.points.map(([x, y]) => [x * size.w, y * size.h]);
+  const lap = lapLength(laneWorld);
+  if (!isUniformWidth(doc.width)) {
+    const ws = widthSamples(doc.width, lap, 240);
+    say('width', `Lane width varies from ${Math.min(...ws).toFixed(1)} to ${Math.max(...ws).toFixed(1)} cells (${doc.width.spans.length} brushed stretch${doc.width.spans.length === 1 ? '' : 'es'}, ${doc.width.taper}-cell taper). The game flies one width (${width}) for now.`, null,
+      { samples: ws.filter((_, i) => i % 4 === 0).map((v) => round(v, 2)) });
+  }
+  if (doc.width.base > R.MAX_WIDTH) say('width', `Lane drawn ${doc.width.base} cells wide; the game's widest is ${R.MAX_WIDTH}, so it flies at ${width}.`);
+
+  // Supported placements.
+  const shardList = distinct(shards, 1.2).map(strip);
+  const mineList = distinct(mines, 1).map(strip).slice(0, 150);
+  const stationList = distinct(stations, 4).map(strip);
+  const bouncers = [];
+  rocks.forEach(({ q, size: rockSize, period }, i) => {
+    if (!q) return;
+    const radius = round(clamp(rockSize / 2, 0.4, half - 0.3), 3);
+    const span = half - radius - 0.05;
+    const speed = period ? round(clamp((4 * span) / period, 0.5, 12), 3) : 3.2;
+    bouncers.push({ seg: q.seg, t: q.t, radius, speed, phase: round((i * 0.381966) % 1) });
+  });
+  const sentryList = [];
+  for (const p of sentries) {
+    // A sentry sits just outside a corner's rail: the nearest corner point (never the start).
+    if (projectOnTrack(track, p).distance > half + 8) { drop('sentries'); continue; }
+    let point = 1, bd = Infinity;
+    track.points.forEach((c, i) => { if (i === 0) return; const d = Math.hypot(c.x - p[0], c.y - p[1]); if (d < bd) { bd = d; point = i; } });
+    if (sentryList.some((s) => s.point === point)) continue;
+    const c = track.points[point], inside = cornerInside(track, point);
+    sentryList.push({ point, side: (p[0] - c.x) * inside.x + (p[1] - c.y) * inside.y > 0 ? 'inside' : 'outside' });
+  }
+  for (const [what, n] of Object.entries(dropped)) notes.push(`Left out ${n} ${what} drawn off the lane.`);
+  const obstacleContent = doc.strokes.some((s) => s.layer === 'obstacles') || doc.stamps.some((s) => STAMP_TYPES[s.type].layer === 'obstacles');
+  const autoHazards = doc.auto.hazards === 'on' || (doc.auto.hazards === 'auto' && !obstacleContent);
+  return { shards: shardList, mines: mineList, bouncers, sentries: sentryList, stations: stationList, autoHazards, intent, notes };
+}
+
 /** Invalid input throws TypeError. Valid but unflyable drawings return ok:false. */
-export function sketchToWeekly(sketch, options = {}) {
+export function sketchToWeekly(input, options = {}) {
+  const v2 = input && typeof input === 'object' && input.version === 2 ? prepareDesign(input) : null;
+  const sketch = v2 ? v2.sketch : input;
   validate(sketch, options);
-  const { points, marks } = cleanStroke(sketch);
-  const title = options.title ?? 'Studio Draft';
-  const landmark = options.landmark ?? sketch.marks?.find((m) => m.kind === 'landmark' && m.note?.trim())?.note ?? 'The Fingerprint';
+  const { points, marks, toWorld } = cleanStroke(sketch);
+  const title = options.title ?? (v2?.doc.title.trim() || 'Studio Draft');
+  const v2Landmark = v2 && (v2.doc.landmark.trim() || v2.doc.stamps.find((s) => s.type === 'landmark' && s.label?.trim())?.label);
+  const landmark = options.landmark ?? (v2Landmark || sketch.marks?.find((m) => m.kind === 'landmark' && m.note?.trim())?.note) ?? 'The Fingerprint';
+  const width = v2 ? clamp(v2.doc.width.base, R.MIN_WIDTH, R.MAX_WIDTH) : { easy: 7.6, normal: 7, hard: 6.4 }[sketch.difficulty ?? 'normal'];
   const event = {
     id: options.id ?? 'studio-draft', week: 2, version: options.version ?? 1,
     title, tagline: options.tagline ?? 'One lap. Every shard. Your line.', music: 'level3',
     rewards: {}, commentsPage: null,
-    track: { title, landmark, width: { easy: 7.6, normal: 7, hard: 6.4 }[sketch.difficulty ?? 'normal'], points, shards: [], mines: [], bouncers: [], sentries: [], stations: [] },
+    track: { title, landmark, width, points, shards: [], mines: [], bouncers: [], sentries: [], stations: [] },
   };
-  populate(event, sketch, marks);
+  let design = null;
+  if (v2) {
+    if (SKINS.includes(v2.doc.skin)) event.track.skin = v2.doc.skin;
+    design = placeDesign(v2.doc, toWorld, createTrack(points, width, title));
+    populate(event, sketch, marks, { shards: design.shards.length ? design.shards : null, stations: design.stations.length ? design.stations : null, hazards: design.autoHazards });
+    const source = event.track;
+    source.mines.push(...design.mines);
+    source.bouncers.push(...design.bouncers);
+    source.sentries.push(...design.sentries);
+    if (source.shards.length < R.MIN_SHARDS) {
+      const track = createTrack(source.points, width, title), added = R.MIN_SHARDS - source.shards.length;
+      for (let k = 0; source.shards.length < R.MIN_SHARDS && k < 12; k++) {
+        const along = ((k + 0.5) / 12) * track.length;
+        const w = pointOnTrack(track, along);
+        if (source.shards.some((q) => { const v = pointOnTrack(track, track.segments[q.seg].start + track.segments[q.seg].length * q.t, q.off); return Math.hypot(v.x - w.x, v.y - w.y) < 20; })) continue;
+        source.shards.push(placement(track, along));
+      }
+      design.notes.push(`Added ${added} shard${added === 1 ? '' : 's'} on the centre line: the game needs at least ${R.MIN_SHARDS}.`);
+    }
+  } else populate(event, sketch, marks);
   let layout = createWeeklyLayout(event), problems = geometryProblems(layout.track), flown = null;
   const fixes = [];
   let startFixed = false;
@@ -302,7 +519,7 @@ export function sketchToWeekly(sketch, options = {}) {
   }
   const finished = flown?.finished === true;
   const ms = finished ? flown.time : null;
-  return { event, report: {
+  const report = {
     ok: !problems.length && finished, problems, fixes,
     lengthCells: Math.round(layout.track.length * 100) / 100,
     corners: turnAngles(layout.track).filter((a) => a > 0.22).length,
@@ -310,14 +527,39 @@ export function sketchToWeekly(sketch, options = {}) {
     pilot: { finished, ms },
     // A heuristic, not a measured human time: the careful pilot is deliberately slow.
     estimatedHumanMs: ms === null ? null : Math.round(ms * 0.78),
-  } };
+  };
+  if (!v2) return { event, report };
+  // v2 only: what the design asked for that the game cannot do yet, and placement notes.
+  report.draftVersion = 2;
+  report.skin = event.track.skin ?? null;
+  report.sentries = event.track.sentries.length;
+  report.stations = event.track.stations.length;
+  report.width = event.track.width;
+  report.notes = [...v2.notes, ...design.notes];
+  report.intent = design.intent.map((i) => i.text);
+  return { event, report, intent: design.intent };
+}
+
+/** The lane exactly as the game will fly it (world points, start first) and the page-to-world map. */
+export function gameLane(input) {
+  const v2 = input && typeof input === 'object' && input.version === 2 ? prepareDesign(input) : null;
+  const sketch = v2 ? v2.sketch : input;
+  validate(sketch, {});
+  const { points, toWorld } = cleanStroke(sketch);
+  return { points, toWorld, width: v2 ? clamp(v2.doc.width.base, R.MIN_WIDTH, R.MAX_WIDTH) : { easy: 7.6, normal: 7, hard: 6.4 }[sketch.difficulty ?? 'normal'] };
 }
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' })[c]);
 const num = (n) => { if (!finite(n)) throw new TypeError('SVG geometry must be finite.'); return Number(n.toFixed(3)); };
 
-/** Standalone obstacle preview. Text is escaped; geometry accepts only numbers. */
-export function weeklyPreviewSvg(event, { width = 600 } = {}) {
+const INTENT_COLOR = { landmark: '#a98bff', star: '#a98bff', zone: '#ff9a3d', request: '#ff4fa3', barricade: '#ff4fa3', debris: '#ff4fa3', note: '#9aa3ad', behaviour: '#ff4fa3' };
+
+/**
+ * Standalone obstacle preview. Text is escaped; geometry accepts only numbers.
+ * `intent` (v2 converter output) adds the design intent dashed on top: zones,
+ * landmarks, requested items and obstacles the game cannot do yet.
+ */
+export function weeklyPreviewSvg(event, { width = 600, intent = null } = {}) {
   if (!finite(width) || width <= 0) throw new TypeError('SVG width must be positive and finite.');
   const layout = createWeeklyLayout(event), { track } = layout, b = track.bounds;
   const x = b.minX - 8, y = b.minY - 28, w = b.maxX - x + 8, h = b.maxY - y + 8;
@@ -343,6 +585,18 @@ export function weeklyPreviewSvg(event, { width = 600 } = {}) {
   }
   for (const s of layout.sentries) out.push(`<circle cx="${num(s.x)}" cy="${num(s.y)}" r=".8" fill="#ffad72"/>`);
   for (const s of layout.stations) out.push(`<circle cx="${num(s.x)}" cy="${num(s.y)}" r="1.2" fill="none" stroke="#6ed2e3" stroke-width=".4"/>`);
+  for (const item of Array.isArray(intent) ? intent.slice(0, 80) : []) {
+    const color = INTENT_COLOR[item.kind];
+    if (!color) continue;
+    if (Array.isArray(item.poly) && item.poly.length > 1 && item.poly.every((p) => finite(p[0]) && finite(p[1]))) {
+      const d = item.poly.map((p, i) => `${i ? 'L' : 'M'}${num(p[0])} ${num(p[1])}`).join(' ') + (item.kind === 'zone' ? ' Z' : '');
+      out.push(`<path d="${d}" fill="${item.kind === 'zone' ? color : 'none'}" fill-opacity=".18" stroke="${color}" stroke-width=".6" stroke-dasharray="1.5 1"/>`);
+    } else if (Array.isArray(item.at) && finite(item.at[0]) && finite(item.at[1])) {
+      const [cx, cy] = item.at, r = item.kind === 'landmark' || item.kind === 'star' ? clamp((item.size || 4) / 2, 1, 8) : 1.6;
+      out.push(`<circle cx="${num(cx)}" cy="${num(cy)}" r="${num(r)}" fill="none" stroke="${color}" stroke-width=".6" stroke-dasharray="1 .8"/>`);
+      if (item.kind === 'request') out.push(`<text x="${num(cx)}" y="${num(cy + 1.1)}" fill="${color}" font-size="3" text-anchor="middle">?</text>`);
+    }
+  }
   out.push('</svg>');
   return out.join('\n');
 }

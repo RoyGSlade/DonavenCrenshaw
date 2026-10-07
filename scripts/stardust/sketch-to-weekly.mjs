@@ -22,8 +22,10 @@ try {
     for await (const chunk of process.stdin) chunks.push(chunk);
     input = Buffer.concat(chunks).toString('utf8');
   }
-  const { event, report } = sketchToWeekly(JSON.parse(input.replace(/^\uFEFF/, '')), options);
-  process.stdout.write(JSON.stringify({ event, report, svg: weeklyPreviewSvg(event) }) + '\n');
+  // A v1 sketch or a v2 studio design. v2 also returns `intent`: what the
+  // design asks for that the game cannot do yet (drawn dashed on the preview).
+  const { event, report, intent } = sketchToWeekly(JSON.parse(input.replace(/^\uFEFF/, '')), options);
+  process.stdout.write(JSON.stringify({ event, report, svg: weeklyPreviewSvg(event, { intent }), ...(intent ? { intent } : {}) }) + '\n');
 } catch (error) {
   process.stderr.write(`Invalid sketch input: ${error.message}\n`);
   process.exitCode = 2;
