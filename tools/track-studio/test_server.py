@@ -38,7 +38,7 @@ def square_sketch(n=12, **over):
 
 
 class Harness:
-    def __init__(self, *, lhc=True, owner=OWNER, dev=False, data_inside_root=False):
+    def __init__(self, *, lhc=True, owner=OWNER, dev=False, data_inside_root=False, **cfg_extra):
         self.tmp = Path(tempfile.mkdtemp(prefix="studio-test-"))
         self.root = self.tmp / "site"
         (self.root / "projects" / "Space-Shooter").mkdir(parents=True)
@@ -57,14 +57,16 @@ class Harness:
         (self.tmp / "outside.txt").write_text("outside", encoding="utf-8")
         self.data = (self.root / "studio-data") if data_inside_root else (self.tmp / "data")
         self.lhc_log = self.tmp / "lhc.log"
+        if cfg_extra.get("asset_queue") is True:  # a temp kauto-3d queue root, never the real one
+            cfg_extra["asset_queue"] = str(self.tmp / "kauto-queue")
         cfg = studio.Config(root=self.root, data=self.data, owner=owner, dev_no_auth=dev,
                             converter=FAKE_CONVERTER, lhc=FAKE_LHC if lhc else None,
-                            card="#SAVE-01", repo_target="studio-repo")
+                            card="#SAVE-01", repo_target="studio-repo", **cfg_extra)
         self.server = studio.StudioServer(("127.0.0.1", 0), cfg)
         self.port = self.server.server_address[1]
         self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
         self.thread.start()
-        self._env = mock.patch.dict(os.environ, {"FAKE_LHC_LOG": str(self.lhc_log)})
+        self._env = mock.patch.dict(os.environ, {"FAKE_LHC_LOG": str(self.lhc_log), "FAKE_WHOIS_LOG": str(self.tmp / "whois.log")})
         self._env.start()
 
     def close(self):
@@ -631,6 +633,337 @@ class AtomicWriteTests(Base):
         old = lock.stat().st_mtime - 1000
         os.utime(lock, (old, old))
         self.assertEqual(self.h.json("POST", "/studio/api/sketches", {"sketch": square_sketch()})[0], 200)
+
+
+# ---------------------------------------------------------------------------
+# Studio v2
+# ---------------------------------------------------------------------------
+
+FAKE_WHOIS = [sys.executable, str(HERE / "testing" / "fake_whois.py")]
+PNG = b"\x89PNG\r\n\x1a\n" + b"\x00" * 64
+JPEG = b"\xff\xd8\xff\xe0" + b"\x00" * 64
+
+
+def design_v2(closed=True, **over):
+    import math
+    pts = [[round(0.5 + 0.4 * math.cos(i / 40 * 6.2832), 5), round(0.5 + 0.42 * math.sin(i / 40 * 6.2832), 5)] for i in range(40)]
+    doc = {
+        "version": 2, "id": "d-test1", "title": "Mall Run", "landmark": "The Escalator", "difficulty": "hard", "skin": "classic",
+        "page": {"aspect": 0.75, "cells": 260},
+        "lane": {"points": pts, "closed": closed, "start": 0},
+        "width": {"base": 7, "taper": 24, "spans": [{"from": 0.1, "len": 0.2, "w": 11}]},
+        "strokes": [{"id": "k1", "layer": "hazards", "type": "debris", "points": [[0.3, 0.3], [0.4, 0.3], [0.4, 0.4]], "closed": True}],
+        "stamps": [{"id": "s1", "type": "landmark", "x": 0.5, "y": 0.5, "size": 8, "rotation": 0, "behavior": "static", "label": "Food court"},
+                   {"id": "s2", "type": "mine", "x": 0.9, "y": 0.5, "size": 0.84, "rotation": 0, "behavior": "falling"}],
+        "requests": [], "layers": {"notes": {"visible": False, "locked": False}}, "auto": {"hazards": "auto"},
+    }
+    doc.update(over)
+    return doc
+
+
+def b64(data: bytes) -> str:
+    import base64
+    return base64.b64encode(data).decode()
+
+
+class DesignV2Tests(Base):
+    def make(self, doc=None, path="/studio/api/make", **body):
+        payload = {"sketch": doc or design_v2()}
+        payload.update(body)
+        return self.h.json("POST", path, payload)
+
+    def test_make_track_from_a_v2_design(self):
+        status, out = self.make()
+        self.assertEqual(status, 200, out)
+        v = out["version"]
+        self.assertEqual((v["id"], v["draftVersion"], v["skin"], v["design"], v["sketchNumber"]), ("w2-v1", 2, "classic", "d-test1", 1))
+        self.assertEqual(v["title"], "Mall Run", "title and landmark come from the design")
+        self.assertEqual(v["landmark"], "The Escalator")
+        self.assertEqual(v["difficulty"], "hard")
+        self.assertEqual(v["intent"], ['Landmark "Food court".'])
+        stored = json.loads((self.h.data / "sketches" / "1.json").read_text(encoding="utf-8"))
+        self.assertEqual(stored["version"], 2)
+        self.assertEqual(stored["width"]["spans"][0]["w"], 11)
+        self.assertEqual(stored["layers"]["notes"], {"visible": False, "locked": False})
+        status, got = self.h.json("GET", "/studio/api/sketches/1")
+        self.assertEqual((status, got["sketch"]["id"]), (200, "d-test1"))
+        self.assertEqual(self.h.json("GET", "/studio/api/sketches/9")[0], 404)
+        self.assertEqual(self.h.json("GET", "/studio/api/sketches/..%2f1")[0], 404)
+
+    def test_v1_and_v2_both_work_on_make_and_sketches(self):
+        self.assertEqual(self.make(square_sketch())[0], 200)
+        self.assertEqual(self.make(path="/studio/api/sketches")[0], 200, "a small v2 design fits the old route")
+        state = self.h.json("GET", "/studio/api/state")[1]
+        self.assertEqual([v["draftVersion"] for v in state["versions"]], [2, 1])
+
+    def test_make_refuses_open_lanes_and_junk(self):
+        status, out = self.make(design_v2(closed=False))
+        self.assertEqual(status, 400)
+        self.assertIn("Close the lane loop", out["error"])
+        bad = [design_v2(stamps=[{"type": "ufo", "x": 0.1, "y": 0.1}]),
+               design_v2(strokes=[{"layer": "lava", "points": [[0, 0]]}]),
+               design_v2(page={"aspect": 99, "cells": 260}),
+               design_v2(width={"base": 3, "taper": 0, "spans": []}),
+               design_v2(stamps=[{"type": "mine", "x": "a", "y": 0}]),
+               design_v2(lane={"points": [[0.1, 0.1]] * 2001, "closed": True}),
+               dict(design_v2(), version=3)]
+        for doc in bad:
+            self.assertEqual(self.make(doc)[0], 400, json.dumps(doc)[:120])
+        self.assertEqual(self.h.json("GET", "/studio/api/state")[1]["versions"], [])
+
+    def test_design_label_flags_are_not_converter_flags(self):
+        status, out = self.make(design_v2(title="--version 99"))
+        self.assertEqual(status, 200)
+        self.assertEqual(out["version"]["version"], 1)
+
+    def test_autosave_designs_keeps_half_drawn_work(self):
+        status, out = self.h.json("POST", "/studio/api/designs", {"design": design_v2(closed=False, id="d-wip")})
+        self.assertEqual(status, 200, out)
+        self.assertEqual(out["id"], "d-wip")
+        status, out2 = self.h.json("POST", "/studio/api/designs", {"design": design_v2(id="../x")})
+        self.assertTrue(out2["id"].startswith("d-") and out2["id"] != "../x")
+        listing = self.h.json("GET", "/studio/api/designs")[1]["designs"]
+        self.assertEqual({d["id"] for d in listing}, {"d-wip", out2["id"]})
+        got = self.h.json("GET", "/studio/api/designs/d-wip")[1]
+        self.assertEqual(got["design"]["lane"]["closed"], False)
+        self.assertEqual(self.h.json("GET", "/studio/api/designs/d-nope")[0], 404)
+        self.assertEqual(self.h.json("GET", "/studio/api/designs/..%2fversions")[0], 404)
+        self.assertEqual(self.h.json("POST", "/studio/api/designs", {"design": {"version": 1}})[0], 400)
+        self.assertEqual(list(self.h.data.glob("**/*.tmp")), [])
+
+    def test_refine_with_a_v2_design_tells_the_agent_about_v2_and_intent(self):
+        self.make()
+        status, body = self.h.json("POST", "/studio/api/refine", {"fromVersion": 1, "notes": "make the mall darker", "sketch": design_v2()})
+        self.assertEqual(status, 200, body)
+        prompt = self.h.lhc_calls()[-1]["flags"]["_prompt-file-text"]
+        for needle in ("Studio v2 designs", "draftV2.js", "Design intent the game cannot do yet", "Food court", "sketches/2.json"):
+            self.assertIn(needle, prompt)
+
+    def test_agent_versions_inherit_the_design(self):
+        self.make()
+        ev = self.h.tmp / "event.json"
+        ev.write_text(json.dumps({"event": {"title": "x", "track": {"skin": "midnight"}}, "report": {"ok": True, "pilot": {"finished": True, "ms": 1}}}), encoding="utf-8")
+        proc = subprocess.run([sys.executable, str(HERE / "server.py"), "add-version", "--data", str(self.h.data),
+                               "--from-file", str(ev), "--from-version", "1"], capture_output=True, text=True)
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        v = self.h.json("GET", "/studio/api/state")[1]["versions"][0]
+        self.assertEqual((v["version"], v["draftVersion"], v["design"], v["skin"]), (2, 2, "d-test1", "midnight"))
+
+    def test_studio_modules_are_served_and_nothing_else(self):
+        status, headers, _ = self.h.request("GET", "/studio/studio.css")
+        self.assertEqual(status, 200)
+        for path in ("/studio/server.py", "/studio/../server.py", "/studio/test_server.py", "/studio/testing/fake_lhc.py",
+                     "/studio/Studio.js", "/studio/.hidden.js", "/studio/x.json"):
+            self.assertEqual(self.h.request("GET", path)[0], 404, path)
+        self.assertIn("worker-src 'self'", headers["content-security-policy"])
+
+
+class PreviewTests(Base):
+    harness_kwargs = {"preview": True}
+
+    def test_preview_refuses_approval_and_says_so(self):
+        self.h.make_version()
+        status, out = self.h.json("POST", "/studio/api/approve", {"version": 1})
+        self.assertEqual(status, 409)
+        self.assertIn("preview", out["error"])
+        self.assertEqual(self.h.lhc_calls(), [])
+        self.assertTrue(self.h.json("GET", "/studio/api/state")[1]["preview"])
+
+
+def item_request(**over):
+    req = {"title": "Broken escalator", "description": "An escalator that drops steps through the store",
+           "effect": "Falling steps knock you sideways", "need": "The mall should feel like a mountain",
+           "type": "hazard", "behavior": "falling", "form": {"size": "two lanes long", "shape": "stairs", "look": "rusty chrome"},
+           "where": {"x": 0.4, "y": 0.2, "lap": 0.31, "design": "d-test1", "track": "Mall Run", "stampId": "s9"}}
+    req.update(over)
+    return req
+
+
+class ItemRequestTests(Base):
+    harness_kwargs = {"asset_queue": True}
+
+    def post(self, req=None, **body):
+        payload = {"request": req or item_request(), "sketchPng": b64(PNG)}
+        payload.update(body)
+        return self.h.json("POST", "/studio/api/requests", payload)
+
+    def queue_files(self):
+        root = self.h.tmp / "kauto-queue"
+        return sorted(root.glob("*.json")) if root.exists() else []
+
+    def test_request_files_a_card_saves_the_sketch_and_queues_a_3d_asset(self):
+        status, out = self.post(photo="data:image/jpeg;base64," + b64(JPEG))
+        self.assertEqual(status, 200, out)
+        r = out["request"]
+        self.assertTrue(studio.REQUEST_ID_RE.match(r["id"]))
+        self.assertEqual((r["status"], r["card"]["status"], r["card"]["ref"], r["card"]["attachment"]), ("filed", "filed", "ab12", "pending"))
+        self.assertEqual(r["stampId"], "s9")
+        self.assertEqual((self.h.data / "requests" / r["id"] / "sketch.png").read_bytes(), PNG)
+        self.assertEqual((self.h.data / "requests" / r["id"] / "photo.jpg").read_bytes(), JPEG)
+        calls = self.h.lhc_calls()
+        add = next(c for c in calls if c["cmd"] == ["board", "add"])
+        self.assertEqual(add["args"], ["Track Studio request: Broken escalator"])
+        self.assertEqual((add["flags"]["kind"], add["flags"]["repo"], add["flags"]["category"]), ("task", "studio-repo", "track-studio"))
+        self.assertIs(add["flags"]["json"], True)
+        notes = [c for c in calls if c["cmd"] == ["board", "note"]]
+        self.assertEqual(notes[0]["args"][0], "fake-board-add")
+        body = notes[0]["args"][1]
+        for needle in ("Broken escalator", "Type: hazard. Behaviour: falling.", "Falling steps knock you sideways",
+                       "feel like a mountain", "size: two lanes long; shape: stairs; look: rusty chrome", "31% round the lap",
+                       "lhc_board_attach", "sketch.png", "photo.jpg", "GAME-SUPPORT"):
+            self.assertIn(needle, body)
+        self.assertIn("Queued for kauto-3d", notes[-1]["args"][1])
+        # The kauto-3d queue entry follows ~/kauto-3d/QUEUE-CONTRACT.md.
+        files = self.queue_files()
+        self.assertEqual(len(files), 1)
+        self.assertRegex(files[0].name, r"^\d{8}-\d{6}-broken-escalator\.json$")
+        entry = json.loads(files[0].read_text(encoding="utf-8"))
+        for key in ("id", "created_at", "requested_by", "game", "kind", "text", "priority", "status", "batch_id", "updated_at", "note"):
+            self.assertIn(key, entry)
+        self.assertEqual((entry["id"], entry["requested_by"], entry["game"], entry["kind"], entry["status"], entry["priority"], entry["batch_id"]),
+                         (files[0].stem, "owner", "stardust", "prop", "queued", "next", None))
+        self.assertEqual(entry["created_at"], entry["updated_at"])
+        self.assertIn("Broken escalator", entry["text"])
+        self.assertEqual((entry["source"], entry["studio_request"], entry["card"]), ("track-studio", r["id"], "ab12"))
+        self.assertTrue((self.h.tmp / "kauto-queue" / ".lock").exists())
+        self.assertEqual(r["queue"]["id"], files[0].stem)
+        # The state lists it; the images are served (and only these names).
+        state = self.h.json("GET", "/studio/api/state")[1]
+        self.assertEqual(state["itemRequests"][0]["id"], r["id"])
+        self.assertTrue(state["assetQueue"])
+        status, headers, data = self.h.request("GET", r["sketchUrl"])
+        self.assertEqual((status, headers["content-type"], data), (200, "image/png", PNG))
+        self.assertEqual(self.h.request("GET", r["photoUrl"])[0], 200)
+        for bad in (f"/studio/requests/{r['id']}/../../versions.json", f"/studio/requests/{r['id']}/x.png", "/studio/requests/zz/sketch.png"):
+            self.assertEqual(self.h.request("GET", bad)[0], 404, bad)
+
+    def test_attach_is_used_when_the_cli_has_it(self):
+        with mock.patch.dict(os.environ, {"FAKE_LHC_ATTACH": "1"}):
+            status, out = self.post()
+        self.assertEqual(out["request"]["card"]["attachment"], "attached")
+        attach = next(c for c in self.h.lhc_calls() if c["cmd"] == ["board", "attach"])
+        self.assertEqual(attach["args"][0], "fake-board-add")
+        self.assertTrue(attach["args"][1].endswith("sketch.png"))
+        self.assertEqual(attach["flags"]["_attached-bytes"], len(PNG))
+        self.assertIn("attached to this card", next(c for c in self.h.lhc_calls() if c["cmd"] == ["board", "note"])["args"][1])
+
+    def test_lhc_failure_still_saves_and_retry_files_it_once(self):
+        with mock.patch.dict(os.environ, {"FAKE_LHC_FAIL": "1"}):
+            status, out = self.post()
+        self.assertEqual(status, 200, "the request is saved even if the card fails")
+        r = out["request"]
+        self.assertEqual((r["status"], r["card"]["status"]), ("saved", "failed"))
+        self.assertIn("Retry", out["message"])
+        self.assertEqual(len(self.queue_files()), 1, "the 3D queue does not depend on the card")
+        status, out = self.h.json("POST", "/studio/api/requests-retry", {"id": r["id"]})
+        self.assertEqual(status, 200, out)
+        self.assertEqual((out["request"]["status"], out["request"]["card"]["status"]), ("filed", "filed"))
+        self.assertEqual(len(self.queue_files()), 1, "retry does not queue twice")
+        self.assertEqual(self.h.json("POST", "/studio/api/requests-retry", {"id": "q00000000"})[0], 404)
+        self.assertEqual(self.h.json("POST", "/studio/api/requests-retry", {"id": "../x"})[0], 400)
+
+    def test_validation(self):
+        self.assertEqual(self.post(item_request(title="  "))[0], 400)
+        self.assertEqual(self.post(sketchPng="not base64!")[0], 400)
+        self.assertEqual(self.post(sketchPng=b64(b"GIF89a" + b"\x00" * 10))[0], 400)
+        self.assertEqual(self.post(photo=b64(b"<svg/>"))[0], 400)
+        self.assertEqual(self.post(item_request(where={"x": 9}))[0], 400)
+        self.assertEqual(self.post(sketchPng=b64(b"\x89PNG\r\n\x1a\n" + b"\x00" * (studio.IMAGE_CAP + 1)))[0], 413)
+        self.assertEqual(self.queue_files(), [])
+        status, out = self.post(item_request(type="nope", behavior="teleport", title="--kind idea"), sketchPng=None)
+        self.assertEqual(status, 200)
+        self.assertEqual((out["request"]["type"], out["request"]["behavior"], out["request"]["sketchUrl"]), ("other", "static", None))
+        self.assertEqual(self.h.lhc_calls()[0]["args"], ["Track Studio request: kind idea"])
+
+    def test_no_3d_asset_when_not_needed(self):
+        status, out = self.post(item_request(type="mechanic"))
+        self.assertEqual(out["request"]["needs3d"], False)
+        self.assertEqual(self.queue_files(), [])
+        status, out = self.post(item_request(type="obstacle", needs3d=False))
+        self.assertEqual(self.queue_files(), [])
+
+
+class ItemRequestNoQueueTests(Base):
+    harness_kwargs = {"lhc": False}
+
+    def test_without_lhc_or_queue_the_request_is_still_kept(self):
+        status, out = self.h.json("POST", "/studio/api/requests", {"request": item_request()})
+        self.assertEqual(status, 200)
+        r = out["request"]
+        self.assertEqual((r["status"], r["card"]["status"], r["queue"]["status"]), ("saved", "not-configured", "not-configured"))
+        self.assertIn("LHC is not set up", out["message"])
+        self.assertFalse(self.h.json("GET", "/studio/api/state")[1]["assetQueue"])
+
+
+REPO = HERE.parent.parent
+
+
+@unittest.skipUnless(shutil.which("node") and (REPO / "scripts" / "stardust" / "sketch-to-weekly.mjs").exists(), "node and the site checkout are needed")
+class RealConverterV2Tests(Base):
+    def test_the_real_converter_makes_a_v2_design_with_intent(self):
+        self.h.server.cfg.root = REPO  # the converter runs with the checkout as cwd
+        self.h.server.cfg.converter = ["node", "scripts/stardust/sketch-to-weekly.mjs"]
+        status, out = self.h.json("POST", "/studio/api/make", {"sketch": design_v2()})
+        self.assertEqual(status, 200, out)
+        v = out["version"]
+        self.assertEqual((v["status"], v["skin"], v["draftVersion"]), ("ready", "classic", 2), v["problems"])
+        self.assertTrue(any("Food court" in s for s in v["intent"]), v["intent"])
+        self.assertTrue(any("falling" in s for s in v["intent"]), v["intent"])
+        self.assertTrue(any("width varies" in s for s in v["intent"]), v["intent"])
+        event = json.loads((self.h.data / "drafts" / "w2-v1.json").read_text(encoding="utf-8"))
+        self.assertEqual((event["id"], event["track"]["skin"], event["track"]["width"]), ("w2-v1", "classic", 7))
+        self.assertIn("stroke-dasharray", (self.h.data / "drafts" / "w2-v1.svg").read_text(encoding="utf-8"))
+
+
+class QueueWriterTests(unittest.TestCase):
+    def test_names_collisions_and_atomic_files(self):
+        root = Path(tempfile.mkdtemp(prefix="kauto-q-")) / "queue"
+        try:
+            a = studio.write_queue_entry(root, {"status": "queued"}, "Broken Escalator!!")
+            b = studio.write_queue_entry(root, {"status": "queued"}, "Broken Escalator!!")
+            self.assertNotEqual(a, b)
+            self.assertRegex(a.name, r"^\d{8}-\d{6}-broken-escalator(-2)?\.json$")
+            self.assertEqual(json.loads(a.read_text(encoding="utf-8"))["id"], a.stem)
+            self.assertEqual(studio.queue_slug("***"), "item")
+            self.assertEqual([p.name for p in root.iterdir() if p.suffix == ".tmp"], [])
+        finally:
+            shutil.rmtree(root.parent, ignore_errors=True)
+
+
+class HostAuthTests(Base):
+    # The harness binds loopback, but the config says the studio was bound off loopback:
+    # the header is ignored and `tailscale whois` decides.
+    harness_kwargs = {"host": "100.125.226.51", "whois": FAKE_WHOIS}
+
+    def setUp(self):
+        super().setUp()
+        studio._whois_cache.clear()
+        self.addCleanup(studio._whois_cache.clear)
+
+    def test_whois_decides_and_the_header_is_ignored(self):
+        with mock.patch.dict(os.environ, {"FAKE_WHOIS_LOGIN": OWNER.upper()}):
+            self.assertEqual(self.h.request("GET", "/studio/api/state", auth=False)[0], 200)
+        studio._whois_cache.clear()
+        with mock.patch.dict(os.environ, {"FAKE_WHOIS_LOGIN": "someone@else.com"}):
+            self.assertEqual(self.h.request("GET", "/studio/api/state")[0], 403, "a forged header does not help")
+        studio._whois_cache.clear()
+        with mock.patch.dict(os.environ, {"FAKE_WHOIS_LOGIN": "FAIL"}):
+            self.assertEqual(self.h.request("GET", "/studio/")[0], 403)
+        calls = (self.h.tmp / "whois.log").read_text(encoding="utf-8").splitlines()
+        self.assertEqual(json.loads(calls[0]), ["127.0.0.1"], "whois is asked about the connecting address")
+
+    def test_whois_answers_are_cached(self):
+        with mock.patch.dict(os.environ, {"FAKE_WHOIS_LOGIN": OWNER}):
+            for _ in range(3):
+                self.assertEqual(self.h.request("GET", "/studio/api/state")[0], 200)
+        self.assertEqual(len((self.h.tmp / "whois.log").read_text(encoding="utf-8").splitlines()), 1)
+
+    def test_main_refuses_unsafe_binds(self):
+        root = str(self.h.root)
+        self.assertEqual(studio.main(["--root", root, "--data", str(self.h.data), "--host", "100.125.226.51", "--dev-no-auth"]), 2)
+        self.assertEqual(studio.main(["--root", root, "--data", str(self.h.data), "--host", "0.0.0.0", "--owner", OWNER]), 2)
+        self.assertEqual(studio.main(["--root", root, "--data", str(self.h.data), "--host", "100.125.226.51"]), 2, "needs --owner")
+        self.assertTrue(studio.is_loopback("127.0.0.1") and studio.is_loopback("::1") and not studio.is_loopback("100.125.226.51"))
 
 
 class HelperTests(unittest.TestCase):

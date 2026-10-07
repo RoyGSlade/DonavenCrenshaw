@@ -7,14 +7,20 @@ with HTTPS and stamps the `Tailscale-User-Login` header that this server checks.
     python3 server.py --root <site checkout> --data <dir> --port 8767 --owner <login>
     python3 server.py add-version --data <dir> --from-file event.json --source agent --notes "..."
 
+v2 (studio drafts with layers, stamps, width profile, skin and requests) is
+accepted alongside v1 sketches. `--host` binds another address (a preview on
+the tailnet IP); off loopback every request is identified with `tailscale whois`.
+
 See README.md next to this file.
 """
 from __future__ import annotations
 
 import argparse
+import base64
 import contextlib
 import hashlib
 import http.server
+import ipaddress
 import json
 import mimetypes
 import os
@@ -37,10 +43,35 @@ STATIC_DIR = HERE / "static"
 
 DRAFT_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,39}$")
 DRAFT_FILE_RE = re.compile(r"^([A-Za-z0-9][A-Za-z0-9_-]{0,39})\.(json|svg)$")
+DESIGN_ID_RE = re.compile(r"^d-[A-Za-z0-9_-]{1,36}$")
+REQUEST_ID_RE = re.compile(r"^q[0-9a-f]{8}$")
+ITEM_ID_RE = re.compile(r"^[A-Za-z0-9_-]{1,40}$")
+STATIC_FILE_RE = re.compile(r"^[a-z][a-z0-9-]{0,40}\.(html|js|mjs|css|svg|png)$")
+REQUEST_FILE_RE = re.compile(r"^(q[0-9a-f]{8})/(sketch\.png|photo\.(?:jpg|png|webp))$")
 MARK_KINDS = {"landmark", "fast", "tight", "hazard", "calm"}
 DIFFICULTIES = {"easy", "normal", "hard"}
 
+# Draft v2 vocabulary (projects/Space-Shooter/studio/draftV2.js is the source of truth;
+# the converter normalizes again, this only bounds what the server stores).
+V2_SKINS = {"midnight", "classic"}
+V2_STROKE_LAYERS = {"obstacles", "landmarks", "shards", "hazards", "notes"}
+V2_LAYERS = {"lane"} | V2_STROKE_LAYERS
+V2_STAMP_TYPES = {"landmark", "star", "mine", "rock", "sentry", "barricade", "debris", "gate", "shards", "shard",
+                  "start", "fuel", "fast", "tight", "calm", "hazard", "text", "request"}
+V2_LIMITS = {"lane": 2000, "strokes": 300, "stroke_points": 1500, "stamps": 600, "spans": 64, "requests": 100, "points": 60000}
+REQUEST_TYPES = ("obstacle", "landmark", "pickup", "hazard", "mechanic", "decor", "skin", "other")
+REQUEST_BEHAVIORS = ("static", "moving", "rotating", "falling", "timed", "triggered")
+VISUAL_REQUEST_TYPES = {"obstacle", "landmark", "pickup", "hazard", "decor", "skin"}
+# kauto-3d queue kinds (~/kauto-3d/QUEUE-CONTRACT.md): prop|building|ship|character|other
+QUEUE_KIND = {"obstacle": "prop", "pickup": "prop", "hazard": "prop", "decor": "prop", "landmark": "building",
+              "skin": "other", "mechanic": "other", "other": "other"}
+
 SMALL_BODY = 256 * 1024
+DESIGN_BODY = 1536 * 1024
+REQUEST_BODY = 9 * 1024 * 1024
+IMAGE_CAP = 3 * 1024 * 1024
+DESIGN_KEEP = 200
+WHOIS_TTL = 60
 RUN_BODY = 3 * 1024 * 1024
 RUN_LOG_FILE_CAP = 40 * 1024 * 1024
 CONVERTER_TIMEOUT = 60
@@ -109,10 +140,29 @@ def parse_command(value: str | None) -> list[str] | None:
     return shlex.split(value, posix=(os.name != "nt") or "\\" not in value)
 
 
+def is_loopback(host: str) -> bool:
+    if host in ("localhost", ""):
+        return True
+    try:
+        return ipaddress.ip_address(host).is_loopback
+    except ValueError:
+        return False
+
+
 class Config:
     def __init__(self, *, root: Path, data: Path, owner: str | None, dev_no_auth: bool = False,
                  converter=None, lhc=None, card: str | None = None, repo_target: str | None = None,
-                 refine_agent: str = "codex"):
+                 refine_agent: str = "codex", host: str = "127.0.0.1", whois=None,
+                 asset_queue: str | None = None, asset_game: str = "stardust", preview: bool = False):
+        # Off loopback the Tailscale-User-Login header is not trustworthy (only `tailscale
+        # serve` strips a client's copy), so the server asks `tailscale whois` instead.
+        self.host = host
+        self.trust_header = is_loopback(host)
+        self.whois = whois or ["tailscale", "whois", "--json"]
+        self.asset_queue = Path(asset_queue).expanduser().resolve() if asset_queue else None
+        self.asset_game = asset_game if asset_game in ("stardust", "kingdoms-and-caravans", "other") else "other"
+        self.preview = preview
+        self.attach_supported = None  # learned from `lhcmemorys board attach --help`
         self.root = Path(root).resolve()
         self.data = Path(data).resolve()
         self.owner = (owner or "").strip().lower() or None
@@ -209,7 +259,8 @@ def summarize_report(report) -> dict:
     if not isinstance(report, dict):
         return {"ok": False, "problems": ["The converter returned no report."]}
     out: dict = {"ok": report.get("ok") is True}
-    for key in ("lengthCells", "corners", "shards", "mines", "bouncers", "estimatedHumanMs"):
+    for key in ("lengthCells", "corners", "shards", "mines", "bouncers", "sentries", "stations", "width",
+                "draftVersion", "estimatedHumanMs"):
         v = report.get(key)
         if isinstance(v, (int, float)) and not isinstance(v, bool):
             out[key] = v
@@ -217,10 +268,15 @@ def summarize_report(report) -> dict:
     if isinstance(pilot, dict):
         out["pilot"] = {"finished": pilot.get("finished") is True,
                         "ms": pilot.get("ms") if isinstance(pilot.get("ms"), (int, float)) else None}
-    for key in ("problems", "fixes"):
+    for key in ("problems", "fixes", "notes"):
         v = report.get(key)
         if isinstance(v, list):
             out[key] = [str(x)[:300] for x in v[:30]]
+    # v2: what the design asks for that the game cannot do yet ("design intent").
+    if isinstance(report.get("intent"), list):
+        out["intent"] = [str(x)[:300] for x in report["intent"][:60]]
+    if report.get("skin") in V2_SKINS:
+        out["skin"] = report["skin"]
     out.setdefault("problems", [])
     return out
 
@@ -228,7 +284,7 @@ def summarize_report(report) -> dict:
 class Store:
     def __init__(self, data: Path):
         self.data = Path(data).resolve()
-        for sub in ("drafts", "sketches", "runs"):
+        for sub in ("drafts", "sketches", "runs", "designs", "requests"):
             (self.data / sub).mkdir(parents=True, exist_ok=True)
         self.versions_path = self.data / "versions.json"
         self.reserved: set[int] = set()
@@ -273,7 +329,7 @@ class Store:
     def add_version(self, *, event: dict, report, svg: str | None, source: str, sketch: str | None,
                     title: str = "", landmark: str = "", difficulty: str | None = None,
                     notes: str = "", name_ideas: str = "", from_version: int | None = None,
-                    wanted_number: int | None = None) -> dict:
+                    wanted_number: int | None = None, extra: dict | None = None) -> dict:
         if not isinstance(event, dict):
             raise ApiError(400, "The event must be a JSON object.")
         with data_lock(self.data):
@@ -318,8 +374,16 @@ class Store:
                 "approval": None,
                 "requests": [],
             }
+            # v2 sketches: skin, draft version, the design it came from and its design intent.
+            version.update(extra or {})
+            track = event.get("track") if isinstance(event.get("track"), dict) else {}
+            if track.get("skin") in V2_SKINS:
+                version["skin"] = track["skin"]
             if from_version is not None:
                 src = self.by_number(versions, from_version)
+                for key in ("draftVersion", "design"):
+                    if src and src.get(key) and key not in version:
+                        version[key] = src[key]
                 if src:
                     for req in src.get("requests", []):
                         if req.get("kind") == "refine" and req.get("status") == "pending":
@@ -386,14 +450,192 @@ class Store:
         items = read_json_file(self.data / "requests.json", [])
         return items if isinstance(items, list) else []
 
+    # -- designs: the studio's autosaved work in progress (draft v2 documents) --
+    def save_design(self, doc: dict) -> dict:
+        doc_id = doc.get("id")
+        if not isinstance(doc_id, str) or not DESIGN_ID_RE.match(doc_id):
+            doc_id = "d-" + secrets.token_hex(6)
+        doc = dict(doc, id=doc_id)
+        saved = now_iso()
+        with data_lock(self.data):
+            atomic_write_json(self.data / "designs" / f"{doc_id}.json", {"savedAt": saved, "doc": doc})
+            files = sorted((self.data / "designs").glob("d-*.json"), key=lambda q: q.stat().st_mtime)
+            for old in files[:-DESIGN_KEEP]:
+                with contextlib.suppress(OSError):
+                    old.unlink()
+        return {"id": doc_id, "savedAt": saved}
+
+    def design(self, doc_id: str) -> dict | None:
+        if not DESIGN_ID_RE.match(doc_id):
+            return None
+        item = read_json_file(self.data / "designs" / f"{doc_id}.json", None)
+        return item if isinstance(item, dict) and isinstance(item.get("doc"), dict) else None
+
+    def designs(self) -> list[dict]:
+        out = []
+        for path in (self.data / "designs").glob("d-*.json"):
+            item = read_json_file(path, None)
+            if not isinstance(item, dict) or not isinstance(item.get("doc"), dict):
+                continue
+            doc = item["doc"]
+            lane = doc.get("lane") if isinstance(doc.get("lane"), dict) else {}
+            out.append({"id": doc.get("id"), "title": str(doc.get("title") or "")[:60], "savedAt": item.get("savedAt"),
+                        "closed": lane.get("closed") is True, "points": len(lane.get("points") or [])})
+        out.sort(key=lambda d: d.get("savedAt") or "", reverse=True)
+        return out[:50]
+
+    # -- item requests ("Request something new" cards) --
+    def item_requests(self) -> list[dict]:
+        items = read_json_file(self.data / "item-requests.json", [])
+        return items if isinstance(items, list) else []
+
+    def put_item_request(self, record: dict) -> dict:
+        with data_lock(self.data):
+            items = [r for r in self.item_requests() if r.get("id") != record["id"]]
+            items.append(record)
+            atomic_write_json(self.data / "item-requests.json", items[-200:])
+        return record
+
 
 # ---------------------------------------------------------------------------
 # Validation
 # ---------------------------------------------------------------------------
 
+def _num(value, lo: float, hi: float, what: str):
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or value != value or not (lo <= value <= hi):
+        raise ApiError(400, f"{what} looks wrong.")
+    return value
+
+
+def _points(raw, limit: int, what: str, lo: float = -0.5, hi: float = 1.5) -> list:
+    if not isinstance(raw, list) or len(raw) > limit:
+        raise ApiError(400, f"{what} has too many points (limit {limit}).")
+    out = []
+    for p in raw:
+        if (not isinstance(p, (list, tuple)) or len(p) != 2
+                or any(isinstance(c, bool) or not isinstance(c, (int, float)) or c != c or not (lo <= c <= hi) for c in p)):
+            raise ApiError(400, f"{what} points must be [x, y] numbers on the page.")
+        out.append([round(float(p[0]), 6), round(float(p[1]), 6)])
+    return out
+
+
+def _item_id(value, fallback: str) -> str:
+    return value if isinstance(value, str) and ITEM_ID_RE.match(value) else fallback
+
+
+def validate_design(raw, *, require_loop: bool) -> dict:
+    """A draft v2 design (projects/Space-Shooter/studio/draftV2.js), bounded and cleaned.
+
+    require_loop: Make track needs a closed lane; autosave keeps half-drawn work."""
+    if not isinstance(raw, dict) or raw.get("version") != 2:
+        raise ApiError(400, "The design must be a version 2 object.")
+    page = raw.get("page") if isinstance(raw.get("page"), dict) else {}
+    lane = raw.get("lane") if isinstance(raw.get("lane"), dict) else {}
+    width = raw.get("width") if isinstance(raw.get("width"), dict) else {}
+    lane_pts = _points(lane.get("points", []), V2_LIMITS["lane"], "The lane")
+    closed = lane.get("closed") is True
+    if require_loop and (not closed or len(lane_pts) < 4):
+        raise ApiError(400, "Close the lane loop first: draw back to where you started.")
+    start = lane.get("start", 0)
+    if isinstance(start, bool) or not isinstance(start, int) or not (0 <= start < max(1, len(lane_pts))):
+        start = 0
+    doc = {
+        "version": 2,
+        "id": raw["id"] if isinstance(raw.get("id"), str) and DESIGN_ID_RE.match(raw["id"]) else None,
+        "title": clean_text(raw.get("title"), 60, strip_dashes=True),
+        "landmark": clean_text(raw.get("landmark"), 60, strip_dashes=True),
+        "notes": clean_text(raw.get("notes"), 4000),
+        "nameIdeas": clean_text(raw.get("nameIdeas"), 1500),
+        "difficulty": raw.get("difficulty") if raw.get("difficulty") in DIFFICULTIES else "normal",
+        "skin": raw.get("skin") if raw.get("skin") in V2_SKINS else "midnight",
+        "page": {"aspect": _num(page.get("aspect", 0.75), 0.2, 5, "The page shape"),
+                 "cells": _num(page.get("cells", 260), 120, 2400, "The page size")},
+        "lane": {"points": lane_pts, "closed": closed, "start": start},
+        "width": {"base": _num(width.get("base", 7), 5.8, 14, "The lane width"),
+                  "taper": _num(width.get("taper", 24), 0, 400, "The taper length"), "spans": []},
+        "strokes": [], "stamps": [], "requests": [],
+        "layers": {}, "auto": {"hazards": "auto"},
+    }
+    spans = width.get("spans", [])
+    if not isinstance(spans, list) or len(spans) > V2_LIMITS["spans"]:
+        raise ApiError(400, "Too many width stretches.")
+    for sp in spans:
+        if not isinstance(sp, dict):
+            raise ApiError(400, "A width stretch looks wrong.")
+        doc["width"]["spans"].append({"from": _num(sp.get("from"), 0, 1, "A width stretch"),
+                                      "len": _num(sp.get("len"), 0, 1, "A width stretch"),
+                                      "w": _num(sp.get("w"), 5.8, 14, "A width stretch")})
+    total = len(lane_pts)
+    strokes = raw.get("strokes", [])
+    if not isinstance(strokes, list) or len(strokes) > V2_LIMITS["strokes"]:
+        raise ApiError(400, f"Too many strokes (limit {V2_LIMITS['strokes']}).")
+    for i, st in enumerate(strokes):
+        if not isinstance(st, dict) or st.get("layer") not in V2_STROKE_LAYERS:
+            raise ApiError(400, "A stroke is on an unknown layer.")
+        pts = _points(st.get("points", []), V2_LIMITS["stroke_points"], "A stroke")
+        total += len(pts)
+        item = {"id": _item_id(st.get("id"), f"k{i + 1}"), "layer": st["layer"], "points": pts, "closed": st.get("closed") is True}
+        for key in ("type", "behavior"):
+            if isinstance(st.get(key), str) and ITEM_ID_RE.match(st[key]):
+                item[key] = st[key]
+        for key, lo, hi in (("spacing", 1, 80), ("size", 0.3, 12)):
+            if key in st:
+                item[key] = _num(st[key], lo, hi, f"A stroke {key}")
+        label = clean_text(st.get("label"), 80)
+        if label:
+            item["label"] = label
+        doc["strokes"].append(item)
+    stamps = raw.get("stamps", [])
+    if not isinstance(stamps, list) or len(stamps) > V2_LIMITS["stamps"]:
+        raise ApiError(400, f"Too many stamps (limit {V2_LIMITS['stamps']}).")
+    for i, sm in enumerate(stamps):
+        if not isinstance(sm, dict) or sm.get("type") not in V2_STAMP_TYPES:
+            raise ApiError(400, "A stamp has an unknown type.")
+        item = {"id": _item_id(sm.get("id"), f"s{i + 1}"), "type": sm["type"],
+                "x": _num(sm.get("x"), -0.5, 1.5, "A stamp position"), "y": _num(sm.get("y"), -0.5, 1.5, "A stamp position"),
+                "size": _num(sm.get("size", 1), 0.3, 60, "A stamp size"), "rotation": _num(sm.get("rotation", 0), -720, 720, "A stamp rotation"),
+                "behavior": sm.get("behavior") if sm.get("behavior") in REQUEST_BEHAVIORS else "static"}
+        if "period" in sm:
+            item["period"] = _num(sm["period"], 0.2, 60, "A stamp period")
+        for key, limit in (("label", 80), ("note", 140)):
+            text = clean_text(sm.get(key), limit)
+            if text:
+                item[key] = text
+        for key in ("requestId", "path"):
+            if isinstance(sm.get(key), str) and ITEM_ID_RE.match(sm[key]):
+                item[key] = sm[key]
+        doc["stamps"].append(item)
+    if total > V2_LIMITS["points"]:
+        raise ApiError(400, "The design has too many points in total.")
+    reqs = raw.get("requests", [])
+    if isinstance(reqs, list):
+        for r in reqs[:V2_LIMITS["requests"]]:
+            if isinstance(r, dict) and isinstance(r.get("id"), str) and ITEM_ID_RE.match(r["id"]):
+                doc["requests"].append({
+                    "id": r["id"], "title": clean_text(r.get("title"), 80),
+                    "type": r.get("type") if r.get("type") in REQUEST_TYPES else "other",
+                    "behavior": r.get("behavior") if r.get("behavior") in REQUEST_BEHAVIORS else "static",
+                    "status": clean_text(r.get("status"), 20), "cardRef": clean_text(r.get("cardRef"), 80),
+                    "queued": r.get("queued") is True,
+                    **({"stampId": r["stampId"]} if isinstance(r.get("stampId"), str) and ITEM_ID_RE.match(r["stampId"]) else {}),
+                })
+    layers = raw.get("layers") if isinstance(raw.get("layers"), dict) else {}
+    for key in sorted(V2_LAYERS):
+        layer = layers.get(key) if isinstance(layers.get(key), dict) else {}
+        doc["layers"][key] = {"visible": layer.get("visible") is not False, "locked": layer.get("locked") is True}
+    auto = raw.get("auto") if isinstance(raw.get("auto"), dict) else {}
+    if auto.get("hazards") in ("auto", "on", "off"):
+        doc["auto"]["hazards"] = auto["hazards"]
+    if raw.get("fromV1") is True:
+        doc["fromV1"] = True
+    return doc
+
+
 def validate_sketch(raw) -> dict:
     if not isinstance(raw, dict):
         raise ApiError(400, "The sketch must be an object.")
+    if raw.get("version") == 2:
+        return validate_design(raw, require_loop=True)
     pts = raw.get("points")
     if not isinstance(pts, list) or not (3 <= len(pts) <= 3000):
         raise ApiError(400, "The sketch needs between 3 and 3000 points. Draw a longer loop.")
@@ -550,6 +792,130 @@ def lhc_ref(parsed: dict):
     return None
 
 
+def board_scope(cfg: Config) -> list[str]:
+    """`--repo <target>` for a registered repo, `--project` for the Home board."""
+    target = cfg.repo_target or str(cfg.root)
+    return ["--project", "Track Studio"] if target == "home" else ["--repo", target]
+
+
+def lhc_attach_supported(cfg: Config) -> bool:
+    """Whether this lhcmemorys CLI has `board attach` (LHCmemoryS main has the MCP tool
+    lhc_board_attach; the CLI may not). Asked once per process."""
+    if cfg.attach_supported is None:
+        try:
+            proc = subprocess.run(list(cfg.lhc) + ["board", "attach", "--help"], capture_output=True, timeout=LHC_TIMEOUT, cwd=str(cfg.root))
+            cfg.attach_supported = proc.returncode == 0
+        except (OSError, subprocess.TimeoutExpired):
+            cfg.attach_supported = False
+    return cfg.attach_supported
+
+
+def decode_image(value, kinds: tuple[str, ...]) -> tuple[bytes, str] | None:
+    """A base64 image (optionally a data: URL) to (bytes, extension); None when absent."""
+    if value in (None, ""):
+        return None
+    if not isinstance(value, str):
+        raise ApiError(400, "Images must be sent as base64 text.")
+    if value.startswith("data:"):
+        value = value.split(",", 1)[1] if "," in value else ""
+    try:
+        data = base64.b64decode(value, validate=True)
+    except (ValueError, TypeError):
+        raise ApiError(400, "An image is not valid base64.")
+    if len(data) > IMAGE_CAP:
+        raise ApiError(413, f"An image is too large (limit {IMAGE_CAP // (1024 * 1024)} MB).")
+    if data.startswith(b"\x89PNG\r\n\x1a\n") and "png" in kinds:
+        return data, "png"
+    if data.startswith(b"\xff\xd8\xff") and "jpg" in kinds:
+        return data, "jpg"
+    if data[:4] == b"RIFF" and data[8:12] == b"WEBP" and "webp" in kinds:
+        return data, "webp"
+    raise ApiError(400, "Images must be PNG" + (", JPEG or WebP." if len(kinds) > 1 else "."))
+
+
+def validate_item_request(raw) -> dict:
+    if not isinstance(raw, dict):
+        raise ApiError(400, "The request must be an object.")
+    title = clean_text(raw.get("title"), 80, strip_dashes=True)
+    if not title:
+        raise ApiError(400, "Give the new thing a title.")
+    form = raw.get("form") if isinstance(raw.get("form"), dict) else {}
+    kind = raw.get("type") if raw.get("type") in REQUEST_TYPES else "other"
+    out = {
+        "title": title,
+        "description": clean_text(raw.get("description"), 2000),
+        "effect": clean_text(raw.get("effect"), 600),
+        "need": clean_text(raw.get("need"), 600),
+        "type": kind,
+        "behavior": raw.get("behavior") if raw.get("behavior") in REQUEST_BEHAVIORS else "static",
+        "form": {"size": clean_text(form.get("size"), 80), "shape": clean_text(form.get("shape"), 120), "look": clean_text(form.get("look"), 400)},
+        "needs3d": raw.get("needs3d") is True if "needs3d" in raw else kind in VISUAL_REQUEST_TYPES,
+    }
+    where = raw.get("where") if isinstance(raw.get("where"), dict) else {}
+    loc = {}
+    for key, lo, hi in (("x", -0.5, 1.5), ("y", -0.5, 1.5), ("lap", 0, 1)):
+        if key in where and where[key] is not None:
+            loc[key] = round(float(_num(where[key], lo, hi, "The request's place")), 5)
+    if isinstance(where.get("design"), str) and DESIGN_ID_RE.match(where["design"]):
+        loc["design"] = where["design"]
+    if isinstance(where.get("stampId"), str) and ITEM_ID_RE.match(where["stampId"]):
+        loc["stampId"] = where["stampId"]
+    loc["track"] = clean_text(where.get("track"), 60)
+    out["where"] = loc
+    return out
+
+
+def request_card_body(req: dict, *, sketch_note: str) -> str:
+    form = req["form"]
+    look = "; ".join(f"{k}: {v}" for k, v in (("size", form["size"]), ("shape", form["shape"]), ("look", form["look"])) if v)
+    where = req["where"]
+    place = f'on "{where["track"]}"' if where.get("track") else "on the track design"
+    if where.get("lap") is not None:
+        place += f", {round(where['lap'] * 100)}% round the lap"
+    lines = [
+        f"Track Studio request: {req['title']}",
+        f"Type: {req['type']}. Behaviour: {req['behavior']}.",
+        f"What it is: {req['description'] or '(not described)'}",
+        f"What it does to the player: {req['effect'] or '(not said)'}",
+        f"Why it is needed: {req['need'] or '(not said)'}",
+        f"Form: {look or '(not said)'}",
+        f"Where: {place} (a ? marker sits there in the studio{', design ' + where['design'] if where.get('design') else ''}).",
+        sketch_note,
+        "Visual/3D asset: queued for kauto-3d." if req.get("queued") else ("Visual/3D asset: wanted (not queued)." if req["needs3d"] else ""),
+        "Game support: anything beyond mines, sweeping rocks, sentries, fuel docks and shards needs game work first "
+        "(docs/stardust/TRACK-STUDIO-V2-GAME-SUPPORT.md).",
+    ]
+    return "\n".join(line for line in lines if line)
+
+
+def queue_slug(text: str) -> str:
+    slug = re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")
+    return (slug or "item")[:40].strip("-") or "item"
+
+
+def write_queue_entry(root: Path, entry: dict, title: str) -> Path:
+    """One kauto-3d queue file (~/kauto-3d/QUEUE-CONTRACT.md): `<YYYYMMDD-HHMMSS>-<slug>.json`,
+    created under an exclusive flock on `<root>/.lock`, written temp + rename."""
+    root.mkdir(parents=True, exist_ok=True)
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
+    with open(root / ".lock", "a+") as lock:
+        try:
+            import fcntl
+            fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+        except ImportError:  # Windows: no flock; the atomic rename still protects readers
+            pass
+        base = f"{stamp}-{queue_slug(title)}"
+        for k in range(1, 100):
+            stem = base if k == 1 else f"{base}-{k}"
+            path = root / f"{stem}.json"
+            if not path.exists():
+                break
+        else:
+            raise ApiError(503, "The 3D queue has too many entries this second; try again.")
+        atomic_write_json(path, dict(entry, id=stem))
+    return path
+
+
 # ---------------------------------------------------------------------------
 # Prompts
 # ---------------------------------------------------------------------------
@@ -558,7 +924,8 @@ def command_text(cmd: list[str]) -> str:
     return " ".join(shlex.quote(c) for c in cmd)
 
 
-def refine_prompt(cfg: Config, store: Store, version: dict, notes: str, new_sketch_rel: str | None, next_n: int) -> str:
+def refine_prompt(cfg: Config, store: Store, version: dict, notes: str, new_sketch_rel: str | None, next_n: int,
+                  new_sketch_v2: bool = False) -> str:
     did = version["id"]
     runs = version.get("runs") or {}
     report = version.get("report") or {}
@@ -570,6 +937,12 @@ def refine_prompt(cfg: Config, store: Store, version: dict, notes: str, new_sket
     sketch_line = f"- {version['sketch']}: the owner's sketch for this version." if version.get("sketch") else "- (this version has no sketch: an earlier agent edit.)"
     if new_sketch_rel:
         sketch_line += f"\n- {new_sketch_rel}: a NEW sketch the owner drew with this request; treat it as the primary input."
+    intent = report.get("intent") or []
+    if version.get("draftVersion") == 2 or new_sketch_v2:
+        sketch_line += ("\n- Studio v2 designs (\"version\": 2) carry layers, stamps, a width profile, the skin and item requests;"
+                        " the converter takes them as they are (edit the design JSON, then re-run it). Format: projects/Space-Shooter/studio/draftV2.js.")
+    if intent:
+        sketch_line += "\n- Design intent the game cannot do yet (keep it in mind, do not fake it): " + " | ".join(intent[:20])
     return f"""Track Studio refinement request. The owner is on his phone on the road, so work fast and keep the result simple.
 {('Card: ' + cfg.card) if cfg.card else ''}
 
@@ -661,7 +1034,23 @@ def public_version(v: dict) -> dict:
         "previewUrl": f"/studio/drafts/{did}.svg",
         "draftUrl": f"/studio/drafts/{did}.json",
         "playUrl": f"/projects/Space-Shooter/?preview=weekly&draft=/studio/drafts/{did}.json",
+        # v2: the skin, the design it came from, and what the game cannot do yet.
+        "draftVersion": v.get("draftVersion") or 1,
+        "skin": v.get("skin") or report.get("skin"),
+        "design": v.get("design"),
+        "sketchNumber": int(v["sketch"][len("sketches/"):-len(".json")]) if isinstance(v.get("sketch"), str) and re.match(r"^sketches/\d+\.json$", v["sketch"]) else None,
+        "intent": report.get("intent", []),
+        "notesFromConverter": report.get("notes", []),
     }
+
+
+def public_item_request(r: dict) -> dict:
+    keys = ("id", "created", "title", "description", "effect", "need", "type", "behavior", "form", "needs3d", "where",
+            "card", "queue", "status", "stampId")
+    out = {k: r.get(k) for k in keys}
+    out["sketchUrl"] = f"/studio/requests/{r['id']}/sketch.png" if r.get("sketch") else None
+    out["photoUrl"] = f"/studio/requests/{r['id']}/{r['photo']}" if r.get("photo") else None
+    return out
 
 
 # ---------------------------------------------------------------------------
@@ -710,8 +1099,34 @@ class StudioServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
         super().__init__(addr, Handler)
 
 
-STUDIO_CSP = ("default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; "
+STUDIO_CSP = ("default-src 'none'; script-src 'self'; worker-src 'self'; style-src 'self'; img-src 'self' data: blob:; "
               "connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'")
+
+
+_whois_cache: dict[str, tuple[str | None, float]] = {}
+_whois_lock = threading.Lock()
+
+
+def whois_login(cfg: Config, ip: str) -> str | None:
+    """The tailnet login behind a client address (`tailscale whois --json <ip>`), cached a minute."""
+    now = time.monotonic()
+    with _whois_lock:
+        hit = _whois_cache.get(ip)
+        if hit and hit[1] > now:
+            return hit[0]
+    login = None
+    try:
+        proc = subprocess.run(list(cfg.whois) + [ip], capture_output=True, timeout=5)
+        if proc.returncode == 0:
+            info = json.loads(proc.stdout.decode("utf-8", "replace"))
+            profile = info.get("UserProfile") if isinstance(info, dict) else None
+            if isinstance(profile, dict) and isinstance(profile.get("LoginName"), str):
+                login = profile["LoginName"].strip().lower()
+    except (OSError, ValueError, subprocess.TimeoutExpired):
+        login = None
+    with _whois_lock:
+        _whois_cache[ip] = (login, now + (WHOIS_TTL if login else 5))
+    return login
 
 
 class Handler(http.server.BaseHTTPRequestHandler):
@@ -760,8 +1175,12 @@ class Handler(http.server.BaseHTTPRequestHandler):
     def _authorized(self) -> bool:
         if self.cfg.dev_no_auth:
             return True
+        if not self.cfg.owner:
+            return False
+        if not self.cfg.trust_header:  # bound off loopback: ask Tailscale who is connecting
+            return whois_login(self.cfg, self.client_address[0]) == self.cfg.owner
         login = (self.headers.get("Tailscale-User-Login") or "").strip().lower()
-        return bool(self.cfg.owner) and login == self.cfg.owner
+        return login == self.cfg.owner
 
     def _origin_ok(self) -> bool:
         origin = self.headers.get("Origin")
@@ -842,8 +1261,14 @@ class Handler(http.server.BaseHTTPRequestHandler):
     def _studio_static(self, rel: str, head_only: bool):
         if rel in ("", "index.html", "studio.html"):
             return self._file(STATIC_DIR / "studio.html", head_only, csp=STUDIO_CSP, no_cache=True)
-        if rel in ("studio.js", "studio.css"):
+        if STATIC_FILE_RE.match(rel):  # the page's own modules, styles and icons
             return self._file(STATIC_DIR / rel, head_only, csp=STUDIO_CSP, no_cache=True)
+        if rel.startswith("requests/"):
+            m = REQUEST_FILE_RE.match(rel[len("requests/"):])
+            if not m:
+                return self._error(404, "Not found.")
+            return self._file(self.cfg.data / "requests" / m.group(1) / m.group(2), head_only,
+                              csp="default-src 'none'; sandbox", no_cache=True)
         if rel.startswith("drafts/"):
             m = DRAFT_FILE_RE.match(rel[len("drafts/"):])
             if not m:
@@ -919,15 +1344,29 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
     # -- API --
     def _api(self, method: str, name: str):
+        verb = "GET" if method == "HEAD" else method
+        # Item routes: GET sketches/<n>, GET designs/<id>.
+        if "/" in name and verb == "GET":
+            head, _, rest = name.partition("/")
+            if head == "sketches" and rest.isdigit() and len(rest) < 7:
+                return self.api_sketch_get(int(rest))
+            if head == "designs" and DESIGN_ID_RE.match(rest):
+                return self.api_design_get(rest)
+            return self._error(404, "Not found.")
         routes = {
             ("GET", "state"): self.api_state,
             ("POST", "sketches"): self.api_sketches,
+            ("POST", "make"): self.api_make,
             ("POST", "refine"): self.api_refine,
             ("POST", "names"): self.api_names,
             ("POST", "runs"): self.api_runs,
             ("POST", "approve"): self.api_approve,
+            ("GET", "designs"): self.api_designs,
+            ("POST", "designs"): self.api_design_save,
+            ("POST", "requests"): self.api_item_request,
+            ("POST", "requests-retry"): self.api_item_request_retry,
         }
-        fn = routes.get(("GET" if method == "HEAD" else method, name))
+        fn = routes.get((verb, name))
         if fn is None:
             known = {n for (_, n) in routes}
             return self._error(405 if name in known else 404, "Not found." if name not in known else "Wrong method.")
@@ -939,39 +1378,207 @@ class Handler(http.server.BaseHTTPRequestHandler):
         pending = [dict(r, draftId=v["id"], version=v["version"]) for v in versions
                    for r in v.get("requests", []) if r.get("status") == "pending"]
         names = [r for r in self.store.name_requests() if r.get("status") == "pending"][-5:]
+        items = [public_item_request(r) for r in self.store.item_requests()][-30:]
         self._json(200, {
             "ok": True, "now": now_iso(), "versions": views, "pending": pending, "nameRequests": names,
-            "lhcConfigured": bool(self.cfg.lhc),
+            "lhcConfigured": bool(self.cfg.lhc), "itemRequests": items[::-1],
+            "assetQueue": bool(self.cfg.asset_queue), "preview": self.cfg.preview,
         })
 
-    def api_sketches(self):
-        body = self._read_json()
+    def api_make(self):
+        """Make track from a v2 design: the same as sketches, with room for a big design."""
+        self.api_sketches(limit=DESIGN_BODY)
+
+    def api_sketches(self, limit: int = SMALL_BODY):
+        body = self._read_json(limit)
         if not isinstance(body, dict):
             raise ApiError(400, "Send a JSON object.")
         sketch_in = body.get("sketch")
         if isinstance(sketch_in, dict) and "difficulty" not in sketch_in and body.get("difficulty"):
             sketch_in = dict(sketch_in, difficulty=body["difficulty"])
         sketch = validate_sketch(sketch_in)
-        title = clean_text(body.get("title"), 60, strip_dashes=True)
-        landmark = clean_text(body.get("landmark"), 60, strip_dashes=True)
-        notes = clean_text(body.get("notes"), 4000)
-        ideas = clean_text(body.get("nameIdeas"), 1500)
+        v2 = sketch.get("version") == 2
+        title = clean_text(body.get("title"), 60, strip_dashes=True) or (sketch.get("title", "") if v2 else "")
+        landmark = clean_text(body.get("landmark"), 60, strip_dashes=True) or (sketch.get("landmark", "") if v2 else "")
+        notes = clean_text(body.get("notes"), 4000) or (sketch.get("notes", "") if v2 else "")
+        ideas = clean_text(body.get("nameIdeas"), 1500) or (sketch.get("nameIdeas", "") if v2 else "")
         number = self.store.reserve()
         try:
             draft_id = f"w2-v{number}"
             sketch_rel = self.store.save_sketch(sketch)
             result = run_converter(self.cfg, self.cfg.data / sketch_rel, title=title, landmark=landmark,
                                    version=number, draft_id=draft_id)
+            extra = None
+            if v2:
+                extra = {"draftVersion": 2, "skin": sketch["skin"], "design": sketch.get("id")}
             version = self.store.add_version(
                 event=result["event"], report=result["report"], svg=result.get("svg"), source="sketch",
                 sketch=sketch_rel, title=title, landmark=landmark, difficulty=sketch["difficulty"],
-                notes=notes, name_ideas=ideas, wanted_number=number)
+                notes=notes, name_ideas=ideas, wanted_number=number, extra=extra)
         finally:
             self.store.release(number)
         self._json(200, {"ok": True, "version": public_version(version)})
 
-    def api_refine(self):
+    def api_sketch_get(self, number: int):
+        """The sketch or v2 design a version was made from (Open in editor)."""
+        raw = read_json_file(self.cfg.data / "sketches" / f"{number}.json", None)
+        if not isinstance(raw, dict):
+            raise ApiError(404, "No such sketch.")
+        self._json(200, {"ok": True, "sketch": raw})
+
+    def api_designs(self):
+        self._json(200, {"ok": True, "designs": self.store.designs()})
+
+    def api_design_get(self, doc_id: str):
+        item = self.store.design(doc_id)
+        if item is None:
+            raise ApiError(404, "No such design.")
+        self._json(200, {"ok": True, "design": item["doc"], "savedAt": item.get("savedAt")})
+
+    def api_design_save(self):
+        """Autosave: the design as it stands, even half drawn."""
+        body = self._read_json(DESIGN_BODY)
+        doc = validate_design(body.get("design") if isinstance(body, dict) else None, require_loop=False)
+        saved = self.store.save_design(doc)
+        self._json(200, {"ok": True, **saved})
+
+    # -- item requests --
+    def _file_card(self, record: dict) -> None:
+        """Create the board card, post the details, attach the sketch. Records what happened;
+        never raises for LHC trouble (the request is already saved)."""
+        if not self.cfg.lhc:
+            record["card"] = {"status": "not-configured", "error": "LHC is not configured on the studio server."}
+            return
+        card = record.get("card") or {}
+        scope = board_scope(self.cfg)
+        try:
+            if not card.get("id"):
+                title = f"Track Studio request: {record['title']}"[:120]
+                parsed = run_lhc(self.cfg, ["board", "add", title, "--kind", "task", "--category", "track-studio"] + scope + ["--json"])
+                card = {"id": str(parsed.get("id") or "")[:80] or None, "ref": str(parsed.get("shortid") or parsed.get("id") or "")[:80] or None}
+                if not card["id"]:
+                    raise LhcUnavailable("LHC did not return a card id.")
+            sketch_path = self.cfg.data / "requests" / record["id"] / "sketch.png" if record.get("sketch") else None
+            if sketch_path and (card.get("attachment") == "attached" or lhc_attach_supported(self.cfg)):
+                if card.get("attachment") != "attached":
+                    run_lhc(self.cfg, ["board", "attach", card["id"], str(sketch_path), "--caption", f"Sketch: {record['title']}"[:120]] + scope + ["--json"])
+                    card["attachment"] = "attached"
+                sketch_note = "Sketch: attached to this card."
+            elif sketch_path:
+                # The CLI has no attach command: leave the file for an agent (MCP lhc_board_attach).
+                card["attachment"] = "pending"
+                sketch_note = f"Sketch: saved at {sketch_path}; attach it with lhc_board_attach (this CLI cannot attach images)."
+            else:
+                sketch_note = "Sketch: none drawn."
+            if record.get("photo"):
+                sketch_note += f" Photo: {self.cfg.data / 'requests' / record['id'] / record['photo']}."
+            if not card.get("noted"):
+                run_lhc(self.cfg, ["board", "note", card["id"], request_card_body(record, sketch_note=sketch_note)] + scope + ["--actor", "claude"])
+                card["noted"] = True
+            card["status"] = "filed"
+            card.pop("error", None)
+        except ApiError as e:
+            card["status"] = "failed"
+            card["error"] = e.message[:300]
+        record["card"] = card
+
+    def _queue_asset(self, record: dict) -> None:
+        if not record.get("needs3d") or (record.get("queue") or {}).get("status") == "queued":
+            return
+        if not self.cfg.asset_queue:
+            record["queue"] = {"status": "not-configured"}
+            return
+        form = record["form"]
+        text = " ".join(part for part in (
+            f"{record['title']}.", record["description"],
+            f"Effect: {record['effect']}." if record["effect"] else "",
+            f"Size: {form['size']}." if form["size"] else "", f"Shape: {form['shape']}." if form["shape"] else "",
+            f"Look: {form['look']}." if form["look"] else "") if part)
+        created = now_iso()
+        entry = {
+            "created_at": created, "requested_by": "owner", "game": self.cfg.asset_game,
+            "kind": QUEUE_KIND.get(record["type"], "other"), "text": text[:2000], "priority": "next",
+            "status": "queued", "batch_id": None, "updated_at": created, "note": "",
+            # Extra fields (the consumer ignores unknown fields):
+            "source": "track-studio", "studio_request": record["id"],
+            "card": (record.get("card") or {}).get("ref"),
+            "sketch": str(self.cfg.data / "requests" / record["id"] / "sketch.png") if record.get("sketch") else None,
+        }
+        try:
+            path = write_queue_entry(self.cfg.asset_queue, entry, record["title"])
+            record["queue"] = {"status": "queued", "id": path.stem, "at": created}
+        except (OSError, ApiError) as e:
+            record["queue"] = {"status": "failed", "error": str(getattr(e, "message", e))[:200]}
+
+    def api_item_request(self):
+        """"Request something new": save it, file a board card (+ sketch), queue a 3D asset."""
+        body = self._read_json(REQUEST_BODY)
+        if not isinstance(body, dict):
+            raise ApiError(400, "Send a JSON object.")
+        req = validate_item_request(body.get("request"))
+        sketch = decode_image(body.get("sketchPng"), ("png",))
+        photo = decode_image(body.get("photo"), ("jpg", "png", "webp"))
+        rid = "q" + secrets.token_hex(4)
+        folder = self.cfg.data / "requests" / rid
+        record = dict(req, id=rid, created=now_iso(), status="saved", sketch=None, photo=None,
+                      stampId=req["where"].get("stampId"))
+        if sketch:
+            atomic_write(folder / "sketch.png", sketch[0])
+            record["sketch"] = "sketch.png"
+        if photo:
+            atomic_write(folder / f"photo.{photo[1]}", photo[0])
+            record["photo"] = f"photo.{photo[1]}"
+        self.store.put_item_request(record)  # saved before anything outward can fail
+        self._file_card(record)
+        record["queued"] = False
+        self._queue_asset(record)
+        record["queued"] = (record.get("queue") or {}).get("status") == "queued"
+        if record["queued"] and (record.get("card") or {}).get("status") == "filed":
+            with contextlib.suppress(ApiError):  # tell the card it is in the 3D queue
+                run_lhc(self.cfg, ["board", "note", record["card"]["id"], f"Queued for kauto-3d as {record['queue']['id']}."]
+                        + board_scope(self.cfg) + ["--actor", "claude"])
+        record["status"] = "filed" if (record.get("card") or {}).get("status") == "filed" else "saved"
+        self.store.put_item_request(record)
+        self._json(200, {"ok": True, "request": public_item_request(record), "message": self._request_message(record)})
+
+    def api_item_request_retry(self):
         body = self._read_json()
+        rid = body.get("id") if isinstance(body, dict) else None
+        if not isinstance(rid, str) or not REQUEST_ID_RE.match(rid):
+            raise ApiError(400, "Which request? Send its id.")
+        record = next((r for r in self.store.item_requests() if r.get("id") == rid), None)
+        if record is None:
+            raise ApiError(404, "No such request.")
+        if (record.get("card") or {}).get("status") != "filed":
+            self._file_card(record)
+        if (record.get("queue") or {}).get("status") != "queued":
+            self._queue_asset(record)
+        record["queued"] = (record.get("queue") or {}).get("status") == "queued"
+        record["status"] = "filed" if (record.get("card") or {}).get("status") == "filed" else "saved"
+        self.store.put_item_request(record)
+        self._json(200, {"ok": True, "request": public_item_request(record), "message": self._request_message(record)})
+
+    @staticmethod
+    def _request_message(record: dict) -> str:
+        card = record.get("card") or {}
+        parts = ["Saved."]
+        if card.get("status") == "filed":
+            parts.append(f"Board card {card.get('ref') or ''} made.".replace("  ", " "))
+            if card.get("attachment") == "pending":
+                parts.append("The sketch waits for an agent to attach it.")
+        elif card.get("status") == "not-configured":
+            parts.append("No board card: LHC is not set up here.")
+        else:
+            parts.append(f"The board card failed ({card.get('error', 'unknown')}); tap Retry.")
+        q = record.get("queue") or {}
+        if q.get("status") == "queued":
+            parts.append("Queued for a 3D model.")
+        elif q.get("status") == "failed":
+            parts.append("The 3D queue refused it; tap Retry.")
+        return " ".join(parts)
+
+    def api_refine(self):
+        body = self._read_json(DESIGN_BODY)
         if not isinstance(body, dict):
             raise ApiError(400, "Send a JSON object.")
         from_v = body.get("fromVersion")
@@ -991,7 +1598,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
             raise LhcUnavailable("LHC is not configured on the studio server (start it with --lhc).")
         sketch_rel = self.store.save_sketch(sketch) if sketch else None
         next_n = self.store.next_number(versions)
-        prompt = refine_prompt(self.cfg, self.store, version, notes or "(no written notes; see the new sketch)", sketch_rel, next_n)
+        prompt = refine_prompt(self.cfg, self.store, version, notes or "(no written notes; see the new sketch)", sketch_rel, next_n,
+                               new_sketch_v2=bool(sketch and sketch.get("version") == 2))
         args = ["request", "add", "--to", self.cfg.refine_agent, "--tier", "edit",
                 "--repo", self.cfg.repo_target or str(self.cfg.root)]
         parsed = lhc_with_text_file(self.cfg, args, "--prompt-file", prompt, ["--json"])
@@ -1031,6 +1639,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
             raise ApiError(409, "That version still has problems. Fix them before approving.")
         if version.get("approval"):
             raise ApiError(409, "Approval for this version is already waiting in your Focus Inbox.")
+        if self.cfg.preview:  # a preview runs on a copy of the data: nothing here can ship
+            raise ApiError(409, "This is the Studio v2 preview (a copy of your tracks). Approve from the live studio.")
         draft_path = self.cfg.data / "drafts" / f"{version['id']}.json"
         try:
             sha = hashlib.sha256(draft_path.read_bytes()).hexdigest()
@@ -1104,6 +1714,13 @@ def build_serve_parser() -> argparse.ArgumentParser:
     p.add_argument("--repo-target", help="LHC registered repo path/id for requests (default: --root)")
     p.add_argument("--converter", help="converter command (default: node scripts/stardust/sketch-to-weekly.mjs)")
     p.add_argument("--refine-agent", choices=("codex", "claude"), default="codex", help="agent for refine requests (default codex)")
+    p.add_argument("--host", default="127.0.0.1",
+                   help="bind address (default 127.0.0.1). Off loopback (e.g. the tailnet IP for a phone preview) "
+                        "every request is checked with `tailscale whois` against --owner")
+    p.add_argument("--whois", help="whois command (default: tailscale whois --json); the client IP is appended")
+    p.add_argument("--asset-queue", help="kauto-3d queue root for visual requests (e.g. ~/kauto-3d/queue); omit to never queue")
+    p.add_argument("--asset-game", default="stardust", help="queue entry game (default stardust)")
+    p.add_argument("--preview", action="store_true", help="a preview on a copy of the data: refuses approvals")
     return p
 
 
@@ -1131,14 +1748,24 @@ def main(argv=None) -> int:
     if not root.is_dir():
         print(f"--root {root} is not a directory.", file=sys.stderr)
         return 2
+    if not is_loopback(args.host):
+        if args.dev_no_auth:
+            print("--dev-no-auth only works on loopback; off loopback the studio checks `tailscale whois`.", file=sys.stderr)
+            return 2
+        if args.host in ("0.0.0.0", "::"):
+            print("Bind one address (the tailnet IP), not every interface.", file=sys.stderr)
+            return 2
     cfg = Config(root=root, data=Path(args.data), owner=args.owner, dev_no_auth=args.dev_no_auth,
                  converter=parse_command(args.converter), lhc=parse_command(args.lhc),
-                 card=args.card, repo_target=args.repo_target, refine_agent=args.refine_agent)
-    server = StudioServer(("127.0.0.1", args.port), cfg)
+                 card=args.card, repo_target=args.repo_target, refine_agent=args.refine_agent,
+                 host=args.host, whois=parse_command(args.whois), asset_queue=args.asset_queue,
+                 asset_game=args.asset_game, preview=args.preview)
+    server = StudioServer((args.host, args.port), cfg)
     if cfg.dev_no_auth:
         log("WARNING: --dev-no-auth is on; anyone who can reach this port is the owner.")
-    log(f"listening on http://127.0.0.1:{server.server_address[1]} root={cfg.root} data={cfg.data} "
-        f"owner={'(dev)' if cfg.dev_no_auth else cfg.owner} lhc={'yes' if cfg.lhc else 'no'}")
+    log(f"listening on http://{args.host}:{server.server_address[1]} root={cfg.root} data={cfg.data} "
+        f"owner={'(dev)' if cfg.dev_no_auth else cfg.owner} auth={'header' if cfg.trust_header else 'tailscale whois'} "
+        f"lhc={'yes' if cfg.lhc else 'no'} queue={cfg.asset_queue or 'off'}{' PREVIEW' if cfg.preview else ''}")
     try:
         server.serve_forever()
     except KeyboardInterrupt:
