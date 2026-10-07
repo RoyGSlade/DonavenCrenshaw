@@ -17,6 +17,7 @@ import { drawWeeklyWorld, drawWeeklyHud } from '../gfx/weeklyVfx.js';
 import { ghostPosesNow } from '../engine/modes/weekly.js';
 import { updateFlightUi } from './flightUi.js';
 import { drawHitboxDebug } from '../gfx/hitboxDebug.js';
+import { laneSkin, drawMidnightLane, drawClassicLane, finishChecker, backdropStops, starAlpha } from '../gfx/trackSkin.js';
 // ?debug=hitbox outlines the ship's exact body and the pickup shapes.
 const DEBUG_HITBOX = new URLSearchParams(globalThis.location?.search || '').get('debug') === 'hitbox';
 
@@ -34,6 +35,7 @@ const SPRITE = {
 const bufferCanvas = document.createElement('canvas');
 const bufferCtx = bufferCanvas.getContext('2d');
 let isBufferDirty = true; // Flag to trigger a redraw of the buffer
+let backdropSkin = 'classic'; // the lane skin the buffer was painted for
 
 // ---------------------------- Helpers --------------------------------
 function drawSheetFrame(ctx, img, fw, fh, frameIndex, dx, dy, dw, dh, rot = 0) {
@@ -82,7 +84,7 @@ function drawStaticBackgroundToBuffer() {
 
   bufferCtx.clearRect(0, 0, W, H);
   const backdrop = bufferCtx.createLinearGradient(0, 0, W, H);
-  backdrop.addColorStop(0, '#060f1d'); backdrop.addColorStop(.55, '#0b1825'); backdrop.addColorStop(1, '#050a12');
+  for (const [at, color] of backdropStops(backdropSkin)) backdrop.addColorStop(at, color);
   bufferCtx.fillStyle = backdrop;
   bufferCtx.fillRect(0, 0, W, H);
 
@@ -178,7 +180,9 @@ export function render() {
   state.gfx.anim.gate += (SPRITE.GATE_FPS / 60) * (dt * 60);
   state.gfx.anim.shard += (SPRITE.SHARD_FPS / 60) * (dt * 60);
 
-  // Static buffer refresh
+  // Static buffer refresh (the midnight weekly lane sits on near-black space)
+  const skin = mode === 'roadmap' ? laneSkin(state.run?.current) : 'classic';
+  if (skin !== backdropSkin) { backdropSkin = skin; markBufferDirty(); }
   if (isBufferDirty) drawStaticBackgroundToBuffer();
 
   // Clear and draw static bg
@@ -194,7 +198,7 @@ export function render() {
       vyPx = player.vy * cellH;
     }
     ctx.save(); ctx.scale(dpr, dpr);
-    drawParallaxStars(ctx, W, H, vxPx, vyPx);
+    drawParallaxStars(ctx, W, H, vxPx, vyPx, starAlpha(skin));
     ctx.restore();
   }
 
@@ -340,32 +344,12 @@ function drawRoadmap(ctx) {
 function drawCircuit(ctx, scene) {
   const track = scene.track, unit = state.gfx.cellW;
   if (!track?.points?.length) return;
-  const trace = () => {
-    ctx.beginPath();
-    track.points.forEach((point, i) => i ? ctx.lineTo(point.x * unit, point.y * unit) : ctx.moveTo(point.x * unit, point.y * unit));
-    ctx.closePath();
-  };
+  // The lane itself comes from the skin (gfx/trackSkin.js); ?skin=classic is the original.
+  const skin = laneSkin(scene);
+  if (skin === 'midnight') drawMidnightLane(ctx, track, unit, { time: state.gfx.visualTime || 0, reducedMotion: !!state.settings?.reducedMotion });
+  else drawClassicLane(ctx, track, unit);
   ctx.save();
   ctx.lineJoin = 'round'; ctx.lineCap = 'round';
-  // The visible racing ribbon shares the same round-segment corridor as collisions.
-  trace(); ctx.strokeStyle = '#142c3b'; ctx.lineWidth = (track.width + .7) * unit; ctx.stroke();
-  ctx.strokeStyle = '#527b88'; ctx.lineWidth = (track.width + .16) * unit; ctx.stroke();
-  ctx.setLineDash([.55 * unit, .55 * unit]); ctx.strokeStyle = '#97d7d0'; ctx.stroke();
-  ctx.setLineDash([]); ctx.lineWidth = track.width * unit; ctx.strokeStyle = '#10202e'; ctx.stroke();
-  trace(); ctx.strokeStyle = '#182c3b'; ctx.lineWidth = (track.width - .4) * unit; ctx.stroke();
-  // A faint broken guide gives speed and direction without covering apex pickups.
-  trace(); ctx.lineWidth = .025 * unit; ctx.setLineDash([.22 * unit, .55 * unit]); ctx.strokeStyle = '#6095a13a'; ctx.stroke(); ctx.setLineDash([]);
-  for (let i = 0; i < track.points.length; i++) {
-    const a = track.points[i], b = track.points[(i + 1) % track.points.length];
-    const length = Math.hypot(b.x - a.x, b.y - a.y);
-    const heading = Math.atan2(b.y - a.y, b.x - a.x);
-    for (let distance = 2; distance < length - 1; distance += 4) {
-      const t = distance / length;
-      ctx.save(); ctx.translate((a.x + (b.x - a.x) * t) * unit, (a.y + (b.y - a.y) * t) * unit); ctx.rotate(heading);
-      ctx.strokeStyle = '#8de5dc48'; ctx.lineWidth = .035 * unit;
-      ctx.beginPath(); ctx.moveTo(-.15 * unit, -.16 * unit); ctx.lineTo(.07 * unit, 0); ctx.lineTo(-.15 * unit, .16 * unit); ctx.stroke(); ctx.restore();
-    }
-  }
   // Checkpoints span the full lane: the outside rail to where the inner rails
   // meet (engine/track.js). The weekly tracks show every corner's line.
   const nextIndex = scene.trackProgress?.nextCheckpoint || 0;
@@ -396,9 +380,10 @@ function drawCircuit(ctx, scene) {
   if (portal) {
     ctx.save(); ctx.translate(portal.x * unit, portal.y * unit); ctx.rotate(Math.atan2(portal.ty, portal.tx));
     const squares = 12, across = track.width / squares;
-    for (let i = 0; i < squares; i++) for (let row = 0; row < 2; row++) {
-      ctx.fillStyle = (i + row) % 2 ? '#81ddd98a' : '#0a1b26';
-      ctx.fillRect((row - 1) * .13 * unit, (i * across - track.width / 2) * unit, .13 * unit, across * unit);
+    const checker = finishChecker(skin);
+    for (let i = 0; i < squares; i++) for (let row = 0; row < checker.rows; row++) {
+      ctx.fillStyle = (i + row) % 2 ? checker.light : checker.dark;
+      ctx.fillRect((row - checker.rows / 2) * checker.depth * unit, (i * across - track.width / 2) * unit, checker.depth * unit, across * unit);
     }
     ctx.restore();
   }
@@ -694,7 +679,7 @@ function ensureStars(W, H) {
   }
 }
 
-function drawParallaxStars(ctx, W, H, vxPx, vyPx) {
+function drawParallaxStars(ctx, W, H, vxPx, vyPx, alpha = 1) {
   ensureStars(W, H);
   const S = config.STARFIELD;
   const camXpx = state.settings?.reducedMotion ? 0 : state.gfx.camera.x * state.gfx.cellW;
@@ -706,7 +691,7 @@ function drawParallaxStars(ctx, W, H, vxPx, vyPx) {
   const TW = turned ? 2 * Math.hypot(W / 2, Math.max(ay, H - ay)) : W, TH = turned ? TW : H;
   ctx.save();
   if (turned) { ctx.translate(W / 2, ay); ctx.rotate(cam.viewRot); ctx.translate(-TW / 2, -TH / 2); }
-  ctx.globalAlpha = S.ALPHA ?? 0.25;
+  ctx.globalAlpha = (S.ALPHA ?? 0.25) * alpha;
   ctx.lineCap = 'round';
   for (const layer of state.gfx._stars) {
     for (const s of layer) {
