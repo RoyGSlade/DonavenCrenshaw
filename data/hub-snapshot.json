@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-09T22:06:17.974Z",
+  "generatedAt": "2026-10-10T17:36:29.564Z",
   "stardust": {
     "leaderboard": [
       {
@@ -47,7 +47,16 @@
     "status": "live",
     "opensAt": "2026-10-06T15:00:00-07:00",
     "closesAt": "2026-10-13T14:45:00-07:00",
-    "leaderboard": []
+    "leaderboard": [
+      {
+        "rank": 1,
+        "name": "DrageNivek",
+        "title": null,
+        "avatarPreset": null,
+        "timeMs": 146887,
+        "setAt": "2026-10-10T17:28:35.964Z"
+      }
+    ]
   },
   "platinum10": [],
   "votes": {
