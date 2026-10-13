@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-13T17:51:14.638Z",
+  "generatedAt": "2026-10-13T21:51:19.354Z",
   "stardust": {
     "leaderboard": [
       {
@@ -44,7 +44,7 @@
   "weekly": {
     "id": "weekly-02",
     "name": "Week 2 — The Abandoned Mall",
-    "status": "live",
+    "status": "closed",
     "opensAt": "2026-10-06T15:00:00-07:00",
     "closesAt": "2026-10-13T14:45:00-07:00",
     "leaderboard": [
