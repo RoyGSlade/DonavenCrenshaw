@@ -433,3 +433,32 @@ export const WEEK2_DRAFT = {
   },
   "landmark": "The Broken Escalator"
 };
+
+
+// Week 3 release candidate. DISABLED and trackless until the owner approves
+// the exact track in Focus: `node scripts/stardust/ship-weekly-track.mjs
+// --week 3 ...` fills the track, title and landmark here and in the Hub, and
+// --enable flips exactly this block's `enabled` plus the Hub week-3 level and
+// event. Weekly cadence (Focus a1f45c71): close Tue 14:45 Pacific, next week
+// opens 15:00. Rewards are a minimal placeholder (champion only); the owner
+// has not chosen Week 3 prizes. Week 2's rollout gate above is not reused.
+export const WEEK3_DRAFT = {
+  "id": "weekly-03",
+  "theme": "mall",
+  "week": 3,
+  "version": 1,
+  "enabled": false,
+  "title": "Owner track pending",
+  "tagline": "One lap. Every shard. One shared leaderboard.",
+  "opensAt": "2026-10-13T15:00:00-07:00",
+  "closesAt": "2026-10-20T14:45:00-07:00",
+  "commentsPage": "stardust-weekly-03",
+  "music": "level3",
+  "ships": "builds",
+  "rewards": {
+    "champion": "weekly-03-champion",
+    "championTitle": "Week 3 Champion",
+    "podiumSize": 3
+  },
+  "track": null
+};
