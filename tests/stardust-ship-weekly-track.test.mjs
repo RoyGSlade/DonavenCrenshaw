@@ -174,7 +174,7 @@ test('CLI dry-run reports both hashes without writing release files', { skip: !p
 
 const week3Of = async options => ({ ...options, week: 3 });
 
-test('--week 3 ships weekly-03 only: Week 2 geometry, rollout gate and flags stay byte-identical, still disabled', { skip: !paired }, async t => {
+test('--week 3 ships weekly-03 only: Week 2 geometry, rollout gate and flags stay byte-identical, week 3 flags stay as they were', { skip: !paired }, async t => {
   const options = await week3Of(await fixture(t));
   const before = await snapshots(options);
   const plan = await planShipWeeklyTrack(options);
@@ -182,7 +182,7 @@ test('--week 3 ships weekly-03 only: Week 2 geometry, rollout gate and flags sta
   assert.equal(plan.siteHash, plan.hubHash);
   assert.equal(plan.event.id, 'weekly-03');
   assert.equal(plan.event.week, 3);
-  assert.equal(plan.event.enabled, false, 'no --enable: stays disabled');
+  assert.equal(plan.event.enabled, WEEK3_DRAFT.enabled, 'no --enable: the flag stays as it was');
   assert.deepEqual(plan.event.rewards, WEEK3_DRAFT.rewards);
   assert.equal(plan.event.opensAt, '2026-10-13T15:00:00-07:00');
   assert.equal(plan.event.closesAt, '2026-10-20T14:45:00-07:00');
@@ -198,7 +198,7 @@ test('--week 3 ships weekly-03 only: Week 2 geometry, rollout gate and flags sta
   const priorRules = JSON.parse(before[1]), priorCatalog = JSON.parse(before[2]);
   assert.deepEqual(shipped.WEEK2_DRAFT, WEEK2_DRAFT, 'Week 2 draft untouched');
   assert.deepEqual(shipped.WEEKLY_ROLLOUT, WEEKLY_ROLLOUT, 'Week 2 rollout gate untouched');
-  assert.equal(shipped.WEEK3_DRAFT.enabled, false);
+  assert.equal(shipped.WEEK3_DRAFT.enabled, WEEK3_DRAFT.enabled);
   assert.equal(shipped.WEEK3_DRAFT.version, 7);
   assert.deepEqual(shipped.WEEK3_DRAFT.track.points, synthetic().track.points);
   assert.deepEqual(catalog['weekly-03'].track, shipped.WEEK3_DRAFT.track);
@@ -208,8 +208,8 @@ test('--week 3 ships weekly-03 only: Week 2 geometry, rollout gate and flags sta
   assert.equal(level.minTimeMs, 1000);
   assert.equal(level.version, 7);
   assert.match(level.name, /^Weekly 3 /);
-  assert.equal(level.enabled, false);
-  assert.equal(rules.events.find(e => e.id === 'weekly-03').enabled, false);
+  assert.equal(level.enabled, priorRules.levels.find(l => l.id === 'weekly-03').enabled);
+  assert.equal(rules.events.find(e => e.id === 'weekly-03').enabled, priorRules.events.find(e => e.id === 'weekly-03').enabled);
   assert.match(rules.events.find(e => e.id === 'weekly-03').name, /^Week 3 /);
   assert.deepEqual(rules.weeklyRollout, priorRules.weeklyRollout);
   assert.deepEqual(rules.levels.filter(l => l.id !== 'weekly-03'), priorRules.levels.filter(l => l.id !== 'weekly-03'));
