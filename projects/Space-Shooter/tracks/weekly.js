@@ -23,7 +23,7 @@
 //
 // opensAt/closesAt are ISO 8601 with an offset. The hub enforces the same
 // window on its board, so change both together.
-import { WEEK2_DRAFT } from './weeklyRollout.js';
+import { WEEK2_DRAFT, WEEK3_DRAFT } from './weeklyRollout.js';
 export const WEEKLY_EVENTS = [
   {
     id: 'weekly-01',
@@ -144,6 +144,7 @@ export const WEEKLY_EVENTS = [
     },
   },
   WEEK2_DRAFT,
+  WEEK3_DRAFT,
 ];
 
 /**

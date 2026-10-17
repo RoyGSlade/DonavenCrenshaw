@@ -12,6 +12,10 @@ import { PLAYER_HULL, shipTouchesCircle } from '../projects/Space-Shooter/engine
 import { flyWeeklyLap } from '../projects/Space-Shooter/engine/weekly/pilot.js';
 import { weeklyStatus, parseWeeklyQuery, weeklyPreviewSvg, weeklyGameUrl } from '../projects/Space-Shooter/systems/weekly.js';
 import { isInsideTrack, isHullInsideTrack, pointOnTrack, nearestTrackPoint, updateTrackProgress, createTrackProgress } from '../projects/Space-Shooter/engine/track.js';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+// The paired Hub checkout: a sibling by default, or STARDUST_HUB_ROOT.
+const hubFile = (rel) => path.join(process.env.STARDUST_HUB_ROOT || fileURLToPath(new URL('../../hub', import.meta.url)), rel);
 
 const event = WEEKLY_EVENTS[0];
 const layout = createWeeklyLayout(event);
@@ -45,9 +49,9 @@ test('every weekly event is well formed, a week long and uniquely named', () => 
   assert.equal(currentWeekly(Date.parse('2026-10-01T00:00:00Z')).id, 'weekly-01');
 });
 
-test("the hub's rules and titles agree with the game (when the hub repo sits alongside)", { skip: !existsSync(new URL('../../hub/api/games/stardust/rules.json', import.meta.url)) }, () => {
-  const rules = JSON.parse(readFileSync(new URL('../../hub/api/games/stardust/rules.json', import.meta.url), 'utf8'));
-  const titles = JSON.parse(readFileSync(new URL('../../hub/api/config/titles.json', import.meta.url), 'utf8'));
+test("the hub's rules and titles agree with the game (when the hub repo sits alongside)", { skip: !existsSync(hubFile('api/games/stardust/rules.json')) }, () => {
+  const rules = JSON.parse(readFileSync(hubFile('api/games/stardust/rules.json'), 'utf8'));
+  const titles = JSON.parse(readFileSync(hubFile('api/config/titles.json'), 'utf8'));
   const titleIds = new Set((titles.titles || titles).map((t) => t.id));
   for (const e of WEEKLY_EVENTS) {
     const level = rules.levels.find((l) => l.id === e.id);
@@ -57,7 +61,7 @@ test("the hub's rules and titles agree with the game (when the hub repo sits alo
     assert.equal(Date.parse(level.closesAt), Date.parse(e.closesAt), `${e.id} closes at the same moment on both sides`);
     assert.equal(level.network, false);
     assert.equal(level.staffHidden, true, 'the owner\'s dev times stay off the public board');
-    assert.equal(level.replay, e.week === 2 ? 'verify' : 'store');
+    assert.equal(level.replay, e.week >= 2 ? 'verify' : 'store');
     const eventLap = e.track ? (e === event ? lap : flyWeeklyLap(createWeeklyLayout(e))) : null;
     if (eventLap) {
       assert.ok(eventLap.finished && !eventLap.dead, `${e.id} pilot finishes`);
@@ -70,10 +74,10 @@ test("the hub's rules and titles agree with the game (when the hub repo sits alo
     assert.equal(hubEvent.rewards.podiumEntitlement, e.rewards.entitlement);
     assert.ok(titleIds.has(e.rewards.champion), "champion title exists");
     if (e.rewards.podium) assert.ok(titleIds.has(e.rewards.podium));
-    if (e.week === 2) {
+    if (e.week >= 2) {
       assert.equal(level.enabled, e.enabled);
       assert.equal(hubEvent.enabled, e.enabled);
-      for (const p of e.rewards.placements) {
+      for (const p of e.rewards.placements || []) {
         assert.equal(hubEvent.rewards.placementTitles[p.rank], p.id);
         assert.equal(titles.titles.find(t => t.id === p.id).title, p.title);
       }

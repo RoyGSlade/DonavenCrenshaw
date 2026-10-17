@@ -7,6 +7,10 @@ import { WEEK2_DRAFT, WEEKLY_ROLLOUT } from '../projects/Space-Shooter/tracks/we
 import { weeklyAccess, canLaunchWeeklyMode } from '../projects/Space-Shooter/systems/weeklyAccess.js';
 import { week2WinnerLivery } from '../projects/Space-Shooter/systems/weeklyRewards.js';
 import { decodeShipCode } from '../projects/Space-Shooter/systems/shipShare.js';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+// The paired Hub checkout: a sibling by default, or STARDUST_HUB_ROOT.
+const hubFile = (rel) => path.join(process.env.STARDUST_HUB_ROOT || fileURLToPath(new URL('../../hub', import.meta.url)), rel);
 
 const w1 = WEEKLY_EVENTS[0];
 const w2 = { ...WEEK2_DRAFT, enabled: true, track: w1.track };
@@ -41,12 +45,12 @@ test('feature the live week, then newest live during overlap; Gantry remains sel
 });
 
 test('site and Hub release configuration and every gate boundary match', {
-  skip: !existsSync(new URL('../../hub/api/games/stardust/rules.json', import.meta.url)),
+  skip: !existsSync(hubFile('api/games/stardust/rules.json')),
 }, () => {
-  const rules = JSON.parse(readFileSync(new URL('../../hub/api/games/stardust/rules.json', import.meta.url)));
+  const rules = JSON.parse(readFileSync(hubFile('api/games/stardust/rules.json')));
   assert.deepEqual(rules.weeklyRollout, WEEKLY_ROLLOUT);
   const require = createRequire(import.meta.url);
-  const { weeklyAccess: hubAccess } = require('../../hub/api/lib/games/weeklyAccess.js');
+  const { weeklyAccess: hubAccess } = require(hubFile('api/lib/games/weeklyAccess.js'));
   for (const t of [Date.parse(w2.opensAt) - 1, Date.parse(w2.opensAt), Date.parse(w1.closesAt) - 1, Date.parse(w1.closesAt), Date.parse(w2.closesAt)]) {
     for (const board of [...WEEKLY_ROLLOUT.legacyBoards, 'weekly-01', 'weekly-02', 'dogfight']) {
       assert.equal(hubAccess({ weeklyRollout: liveRollout }, board, new Date(t)), weeklyAccess(board, t, liveRollout), `${board} at ${t}`);
