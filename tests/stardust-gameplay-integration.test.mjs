@@ -81,7 +81,12 @@ function reset() {
   state.gfx.projectiles = [];
   state.gfx.particles = [];
 }
-test("real mode import graph, launch, pause and retry preserve intended lifecycle", () => {
+// A network run is retired for good once the Week 2 rollout opens (weeklyAccess returns "legacy" for the "full" board
+// after 2026-10-06T15:00-07:00), so retryRun() refuses to start one at the real clock. This test is about the retry
+// lifecycle, not the gate, so it pins the clock to before the gate (node:test restores Date.now afterwards).
+const BEFORE_ROLLOUT_GATE = Date.parse("2026-10-05T12:00:00-07:00");
+test("real mode import graph, launch, pause and retry preserve intended lifecycle", (t) => {
+  t.mock.method(Date, "now", () => BEFORE_ROLLOUT_GATE);
   reset();
   buildLevel(1);
   const lv = state.run.current;
