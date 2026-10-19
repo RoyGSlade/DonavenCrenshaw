@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { optedOut, sourceOf, viewBody, sendView, trackView } from '../scripts/visits.js';
+import { optedOut, sourceOf, viaOf, viewBody, sendView, trackView, readStoredVia } from '../scripts/visits.js';
 
 const read = (name) => fs.readFileSync(new URL(`../${name}`, import.meta.url), 'utf8');
 const HUB = 'https://hub.example';
@@ -43,17 +43,61 @@ test('no hub configured means nothing is sent', () => {
   }
 });
 
-test('the ?via= tag is lowercased and must be 1 to 32 of a-z, 0-9 and hyphen', () => {
+test('the ?via= tag is lowercased and must be 1 to 24 of a-z, 0-9 and hyphen', () => {
   assert.equal(sourceOf({ search: '?via=Reddit' }), 'reddit');
   assert.equal(sourceOf({ search: '?x=1&via=week-5-post' }), 'week-5-post');
-  assert.equal(sourceOf({ search: `?via=${'a'.repeat(32)}` }), 'a'.repeat(32));
+  assert.equal(sourceOf({ search: `?via=${'a'.repeat(24)}` }), 'a'.repeat(24));
   // A bad tag is ignored, not stored: the referrer or "direct" decides instead.
-  for (const bad of ['', 'a'.repeat(33), 'has space', 'a_b', 'a.b', '<b>', '%00', 'caf%C3%A9']) {
+  for (const bad of ['', 'a'.repeat(25), 'has space', 'a_b', 'a.b', '<b>', '%00', 'caf%C3%A9']) {
     assert.equal(sourceOf({ search: `?via=${bad}` }), 'direct', bad);
   }
   assert.equal(sourceOf({ search: '?via=bad!', referrer: 'https://news.ycombinator.com/item?id=1' }), 'news.ycombinator.com');
   // A tag beats the referrer.
   assert.equal(sourceOf({ search: '?via=discord', referrer: 'https://www.reddit.com/r/x' }), 'discord');
+});
+
+// A tiny stand-in for sessionStorage.
+const memoryStorage = (initial = {}) => {
+  const data = { ...initial };
+  return { data, getItem: (k) => (k in data ? data[k] : null), setItem: (k, v) => { data[k] = String(v); } };
+};
+
+test('a ?via= tag is kept for the visit, so later pages without it count under it', () => {
+  const storage = memoryStorage();
+  const landing = track({ location: { ...here, search: '?via=Discord' }, storage });
+  assert.equal(landing.sent[0].body.s, 'discord');
+  assert.equal(storage.data.via, 'discord');
+  // The next page of the visit has no tag and an internal referrer.
+  const next = track({ location: { ...here, pathname: '/stardust/' }, referrer: 'https://donavencrenshaw.com/', storage });
+  assert.deepEqual(next.sent[0].body, { p: '/stardust/', s: 'discord' });
+  // A new tag replaces the old one; an invalid tag changes nothing.
+  assert.equal(track({ location: { ...here, search: '?via=reddit' }, storage }).sent[0].body.s, 'reddit');
+  assert.equal(track({ location: { ...here, search: '?via=<b>' }, storage }).sent[0].body.s, 'reddit');
+  assert.equal(storage.data.via, 'reddit');
+  // No tag and nothing stored: referrer or direct, as before.
+  assert.equal(track({ storage: memoryStorage() }).sent[0].body.s, 'direct');
+  assert.equal(track({ referrer: 'https://news.ycombinator.com/', storage: memoryStorage() }).sent[0].body.s, 'news.ycombinator.com');
+});
+
+test('opted-out visitors are not counted and nothing is stored for them', () => {
+  const storage = memoryStorage();
+  const { counted, sent } = track({ nav: { globalPrivacyControl: true }, location: { ...here, search: '?via=reddit' }, storage });
+  assert.equal(counted, false);
+  assert.deepEqual(sent, []);
+  assert.deepEqual(storage.data, {});
+  assert.equal(track({ nav: { doNotTrack: '1' }, location: { ...here, search: '?via=reddit' }, storage }).counted, false);
+  assert.deepEqual(storage.data, {});
+});
+
+test('blocked or junk session storage never breaks counting', () => {
+  const throwing = { getItem() { throw new Error('blocked'); }, setItem() { throw new Error('blocked'); } };
+  assert.equal(track({ location: { ...here, search: '?via=reddit' }, storage: throwing }).sent[0].body.s, 'reddit');
+  assert.equal(track({ storage: throwing }).sent[0].body.s, 'direct');
+  assert.equal(readStoredVia(memoryStorage({ via: '<script>' })), '');
+  assert.equal(readStoredVia(undefined), '');
+  assert.equal(track({ storage: memoryStorage({ via: 'X'.repeat(40) }) }).sent[0].body.s, 'direct');
+  assert.equal(viaOf('?via=Reddit'), 'reddit');
+  assert.equal(viaOf(''), '');
 });
 
 test('a referrer is reduced to its hostname; same-site clicks are internal', () => {
@@ -96,9 +140,12 @@ test('a failing hub never throws into the page', async () => {
   await new Promise((resolve) => setTimeout(resolve, 0));
 });
 
-test('every page loads the counter, and it stores nothing in the browser', () => {
+test('every page loads the counter, and the only thing it stores is the ?via= tag', () => {
   assert.match(read('src/components/head.ejs'), /<script type="module" src="<%= siteRoot %>scripts\/visits\.js" data-visits-hub="<%= hubUrl %>"><\/script>/);
   assert.match(read('scripts/build.mjs'), /'visits\.js'/);
   const source = read('scripts/visits.js');
-  assert.doesNotMatch(source, /document\.cookie|localStorage|sessionStorage|indexedDB|fingerprint|userAgent|screen\./);
+  // The only browser storage is this tab's sessionStorage, holding the ?via= tag.
+  assert.deepEqual([...new Set(source.match(/sessionStorage|localStorage/g))], ['sessionStorage']);
+  assert.match(read('content/privacy.md'), /only thing kept in your browser is a `\?via=` tag/);
+  assert.doesNotMatch(source, /document\.cookie|localStorage|indexedDB|fingerprint|userAgent|screen\./);
 });

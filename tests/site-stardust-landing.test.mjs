@@ -37,3 +37,12 @@ test('homepage presents challenges as playable rather than a future milestone', 
   assert.match(home, /href="stardust\/weekly\/"/);
   assert.doesNotMatch(home, />Next<|Friend challenges: find/);
 });
+
+test('the game page is branded Stardust and shows the weekly card above the hero', () => {
+  const page = read('projects/Space-Shooter/index.html');
+  assert.match(page, /<span class="wordmark">STARDUST <b>\/<\/b> WEEKLY RACE<\/span>/);
+  assert.doesNotMatch(page, /INFINITE AGES|THE HANGAR/);
+  const weekly = page.indexOf('id="weekly-card"');
+  assert.ok(weekly > 0 && weekly < page.indexOf('class="hero-grid"'), 'weekly card comes before the hero grid');
+  assert.ok(page.indexOf('id="starmap-start-btn"') > weekly, 'the solo network launch button is still there');
+});
