@@ -81,7 +81,11 @@ function reset() {
   state.gfx.projectiles = [];
   state.gfx.particles = [];
 }
-test("real mode import graph, launch, pause and retry preserve intended lifecycle", () => {
+test("real mode import graph, launch, pause and retry preserve intended lifecycle", (t) => {
+  // The full network run became a legacy board when Week 2 opened (2026-10-06), so starting or retrying
+  // one is refused by design from then on. Pin the clock before the rollout so this keeps testing the
+  // retry lifecycle instead of whatever week the calendar is on.
+  t.mock.timers.enable({ apis: ["Date"], now: Date.parse("2026-10-01T12:00:00-07:00") });
   reset();
   buildLevel(1);
   const lv = state.run.current;
