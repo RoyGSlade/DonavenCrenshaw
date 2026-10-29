@@ -14,6 +14,7 @@ hero_scene: desk
 
 <div class="buildlog-layout">
   <div class="buildlog-main">
+    <!-- DEVLOG_ENTRIES -->
     <article class="noir-card lit-edge shadow-caster buildlog-current" aria-labelledby="current-log">
       <div class="buildlog-current-meta">
         <time class="buildlog-date mono" datetime="2026-09-28">2026-09-28</time>

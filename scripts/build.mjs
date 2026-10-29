@@ -9,6 +9,7 @@ import { releaseText, isCustomTrackLive } from '../projects/Space-Shooter/system
 import { checkTrack } from '../projects/Space-Shooter/engine/trackChecks.js';
 import { currentWeekly, weeklyById, weeklyStatus, weeklyGameUrl, weeklyPreviewSvg } from '../projects/Space-Shooter/systems/weekly.js';
 import { buildSponsorWall } from './sponsors.mjs';
+import { loadDevlogEntries, renderDevlogHtml, injectDevlog, DEVLOG_DIRNAME } from './devlog.mjs';
 
 const ROOT_DIR = path.resolve('.');
 const SRC_DIR = path.join(ROOT_DIR, 'src');
@@ -347,6 +348,8 @@ async function buildAllContent(dirPath, subDir = '', components, site, data, pos
     for (const entry of entries.sort((a, b) => a.name.localeCompare(b.name))) {
         const fullPath = path.join(dirPath, entry.name);
         if (entry.isDirectory()) {
+            // Devlog entries render inside the Build Log page (scripts/devlog.mjs), not as pages of their own.
+            if (subDir === '' && entry.name === DEVLOG_DIRNAME) continue;
             await buildAllContent(fullPath, path.posix.join(subDir, entry.name), components, site, data, postsData, generatedPaths, redirectEntries);
         } else if (entry.name.endsWith('.md')) {
             const rawContent = await fs.readFile(fullPath, 'utf-8');
@@ -365,7 +368,8 @@ async function buildAllContent(dirPath, subDir = '', components, site, data, pos
             const layoutPath = path.join(LAYOUTS_DIR, `${frontmatter.layout || 'default'}.ejs`);
             if (!fs.existsSync(layoutPath)) throw new Error(`[BUILD ERROR] Missing layout for ${fullPath}: ${frontmatter.layout || 'default'}`);
             const layoutEjs = await fs.readFile(layoutPath, 'utf-8');
-            const htmlContent = marked.parse(content);
+            let htmlContent = marked.parse(content);
+            if (frontmatter.page_kind === 'build-log') htmlContent = injectDevlog(htmlContent, data.devlogHtml || '');
             const finalHtml = frontmatter.redirect
                 ? redirectHtml(site, route, frontmatter.redirect, frontmatter.title || 'Page moved')
                 : ejs.render(layoutEjs, { ...context, content: htmlContent, components: renderedComponents }, { views: [COMPONENTS_DIR] });
@@ -542,6 +546,9 @@ async function main() {
     console.log(`[HUB] ${HUB_URL}`);
     if (weekly) console.log(`[WEEKLY] ${weekly.id} ${weekly.title}: ${weekly.state} at build time -> ${weekly.layout}`);
     const data = { branches, products, support, sponsorWall, updates, hubSnapshot, customTrack: customTrackData(), weekly, avatars, importedProjects, importedWarnings: projectImport.warnings };
+    const devlogEntries = await loadDevlogEntries(path.join(CONTENT_DIR, DEVLOG_DIRNAME));
+    data.devlogHtml = renderDevlogHtml(devlogEntries);
+    console.log(`[DEVLOG] ${devlogEntries.length} entries`);
     const postsData = [];
     const generatedPaths = [];
     const redirectEntries = [];
