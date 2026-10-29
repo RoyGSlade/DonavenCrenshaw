@@ -63,6 +63,26 @@
     margin-top: 1rem;
 }
 
+.buildlog-devlog {
+    margin: 0 0 clamp(2rem, 5vw, 4rem);
+}
+
+.buildlog-devlog .devlog-entry + .devlog-entry {
+    margin-top: 1.5rem;
+}
+
+.buildlog-entry-copy h4,
+.buildlog-entry-copy h5,
+.buildlog-entry-copy h6 {
+    margin: 1.5rem 0 0.5rem;
+}
+
+.buildlog-entry-copy ul,
+.buildlog-entry-copy ol {
+    margin: 1rem 0 0;
+    padding-left: 1.25rem;
+}
+
 .buildlog-history {
     margin: clamp(2rem, 5vw, 4rem) 0 0;
 }
