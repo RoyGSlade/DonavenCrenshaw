@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#070d17">
+  <meta name="robots" content="noindex">
+  <title>Stardust quest sandbox</title>
+  <meta name="description" content="A test bench for the new Stardust's quests: quest givers, dialogue, travel, random events, fights, a cipher lock and a riddle. Not open to players yet.">
+  <link rel="stylesheet" href="../../../game.css">
+  <link rel="stylesheet" href="./sandbox.css">
+</head>
+<body class="qs">
+  <header class="qs-head">
+    <h1>STAR<span>DUST</span> <small>quest sandbox</small></h1>
+    <p id="qs-status" class="qs-status" role="status"></p>
+  </header>
+  <section id="qs-closed" class="qs-closed" hidden>
+    <h2>Not open yet</h2>
+    <p>The new Stardust is still being built. This page is a test bench for its quests.</p>
+    <p><a href="../../../">Back to Stardust</a></p>
+  </section>
+  <div id="qs-app" class="qs-app" hidden>
+    <aside class="qs-side" aria-label="Captain and wallet">
+      <section class="qs-card" aria-labelledby="qs-captain-title">
+        <h2 id="qs-captain-title">Captain</h2>
+        <div id="qs-captain"></div>
+        <div class="qs-row"><button type="button" id="qs-roll">Roll new stats (1d6 each)</button></div>
+      </section>
+      <section class="qs-card" aria-labelledby="qs-wallet-title">
+        <h2 id="qs-wallet-title">Wallet</h2>
+        <div id="qs-wallet"></div>
+        <div class="qs-row">
+          <button type="button" id="qs-gift">Test kit: +200 credits, scrap, permit</button>
+          <button type="button" id="qs-reset">Reset sandbox save</button>
+        </div>
+        <p class="qs-note">Sandbox save only. The real save comes with core's hangar.</p>
+      </section>
+      <section class="qs-card" aria-labelledby="qs-log-title">
+        <h2 id="qs-log-title">Log</h2>
+        <ol id="qs-log" class="qs-log"></ol>
+      </section>
+    </aside>
+    <main id="qs-main" class="qs-main" tabindex="-1"></main>
+  </div>
+  <script type="module" src="./sandbox.js"></script>
+</body>
+</html>
