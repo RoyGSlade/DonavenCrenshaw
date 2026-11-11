@@ -137,46 +137,68 @@ export function createOnFoot({ root, store = null, bus = null, hooks = {}, mapId
     return r;
   }
 
-  /** Fly to a sector place (dustfall, alpha, beacon), dock, and walk into the giver's place. */
+  // Where the ship is docked: 'home' (the hangar pad) or a sector place id.
+  // The ship's ramp leads out to wherever that is, and the helm offers home.
+  let docked = 'home';
+
+  /** Fly to a sector place (dustfall, alpha, beacon) or 'home', dock, and walk out into that place. */
   async function flyTo(target) {
     const place = PLACES[target];
-    if (!place || target === 'home') throw new Error(`No place ${target}`);
+    if (!place) throw new Error(`No place ${target}`);
+    if (target === docked) return { arrived: true, place: target, already: true };
     world.pause();
     world.el.hidden = true;
     emit(TUTORIAL_EVENTS.launched, { target });
+    hooks.flying?.(true);
     const visited = Object.keys(save()?.flags || {}).filter(k => k.startsWith('poi-')).map(k => k.slice(4));
-    const r = await flyHop(root, {
-      to: target, shipArt, visited, reducedMotion, sound, scanRange: 1 + fx('scan.range') + mods('explore').scan,
-      onPoi: (poi) => {
-        emit(TUTORIAL_EVENTS.poi, { id: poi.id });
-        if (store) store.grant({ ...(inTutorial() ? {} : poi.reward || {}), flags: { [`poi-${poi.id}`]: 1 } });
-      },
-    });
-    world.el.hidden = false;
-    world.resume();
+    let r;
+    try {
+      r = await flyHop(root, {
+        to: target, from: docked, shipArt, visited, reducedMotion, sound, scanRange: 1 + fx('scan.range') + (mods('explore').scan || 0),
+        onPoi: (poi) => {
+          emit(TUTORIAL_EVENTS.poi, { id: poi.id });
+          if (store) store.grant({ ...(inTutorial() ? {} : poi.reward || {}), flags: { [`poi-${poi.id}`]: 1 } });
+        },
+      });
+    } finally {
+      world.el.hidden = false;
+      world.resume();
+      hooks.flying?.(false);
+    }
     if (r.arrived) {
+      docked = target;
       emit(TUTORIAL_EVENTS.exploreArrived, { target });
-      if (place.map) world.go(place.map, 'from-dock');
+      if (target === 'home') world.go('hangar', 'ship-ramp');
+      else if (place.map) world.go(place.map, 'from-dock');
     }
     return r;
   }
 
   // The helm (or the hangar's launch hatch): pick where to fly. Story's unlocks decide what's open.
   function helm() {
-    const open = TARGETS_IN_ORDER.filter(id => (hooks.isUnlocked ? hooks.isUnlocked(`explore:${id}`) : true));
+    const open = TARGETS_IN_ORDER.filter(id => id !== docked && (hooks.isUnlocked ? hooks.isUnlocked(`explore:${id}`) : true));
     return new Promise((resolve) => {
       const panel = createEl('section', { class: 'of-panel of-helm', role: 'dialog', 'aria-label': 'Set a course' },
-        createEl('p', { class: 'of-eyebrow', text: 'HELM · SET A COURSE' }));
+        createEl('p', { class: 'of-eyebrow', text: docked === 'home' ? 'HELM · SET A COURSE' : `HELM · DOCKED AT ${PLACES[docked].name.toUpperCase()}` }));
       const close = (value) => { panel.remove(); resolve(value); };
+      const from = PLACES[docked] || PLACES.home;
+      const km = (p) => Math.round(Math.hypot(p.x - from.x, p.y - from.y));
+      if (docked !== 'home') {
+        const b = createEl('button', { type: 'button', class: 'of-course', dataset: { target: 'home' } },
+          createEl('b', { text: 'Home: your hangar' }), createEl('span', { text: `Chibby's waiting. ${km(PLACES.home)} km` }));
+        b.addEventListener('click', () => close('home'));
+        panel.append(b);
+      }
       for (const id of TARGETS_IN_ORDER) {
+        if (id === docked) continue;
         const p = PLACES[id];
         const giver = p.giver ? `${p.giver[0].toUpperCase()}${p.giver.slice(1)}` : '';
         const b = createEl('button', { type: 'button', class: 'of-course', disabled: !open.includes(id), dataset: { target: id } },
-          createEl('b', { text: p.name }), createEl('span', { text: open.includes(id) ? `${giver ? `${giver} is here. ` : ''}${Math.round(Math.hypot(p.x - PLACES.home.x, p.y - PLACES.home.y))} km` : 'No reason to go yet' }));
+          createEl('b', { text: p.name }), createEl('span', { text: open.includes(id) ? `${giver ? `${giver} is here. ` : ''}${km(p)} km` : 'No reason to go yet' }));
         b.addEventListener('click', () => close(id));
         panel.append(b);
       }
-      if (!open.length) panel.append(createEl('p', { class: 'of-help', text: 'Nowhere to be yet. Somebody in the hangar will give you a reason.' }));
+      if (!open.length && docked === 'home') panel.append(createEl('p', { class: 'of-help', text: 'Nowhere to be yet. Somebody in the hangar will give you a reason.' }));
       const stay = createEl('button', { type: 'button', text: 'Stay docked' });
       stay.addEventListener('click', () => close(null));
       panel.append(stay);
@@ -215,6 +237,8 @@ export function createOnFoot({ root, store = null, bus = null, hooks = {}, mapId
       locked: (door) => { toast(`${door.label}: ${door.gate?.reason || 'Locked.'}`); sound('jam'); },
       gate,
       entered: (map) => hooks.entered?.(map),
+      // Away from home, the ship's ramp opens onto the place it is docked at.
+      doorTo: (door, map) => (map.id === 'ship' && door.id === 'ramp' && docked !== 'home' && PLACES[docked]?.map ? { to: PLACES[docked].map, arrive: 'from-dock' } : null),
     },
   });
 
@@ -230,6 +254,9 @@ export function createOnFoot({ root, store = null, bus = null, hooks = {}, mapId
 
   return {
     world, emit, talk, mine, puzzle, hack, practice, fight, flyTo, helm, toast, sound, gate, mods,
+    get docked() { return docked; },
+    /** Put the ship somewhere without flying (a reload, a Studio link, a test). */
+    dockAt(id) { if (PLACES[id]) docked = id; },
     questFight: (enemy, seed) => fight(questFightSetup(enemy, seed)),
     destroy() { for (const off of offs) off?.(); world.destroy(); toastNode.remove(); },
   };

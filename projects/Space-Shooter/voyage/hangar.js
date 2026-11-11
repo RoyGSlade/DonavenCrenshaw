@@ -9,16 +9,18 @@ import {
   STATS, GIVERS, UPGRADES, REP_MAX, MAX_REP_REWARDS,
   SHIP_STAT_NAMES, TOP_TIER, UNLOCK_NAMES, ITEMS, CURRENCY, ACTIVITIES, DEATH,
 } from './data.js';
-import { unspentPoints, spentPoints } from './character.js';
+import { unspentPoints, spentPoints, check } from './character.js';
 import { money, giverName, itemName, repBand, discount } from './economy.js';
 import { voyageShipStats, canUpgrade, visualTier } from './upgrades.js';
 import { QUESTS } from './quests/data/quests/index.js';
 import { createSkillTree } from './ui/skillTree.js';
-import { iconFor, HANGAR_ART } from './ui/assets.js';
+import { iconFor, HANGAR_ART, castPortrait } from './ui/assets.js';
+import { statCard, HOW_CHECKS_WORK } from './story/stats.js';
 import { STAT_TEXT } from './hangarLinks.js';
 import { rollWords } from './ui/licence.js';
 import { CAST_NAMES } from './hangarStations.js';
 import { launches } from './hangarApi.js';
+import { BADGES_DATA } from './quests/data/badges.js';
 
 // --- Tiny DOM helpers ----------------------------------------------------------------
 
@@ -79,7 +81,10 @@ export function createHangar({ panes, store, ship, crew, toast, dev = false, onT
       else if (e.type === 'item') lines.push(`${e.amount > 0 ? '+' : ''}${e.amount} ${itemName(e.id)}`);
       else if (e.type === 'skill-points') lines.push(`+${e.amount} skill point${e.amount === 1 ? '' : 's'}`);
       else if (e.type === 'max-rep') lines.push(`${giverName(e.giver)} swears you in: +${e.permanent} permanent points${e.unlocks.length ? `, ${e.unlocks.map((u) => UNLOCK_NAMES[u] || u).join(', ')}` : ''}`);
-      else if (e.type === 'unlock') lines.push(`Unlocked ${UNLOCK_NAMES[e.id] || e.id}`);
+      else if (e.type === 'unlock') {
+        const badge = e.id.startsWith('badge:') ? BADGES_DATA.badges[e.id.slice(6)] : null;
+        lines.push(badge ? `Badge: ${badge.name}` : `Unlocked ${UNLOCK_NAMES[e.id] || e.id}`);
+      }
     }
     if (lines.length) toast(lines.join('\n'));
   }
@@ -131,7 +136,7 @@ export function createHangar({ panes, store, ship, crew, toast, dev = false, onT
       fill(panes.captain,
         el('p', { class: 'vy-eyebrow', text: 'NO CAPTAIN YET' }),
         el('h2', { text: 'Nobody sleeps here yet.' }),
-        el('p', { text: 'Sign the captain\'s licence first: a name, a colour and four rolls of the die.' }),
+        el('p', { text: 'Sign the captain\'s licence first: a face, a name and five rolls of the die.' }),
         el('button', { type: 'button', class: 'primary', text: 'Open the licence', on: { click: openLicence } }),
       );
       return;
@@ -139,17 +144,21 @@ export function createHangar({ panes, store, ship, crew, toast, dev = false, onT
     tree.render(save);
     fill(panes.captain,
       el('div', { class: 'vy-captain' }, [
-        el('div', { class: 'vy-badge', style: `background:${c.look.color}`, 'aria-hidden': 'true', text: initials(c.name) }),
+        castPortrait(c.look.portrait)
+          ? el('img', { class: 'vy-badge vy-badge-face', src: castPortrait(c.look.portrait), alt: '', style: `border-color:${c.look.color}` })
+          : el('div', { class: 'vy-badge', style: `background:${c.look.color}`, 'aria-hidden': 'true', text: initials(c.name) }),
         el('div', {}, [el('p', { class: 'vy-eyebrow', text: `CAPTAIN${c.deaths ? ` · ${c.deaths} DEATH${c.deaths === 1 ? '' : 'S'}` : ''}` }), el('h2', { text: c.name })]),
       ]),
       el('div', { class: 'ui-stats' }, STATS.map((s) => {
         const icon = iconFor(s.id);
+        const card = statCard(s.id, c.stats[s.id]);
         return el('div', { class: 'ui-stat', title: rollWords(s.id, c.stats[s.id]) }, [
           icon ? el('img', { src: icon, alt: '' }) : el('i'),
-          el('span', {}, [s.name, el('small', { text: STAT_TEXT[s.id]?.short || s.blurb })]),
+          el('span', {}, [s.name, el('small', { text: STAT_TEXT[s.id]?.short || s.blurb }), card ? el('small', { class: 'ui-stat-odds', text: `${card.bonus} on attempts. ${card.odds}` }) : null]),
           el('b', { 'data-stat': s.id, text: String(c.stats[s.id]) }),
         ]);
       })),
+      el('details', { class: 'ui-how' }, [el('summary', { text: 'How rolls work' }), el('ul', { class: 'vy-list' }, HOW_CHECKS_WORK.map((t) => el('li', { text: t })))]),
       el('div', { class: 'vy-points' }, [
         el('span', {}, ['Unspent ', el('b', { text: String(unspentPoints(c)) })]),
         el('span', {}, ['Spent ', el('b', { text: String(spentPoints(c)) })]),
@@ -306,9 +315,8 @@ export function createHangar({ panes, store, ship, crew, toast, dev = false, onT
         el('button', { type: 'button', id: 'vy-dev-line', text: 'Test a line', on: { click: () => bus?.emit('story:say', { seq: `dev-${++n}`, id: 'dev.line', speaker: 'chibby', name: 'Chibby', text: 'Test line, Captain. If you can read this, the dialogue box works. If you can hear it, the voice lane does too.', audio: null, durationMs: 4200 }) } }),
         el('button', { type: 'button', id: 'vy-dev-check', text: 'Test a check', on: { click: () => {
           const c = store.get().character;
-          const roll = 1 + Math.floor(Math.random() * 6);
-          const bonus = c?.stats?.dex ?? 3;
-          bus?.emit('check:rolled', { roll, bonus, total: roll + bonus, dc: 8, pass: roll + bonus >= 8, stat: 'dex', label: 'Test: thread the needle' });
+          if (!c) { toast('Make a captain first.'); return; }
+          bus?.emit('roll:attempt', { ...check(c, { stat: 'dex', tag: 'test', dc: 8 }, Math.random), who: c.name, label: 'Test: thread the needle' });
         } } }),
         el('button', { type: 'button', id: 'vy-dev-reset', text: 'Fresh save', on: { click: () => { if (confirm('Start a fresh save on this device? Your account copy is replaced on the next sync.')) store.reset(); } } }),
       ]),

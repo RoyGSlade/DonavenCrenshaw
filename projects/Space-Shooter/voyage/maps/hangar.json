@@ -24,8 +24,8 @@
     "##########..##############"
   ],
   "props": [
-    {"art":"player-ship","at":[4,2],"size":[8,4],"block":true,"station":"pad"},
-    {"art":"nav-console","at":[1,2],"size":[1,2],"block":true,"station":"hatch","interact":{"kind":"ship","id":"helm","label":"Launch hatch: set a course"}},
+    {"art":"player-ship","at":[4,2],"size":[8,4],"block":true,"station":"pad","interact":{"kind":"station","id":"pad","label":"Your ship: upgrades and Chibby's parts"}},
+    {"art":"nav-console","at":[1,2],"size":[1,2],"block":true,"station":"hatch","interact":{"kind":"station","id":"hatch","label":"Launch hatch: fly out, races and crew"}},
     {"art":"job-board","at":[14,1],"size":[3,1],"block":true,"station":"board","interact":{"kind":"station","id":"board","label":"Job board"}},
     {"art":"bunk","at":[21,1],"size":[2,1],"block":true},
     {"art":"engineering-console","at":[23,1],"size":[1,1],"block":true,"station":"quarters","interact":{"kind":"station","id":"quarters","label":"Your bunk: skills and stats"}},

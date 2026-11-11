@@ -3,11 +3,18 @@
 // The hangar is a place now (stations, not tabs): see voyage/hangarStations.js for the ids.
 
 /**
- * Sign the captain's licence that opens for a new player: a name, then the die
+ * Sign the captain's licence that opens for a new player (after the intro): a name, then the die
  * for each stat (reduced motion makes each roll land at once), then sign.
  */
-export async function signOnCaptain(page, name) {
+export async function signOnCaptain(page, name, { tutorial = false } = {}) {
   await page.emulateMedia({ reducedMotion: 'reduce' });
+  // Round 2: a new save opens on the story's intro. These checks skip the tutorial
+  // (everything opens) unless they ask for it; the licence follows either way.
+  await page.locator('#hg-licence:visible, .sy-intro').first().waitFor();
+  if (await page.locator('.sy-intro').count()) {
+    if (tutorial) { await page.locator('.sy-begin').click(); await page.locator('.sy-intro-skip').click(); }
+    else await page.locator('.sy-intro-skipall').click();
+  }
   await page.locator('#hg-licence').waitFor();
   await page.locator('#vy-name').fill(name);
   const roll = page.locator('#hg-roll');

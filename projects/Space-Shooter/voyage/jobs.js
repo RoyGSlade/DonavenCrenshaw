@@ -29,7 +29,8 @@ const deadly = (quest) => Object.values(quest.nodes).some((n) => n.type === 'end
 // live(frame) (optional): a live fight frame for the crew's turret scope.
 const NO_CREW = Object.freeze({ aboard: () => null, step: () => {}, changed: () => {}, live: () => {} });
 
-export function createJobs({ pane, store, say, toast, dev = false, onCaptain = () => {}, onPlaying = () => {}, crew = NO_CREW }) {
+// voice({ line, speaker, text }): play a spoken node's line. rolled(rolls): show the attempts on the dice.
+export function createJobs({ pane, store, say, toast, dev = false, onCaptain = () => {}, onPlaying = () => {}, crew = NO_CREW, voice = null, rolled = () => {} }) {
   let seedBox = null;
 
   const player = createQuestPlayer({
@@ -52,6 +53,8 @@ export function createJobs({ pane, store, say, toast, dev = false, onCaptain = (
     // (voyage/races/launch.js); the time comes back as the engine's live action.
     liveRace: () => flyQuestRace({ store, title: player.quest?.title || '', onResult: (r) => player.raceResult(r) }),
     crewLive: (frame) => crew.live?.(frame),
+    voice,
+    rolled,
   });
 
   function take(quest) {
@@ -119,8 +122,30 @@ export function createJobs({ pane, store, say, toast, dev = false, onCaptain = (
   const returned = takeReturnedRace();
   if (returned?.kind === 'quest' && player.active) player.raceResult(returned);
 
+  /**
+   * Open a job straight away (the Studio's play link ?quest=<id>&node=<dialogue node>&seed=n).
+   * Only for a throwaway save: it drops any job in progress. Returns false for an unknown quest.
+   */
+  function openLinked(questId, { node = null, seed = 1 } = {}) {
+    const quest = QUESTS[questId];
+    if (!quest) return false;
+    if (player.active) player.exit();
+    store.update((s) => ({ ...s, quests: { ...s.quests, active: {} } }));
+    player.start(quest, seed > 0 ? seed : 1);
+    const target = node && quest.nodes[node];
+    if (target?.type === 'dialogue' && player.run && !player.run.ended) {
+      const run = { ...player.run, node, part: null };
+      player.exit();
+      store.update((s) => ({ ...s, quests: { ...s.quests, active: { [quest.id]: run } } }));
+      if (player.resume()) player.render();
+    }
+    onPlaying(player.active);
+    return true;
+  }
+
   return {
     render,
+    openLinked,
     keydown: (e) => player.keydown(e),
     get playing() { return player.active; },
     /** A crew action from player two; an error string for them, or null. */

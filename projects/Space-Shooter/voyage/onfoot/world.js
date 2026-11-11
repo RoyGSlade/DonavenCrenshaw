@@ -14,7 +14,7 @@ import { enterMap } from '../maps/index.js';
 import { createWalker, stepWalker, nearestInteract, stepNpc, WALK } from './rules/walk.js';
 import { createFight, stepFight, STEP, ENEMY_TYPES } from './rules/shooter.js';
 import { buildStaticLayer, buildVignette, drawBody, drawContained, castSprite, castLook } from './draw.js';
-import { sprite, playerFrames, preload, onArtLoaded } from './assets.js';
+import { sprite, playerFrames, preload, onArtLoaded, captainSprite } from './assets.js';
 import { fitCanvas, viewZoom, cameraFor } from './viewport.js';
 import { createInput } from './input.js';
 import { createEl } from './dom.js';
@@ -132,7 +132,7 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
       stepNpc(n, t, dt, map, following.has(n.id) ? walker : null);
     }
     // Npc interact points follow the npc.
-    const extra = npcs.filter(n => !hidden.has(n.id)).map(n => ({ kind: 'npc', id: n.id, label: castLook(n.id).name, x: n.x, y: n.y, reach: map.tile * 1.3 }));
+    const extra = npcs.filter(n => !hidden.has(n.id)).map(n => ({ kind: 'npc', id: n.id, label: castLook(n.id).name, x: n.x, y: n.y, reach: map.tile * 1.9 })); // reach: across a desk or a counter
     const base = { ...map, interacts: map.interacts.filter(i => i.kind !== 'npc') };
     target = busy ? null : nearestInteract(walker, base, extra);
     showPrompt(target);
@@ -169,7 +169,8 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
         return;
       }
       if (gate) { hooks.locked?.({ ...d, gate }, api); return; }
-      go(it.to, it.arrive);
+      const redirect = hooks.doorTo?.(d, map);
+      go(redirect?.to || it.to, redirect?.arrive || it.arrive);
       return;
     }
     const result = hooks.interact?.(it, api);
@@ -344,10 +345,13 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
   }
 
   function drawPlayer(x, y, angle, moving, stride, hit, ghost = false) {
+    // The captain's own look (the cast lane's cap-a..cap-d, picked on the licence); the
+    // on-foot pack's pilot frames until that picture has loaded.
+    const cap = captainSprite();
     const frames = playerFrames();
-    const img = moving ? frames[Math.floor(stride) % 4] || frames[0] : frames[0];
+    const img = cap || (moving ? frames[Math.floor(stride) % 4] || frames[0] : frames[0]);
     if (ghost) ctx.globalAlpha = 0.6;
-    drawBody(ctx, x, y, angle, img, { size: 52, t, moving, stride, hit, tint: '#81e6df' });
+    drawBody(ctx, x, y, angle, img, { size: cap ? 46 * castLook('captain').scale : 52, t, moving, stride, hit, tint: '#81e6df' });
     ctx.globalAlpha = 1;
     if (fight && !fight.ended) {
       // A short laser sight: where you're aiming.
@@ -444,6 +448,8 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
 
   const api = {
     get map() { return map; },
+    /** Where an npc is now ({ x, y } in world px), or null: tests and the page's pointers. */
+    npcAt(id) { const n = npcs.find(x => x.id === id && !hidden.has(x.id)); return n ? { x: n.x, y: n.y } : null; },
     get player() { return walker; },
     get mode() { return mode; },
     get fightState() { return fight; },

@@ -15,9 +15,12 @@
   <link rel="stylesheet" href="./quests/ui/player.css">
   <link rel="stylesheet" href="./crew/crew.css">
   <link rel="stylesheet" href="./ui/kit.css">
+  <link rel="stylesheet" href="./onfoot/onfoot.css">
+  <link rel="stylesheet" href="./story/story.css">
+  <link rel="stylesheet" href="./shops/shop.css">
 </head>
 <body>
-  <canvas id="voyage-scene" aria-hidden="true"></canvas>
+  <main id="hg-floor" class="of-stage hg-floor" aria-label="The hangar floor. Walk with WASD or the arrow keys, E to use; on a phone, the stick and the button."></main>
   <header class="vy-top hg-top">
     <a href="../?activity=classic" id="vy-back">← CLASSIC</a>
     <h1 class="vy-wordmark">STARDUST <b>/</b> THE HANGAR</h1>
@@ -34,8 +37,8 @@
     <a class="vy-link" href="../">Back to the hangar</a>
   </section>
 
-  <main id="vy-hangar" class="vy-hangar hg-place" hidden>
-    <h2 class="hg-sr">The hangar. Pick a station to open it.</h2>
+  <div id="vy-hangar" class="vy-hangar hg-place" hidden>
+    <h2 class="hg-sr">The hangar. Walk up to a station, or pick one here to open it.</h2>
     <p id="hg-objective" class="hg-objective ui-nameplate" role="status" hidden><b>NEXT</b><span></span></p>
     <nav id="hg-spots" class="hg-layer" aria-label="Hangar stations"></nav>
     <section id="hg-sheet" class="hg-sheet ui-panel" role="region" aria-labelledby="hg-sheet-title" hidden>
@@ -55,7 +58,7 @@
       </div>
     </section>
     <section id="vy-dev" class="vy-dev" hidden aria-label="Test tools"></section>
-  </main>
+  </div>
   <section id="hg-settings" class="hg-settings ui-panel" hidden aria-label="Settings"></section>
   <section id="hg-licence" class="hg-licence" hidden aria-labelledby="hg-licence-title"></section>
   <div id="hg-dialogue" class="ui-dialogue" hidden></div>

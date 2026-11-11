@@ -258,3 +258,48 @@
 .hg-sheet-open[data-sheet-side=left] .hg-objective{left:auto;right:16px}
 @media (max-width:700px){.hg-sheet-open .hg-objective{left:50%;transform:translateX(-50%);max-width:92vw}}
 @media (max-width:700px){.hg-sheet-open .vy-toast{bottom:auto;top:64px}}
+
+/* Round 2 integration: the walkable floor is the hangar (onfoot/*); station panels open over it. */
+#hg-floor.hg-floor{position:fixed;inset:0;z-index:0;min-height:0;width:100vw;height:100vh;height:100dvh}
+.hg-floor .of-objective{display:none} /* the hangar's NEXT banner says it once */
+.hg-floor .of-place{top:58px}
+.hg-spot[hidden]{display:none}
+.hg-sheet-open .hg-floor .of-prompt{opacity:0}
+/* Captain looks on the licence */
+.ui-looks{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:2px 0 10px}
+.ui-look{display:grid;justify-items:center;gap:2px;padding:4px;min-height:0;background:#0b1522;border:1px solid #2a4152;border-radius:6px;color:var(--ui-text,#eaf4f5);cursor:pointer}
+.ui-look img{width:100%;aspect-ratio:1;object-fit:cover;object-position:50% 20%;border-radius:4px;background:#070d17}
+.ui-look span{display:grid;place-items:center;width:100%;aspect-ratio:1;font:700 20px Inter,sans-serif}
+.ui-look small{font:9px Consolas,monospace;letter-spacing:.1em;text-transform:uppercase;color:#9fb3c2}
+.ui-look[aria-pressed=true]{border-color:var(--ui-cyan,#81e6df);box-shadow:0 0 0 2px #81e6df55}
+.vy-badge-face{width:64px;height:64px;object-fit:cover;object-position:50% 20%;border-radius:50%;border:3px solid;background:#070d17}
+.ui-stat-odds{color:#9fb3c2}
+.ui-how{margin:8px 0;font-size:13px}
+.ui-how summary{cursor:pointer;color:var(--ui-cyan,#81e6df)}
+/* The attempt roll: two dice; gold on a natural double six */
+.ui-attempt-dice{display:flex;gap:4px}
+.ui-attempt-dice canvas[hidden]{display:none}
+.ui-attempt[data-natural=true].is-done{border-color:#f4d35e;box-shadow:0 0 0 2px #f4d35e66,0 0 26px #f4d35e55}
+.ui-attempt[data-natural=true].is-done .ui-attempt-verdict{color:#f4d35e}
+@media (max-width:700px){.ui-looks{gap:5px}.ui-look small{display:none}}
+.ui-attempt{grid-template-columns:auto minmax(0,1fr);width:min(380px,94vw)}
+.ui-attempt-dice .ui-attempt-die{width:76px;height:76px}
+.hg-floor .of-hud{top:56px}
+.hg-fight .ui-dialogue{pointer-events:none;opacity:.88}
+.hg-fight .ui-dialogue button{pointer-events:auto}
+.hg-fight .hg-objective,.hg-fight .hg-layer{opacity:.5}
+.ui-dlg-choice{display:grid;gap:2px;text-align:left}
+.ui-dlg-odds{font:11px Consolas,monospace;letter-spacing:.04em;color:var(--ui-cyan)}
+.ui-dlg-choice[disabled] .ui-dlg-odds{color:var(--ui-amber)}
+/* Phones: the floor's stick and buttons own the bottom, so words sit at the top. */
+@media (max-width:700px){
+  body:not(.hg-sheet-open) .hg-objective{top:60px;bottom:auto}
+  body:not(.hg-sheet-open) .ui-dialogue{top:96px;bottom:auto}
+  body:not(.hg-sheet-open) .vy-toast{top:60px;bottom:auto}
+  .hg-floor .of-place{top:100px}
+}
+@media (min-width:701px){
+  .hg-sheet-open[data-sheet-side=right] .vy-toast{left:calc((100vw - min(560px,46vw)) / 2)}
+  .hg-sheet-open[data-sheet-side=left] .vy-toast{left:calc(100vw - (100vw - min(560px,46vw)) / 2)}
+  .vy-toast{z-index:14}
+}

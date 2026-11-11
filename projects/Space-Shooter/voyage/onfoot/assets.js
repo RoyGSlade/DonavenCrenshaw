@@ -83,9 +83,13 @@ export function loadImage(url) {
   return img.complete && img.naturalWidth ? img : null;
 }
 
+// The hangar lane's FLUX station props (voyage/ui/kit), for the stations on the hangar floor.
+export const HANGAR_KIT_FILES = Object.freeze({ 'job-board': 'prop-board.webp', 'ore-slab': 'prop-scrap.webp', 'range-mat': 'prop-range.webp', 'ore-vein': 'prop-scrap.webp' });
+
 /** A loaded sprite image for an art id, or null (draw a placeholder). Starts the load. */
 export function sprite(id) {
   if (INTERIOR_ART.props[id]) return loadImage(INTERIOR_ART.props[id].url);
+  if (HANGAR_KIT_FILES[id]) return loadImage(new URL(`../ui/kit/${HANGAR_KIT_FILES[id]}`, import.meta.url).href);
   return SPRITE_FILES[id] ? loadImage(at(SPRITE_FILES[id])) : null;
 }
 export const groundImage = id => (GROUND_FILES[id] ? loadImage(at(GROUND_FILES[id])) : null);

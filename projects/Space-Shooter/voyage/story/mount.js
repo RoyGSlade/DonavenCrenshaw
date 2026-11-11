@@ -15,15 +15,17 @@ import { playIntro } from './intro.js';
 import { storyOf } from './progress.js';
 
 /**
- * mountStory({ store, root, bus, reducedMotion, volume, muted, caption, startAt }) ->
+ * mountStory({ store, root, bus, reducedMotion, volume, muted, caption, startAt, playsAudio }) ->
  * { director, caption, bus, speak, stop }. caption: false when the page draws lines itself.
+ * playsAudio: false when the page's own box plays each line's `audio` (the hangar's
+ * dialogue box ducks its ambience under it); say() then only times the line.
  */
 export function mountStory({
   store, root = document.body, bus = storyBus,
   reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches,
-  volume = () => 1, muted = () => false, caption = true, startAt = null,
+  volume = () => 1, muted = () => false, caption = true, startAt = null, playsAudio = true,
 } = {}) {
-  const speak = createSay({ bus, audio: browserAudio({ volume, muted }) });
+  const speak = createSay({ bus, audio: playsAudio ? browserAudio({ volume, muted }) : null });
   const director = createDirector({ store, bus, say: speak });
   const box = caption ? createCaption({ root, bus, reducedMotion, skippable: () => !storyOf(store.get()).finished }) : null;
   let playing = false;

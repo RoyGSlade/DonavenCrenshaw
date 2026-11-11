@@ -89,11 +89,15 @@ export function createHangarPlace({ scene, layer, sheet, panes, renderStation, s
     buttons.set(s.id, b);
   }
 
+  // A floor that knows where its stations stand on screen (the walkable hangar,
+  // scene.stationScreen(id) -> { x, y } or null when off screen or another room)
+  // places the plates itself; the drawn hangar scene maps floor metres.
   function place() {
     for (const s of STATIONS) {
       const b = buttons.get(s.id);
-      const p = scene.toScreen(s.at.x, s.at.y);
-      b.style.transform = `translate(${Math.round(p.x)}px, ${Math.round(p.y)}px)`;
+      const p = scene.stationScreen ? scene.stationScreen(s.id) : scene.toScreen(s.at.x, s.at.y);
+      b.hidden = !p;
+      if (p) b.style.transform = `translate(${Math.round(p.x)}px, ${Math.round(p.y)}px)`;
     }
   }
 
@@ -146,7 +150,7 @@ export function createHangarPlace({ scene, layer, sheet, panes, renderStation, s
     if (current !== id) opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     current = id;
     // The panel opens on the side away from the station (it stays in view).
-    const side = s.at.x < 12 ? 'right' : 'left';
+    const side = scene.sideFor ? scene.sideFor(id) : s.at.x < 12 ? 'right' : 'left';
     sheet.root.dataset.side = side;
     document.body.classList.add('hg-sheet-open');
     document.body.dataset.sheetSide = side;

@@ -139,7 +139,7 @@ export const HANGAR_DATA = {
         "locked": "Mel looks you up and down, then back at her rifle. \"Not today.\"",
         "kitTitle": "YOUR KIT",
         "noKit": "Nothing issued yet. Mel hands out gear to people she has seen shoot.",
-        "shopSoon": "Mel's stock board is being chalked up. Prices soon."
+        "shopSoon": "Her stock is on the Gear tab: armour, sidearms and kit, priced in chalk."
       }
     },
     {
@@ -192,7 +192,7 @@ export const HANGAR_DATA = {
         "body": "Crates under a tarp, a lantern that runs on something it shouldn't, and Edna, humming, pricing you up from the doorway.",
         "locked": "Someone is whistling behind the tarp. The tune stops when you get close.",
         "lockbox": "Try Edna's lockbox",
-        "shopSoon": "Edna's wares are under the tarp. \"When you're ready, love.\""
+        "shopSoon": "Her wares are on the Wares tab, under the tarp. \"When you're ready, love.\""
       }
     },
     {
@@ -311,11 +311,11 @@ export const HANGAR_DATA = {
   "licence": {
     "eyebrow": "CAPTAIN'S LICENCE · DRIFTWAKE REGISTRY",
     "title": "Who flies this ship?",
-    "body": "Name your captain, then roll the die once for each stat. Whatever lands face up is yours. A 3 is average; every point above helps, every point below costs.",
+    "body": "Pick a face, name your captain, then roll the die once for each stat. Whatever lands face up is yours. A 3 is average; each stat is the bonus on every attempt, but only the dice decide, and a double six always works.",
     "sign": "Sign the licence",
-    "rolledAll": "All four rolled. Sign the licence when you're ready.",
+    "rolledAll": "All five rolled. Sign the licence when you're ready.",
     "hint": "Flick the tray or press Roll. Whatever lands face up is your {stat}.",
-    "hintDone": "Four stats, rolled once. They stay until your captain dies.",
+    "hintDone": "Five stats, rolled once. Each one is the bonus on every attempt you make. They stay until your captain dies.",
     "checkDc": 7
   }
 };

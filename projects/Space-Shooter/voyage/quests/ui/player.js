@@ -86,7 +86,9 @@ export function shipSummary(save) {
 // liveRace(view): fly the race leg live on today's racing engine (voyage/races/
 // launch.js); the time comes back through raceResult(). null: quick rolls only.
 // crewLive(frame): live fight frames for the crew's turret scope (P11, races lane).
-export function createQuestPlayer({ root, session, status = () => {}, onEnd = () => {}, onExit = () => {}, onChange = () => {}, exitLabel = 'Back to the job board', announceEvents = true, crew = () => null, voice = null, liveRace = null, crewLive = () => {} }) {
+// rolled(rolls): every attempt the engine rolled in a step, in order (contract
+// section 6), so the page can show each on the dice.
+export function createQuestPlayer({ root, session, status = () => {}, onEnd = () => {}, onExit = () => {}, onChange = () => {}, exitLabel = 'Back to the job board', announceEvents = true, crew = () => null, voice = null, liveRace = null, crewLive = () => {}, rolled = () => {} }) {
   let current = null; // { quest, run }
   let voiced = '';
   let lastEvents = [];
@@ -97,6 +99,7 @@ export function createQuestPlayer({ root, session, status = () => {}, onEnd = ()
   function start(quest, seed) {
     const started = startQuest(quest, session.get(), { seed, now: Date.now() });
     current = { quest, run: started.run };
+    if (started.rolls?.length) { try { rolled(started.rolls); } catch (error) { console.warn('Stardust: showing a roll failed', error); } }
     lastEvents = started.events;
     session.commit(started.save, started.events, { run: started.run });
     render();
@@ -117,6 +120,7 @@ export function createQuestPlayer({ root, session, status = () => {}, onEnd = ()
     const result = act(current.quest, current.run, session.get(), action, { now: Date.now(), crew: crew() });
     if (result.error) return result.error;
     current.run = result.run;
+    if (result.rolls?.length) { try { rolled(result.rolls); } catch (error) { console.warn('Stardust: showing a roll failed', error); } }
     lastEvents = result.events;
     const lines = shownEvents(result.events);
     if (announceEvents && lines.length) status(lines.map(eventText).join(' · '));
@@ -311,15 +315,18 @@ export function createQuestPlayer({ root, session, status = () => {}, onEnd = ()
     );
     const moves = el('div', { class: 'qs-moves' }, ...p.moves.map(m => button(`${m.label} [${MOVE_KEYS[m.id].toUpperCase()}]`, () => send({ move: m.id }))));
     for (const m of p.moves) keyHandlers.push({ key: MOVE_KEYS[m.id], fn: () => send({ move: m.id }) });
+    // Quest fights: live first, the roll as the fallback (Donaven, 2026-11-11).
+    if (p.live) box.append(el('p', { class: 'qs-live-row' }, button('Fly it live (Dogfight combat)', () => openLiveFight(p.live.setup, e.name, send), { class: 'primary' }), el('small', { text: ' Arrows or WASD to fly, Space to fire, Shift to boost. Touch buttons on phones.' })));
+    if (p.live) box.append(el('p', { class: 'qs-note', text: 'Or fight it turn by turn, one roll at a time:' }));
     box.append(moves);
-    if (p.live) box.append(el('p', { class: 'qs-live-row' }, button('Fly it live (Dogfight combat)', () => openLiveFight(p.live.setup, e.name, send)), el('small', { text: ' Arrows or WASD to fly, Space to fire, Shift to boost. Touch buttons on phones.' })));
     return box;
   }
 
   function renderFoot(p) {
-    const box = el('section', { class: 'qs-part' }, el('h3', { text: `${p.title}: ${p.enemy.name}` }), el('p', { class: 'qs-note', text: p.note }));
+    const box = el('section', { class: 'qs-part qs-foot' }, el('h3', { text: `${p.title}: ${p.enemy.name}` }), el('p', { class: 'qs-note', text: p.note }));
+    // Live first, the roll as the fallback.
+    if (p.live) box.append(el('p', { class: 'qs-live-row' }, button('Fight it live (on foot)', () => openFootFight(p.live.setup, p.enemy.name), { class: 'primary' }), el('small', { text: ' WASD to move, mouse or arrows to aim and fire, Space to dash. Sticks on phones.' })));
     box.append(el('div', { class: 'qs-moves' }, ...p.moves.map(m => button(m.label, () => doAct({ move: m.id })))));
-    if (p.live) box.append(el('p', { class: 'qs-live-row' }, button('Fight it live (on foot)', () => openFootFight(p.live.setup, p.enemy.name)), el('small', { text: ' WASD to move, mouse or arrows to aim and fire, Space to dash. Sticks on phones.' })));
     return box;
   }
 
