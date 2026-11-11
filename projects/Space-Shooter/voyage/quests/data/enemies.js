@@ -1,0 +1,62 @@
+// Enemy templates. Every number or list in a spec is rolled per quest from the
+// quest seed (see ../rolls.js): hp, movement and abilities change each time.
+// Movement ids and ability ids are explained in ../parts/skirmish.js.
+export const ENEMIES = Object.freeze({
+  raider: {
+    name: { pick: ['Ember raider', 'Syndicate cutter', 'Scrap-claw raider'] },
+    faction: 'ember-syndicate',
+    hp: { range: [34, 56] },
+    movement: { pick: ['strafe', 'charge', 'orbit'] },
+    abilities: { pickN: 1, from: ['shield', 'emp', 'mines', 'missiles'] },
+    damage: [6, 10],
+    parley: true,
+    parleyDc: 8,
+  },
+  drone: {
+    name: { pick: ['Warden drone', 'Dead-relay sentinel'] },
+    faction: 'none',
+    hp: { range: [22, 38] },
+    movement: { pick: ['hold', 'orbit'] },
+    abilities: { pickN: 1, from: ['shield', 'repair', 'emp'] },
+    damage: [5, 8],
+    parley: false,
+  },
+  choir: {
+    name: { pick: ['Choir lantern-ship', 'Hollow skiff'] },
+    faction: 'hollow-choir',
+    hp: { range: [38, 60] },
+    movement: { pick: ['orbit', 'strafe'] },
+    abilities: { pickN: 1, from: ['cloak', 'emp', 'repair'] },
+    damage: [7, 11],
+    parley: true,
+    parleyDc: 9,
+  },
+  scav: {
+    name: { pick: ['Driftborn scow', 'Claim-jumper tug'] },
+    faction: 'driftborn',
+    hp: { range: [26, 42] },
+    movement: { pick: ['hold', 'charge'] },
+    abilities: { pickN: 1, from: ['mines', 'repair'] },
+    damage: [5, 9],
+    parley: true,
+    parleyDc: 6,
+  },
+  ace: {
+    name: 'Red Kestrel',
+    faction: 'ember-syndicate',
+    hp: { range: [64, 84] },
+    movement: { pick: ['strafe', 'charge'] },
+    abilities: { pickN: 2, from: ['shield', 'missiles', 'mines', 'repair'] },
+    damage: [8, 12],
+    parley: true,
+    parleyDc: 10,
+  },
+  guards: {
+    name: { pick: ['Depot guards', 'Syndicate dockhands', 'Two bored sentries'] },
+    hp: { range: [18, 30] },
+    movement: 'hold',
+    abilities: [],
+    damage: [4, 8],
+    parley: false,
+  },
+});
