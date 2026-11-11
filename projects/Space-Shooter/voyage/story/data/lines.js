@@ -549,6 +549,90 @@ export const LINES_DATA = {
       "direction": "Easygoing, a thumbs-up."
     },
     {
+      "id": "chibby.nudge.walk",
+      "speaker": "chibby",
+      "emotion": "playful",
+      "text": "Pad's the big circle with the ship on it. Can't miss it. People miss it.",
+      "direction": "Calling over, patient and teasing."
+    },
+    {
+      "id": "chibby.nudge.ship",
+      "speaker": "chibby",
+      "emotion": "warm",
+      "text": "Come say hi! I don't bite. Ralph does, a little.",
+      "direction": "Waving you over, friendly."
+    },
+    {
+      "id": "chibby.nudge.ralph",
+      "speaker": "chibby",
+      "emotion": "playful",
+      "text": "Ralph's by his kennel, wagging at nothing. Go on.",
+      "direction": "Pointing, amused."
+    },
+    {
+      "id": "chibby.nudge.mine",
+      "speaker": "chibby",
+      "emotion": "playful",
+      "text": "Drill goes pointy end at the rock. The rock is behind the scrap pile.",
+      "direction": "Helpful, a little silly."
+    },
+    {
+      "id": "chibby.nudge.hatch",
+      "speaker": "chibby",
+      "emotion": "warm",
+      "text": "Hatch is at the back. Big yellow stripes. Off you go.",
+      "direction": "Encouraging, a shooing gesture in the voice."
+    },
+    {
+      "id": "garrity.nudge.1",
+      "speaker": "garrity",
+      "emotion": "excited",
+      "text": "Over here, kid! The big one waving the robot arm!",
+      "direction": "Bellowing across a scrapyard."
+    },
+    {
+      "id": "hask.nudge.1",
+      "speaker": "hask",
+      "emotion": "dry",
+      "text": "My office is past the coffee machine. Follow the smell of burning.",
+      "direction": "Flat, over a speaker."
+    },
+    {
+      "id": "vey.nudge.1",
+      "speaker": "vey",
+      "emotion": "sly",
+      "text": "The lounge, Captain. The one with the good chairs.",
+      "direction": "Silky, amused at your wandering."
+    },
+    {
+      "id": "mel.nudge.1",
+      "speaker": "mel",
+      "emotion": "grumpy",
+      "text": "Locker. Now. I'm not shouting. This is my normal voice.",
+      "direction": "Loud and flat."
+    },
+    {
+      "id": "mel.nudge.2",
+      "speaker": "mel",
+      "emotion": "dry",
+      "text": "Targets don't shoot themselves. Well. Some do. Not mine.",
+      "direction": "Impatient tapping."
+    },
+    {
+      "id": "edna.nudge.1",
+      "speaker": "edna",
+      "emotion": "playful",
+      "text": "Yoo-hoo! Back room, duckling. Follow the whistling.",
+      "direction": "Sing-song call from another room."
+    },
+    {
+      "id": "edna.nudge.2",
+      "speaker": "edna",
+      "emotion": "warm",
+      "text": "Three dials, duckling. The box hums when one's right. Listen for it.",
+      "direction": "Gentle hint, leaning close."
+    },
+    {
       "id": "chibby.idle.1",
       "speaker": "chibby",
       "emotion": "warm",

@@ -22,6 +22,8 @@ const freeze = (v) => { if (v && typeof v === 'object') { Object.values(v).forEa
 export const LEGS = freeze(structuredClone(TUTORIAL_DATA.legs));
 export const STEPS = freeze(structuredClone(TUTORIAL_DATA.steps));
 
+/** Quiet time on a step before a nudge line plays. */
+export const NUDGE_MS = Number(TUTORIAL_DATA.nudgeMs) || 30000;
 export const STEP_IDS = Object.freeze(STEPS.map((s) => s.id));
 export const STEP_BY_ID = new Map(STEPS.map((s) => [s.id, s]));
 

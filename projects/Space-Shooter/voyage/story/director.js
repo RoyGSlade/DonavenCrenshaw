@@ -10,7 +10,7 @@ import { grant, missing } from '../economy.js';
 import { STAT_OPTION_MIN } from '../data.js';
 import { storyBus } from './bus.js';
 import { createSay } from './say.js';
-import { STEPS, STEP_BY_ID, ALL_UNLOCKS, TALKS, PICKS, SKIP_IF, unlockName } from './tutorial.js';
+import { STEPS, STEP_BY_ID, ALL_UNLOCKS, TALKS, PICKS, SKIP_IF, NUDGE_MS, unlockName } from './tutorial.js';
 import { storyOf, freshStory, cleanStory, objectiveFor } from './progress.js';
 import { optionTag } from './stats.js';
 
@@ -34,16 +34,41 @@ const matches = (wait, type, detail) => wait && wait.type === type
   && Object.entries(wait.match || {}).every(([k, v]) => detail?.[k] === v);
 
 /**
- * createDirector({ store, bus, say, audio }) -> { start, skip, replay, state, objective, choose, stop }.
+ * createDirector({ store, bus, say, audio, timer, nudgeMs }) -> { start, skip, replay, state, objective, choose, stop }.
  * store: voyage/store.js (get, update). say: a speak function (default createSay on the bus).
+ * timer: { set(fn, ms) -> handle, clear(handle) } for the nudges (tests pass a fake).
  */
-export function createDirector({ store, bus = storyBus, say = null, audio = null } = {}) {
+export function createDirector({
+  store, bus = storyBus, say = null, audio = null, nudgeMs = NUDGE_MS,
+  timer = { set: (fn, ms) => setTimeout(fn, ms), clear: (h) => clearTimeout(h) },
+} = {}) {
   const speak = say || createSay({ bus, audio });
   let queue = Promise.resolve();
   let offs = [];
   let running = false;
   let pendingTalk = null; // { step, talk, options }
   const seen = new Set(); // `also` lines already played this session
+  let nudgeTimer = null;
+  let nudged = { step: null, n: 0 }; // which nudge line plays next on this step
+
+  // Nudges: when the player has done nothing on a step for nudgeMs, the step's
+  // helper says where to go. Any event from the game (not the story's own)
+  // restarts the wait; each nudge line plays once.
+  function armNudge() {
+    if (nudgeTimer !== null) timer.clear(nudgeTimer);
+    nudgeTimer = null;
+    const s = read();
+    const step = !s.finished && STEP_BY_ID.get(s.step);
+    if (!running || !step?.nudge?.length || !(nudgeMs > 0)) return;
+    if (nudged.step !== step.id) nudged = { step: step.id, n: 0 };
+    if (nudged.n >= step.nudge.length) return;
+    nudgeTimer = timer.set(() => {
+      nudgeTimer = null;
+      if (!running || read().step !== step.id || pendingTalk) return;
+      const id = step.nudge[nudged.n++];
+      playLines([id]).then(armNudge);
+    }, nudgeMs);
+  }
 
   const read = () => storyOf(store.get());
   const vars = () => ({ name: store.get().character?.name || '' });
@@ -81,6 +106,7 @@ export function createDirector({ store, bus = storyBus, say = null, audio = null
     if (step.enter?.length) playLines(step.enter);
     if (step.talk) enqueue(() => runTalk(step));
     if (!step.wait) enqueue(() => complete(step, {}));
+    else enqueue(armNudge);
   }
 
   function complete(step, detail, { silent = false } = {}) {
@@ -146,6 +172,7 @@ export function createDirector({ store, bus = storyBus, say = null, audio = null
     if (!running) return;
     if (type === 'tutorial:skip') { api.skip(); return; }
     if (type === 'story:choose') { choose(Number(detail?.index)); return; }
+    if (!type.startsWith('story:') && nudgeTimer !== null) armNudge();
     const s = read();
     if (s.finished) return;
     const step = STEP_BY_ID.get(s.step);
@@ -209,6 +236,8 @@ export function createDirector({ store, bus = storyBus, say = null, audio = null
     stop() {
       running = false;
       pendingTalk = null;
+      if (nudgeTimer !== null) timer.clear(nudgeTimer);
+      nudgeTimer = null;
       for (const off of offs) off();
       offs = [];
     },

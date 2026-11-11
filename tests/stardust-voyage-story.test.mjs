@@ -32,7 +32,7 @@ function setup({ storage = memoryStore() } = {}) {
   const speak = async (id) => { said.push(id); return { id, skipped: false }; };
   const seen = [];
   bus.on('*', (type, detail) => seen.push({ type, detail }));
-  const director = createDirector({ store, bus, say: speak });
+  const director = createDirector({ store, bus, say: speak, nudgeMs: 0 });
   return { store, bus, said, seen, director, storage };
 }
 
@@ -108,7 +108,7 @@ test('every line has a good id, a known speaker and emotion, and short text', ()
 test('every line the tutorial, talks and picks name exists', () => {
   const named = [];
   for (const s of STEPS) {
-    for (const x of [...(s.enter || []), ...(s.after || [])]) if (typeof x === 'string') named.push(x);
+    for (const x of [...(s.enter || []), ...(s.after || []), ...(s.nudge || [])]) if (typeof x === 'string') named.push(x);
     for (const a of s.also || []) named.push(...a.lines);
   }
   for (const t of Object.values(TALKS)) named.push(t.prompt, ...t.options.map((o) => o.reply));
@@ -419,4 +419,34 @@ test('other lanes can add lines in the same shape', async () => {
   const speak = createSay({ bus, voiceUrl: () => null, wait: () => Promise.resolve() });
   await speak('clerk.paper.1');
   assert.equal(seen[0].name, 'Clerk Ossa');
+});
+
+test('a quiet player gets a nudge line once, and doing something restarts the wait', async () => {
+  const pending = [];
+  const timer = { set: (fn, ms) => { const h = { fn, ms, live: true }; pending.push(h); return h; }, clear: (h) => { h.live = false; } };
+  const fire = async () => { const h = pending.filter((x) => x.live).pop(); assert.ok(h, 'a nudge is armed'); h.live = false; h.fn(); await env.director.idle(); };
+  let t = 1_762_800_000_000;
+  const store = createVoyageStore({ storage: memoryStore(), now: () => (t += 1000) });
+  const bus = createBus();
+  const said = [];
+  const env = { store, bus, director: createDirector({ store, bus, say: async (id) => { said.push(id); }, timer, nudgeMs: 30000 }) };
+  env.director.start();
+  await emit(env, 'intro:done');
+  assert.equal(pending.filter((x) => x.live).length, 0, 'no nudge on a step without one');
+  env.store.createCharacter({ name: 'Vela' }, seq(ROLL));
+  await emit(env, 'captain:created', { character: env.store.get().character });
+  assert.equal(env.director.state().step, 'walk');
+  assert.equal(pending.filter((x) => x.live).length, 1);
+  assert.equal(pending.at(-1).ms, 30000);
+  env.bus.emit('tutorial:moved', {});
+  assert.equal(pending.filter((x) => x.live).length, 1, 'moving re-arms instead of stacking');
+  await fire();
+  assert.equal(said.at(-1), 'chibby.nudge.walk');
+  assert.equal(pending.filter((x) => x.live).length, 0, 'each nudge plays once');
+  await emit(env, 'tutorial:arrived', { station: 'pad' });
+  assert.equal(env.director.state().step, 'ship');
+  await fire();
+  assert.equal(said.at(-1), 'chibby.nudge.ship');
+  env.director.stop();
+  assert.equal(pending.filter((x) => x.live).length, 0);
 });

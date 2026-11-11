@@ -2,7 +2,8 @@
 // Stardust Studio (Focus) can read and write it (lhc-lanes/stardust/STUDIO-SCHEMA.md,
 // ROUND2-CONTRACT.md). No code, comments or trailing commas inside the JSON.
 // A step's lines are line ids, or { "pick": name } (a line chosen in code: story/tutorial.js PICKS).
-// skipIf names a condition in story/tutorial.js SKIP_IF.
+// skipIf names a condition in story/tutorial.js SKIP_IF. nudge: lines played once each, in order, when the
+// player has done nothing on that step for nudgeMs.
 export const TUTORIAL_DATA = {
   "version": 1,
   "legs": [
@@ -87,7 +88,10 @@ export const TUTORIAL_DATA = {
         "match": {
           "station": "pad"
         }
-      }
+      },
+      "nudge": [
+        "chibby.nudge.walk"
+      ]
     },
     {
       "id": "ship",
@@ -106,6 +110,9 @@ export const TUTORIAL_DATA = {
       "unlocks": [
         "ship",
         "station:pad"
+      ],
+      "nudge": [
+        "chibby.nudge.ship"
       ]
     },
     {
@@ -127,6 +134,9 @@ export const TUTORIAL_DATA = {
       ],
       "unlocks": [
         "station:scrap"
+      ],
+      "nudge": [
+        "chibby.nudge.ralph"
       ]
     },
     {
@@ -151,6 +161,9 @@ export const TUTORIAL_DATA = {
       "unlocks": [
         "explore:dustfall",
         "station:hatch"
+      ],
+      "nudge": [
+        "chibby.nudge.mine"
       ]
     },
     {
@@ -176,6 +189,9 @@ export const TUTORIAL_DATA = {
       },
       "after": [
         "garrity.arrive.1"
+      ],
+      "nudge": [
+        "chibby.nudge.hatch"
       ]
     },
     {
@@ -202,6 +218,9 @@ export const TUTORIAL_DATA = {
       },
       "unlocks": [
         "giver:garrity"
+      ],
+      "nudge": [
+        "garrity.nudge.1"
       ]
     },
     {
@@ -227,6 +246,9 @@ export const TUTORIAL_DATA = {
       },
       "unlocks": [
         "station:locker"
+      ],
+      "nudge": [
+        "mel.nudge.1"
       ]
     },
     {
@@ -250,6 +272,9 @@ export const TUTORIAL_DATA = {
       "unlocks": [
         "station:range",
         "explore:alpha"
+      ],
+      "nudge": [
+        "mel.nudge.2"
       ]
     },
     {
@@ -275,6 +300,9 @@ export const TUTORIAL_DATA = {
       },
       "after": [
         "hask.arrive.1"
+      ],
+      "nudge": [
+        "chibby.nudge.hatch"
       ]
     },
     {
@@ -301,6 +329,9 @@ export const TUTORIAL_DATA = {
       },
       "unlocks": [
         "giver:hask"
+      ],
+      "nudge": [
+        "hask.nudge.1"
       ]
     },
     {
@@ -320,6 +351,9 @@ export const TUTORIAL_DATA = {
       ],
       "unlocks": [
         "station:backroom"
+      ],
+      "nudge": [
+        "edna.nudge.1"
       ]
     },
     {
@@ -358,6 +392,9 @@ export const TUTORIAL_DATA = {
       ],
       "unlocks": [
         "explore:beacon"
+      ],
+      "nudge": [
+        "edna.nudge.2"
       ]
     },
     {
@@ -383,6 +420,9 @@ export const TUTORIAL_DATA = {
       },
       "after": [
         "vey.arrive.1"
+      ],
+      "nudge": [
+        "chibby.nudge.hatch"
       ]
     },
     {
@@ -409,6 +449,9 @@ export const TUTORIAL_DATA = {
       },
       "unlocks": [
         "giver:vey"
+      ],
+      "nudge": [
+        "vey.nudge.1"
       ]
     },
     {
@@ -476,5 +519,6 @@ export const TUTORIAL_DATA = {
     "giver:garrity": "Hob Garrity will hire you",
     "giver:hask": "Stationmaster Hask will hire you",
     "giver:vey": "Lucan Vey will hire you"
-  }
+  },
+  "nudgeMs": 30000
 };
