@@ -33,6 +33,7 @@ const mimeTypes = new Map([
   ['.svg', 'image/svg+xml'],
   ['.mp3', 'audio/mpeg'],
   ['.wav', 'audio/wav'],
+  ['.ogg', 'audio/ogg'],
 ]);
 
 const routeRoots = [
