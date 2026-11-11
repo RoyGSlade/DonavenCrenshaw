@@ -11,8 +11,8 @@ export const QUEST_GIVERS = Object.freeze({
     role: 'Relay Guild stationmaster',
     faction: 'relay-guild',
     sector: 'alpha',
-    greeting: 'Bad coffee, worse budgets, and a lane that keeps trying to die. Pull up a crate, courier.',
-    quests: ['cold-run', 'black-lane'],
+    greeting: 'Pull up a crate, Captain. The coffee is still terrible. Deputy says hello. He\'s a cactus.',
+    quests: ['cold-run', 'three-tiers', 'slow-parade', 'black-lane', 'dead-channel'],
   },
   vey: {
     name: 'Lucan Vey',
@@ -20,8 +20,8 @@ export const QUEST_GIVERS = Object.freeze({
     role: 'information broker',
     faction: 'none',
     sector: 'beacon',
-    greeting: 'Everything is a favour, captain. The trick is knowing whose.',
-    quests: ['railgun-paper-trail', 'listening-gate'],
+    greeting: 'Captain. You look like someone with a favour to spend.',
+    quests: ['missing-page', 'railgun-paper-trail', 'teapot', 'warden-file', 'listening-gate'],
   },
   garrity: {
     name: 'Hob Garrity',
@@ -30,6 +30,6 @@ export const QUEST_GIVERS = Object.freeze({
     faction: 'driftborn',
     sector: 'dustfall',
     greeting: 'If it floats, I can sell it. If it sinks, I can sell it slower.',
-    quests: ['dead-weight'],
+    quests: ['dead-weight', 'deep-seam', 'lighthouse', 'dustfall-derby', 'black-box'],
   },
 });

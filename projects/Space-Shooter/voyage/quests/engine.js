@@ -185,6 +185,8 @@ function enter(quest, nodeId, ctx, now, depth = 0) {
   if (node.set) Object.assign(run.local, node.set);
   if (node.onEnter) ctx.grant(resolveReward(node.onEnter, run));
   if (node.location) run.location = node.location;
+  // hull: a patch (or a knock) to the ship's hull for the rest of this quest.
+  if (Number.isFinite(node.hull)) run.hull = Math.max(1, Math.min(run.hullMax, run.hull + node.hull));
 
   if (node.type === 'branch') {
     const hit = (node.cases || []).find(c => reqMet(c.when, run, ctx.save));
@@ -288,6 +290,11 @@ export function view(quest, run, save) {
     title: fill(node.title || '', s),
     speaker: node.speaker ? fill(node.speaker, s) : null,
     portrait: node.portrait || null,
+    // beat: the stage direction shown before a spoken line (never voiced).
+    // line: the voice line id for the spoken text (content/LINES-quests.json);
+    // the page shows `text` and plays the line's audio, if any.
+    beat: node.beat ? fill(node.beat, s) : '',
+    line: node.line || null,
     text: fill(node.text || '', s),
     hull: run.hull,
     hullMax: run.hullMax,
