@@ -9,7 +9,7 @@
 //   scan    {}          scan the next jump (S56): Wisdom check, pass halves its odds
 //   mark    { route }   tell the pilot which lane the navigator would take
 // The dialogue checks and the minigames (S55) go through the engine itself.
-import { check, skillBonus } from '../core.js';
+import { check, skillBonus, rollText } from '../core.js';
 import { SYSTEMS, damageEnemy } from './skirmish.js';
 import { settleCardFight } from './travel.js';
 
@@ -102,8 +102,8 @@ function scan(ctx) {
   const r = check(ctx.crew, CREW_RULES.scan, ctx.rng.next);
   if (r.pass) trip.scanned = target;
   trip.log.push(r.pass
-    ? `${crewName(ctx)} scans ahead (${r.roll}+${r.bonus} vs ${r.dc}): trouble spotted early, the next jump is safer.`
-    : `${crewName(ctx)} scans ahead (${r.roll}+${r.bonus} vs ${r.dc}): nothing but static.`);
+    ? `${crewName(ctx)} scans ahead (${rollText(r)}): trouble spotted early, the next jump is safer.`
+    : `${crewName(ctx)} scans ahead (${rollText(r)}): nothing but static.`);
   return null;
 }
 

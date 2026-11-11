@@ -125,6 +125,8 @@ export async function createDogfightServer({
     ".js": "text/javascript; charset=utf-8",
     ".css": "text/css; charset=utf-8",
     ".png": "image/png",
+    ".webp": "image/webp",
+    ".jpg": "image/jpeg",
     ".json": "application/json",
     ".webmanifest": "application/manifest+json",
     ".mp3": "audio/mpeg",

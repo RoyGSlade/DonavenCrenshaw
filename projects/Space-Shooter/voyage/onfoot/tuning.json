@@ -1,0 +1,170 @@
+{
+  "sidearm": {
+    "damage": 10,
+    "rate": 0.14,
+    "speed": 640,
+    "spread": 0.035,
+    "life": 0.9
+  },
+  "dash": {
+    "speed": 520,
+    "time": 0.16,
+    "cooldown": 0.9,
+    "iframes": 0.22
+  },
+  "footSpeed": 185,
+  "footHp": 60,
+  "enemies": {
+    "target": {
+      "name": "Practice target",
+      "art": "scout-drone",
+      "hp": 20,
+      "radius": 15,
+      "speed": 0,
+      "brain": "still"
+    },
+    "drone": {
+      "name": "Scout drone",
+      "art": "scout-drone",
+      "hp": 18,
+      "radius": 15,
+      "speed": 140,
+      "brain": "rush",
+      "touch": 8
+    },
+    "bug": {
+      "name": "Swarm bug",
+      "art": "swarm-bug",
+      "hp": 10,
+      "radius": 11,
+      "speed": 185,
+      "brain": "rush",
+      "touch": 6
+    },
+    "grunt": {
+      "name": "Raider",
+      "art": "raider-grunt",
+      "hp": 34,
+      "radius": 15,
+      "speed": 95,
+      "brain": "gunner",
+      "range": [
+        170,
+        290
+      ],
+      "shot": {
+        "damage": 7,
+        "speed": 360,
+        "rate": 1.3,
+        "burst": 3,
+        "gap": 0.12,
+        "spread": 0.08
+      }
+    },
+    "heavy": {
+      "name": "Raider heavy",
+      "art": "raider-heavy",
+      "hp": 70,
+      "radius": 19,
+      "speed": 62,
+      "brain": "gunner",
+      "range": [
+        110,
+        210
+      ],
+      "shot": {
+        "damage": 5,
+        "speed": 320,
+        "rate": 1.8,
+        "burst": 1,
+        "pellets": 5,
+        "spread": 0.32
+      }
+    },
+    "turret": {
+      "name": "Turret",
+      "art": "turret",
+      "hp": 50,
+      "radius": 20,
+      "speed": 0,
+      "brain": "turret",
+      "turn": 1.8,
+      "shot": {
+        "damage": 6,
+        "speed": 400,
+        "rate": 0.55,
+        "burst": 1,
+        "spread": 0.04
+      }
+    },
+    "gundrone": {
+      "name": "Gun drone",
+      "art": "gun-drone",
+      "hp": 26,
+      "radius": 17,
+      "speed": 120,
+      "brain": "gunner",
+      "range": [
+        200,
+        320
+      ],
+      "shot": {
+        "damage": 5,
+        "speed": 380,
+        "rate": 0.9,
+        "burst": 2,
+        "gap": 0.1,
+        "spread": 0.06
+      }
+    }
+  },
+  "mining": {
+    "duration": 24,
+    "heatUp": 0.5,
+    "coolDown": 0.75,
+    "band": 0.24,
+    "fast": 0.14,
+    "slow": 0.03,
+    "hot": 0.07,
+    "jamTime": 1.6,
+    "chunks": 4
+  },
+  "puzzleHintAfter": 6,
+  "hack": {
+    "time": 16,
+    "timePerLevel": -1.5,
+    "window": 0.62,
+    "windowPerLevel": -0.07,
+    "speed": 2.1,
+    "speedStep": 0.45,
+    "misses": 2,
+    "tumblers": 3
+  },
+  "activities": {
+    "_note": "Which contract activity ids (ROUND2-CONTRACT section 9) onfoot understands and what each changes. The size comes from the skill's own level data in data.js (value). mod: hack/lock minigames: time = extra seconds, pins = fewer pins on a pick lock; mine: sweet = sweet spot bigger by that share, yield = extra ore from a run; explore: scan = scanner reach bigger by that share; repair: time = share of repair time saved.",
+    "hack.time": {
+      "activity": "hack",
+      "mod": "time"
+    },
+    "lock.pins": {
+      "activity": "lock",
+      "mod": "pins"
+    },
+    "mine.sweet-spot": {
+      "activity": "mine",
+      "mod": "sweet"
+    },
+    "salvage.yield": {
+      "activity": "mine",
+      "mod": "yield"
+    },
+    "explore.scan": {
+      "activity": "explore",
+      "mod": "scan"
+    },
+    "repair.time": {
+      "activity": "repair",
+      "mod": "time"
+    }
+  }
+}

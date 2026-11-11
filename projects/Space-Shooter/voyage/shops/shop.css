@@ -1,0 +1,28 @@
+/* The shop counter (voyage/shops/ui.js). Uses the hangar's colour tokens when present. */
+.sh { display: grid; gap: 10px; min-width: 0; }
+.sh-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.sh-head h3 { margin: 0; font-size: 20px; }
+.sh-wallet { margin: 0; font: 700 15px Consolas, monospace; color: var(--orange, #ffad72); }
+.sh-blurb { margin: 0; color: var(--muted, #9fb3c8); line-height: 1.5; }
+.sh-discounts { margin: 0; padding-left: 18px; color: var(--cyan, #81e6df); font-size: 13px; }
+.sh-tabs { display: flex; gap: 6px; }
+.sh-tabs .is-on { border-color: var(--cyan, #81e6df); color: var(--cyan, #81e6df); }
+.sh-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.sh-item { display: flex; justify-content: space-between; gap: 12px; padding: 10px 12px; border: 1px solid var(--line, #24384d); border-radius: 6px; background: #0e1b29; transition: border-color .2s, transform .2s; }
+.sh-item.is-off { opacity: .72; }
+.sh-item.is-bought { border-color: var(--cyan, #81e6df); transform: scale(1.01); }
+.sh-what { min-width: 0; }
+.sh-what p { margin: 4px 0 0; font-size: 13px; line-height: 1.45; }
+.sh-tag, .sh-owned { display: block; font-size: 12px; color: var(--cyan, #81e6df); }
+.sh-risk { color: var(--orange, #ffad72); }
+.sh-buy { display: grid; gap: 6px; justify-items: end; align-content: start; flex: none; max-width: 45%; }
+.sh-price { font: 700 14px Consolas, monospace; }
+.sh-price s { opacity: .6; font-weight: 400; }
+.sh-buy button { max-width: 100%; white-space: normal; text-align: center; }
+.sh-gear ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.sh-gear li { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.sh-gear h4, .sh-deals h4 { margin: 6px 0; font: 700 12px Consolas, monospace; letter-spacing: .1em; color: var(--muted, #9fb3c8); }
+.sh-note { min-height: 1.4em; margin: 0; font-size: 14px; }
+.sh-empty { color: var(--muted, #9fb3c8); }
+@media (max-width: 520px) { .sh-item { flex-direction: column; } .sh-buy { justify-items: start; max-width: none; } }
+@media (prefers-reduced-motion: reduce) { .sh-item { transition: none; } .sh-item.is-bought { transform: none; } }

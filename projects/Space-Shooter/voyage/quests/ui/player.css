@@ -62,3 +62,16 @@
 @media (max-width: 420px) {
   .qs-slot { width: 44px; height: 44px; }
 }
+
+/* Round 2 (content): stage directions, spoken lines, the giver's closing word and the reward moment. */
+.qs-beat { margin: 0 0 10px; font-size: 14px; line-height: 1.55; font-style: italic; color: var(--muted, #9fb3c8); }
+.qs-said { font-size: 16px; }
+.qs-end-say { display: flex; gap: 12px; align-items: flex-start; margin: 0 0 12px; }
+.qs-end-say .qs-portrait { flex: none; border-radius: 10px; }
+.qs-end.is-win .qs-rewards li { animation: qs-reward-in .45s ease-out both; }
+.qs-end.is-win .qs-rewards li:nth-child(2) { animation-delay: .12s; }
+.qs-end.is-win .qs-rewards li:nth-child(3) { animation-delay: .24s; }
+.qs-end.is-win .qs-rewards li:nth-child(4) { animation-delay: .36s; }
+.qs-end.is-win .qs-rewards li:nth-child(n+5) { animation-delay: .48s; }
+@keyframes qs-reward-in { from { opacity: 0; transform: translateY(6px) scale(.96); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .qs-end.is-win .qs-rewards li { animation: none; } }

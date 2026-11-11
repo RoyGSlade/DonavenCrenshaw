@@ -16,10 +16,11 @@ import { ITEMS, GIVERS } from '../core.js';
 import { startQuest, view, act, shipFor } from '../engine.js';
 import { shipRaceBonus } from '../parts/race.js';
 import { CIPHER_SYMBOLS } from '../parts/cipher.js';
-import { createLiveFight, stepLiveFight, liveFightResult } from '../live/dogfight.js';
+import { openLiveFightOverlay } from '../../races/liveFightUi.js';
 import { giverPortrait } from '../../art.js';
-import { RULES, NEUTRAL } from '../../../dogfight/simulation.js';
-import { drawCustomShip } from '../../../dogfight/shipArt.js';
+import { BADGES_DATA } from '../data/badges.js';
+import { UNLOCK_NAMES } from '../../data.js';
+import { playFootFight } from '../../onfoot/footFight.js';
 
 // ---- tiny DOM helper ------------------------------------------------------
 export function el(tag, props = {}, ...children) {
@@ -49,7 +50,10 @@ export function eventText(e) {
   if (e.type === 'skill-points') return `${sign(e.amount)} skill point${e.amount === 1 ? '' : 's'}`;
   if (e.type === 'flag') return 'A Knock fragment';
   if (e.type === 'max-rep') return `Max rep with ${GIVERS[e.giver]?.name || e.giver}`;
-  if (e.type === 'unlock') return `Unlocked ${e.id}`;
+  if (e.type === 'unlock') {
+    const badge = e.id.startsWith('badge:') ? BADGES_DATA.badges[e.id.slice(6)] : null;
+    return badge ? `New badge: ${badge.name}` : `Unlocked ${UNLOCK_NAMES[e.id] || e.id}`;
+  }
   return e.type;
 }
 
@@ -76,8 +80,17 @@ export function shipSummary(save) {
  * crew(): the crew aboard (voyage/crew/card.js card) or null; crew actions
  * come in through crewAct (P11).
  */
-export function createQuestPlayer({ root, session, status = () => {}, onEnd = () => {}, onExit = () => {}, onChange = () => {}, exitLabel = 'Back to the job board', announceEvents = true, crew = () => null }) {
+// voice({ line, speaker, text }): a spoken node just came on screen (once per
+// visit). The page plays the line's audio (story's voiceUrl / speak) and keeps
+// showing `text` from the view; without a voice hook the player is text only.
+// liveRace(view): fly the race leg live on today's racing engine (voyage/races/
+// launch.js); the time comes back through raceResult(). null: quick rolls only.
+// crewLive(frame): live fight frames for the crew's turret scope (P11, races lane).
+// rolled(rolls): every attempt the engine rolled in a step, in order (contract
+// section 6), so the page can show each on the dice.
+export function createQuestPlayer({ root, session, status = () => {}, onEnd = () => {}, onExit = () => {}, onChange = () => {}, exitLabel = 'Back to the job board', announceEvents = true, crew = () => null, voice = null, liveRace = null, crewLive = () => {}, rolled = () => {} }) {
   let current = null; // { quest, run }
+  let voiced = '';
   let lastEvents = [];
   let ui = { key: '', cipher: [], riddle: [] };
   let keyHandlers = [];
@@ -86,6 +99,7 @@ export function createQuestPlayer({ root, session, status = () => {}, onEnd = ()
   function start(quest, seed) {
     const started = startQuest(quest, session.get(), { seed, now: Date.now() });
     current = { quest, run: started.run };
+    if (started.rolls?.length) { try { rolled(started.rolls); } catch (error) { console.warn('Stardust: showing a roll failed', error); } }
     lastEvents = started.events;
     session.commit(started.save, started.events, { run: started.run });
     render();
@@ -106,6 +120,7 @@ export function createQuestPlayer({ root, session, status = () => {}, onEnd = ()
     const result = act(current.quest, current.run, session.get(), action, { now: Date.now(), crew: crew() });
     if (result.error) return result.error;
     current.run = result.run;
+    if (result.rolls?.length) { try { rolled(result.rolls); } catch (error) { console.warn('Stardust: showing a roll failed', error); } }
     lastEvents = result.events;
     const lines = shownEvents(result.events);
     if (announceEvents && lines.length) status(lines.map(eventText).join(' · '));
@@ -123,7 +138,7 @@ export function createQuestPlayer({ root, session, status = () => {}, onEnd = ()
   /** A crew action from player two (P11). Returns an error for the crew, or null. */
   function crewAct(action) {
     if (!current) return 'The captain has not taken a job yet.';
-    if (live) return 'The captain is flying this fight live. Hold on.';
+    if (live) return live.crewAct(action);
     if (!crew()) return 'No crew aboard.';
     return apply({ ...action, type: 'crew' });
   }
@@ -161,6 +176,11 @@ export function createQuestPlayer({ root, session, status = () => {}, onEnd = ()
     if (!ui.key.startsWith(`${v.node}:`) || !v.part) ui = { key: uiKey, cipher: [], riddle: [] };
     ui.key = uiKey;
     const ship = shipSummary(save);
+    const said = `${current.quest.id}:${v.node}:${current.run.visits?.[v.node] || 0}`;
+    if (v.line && voice && said !== voiced && !v.part) {
+      voiced = said;
+      try { voice({ line: v.line, speaker: v.speaker, text: v.text }); } catch (error) { console.warn('Stardust: quest voice failed', error); }
+    }
     const head = el('div', { class: 'qs-quest-head' },
       el('h2', { class: 'qs-title', text: v.quest.title }),
       el('p', { class: 'qs-where', text: `${v.locationName} · seed ${current.run.seed}` }),
@@ -179,8 +199,9 @@ export function createQuestPlayer({ root, session, status = () => {}, onEnd = ()
     return el('section', { class: 'qs-dialogue', 'aria-live': 'polite' },
       v.portrait ? portrait(v.portrait) : null,
       el('div', { class: 'qs-box' },
+        v.beat ? el('p', { class: 'qs-beat', text: v.beat }) : null,
         v.speaker ? el('p', { class: 'qs-speaker', text: v.speaker }) : null,
-        el('p', { class: 'qs-text', text: v.text }),
+        el('p', { class: v.speaker ? 'qs-text qs-said' : 'qs-text', text: v.text }),
         choiceList(v.choices, choice => doAct({ type: 'choose', index: choice.index })),
       ),
     );
@@ -192,7 +213,11 @@ export function createQuestPlayer({ root, session, status = () => {}, onEnd = ()
     return el('section', { class: `qs-end ${win ? 'is-win' : 'is-fail'}` },
       el('p', { class: 'qs-eyebrow', text: win ? 'JOB DONE' : 'JOB FAILED' }),
       el('h3', { text: v.ended.title }),
-      el('p', { class: 'qs-text', text: v.ended.text }),
+      v.beat ? el('p', { class: 'qs-beat', text: v.beat }) : null,
+      v.speaker ? el('div', { class: 'qs-end-say' },
+        v.portrait ? portrait(v.portrait, 72) : null,
+        el('div', {}, el('p', { class: 'qs-speaker', text: v.speaker }), el('p', { class: 'qs-text qs-said', text: v.ended.text })),
+      ) : el('p', { class: 'qs-text', text: v.ended.text }),
       lines.length ? el('ul', { class: 'qs-rewards' }, ...lines.map(e => el('li', { text: eventText(e) }))) : el('p', { class: 'qs-note', text: 'No reward.' }),
       v.ended.death ? el('p', { class: 'qs-locked qs-death', text: 'Your captain died on this job. Half of their skill points are gone, the rest are refunded to spend again, and their stats were rolled fresh.' }) : null,
       v.ended.followUp ? el('p', { class: 'qs-note', text: `Follow-up: ${QUESTS[v.ended.followUp]?.title || v.ended.followUp} is on the board again.` }) : null,
@@ -290,13 +315,17 @@ export function createQuestPlayer({ root, session, status = () => {}, onEnd = ()
     );
     const moves = el('div', { class: 'qs-moves' }, ...p.moves.map(m => button(`${m.label} [${MOVE_KEYS[m.id].toUpperCase()}]`, () => send({ move: m.id }))));
     for (const m of p.moves) keyHandlers.push({ key: MOVE_KEYS[m.id], fn: () => send({ move: m.id }) });
+    // Quest fights: live first, the roll as the fallback (Donaven, 2026-11-11).
+    if (p.live) box.append(el('p', { class: 'qs-live-row' }, button('Fly it live (Dogfight combat)', () => openLiveFight(p.live.setup, e.name, send), { class: 'primary' }), el('small', { text: ' Arrows or WASD to fly, Space to fire, Shift to boost. Touch buttons on phones.' })));
+    if (p.live) box.append(el('p', { class: 'qs-note', text: 'Or fight it turn by turn, one roll at a time:' }));
     box.append(moves);
-    if (p.live) box.append(el('p', { class: 'qs-live-row' }, button('Fly it live (Dogfight combat)', () => openLiveFight(p.live.setup, e.name, send)), el('small', { text: ' Arrows or WASD to fly, Space to fire, Shift to boost. Touch buttons on phones.' })));
     return box;
   }
 
   function renderFoot(p) {
-    const box = el('section', { class: 'qs-part' }, el('h3', { text: `${p.title}: ${p.enemy.name}` }), el('p', { class: 'qs-note', text: p.note }));
+    const box = el('section', { class: 'qs-part qs-foot' }, el('h3', { text: `${p.title}: ${p.enemy.name}` }), el('p', { class: 'qs-note', text: p.note }));
+    // Live first, the roll as the fallback.
+    if (p.live) box.append(el('p', { class: 'qs-live-row' }, button('Fight it live (on foot)', () => openFootFight(p.live.setup, p.enemy.name), { class: 'primary' }), el('small', { text: ' WASD to move, mouse or arrows to aim and fire, Space to dash. Sticks on phones.' })));
     box.append(el('div', { class: 'qs-moves' }, ...p.moves.map(m => button(m.label, () => doAct({ move: m.id })))));
     return box;
   }
@@ -354,88 +383,48 @@ export function createQuestPlayer({ root, session, status = () => {}, onEnd = ()
   // ---- race leg ----
   function renderRace(p) {
     const secs = ms => `${(ms / 1000).toFixed(2)} s`;
+    const live = liveRace ? el('div', { class: 'qs-moves qs-race-live' },
+      button('Fly it live', () => { if (!liveRace(p)) status('The race could not start. Try the quick roll instead.'); }, { class: 'primary', id: 'qs-race-live' }),
+      el('small', { text: ` Today's racing engine, your upgraded ship. Nothing goes on a leaderboard.` })) : null;
     return el('section', { class: 'qs-part qs-race' },
       el('h3', { text: p.title }),
       el('p', { class: 'qs-text', text: `${p.rival.name} will run ${p.track.title} in ${secs(p.targetMs)}. Beat it.` }),
-      el('p', { class: 'qs-note', text: `Your ship adds +${p.shipBonus || 0} to the roll (engine, thrusters and flying skills). Flying this leg live on today's racing engine comes later; for now it resolves with a Dexterity roll.` }),
+      live,
+      el('p', { class: 'qs-note', text: liveRace ? `Or settle it with a roll: your ship adds +${p.shipBonus || 0} (engine, thrusters and flying skills).` : `Your ship adds +${p.shipBonus || 0} to the roll (engine, thrusters and flying skills).` }),
       el('div', { class: 'qs-moves' }, ...p.moves.map(m => button(m.label, () => doAct({ type: 'quick', style: m.id })))),
     );
   }
 
-  // ---- live fight on Dogfight's simulation ----
-  const KEYMAP = { ArrowLeft: 'left', a: 'left', A: 'left', ArrowRight: 'right', d: 'right', D: 'right', ArrowUp: 'thrust', w: 'thrust', W: 'thrust', ArrowDown: 'brake', s: 'brake', S: 'brake', ' ': 'fire', Shift: 'boost' };
-
-  function openLiveFight(setup, name, send) {
+  // ---- live on-foot fight (voyage/onfoot) ----
+  function openFootFight(setup, name) {
     if (live) return;
-    const canvas = el('canvas', { class: 'qs-live-canvas', width: '800', height: '480', 'aria-label': `Live fight against ${name}` });
-    const held = new Set();
-    const touchBtn = (label, key) => el('button', { type: 'button', class: 'qs-touch', onpointerdown: e => { e.preventDefault(); held.add(key); }, onpointerup: () => held.delete(key), onpointerleave: () => held.delete(key), onpointercancel: () => held.delete(key) }, label);
-    const overlay = el('div', { class: 'qs-live', role: 'dialog', 'aria-label': `Live fight: ${name}` },
-      el('p', { class: 'qs-eyebrow', text: `LIVE FIGHT · ${name}` }),
-      canvas,
-      el('div', { class: 'qs-touch-row' }, touchBtn('◀', 'left'), touchBtn('▶', 'right'), touchBtn('Thrust', 'thrust'), touchBtn('Boost', 'boost'), touchBtn('Fire', 'fire')),
-      button('Stop and fight turn by turn instead', () => close(null)),
-    );
-    document.body.append(overlay);
-    const match = createLiveFight(setup);
-    const onKey = down => e => {
-      const key = KEYMAP[e.key];
-      if (!key) return;
-      e.preventDefault();
-      if (down) held.add(key); else held.delete(key);
-    };
-    const kd = onKey(true), ku = onKey(false);
-    addEventListener('keydown', kd); addEventListener('keyup', ku);
-    let last = performance.now(), acc = 0, raf = 0;
-    live = { close };
-    function input() {
-      if (!held.size) return NEUTRAL;
-      return { ...NEUTRAL, turn: (held.has('right') ? 1 : 0) - (held.has('left') ? 1 : 0), thrust: held.has('thrust'), brake: held.has('brake'), boost: held.has('boost'), fire: held.has('fire') };
-    }
-    function frame(now) {
-      acc = Math.min(0.25, acc + (now - last) / 1000); last = now;
-      while (acc >= RULES.step) { stepLiveFight(match, input(), setup); acc -= RULES.step; }
-      draw(canvas, match, setup);
-      const result = liveFightResult(match, setup);
-      if (result) return close(result);
-      raf = requestAnimationFrame(frame);
-    }
-    function close(result) {
-      cancelAnimationFrame(raf);
-      removeEventListener('keydown', kd); removeEventListener('keyup', ku);
-      overlay.remove();
+    live = { close: () => {} };
+    playFootFight(setup, { character: session.get().character, title: name }).then(result => {
       live = null;
-      if (result) send({ type: 'live', outcome: result.outcome, hull: result.hull });
-    }
-    raf = requestAnimationFrame(frame);
+      if (result) doAct({ type: 'live', outcome: result.outcome, hp: result.hp });
+    });
   }
 
-  function draw(canvas, match, setup) {
-    const ctx = canvas.getContext('2d');
-    const unit = Math.min(canvas.width / RULES.width, canvas.height / RULES.height);
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.fillStyle = '#070d17'; ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.setTransform(unit, 0, 0, unit, 0, 0);
-    ctx.strokeStyle = '#2a4152'; ctx.lineWidth = 1 / unit; ctx.strokeRect(0, 0, RULES.width, RULES.height);
-    for (const o of match.obstacles || []) {
-      if (o.hp === 0) continue;
-      ctx.fillStyle = '#1b2b3a'; ctx.beginPath(); ctx.arc(o.x, o.y, o.radius, 0, Math.PI * 2); ctx.fill();
-    }
-    ctx.fillStyle = '#ffe3cf';
-    for (const b of match.bullets) { ctx.beginPath(); ctx.arc(b.x, b.y, 0.09, 0, Math.PI * 2); ctx.fill(); }
-    match.ships.forEach((ship, i) => {
-      if (ship.hp <= 0) return;
-      ctx.save(); ctx.translate(ship.x, ship.y); ctx.rotate(ship.angle + Math.PI / 2);
-      drawCustomShip(ctx, ship.loadout, ship.hit > 0);
-      ctx.restore();
-      const pct = ship.hp / setup.hp[i];
-      ctx.fillStyle = i ? '#ffad72' : '#81e6df';
-      ctx.fillRect(ship.x - 0.6, ship.y - 0.95, 1.2 * pct, 0.12);
+  /** The time from a live race leg ({ timeMs, finished }). Returns the engine's error, or null. */
+  function raceResult(result) {
+    if (!current || current.run.part?.kind !== 'race') return 'No race leg waiting.';
+    const error = apply({ type: 'live', timeMs: result.timeMs, finished: result.finished !== false });
+    if (error) status(error);
+    return error;
+  }
+
+  // ---- live fight on Dogfight's simulation ----
+  // The overlay, the crew's turret and repairs and the ability bar live in
+  // voyage/races/liveFightUi.js (races lane); this only hands the result back.
+  function openLiveFight(setup, name, send) {
+    if (live) return;
+    live = openLiveFightOverlay({
+      setup, name,
+      pilot: session.get().character,
+      crew,
+      onFrame: (frame) => crewLive(frame),
+      onResult: (result) => { live = null; if (result) send({ type: 'live', outcome: result.outcome, hull: result.hull }); else render(); },
     });
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.fillStyle = '#eaf4f5'; ctx.font = '14px Consolas, monospace';
-    if (match.phase === 'countdown') ctx.fillText(`Get ready… ${Math.ceil(match.countdown)}`, 16, 24);
-    ctx.fillText(`Hull ${Math.round((match.ships[0].hp / RULES.damage) * setup.hitValue[0])}`, 16, canvas.height - 14);
   }
 
   function render() {
@@ -453,7 +442,7 @@ export function createQuestPlayer({ root, session, status = () => {}, onEnd = ()
   }
 
   return {
-    start, resume, render, keydown, exit, crewAct,
+    start, resume, render, keydown, exit, crewAct, raceResult,
     get active() { return Boolean(current); },
     get quest() { return current?.quest || null; },
     get live() { return Boolean(live); },

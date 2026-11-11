@@ -18,7 +18,7 @@
 // Rewards, costs and requirements use core's formats (INTERFACES.md section 3).
 import { hashSeed, roller } from './rng.js';
 import { roll, fill } from './rolls.js';
-import { grant, spend, meets, missing, check, combatStats, GIVERS, STAT_NAMES } from './core.js';
+import { grant, spend, meets, missing, check, combatStats, GIVERS, STAT_NAMES, rollText, checkChance, collectRolls } from './core.js';
 import { SECTORS } from './data/sectors.js';
 import { createSkirmish, viewSkirmish, actSkirmish, hullAfter } from './parts/skirmish.js';
 import { createFoot, viewFoot, actFoot } from './parts/foot.js';
@@ -185,6 +185,8 @@ function enter(quest, nodeId, ctx, now, depth = 0) {
   if (node.set) Object.assign(run.local, node.set);
   if (node.onEnter) ctx.grant(resolveReward(node.onEnter, run));
   if (node.location) run.location = node.location;
+  // hull: a patch (or a knock) to the ship's hull for the rest of this quest.
+  if (Number.isFinite(node.hull)) run.hull = Math.max(1, Math.min(run.hullMax, run.hull + node.hull));
 
   if (node.type === 'branch') {
     const hit = (node.cases || []).find(c => reqMet(c.when, run, ctx.save));
@@ -232,8 +234,11 @@ function choiceFor(choice, run, save) {
   return { ...choice, ...over, variants: undefined };
 }
 
-function checkText(chk) {
-  return `${STAT_NAMES[chk.stat] || chk.stat} check, ${chk.dc} or more on d6 + ${chk.stat}`;
+// "Charisma: 2d6 + 2 vs 8 (72%)": the roll the player is about to make, with their odds.
+function checkText(chk, c) {
+  const mod = (c?.stats?.[chk.stat] ?? 3) - 3;
+  const pct = Math.round(checkChance(c, chk) * 100);
+  return `${STAT_NAMES[chk.stat] || chk.stat}: 2d6 ${mod < 0 ? '-' : '+'} ${Math.abs(mod)} vs ${chk.dc} (${pct}%)`;
 }
 
 // ---- public API --------------------------------------------------------
@@ -243,7 +248,12 @@ export function rollQuest(quest, seed) {
   return roll(quest.rolls || {}, roller(holder));
 }
 
-export function startQuest(quest, save, { seed = 1, now = 0 } = {}) {
+export function startQuest(quest, save, options = {}) {
+  const { out, rolls } = collectRolls(() => startQuestInner(quest, save, options));
+  return { ...out, rolls };
+}
+
+function startQuestInner(quest, save, { seed = 1, now = 0 } = {}) {
   const ship = shipFor(save);
   const run = {
     v: RUN_VERSION,
@@ -288,6 +298,11 @@ export function view(quest, run, save) {
     title: fill(node.title || '', s),
     speaker: node.speaker ? fill(node.speaker, s) : null,
     portrait: node.portrait || null,
+    // beat: the stage direction shown before a spoken line (never voiced).
+    // line: the voice line id for the spoken text (content/LINES-quests.json);
+    // the page shows `text` and plays the line's audio, if any.
+    beat: node.beat ? fill(node.beat, s) : '',
+    line: node.line || null,
     text: fill(node.text || '', s),
     hull: run.hull,
     hullMax: run.hullMax,
@@ -308,7 +323,7 @@ export function view(quest, run, save) {
         locked: reasons.length > 0,
         reasons: reasons.length && choice.lockedHint ? [choice.lockedHint] : reasons,
         hidden: reasons.length > 0 && Boolean(choice.hideLocked),
-        check: choice.check ? { stat: choice.check.stat, dc: choice.check.dc, text: checkText(choice.check) } : null,
+        check: choice.check ? { stat: choice.check.stat, dc: choice.check.dc, text: checkText(choice.check, save.character), chance: checkChance(save.character, choice.check) } : null,
         cost: choice.cost || null,
       };
     }).filter(c => !c.hidden);
@@ -341,7 +356,7 @@ function choose(quest, run, ctx, node, index, roller, now) {
   if (choice.check) {
     const r = check(roller, choice.check, ctx.rng.next);
     const who = roller === ctx.save.character ? '' : `${roller.name || 'Your crew'} takes it. `;
-    pushLog(run, `${who}${STAT_NAMES[choice.check.stat] || choice.check.stat} check: ${r.roll} + ${r.bonus} = ${r.total} vs ${r.dc}, ${r.pass ? 'pass' : 'fail'}.`);
+    pushLog(run, `${who}${STAT_NAMES[choice.check.stat] || choice.check.stat}: ${rollText(r)}, ${r.pass ? 'pass' : 'fail'}.`);
     run.lastCheck = r;
     target = r.pass ? choice.check.pass : choice.check.fail;
   }
@@ -369,7 +384,16 @@ function actAsCrew(quest, run, ctx, node, action, now) {
   return null;
 }
 
-export function act(quest, runIn, saveIn, action, { now = 0, crew = null } = {}) {
+/**
+ * One action. Also returns `rolls`: every attempt rolled during it, in order
+ * (core's attempt shape plus `who`), so the page can roll a die for each.
+ */
+export function act(quest, runIn, saveIn, action, options = {}) {
+  const { out, rolls } = collectRolls(() => actInner(quest, runIn, saveIn, action, options));
+  return { ...out, rolls: out.error ? [] : rolls };
+}
+
+function actInner(quest, runIn, saveIn, action, { now = 0, crew = null } = {}) {
   if (runIn.ended) return { run: runIn, save: saveIn, events: [], error: 'This quest is over.' };
   if (runIn.steps >= MAX_STEPS) return { run: runIn, save: saveIn, events: [], error: 'Too many steps.' };
   const run = structuredClone(runIn);

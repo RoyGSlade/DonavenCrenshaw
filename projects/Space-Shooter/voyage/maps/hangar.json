@@ -1,0 +1,73 @@
+{
+  "id": "hangar",
+  "name": "The hangar",
+  "kind": "exterior",
+  "tile": 48,
+  "floor": "plating",
+  "ambient": "hangar",
+  "grid": [
+    "###########..#############",
+    "#........................#",
+    "#..::::::::::............#",
+    "#..:........:............#",
+    "#..:........:............#",
+    "#..:........:............#",
+    "#..:........:............#",
+    "#..::::::::::............#",
+    "#.........................",
+    "#///......................",
+    "#........................#",
+    "#........................#",
+    "#..................../////",
+    "#........................#",
+    "#........................#",
+    "##########..##############"
+  ],
+  "props": [
+    {"art":"player-ship","at":[4,2],"size":[8,4],"block":true,"station":"pad","interact":{"kind":"station","id":"pad","label":"Your ship: upgrades and Chibby's parts"}},
+    {"art":"nav-console","at":[1,2],"size":[1,2],"block":true,"station":"hatch","interact":{"kind":"station","id":"hatch","label":"Launch hatch: fly out, races and crew"}},
+    {"art":"job-board","at":[14,1],"size":[3,1],"block":true,"station":"board","interact":{"kind":"station","id":"board","label":"Job board"}},
+    {"art":"bunk","at":[21,1],"size":[2,1],"block":true},
+    {"art":"engineering-console","at":[23,1],"size":[1,1],"block":true,"station":"quarters","interact":{"kind":"station","id":"quarters","label":"Your bunk: skills and stats"}},
+    {"art":"locker","at":[24,3],"size":[1,1],"block":true},
+    {"art":"locker","at":[24,4],"size":[1,1],"block":true,"station":"locker","interact":{"kind":"station","id":"locker","label":"Mel's gear wall"}},
+    {"art":"locker","at":[24,5],"size":[1,1],"block":true},
+    {"art":"cargo-crate","at":[1,10],"size":[1,1],"block":"low"},
+    {"art":"cargo-crate","at":[2,10],"size":[1,1],"block":"low"},
+    {"art":"cargo-crate","at":[1,11],"size":[1,1],"block":"low"},
+    {"art":"fuel-barrel","at":[14,7],"size":[1,1],"block":"low"},
+    {"art":"fuel-barrel","at":[15,7],"size":[1,1],"block":"low"},
+    {"art":"supply-pod","at":[22,8],"size":[2,2],"block":true},
+    {"art":"salvage-pile","at":[3,13],"size":[2,2],"block":true},
+    {"art":"ore-slab","at":[5,13],"size":[2,2],"block":true,"station":"scrap","interact":{"kind":"mine","id":"scrap-seam","label":"The seam Ralph dug up: drill it"}},
+    {"art":"drill-rig","at":[7,13],"size":[2,2],"block":true},
+    {"art":"dog-bed","at":[9,13],"size":[2,1],"block":false,"station":"kennel"},
+    {"art":"range-mat","at":[14,10],"size":[6,4],"block":false,"station":"range","interact":{"kind":"range","id":"range","label":"Mel's range"},"layer":"floor","under":true},
+    {"art":"cargo-crate","at":[14,13],"size":[1,1],"block":"low"},
+    {"art":"fuel-barrel","at":[20,10],"size":[1,1],"block":"low"}
+  ],
+  "npcs": [
+    {"id":"chibby","at":[13,5],"face":"left","wander":0.5,"station":"pad"},
+    {"id":"ralph","at":[9.5,12.6],"face":"down","wander":1.6,"station":"kennel"},
+    {"id":"mel","at":[23,4],"face":"left","wander":0.4,"station":"locker"}
+  ],
+  "doors": [
+    {"id":"workshop","at":[11,0],"size":[2,1],"to":"workshop","arrive":"from-hangar","label":"Chibby's workshop"},
+    {"id":"mel-bay","at":[25,8],"size":[1,2],"to":"mel-bay","arrive":"from-hangar","label":"Mel's fitting bay"},
+    {"id":"backroom","at":[25,12],"size":[1,1],"to":"edna-den","arrive":"from-hangar","label":"Edna's back room","station":"backroom"},
+    {"id":"concourse","at":[10,15],"size":[2,1],"to":"cantina","arrive":"from-hangar","label":"Concourse: the cantina"},
+    {"id":"ramp","at":[7,7],"size":[2,1],"look":"ramp","to":"ship","arrive":"from-hangar","label":"Board your ship"}
+  ],
+  "spawns": {
+    "default": [10, 9, "up"],
+    "ship-ramp": [8, 8, "down"],
+    "from-workshop": [11.5, 1, "down"],
+    "from-mel-bay": [24, 8.5, "left"],
+    "from-edna-den": [24, 12, "left"],
+    "from-cantina": [10.5, 14, "up"]
+  },
+  "zones": [
+    {"id":"range","at":[14,10],"size":[6,4],"station":"range"},
+    {"id":"pad","at":[3,2],"size":[11,7],"station":"pad"}
+  ]
+}

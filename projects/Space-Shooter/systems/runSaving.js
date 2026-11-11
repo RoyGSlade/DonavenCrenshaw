@@ -3,6 +3,7 @@
 // Challenge links (?challenge=<id>), circuit splits and the finish breakdown
 // live here too; their wording comes from challenges.js.
 import { equippedBuild } from './shipBuild.js';
+import { allowPersistentWrite } from './questRace.js';
 import { createRunRecorder, describeResult, clock, LEVEL_BOARDS } from './hubRuns.js';
 import {
   CIRCUITS, parseChallengeId, classifyChallenge, challengeNote, pilotName, splitLine, runningLine, referenceSoFar,
@@ -332,6 +333,8 @@ async function paintBoard() {
 // that wakes up mid-session starts saving from the next run, and the player is
 // told plainly while it can't.
 export async function initRunSaving() {
+  // A quest race for the new game (systems/questRace.js) saves nothing, like the lab.
+  if (!allowPersistentWrite('saving')) return;
   if (!recorder.enabled) return;
   // The equipped ship, flight settings and designs go to the account of a signed-in pilot.
   const sync = startHubSync(recorder);

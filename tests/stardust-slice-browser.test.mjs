@@ -1,7 +1,8 @@
 // The slice's whole loop in a real browser, from today's hangar:
 //   preview card -> new hangar -> sign on a captain -> Jobs -> take Cold Run from
 //   Hask -> play it (trip, events, talk or fight, seal) -> reward in the Ledger ->
-//   buy an upgrade in the Ship tab -> the next job starts with the stronger ship.
+//   buy an upgrade at the pad -> the next job starts with the stronger ship.
+// Round 2: the hangar is a place; stations open in place (scripts/stardust-hangar-kit.mjs).
 // Then a phone-size check of the job board. Opt-in like the other browser
 // checks (STARDUST_BROWSER_TEST=1); run it on its own, capped:
 //   STARDUST_BROWSER_TEST=1 ~/kauto-3d/bin/capped 6G timeout 600 node --test tests/stardust-slice-browser.test.mjs
@@ -9,6 +10,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { loadPlaywright, startServer, blockHub, bootStardust, DESKTOP, PHONE } from '../scripts/stardust-test-kit.mjs';
+import { signOnCaptain, openStation } from '../scripts/stardust-hangar-kit.mjs';
 
 const HANGAR = '/projects/Space-Shooter/voyage/';
 const SAVE_KEY = 'stardust.voyage.v1';
@@ -117,18 +119,13 @@ test('slice loop: preview card -> captain -> job -> reward -> upgrade -> a stron
   page.on('console', (m) => { if (m.type() === 'error' && !/api\.donavencrenshaw\.com|Failed to load resource/.test(m.text())) errors.push(m.text()); });
   await page.goto(`${server.origin}${HANGAR}?newgame=1`);
 
-  // No captain yet: the Jobs tab sends you to sign on.
-  await page.getByRole('tab', { name: 'Jobs' }).click();
-  assert.match(await page.locator('#pane-jobs').innerText(), /Sign on a captain first/);
-  await page.locator('#pane-jobs button.primary').click();
-  await page.locator('#vy-name').fill('Vela Quint');
-  await page.getByRole('button', { name: 'Roll stats and sign on' }).click();
-  await page.locator('#pane-captain h2', { hasText: 'Vela Quint' }).waitFor();
+  // No captain yet: the captain's licence opens; roll the stats and sign.
+  await signOnCaptain(page, 'Vela Quint');
   const signed = await readSave(page);
   assert.deepEqual({ money: signed.money, scrap: signed.items.scrap }, { money: 80, scrap: 4 }, 'start kit');
 
   // The board: three givers with portraits and their jobs.
-  await page.getByRole('tab', { name: 'Jobs' }).click();
+  await openStation(page, 'board');
   assert.equal(await page.locator('.vy-giver').count(), 3);
   assert.equal(await page.locator('.vy-giver img.vy-portrait').evaluateAll((imgs) => imgs.filter((i) => i.complete && i.naturalWidth > 0).length), 3, 'portraits load');
   const hullBefore = Number(await page.locator('.vy-jobship').getAttribute('data-ship-hull'));
@@ -152,20 +149,20 @@ test('slice loop: preview card -> captain -> job -> reward -> upgrade -> a stron
   assert.ok(runs.some((r) => r.seen.includes('travel')), 'jobs travel on the sector map');
 
   // The Ledger shows the reward: credits, Hask's rep and the job record.
-  await page.getByRole('tab', { name: 'Ledger' }).click();
+  await openStation(page, 'quarters', 'ledger');
   assert.equal(await page.locator('[data-money]').innerText(), `${afterJobs.money.toLocaleString('en-US')} cr`);
   assert.match(await page.locator('#pane-ledger [data-rep="hask"]').innerText(), new RegExp(`^${afterJobs.rep.hask} / 100`));
   assert.match(await page.locator('[data-job="cold-run"]').innerText(), /Cold Run/);
 
   // Spend it: hull tier 1.
-  await page.getByRole('tab', { name: 'Ship' }).click();
+  await openStation(page, 'pad');
   await page.locator('[data-upgrade="hull"]').click();
   const upgraded = await readSave(page);
   assert.equal(upgraded.upgrades.hull, 1);
   assert.ok(upgraded.money < afterJobs.money, 'credits were spent');
 
   // The next job flies the stronger ship.
-  await page.getByRole('tab', { name: 'Jobs' }).click();
+  await openStation(page, 'board');
   assert.equal(Number(await page.locator('.vy-jobship').getAttribute('data-ship-hull')), hullBefore + 20);
   await page.locator('[data-quest="cold-run"] button').click();
   await page.locator('#pane-jobs .qs-quest-head').waitFor();
@@ -174,7 +171,7 @@ test('slice loop: preview card -> captain -> job -> reward -> upgrade -> a stron
   // A job in progress survives a reload and picks up where it was.
   await page.reload();
   await page.locator('#pane-jobs .qs-quest-head').waitFor();
-  assert.equal(await page.getByRole('tab', { name: 'Jobs' }).getAttribute('aria-selected'), 'true');
+  assert.equal(await page.locator('#hg-sheet').getAttribute('data-open-station'), 'board', 'the job board opens with the job');
   const resumed = await playJob(page);
   assert.match(resumed.text, /JOB DONE|JOB FAILED/);
   assert.deepEqual(errors, []);
@@ -188,7 +185,7 @@ test('slice loop: preview card -> captain -> job -> reward -> upgrade -> a stron
   const phoneErrors = [];
   p2.on('pageerror', (e) => phoneErrors.push(e.message));
   await p2.goto(`${server.origin}${HANGAR}?newgame=1`);
-  await p2.getByRole('tab', { name: 'Jobs' }).click();
+  await openStation(p2, 'board');
   await p2.locator('.vy-giver').first().waitFor();
   assert.equal(await p2.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, 'no sideways scroll at 390 px');
   await p2.locator('[data-quest="cold-run"] button').click();

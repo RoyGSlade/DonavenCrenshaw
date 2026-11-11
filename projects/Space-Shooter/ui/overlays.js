@@ -1,4 +1,5 @@
 import { playMusic, stopMusic, playGateMotif, setMusicVolume, setSfxVolume } from '../audio.js';
+import { isQuestRace } from '../systems/questRace.js';
 import { state } from '../state.js';
 import { startNewRun, retryRun, quitRun } from '../engine/index.js';
 import { exitArena } from '../engine/modeManager.js';
@@ -66,12 +67,14 @@ function leaveChallenge() {
 let lastLaunch = { kind: 'network', preview: false };
 /** Leave the hangar and fly: { kind: 'network' | 'custom' | 'weekly', preview, event, ship }. ship: 'equipped' flies a weekly preview as the equipped garage build. */
 export function launchRun(options = {}) {
-  if (!canLaunchWeeklyMode(options)) { toast('This mode is retired or awaiting release. Fly the current weekly track.'); return; }
+  // A quest race (systems/questRace.js) saves nothing; the layout's release window does not apply.
+  const quest = options.kind === 'weekly' && options.questRace && isQuestRace() ? options.questRace : null;
+  if (!quest && !canLaunchWeeklyMode(options)) { toast('This mode is retired or awaiting release. Fly the current weekly track.'); return; }
   // The first activation hides the launch screen; queued taps must not start another run.
   if (!state.ui.showStartOverlay && !state.ui.showEndOverlay) return;
   dismissFinishScreen();
   const kind = ['custom', 'weekly'].includes(options.kind) ? options.kind : 'network';
-  lastLaunch = { kind, preview: !!options.preview, event: kind === 'weekly' ? options.event : null, ship: kind === 'weekly' && options.preview ? options.ship || null : null };
+  lastLaunch = { kind, preview: !!options.preview, event: kind === 'weekly' ? options.event : null, ship: kind === 'weekly' && options.preview ? options.ship || null : null, ...(quest ? { questRace: quest } : {}) };
   hide('starmap-start');
   hide('starmap-end');
   state.ui.showStartOverlay = false;

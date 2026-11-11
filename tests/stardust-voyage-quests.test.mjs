@@ -20,8 +20,14 @@ import { liveFightSetup, createLiveFight, stepLiveFight, liveFightResult, enemyI
 import { GLYPHS } from '../projects/Space-Shooter/systems/progression.js';
 
 const low = () => ({ ...emptySave(), character: testCharacter({ cha: 1, con: 1, dex: 1, wis: 1 }) });
-const high = () => ({ ...emptySave(), money: 500, items: { scrap: 4, permit: 1, 'mining-drill': 1 }, flags: { 'fragment-1': 1 }, character: testCharacter({ cha: 6, con: 6, dex: 6, wis: 6 }) });
-const mid = () => ({ ...emptySave(), money: 200, items: { scrap: 2 }, character: testCharacter({ cha: 3, con: 4, dex: 3, wis: 4 }) });
+// Every shop item a quest can ask for, and every skill gate's level (round 2:
+// skills unlock options, stats only add to rolls).
+const KIT = { scrap: 20, ore: 10, circuit: 4, 'fuel-cell': 4, permit: 1, 'mining-drill': 1, 'breach-kit': 1, 'scan-goggles': 1, medkit: 1, 'hull-patch': 1, 'shield-cell': 1, 'ghost-transponder': 1, 'syndicate-codes': 1 };
+const SKILLED = { pilot: 3, navigator: 2, smuggler: 2, gunner: 2, brawler: 1, 'hard-stare': 2, mechanic: 3, hacker: 2, salvager: 1, lockpick: 2, trader: 2, demolitions: 1 };
+const high = () => ({ ...emptySave(), money: 500, items: { ...KIT }, flags: { 'fragment-1': 1, 'fragment-2': 1, 'fragment-3': 1, 'edna-teapot': 1 }, character: { ...testCharacter({ cha: 6, con: 6, dex: 6, wis: 6, str: 6 }), earned: 40, skills: { ...SKILLED } } });
+const mid = () => ({ ...emptySave(), money: 200, items: { scrap: 2 }, character: testCharacter({ cha: 3, con: 4, dex: 3, wis: 4, str: 4 }) });
+// A weak captain with a full kit bag: the only way to need a medkit or a patch.
+const kitted = () => ({ ...emptySave(), money: 500, items: { ...KIT }, character: testCharacter({ cha: 1, con: 1, dex: 1, wis: 1, str: 1 }) });
 const quest = QUESTS[SLICE_QUEST];
 
 function partCtx(save, seed = 1) {
@@ -77,8 +83,9 @@ test('a quest rolls the same pieces from the same seed, and different pieces acr
   assert.deepEqual([...setups].sort(), ['decoy', 'tailing', 'waiting']);
 });
 
-test('all five quests, the givers and the event cards pass validation', () => {
-  assert.equal(Object.keys(QUESTS).length, 5);
+test('all fifteen quests, the givers and the event cards pass validation', () => {
+  assert.equal(Object.keys(QUESTS).length, 15);
+  for (const [id, giver] of Object.entries(QUEST_GIVERS)) assert.equal(giver.quests.length, 5, `${id} gives five jobs`);
   for (const q of Object.values(QUESTS)) assert.deepEqual(validateQuest(q), [], q.id);
   assert.deepEqual(validateEvents(), []);
   for (const q of Object.values(QUESTS)) assert.ok(QUEST_GIVERS[q.giver] && GIVERS[q.giver], `${q.id} giver ${q.giver}`);
@@ -89,7 +96,7 @@ test('every node and every ending of every quest is reachable with real actions'
   for (const q of Object.values(QUESTS)) {
     const nodes = new Set();
     const ends = new Set();
-    for (const save of [low(), high(), mid()]) {
+    for (const save of [low(), high(), mid(), kitted()]) {
       const result = explore(q, save, { seeds: [1, 2, 3, 4, 5, 6] });
       assert.deepEqual(result.errors, [], q.id);
       result.nodes.forEach(n => nodes.add(n));
@@ -126,7 +133,7 @@ test('the engine never mutates the quest, the run or the save it is given', () =
   assert.notEqual(next.run, start.run);
 });
 
-test('dialogue: stats unlock options, local flags unlock options, costs lock when unaffordable', () => {
+test('dialogue: skills unlock options, local flags unlock options, costs lock when unaffordable', () => {
   const findAmbush = save => {
     for (let seed = 1; seed < 200; seed++) {
       if (rollQuest(quest, seed).setup !== 'waiting') continue;
@@ -139,19 +146,20 @@ test('dialogue: stats unlock options, local flags unlock options, costs lock whe
   const nameDrop = poor.choices.find(c => c.label.startsWith('Name the debt'));
   assert.equal(nameDrop.locked, true);
   assert.equal(nameDrop.reasons.length, 1);
-  assert.match(nameDrop.reasons[0], /^Needs Charisma 5\.?$/);
+  assert.match(nameDrop.reasons[0], /^Needs the Hard Stare skill\.?$/, 'a skill gate names its level even while locked');
   assert.equal(poor.choices.find(c => c.label.startsWith('Vent two scrap')).locked, true);
   assert.equal(poor.choices.find(c => c.label.startsWith('Tap the Knock')).locked, true);
   const rich = findAmbush(high());
   assert.equal(rich.choices.find(c => c.label.startsWith('Name the debt')).locked, false);
   assert.equal(rich.choices.find(c => c.label.startsWith('Vent two scrap')).locked, false);
   const check = rich.choices.find(c => c.check);
-  assert.match(check.check.text, /check, \d+ or more/);
+  assert.match(check.check.text, /: 2d6 [+-] \d+ vs \d+ \(\d+%\)$/);
+  assert.ok(check.check.chance > 0 && check.check.chance < 1, 'the odds are shown and never certain');
   // Picking a locked option is refused and changes nothing.
   let { run, save } = startQuest(quest, low(), { seed: 1 });
   run = { ...run, node: 'ambush-waiting', part: null };
   const refused = act(quest, run, save, { type: 'choose', index: 3 });
-  assert.match(refused.error, /^Needs Charisma 5\.?$/);
+  assert.match(refused.error, /^Needs the Hard Stare skill\.?$/);
   assert.equal(refused.run, run);
 });
 

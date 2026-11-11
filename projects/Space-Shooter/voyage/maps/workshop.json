@@ -1,0 +1,50 @@
+{
+  "id": "workshop",
+  "name": "Chibby's workshop",
+  "kind": "interior",
+  "tile": 48,
+  "room": "workshop",
+  "floor": "deck",
+  "ambient": "workshop",
+  "grid": [
+    "##############",
+    "#............#",
+    "#............#",
+    "#....====....#",
+    "#....====....#",
+    "#............#",
+    "#............#",
+    "#............#",
+    "#............#",
+    "######..######"
+  ],
+  "props": [
+    {"art":"workbench","at":[1,1],"size":[2,1],"block":"low","station":"pad","interact":{"kind":"station","id":"pad","label":"Chibby's bench: ship upgrades"}},
+    {"art":"tool-rack","at":[3,1],"size":[2,1],"block":true},
+    {"art":"welding-cart","at":[5,1],"size":[1,1],"block":"low"},
+    {"art":"parts-shelf","at":[7,1],"size":[2,1],"block":true},
+    {"art":"parts-shelf","at":[9,1],"size":[2,1],"block":true},
+    {"art":"vending-machine","at":[12,1],"size":[1,1],"block":true},
+    {"art":"reactor-core","at":[6,3],"size":[3,3],"block":true,"interact":{"kind":"console","id":"engine-on-stand","label":"The engine on the stand"}},
+    {"art":"toolbox-chest","at":[1,5],"size":[1,1],"block":"low"},
+    {"art":"pipe-run","at":[12,3],"size":[1,2],"block":true},
+    {"art":"dog-bed","at":[11,5],"size":[1,1],"block":false,"station":"kennel"},
+    {"art":"floor-vent","at":[3,6],"size":[1,1],"block":false,"layer":"floor"},
+    {"art":"oil-drum","at":[1,7],"size":[1,1],"block":"low"},
+    {"art":"oil-drum","at":[1,8],"size":[0.85,0.85],"block":"low"},
+    {"art":"crate-large","at":[9,7],"size":[2,1],"block":"low"},
+    {"art":"scrap-bin","at":[12,7],"size":[1,1],"block":"low"},
+    {"art":"salvage-pile","at":[2,7],"size":[2,2],"block":true}
+  ],
+  "npcs": [
+    {"id":"chibby","at":[2,2],"face":"down","wander":0.5},
+    {"id":"ralph","at":[11,5],"face":"left","wander":1.2,"follow":true}
+  ],
+  "doors": [
+    {"id":"out","at":[6,9],"size":[2,1],"to":"hangar","arrive":"from-workshop","label":"Back to the hangar"}
+  ],
+  "spawns": {
+    "default": [6.5,8,"up"],
+    "from-hangar": [6.5,8,"up"]
+  }
+}

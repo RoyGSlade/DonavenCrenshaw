@@ -59,4 +59,31 @@ export const ENEMIES = Object.freeze({
     damage: [4, 8],
     parley: false,
   },
+  // On-foot crews (fight mode 'foot'). The on-foot shooter picks its enemy kinds
+  // from the name (voyage/onfoot/rules/shooter.js questFightSetup): a drone/bot
+  // name brings drones, a bug/crawler name brings bugs, anything else raiders.
+  boarders: {
+    name: { pick: ['Two raider boarders', 'A biscuit-mad boarding party'] },
+    hp: { range: [20, 34] },
+    movement: 'hold',
+    abilities: [],
+    damage: [4, 8],
+    parley: false,
+  },
+  crawlers: {
+    name: { pick: ['Rock crawlers', 'A swarm of tunnel bugs'] },
+    hp: { range: [16, 30] },
+    movement: 'charge',
+    abilities: [],
+    damage: [3, 6],
+    parley: false,
+  },
+  sentries: {
+    name: { pick: ['Warden sentry drones', 'Old security bots'] },
+    hp: { range: [24, 40] },
+    movement: 'hold',
+    abilities: [],
+    damage: [5, 9],
+    parley: false,
+  },
 });
