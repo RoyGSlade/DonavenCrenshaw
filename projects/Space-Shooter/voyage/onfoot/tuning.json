@@ -141,142 +141,30 @@
     "tumblers": 3
   },
   "activities": {
-    "_note": "What each activity modifier id does. Skill levels below grant them. Story's ROUND2-CONTRACT ids win when published.",
-    "activity:hack.time+": {
+    "_note": "Which contract activity ids (ROUND2-CONTRACT section 9) onfoot understands and what each changes. The size comes from the skill's own level data in data.js (value). mod: hack/lock minigames: time = extra seconds, pins = fewer pins on a pick lock; mine: sweet = sweet spot bigger by that share, yield = extra ore from a run; explore: scan = scanner reach bigger by that share; repair: time = share of repair time saved.",
+    "hack.time": {
       "activity": "hack",
-      "time": 4,
-      "text": "+4 s on the hack timer"
+      "mod": "time"
     },
-    "activity:hack.window+": {
-      "activity": "hack",
-      "window": 0.25,
-      "text": "Bypass windows 25% wider"
+    "lock.pins": {
+      "activity": "lock",
+      "mod": "pins"
     },
-    "activity:hack.trace+": {
-      "activity": "hack",
-      "misses": 1,
-      "text": "One more miss before the trace trips"
-    },
-    "activity:puzzle.hint+": {
-      "activity": "puzzle",
-      "hintSooner": 2,
-      "text": "Puzzle hints come two turns sooner"
-    },
-    "activity:mine.sweet+": {
+    "mine.sweet-spot": {
       "activity": "mine",
-      "band": 0.06,
-      "text": "Bigger sweet spot on the drill"
+      "mod": "sweet"
     },
-    "activity:mine.cool+": {
+    "salvage.yield": {
       "activity": "mine",
-      "heatUp": -0.12,
-      "text": "The drill heats up slower"
+      "mod": "yield"
     },
-    "activity:foot.steady+": {
-      "activity": "foot",
-      "spread": -0.3,
-      "text": "Steadier sidearm"
+    "explore.scan": {
+      "activity": "explore",
+      "mod": "scan"
     },
-    "activity:foot.reload+": {
-      "activity": "foot",
-      "rate": -0.15,
-      "text": "Faster follow-up shots"
-    },
-    "activity:foot.dash+": {
-      "activity": "foot",
-      "dash": -0.2,
-      "text": "Dash recovers faster"
+    "repair.time": {
+      "activity": "repair",
+      "mod": "time"
     }
-  },
-  "skillLevels": [
-    {
-      "skill": "slicer",
-      "level": 1,
-      "unlocks": [
-        {
-          "type": "activity",
-          "id": "activity:hack.time+"
-        },
-        {
-          "type": "activity",
-          "id": "activity:puzzle.hint+"
-        },
-        {
-          "type": "access",
-          "id": "access:slicer.1",
-          "text": "Staff-only doors"
-        }
-      ]
-    },
-    {
-      "skill": "slicer",
-      "level": 2,
-      "unlocks": [
-        {
-          "type": "activity",
-          "id": "activity:hack.window+"
-        },
-        {
-          "type": "activity",
-          "id": "activity:hack.trace+"
-        },
-        {
-          "type": "access",
-          "id": "access:slicer.2",
-          "text": "Secure doors and safes"
-        }
-      ]
-    },
-    {
-      "skill": "patch-kit",
-      "level": 1,
-      "unlocks": [
-        {
-          "type": "activity",
-          "id": "activity:mine.cool+"
-        }
-      ]
-    },
-    {
-      "skill": "patch-kit",
-      "level": 2,
-      "unlocks": [
-        {
-          "type": "activity",
-          "id": "activity:mine.sweet+"
-        }
-      ]
-    },
-    {
-      "skill": "brawler",
-      "level": 1,
-      "unlocks": [
-        {
-          "type": "activity",
-          "id": "activity:foot.reload+"
-        }
-      ]
-    },
-    {
-      "skill": "brawler",
-      "level": 2,
-      "unlocks": [
-        {
-          "type": "activity",
-          "id": "activity:foot.steady+"
-        }
-      ]
-    },
-    {
-      "skill": "evasive",
-      "level": 1,
-      "unlocks": [
-        {
-          "type": "activity",
-          "id": "activity:foot.dash+"
-        }
-      ]
-    }
-  ],
-  "statBoons": true
+  }
 }

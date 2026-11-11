@@ -21,13 +21,13 @@
     {"art":"locker","at":[1,1],"size":[1,1],"block":true},
     {"art":"locker","at":[2,1],"size":[1,1],"block":true},
     {"art":"locker","at":[3,1],"size":[1,1],"block":true},
-    {"art":"weapon-rack","at":[5,1],"size":[2,0.9],"block":true},
-    {"art":"display-case","at":[8,1],"size":[2,0.9],"block":true},
-    {"art":"armour-stand","at":[5.2,3.6],"size":[1.6,1.6],"block":true,"station":"locker","interact":{"kind":"station","id":"locker","label":"Mel's gear: fit out"}},
-    {"art":"shop-counter","at":[1,6.6],"size":[3,1],"block":"low"},
-    {"art":"parts-shelf","at":[7,7],"size":[2,0.9],"block":true},
+    {"art":"weapon-rack","at":[5,1],"size":[2,1],"block":true},
+    {"art":"display-case","at":[8,1],"size":[2,1],"block":true},
+    {"art":"armour-stand","at":[5,3],"size":[2,2],"block":true,"station":"locker","interact":{"kind":"station","id":"locker","label":"Mel's gear: fit out"}},
+    {"art":"shop-counter","at":[1,6],"size":[3,1],"block":"low"},
+    {"art":"parts-shelf","at":[7,7],"size":[2,1],"block":true},
     {"art":"potted-plant","at":[10,7],"size":[1,1],"block":true},
-    {"art":"armour-stand","at":[8.4,5.9],"size":[1,1],"block":true}
+    {"art":"armour-stand","at":[9,5],"size":[1,1],"block":true}
   ],
   "npcs": [
     {"id":"mel","at":[8,3],"face":"left","wander":0.5}

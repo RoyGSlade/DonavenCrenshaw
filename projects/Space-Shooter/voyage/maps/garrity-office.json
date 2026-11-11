@@ -17,20 +17,20 @@
     "#####..#####"
   ],
   "props": [
-    {"art":"desk","at":[7,1.4],"size":[3,1],"block":"low"},
-    {"art":"office-chair","at":[8.1,0.9],"size":[0.8,0.6],"block":false},
+    {"art":"desk","at":[7,1],"size":[3,1],"block":"low"},
+    {"art":"office-chair","at":[6,2],"size":[1,1],"block":false},
     {"art":"salvage-pile","at":[1,1],"size":[2,2],"block":true,"interact":{"kind":"console","id":"scrap","label":"Scrap pile"}},
-    {"art":"salvage-pile","at":[1,4.5],"size":[1.6,1.6],"block":true},
+    {"art":"salvage-pile","at":[1,4],"size":[2,2],"block":true},
     {"art":"crate-large","at":[10,4],"size":[1,2],"block":true},
-    {"art":"oil-drum","at":[4,5.5],"size":[1,1],"block":"low"},
-    {"art":"workbench","at":[4,2.5],"size":[2,1],"block":"low"},
-    {"art":"scrap-bin","at":[3.2,1.2],"size":[0.9,0.9],"block":"low"},
-    {"art":"filing-cabinet","at":[10.2,1],"size":[0.8,0.9],"block":true},
-    {"art":"tool-rack","at":[7,6.1],"size":[2,0.9],"block":true},
-    {"art":"pipe-run","at":[10.2,2.2],"size":[0.8,1.6],"block":true}
+    {"art":"oil-drum","at":[4,5],"size":[1,1],"block":"low"},
+    {"art":"workbench","at":[4,2],"size":[2,1],"block":"low"},
+    {"art":"scrap-bin","at":[3,1],"size":[1,1],"block":"low"},
+    {"art":"filing-cabinet","at":[10,1],"size":[1,1],"block":true},
+    {"art":"tool-rack","at":[7,6],"size":[2,1],"block":true},
+    {"art":"pipe-run","at":[10,2],"size":[1,2],"block":true}
   ],
   "npcs": [
-    {"id":"garrity","at":[8,2.6],"face":"down","wander":0.7}
+    {"id":"garrity","at":[8,2],"face":"down","wander":0.7}
   ],
   "doors": [
     {"id":"out","to":"ship","arrive":"from-dock","label":"Back aboard your ship","at":[5,7],"size":[2,1]}

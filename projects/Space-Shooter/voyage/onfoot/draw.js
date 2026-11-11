@@ -4,6 +4,7 @@
 // bodies. Missing art draws a placeholder in the approved palette (gunmetal,
 // cyan lights, amber for hostiles).
 import { wallPiece } from './rules/walls.js';
+import { unturnedBox } from './rules/geom.js';
 import { sprite, groundImage, tileImage, castImage, roomArt, interiorProp, CAST_LOOK } from './assets.js';
 
 const TAU = Math.PI * 2;
@@ -185,11 +186,13 @@ export function buildStaticLayer(map, scale, { extraArt = null, isLocked = () =>
     const img = sprite(p.art);
     const meta = interiorProp(p.art);
     // A long counter or shelf made of one art piece repeats it along its length.
-    const nx = img && meta ? Math.max(1, Math.round(p.w / T / meta.tiles[0])) : 1;
-    const ny = img && meta ? Math.max(1, Math.round(p.h / T / meta.tiles[1])) : 1;
+    // The count is worked out in the UNturned box (a bar turned a quarter is still a row of counters).
+    const un = unturnedBox(p.w, p.h, p.rot);
+    const nx = img && meta ? Math.max(1, Math.round(un.w / T / meta.tiles[0])) : 1;
+    const ny = img && meta ? Math.max(1, Math.round(un.h / T / meta.tiles[1])) : 1;
     if (img && nx * ny > 1) {
-      const w = p.w / nx, h = p.h / ny;
-      for (let i = 0; i < nx; i++) for (let j = 0; j < ny; j++) drawContained(ctx, img, { ...p, x: p.x + i * w, y: p.y + j * h, w, h, cx: p.x + i * w + w / 2, cy: p.y + j * h + h / 2 });
+      const w = un.w / nx, h = un.h / ny;
+      for (let i = 0; i < nx; i++) for (let j = 0; j < ny; j++) drawContained(ctx, img, p, 0, { x: p.cx - un.w / 2 + i * w, y: p.cy - un.h / 2 + j * h, w, h });
     } else if (img) drawContained(ctx, img, p);
     else drawPropPlaceholder(ctx, p);
   }
@@ -209,7 +212,7 @@ function drawWallPiece(ctx, art, r, c, T, open, glass) {
 
 function drawDoor(ctx, d, locked) {
   const ratio = Math.max(d.w, d.h) / Math.min(d.w, d.h);
-  const img = ratio >= 1.5 && ratio <= 2.6 ? (!locked ? sprite('door-open') : sprite('door-closed')) : null;
+  const img = !d.look && ratio >= 1.5 && ratio <= 2.6 ? (!locked ? sprite('door-open') : sprite('door-closed')) : null;
   if (img) {
     ctx.save();
     if (d.w >= d.h) ctx.drawImage(img, d.x, d.y, d.w, d.h);
@@ -226,15 +229,26 @@ function drawDoor(ctx, d, locked) {
   ctx.restore();
 }
 
-/** Draws an image fitted inside a prop's box (keeps its aspect), with a soft shadow. */
-export function drawContained(ctx, img, p, pad = 0) {
-  const k = Math.min((p.w - pad * 2) / img.width, (p.h - pad * 2) / img.height);
+/**
+ * Draws an image fitted inside a prop's box (keeps its aspect), with a soft
+ * shadow. The prop's x/y/w/h are the footprint AFTER turning (map data), so a
+ * quarter-turned prop fits its art into the UNturned box and then rotates
+ * about the prop's centre (procgen API.md section 3): no squashing.
+ * `piece` (optional) is one tile of a repeated prop, as { x, y, w, h } in the
+ * unturned box; the whole prop's centre (p.cx, p.cy) is still the pivot.
+ */
+export function drawContained(ctx, img, p, pad = 0, piece = null) {
+  const rot = p.rot || 0;
+  const un = unturnedBox(p.w, p.h, rot);
+  const box = piece || { x: p.cx - un.w / 2, y: p.cy - un.h / 2, w: un.w, h: un.h };
+  const k = Math.min((box.w - pad * 2) / img.width, (box.h - pad * 2) / img.height);
   const w = img.width * k, h = img.height * k;
-  const x = p.x + (p.w - w) / 2, y = p.y + (p.h - h) / 2;
+  const x = box.x + (box.w - w) / 2, y = box.y + (box.h - h) / 2;
+  const mx = box.x + box.w / 2, my = box.y + box.h / 2; // this piece's own centre, before the turn
   ctx.save();
-  if (p.rot) { ctx.translate(p.cx, p.cy); ctx.rotate(p.rot); ctx.translate(-p.cx, -p.cy); }
+  if (rot) { ctx.translate(p.cx, p.cy); ctx.rotate(rot); ctx.translate(-p.cx, -p.cy); }
   ctx.globalAlpha = 0.35; ctx.filter = 'none';
-  ctx.fillStyle = '#000'; ctx.beginPath(); ctx.ellipse(p.cx + 4, p.cy + 6, w * 0.3, h * 0.3, 0, 0, TAU); ctx.fill();
+  ctx.fillStyle = '#000'; ctx.beginPath(); ctx.ellipse(mx + 4, my + 6, w * 0.3, h * 0.3, 0, 0, TAU); ctx.fill();
   ctx.globalAlpha = 1;
   ctx.drawImage(img, x, y, w, h);
   ctx.restore();

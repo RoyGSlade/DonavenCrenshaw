@@ -4,8 +4,8 @@ import { createHack, stepHack, splice, speedOf } from './rules/hack.js';
 import { fitCanvas } from './viewport.js';
 import { createEl } from './dom.js';
 
-export function playHack(root, { title = 'Lock', difficulty = 1, seed = 1, mods = {}, sound = () => {}, reducedMotion = () => false } = {}) {
-  const state = createHack({ difficulty, seed, mods });
+export function playHack(root, { title = 'Lock', difficulty = 1, seed = 1, mods = {}, pick = false, sound = () => {}, reducedMotion = () => false } = {}) {
+  const state = createHack({ difficulty, seed, mods, pick });
   const canvas = createEl('canvas', { class: 'of-hack-canvas', 'aria-hidden': 'true' });
   const status = createEl('p', { class: 'of-mine-status', role: 'status', 'aria-live': 'polite', text: `Set ${state.tumblers.length} tumblers. Splice when the sweep is in the lit window.` });
   const btn = createEl('button', { type: 'button', class: 'of-drill-btn primary', text: 'Splice' });

@@ -17,7 +17,7 @@ const mask = text => [...text].reduce((m, ch) => m | (LETTER[ch] || 0), 0);
 // an empty socket. `turns` scrambles them, so a layout is solvable by construction.
 export const LAYOUTS = Object.freeze(PUZZLES);
 
-export function createPuzzle(id = 'lockbox', { hintBonus = 0, freeHint = false } = {}) {
+export function createPuzzle(id = 'lockbox', { hintBonus = 0 } = {}) {
   const layout = LAYOUTS[id];
   if (!layout) throw new Error(`Unknown puzzle ${id}`);
   const tiles = layout.cells.map((cell, i) => {
@@ -28,14 +28,13 @@ export function createPuzzle(id = 'lockbox', { hintBonus = 0, freeHint = false }
     return { mask: m, solved, fixed, line: onLine(layout, i), role: cell.startsWith('*') ? 'source' : cell.startsWith('@') ? 'sink' : cell === '-' ? 'empty' : 'conduit' };
   });
   // Hints: after `hintAfter` turns that don't add power, one wrong tile on the
-  // solution line glows. Wisdom's hint tag brings it one turn sooner per point;
-  // a Wisdom of 6 starts with one shown (contract section 6).
+  // solution line glows. Wisdom's hint tag brings it one turn sooner per point
+  // (contract section 6; the old "Wisdom 6 starts with a hint" boon is gone).
   const state = { id, name: layout.name, blurb: layout.blurb || '', solvedText: layout.solvedText || 'Power is through.', cols: layout.cols, rows: layout.rows, tiles, moves: 0, solved: false, powered: [],
     hintAfter: Math.max(2, TUNING.puzzleHintAfter - Math.round(hintBonus)), idle: 0, best: 0, hint: null };
   refresh(state);
   if (state.solved) throw new Error(`Puzzle ${id} starts solved`);
   state.best = state.powered.length;
-  if (freeHint) state.hint = nextHint(state);
   return state;
 }
 

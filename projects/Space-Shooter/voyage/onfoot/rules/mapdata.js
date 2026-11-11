@@ -13,7 +13,13 @@
 //     grid: ['#######', '#.....#', ...],   // one char per tile, legend below
 //     legend: { 'g': { tile: 'grate' } },  // extra or overriding legend entries
 //     props: [{ art: 'console', at: [x, y], size: [w, h], rot: 0, block: true | 'low' | false,
+//               layer: 'floor' (drawn first, walked over: rugs, vents), under: true (things may stand on it),
 //               interact: { kind: 'console', id: 'nav', label: 'Nav console' } }],
+// `size` is the footprint on the grid AFTER turning (a 2x1 desk turned a quarter is 1x2, rot PI/2);
+// walking and the art both use it (the art is fitted unturned, then rotated: draw.js).
+// Props cover whole tiles for procgen's validator (voyage/procgen validateMap): keep `at` and `size`
+// on tile edges unless a prop really is smaller. `dress: { fresh: true }` marks a generic place that
+// is dressed again on every visit (maps/index.js enterMap); `dress: { seed }` dresses once.
 //     npcs: [{ id: 'chibby', at: [x, y], face: 'down', wander: 1.5 }],
 //     doors: [{ id: 'ramp', at: [x, y], size: [w, h], to: 'hangar', arrive: 'ship-ramp', label: 'Down the ramp' }],
 //     spawns: { default: [x, y, 'up'], 'from-hangar': [x, y, 'up'] },
@@ -23,9 +29,10 @@
 // and shots too but reads as cover; false is decoration you walk over.
 // Interact kinds the walk layer routes (world.js): npc, station, door, mine,
 // puzzle, hack, range, repair, console, ship. Gates (doors and interacts):
-// `locked` (a puzzle id), `access` (a skill-level access id, 'access:slicer.2'),
-// `requires` (core's requirement format, { skills: { slicer: 2 } }) and
-// `lock: { hack: level }` (hack it open). See onfoot.js gate().
+// `locked` (a puzzle id), `access` (a contract access id from ROUND2-CONTRACT section 9,
+// 'door.sealed', 'terminal', 'area.salvage'), `requires` (core's requirement format,
+// { skills: { hacker: 2 } }), `lock: { hack: level }` (bypass it with the hack minigame) and
+// `lock: { pick: level }` (pick it: needs Lockpick). See onfoot.js gate().
 
 export const FACES = Object.freeze({ up: -Math.PI / 2, down: Math.PI / 2, left: Math.PI, right: 0 });
 

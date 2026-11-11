@@ -10,7 +10,7 @@
 //   hooks.entered(map, world)      -> after every map change
 //   world.go(mapId, spawn) · world.fight(setup) -> Promise<{ outcome, hp }> · world.unlock(id)
 //   world.setNpcVisible(id, on) · world.follow(id, on) · world.pause() / resume() · world.destroy()
-import { getMap } from '../maps/index.js';
+import { enterMap } from '../maps/index.js';
 import { createWalker, stepWalker, nearestInteract, stepNpc, WALK } from './rules/walk.js';
 import { createFight, stepFight, STEP, ENEMY_TYPES } from './rules/shooter.js';
 import { buildStaticLayer, buildVignette, drawBody, drawContained, castSprite, castLook } from './draw.js';
@@ -53,7 +53,7 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
   const offArt = onArtLoaded(() => { layerDirty = true; });
 
   function setMap(id, spawnName = 'default') {
-    map = getMap(id);
+    map = enterMap(id); // a generic place (the cantina) is dressed fresh on every visit
     preload(map);
     const s = map.spawns[spawnName] || map.spawns.default;
     const keep = walker;
@@ -85,8 +85,8 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     if (p.art !== 'player-ship') return false;
     const img = shipArt?.();
     if (!img) return false;
-    // Tier art faces up with margin; draw it big inside the pad box.
-    drawContained(c, img, { ...p, x: p.x - p.w * 0.1, y: p.y - p.h * 0.25, w: p.w * 1.2, h: p.h * 1.5, cx: p.cx, cy: p.cy });
+    // Tier art faces up with margin; draw it big around the hull box (the ramp row under it stays walkable and clear).
+    drawContained(c, img, { ...p, w: p.w * 1.2, h: p.h * 1.75, cx: p.cx, cy: p.cy + p.h * 0.2 });
     return true;
   }
 
@@ -101,7 +101,7 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
   // A door's gate: null when open, else { reason, hack?: level, key } (puzzle locks here; skill and hack gates from the page).
   const doorGate = d => {
     const def = findDoorDef(d) || {};
-    if (def.locked && !opened.has(def.locked)) return { reason: 'Locked', key: def.locked };
+    if (def.locked && !opened.has(def.locked)) return { reason: 'Locked.', key: def.locked };
     const g = hooks.gate?.(def, map) || null;
     if (g?.hack && opened.has(`hack:${map.id}:${d.id}`)) return null;
     return g;
@@ -164,7 +164,7 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
       const gate = doorGate(d);
       if (gate?.hack) {
         const key = `hack:${map.id}:${d.id}`;
-        const r = hooks.interact?.({ kind: 'hack', id: key, level: gate.hack, label: d.label, door: true }, api);
+        const r = hooks.interact?.({ kind: 'hack', id: key, level: gate.hack, label: d.label, door: true, pick: gate.pick }, api);
         if (r?.then) { busy = true; input.enabled = false; r.then(res => { if (res?.success) { opened.add(key); layerDirty = true; } }).finally(() => { busy = false; input.enabled = true; }); }
         return;
       }
@@ -185,7 +185,7 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     if (!it) { prompt.hidden = true; input.prompt(null); return; }
     const d = it.kind === 'door' ? map.doors.find(x => x.id === it.id) : null;
     const gate = d ? doorGate(d) : hooks.gate?.(it, map) || null;
-    const label = it.kind === 'npc' ? `${VERBS.npc} ${it.label || castLook(it.id).name}` : gate ? `${it.label}: ${gate.hack ? `locked (hack, level ${gate.hack})` : gate.reason}` : it.label || `${VERBS[it.kind]} ${it.id}`;
+    const label = it.kind === 'npc' ? `${VERBS.npc} ${it.label || castLook(it.id).name}` : gate ? `${it.label}: ${gate.hack ? `locked (${gate.pick ? 'pick' : 'hack'}, level ${gate.hack})` : gate.reason}` : it.label || `${VERBS[it.kind]} ${it.id}`;
     const key = input.touch ? '' : 'E  ';
     const text = `${key}${label}`;
     if (prompt.textContent !== text) prompt.textContent = text;

@@ -17,15 +17,15 @@
     "#####..#####"
   ],
   "props": [
-    {"art":"desk","at":[4,2.2],"size":[4,1],"block":"low"},
-    {"art":"office-chair","at":[5.5,1.2],"size":[0.8,0.8],"block":false},
-    {"art":"nav-console","at":[1,1],"size":[2.4,0.9],"block":true,"interact":{"kind":"console","id":"lane-traffic","label":"Lane traffic board"}},
-    {"art":"engineering-console","at":[8.6,1],"size":[2.4,0.9],"block":true},
+    {"art":"desk","at":[5,2],"size":[3,1],"block":"low"},
+    {"art":"office-chair","at":[6,1],"size":[1,1],"block":false},
+    {"art":"nav-console","at":[1,1],"size":[3,1],"block":true,"interact":{"kind":"console","id":"lane-traffic","label":"Lane traffic board"}},
+    {"art":"engineering-console","at":[9,1],"size":[2,1],"block":true},
     {"art":"vending-machine","at":[10,5],"size":[1,1],"block":true,"interact":{"kind":"console","id":"tea","label":"Tea machine"}},
     {"art":"potted-plant","at":[1,5],"size":[1,1],"block":true},
-    {"art":"filing-cabinet","at":[1,3],"size":[0.9,0.9],"block":true},
-    {"art":"filing-cabinet","at":[1,3.9],"size":[0.9,0.9],"block":true},
-    {"art":"holo-table","at":[7.4,4.2],"size":[1.6,1.6],"block":true},
+    {"art":"filing-cabinet","at":[1,3],"size":[1,1],"block":true},
+    {"art":"filing-cabinet","at":[1,4],"size":[1,1],"block":true},
+    {"art":"holo-table","at":[7,4],"size":[2,2],"block":true},
     {"art":"safe","at":[10,3],"size":[1,1],"block":true}
   ],
   "npcs": [

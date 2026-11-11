@@ -4,8 +4,8 @@
 import { createPuzzle, rotateTile, parMoves, N, E, S, W } from './rules/puzzle.js';
 import { createEl } from './dom.js';
 
-export function playPuzzle(root, { id = 'lockbox', title = null, hintBonus = 0, freeHint = false, sound = () => {} } = {}) {
-  const state = createPuzzle(id, { hintBonus, freeHint });
+export function playPuzzle(root, { id = 'lockbox', title = null, hintBonus = 0, sound = () => {} } = {}) {
+  const state = createPuzzle(id, { hintBonus });
   const par = parMoves(id);
   const grid = createEl('div', { class: 'of-grid', role: 'grid', 'aria-label': 'Conduit tiles', style: `grid-template-columns: repeat(${state.cols}, 1fr)` });
   const status = createEl('p', { class: 'of-mine-status', role: 'status', 'aria-live': 'polite', text: 'Turn the tiles until power runs from the cell to the door.' });

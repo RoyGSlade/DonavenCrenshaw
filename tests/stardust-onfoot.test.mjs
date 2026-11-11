@@ -13,7 +13,9 @@ import { createPuzzle, rotateTile, parMoves, LAYOUTS } from '../projects/Space-S
 import { createHop, stepHop, autopilot, PLACES, POIS, GIVER_PLACE, steerToward } from '../projects/Space-Shooter/voyage/explore/rules.js';
 import { TUTORIAL_EVENTS, STATIONS, CAST, metEvent, createEmitter } from '../projects/Space-Shooter/voyage/onfoot/events.js';
 import { createFoot, viewFoot, actFoot } from '../projects/Space-Shooter/voyage/quests/parts/foot.js';
-import { effect, skillBonus } from '../projects/Space-Shooter/voyage/character.js';
+import { effect, hasUnlock, activityValue } from '../projects/Space-Shooter/voyage/character.js';
+import { SKILLS } from '../projects/Space-Shooter/voyage/data.js';
+import { missing } from '../projects/Space-Shooter/voyage/economy.js';
 
 const ROOT = new URL('../projects/Space-Shooter/voyage/', import.meta.url);
 const T = 48;
@@ -118,21 +120,30 @@ test('shooter: dashing dodges, the exit zone lets you flee, same seed same fight
   assert.equal(play(), play());
 });
 
-test('footStats reads the contract stat effects; quest enemies turn into bodies', () => {
+test('footStats reads the contract stat effects (Health, Dexterity, Strength); boons and skills do not touch the sidearm', () => {
   const plain = footStats(null);
   assert.equal(plain.hp, 60);
-  const tough = { stats: { cha: 3, con: 6, dex: 6, wis: 3 }, skills: { brawler: 2 }, earned: 0, permanent: 0 };
-  const s = footStats(tough, { effect, skillBonus });
-  assert.ok(s.hp > plain.hp, 'Constitution and Brawler add hp');
-  assert.ok(s.damage > plain.damage, 'fight tag adds damage');
-  assert.equal(s.guard, true); assert.equal(s.assist, true);
-  // The guard boon shrugs off the first hit.
+  assert.equal(plain.spreadScale, 1); assert.equal(plain.speedScale, 1); assert.equal(plain.melee, 0);
+  const tough = { stats: { str: 6, con: 6, dex: 6, wis: 3, cha: 3 }, skills: { brawler: 2, gunner: 3 }, earned: 0, permanent: 0 };
+  const s = footStats(tough, { effect });
+  assert.ok(s.hp > plain.hp, 'Health adds hp (foot.hp)');
+  assert.ok(s.speedScale > 1, 'Dexterity adds foot speed (foot.speed)');
+  assert.ok(s.spreadScale < 1, 'Dexterity steadies the aim (aim)');
+  assert.ok(s.melee > 0, 'Strength adds melee');
+  assert.equal(s.damage, plain.damage, 'no stat tag raises sidearm damage any more');
+  assert.equal(s.dashCooldown, plain.dashCooldown, 'dodge is not a stat tag any more');
+  assert.equal('guard' in s, false); assert.equal('assist' in s, false);
+  // A 6 in Health used to shrug off the first hit (a boon); boons are gone, so the first hit lands.
   const f = createFight({ map: fightMap, spawn: 'fight', enemies: [{ type: 'target', at: [18, 1] }], player: s });
   f.player.iframes = 0;
   const hp = f.player.hp;
   f.bullets.push({ x: f.player.x + 30, y: f.player.y, px: f.player.x + 30, py: f.player.y, vx: -600, vy: 0, owner: 'enemy', damage: 9, life: 1 });
   for (let i = 0; i < 10; i++) stepFight(f, {}, STEP);
-  assert.equal(f.player.hp, hp);
+  assert.equal(f.player.hp, hp - 9);
+  // A 6 in Dexterity used to pull the sidearm onto targets (a boon); the shot now goes where the reticle points.
+  const g = createFight({ map: fightMap, spawn: { x: 3 * T, y: 7.5 * T, angle: 0 }, enemies: [{ type: 'target', x: 6 * T, y: 9 * T }], player: s });
+  for (let i = 0; i < 20; i++) stepFight(g, { aim: 0, fire: true }, STEP);
+  assert.equal(g.enemies[0].hp, ENEMY_TYPES.target.hp, 'no aim assist: a shot straight ahead misses a target off to the side');
   assert.equal(questFightSetup({ name: 'Scrap drones', hp: 60 }).enemies.length, 4);
   assert.equal(questFightSetup({ name: 'Swarm', hp: 10 }).enemies[0].type, 'bug');
   for (const e of questFightSetup({ name: 'Guards', hp: 60 }).enemies) assert.ok(walkable(fightMap, (e.at[0] + 0.5) * T, (e.at[1] + 0.5) * T, 20));
@@ -150,7 +161,7 @@ test('mining: riding the green band digs it all out clean; never drilling gets n
   assert.deepEqual(good.reward, { items: { ore: MINING.chunks + 1 } });
   assert.equal(play(() => false).ore, 0);
   assert.ok(play(() => true).jams >= 1);
-  // Constitution digs faster (mine.speed).
+  // Strength digs faster (mine.speed).
   const fast = createMining({ seed: 5, speed: 1.4 }), slow = createMining({ seed: 5 });
   for (let i = 0; i < 120; i++) { for (const s of [fast, slow]) stepMining(s, { drill: s.heat < 0.6 }, 1 / 60); }
   assert.ok(fast.progress > slow.progress);
@@ -170,7 +181,7 @@ test('puzzle: every layout starts unsolved, solves by turning each line tile hom
   const decoy = stuck.tiles.findIndex(t => !t.line && t.role === 'conduit');
   for (let i = 0; i < stuck.hintAfter; i++) rotateTile(stuck, decoy);
   assert.ok(stuck.hint != null && stuck.tiles[stuck.hint].line, 'a hint points at a tile on the line');
-  assert.ok(createPuzzle('lockbox', { freeHint: true }).hint != null, 'Wisdom 6 starts with a hint');
+  assert.equal(createPuzzle('lockbox', { freeHint: true }).hint, null, 'no free hint any more: the Wisdom 6 boon is gone');
   assert.ok(createPuzzle('lockbox', { hintBonus: 2 }).hintAfter < stuck.hintAfter);
   const fixed = createPuzzle('lockbox');
   assert.equal(rotateTile(fixed, fixed.tiles.findIndex(t => t.role === 'source')).ok, false);
@@ -241,36 +252,67 @@ test('the on-foot layers name no CDN and use textContent for text (offline, safe
   }
 });
 
-import { activityMods, hasAccess, accessReason, unlocksFor } from '../projects/Space-Shooter/voyage/onfoot/rules/activity.js';
+import { activityMods, hasAccess, accessReason, unlocksFor, gateFor, ACTIVITY_IDS } from '../projects/Space-Shooter/voyage/onfoot/rules/activity.js';
 import { createHack, stepHack, splice, cursorInWindow } from '../projects/Space-Shooter/voyage/onfoot/rules/hack.js';
 import { wallPiece } from '../projects/Space-Shooter/voyage/onfoot/rules/walls.js';
-import { registerMap, setRoomDresser, mapDef } from '../projects/Space-Shooter/voyage/maps/index.js';
+import { registerMap, setRoomDresser, setVisitSeed, mapDef, enterMap, FRESH_TRIES } from '../projects/Space-Shooter/voyage/maps/index.js';
+import { validateMap, designChecks } from '../projects/Space-Shooter/voyage/procgen/index.js';
+import { dressRoom } from '../projects/Space-Shooter/voyage/procgen/dress.js';
+import { unturnedBox } from '../projects/Space-Shooter/voyage/onfoot/rules/geom.js';
+import TUNING from '../projects/Space-Shooter/voyage/onfoot/tuning.json' with { type: 'json' };
 
-test('skill levels upgrade the activities themselves and open access gates (one function each)', () => {
+test('skills unlock things by level: skill data lives only in data.js; onfoot reads it through character.js', () => {
+  // No stand-in table, no boons, in onfoot's own tuning.
+  assert.equal('skillLevels' in TUNING, false); assert.equal('statBoons' in TUNING, false);
+  // Every activity id onfoot understands is a real one in the skills' level data (contract section 9).
+  const real = new Set(SKILLS.flatMap(sk => sk.levels.flatMap(l => l.unlocks.filter(u => u.type === 'activity').map(u => u.id))));
+  for (const id of Object.keys(ACTIVITY_IDS)) assert.ok(real.has(id), `${id} is a contract activity id`);
+  for (const id of ['hack.time', 'mine.sweet-spot', 'repair.time', 'lock.pins', 'explore.scan', 'salvage.yield']) assert.ok(ACTIVITY_IDS[id], `onfoot maps ${id}`);
+
   const none = { skills: {} };
-  const slicer2 = { stats: { cha: 3, con: 3, dex: 3, wis: 3 }, earned: 0, permanent: 0, skills: { slicer: 2, brawler: 2, 'patch-kit': 2 } };
+  const hacker2 = { stats: { str: 3, con: 3, dex: 3, wis: 3, cha: 3 }, earned: 0, permanent: 0, skills: { hacker: 2, salvager: 1, lockpick: 2, mechanic: 2, navigator: 1 } };
+  const hacker3 = { ...hacker2, skills: { ...hacker2.skills, hacker: 3 } };
   assert.deepEqual(activityMods(none, 'hack').ids, []);
-  const h = activityMods(slicer2, 'hack');
-  assert.ok(h.time > 0 && h.window > 0 && h.misses > 0, 'Slicer 2: more time, wider window, an extra miss');
-  assert.ok(activityMods({ skills: { slicer: 1 } }, 'hack').window === undefined, 'level 1 alone gives only the time');
-  assert.ok(activityMods(slicer2, 'mine').band > 0);
-  assert.ok(activityMods(slicer2, 'foot').spread < 0);
-  assert.ok(activityMods(slicer2, 'puzzle').hintSooner > 0);
+  // Hacker: hack.time +5 s at rank 1, another +5 s at rank 3 (the values come from SKILLS).
+  assert.equal(activityMods({ skills: { hacker: 1 } }, 'hack').time, 5);
+  assert.equal(activityMods({ skills: { hacker: 2 } }, 'hack').time, 5, 'rank 2 gives access and an ability, no more time');
+  assert.equal(activityMods(hacker3, 'hack').time, 10);
+  assert.equal(activityMods(hacker3, 'hack').time, activityValue(hacker3, 'hack.time'));
+  assert.match(activityMods(hacker3, 'hack').texts[0], /hack timer/);
+  assert.ok(Math.abs(activityMods(hacker2, 'mine').sweet - 0.2) < 1e-9, 'Salvager 1: mining sweet spot 20% bigger');
+  assert.equal(activityMods(hacker2, 'lock').pins, 2, 'Lockpick 1+2: two pins fewer');
+  assert.ok(Math.abs(activityMods(hacker2, 'repair').time - 0.4) < 1e-9, 'Mechanic 1+2: repairs 40% quicker');
+  assert.ok(Math.abs(activityMods(hacker2, 'explore').scan - 0.25) < 1e-9, 'Navigator 1: scanner reach 25% further');
+  assert.equal(activityMods({ skills: { brawler: 2 } }, 'foot').ids.length, 0, 'no sidearm upgrades come from skills');
   // The minigames read them.
-  const easy = createHack({ difficulty: 2, seed: 3, mods: h }), hard = createHack({ difficulty: 2, seed: 3 });
-  assert.ok(easy.time > hard.time && easy.tumblers[0].width > hard.tumblers[0].width && easy.allowed > hard.allowed);
-  const f = footStats(slicer2, { effect, skillBonus, mods: activityMods(slicer2, 'foot') });
-  assert.ok(f.spreadScale < footStats(slicer2, { effect, skillBonus }).spreadScale);
-  assert.ok(createMining({ mods: activityMods(slicer2, 'mine') }).band > createMining({}).band);
-  // Access: "needs Slicer 2".
-  assert.equal(hasAccess(none, 'access:slicer.2'), false);
-  assert.equal(hasAccess(slicer2, 'access:slicer.2'), true);
-  assert.equal(hasAccess(slicer2, 'access:slicer.1'), true, 'a higher level holds the lower access');
-  assert.equal(accessReason('access:slicer.2', { skillName: () => 'Slicer' }), 'Needs Slicer 2');
-  assert.ok(unlocksFor(slicer2).every(u => ['activity', 'access', 'ability'].includes(u.type)));
-  // A page can hand in its own levels (story or core data).
-  const own = [{ skill: 'slicer', level: 1, unlocks: [{ type: 'activity', id: 'activity:hack.time+' }, { type: 'access', id: 'access:vault' }] }];
-  assert.equal(hasAccess({ skills: { slicer: 1 } }, 'access:vault', { levels: own }), true);
+  const easy = createHack({ difficulty: 2, seed: 3, mods: activityMods(hacker3, 'hack') }), hard = createHack({ difficulty: 2, seed: 3 });
+  assert.equal(easy.time, hard.time + 10);
+  assert.equal(easy.allowed, hard.allowed, 'no extra misses any more');
+  assert.equal(easy.tumblers[0].width, hard.tumblers[0].width, 'windows are not widened any more');
+  const mineBase = createMining({}), mineSkill = createMining({ mods: activityMods(hacker2, 'mine') });
+  assert.ok(Math.abs(mineSkill.band - mineBase.band * 1.2) < 1e-9);
+  const pins = (c, pick) => createHack({ difficulty: 1, seed: 2, mods: activityMods(c, 'lock'), pick }).tumblers.length;
+  assert.equal(pins(none, true), 3); assert.equal(pins(hacker2, true), 2, 'Lockpick takes pins off a pick lock, never below 2');
+  assert.equal(pins(hacker2, false), 3, 'a hack lock is not a pick lock');
+  // Salvage yield: one more part from a run that dug anything.
+  const dig = (mods) => { const m = createMining({ seed: 5, mods }); for (let i = 0; i < 60 * 30 && !m.done; i++) stepMining(m, { drill: m.heat < (bandAt(m)[0] + bandAt(m)[1]) / 2 }, 1 / 60); return m.result; };
+  assert.equal(dig({ yield: 1 }).ore, dig({}).ore + 1);
+  assert.equal(createMining({ mods: { yield: 1 } }).bonus, 1);
+  // Access: "needs Hacker 2" is the contract's door.sealed; a higher rank holds the lower access.
+  assert.equal(hasAccess(none, 'door.sealed'), false);
+  assert.equal(hasAccess({ skills: { hacker: 1 } }, 'door.sealed'), false);
+  assert.equal(hasAccess(hacker2, 'door.sealed'), true);
+  assert.equal(hasAccess(hacker2, 'terminal'), true, 'rank 2 keeps rank 1\'s access');
+  assert.equal(hasAccess(hacker2, 'access:door.sealed'), true, 'the access: prefix is tolerated');
+  assert.equal(hasAccess(none, null), true, 'no gate, no skill needed');
+  assert.equal(hasUnlock(hacker2, 'access', 'door.sealed'), true);
+  // The reason text is core's: "Needs Hacker rank 2." (level 1 reads "Needs the Hacker skill.").
+  assert.equal(accessReason('door.sealed'), 'Needs Hacker rank 2.');
+  assert.equal(accessReason('terminal'), 'Needs the Hacker skill.');
+  assert.equal(accessReason('door.locked'), 'Needs the Lockpick skill.');
+  assert.equal(accessReason('nonsense'), 'Locked.');
+  assert.deepEqual(missing(none, { skills: { hacker: 2 } }), ['Needs Hacker rank 2.'], 'requires: { skills } says the same thing');
+  assert.ok(unlocksFor(hacker2).every(u => ['activity', 'access', 'ability'].includes(u.type)));
 });
 
 test('hacking: splicing inside the window sets tumblers and opens the lock; misses trip the trace; time runs out', () => {
@@ -293,8 +335,34 @@ test('hacking: splicing inside the window sets tumblers and opens the lock; miss
 
 test('gated content is data: a hackable staff door, a skill-gated console, a hackable cache', () => {
   assert.deepEqual(MAP_DEFS.cantina.doors.find(d => d.id === 'staff').lock, { hack: 1 });
-  assert.equal(MAP_DEFS['moon-outpost'].props.find(p => p.interact?.id === 'reactor').interact.access, 'access:slicer.2');
+  const reactor = MAP_DEFS['moon-outpost'].props.find(p => p.interact?.id === 'reactor').interact;
+  assert.equal(reactor.access, 'door.sealed', 'the reactor needs the contract id for Hacker 2, not a stand-in id');
   assert.equal(MAP_DEFS['moon-outpost'].props.find(p => p.interact?.kind === 'hack').interact.level, 1);
+  // No map names an access id the skills do not grant (and none of the old stand-in ids is left).
+  const granted = new Set(SKILLS.flatMap(sk => sk.levels.flatMap(l => l.unlocks.filter(u => u.type === 'access').map(u => u.id))));
+  for (const def of Object.values(MAP_DEFS)) {
+    for (const g of [...def.props.map(p => p.interact), ...def.doors].filter(Boolean)) {
+      if (g.access) assert.ok(granted.has(g.access), `${def.id}: ${g.access} is a contract access id`);
+      for (const [skill, rank] of Object.entries(g.requires?.skills || {})) assert.ok(SKILLS.find(sk => sk.id === skill)?.max >= rank, `${def.id}: ${skill} ${rank}`);
+    }
+  }
+  assert.doesNotMatch(readFileSync(new URL('maps/moon-outpost.json', ROOT), 'utf8'), /slicer/);
+});
+
+test('gates say what is missing in core\'s words, and a pick lock needs Lockpick', () => {
+  const hacker1 = { stats: {}, skills: { hacker: 1 } }, hacker2 = { stats: {}, skills: { hacker: 2 } };
+  const reactor = MAP_DEFS['moon-outpost'].props.find(p => p.interact?.id === 'reactor').interact;
+  assert.deepEqual(gateFor(reactor, { character: hacker1 }), { reason: 'Needs Hacker rank 2.' });
+  assert.equal(gateFor(reactor, { character: hacker2 }), null);
+  assert.deepEqual(gateFor({ requires: { skills: { hacker: 2 } } }, { character: hacker1, save: { character: hacker1 } }), { reason: 'Needs Hacker rank 2.' });
+  assert.equal(gateFor({ requires: { skills: { hacker: 2 } } }, { character: hacker1 }), null, 'requires needs a save to read; without one it does not gate');
+  // Hack locks are open to anyone; the hack minigame is the way in.
+  assert.deepEqual(gateFor({ lock: { hack: 2 } }, { character: null }), { reason: 'Locked.', hack: 2 });
+  // Pick locks need Lockpick 1 (door.locked), then run the same ring read as pins.
+  assert.deepEqual(gateFor({ lock: { pick: 2 } }, { character: hacker2 }), { reason: 'Needs the Lockpick skill.' });
+  assert.deepEqual(gateFor({ lock: { pick: 2 } }, { character: { skills: { lockpick: 1 } } }), { reason: 'Locked.', hack: 2, pick: true });
+  assert.equal(gateFor(null), null);
+  assert.equal(gateFor({ label: 'plain' }), null);
 });
 
 test('interior walls: the right piece for each wall tile (art/interiors README)', () => {
@@ -324,4 +392,118 @@ test('maps can come from the procedural dresser or be registered at runtime', ()
     assert.equal(called, null, 'registered maps are used as given');
     assert.throws(() => registerMap({ id: 'bad', grid: ['?'] }));
   } finally { setRoomDresser(null); }
+});
+
+test('rotated props: the art is fitted into the UNturned box, then turned (no squashing)', () => {
+  // A 2x1 desk turned a quarter has map size 1x2: the art box is 2x1 again.
+  assert.deepEqual(unturnedBox(48, 96, Math.PI / 2), { w: 96, h: 48, turned: true });
+  assert.deepEqual(unturnedBox(48, 96, -Math.PI / 2), { w: 96, h: 48, turned: true });
+  assert.deepEqual(unturnedBox(96, 48, 0), { w: 96, h: 48, turned: false });
+  assert.deepEqual(unturnedBox(96, 48, Math.PI), { w: 96, h: 48, turned: false }, 'a half turn keeps the box');
+  assert.equal(unturnedBox(48, 96, Math.PI * 3 / 2).turned, true);
+  assert.equal(unturnedBox(48, 96, Math.PI / 2 + 0.1).turned, true, 'a little jitter on a turned prop is still a turn');
+  assert.deepEqual(unturnedBox(48, 96, 0.7), { w: 48, h: 96, turned: false }, 'a free angle (a scattered rock) is not a turn: size is already its box');
+  // drawContained turns about the prop centre with the swapped box (a fake canvas records the calls).
+  const calls = [];
+  const ctx = new Proxy({}, { get: (_, k) => (...a) => { calls.push([k, ...a]); }, set: () => true });
+  return import('../projects/Space-Shooter/voyage/onfoot/draw.js').then(({ drawContained }) => {
+    const art = { width: 200, height: 100 }; // a 2:1 desk
+    const p = { x: 96, y: 48, w: 48, h: 96, cx: 120, cy: 96, rot: Math.PI / 2 };
+    drawContained(ctx, art, p);
+    const img = calls.find(c => c[0] === 'drawImage');
+    assert.deepEqual(img.slice(2), [120 - 48, 96 - 24, 96, 48], 'drawn 2 tiles by 1 tile, centred on the prop, before the quarter turn');
+    assert.ok(calls.some(c => c[0] === 'rotate' && Math.abs(c[1] - Math.PI / 2) < 1e-9));
+    assert.ok(calls.some(c => c[0] === 'translate' && c[1] === 120 && c[2] === 96), 'turned about the prop centre');
+  });
+});
+
+test('every story map is valid for procgen (validateMap on whole tiles); the generic cantina falls back to a valid hand-made room', () => {
+  const story = ['hangar', 'ship', 'workshop', 'mel-bay', 'edna-den', 'hask-office', 'vey-lounge', 'garrity-office', 'moon-outpost', 'cantina'];
+  for (const id of story) {
+    const v = validateMap(MAP_DEFS[id]);
+    assert.deepEqual(v.problems, [], `${id} breaks procgen's hard rules`);
+    assert.equal(v.ok, true);
+  }
+  // Every walkable map in the folder is covered by the list above (a new map file must be added to it).
+  assert.deepEqual(Object.keys(MAP_DEFS).sort(), [...story].sort());
+  // designChecks is information, not a rule: it must run on every map.
+  for (const id of story) assert.equal(typeof designChecks(MAP_DEFS[id]).total, 'number');
+  // The people stay reachable to talk to: an npc needs an open tile beside them.
+  for (const id of story) for (const n of MAP_DEFS[id].npcs) {
+    const map = getMap(id);
+    const near = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => walkable(map, (n.at[0] + 0.5 + dx) * T, (n.at[1] + 0.5 + dy) * T, 13));
+    assert.ok(near, `${id}: somebody can stand next to ${n.id}`);
+  }
+});
+
+test('generic places are dressed fresh on every visit with a new seed; story places stay as made', () => {
+  const must = (map) => map.interacts.filter(i => i.kind === 'console').map(i => i.id).sort().join();
+  assert.deepEqual(MAP_DEFS.cantina.dress, { fresh: true, type: 'cantina' });
+  const seen = new Set();
+  const seeds = [];
+  setVisitSeed(() => { const s = 1000 + seeds.length * 7919; seeds.push(s); return s; });
+  try {
+    for (let i = 0; i < 12; i++) {
+      const m = enterMap('cantina');
+      assert.equal(m.visit.fallback, false);
+      assert.equal(m.visit.seed, seeds[i], 'each visit takes a new seed');
+      assert.deepEqual(validateMap(m.def).problems, [], `visit ${i} is a valid room`);
+      assert.deepEqual(checkMaps({ ...MAP_DEFS, cantina: m.def }, { puzzles: PUZZLES, stations: STATIONS }).problems, [], 'spawns and doors still link up');
+      assert.equal(must(m), 'bar,jukebox,vending', 'the must-have interacts come back each time');
+      // The shell is the file's: doors (the hackable staff door), spawns, grid, name.
+      assert.deepEqual(m.def.doors, MAP_DEFS.cantina.doors);
+      assert.deepEqual(m.def.spawns, MAP_DEFS.cantina.spawns);
+      assert.deepEqual(m.def.grid, MAP_DEFS.cantina.grid);
+      assert.deepEqual(m.def.doors.find(d => d.id === 'staff').lock, { hack: 1 });
+      seen.add(JSON.stringify(m.def.props.map(p => [p.art, p.at])));
+    }
+    assert.ok(seen.size >= 10, `12 visits gave ${seen.size} different rooms`);
+    assert.equal(getMap('cantina').visit.seed, seeds[11], 'getMap answers with the room as last visited');
+    // The same seed dresses the same room (the dresser is deterministic): a visit can be replayed.
+    assert.deepEqual(enterMap('cantina', { seed: 77 }).def.props, enterMap('cantina', { seed: 77 }).def.props);
+    // Story places are entered as made: the same compiled map every time.
+    assert.equal(enterMap('hangar'), enterMap('hangar'));
+    assert.equal(enterMap('ship').def, MAP_DEFS.ship);
+  } finally { setVisitSeed(null); }
+});
+
+test('a fresh dress that breaks a rule tries the next seed, then falls back to the hand-made props', () => {
+  const shell = { id: 'fresh-room', name: 'Fresh room', grid: ['#######', '#.....#', '#.....#', '#.....#', '#######'], spawns: { default: [3, 2, 'up'] },
+    doors: [{ id: 'out', at: [3, 4], size: [1, 1], to: 'hangar', arrive: 'default' }], dress: { fresh: true, type: 'workshop' },
+    props: [{ art: 'crate-small', at: [1, 1], size: [1, 1], block: 'low' }] };
+  registerMap(shell);
+  const calls = [];
+  // A dresser whose first two seeds overlap two props, then a good one.
+  setRoomDresser((map, { seed }) => { calls.push(seed); return { props: seed < 12 ? [{ art: 'crate-small', at: [1, 1], size: [1, 1], block: 'low' }, { art: 'crate-small', at: [1, 1], size: [1, 1], block: 'low' }] : [{ art: 'crate-small', at: [4, 1], size: [1, 1], block: 'low' }] }; });
+  try {
+    const m = enterMap('fresh-room', { seed: 10 });
+    assert.deepEqual(calls, [10, 11, 12], 'seeds 10 and 11 broke a rule; the next one was tried');
+    assert.deepEqual(m.visit, { seed: 12, tries: 3, fallback: false });
+    assert.deepEqual(m.def.props[0].at, [4, 1]);
+    // Never a valid room: the hand-made props come back, after a few tries.
+    calls.length = 0;
+    setRoomDresser(() => { calls.push(1); return { props: [{ art: 'crate-small', at: [0, 0], size: [1, 1], block: true }] }; }); // inside a wall
+    const kept = enterMap('fresh-room', { seed: 5 });
+    assert.equal(calls.length, FRESH_TRIES);
+    assert.equal(kept.visit.fallback, true);
+    assert.deepEqual(kept.def.props, shell.props, 'the hand-made props are the fallback');
+    // A dresser that throws is a failed seed, not a crash.
+    setRoomDresser(() => { throw new Error('boom'); });
+    assert.equal(enterMap('fresh-room', { seed: 5 }).visit.fallback, true);
+    // No dresser (null = procgen's own): the real dresser makes a valid room from this shell.
+    setRoomDresser(null);
+    const real = enterMap('fresh-room', { seed: 3 });
+    assert.equal(real.visit.fallback, false);
+    assert.deepEqual(validateMap(real.def).problems, []);
+  } finally { setRoomDresser(null); }
+  // The dresser is registered by the maps module itself: a map with a one-off dress seed and no props is
+  // dressed on first entry with no setup, then kept (a story place is dressed once and fixed).
+  const once = registerMap({ ...shell, id: 'dress-once', props: [], dress: { seed: 4, type: 'workshop' } });
+  assert.equal(once.props.length, 0, 'registered maps are used as given');
+  setRoomDresser(null); // clears the cache; the next getMap dresses
+  const dressed = getMap('dress-once');
+  assert.ok(dressed.props.length > 0, 'procgen dressed it');
+  assert.equal(getMap('dress-once'), dressed, 'dressed once, then kept');
+  assert.deepEqual(validateMap(dressed.def).problems, []);
+  assert.deepEqual(dressed.def.props, dressRoom(mapDef('dress-once'), { seed: 4 }).props, 'seed 4, as the file says');
 });

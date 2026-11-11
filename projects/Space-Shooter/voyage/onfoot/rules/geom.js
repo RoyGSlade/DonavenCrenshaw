@@ -68,3 +68,18 @@ export function lineOfSight(x0, y0, x1, y1, blockers) {
   for (const b of blockers) if (segRect(x0, y0, x1, y1, b) !== null) return false;
   return true;
 }
+
+/**
+ * The art's box BEFORE the prop was turned. Map data stores a prop's `size`
+ * as the footprint after turning (a 2x1 desk turned a quarter has size 1x2),
+ * so art for a quarter-turned prop must be fitted into the swapped box and
+ * then rotated, or it comes out squashed. A free angle (scattered rocks,
+ * a few degrees of jitter) is not a turn: its size is already the art's box.
+ * Returns { w, h, turned }.
+ */
+export function unturnedBox(w, h, rot = 0) {
+  const quarter = Math.round(rot / (Math.PI / 2));
+  const exact = Math.abs(rot - quarter * (Math.PI / 2)) < 0.25;
+  const turned = exact && Math.abs(quarter) % 2 === 1;
+  return turned ? { w: h, h: w, turned } : { w, h, turned };
+}

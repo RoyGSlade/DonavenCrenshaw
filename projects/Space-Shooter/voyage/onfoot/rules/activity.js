@@ -1,59 +1,78 @@
-// Skill levels upgrade the activities themselves (BRIEF "SKILL LEVELS",
-// Donaven 2026-11-11): Slicer 2 gives more time on a hack, a wider bypass
-// window, and opens "needs Slicer 2" doors. Every minigame reads its
-// modifiers through activityMods(); every gate asks hasAccess(). Pure.
+// Skills unlock things (ROUND2-CONTRACT.md section 9; Donaven 2026-11-11:
+// "Skills should be for neat stuff or locked areas"). Skill levels live ONLY
+// in data.js (SKILLS[].levels) and are read through character.js; nothing here
+// keeps its own table. Pure.
 //
-// Data (../tuning.json): `skillLevels` [{ skill, level, unlocks: [{ type:
-// 'activity'|'access'|'ability', id, text }] }] and `activities` (what each
-// activity id changes). Story's contract publishes the real ids; a page can
-// pass its own `levels` (story or core data) and nothing here changes.
+//   activity unlocks make a minigame itself better: activityMods(c, 'hack')
+//     sums the stacked `value`s of the unlocks the minigame understands;
+//   access unlocks open gates: hasAccess(c, 'door.sealed'), and accessReason()
+//     says which skill rank is missing in core's words ("Needs Hacker rank 2.").
+//
+// Which contract activity ids onfoot understands, and what each one changes, is
+// data: ../tuning.json "activities" ({ id: { activity, mod } }). The numbers
+// come from the skill's own level data. Ids nobody here implements yet
+// (brawl.combo, stare.time, charge.radius, stealth.time, race.boost...) simply
+// do nothing; the skill still shows in the hangar.
 import TUNING from '../tuning.json' with { type: 'json' };
-import { SKILLS } from '../../data.js';
+import { skillUnlocks, hasUnlock, skillsGranting } from '../../character.js';
+import { missing } from '../../economy.js';
 
-/** Core/story skills with levels ({ id, levels: [{ level, unlocks }] }) as the flat list used here. */
-export function levelsFromSkills(skills = []) {
-  return skills.flatMap(s => (s.levels || []).map(l => ({ skill: s.id, level: l.level, unlocks: l.unlocks || [] })));
-}
-// Story's skill levels win once they are in data.js (SKILLS[].levels); until then tuning.json's stand-in table.
-const FROM_DATA = levelsFromSkills(SKILLS);
-export const SKILL_LEVELS = Object.freeze(FROM_DATA.length ? FROM_DATA : TUNING.skillLevels);
 export const ACTIVITY_IDS = Object.freeze(Object.fromEntries(Object.entries(TUNING.activities).filter(([k]) => !k.startsWith('_'))));
 
-/** Every unlock the captain has: for each skill, the entries of every level up to its rank. */
-export function unlocksFor(character, levels = SKILL_LEVELS) {
-  const skills = character?.skills || {};
-  return levels.filter(l => (skills[l.skill] || 0) >= l.level).flatMap(l => l.unlocks.map(u => ({ ...u, skill: l.skill, level: l.level })));
-}
+/** Every unlock the captain has learned: [{ type, id, value?, text, skill, level }]. */
+export const unlocksFor = (character) => skillUnlocks(character);
 
 /**
- * The modifiers for one activity ('hack', 'mine', 'puzzle', 'foot'), summed
- * over the captain's activity unlocks: { time, window, misses, hintSooner,
- * band, heatUp, spread, rate, dash, ids: [...] }. Missing keys are 0.
+ * The modifiers for one activity ('hack', 'lock', 'mine', 'explore', 'repair'),
+ * summed over the captain's activity unlocks: { time, pins, sweet, yield, scan,
+ * repair, ids: [...], texts: [...] }. Missing keys read as 0 (use mod()).
+ * `texts` are the skills' own "this lets you..." lines, for the minigame panel.
  */
-export function activityMods(character, activity, { levels = SKILL_LEVELS, ids = ACTIVITY_IDS } = {}) {
+export function activityMods(character, activity, { ids = ACTIVITY_IDS } = {}) {
   const mods = { ids: [], texts: [] };
-  for (const u of unlocksFor(character, levels)) {
+  for (const u of unlocksFor(character)) {
     if (u.type !== 'activity') continue;
     const def = ids[u.id];
     if (!def || def.activity !== activity) continue;
     mods.ids.push(u.id);
-    if (def.text || u.text) mods.texts.push(u.text || def.text);
-    // An unlock may carry its own size (story data: { id, value }); it replaces the default amount.
-    const nums = Object.entries(def).filter(([, v]) => typeof v === 'number');
-    for (const [k, v] of nums) mods[k] = (mods[k] || 0) + (typeof u.value === 'number' && nums.length === 1 ? u.value : v);
+    if (u.text) mods.texts.push(u.text);
+    mods[def.mod] = (mods[def.mod] || 0) + (Number(u.value) || 0);
   }
   return mods;
 }
 export const mod = (mods, key) => mods?.[key] || 0;
 
-/** Does the captain hold an access unlock (e.g. 'access:slicer.2')? A higher level of the same skill counts. */
-export function hasAccess(character, accessId, { levels = SKILL_LEVELS } = {}) {
+/** Does the captain hold this access unlock ('door.sealed', 'terminal', 'area.salvage')? A higher level holds the lower ones too. */
+export function hasAccess(character, accessId) {
   if (!accessId) return true;
-  return unlocksFor(character, levels).some(u => u.type === 'access' && u.id === accessId);
+  return hasUnlock(character, 'access', String(accessId).replace(/^access:/, ''));
 }
 
-/** The plain-words reason an access gate is shut, from the level that grants it. */
-export function accessReason(accessId, { levels = SKILL_LEVELS, skillName = id => id } = {}) {
-  const l = levels.find(x => x.unlocks.some(u => u.type === 'access' && u.id === accessId));
-  return l ? `Needs ${skillName(l.skill)} ${l.level}` : 'Locked';
+/**
+ * The plain-words reason an access gate is shut, in core's requirement words:
+ * "Needs the Hacker skill." (level 1) or "Needs Hacker rank 2." The lowest rank
+ * that grants the access is the one named. `save` is optional (core reads the character from it).
+ */
+export function accessReason(accessId, save = null) {
+  const id = String(accessId || '').replace(/^access:/, '');
+  const first = skillsGranting('access', id).sort((a, b) => a.level - b.level)[0];
+  if (!first) return 'Locked.';
+  return missing(save || {}, { skills: { [first.skill]: first.level } })[0] || 'Locked.';
+}
+
+/**
+ * A map gate (door or interact), as data -> null when open, else { reason, hack?, pick? }:
+ *   access: 'door.sealed'      a contract access id (skills unlock it)
+ *   requires: { skills: ... }  core's requirement format (only checked when a save is given)
+ *   lock: { hack: n }          bypass it with the hack minigame (open to anyone)
+ *   lock: { pick: n }          pick it (needs the Lockpick skill's door.locked access)
+ * `reason` is a whole sentence in core's words ("Needs Hacker rank 2.").
+ */
+export function gateFor(def, { character = null, save = null } = {}) {
+  if (!def) return null;
+  if (def.access && !hasAccess(character, def.access)) return { reason: accessReason(def.access, save) };
+  if (def.requires && save) { const why = missing(save, def.requires); if (why.length) return { reason: why[0] }; }
+  if (def.lock?.pick) return hasAccess(character, 'door.locked') ? { reason: 'Locked.', hack: def.lock.pick, pick: true } : { reason: accessReason('door.locked', save) };
+  if (def.lock?.hack) return { reason: 'Locked.', hack: def.lock.hack };
+  return null;
 }

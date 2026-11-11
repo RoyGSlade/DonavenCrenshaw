@@ -2,8 +2,9 @@
 // Splice while it sits inside the lit window to set a tumbler. Each one sets
 // faster and the sweep turns back. Miss too often and the trace trips; run out
 // the timer and the lock resets. Pure and seeded; the page sends splice().
-// Skill levels change the minigame itself (activityMods 'hack'): more time,
-// wider windows, an extra miss. Difficulty (a door's lock level) tightens it.
+// Skill levels change the minigame itself (ROUND2-CONTRACT section 9): Hacker's
+// hack.time gives more seconds; Lockpick's lock.pins takes pins off a pick lock
+// (`pick: true`: the same ring, read as pins). Difficulty (a lock's level) tightens it.
 import { step as rngStep, hashSeed } from '../../quests/rng.js';
 import TUNING from '../tuning.json' with { type: 'json' };
 
@@ -11,16 +12,17 @@ export const HACK = Object.freeze({ ...TUNING.hack });
 const TAU = Math.PI * 2;
 const wrap = a => ((a % TAU) + TAU) % TAU;
 
-export function createHack({ difficulty = 1, seed = 1, mods = {} } = {}) {
+export function createHack({ difficulty = 1, seed = 1, mods = {}, pick = false } = {}) {
   let rng = hashSeed('hack', seed, difficulty);
   const rand = () => { const [v, next] = rngStep(rng); rng = next; return v; };
   const level = Math.max(1, Math.min(4, difficulty));
-  const count = HACK.tumblers + level - 1;
-  const width = Math.max(0.18, (HACK.window + HACK.windowPerLevel * (level - 1)) * (1 + (mods.window || 0)));
+  // A pick lock is a row of pins; lock.pins takes some off (never below 2).
+  const count = Math.max(2, HACK.tumblers + level - 1 - (pick ? Math.round(mods.pins || 0) : 0));
+  const width = Math.max(0.18, (HACK.window + HACK.windowPerLevel * (level - 1)));
   const tumblers = Array.from({ length: count }, (_, i) => ({ at: wrap(rand() * TAU + i * 1.7), width: width * (1 - i * 0.05), set: false }));
   return {
     t: 0, difficulty: level, time: Math.max(6, HACK.time + HACK.timePerLevel * (level - 1) + (mods.time || 0)),
-    misses: 0, allowed: HACK.misses + (mods.misses || 0), cursor: wrap(tumblers[0].at + Math.PI), dir: 1,
+    misses: 0, allowed: HACK.misses, cursor: wrap(tumblers[0].at + Math.PI), dir: 1,
     tumblers, index: 0, done: false, result: null, events: [],
   };
 }

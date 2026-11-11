@@ -43,7 +43,7 @@ export function createFight({ map, spawn = 'default', enemies = [], player = {},
     map, t: 0, rng: hashSeed('foot', seed), exit: exitRect, exitHold: 0,
     player: { x: s.x, y: s.y, vx: 0, vy: 0, angle: s.angle ?? 0, hp, maxHp: hp, cool: 0, dashT: 0, dashCd: 0, dashX: 0, dashY: 0, iframes: 0, hit: 0,
       gun: { ...PLAYER_GUN, damage: player.damage ?? PLAYER_GUN.damage, spread: PLAYER_GUN.spread * (player.spreadScale ?? 1), rate: PLAYER_GUN.rate * (player.rateScale ?? 1) }, dashCooldown: player.dashCooldown ?? DASH.cooldown,
-      speed: TUNING.footSpeed * (player.speedScale ?? 1), guard: player.guard ? 1 : 0, assist: Boolean(player.assist), shots: 0, hits: 0 },
+      speed: TUNING.footSpeed * (player.speedScale ?? 1), melee: player.melee ?? 0, shots: 0, hits: 0 },
     enemies: enemies.map((e, i) => spawnEnemy(e, i, map)),
     bullets: [], events: [], ended: null, kills: 0,
   };
@@ -70,7 +70,6 @@ function fire(f, x, y, angle, owner, { damage, speed, spread = 0, life = 1.2 }) 
 function hurtPlayer(f, amount, fromX, fromY) {
   const p = f.player;
   if (p.iframes > 0 || f.ended) return;
-  if (p.guard > 0) { p.guard--; p.iframes = 0.3; f.events.push({ type: 'guard', x: p.x, y: p.y }); return; } // Constitution 6: the first hit is shrugged off
   p.hp = Math.max(0, p.hp - amount);
   p.hit = 0.15;
   const dx = p.x - fromX, dy = p.y - fromY, d = Math.hypot(dx, dy) || 1;
@@ -248,16 +247,7 @@ export function stepFight(f, input = {}, dt = STEP) {
     if (input.aim == null && m > 0.2) p.angle = Math.atan2(iy, ix);
   }
   if (input.fire && p.cool <= 0) {
-    let a = p.angle;
-    if (p.assist) {
-      // Dexterity 6: the sidearm pulls onto a target near the reticle (within about 9 degrees).
-      let best = 0.16;
-      for (const e of f.enemies) {
-        if (!e.alive) continue;
-        const d = Math.abs(wrapAngle(Math.atan2(e.y - p.y, e.x - p.x) - p.angle));
-        if (d < best) { best = d; a = Math.atan2(e.y - p.y, e.x - p.x); }
-      }
-    }
+    const a = p.angle;
     fire(f, p.x + Math.cos(a) * 18, p.y + Math.sin(a) * 18, a, 'player', p.gun);
     p.cool = p.gun.rate; p.shots++;
   }
@@ -274,27 +264,22 @@ export const fightResult = f => f.ended;
 
 /**
  * The captain's on-foot numbers, from the stat effects table (ROUND2-CONTRACT
- * section 6): hp from foot.hp (Constitution, skills), damage from the fight
- * tag, dash cooldown from dodge, move speed from foot.speed and spread from
- * aim (Dexterity; multipliers clamp at 0.5). A 6 in Constitution adds the guard
- * boon (first hit shrugged off), a 6 in Dexterity the aim assist.
+ * sections 6 and 9, boons gone): hp from foot.hp (Health), move speed from
+ * foot.speed and sidearm spread from aim (Dexterity), melee from Strength.
+ * Skills never change the sidearm: they unlock things (abilities such as
+ * foot.haymaker live elsewhere). `melee` is the punch bonus for the day
+ * on-foot punching exists; nothing in the shooter reads it yet.
  */
-export function footStats(character, { effect, skillBonus, mods = {} } = {}) {
+export function footStats(character, { effect } = {}) {
   const fx = tag => (effect ? effect(character, tag) : 0);
-  const hp = TUNING.footHp + fx('foot.hp');
-  const fightBonus = skillBonus ? skillBonus(character, 'fight') : 0;
-  const dodge = fx('dodge');
   return {
-    hp: Math.max(30, Math.round(hp)),
-    damage: PLAYER_GUN.damage + fightBonus * 2,
-    // Skill levels change the sidearm itself (activityMods(c, 'foot')): steadier aim, faster follow-ups, quicker dashes.
-    dashCooldown: Math.max(0.45, (DASH.cooldown - dodge * 0.12) * (1 + (mods.dash || 0))),
-    rateScale: Math.max(0.5, 1 + (mods.rate || 0)),
+    hp: Math.max(30, Math.round(TUNING.footHp + fx('foot.hp'))),
+    damage: PLAYER_GUN.damage,
+    dashCooldown: DASH.cooldown,
+    rateScale: 1,
     speedScale: Math.max(0.5, 1 + fx('foot.speed')),
-    spreadScale: Math.max(0.2, (1 - fx('aim')) * (1 + (mods.spread || 0))),
-    // Contract v1.0 boons (a 6 in the stat). Story proposes dropping boons: set tuning.json statBoons to false.
-    guard: TUNING.statBoons !== false && character?.stats?.con === 6,
-    assist: TUNING.statBoons !== false && character?.stats?.dex === 6,
+    spreadScale: Math.max(0.2, 1 - fx('aim')),
+    melee: fx('melee'),
   };
 }
 
