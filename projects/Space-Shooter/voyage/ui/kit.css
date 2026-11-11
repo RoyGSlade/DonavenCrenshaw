@@ -252,7 +252,6 @@
 .ui-attempt[data-pass=false] .ui-attempt-verdict{color:var(--ui-amber)}
 @media (max-width:700px){.ui-attempt{left:50%;right:auto;transform:translateX(-50%);top:64px;bottom:auto}}
 .ui-node[data-label=up] .ui-node-name{top:auto;bottom:100%;transform:translate(-50%,-4px)}
-.ui-node[data-label=up] .ui-node-rank{bottom:auto;top:-4px;transform:translate(-50%,-50%)}
 .ui-node[data-label=right] .ui-node-name{left:100%;top:50%;transform:translate(6px,-50%)}
 .ui-node[data-label=left] .ui-node-name{left:auto;right:100%;top:50%;transform:translate(-6px,-50%)}
 .hg-sheet-open .hg-objective{left:16px;transform:none;max-width:min(520px,44vw)}
