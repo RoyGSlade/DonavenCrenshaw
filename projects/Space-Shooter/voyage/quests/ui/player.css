@@ -1,0 +1,64 @@
+/* The quest player (quests/ui/player.js): dialogue, travel, fights, puzzles, race legs and the
+   live fight overlay. Used by the hangar's job board and the quest sandbox. Flat and cheap on phones. */
+.qs-moves button { padding: 10px 12px; min-height: 44px; }
+.qs-note { color: var(--muted); font-size: 12px; }
+.qs-title { margin: 0 0 6px; font-size: 26px; letter-spacing: -.03em; }
+.qs-quest-head { display: grid; gap: 6px; margin-bottom: 14px; }
+.qs-where { margin: 0; font: 11px Consolas, monospace; letter-spacing: .1em; color: var(--muted); }
+.qs-bar { display: grid; gap: 3px; font: 11px Consolas, monospace; color: var(--muted); max-width: 360px; }
+.qs-bar-track { height: 8px; border-radius: 4px; background: #13222f; overflow: hidden; }
+.qs-bar-track i { display: block; height: 100%; background: var(--cyan); }
+.qs-bar.is-enemy .qs-bar-track i { background: var(--orange); }
+.qs-dialogue { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 16px; align-items: start; }
+.qs-portrait { width: 120px; height: 120px; border-radius: 8px; background: #102030; border: 1px solid var(--line); }
+.qs-box, .qs-part, .qs-end { border: 1px solid var(--line); border-top: 2px solid var(--cyan); border-radius: 6px; background: #0e1b29; padding: 18px; min-width: 0; }
+.qs-speaker { margin: 0 0 6px; font: 700 12px Consolas, monospace; letter-spacing: .1em; color: var(--cyan); text-transform: uppercase; }
+.qs-text { font-size: 15px; line-height: 1.6; margin: 0 0 12px; }
+.qs-choices { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.qs-choices li { display: grid; gap: 3px; }
+.qs-choices button { text-align: left; letter-spacing: .01em; font-weight: 500; font-size: 14px; padding: 12px 14px; min-height: 44px; }
+.qs-choices button:disabled { cursor: not-allowed; }
+.qs-check { color: var(--cyan); font-size: 11px; padding-left: 4px; }
+.qs-locked { color: var(--orange); font-size: 12px; padding-left: 4px; }
+.qs-part h3, .qs-end h3 { margin: 0 0 10px; font-size: 20px; }
+.qs-eyebrow { margin: 0 0 4px; font: 10px Consolas, monospace; letter-spacing: .16em; color: var(--cyan); }
+.qs-moves { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+.qs-minilog { margin: 10px 0; padding-left: 18px; font: 12px/1.6 Consolas, monospace; color: var(--muted); }
+.qs-abilities { margin: 0 0 10px; padding-left: 18px; font-size: 13px; color: var(--orange); }
+.qs-map { width: 100%; max-width: 620px; height: auto; display: block; margin: 6px 0 12px; background: #08131f; border: 1px solid var(--line); border-radius: 6px; }
+.qs-map .lane { stroke: #2a4152; stroke-width: 2; }
+.qs-map .lane.is-offered { stroke: #81e6df88; stroke-dasharray: 6 5; }
+.qs-map .lane.is-planned { stroke: var(--cyan); stroke-width: 3; }
+.qs-map .sector circle { fill: #13283a; stroke: #59859d; stroke-width: 2; }
+.qs-map .sector.f-relay-guild circle { stroke: #81e6df; }
+.qs-map .sector.f-ember-syndicate circle { stroke: #ffad72; }
+.qs-map .sector.f-hollow-choir circle { stroke: #c7a6ff; }
+.qs-map .sector.f-driftborn circle { stroke: #e9dcb8; }
+.qs-map .sector.is-dest circle { fill: #2a4a3a; }
+.qs-map .sector.is-here circle { fill: var(--cyan); }
+.qs-map text { fill: #d7e5e9; font: 13px Inter, sans-serif; }
+.qs-event { border: 1px solid #ffad7266; border-radius: 6px; padding: 14px; background: #1a1610; margin-top: 8px; }
+.qs-event h4 { margin: 0 0 6px; font-size: 17px; }
+.qs-result { color: var(--text); font-size: 14px; }
+.qs-slots { display: flex; gap: 8px; margin: 10px 0; }
+.qs-slot { display: grid; place-items: center; width: 52px; height: 52px; border: 1px solid var(--line); border-radius: 6px; font-size: 26px; background: #0a1624; }
+.qs-slot.is-known { border-color: var(--cyan); }
+.qs-pad { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; }
+.qs-pad button { padding: 12px 6px; min-height: 48px; font-size: 14px; letter-spacing: .02em; }
+.qs-guesses { margin: 8px 0 0; padding-left: 20px; font: 14px/1.8 Consolas, monospace; white-space: pre; }
+.qs-fragments { list-style: none; padding: 0; margin: 10px 0; display: grid; gap: 6px; font-size: 14px; }
+.qs-fragments b { display: inline-block; width: 26px; color: var(--cyan); font-weight: 400; }
+.qs-end.is-win { border-top-color: var(--cyan); } .qs-end.is-fail { border-top-color: var(--orange); }
+.qs-rewards { margin: 0 0 14px; padding-left: 18px; color: var(--orange); }
+.qs-live-row small { color: var(--muted); }
+.qs-live { position: fixed; inset: 0; z-index: 50; display: grid; place-content: center; justify-items: center; gap: 10px; background: #030914f2; padding: 12px; }
+.qs-live-canvas { width: min(96vw, 800px); height: auto; aspect-ratio: 5 / 3; border: 1px solid var(--line); border-radius: 6px; touch-action: none; }
+.qs-touch-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.qs-touch { min-width: 64px; min-height: 52px; touch-action: none; user-select: none; -webkit-user-select: none; }
+@media (max-width: 800px) {
+  .qs-dialogue { grid-template-columns: 1fr; }
+  .qs-portrait { width: 84px; height: 84px; }
+}
+@media (max-width: 420px) {
+  .qs-slot { width: 44px; height: 44px; }
+}

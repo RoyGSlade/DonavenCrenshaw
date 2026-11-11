@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#070d17">
+  <meta name="robots" content="noindex">
+  <link rel="manifest" href="../manifest.webmanifest">
+  <link rel="apple-touch-icon" href="../art/player-ship.png">
+  <title>The Hangar · Stardust</title>
+  <meta name="description" content="The new Stardust: your ship, your captain and the jobs that pay for both. Not open yet.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath fill='%2381e6df' d='M16 1 30 30 16 23 2 30Z'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="./voyage.css">
+  <link rel="stylesheet" href="./quests/ui/player.css">
+  <link rel="stylesheet" href="./crew/crew.css">
+</head>
+<body>
+  <canvas id="voyage-scene" aria-hidden="true"></canvas>
+  <header class="vy-top">
+    <a href="../?activity=classic" id="vy-back">← CLASSIC</a>
+    <h1 class="vy-wordmark">STARDUST <b>/</b> THE HANGAR</h1>
+    <span id="vy-sync" class="vy-chip" role="status">Saved on this device</span>
+  </header>
+
+  <section id="vy-closed" class="vy-closed" hidden aria-labelledby="vy-closed-title">
+    <p class="vy-eyebrow">COMING LATER</p>
+    <h2 id="vy-closed-title">The new Stardust is not open yet.</h2>
+    <p>Jobs, a captain of your own and a ship you upgrade. It is still being built.</p>
+    <a class="vy-link" href="../">Back to the hangar</a>
+  </section>
+
+  <main id="vy-hangar" class="vy-hangar" hidden>
+    <nav class="vy-tabs" role="tablist" aria-label="Hangar">
+      <button type="button" role="tab" id="tab-ship" aria-controls="pane-ship" aria-selected="true">Ship</button>
+      <button type="button" role="tab" id="tab-jobs" aria-controls="pane-jobs" aria-selected="false" tabindex="-1">Jobs</button>
+      <button type="button" role="tab" id="tab-captain" aria-controls="pane-captain" aria-selected="false" tabindex="-1">Captain</button>
+      <button type="button" role="tab" id="tab-ledger" aria-controls="pane-ledger" aria-selected="false" tabindex="-1">Ledger</button>
+      <button type="button" role="tab" id="tab-crew" aria-controls="pane-crew" aria-selected="false" tabindex="-1">Crew</button>
+    </nav>
+    <section id="pane-ship" class="vy-pane" role="tabpanel" aria-labelledby="tab-ship"></section>
+    <section id="pane-jobs" class="vy-pane vy-jobs-pane" role="tabpanel" aria-labelledby="tab-jobs" hidden></section>
+    <section id="pane-captain" class="vy-pane" role="tabpanel" aria-labelledby="tab-captain" hidden></section>
+    <section id="pane-ledger" class="vy-pane" role="tabpanel" aria-labelledby="tab-ledger" hidden></section>
+    <section id="pane-crew" class="vy-pane" role="tabpanel" aria-labelledby="tab-crew" hidden></section>
+    <section id="vy-dev" class="vy-dev" hidden aria-label="Test tools"></section>
+  </main>
+  <div id="vy-toast" class="vy-toast" role="status" aria-live="polite"></div>
+  <script type="module" src="./boot.js"></script>
+</body>
+</html>

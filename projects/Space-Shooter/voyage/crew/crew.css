@@ -1,0 +1,25 @@
+/* The crew seat (P11): the Crew tab and the crew's station. Hangar tokens from voyage.css. */
+.cw-station h3,.vy-pane .cw-part h3{margin:14px 0 8px;font:700 11px Consolas,monospace;letter-spacing:.12em;color:var(--cyan)}
+.cw-part{display:grid;gap:8px;margin-top:10px}
+.cw-turret{display:grid;gap:8px;justify-items:start}
+.cw-scope{width:100%;max-width:420px;aspect-ratio:16/9;border:1px solid var(--line);border-radius:4px;background:#050b14;cursor:crosshair;touch-action:none}
+.cw-scope:focus-visible{outline:3px solid var(--orange);outline-offset:3px}
+.cw-repairs{display:flex;flex-wrap:wrap;gap:6px}
+.cw-hold{position:relative;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none}
+.cw-hold span{position:relative}
+.cw-hold-fill{position:absolute;inset:0 auto 0 0;width:0;background:#81e6df44;pointer-events:none}
+.cw-routes li,.cw-checks li,.cw-invites li{flex-wrap:wrap}
+.cw-routes button[aria-pressed=true]{border-color:var(--cyan);color:var(--cyan)}
+.cw-checks li span{flex:1 1 200px}
+.cw-seats b{font-weight:600;text-align:right}
+.cw-seats li[data-seat=away] b{color:var(--orange)}
+.cw-code{font:12px Consolas,monospace;letter-spacing:.08em}
+.cw-code b{color:var(--cyan);font-size:16px;letter-spacing:.18em;margin-left:6px}
+#cw-link{margin:4px 0 8px;font:12px Consolas,monospace}
+.cw-join-row{display:flex;gap:6px}
+.cw-join-row input{flex:1;min-width:0;text-transform:uppercase;letter-spacing:.18em;font-family:Consolas,monospace}
+.cw-ask{display:flex;flex-wrap:wrap;gap:8px;align-items:center;border:1px solid var(--cyan);border-radius:4px;padding:10px;margin:8px 0}
+.cw-ask p{flex:1 1 100%;margin:0}
+.cw-note{color:var(--cyan)!important}
+#cw-leave,#cw-close{margin-top:14px}
+.qs-crew{color:var(--cyan)}
