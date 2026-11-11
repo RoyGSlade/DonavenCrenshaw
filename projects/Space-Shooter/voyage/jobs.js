@@ -21,14 +21,21 @@ import { repBand } from './economy.js';
 // A job with a death ending says so on the board (S25: deaths only where marked).
 const deadly = (quest) => Object.values(quest.nodes).some((n) => n.type === 'end' && n.death);
 
-export function createJobs({ pane, store, say, toast, dev = false, onCaptain = () => {}, onPlaying = () => {} }) {
+// crew (P11, optional): { aboard() -> crew card | null, step(events), changed() }.
+// aboard() is passed to the engine so crew jobs apply; step(events) runs after
+// each committed step (the crew's share and screen); changed() when a job
+// starts or ends.
+const NO_CREW = Object.freeze({ aboard: () => null, step: () => {}, changed: () => {} });
+
+export function createJobs({ pane, store, say, toast, dev = false, onCaptain = () => {}, onPlaying = () => {}, crew = NO_CREW }) {
   let seedBox = null;
 
   const player = createQuestPlayer({
     root: pane,
+    crew: () => crew.aboard(),
     session: {
       get: () => store.get(),
-      commit: (save, events) => { store.update(() => save); say(events); },
+      commit: (save, events) => { store.update(() => save); say(events); crew.step(events); },
     },
     status: toast,
     announceEvents: false,
@@ -37,8 +44,8 @@ export function createJobs({ pane, store, say, toast, dev = false, onCaptain = (
       const lost = store.die();
       if (lost != null) toast(`Your captain died. ${lost} skill point${lost === 1 ? '' : 's'} lost, stats rolled again, skills refunded${DEATH.loseUpgrades ? ', ship upgrades lost' : ''}.`);
     },
-    onExit: () => render(),
-    onChange: () => onPlaying(player.active),
+    onExit: () => { render(); crew.changed(); },
+    onChange: () => { onPlaying(player.active); crew.changed(); },
   });
 
   function take(quest) {
@@ -107,5 +114,9 @@ export function createJobs({ pane, store, say, toast, dev = false, onCaptain = (
     render,
     keydown: (e) => player.keydown(e),
     get playing() { return player.active; },
+    /** A crew action from player two; an error string for them, or null. */
+    crewAct: (action) => player.crewAct(action),
+    /** The job in progress, for the crew's screen: { quest, run, live }. */
+    crewView: () => ({ quest: player.quest, run: player.run, live: player.live }),
   };
 }

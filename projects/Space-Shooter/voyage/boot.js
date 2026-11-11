@@ -43,7 +43,22 @@ if (!flag.enabled) {
     return a ? SHIP_STYLES.find((s) => s.id === a.family)?.name || 'Custom ship' : 'Standard Courier';
   };
   const panes = { ship: $('pane-ship'), captain: $('pane-captain'), ledger: $('pane-ledger'), crew: $('pane-crew'), dev: $('vy-dev') };
-  const crew = createCrew({ recorder, captain: () => store.get().character?.name || null });
+  // The crew seat (P11): a friend aboard as crew, through a crew room on the relay.
+  const crewLink = (code) => {
+    const url = new URL(location.pathname, location.origin);
+    if (!runtimeConfig.newGame) url.searchParams.set('newgame', '1');
+    url.searchParams.set('crew', code);
+    return url.href;
+  };
+  const linkedCrew = (new URLSearchParams(location.search).get('crew') || '').trim().toUpperCase();
+  const crew = createCrew({
+    pane: $('pane-crew'), recorder, store, toast,
+    say: (events) => hangar.say(events),
+    inviteLink: crewLink,
+    onAboard: () => select($('tab-crew')),
+    reducedMotion: () => reducedMotion.matches,
+    joinCode: linkedCrew || null,
+  });
   // The ship on the pad. Tier 0 with a custom garage ship shows that ship; the
   // standard ship and every upgraded tier show the tier art (voyage/art.js,
   // Mk I to Mk IV, drawn on one shared canvas so the ship grows tier by tier).
@@ -80,11 +95,17 @@ if (!flag.enabled) {
     pane: $('pane-jobs'), store, toast, dev: flag.dev,
     say: (events) => hangar.say(events),
     onCaptain: () => select($('tab-captain')),
+    crew: crew.hooks,
   });
+  crew.attach(jobs);
   // Quest keys (1-9 for choices, F/E/H/B in fights, Enter, Backspace) while the Jobs tab is open.
   addEventListener('keydown', (e) => { if (!$('pane-jobs').hidden) jobs.keydown(e); });
+  // Crew station keys (Space fires the turret, arrows aim, hold R to repair) while the Crew tab is open.
+  addEventListener('keydown', (e) => { if (!$('pane-crew').hidden) crew.keydown(e); });
+  addEventListener('keyup', (e) => { if (!$('pane-crew').hidden) crew.keyup(e); });
 
-  ready.then(() => crew.refresh(panes.crew));
+  crew.render();
+  ready.then(() => crew.refresh());
 
   // Tabs: arrow keys move between them, as the ARIA tab pattern asks.
   const tabs = [...document.querySelectorAll('.vy-tabs [role=tab]')];
@@ -95,7 +116,7 @@ if (!flag.enabled) {
       t.tabIndex = on ? 0 : -1;
       $(t.getAttribute('aria-controls')).hidden = !on;
     }
-    if (tab.id === 'tab-crew') crew.refresh(panes.crew);
+    if (tab.id === 'tab-crew') crew.refresh();
   };
   tabs.forEach((tab, i) => {
     tab.addEventListener('click', () => select(tab));
@@ -109,5 +130,6 @@ if (!flag.enabled) {
     });
   });
   if (!store.get().character) select($('tab-captain'));
+  else if (crew.pending) select($('tab-crew'));
   else if (jobs.playing) select($('tab-jobs'));
 }

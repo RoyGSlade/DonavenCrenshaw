@@ -55,11 +55,11 @@ function tripState(trip, ctx) {
   };
 }
 
-function puzzleState(part) {
+function puzzleState(part, pv) {
   const p = part.state;
   if (part.kind === 'cipher') {
     return {
-      kind: 'cipher', length: p.length, attemptsLeft: p.attemptsLeft, symbols: p.symbols,
+      kind: 'cipher', length: p.length, attemptsLeft: p.attemptsLeft, symbols: (pv?.symbols || []).map((x) => ({ id: x.id, symbol: x.symbol, label: x.label })),
       guesses: p.guesses.slice(-8).map((g) => ({ code: [...g.code], exact: g.exact, near: g.near })),
       reveal: p.reveal ? { slot: p.reveal.slot, symbol: p.reveal.symbol } : null,
     };
@@ -67,6 +67,7 @@ function puzzleState(part) {
   return {
     kind: 'riddle', attemptsLeft: p.attemptsLeft, instruction: cut(p.instruction, 300),
     fragments: p.fragments.slice(0, 6).map((f) => ({ symbol: f.symbol, text: cut(f.text, 160) })),
+    pads: (pv?.pads || []).slice(0, 4),
     wrong: Boolean(p.wrong), hint: p.hint ? cut(p.hint, 200) : null,
   };
 }
@@ -90,9 +91,9 @@ export function crewState({ quest = null, run = null, save, live = false }) {
   if (run.ended) return { ...out, step: 'end', ended: { result: run.ended.result, title: cut(run.ended.title, 80) }, text: cut(v.ended?.text) };
   const ctx = { run, save };
   const on = crewFight(run);
-  if (on) return { ...out, step: 'fight', fight: fightState(on.fight, live), text: cut(v.part?.card?.title || v.title) };
+  if (on) return { ...out, step: 'fight', hull: on.fight.ship.hp, hullMax: on.fight.ship.hpMax, fight: fightState(on.fight, live), text: cut(v.part?.card?.title || v.title) };
   const part = run.part;
-  if (part?.kind === 'cipher' || part?.kind === 'riddle') return { ...out, step: 'puzzle', text: cut(v.title), puzzle: puzzleState(part) };
+  if (part?.kind === 'cipher' || part?.kind === 'riddle') return { ...out, step: 'puzzle', text: cut(v.title), puzzle: puzzleState(part, v.part) };
   const trip = crewTrip(run);
   if (trip) return { ...out, step: 'trip', trip: tripState(trip, ctx) };
   if (part) {

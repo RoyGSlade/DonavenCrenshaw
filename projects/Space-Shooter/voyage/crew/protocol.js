@@ -19,7 +19,8 @@ export const CREW_KINDS = Object.freeze({
 });
 
 export const CREW_LIMITS = Object.freeze({ depth: 6, string: 400, array: 40, keys: 40, bytes: 12000 });
-const KEY = /^[A-Za-z][A-Za-z0-9]{0,23}$/;
+// Keys are short names; hyphens allowed for ids such as skill and giver ids.
+const KEY = /^[A-Za-z][A-Za-z0-9_-]{0,31}$/;
 
 // A deep copy of plain JSON within the limits, or undefined when anything is off.
 function plain(value, depth) {

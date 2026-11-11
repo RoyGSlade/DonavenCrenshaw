@@ -73,8 +73,10 @@ export function shipSummary(save) {
  * just ended (after its save was committed). onExit(): the player pressed
  * "Back to the job board". exitLabel: that button's words. announceEvents:
  * false when the page shows reward events itself (from session.commit).
+ * crew(): the crew aboard (voyage/crew/card.js card) or null; crew actions
+ * come in through crewAct (P11).
  */
-export function createQuestPlayer({ root, session, status = () => {}, onEnd = () => {}, onExit = () => {}, onChange = () => {}, exitLabel = 'Back to the job board', announceEvents = true }) {
+export function createQuestPlayer({ root, session, status = () => {}, onEnd = () => {}, onExit = () => {}, onChange = () => {}, exitLabel = 'Back to the job board', announceEvents = true, crew = () => null }) {
   let current = null; // { quest, run }
   let lastEvents = [];
   let ui = { key: '', cipher: [], riddle: [] };
@@ -98,10 +100,11 @@ export function createQuestPlayer({ root, session, status = () => {}, onEnd = ()
     return false;
   }
 
-  function doAct(action) {
-    if (!current) return;
-    const result = act(current.quest, current.run, session.get(), action, { now: Date.now() });
-    if (result.error) { status(result.error); return; }
+  // One engine step; returns the engine's error, or null.
+  function apply(action) {
+    if (!current) return 'No job running.';
+    const result = act(current.quest, current.run, session.get(), action, { now: Date.now(), crew: crew() });
+    if (result.error) return result.error;
     current.run = result.run;
     lastEvents = result.events;
     const lines = shownEvents(result.events);
@@ -109,6 +112,20 @@ export function createQuestPlayer({ root, session, status = () => {}, onEnd = ()
     session.commit(result.save, result.events, { run: result.run });
     render();
     if (result.run.ended) onEnd(result.run.ended, result.events);
+    return null;
+  }
+
+  function doAct(action) {
+    const error = apply(action);
+    if (error && current) status(error);
+  }
+
+  /** A crew action from player two (P11). Returns an error for the crew, or null. */
+  function crewAct(action) {
+    if (!current) return 'The captain has not taken a job yet.';
+    if (live) return 'The captain is flying this fight live. Hold on.';
+    if (!crew()) return 'No crew aboard.';
+    return apply({ ...action, type: 'crew' });
   }
 
   function exit() {
@@ -148,6 +165,7 @@ export function createQuestPlayer({ root, session, status = () => {}, onEnd = ()
       el('h2', { class: 'qs-title', text: v.quest.title }),
       el('p', { class: 'qs-where', text: `${v.locationName} · seed ${current.run.seed}` }),
       hullBar('Hull', v.hull, v.hullMax),
+      crew() ? el('p', { class: 'qs-where qs-crew', text: `Crew aboard: ${crew().name}, on the turret, repairs, scopes and checks.` }) : null,
       el('p', { class: 'qs-where qs-ship', dataset: { shipHull: String(v.hullMax), shipGuns: String(ship.guns), shipRace: String(ship.race) }, text: `Your ship: hull ${v.hullMax} · guns ${ship.guns} · race +${ship.race}` }),
     );
     let body;
@@ -230,6 +248,8 @@ export function createQuestPlayer({ root, session, status = () => {}, onEnd = ()
     const box = el('section', { class: 'qs-part qs-trip' }, el('h3', { text: `Travel to ${SECTORS[p.to].name}` }), sectorMap(p));
     if (p.phase === 'plan') {
       box.append(el('p', { class: 'qs-text', text: 'Pick a lane. Each jump can turn up something on the way. Fast is fewer jumps; safe goes round the dangerous sectors.' }));
+      const pick = p.crewMark && p.routes.find(r => r.id === p.crewMark);
+      if (pick) box.append(el('p', { class: 'qs-note qs-crew', text: `Your navigator recommends: ${pick.label}.` }));
       box.append(choiceList(p.routes.map(r => ({ label: `${r.label}, ${r.risk < 0.3 ? 'quiet' : r.risk < 0.7 ? 'some trouble likely' : 'trouble likely'}`, route: r.id, locked: false, reasons: [] })), choice => doAct({ type: 'route', route: choice.route })));
     } else if (p.phase === 'card') box.append(renderCard(p.card));
     else {
@@ -265,6 +285,7 @@ export function createQuestPlayer({ root, session, status = () => {}, onEnd = ()
       e.shield ? el('p', { class: 'qs-note', text: `Shield: ${e.shield}` }) : null,
       hullBar('Your hull', p.ship.hp, p.ship.hpMax),
       el('p', { class: 'qs-note', text: `Your guns hit for ${p.ship.damage} + d6.` }),
+      ...Object.entries(p.systems || {}).filter(([, down]) => down).map(([id]) => el('p', { class: 'qs-locked', dataset: { system: id }, text: id === 'guns' ? 'Guns knocked out: half damage until your crew repairs them.' : 'Engine knocked out: evading and breaking off are harder until your crew repairs it.' })),
       el('ol', { class: 'qs-minilog' }, ...p.log.map(line => el('li', { text: line }))),
     );
     const moves = el('div', { class: 'qs-moves' }, ...p.moves.map(m => button(`${m.label} [${MOVE_KEYS[m.id].toUpperCase()}]`, () => send({ move: m.id }))));
@@ -432,8 +453,10 @@ export function createQuestPlayer({ root, session, status = () => {}, onEnd = ()
   }
 
   return {
-    start, resume, render, keydown, exit,
+    start, resume, render, keydown, exit, crewAct,
     get active() { return Boolean(current); },
+    get quest() { return current?.quest || null; },
+    get live() { return Boolean(live); },
     get run() { return current?.run || null; },
     get log() { return current?.run.log || []; },
   };
