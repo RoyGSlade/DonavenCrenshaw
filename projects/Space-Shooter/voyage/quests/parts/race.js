@@ -4,7 +4,7 @@
 // on a real track. The page can fly the race live (today's racing code, the
 // "race" activity: no board is written) and report the time with
 // { type: 'live', timeMs, finished }, or resolve it quickly with a check.
-import { check, raceStats } from '../core.js';
+import { check, raceStats, rollText } from '../core.js';
 import { TRACKS } from '../data/tracks.js';
 
 // What the upgraded ship adds to a quick race roll: core's race activity
@@ -66,9 +66,8 @@ export function actRace(state, action, ctx) {
   }
   if (action?.type !== 'quick' || !['clean', 'push'].includes(action.style)) return { state, error: 'Unknown move' };
   const push = action.style === 'push';
-  const roll = check(ctx.save.character, { stat: 'dex', tag: 'nav', dc: push ? 7 : 8 }, ctx.rng.next);
-  const ship = shipRaceBonus(ctx.save);
-  const r = { ...roll, bonus: roll.bonus + ship, total: roll.total + ship, pass: roll.total + ship >= roll.dc };
+  // The ship's bonus rides on the attempt as `extra`, so a natural 2 or 12 still decides.
+  const r = check(ctx.save.character, { stat: 'dex', tag: 'nav', dc: push ? 7 : 8, extra: shipRaceBonus(ctx.save) }, ctx.rng.next);
   // A quick race still reports a believable time either side of the rival's.
   const spread = (r.total - r.dc) * 0.015;
   state.timeMs = Math.round(state.targetMs * (1 - spread));
@@ -78,7 +77,7 @@ export function actRace(state, action, ctx) {
   }
   if (r.pass && state.timeMs > state.targetMs) state.timeMs = state.targetMs - 10;
   if (!r.pass && state.timeMs <= state.targetMs) state.timeMs = state.targetMs + 10;
-  state.log.push(`Roll ${r.roll}+${r.bonus} vs ${r.dc}. You: ${seconds(state.timeMs)}. ${state.rival.name}: ${seconds(state.targetMs)}.`);
+  state.log.push(`Roll ${rollText(r)}. You: ${seconds(state.timeMs)}. ${state.rival.name}: ${seconds(state.targetMs)}.`);
   state.done = true; state.outcome = r.pass ? 'win' : 'lose';
   return { state };
 }

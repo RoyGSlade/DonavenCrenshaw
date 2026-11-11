@@ -30,12 +30,12 @@ test('new hangar: closed by default; captain, credits, upgrade and skill survive
   await page.getByRole('button', { name: 'Roll stats and sign on' }).click();
   await page.locator('#pane-captain h2', { hasText: 'Vela Quint' }).waitFor();
   for (let i = 0; i < 3; i++) await page.locator('#vy-dev-job').click();
-  await page.locator('[data-skill="smooth-burn"]').click();
+  await page.locator('[data-skill="pilot"]').click();
   await page.getByRole('tab', { name: 'Ship' }).click();
   await page.locator('[data-upgrade="hull"]').click();
   const before = await page.evaluate(() => JSON.parse(localStorage.getItem('stardust.voyage.v1')));
   assert.equal(before.upgrades.hull, 1);
-  assert.equal(before.character.skills['smooth-burn'], 1);
+  assert.equal(before.character.skills.pilot, 1);
   assert.equal(before.character.earned, 5, '2 to start + 3 from jobs');
   assert.ok(before.rep.hask >= 30, 'three jobs at 10 rep, more with a charming captain');
 
