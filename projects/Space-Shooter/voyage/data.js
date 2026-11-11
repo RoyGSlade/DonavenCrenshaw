@@ -76,11 +76,13 @@ export const MONEY_MAX = 9_999_999;
 export const REP_MAX = 100;
 export const ITEM_STACK_MAX = 999;
 
-// Quest givers (S29 placeholder, S62: tied to the Driftwake factions).
+// Quest givers (S29: the world lane's recommended three, until Donaven picks;
+// S28: one rep number each). Ids match world/QUEST-GIVERS.md; ilvane and
+// mallory are written up there as swap-ins and only need a line here.
 export const GIVERS = Object.freeze([
-  { id: 'relay-guild', name: 'Relay Guild', faction: 'Relay Guild' },
-  { id: 'ember-syndicate', name: 'Ember Syndicate', faction: 'Ember Syndicate' },
-  { id: 'hollow-choir', name: 'Hollow Choir', faction: 'Hollow Choir' },
+  { id: 'hask', name: 'Stationmaster Orrin Hask', short: 'Hask', faction: 'Relay Guild' },
+  { id: 'vey', name: 'Lucan Vey', short: 'Vey', faction: 'Beacon Prime (unaligned)' },
+  { id: 'garrity', name: 'Hob Garrity', short: 'Garrity', faction: 'Driftborn' },
 ]);
 
 // Rep bands, for showing a number as a word.
@@ -88,22 +90,23 @@ export const REP_BANDS = Object.freeze([
   { min: 0, name: 'Stranger' }, { min: 20, name: 'Known' }, { min: 45, name: 'Trusted' }, { min: 75, name: 'Ally' }, { min: 100, name: 'Sworn' },
 ]);
 
-// Reaching REP_MAX with a giver pays this once per save (S30): permanent skill
-// points for the character and unlocks kept with the account part of the save.
+// Reaching REP_MAX with a giver pays this once per save. Donaven's answer to
+// S30 (2026-11-11): 1 permanent skill point (safe from death) plus that giver's
+// own livery and title on the account. Cosmetic only, never a board.
 export const MAX_REP_REWARDS = Object.freeze({
-  'relay-guild': { permanent: 2, unlocks: ['title:relay-sworn', 'paint:relay-cyan'] },
-  'ember-syndicate': { permanent: 2, unlocks: ['title:ember-sworn', 'paint:ember-amber'] },
-  'hollow-choir': { permanent: 2, unlocks: ['title:choir-sworn', 'decal:choir-glyph'] },
+  hask: { permanent: 1, unlocks: ['title:lane-warden', 'paint:guild-livery'] },
+  vey: { permanent: 1, unlocks: ['title:beacon-regular', 'paint:gilded'] },
+  garrity: { permanent: 1, unlocks: ['title:dustfall-made', 'paint:scrapper-livery'] },
 });
 
 export const UNLOCK_KINDS = Object.freeze(['title', 'paint', 'decal', 'badge']);
 export const UNLOCK_NAMES = Object.freeze({
-  'title:relay-sworn': 'Title: Sworn to the Relay',
-  'paint:relay-cyan': 'Paint: Relay cyan',
-  'title:ember-sworn': 'Title: Ember Sworn',
-  'paint:ember-amber': 'Paint: Ember amber',
-  'title:choir-sworn': 'Title: Choir Sworn',
-  'decal:choir-glyph': 'Decal: Choir glyph',
+  'title:lane-warden': 'Title: Lane Warden',
+  'paint:guild-livery': 'Paint: Guild livery',
+  'title:beacon-regular': 'Title: Beacon Regular',
+  'paint:gilded': 'Paint: Gilded trim',
+  'title:dustfall-made': 'Title: Dustfall Made',
+  'paint:scrapper-livery': 'Paint: Scrapper livery',
 });
 
 // Items (S40: railgun is the first item quest). `max` caps a stack.

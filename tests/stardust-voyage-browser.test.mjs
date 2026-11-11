@@ -37,7 +37,7 @@ test('new hangar: closed by default; captain, credits, upgrade and skill survive
   assert.equal(before.upgrades.hull, 1);
   assert.equal(before.character.skills['smooth-burn'], 1);
   assert.equal(before.character.earned, 5, '2 to start + 3 from jobs');
-  assert.ok(before.rep['relay-guild'] >= 30, 'three jobs at 10 rep, more with a charming captain');
+  assert.ok(before.rep.hask >= 30, 'three jobs at 10 rep, more with a charming captain');
 
   await page.reload();
   await page.getByRole('tab', { name: 'Ship' }).click();

@@ -190,8 +190,8 @@ export function createHangar({ panes, store, ship, crew, toast, dev = false, onT
     fill(panes.dev, 
       el('p', { class: 'vy-eyebrow', text: 'TEST TOOLS · THIS TAB ONLY' }),
       el('div', {}, [
-        el('button', { type: 'button', id: 'vy-dev-job', text: 'Practice job', on: { click: () => say(store.grant({ money: 250, rep: { 'relay-guild': 10 }, items: { scrap: 6, ore: 2, circuit: 1 }, skillPoints: 1 })) } }),
-        el('button', { type: 'button', id: 'vy-dev-maxrep', text: 'Max Relay rep', on: { click: () => say(store.grant({ rep: { 'relay-guild': REP_MAX } })) } }),
+        el('button', { type: 'button', id: 'vy-dev-job', text: 'Practice job', on: { click: () => say(store.grant({ money: 250, rep: { hask: 10 }, items: { scrap: 6, ore: 2, circuit: 1 }, skillPoints: 1 })) } }),
+        el('button', { type: 'button', id: 'vy-dev-maxrep', text: 'Max Hask rep', on: { click: () => say(store.grant({ rep: { hask: REP_MAX } })) } }),
         el('button', { type: 'button', id: 'vy-dev-die', text: 'Test death', on: { click: () => {
           const lost = store.die();
           toast(lost == null ? 'Make a captain first.' : `Your captain died. ${lost} skill point${lost === 1 ? '' : 's'} lost, stats rolled again, skills refunded.`);

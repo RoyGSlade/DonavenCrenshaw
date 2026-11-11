@@ -115,9 +115,9 @@ test('character: cleaning repairs bad saves and refunds ranks that no longer fit
 // --- money and rep ----------------------------------------------------------------
 
 test('economy: a reward pays money, rep, items, points and flags and says so in events', () => {
-  const { save, events } = grant(withCaptain(), { money: 120, rep: { 'relay-guild': 10 }, items: { scrap: 4, railgun: 1 }, skillPoints: 1, flags: { 'met-ossa': 1 } });
+  const { save, events } = grant(withCaptain(), { money: 120, rep: { hask: 10 }, items: { scrap: 4, railgun: 1 }, skillPoints: 1, flags: { 'met-ossa': 1 } });
   assert.equal(save.money, 120);
-  assert.equal(save.rep['relay-guild'], 10);
+  assert.equal(save.rep.hask, 10);
   assert.deepEqual(save.items, { scrap: 4, railgun: 1 });
   assert.equal(save.character.earned, START_POINTS + 1);
   assert.equal(save.flags['met-ossa'], 1);
@@ -125,37 +125,37 @@ test('economy: a reward pays money, rep, items, points and flags and says so in 
 });
 
 test('economy: fines and losses clamp at zero; rep clamps 0..100; stacks clamp to the item max', () => {
-  const start = cleanSave({ money: 50, rep: { 'relay-guild': 5 }, items: { permit: 1 } });
-  const { save } = grant(start, { money: -80, rep: { 'relay-guild': -20, 'hollow-choir': 500 }, items: { permit: 3, scrap: -2 } });
+  const start = cleanSave({ money: 50, rep: { hask: 5 }, items: { permit: 1 } });
+  const { save } = grant(start, { money: -80, rep: { hask: -20, garrity: 500 }, items: { permit: 3, scrap: -2 } });
   assert.equal(save.money, 0);
-  assert.equal(save.rep['relay-guild'], undefined, 'zero rep is not stored');
-  assert.equal(save.rep['hollow-choir'], REP_MAX);
+  assert.equal(save.rep.hask, undefined, 'zero rep is not stored');
+  assert.equal(save.rep.garrity, REP_MAX);
   assert.equal(save.items.permit, 1, 'a key item stacks to 1');
   assert.equal(save.items.scrap, undefined);
 });
 
 test('economy: max rep pays permanent points and account unlocks once; banked without a captain', () => {
-  let { save, events } = grant(withCaptain(), { rep: { 'relay-guild': 100 } });
-  assert.equal(save.character.permanent, MAX_REP_REWARDS['relay-guild'].permanent);
-  assert.deepEqual(save.account.unlocks, MAX_REP_REWARDS['relay-guild'].unlocks);
+  let { save, events } = grant(withCaptain(), { rep: { hask: 100 } });
+  assert.equal(save.character.permanent, MAX_REP_REWARDS.hask.permanent);
+  assert.deepEqual(save.account.unlocks, MAX_REP_REWARDS.hask.unlocks);
   assert.ok(events.some((e) => e.type === 'max-rep'));
-  ({ save } = grant(grant(save, { rep: { 'relay-guild': -50 } }).save, { rep: { 'relay-guild': 50 } }));
-  assert.equal(save.character.permanent, MAX_REP_REWARDS['relay-guild'].permanent, 'paid once per save');
-  assert.equal(grant(emptySave(), { rep: { 'ember-syndicate': 100 } }).save.account.bank, 2);
-  assert.ok(grant(withCaptain(), { rep: { 'relay-guild': 1 }, unlocks: ['badge:first-run', 'bogus'] }).save.account.unlocks.includes('badge:first-run'));
+  ({ save } = grant(grant(save, { rep: { hask: -50 } }).save, { rep: { hask: 50 } }));
+  assert.equal(save.character.permanent, MAX_REP_REWARDS.hask.permanent, 'paid once per save');
+  assert.equal(grant(emptySave(), { rep: { vey: 100 } }).save.account.bank, 1);
+  assert.ok(grant(withCaptain(), { rep: { hask: 1 }, unlocks: ['badge:first-run', 'bogus'] }).save.account.unlocks.includes('badge:first-run'));
   assert.equal(grant(withCaptain(), { unlocks: ['bogus'] }).events.length, 0);
 });
 
 test('economy: rep gains are raised by the captain rep bonus; prices lowered by the discount', () => {
   const s = withCaptain({ stats: { cha: 6, con: 3, dex: 3, wis: 3 } });
-  assert.equal(grant(s, { rep: { 'relay-guild': 10 } }).save.rep['relay-guild'], 11, '+15% rounded down');
-  assert.equal(grant(s, { rep: { 'relay-guild': -10 } }).save.rep['relay-guild'], undefined, 'losses are not raised');
+  assert.equal(grant(s, { rep: { hask: 10 } }).save.rep.hask, 11, '+15% rounded down');
+  assert.equal(grant(s, { rep: { hask: -10 } }).save.rep.hask, undefined, 'losses are not raised');
   assert.equal(discount(s), 6);
   assert.equal(priceFor(s, 100), 94);
 });
 
 test('economy: spend, canAfford, meets and missing', () => {
-  const s = withCaptain({ stats: { cha: 4, con: 3, dex: 3, wis: 3 }, skills: { 'patch-kit': 1 }, earned: 2 }, { money: 100, items: { scrap: 3 }, rep: { 'relay-guild': 20 }, flags: { 'met-ossa': 1 } });
+  const s = withCaptain({ stats: { cha: 4, con: 3, dex: 3, wis: 3 }, skills: { 'patch-kit': 1 }, earned: 2 }, { money: 100, items: { scrap: 3 }, rep: { hask: 20 }, flags: { 'met-ossa': 1 } });
   assert.equal(canAfford(s, { money: 100, items: { scrap: 3 } }), true);
   assert.equal(canAfford(s, { money: 101 }), false);
   const paid = spend(s, { money: 40, items: { scrap: 3 } });
@@ -166,11 +166,11 @@ test('economy: spend, canAfford, meets and missing', () => {
   assert.equal(refused.ok, false);
   assert.match(refused.reason, /1 Ore/);
   assert.equal(refused.save.money, 100);
-  assert.equal(meets(s, { rep: { 'relay-guild': 20 }, stats: { cha: 4 }, skills: { 'patch-kit': 1 }, trees: { wrench: 1 }, flags: { 'met-ossa': 1 }, notFlags: ['betrayed'] }), true);
+  assert.equal(meets(s, { rep: { hask: 20 }, stats: { cha: 4 }, skills: { 'patch-kit': 1 }, trees: { wrench: 1 }, flags: { 'met-ossa': 1 }, notFlags: ['betrayed'] }), true);
   assert.equal(meets(s, { notFlags: ['met-ossa'] }), false);
-  assert.equal(meets(s, { anyOf: [{ items: { permit: 1 } }, { rep: { 'relay-guild': 10 } }] }), true);
-  assert.equal(meets(s, { anyOf: [{ items: { permit: 1 } }, { rep: { 'relay-guild': 50 } }] }), false);
-  assert.deepEqual(missing(s, { rep: { 'relay-guild': 40 }, upgrades: { engine: 1 } }), ['Needs 40 rep with Relay Guild.', 'Needs Engine tier 1.']);
+  assert.equal(meets(s, { anyOf: [{ items: { permit: 1 } }, { rep: { hask: 10 } }] }), true);
+  assert.equal(meets(s, { anyOf: [{ items: { permit: 1 } }, { rep: { hask: 50 } }] }), false);
+  assert.deepEqual(missing(s, { rep: { hask: 40 }, upgrades: { engine: 1 } }), ['Needs 40 rep with Stationmaster Orrin Hask.', 'Needs Engine tier 1.']);
   assert.equal(repBand(0), 'Stranger');
   assert.equal(repBand(100), 'Sworn');
 });
@@ -225,16 +225,16 @@ test('upgrades: classic boards fly the build exactly as today; new races and fig
 
 test('save: cleaning keeps good fields, drops bad ones, keeps unknown keys and quest state', () => {
   const s = cleanSave({
-    updatedAt: 5, money: -3, rep: { 'relay-guild': 140, 'Bad Id': 3 }, items: { scrap: 2.7, ore: 0 },
-    upgrades: { hull: 9, engine: -1, junk: 2 }, flags: { a: 2 }, account: { unlocks: ['title:x', 'nope', 'title:x'], maxRep: { 'relay-guild': 3 } },
+    updatedAt: 5, money: -3, rep: { hask: 140, 'Bad Id': 3 }, items: { scrap: 2.7, ore: 0 },
+    upgrades: { hull: 9, engine: -1, junk: 2 }, flags: { a: 2 }, account: { unlocks: ['title:x', 'nope', 'title:x'], maxRep: { hask: 3 } },
     quests: { q1: { step: 2 } }, future: { keep: true }, character: { name: 'Ash' },
   });
   assert.equal(s.money, 0);
-  assert.deepEqual(s.rep, { 'relay-guild': 100 });
+  assert.deepEqual(s.rep, { hask: 100 });
   assert.deepEqual(s.items, { scrap: 2 });
   assert.deepEqual(s.upgrades, { hull: 3, engine: 0, thrusters: 0, guns: 0 });
   assert.deepEqual(s.account.unlocks, ['title:x']);
-  assert.deepEqual(s.account.maxRep, { 'relay-guild': 1 });
+  assert.deepEqual(s.account.maxRep, { hask: 1 });
   assert.deepEqual(s.quests, { q1: { step: 2 } });
   assert.deepEqual(s.future, { keep: true });
   assert.equal(s.character.name, 'Ash');
@@ -276,10 +276,10 @@ test('store: changes save at once in this browser, stamp the clock, and survive 
 
 test('store: max-rep points banked before there was a captain go to the new captain', () => {
   const store = createVoyageStore({ storage: memoryStore(), now: () => 1 });
-  store.grant({ rep: { 'relay-guild': 100 } });
-  assert.equal(store.get().account.bank, 2);
+  store.grant({ rep: { hask: 100 } });
+  assert.equal(store.get().account.bank, 1);
   store.createCharacter({ name: 'Late' }, seq(0.5));
-  assert.equal(store.get().character.permanent, 2);
+  assert.equal(store.get().character.permanent, 1);
   assert.equal(store.get().account.bank, 0);
 });
 
