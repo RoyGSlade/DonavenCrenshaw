@@ -1,0 +1,228 @@
+{
+  "version": 1,
+  "about": "Room types for the procgen dresser (layer: room). Each room type is a list of rules placed in order: anchors, then functional groups, then clutter and decor. Rule fields are documented in lhc-lanes/stardust/procgen/API.md. Sizes are outer tiles (walls included).",
+  "mapTypes": {"workshop": "workshop", "mel-bay": "fitting-bay", "edna-den": "den", "hask-office": "relay-office", "vey-lounge": "broker-lounge", "garrity-office": "salvage-office", "cantina": "cantina", "hangar": "hangar-bay", "cockpit": "cockpit", "crew-deck": "crew-deck", "engine-room": "engine-room", "cargo-hold": "cargo-hold"},
+  "themes": {
+    "tidy": {"name": "Tidy", "clutter": 0.45, "decor": 1.0, "jitter": 0.25, "rotJitter": 0, "wide": 2, "extra": []},
+    "lived-in": {"name": "Lived-in", "clutter": 1.0, "decor": 1.0, "jitter": 0.6, "rotJitter": 0, "wide": 2, "extra": []},
+    "wrecked": {"name": "Wrecked", "clutter": 1.5, "decor": 0.35, "jitter": 1.2, "rotJitter": 0.22, "wide": 1, "clutterPlace": "any", "extra": [{"id": "wreck-scrap", "role": "clutter", "pick": [{"prop": "scrap-bin", "w": 2}, {"prop": "oil-drum", "w": 2}, {"prop": "crate-small", "w": 3}, {"prop": "salvage-pile", "w": 1}], "count": [2, 4], "scale": "area", "place": "any", "cluster": [1, 3], "prefer": {"balance": 1}}]}
+  },
+  "rooms": {
+    "cockpit": {
+      "name": "Cockpit",
+      "floor": "ship-cockpit-floor",
+      "wall": "ship-wall",
+      "size": {"min": [8, 7], "max": [11, 9]},
+      "doors": [{"side": "s"}],
+      "rules": [
+        {"id": "helm", "role": "anchor", "prop": "nav-console", "place": "wall", "prefer": {"far": 2, "facesDoor": 3, "centered": 3}, "zone": "flight", "interact": {"kind": "ship", "id": "helm", "label": "Helm: set a course"}, "use": "front", "satellites": [{"prop": "pilot-seat", "side": "front", "gap": 0, "count": [2, 2], "align": "spread", "face": "parent"}]},
+        {"id": "eng-station", "role": "functional", "prop": "engineering-console", "place": "wall", "mirror": true, "near": ["helm"], "zone": "flight", "prefer": {"near": 1, "side": 3}, "interact": {"kind": "repair", "id": "engine", "label": "Engineering station"}, "use": "front", "satellites": [{"prop": "pilot-seat", "side": "front", "gap": 0, "count": [1, 1], "align": "center", "face": "parent", "chance": 0.7}]},
+        {"id": "plot-table", "role": "functional", "prop": "holo-table", "place": "center", "chance": 0.6, "minArea": 40, "prefer": {"centered": 2}, "interact": {"kind": "console", "id": "star-chart", "label": "Star chart"}, "use": "any"},
+        {"id": "lockers", "role": "functional", "prop": "locker", "run": [1, 2], "place": "wall", "zone": "kit", "prefer": {"door": 2, "corner": 1}},
+        {"id": "kit", "role": "clutter", "pick": ["toolbox-chest", "crate-small"], "count": [1, 2], "place": "wall", "zone": "kit", "cluster": [1, 2], "prefer": {"corner": 1}},
+        {"id": "hatch", "role": "decor", "prop": "hatch-closed", "place": "floor", "chance": 0.7, "prefer": {"balance": 1, "door": 1}},
+        {"id": "vents", "role": "decor", "prop": "floor-vent", "count": [1, 2], "place": "floor", "prefer": {"spread": 2}},
+        {"id": "plant", "role": "decor", "prop": "potted-plant", "place": "corner", "chance": 0.6, "mirror": "tidy", "themes": ["tidy", "lived-in"], "prefer": {"balance": 1, "far": 1}}
+      ]
+    },
+    "crew-deck": {
+      "name": "Crew deck",
+      "floor": "ship-crew-floor",
+      "wall": "ship-wall",
+      "size": {"min": [10, 8], "max": [14, 10]},
+      "doors": [{"side": "s"}],
+      "rules": [
+        {"id": "mess-table", "role": "anchor", "prop": "crew-table", "place": "center", "zone": "mess", "prefer": {"centered": 2}},
+        {"id": "bunks", "role": "anchor", "prop": "bunk", "run": [2, 3], "runGap": 1, "place": "wall", "zone": "sleep", "prefer": {"far": 2, "corner": 1}, "interact": {"kind": "console", "id": "bunk", "label": "Your bunk"}, "use": "any"},
+        {"id": "galley", "role": "functional", "prop": "galley-unit", "place": "wall", "zone": "mess", "prefer": {"balance": 1}, "interact": {"kind": "console", "id": "galley", "label": "Galley: something hot"}, "use": "front"},
+        {"id": "lockers", "role": "functional", "prop": "locker", "run": [2, 3], "place": "wall", "zone": "sleep", "prefer": {"balance": 1}},
+        {"id": "sofa", "role": "functional", "prop": "sofa", "place": "wall", "chance": 0.7, "minArea": 60, "zone": "rest", "prefer": {"balance": 2}, "satellites": [{"prop": "coffee-table", "side": "front", "gap": 0, "count": [1, 1], "align": "center", "required": true}]},
+        {"id": "vending", "role": "functional", "prop": "vending-machine", "place": "wall", "chance": 0.6, "zone": "mess", "prefer": {"corner": 1}},
+        {"id": "ralph", "role": "decor", "prop": "dog-bed", "place": "corner", "chance": 0.7, "zone": "rest", "prefer": {"balance": 1}},
+        {"id": "plants", "role": "decor", "prop": "potted-plant", "count": [1, 2], "place": "corner", "themes": ["tidy", "lived-in"], "mirror": "tidy", "prefer": {"spread": 2, "balance": 1}},
+        {"id": "crates", "role": "clutter", "prop": "crate-small", "count": [0, 2], "place": "wall", "zone": "sleep", "prefer": {"corner": 1}},
+        {"id": "vents", "role": "decor", "prop": "floor-vent", "count": [1, 2], "place": "floor", "prefer": {"spread": 2}},
+        {"id": "hatch", "role": "decor", "prop": "hatch-closed", "place": "floor", "chance": 0.5, "prefer": {"balance": 1}}
+      ]
+    },
+    "engine-room": {
+      "name": "Engine room",
+      "floor": "ship-engine-floor",
+      "wall": "ship-wall",
+      "size": {"min": [10, 9], "max": [14, 11]},
+      "doors": [{"side": "s"}],
+      "rules": [
+        {"id": "reactor", "role": "anchor", "prop": "reactor-core", "place": "center", "ring": {"tile": "/", "width": 1}, "prefer": {"centered": 4}, "interact": {"kind": "repair", "id": "engine", "label": "Reactor: patch the core"}, "use": "any"},
+        {"id": "eng-console", "role": "anchor", "prop": "engineering-console", "place": "wall", "mirror": true, "prefer": {"side": 2, "facesCenter": 1, "spread": 2}, "interact": {"kind": "console", "id": "engine-readout", "label": "Engine readout"}, "use": "front"},
+        {"id": "pipes", "role": "functional", "prop": "pipe-run", "count": [2, 4], "place": "wall", "prefer": {"spread": 3, "corner": 1}},
+        {"id": "bench", "role": "functional", "prop": "workbench", "place": "wall", "zone": "repair", "prefer": {"balance": 2}, "satellites": [{"prop": "toolbox-chest", "side": "right", "gap": 0, "count": [1, 1], "face": "same", "chance": 0.6}]},
+        {"id": "rack", "role": "functional", "prop": "tool-rack", "place": "wall", "zone": "repair", "prefer": {"balance": 1}},
+        {"id": "spares", "role": "clutter", "pick": ["crate-small", "toolbox-chest", "oil-drum"], "count": [1, 3], "scale": "area", "place": "wall", "cluster": [1, 2], "zone": "repair", "prefer": {"corner": 2}},
+        {"id": "vents", "role": "decor", "prop": "floor-vent", "count": [2, 3], "place": "floor", "prefer": {"spread": 2}}
+      ]
+    },
+    "cargo-hold": {
+      "name": "Cargo hold",
+      "floor": "ship-cargo-floor",
+      "wall": "ship-wall",
+      "size": {"min": [11, 9], "max": [16, 11]},
+      "doors": [{"side": "s"}],
+      "rules": [
+        {"id": "containers", "role": "anchor", "prop": "cargo-container", "count": [2, 3], "scale": "area", "place": "wall", "mirror": "tidy", "prefer": {"far": 1, "spread": 1, "corner": 2}},
+        {"id": "rails", "role": "anchor", "prop": "cargo-rail", "run": [2, 3], "place": "floor", "prefer": {"centered": 3, "door": 1}},
+        {"id": "stacks", "role": "functional", "pick": [{"prop": "crate-large", "w": 2}, {"prop": "crate-small", "w": 3}, {"prop": "oil-drum", "w": 1}], "count": [2, 3], "scale": "area", "place": "wall", "cluster": [2, 4], "prefer": {"corner": 2, "spread": 2, "balance": 1}},
+        {"id": "pallet", "role": "functional", "pick": [{"prop": "crate-large", "w": 2}, {"prop": "crate-small", "w": 2}], "place": "open", "chance": 0.7, "minArea": 70, "cluster": [2, 4], "prefer": {"balance": 2, "centered": 1}},
+        {"id": "arms", "role": "functional", "prop": "weapon-rack", "place": "wall", "chance": 0.5, "prefer": {"door": 1}},
+        {"id": "pipes", "role": "functional", "prop": "pipe-run", "count": [1, 2], "place": "wall", "prefer": {"spread": 2}},
+        {"id": "hatch", "role": "decor", "prop": "hatch-closed", "place": "floor", "prefer": {"balance": 1}},
+        {"id": "vents", "role": "decor", "prop": "floor-vent", "count": [0, 2], "place": "floor", "prefer": {"spread": 2}}
+      ]
+    },
+    "workshop": {
+      "name": "Chibby's workshop",
+      "floor": "workshop-floor",
+      "wall": "workshop-wall",
+      "size": {"min": [10, 8], "max": [14, 11]},
+      "doors": [{"side": "s"}],
+      "rules": [
+        {"id": "bench", "role": "anchor", "prop": "workbench", "run": [2, 2], "place": "wall", "zone": "work", "prefer": {"far": 2, "facesDoor": 2, "centered": 2}, "interact": {"kind": "station", "id": "pad", "label": "Chibby's bench: ship upgrades"}, "use": "front", "satellites": [{"prop": "welding-cart", "side": "right", "gap": 0, "count": [1, 1], "face": "same", "chance": 0.8}]},
+        {"id": "rack", "role": "functional", "prop": "tool-rack", "count": [1, 2], "place": "wall", "zone": "work", "prefer": {"spread": 1}},
+        {"id": "project", "role": "functional", "prop": "salvage-pile", "place": "open", "zone": "work", "prefer": {"centered": 1, "balance": 1}, "satellites": [{"prop": "scrap-bin", "side": "right", "gap": 0, "count": [1, 1], "chance": 0.7}]},
+        {"id": "shelves", "role": "functional", "prop": "parts-shelf", "count": [1, 2], "place": "wall", "zone": "storage", "prefer": {"balance": 2}},
+        {"id": "diag", "role": "functional", "prop": "engineering-console", "place": "wall", "chance": 0.6, "zone": "work", "prefer": {"balance": 1}, "interact": {"kind": "console", "id": "diagnostics", "label": "Diagnostics rig"}, "use": "front"},
+        {"id": "lockers", "role": "functional", "prop": "locker", "run": [2, 3], "place": "wall", "chance": 0.7, "zone": "kit", "prefer": {"door": 2}},
+        {"id": "ralph", "role": "decor", "prop": "dog-bed", "place": "corner", "zone": "kit", "prefer": {"balance": 1}},
+        {"id": "chests", "role": "clutter", "pick": ["toolbox-chest", "oil-drum", "scrap-bin"], "count": [1, 2], "scale": "area", "place": "wall", "cluster": [1, 2], "zone": "work", "prefer": {"balance": 1}},
+        {"id": "crates", "role": "clutter", "pick": [{"prop": "crate-small", "w": 3}, {"prop": "crate-large", "w": 1}], "count": [1, 2], "place": "corner", "cluster": [2, 3], "zone": "storage", "prefer": {"balance": 1}},
+        {"id": "vending", "role": "decor", "prop": "vending-machine", "place": "wall", "chance": 0.5, "themes": ["tidy", "lived-in"], "zone": "kit", "prefer": {"door": 1}},
+        {"id": "vents", "role": "decor", "prop": "floor-vent", "count": [1, 2], "place": "floor", "prefer": {"spread": 2}}
+      ]
+    },
+    "fitting-bay": {
+      "name": "Mel's fitting bay",
+      "floor": "fitting-floor",
+      "wall": "fitting-wall",
+      "size": {"min": [10, 8], "max": [14, 10]},
+      "doors": [{"side": "s"}],
+      "rules": [
+        {"id": "counter", "role": "anchor", "prop": "shop-counter", "place": "wall", "wallGap": 1, "keeper": "back", "zone": "shop", "prefer": {"far": 2, "facesDoor": 3, "centered": 3}, "interact": {"kind": "station", "id": "locker", "label": "Mel's counter: gear"}, "use": "front"},
+        {"id": "racks", "role": "anchor", "prop": "weapon-rack", "count": [2, 3], "place": "wall", "mirror": true, "zone": "shop", "prefer": {"facesDoor": 1, "spread": 2}},
+        {"id": "armour", "role": "functional", "prop": "armour-stand", "run": [2, 3], "place": "wall", "mirror": "tidy", "zone": "armour", "prefer": {"balance": 2}},
+        {"id": "cases", "role": "functional", "prop": "display-case", "count": [2, 3], "scale": "area", "place": "open", "prefer": {"centered": 1, "spread": 2}},
+        {"id": "fitting", "role": "functional", "prop": "workbench", "place": "wall", "chance": 0.75, "zone": "armour", "prefer": {"balance": 1}, "interact": {"kind": "console", "id": "fitting", "label": "Fitting bench"}, "use": "front", "satellites": [{"prop": "toolbox-chest", "side": "left", "gap": 0, "count": [1, 1], "face": "same", "chance": 0.6}]},
+        {"id": "lockers", "role": "functional", "prop": "locker", "run": [2, 3], "place": "wall", "zone": "armour", "prefer": {"door": 1}},
+        {"id": "shelf", "role": "functional", "prop": "parts-shelf", "place": "wall", "chance": 0.6, "zone": "shop", "prefer": {"balance": 1}},
+        {"id": "plants", "role": "decor", "prop": "potted-plant", "count": [1, 2], "place": "corner", "mirror": "tidy", "themes": ["tidy", "lived-in"], "prefer": {"spread": 2}},
+        {"id": "crates", "role": "clutter", "pick": ["crate-small", "crate-large"], "count": [0, 2], "place": "corner", "cluster": [1, 2], "zone": "armour", "prefer": {"balance": 1}}
+      ]
+    },
+    "den": {
+      "name": "Edna's den",
+      "floor": "den-floor",
+      "wall": "den-wall",
+      "size": {"min": [10, 8], "max": [13, 10]},
+      "doors": [{"side": "s"}],
+      "rules": [
+        {"id": "counter", "role": "anchor", "prop": "shop-counter", "place": "wall", "wallGap": 1, "keeper": "back", "zone": "shop", "prefer": {"far": 2, "facesDoor": 3, "centered": 2}, "interact": {"kind": "station", "id": "backroom", "label": "Edna's counter"}, "use": "front"},
+        {"id": "shelves", "role": "anchor", "prop": "contraband-shelf", "count": [1, 3], "scale": "area", "place": "wall", "zone": "shop", "prefer": {"spread": 1}},
+        {"id": "lounge", "role": "functional", "prop": "rug", "place": "open", "fallback": "any", "zone": "lounge", "prefer": {"balance": 2, "door": 1}, "satellites": [{"prop": "low-table-cushions", "side": "on", "count": [1, 1], "required": true}]},
+        {"id": "safe", "role": "functional", "prop": "safe", "place": "corner", "fallback": "wall", "zone": "shop", "prefer": {"far": 1}},
+        {"id": "goods", "role": "functional", "prop": "display-case", "place": "wall", "chance": 0.7, "zone": "shop", "prefer": {"balance": 1}},
+        {"id": "guns", "role": "functional", "prop": "weapon-rack", "place": "wall", "chance": 0.6, "zone": "lounge", "prefer": {"balance": 1}},
+        {"id": "stash", "role": "clutter", "pick": [{"prop": "crate-small", "w": 3}, {"prop": "crate-large", "w": 2}], "count": [1, 3], "scale": "area", "place": "wall", "cluster": [2, 3], "prefer": {"corner": 2, "balance": 2}},
+        {"id": "plant", "role": "decor", "prop": "potted-plant", "place": "corner", "chance": 0.5, "themes": ["lived-in"], "zone": "lounge"},
+        {"id": "vents", "role": "decor", "prop": "floor-vent", "count": [0, 1], "place": "floor", "prefer": {"spread": 2}}
+      ]
+    },
+    "relay-office": {
+      "name": "Hask's relay office",
+      "floor": "office-floor",
+      "wall": "office-wall",
+      "size": {"min": [9, 8], "max": [12, 10]},
+      "doors": [{"side": "s"}],
+      "rules": [
+        {"id": "desk", "role": "anchor", "prop": "desk", "place": "wall", "orient": "wall", "wallGap": 1, "keeper": "seat", "zone": "desk", "prefer": {"far": 2, "facesDoor": 3, "centered": 3}, "interact": {"kind": "npc", "id": "desk", "label": "Hask's desk"}, "use": "back", "satellites": [{"prop": "office-chair", "side": "front", "gap": 0, "count": [1, 1], "align": "center", "face": "parent", "seat": true}, {"prop": "office-chair", "side": "back", "gap": 0, "count": [1, 2], "align": "spread", "face": "parent", "chance": 0.7}]},
+        {"id": "relay", "role": "anchor", "prop": "nav-console", "place": "wall", "zone": "relay", "prefer": {"balance": 1, "side": 2}, "interact": {"kind": "console", "id": "relay", "label": "Relay board"}, "use": "front"},
+        {"id": "holo", "role": "functional", "prop": "holo-table", "place": "open", "chance": 0.6, "minArea": 50, "zone": "relay", "prefer": {"balance": 1}, "interact": {"kind": "console", "id": "relay-map", "label": "Relay map"}, "use": "any"},
+        {"id": "files", "role": "functional", "prop": "filing-cabinet", "run": [2, 3], "place": "wall", "zone": "desk", "prefer": {"corner": 1}},
+        {"id": "safe", "role": "functional", "prop": "safe", "place": "corner", "chance": 0.7, "zone": "desk"},
+        {"id": "waiting", "role": "functional", "prop": "sofa", "place": "wall", "chance": 0.7, "zone": "waiting", "prefer": {"door": 2, "balance": 1}, "satellites": [{"prop": "coffee-table", "side": "front", "gap": 0, "count": [1, 1], "align": "center", "required": true}]},
+        {"id": "vending", "role": "decor", "prop": "vending-machine", "place": "wall", "chance": 0.5, "zone": "waiting", "prefer": {"door": 1}},
+        {"id": "plants", "role": "decor", "prop": "potted-plant", "count": [1, 2], "place": "corner", "mirror": "tidy", "themes": ["tidy", "lived-in"], "prefer": {"spread": 2, "balance": 1}},
+        {"id": "boxes", "role": "clutter", "prop": "crate-small", "count": [0, 2], "place": "wall", "zone": "relay", "cluster": [1, 2], "prefer": {"corner": 1}}
+      ]
+    },
+    "broker-lounge": {
+      "name": "Vey's broker lounge",
+      "floor": "lounge-floor",
+      "wall": "lounge-wall",
+      "size": {"min": [10, 9], "max": [14, 11]},
+      "doors": [{"side": "s"}],
+      "rules": [
+        {"id": "lounge", "role": "anchor", "prop": "rug", "place": "open", "zone": "lounge", "prefer": {"centered": 1, "balance": 1, "door": 1}, "satellites": [{"prop": "coffee-table", "side": "on", "count": [1, 1], "required": true}, {"prop": "sofa", "side": "front", "gap": 0, "count": [1, 1], "align": "center", "face": "parent", "required": true}, {"prop": "sofa", "side": "back", "gap": 0, "count": [1, 1], "align": "center", "face": "parent", "chance": 0.75}, {"prop": "office-chair", "side": "sides", "gap": 0, "count": [1, 1], "face": "parent", "chance": 0.5}]},
+        {"id": "desk", "role": "anchor", "prop": "desk", "place": "wall", "orient": "wall", "wallGap": 1, "keeper": "seat", "zone": "desk", "prefer": {"far": 2, "facesDoor": 3, "centered": 1}, "interact": {"kind": "npc", "id": "desk", "label": "Vey's desk"}, "use": "back", "satellites": [{"prop": "office-chair", "side": "front", "gap": 0, "count": [1, 1], "align": "center", "face": "parent", "seat": true}]},
+        {"id": "cases", "role": "functional", "prop": "display-case", "count": [2, 3], "place": "wall", "mirror": "tidy", "zone": "gallery", "prefer": {"spread": 2, "balance": 1}},
+        {"id": "holo", "role": "functional", "prop": "holo-table", "place": "open", "chance": 0.5, "minArea": 80, "zone": "desk", "prefer": {"balance": 1}},
+        {"id": "safe", "role": "functional", "prop": "safe", "place": "corner", "zone": "desk"},
+        {"id": "bar", "role": "functional", "prop": "galley-unit", "place": "wall", "chance": 0.6, "zone": "lounge", "prefer": {"balance": 1}},
+        {"id": "jukebox", "role": "functional", "prop": "jukebox", "place": "corner", "chance": 0.4, "zone": "lounge", "interact": {"kind": "console", "id": "jukebox", "label": "Jukebox"}, "use": "front"},
+        {"id": "files", "role": "functional", "prop": "filing-cabinet", "run": [1, 2], "place": "wall", "chance": 0.6, "zone": "desk"},
+        {"id": "plants", "role": "decor", "prop": "potted-plant", "count": [2, 3], "place": "corner", "mirror": "tidy", "themes": ["tidy", "lived-in"], "prefer": {"spread": 3}},
+        {"id": "plants-wall", "role": "decor", "prop": "potted-plant", "count": [0, 1], "place": "wall", "themes": ["tidy", "lived-in"], "zone": "lounge", "prefer": {"spread": 3}}
+      ]
+    },
+    "salvage-office": {
+      "name": "Garrity's salvage office",
+      "floor": "salvage-floor",
+      "wall": "salvage-wall",
+      "size": {"min": [10, 9], "max": [14, 11]},
+      "doors": [{"side": "s"}],
+      "rules": [
+        {"id": "desk", "role": "anchor", "prop": "desk", "place": "wall", "orient": "wall", "wallGap": 1, "keeper": "seat", "zone": "desk", "prefer": {"far": 2, "facesDoor": 3, "centered": 2}, "interact": {"kind": "npc", "id": "desk", "label": "Garrity's desk"}, "use": "back", "satellites": [{"prop": "office-chair", "side": "front", "gap": 0, "count": [1, 1], "align": "center", "face": "parent", "seat": true}]},
+        {"id": "salvage", "role": "anchor", "prop": "salvage-pile", "count": [1, 2], "place": "corner", "zone": "yard", "prefer": {"spread": 3}},
+        {"id": "bench", "role": "functional", "prop": "workbench", "place": "wall", "zone": "yard", "prefer": {"balance": 1}, "satellites": [{"prop": "scrap-bin", "side": "left", "gap": 0, "count": [1, 1], "face": "same", "chance": 0.6}]},
+        {"id": "shelf", "role": "functional", "prop": "parts-shelf", "place": "wall", "zone": "yard", "prefer": {"spread": 1}},
+        {"id": "rack", "role": "functional", "prop": "tool-rack", "place": "wall", "chance": 0.6, "zone": "yard"},
+        {"id": "files", "role": "functional", "prop": "filing-cabinet", "run": [1, 2], "place": "wall", "zone": "desk"},
+        {"id": "heap", "role": "functional", "pick": ["oil-drum", "crate-small", "scrap-bin"], "place": "open", "chance": 0.8, "minArea": 60, "cluster": [2, 3], "zone": "yard", "prefer": {"balance": 2}},
+        {"id": "drums", "role": "clutter", "pick": ["oil-drum", "scrap-bin", "crate-small"], "count": [1, 3], "scale": "area", "place": "wall", "cluster": [1, 3], "zone": "yard", "prefer": {"corner": 1}},
+        {"id": "pipes", "role": "decor", "prop": "pipe-run", "count": [0, 1], "place": "wall", "prefer": {"spread": 2}}
+      ]
+    },
+    "cantina": {
+      "name": "Station cantina",
+      "floor": "cantina-floor",
+      "wall": "cantina-wall",
+      "size": {"min": [11, 9], "max": [16, 12]},
+      "doors": [{"side": "s"}],
+      "rules": [
+        {"id": "bar", "role": "anchor", "prop": "bar-counter", "run": [2, 3], "place": "wall", "wallGap": 1, "keeper": "back", "zone": "bar", "prefer": {"far": 2, "facesDoor": 3, "centered": 2}, "interact": {"kind": "console", "id": "bar", "label": "The bar"}, "use": "front", "satellites": [{"prop": "bar-stool", "side": "front", "gap": 0, "count": "fill", "every": 1, "maxRun": 3}]},
+        {"id": "galley", "role": "functional", "prop": "galley-unit", "place": "wall", "zone": "bar", "prefer": {"zone": 3}},
+        {"id": "tables", "role": "functional", "prop": "cantina-table", "count": [3, 5], "scale": "area", "place": "open", "zone": "floor", "prefer": {"spread": 3, "balance": 2}},
+        {"id": "booth", "role": "functional", "prop": "crew-table", "place": "wall", "chance": 0.5, "minArea": 90, "zone": "floor", "prefer": {"balance": 2}},
+        {"id": "jukebox", "role": "functional", "prop": "jukebox", "place": "corner", "zone": "floor", "prefer": {"balance": 1}, "interact": {"kind": "console", "id": "jukebox", "label": "Jukebox"}, "use": "front"},
+        {"id": "vending", "role": "decor", "prop": "vending-machine", "place": "wall", "chance": 0.6, "prefer": {"door": 2}},
+        {"id": "plants", "role": "decor", "prop": "potted-plant", "count": [1, 3], "place": "corner", "mirror": "tidy", "themes": ["tidy", "lived-in"], "prefer": {"spread": 3}},
+        {"id": "kegs", "role": "clutter", "pick": ["crate-small", "oil-drum"], "count": [0, 2], "place": "wall", "zone": "bar", "cluster": [1, 2], "prefer": {"zone": 2, "corner": 1}}
+      ]
+    },
+    "hangar-bay": {
+      "name": "Hangar bay",
+      "floor": "base-plating",
+      "wall": "ship-wall",
+      "size": {"min": [15, 11], "max": [20, 14]},
+      "doors": [{"side": "s"}, {"side": "e"}],
+      "rules": [
+        {"id": "berth", "role": "anchor", "prop": "player-ship", "place": "center", "ring": {"tile": ":", "width": 1}, "prefer": {"centered": 2, "far": 1, "facesDoor": -2}, "interact": {"kind": "ship", "id": "helm", "label": "Board your ship"}, "use": "any"},
+        {"id": "bench", "role": "functional", "prop": "workbench", "run": [1, 2], "place": "wall", "zone": "work", "prefer": {"far": 2, "balance": 1}, "interact": {"kind": "station", "id": "pad", "label": "Chibby's bench"}, "use": "front", "satellites": [{"prop": "toolbox-chest", "side": "left", "gap": 0, "count": [1, 1], "face": "same", "chance": 0.7}]},
+        {"id": "racks", "role": "functional", "prop": "tool-rack", "count": [1, 2], "place": "wall", "zone": "work", "prefer": {"spread": 1}},
+        {"id": "lockers", "role": "functional", "prop": "locker", "run": [3, 4], "place": "wall", "zone": "kit", "prefer": {"balance": 2, "door": 1}},
+        {"id": "pods", "role": "functional", "prop": "supply-pod", "count": [1, 2], "place": "corner", "zone": "store", "prefer": {"spread": 3, "balance": 1}},
+        {"id": "fuel", "role": "clutter", "pick": [{"prop": "fuel-barrel", "w": 3}, {"prop": "oil-drum", "w": 1}], "count": [1, 2], "scale": "area", "place": "wall", "cluster": [2, 3], "zone": "store", "prefer": {"balance": 2, "corner": 1}},
+        {"id": "crates", "role": "clutter", "pick": [{"prop": "cargo-crate", "w": 3}, {"prop": "crate-large", "w": 1}], "count": [1, 2], "scale": "area", "place": "corner", "cluster": [2, 4], "zone": "store", "prefer": {"balance": 2}},
+        {"id": "ralph", "role": "decor", "prop": "dog-bed", "place": "corner", "chance": 0.7, "zone": "kit", "prefer": {"balance": 1}},
+        {"id": "vents", "role": "decor", "prop": "floor-vent", "count": [1, 3], "place": "floor", "prefer": {"spread": 2}}
+      ]
+    }
+  }
+}
