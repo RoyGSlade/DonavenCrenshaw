@@ -292,7 +292,7 @@ export function view(quest, run, save) {
         index,
         label: fill(choice.label, s),
         locked: reasons.length > 0,
-        reasons,
+        reasons: reasons.length && choice.lockedHint ? [choice.lockedHint] : reasons,
         hidden: reasons.length > 0 && Boolean(choice.hideLocked),
         check: choice.check ? { stat: choice.check.stat, dc: choice.check.dc, text: checkText(choice.check) } : null,
         cost: choice.cost || null,

@@ -75,7 +75,7 @@ export default {
         { label: 'Kill the lights and slip past (Dexterity)', check: { stat: 'dex', tag: 'nav', dc: 8, pass: 'dock-quiet', fail: 'fight' } },
         { label: '"This is Guild cargo. You want the Guild on you?" (Charisma)', check: { stat: 'cha', tag: 'talk', dc: 8, pass: 'dock-quiet', fail: 'fight' } },
         { label: 'Name the debt their boss owes Hask', requires: { stats: { cha: 5 } }, to: 'dock-quiet' },
-        { label: 'Tap the Knock back on an open channel', requires: { local: { knows: true } }, to: 'spooked' },
+        { label: 'Tap the Knock back on an open channel', requires: { local: { knows: true } }, lockedHint: 'You would have to know what the cargo does', to: 'spooked' },
         { label: 'Vent two scrap as a decoy', cost: { items: { scrap: 2 } }, to: 'dock-quiet' },
         { label: '"Fine. Take it."', to: 'handover' },
       ],
@@ -86,7 +86,7 @@ export default {
       choices: [
         { label: 'Turn and fight.', to: 'fight' },
         { label: 'Outrun it to the dock (Dexterity)', check: { stat: 'dex', tag: 'nav', dc: 7, pass: 'dock-quiet', fail: 'fight' } },
-        { label: 'Tap the Knock back on an open channel', requires: { local: { knows: true } }, to: 'spooked' },
+        { label: 'Tap the Knock back on an open channel', requires: { local: { knows: true } }, lockedHint: 'You would have to know what the cargo does', to: 'spooked' },
         { label: 'Hail it and hand the core over.', to: 'handover' },
       ],
     },

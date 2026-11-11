@@ -96,7 +96,8 @@ export function actCard(state, action, ctx) {
     const result = actSkirmish(state.fight, action, ctx);
     if (result.error) return { state, error: result.error };
     if (state.fight.done) {
-      ctx.run.hull = hullAfter(state.fight);
+      // Losing a fight on the way leaves you limping, not crippled for the job itself.
+      ctx.run.hull = state.fight.outcome === 'lose' ? Math.max(1, Math.round(ctx.run.hullMax * 0.3)) : hullAfter(state.fight);
       const after = state.fightOutcomes[state.fight.outcome] || state.fightOutcomes.win || {};
       state.text = after.text || '';
       if (after.reward) ctx.grant(after.reward);

@@ -40,7 +40,7 @@ export default {
       text: 'The Choir watches you dock in perfect silence. Nobody blocks the gate. Nobody needs to: the lanterns are aimed at your ship.',
       choices: [
         { label: 'Walk to the gate as if you own it (Charisma)', check: { stat: 'cha', tag: 'talk', dc: 8, pass: 'gate', fail: 'choir-fight' } },
-        { label: 'Hum the Knock as you pass', requires: { flags: { 'fragment-1': 1 } }, to: 'gate' },
+        { label: 'Hum the Knock as you pass', requires: { flags: { 'fragment-1': 1 } }, lockedHint: 'You would have to have heard the Knock first (Cold Run)', to: 'gate' },
         { label: '"You open it, then."', to: 'end-choir-opened' },
       ],
     },
