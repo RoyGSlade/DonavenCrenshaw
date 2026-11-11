@@ -225,7 +225,7 @@ test('on foot: walk, talk, mine, shoot, lockbox, fly to a giver (1440), then the
   await walkTo(page, out.x + 10, out.y, { near: 6, tries: 30 });
   await page.waitForFunction(() => document.querySelector('.of-world').__world.map.id === 'hangar', null, { timeout: 5000 });
   await sleep(400);
-  await walkToInteract(page, 'ship', 'helm', [[13.5 * 48, 8.5 * 48], [2 * 48, 8.5 * 48]]); // round the ship, not through it
+  await walkToInteract(page, 'station', 'hatch', [[13.5 * 48, 8.5 * 48], [2 * 48, 8.5 * 48]]); // round the ship, not through it (the hatch opens the helm here; the hangar page opens its launch panel)
   await page.keyboard.press('KeyE');
   await page.locator('.of-helm [data-target="dustfall"]').click();
   await flyHop(page);

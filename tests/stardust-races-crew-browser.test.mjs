@@ -10,6 +10,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import path from 'node:path';
 import { startServer, launchBrowser, DESKTOP } from '../scripts/stardust-test-kit.mjs';
+import { openStation } from '../scripts/stardust-hangar-kit.mjs';
 
 const G = '../projects/Space-Shooter';
 const { createVoyageStore } = await import(`${G}/voyage/store.js`);
@@ -57,6 +58,7 @@ async function open(browser, server, save) {
 // Click the scope where the enemy is (the frame's world coords onto the canvas).
 async function aimAndFire(crew) {
   const scope = crew.locator('canvas.rc-scope');
+  await scope.scrollIntoViewIfNeeded();
   const box = await scope.boundingBox();
   const { fx, fy } = await scope.evaluate((c) => ({ fx: Number(c.dataset.fx), fy: Number(c.dataset.fy) }));
   if (!Number.isFinite(fx)) return false;
@@ -76,27 +78,27 @@ test('crew in a live fight: free-aim turret, repair and abilities through the cr
   const crewBrowser = await launchBrowser();
   t.after(() => crewBrowser.close());
 
-  const P = await open(pilotBrowser, server, captain('Vela Quint', { 'steady-aim': 2 }, 'wave'));
-  const C = await open(crewBrowser, server, captain('Ossa Vey', { 'patch-kit': 1, 'smooth-talk': 2, haggler: 1, slicer: 1 }));
+  const P = await open(pilotBrowser, server, captain('Vela Quint', { gunner: 2 }, 'wave'));
+  const C = await open(crewBrowser, server, captain('Ossa Vey', { hacker: 2, mechanic: 3 }));
   t.after(() => P.context.close().catch(() => {}));
   t.after(() => C.context.close().catch(() => {}));
 
   // The pilot opens a crew room; the crew joins by code.
-  await P.page.getByRole('tab', { name: 'Crew' }).click();
+  await openStation(P.page, 'hatch', 'crew');
   await P.page.locator('#cw-open').click();
   const code = await P.page.locator('.cw-code').getAttribute('data-code', { timeout: 15000 });
-  await C.page.getByRole('tab', { name: 'Crew' }).click();
+  await openStation(C.page, 'hatch', 'crew');
   await C.page.locator('#cw-code').fill(code);
   await C.page.locator('#cw-join').click();
   await C.page.locator('.cw-station', { hasText: 'CREW STATION' }).waitFor({ timeout: 15000 });
   await P.page.locator('.cw-seats', { hasText: 'Ossa Vey' }).waitFor({ timeout: 15000 });
 
   // The pilot's job is at a ship fight: fly it live.
-  await P.page.getByRole('tab', { name: 'Jobs' }).click();
+  await openStation(P.page, 'board');
   await P.page.locator('#pane-jobs .qs-fight').waitFor();
   await P.page.getByRole('button', { name: /Fly it live/ }).click();
   await P.page.locator('.rc-live canvas.qs-live-canvas').waitFor();
-  // The pilot's ability bar comes from their skills: Steady Aim 2 = overcharge.
+  // The pilot's ability bar comes from their skills: Gunner 2 = overcharge (contract v1.2 levels).
   assert.deepEqual(await P.page.locator('.rc-live [data-ability]').evaluateAll((b) => b.map((x) => x.dataset.ability)), ['ship.overcharge']);
 
   // The crew's live scope appears from the stream.
@@ -112,9 +114,12 @@ test('crew in a live fight: free-aim turret, repair and abilities through the cr
   for (let i = 0; i < 400 && !(did.has('hit') && did.has('repair') && did.has('hack') && overcharged); i++) {
     if (!(await P.page.locator('.rc-live').count())) break; // the fight ended
     const fire = C.page.locator('#rc-crew-fire:not([disabled])');
-    if (await fire.count()) { if (await aimAndFire(C.page)) did.add('fire'); }
+    // Hold fire until the crew has had something to repair (content's rewrite made this wave shorter).
+    if (await fire.count() && (did.has('repair') || i > 150)) { if (await aimAndFire(C.page)) did.add('fire'); }
     const hold = C.page.locator('.rc-crew-live .cw-hold:not([disabled])');
     if (!did.has('repair') && await hold.count()) {
+      // Round 2: the crew view sits in the hatch's station panel, which scrolls.
+      await hold.first().scrollIntoViewIfNeeded();
       const b = await hold.first().boundingBox();
       await C.page.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
       await C.page.mouse.down();
@@ -140,11 +145,12 @@ test('crew in a live fight: free-aim turret, repair and abilities through the cr
     if (i === 20) { await snap(P.page, 'races-09-pilot-live.png'); await snap(C.page, 'races-10-crew-live.png'); }
     await C.page.waitForTimeout(120);
   }
-  assert.ok(did.has('fire'), 'the crew fired the turret');
+  const endLog = `${(await status()).slice(-200)} | pilot: ${(await pilotStatus()).slice(-200)} | P page: ${(await P.page.locator('#pane-jobs').innerText().catch(() => '')).slice(0, 300)}`;
+  assert.ok(did.has('fire'), `the crew fired the turret (did: ${[...did].join(', ')}; ${endLog})`);
   assert.ok(did.has('hit'), `a turret bolt hit (crew did: ${[...did].join(', ')})`);
   assert.ok(did.has('hack'), `the crew's hack reached the pilot's fight (crew did: ${[...did].join(', ')})`);
   assert.ok(overcharged, `the pilot used their own ability (crew did: ${[...did].join(', ')})`);
-  assert.ok(did.has('repair'), `the crew repaired something (crew did: ${[...did].join(', ')})`);
+  assert.ok(did.has('repair'), `the crew repaired something (crew did: ${[...did].join(', ')}; crew log: ${(await status()).slice(-300)}; holds: ${await C.page.locator('.cw-hold').evaluateAll((b) => b.map((x) => `${x.dataset.repair}:${x.disabled}`).join(' '))})`);
   console.log(`crew live: ${[...did].join(', ')}${overcharged ? ', pilot overcharge' : ''}`);
 
   // Let the fight finish (the turret keeps working) or stop it; the job goes on turn by turn.

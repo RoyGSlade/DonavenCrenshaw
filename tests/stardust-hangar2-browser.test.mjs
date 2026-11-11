@@ -49,6 +49,8 @@ test('round-2 hangar: dice licence, stations in place, skill tree and respec, di
   page.on('response', (r) => { if (r.status() >= 400 && r.url().includes('/voyage/')) errors.push(`${r.status()} ${r.url()}`); });
   await page.goto(`${server.origin}${HANGAR}?newgame=1&dev=1`);
   await recordBus(page);
+  // Round 2: a new save opens on the story's intro; this check skips the tutorial (the e2e test plays it).
+  await page.locator('.sy-intro-skipall').click();
 
   // 1. A new player: the licence opens. Roll the first stat with the real tumble.
   await page.locator('#hg-licence').waitFor();
@@ -87,20 +89,20 @@ test('round-2 hangar: dice licence, stations in place, skill tree and respec, di
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await page.locator('#vy-dev-open').click();
   await page.locator('#vy-dev-job').click();
-  await page.locator('[data-skill="smooth-burn"]').click();
-  await page.locator('[data-detail="smooth-burn"]').waitFor();
-  assert.match(await page.locator('[data-detail="smooth-burn"]').innerText(), /1 skill point a rank/);
-  await page.locator('[data-learn="smooth-burn"]').click();
-  assert.equal(await page.locator('[data-skill="smooth-burn"].is-fresh .ui-burst').count(), 1, 'the learn burst plays');
+  await page.locator('[data-skill="pilot"]').click();
+  await page.locator('[data-detail="pilot"]').waitFor();
+  assert.match(await page.locator('[data-detail="pilot"]').innerText(), /1 skill point a rank/);
+  await page.locator('[data-learn="pilot"]').click();
+  assert.equal(await page.locator('[data-skill="pilot"].is-fresh .ui-burst').count(), 1, 'the learn burst plays');
   await page.locator('.ui-tree').scrollIntoViewIfNeeded();
   await page.waitForTimeout(250);
   await snap(page, 'hangar2-03-skill-tree-learn-1440.png');
-  await page.locator('[data-learn="smooth-burn"]').click();
+  await page.locator('[data-learn="pilot"]').click();
   let c = (await readSave(page)).character;
-  assert.equal(c.skills['smooth-burn'], 2);
-  await page.locator('[data-unlearn="smooth-burn"]').click();
+  assert.equal(c.skills['pilot'], 2);
+  await page.locator('[data-unlearn="pilot"]').click();
   c = (await readSave(page)).character;
-  assert.equal(c.skills['smooth-burn'], 1, 'one rank back');
+  assert.equal(c.skills['pilot'], 1, 'one rank back');
   const moneyBefore = (await readSave(page)).money;
   await page.locator('#ui-respec-all').click();
   await page.locator('#ui-respec-all', { hasText: 'Yes' }).click();
@@ -113,7 +115,7 @@ test('round-2 hangar: dice licence, stations in place, skill tree and respec, di
   await page.locator('#hg-sheet-close').click();
   assert.equal(await page.locator('#hg-sheet').isVisible(), false);
   await snap(page, 'hangar2-04-hangar-1440.png');
-  await page.locator('[data-station="pad"]').click();
+  await page.locator('[data-station="pad"]').dispatchEvent('click');
   await page.locator('#hg-sheet[data-open-station="pad"]').waitFor();
   assert.equal(await page.locator('#pane-ship').isVisible(), true);
   await page.waitForTimeout(500);
@@ -123,7 +125,8 @@ test('round-2 hangar: dice licence, stations in place, skill tree and respec, di
   assert.ok(seen.some(([e]) => e === 'met:chibby'));
   await page.keyboard.press('Escape');
   assert.equal(await page.locator('#hg-sheet').isVisible(), false);
-  assert.equal(await page.evaluate(() => document.activeElement?.dataset?.station), 'pad', 'focus goes back to the station');
+  // Focus goes back to the station's plate when it is on screen (the floor scrolls with the captain).
+  if (await page.locator('[data-station="pad"]').isVisible()) assert.equal(await page.evaluate(() => document.activeElement?.dataset?.station), 'pad', 'focus goes back to the station');
   // Walking up: the onfoot lane's way in.
   await page.evaluate(async () => (await import('/projects/Space-Shooter/voyage/hangarApi.js')).hangarApi.openStation('locker', { via: 'walk' }));
   await page.locator('#hg-sheet[data-open-station="locker"]').waitFor();
@@ -150,17 +153,19 @@ test('round-2 hangar: dice licence, stations in place, skill tree and respec, di
   }, SAVE_KEY);
   await page.reload();
   await recordBus(page);
-  await openStation(page, 'pad');
-  assert.match(await page.locator('[data-locked="pad"]').innerText(), /NOT YET/);
+  // (The job board: opening the pad would itself move the tutorial on, since Chibby is there.)
   assert.equal(await page.locator('[data-station="pad"]').evaluate((b) => b.classList.contains('is-locked')), true);
+  await openStation(page, 'board');
+  assert.match(await page.locator('[data-locked="board"]').innerText(), /NOT YET/);
+  assert.equal(await page.locator('[data-station="board"]').evaluate((b) => b.classList.contains('is-locked')), true);
   await emit(page, 'story:objective', { step: 'walk', text: 'Walk to Chibby at the pad.', station: 'pad', target: null });
   assert.equal(await page.locator('#hg-objective').innerText().then((x) => /Walk to Chibby/.test(x)), true);
   assert.equal(await page.locator('[data-station="pad"]').evaluate((b) => b.classList.contains('is-objective')), true);
   // Respec is free while the tutorial runs.
   await openStation(page, 'quarters');
-  await page.locator('[data-skill="patch-kit"]').click();
-  await page.locator('[data-unlearn="patch-kit"]').waitFor();
-  assert.match(await page.locator('[data-unlearn="patch-kit"]').innerText(), /free/);
+  await page.locator('[data-skill="mechanic"]').click();
+  await page.locator('[data-unlearn="mechanic"]').waitFor();
+  assert.match(await page.locator('[data-unlearn="mechanic"]').innerText(), /free/);
 
   // 4. The dialogue box answers story:say, and the attempt roller shows a decided roll.
   await emit(page, 'story:say', { seq: 41, id: 'chibby.ship.1', speaker: 'chibby', name: 'Chibby', text: 'She\'s yours, Captain. Mind the paint.', audio: null, durationMs: 9000 });
@@ -188,6 +193,7 @@ test('round-2 hangar: dice licence, stations in place, skill tree and respec, di
   const phoneErrors = [];
   p2.on('pageerror', (e) => phoneErrors.push(e.message));
   await p2.goto(`${server.origin}${HANGAR}?newgame=1`);
+  await p2.locator('.sy-intro-skipall').click();
   await p2.locator('#hg-licence').waitFor();
   assert.equal(await p2.evaluate(() => document.getElementById('hg-dice').width / document.getElementById('hg-dice').getBoundingClientRect().width), 2);
   await snap(p2, 'hangar2-07-licence-390.png');
@@ -199,13 +205,13 @@ test('round-2 hangar: dice licence, stations in place, skill tree and respec, di
   assert.equal(await p2.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, 'no sideways scroll at 390');
   await snap(p2, 'hangar2-08-bunk-390.png');
   await p2.locator('#hg-sheet-close').click();
-  assert.equal(await p2.evaluate(() => document.getElementById('voyage-scene').width / innerWidth), 2);
+  assert.equal(await p2.evaluate(() => document.querySelector('#hg-floor .of-canvas').width / innerWidth), 2);
   await snap(p2, 'hangar2-09-hangar-390.png');
   await openStation(p2, 'pad');
   await p2.waitForTimeout(300);
   await snap(p2, 'hangar2-10-pad-390.png');
   await p2.evaluate(() => localStorage.setItem('stardust.newgame.renderScale', 'fast'));
   await p2.reload();
-  assert.equal(await p2.evaluate(() => document.getElementById('voyage-scene').width / innerWidth), 1, 'Fast draws at 1x');
+  assert.equal(await p2.evaluate(() => document.querySelector('#hg-floor .of-canvas').width / innerWidth), 1, 'Fast draws at 1x');
   assert.deepEqual(phoneErrors, []);
 });

@@ -67,7 +67,7 @@ function boot() {
     toggle.textContent = `TUTORIAL PREVIEW ${n}/${steps.length}`;
   });
 
-  const onfoot = createOnFoot({ root: stage, store, bus, mapId: start, spawn: spawnName, reducedMotion: () => reducedMotion.matches, hooks: { talk: (who) => talkStandIn(who) } });
+  const onfoot = createOnFoot({ root: stage, store, bus, mapId: start, spawn: spawnName, reducedMotion: () => reducedMotion.matches, hooks: { talk: (who) => talkStandIn(who), openStation: (id) => (id === 'hatch' ? onfoot.helm() : talkBox.show([{ who: 'console', name: 'Station', text: `The hangar's ${id} panel opens here in the game.` }])) } });
   bus.emit('story:objective', objective());
   // ?explore=<placeId>: straight into a hop to that place (Studio's sector-map play link).
   const explore = params.get('explore');

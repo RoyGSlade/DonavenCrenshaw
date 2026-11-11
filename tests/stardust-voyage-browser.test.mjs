@@ -54,6 +54,13 @@ test('new hangar: closed by default; captain, credits, upgrade and skill survive
   assert.equal(dead.earned, 3, 'half of 5 lost, rounded down');
   assert.deepEqual(dead.skills, {});
   assert.equal(dead.deaths, 1);
+  // Round 2: the new stats are rolled on the dice (the licence opens in roll-only mode).
+  await page.locator('#hg-licence:not([hidden])').waitFor();
+  assert.match(await page.locator('#hg-licence-title').innerText(), /Roll your new stats/);
+  await page.locator('#hg-quick-roll').click();
+  await page.locator('#hg-sign:not([disabled])').waitFor({ timeout: 30000 });
+  await page.locator('#hg-sign').click();
+  await page.locator('#hg-licence').waitFor({ state: 'hidden' });
 
   // Render quality: DPR capped at 2, the player can go down to 1.
   await page.locator('#hg-settings-btn').click();
@@ -67,7 +74,7 @@ test('new hangar: closed by default; captain, credits, upgrade and skill survive
   const p2 = await phone.newPage();
   p2.on('pageerror', (e) => errors.push(e.message));
   await p2.goto(`${base}?newgame=1`);
-  const ratio = () => p2.evaluate(() => document.getElementById('voyage-scene').width / innerWidth);
+  const ratio = () => p2.evaluate(() => document.querySelector('#hg-floor .of-canvas').width / innerWidth);
   assert.equal(await ratio(), 2);
   await p2.evaluate(() => localStorage.setItem('stardust.newgame.renderScale', 'fast'));
   await p2.reload();

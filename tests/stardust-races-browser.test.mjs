@@ -15,6 +15,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import path from 'node:path';
 import { loadPlaywright, startServer, DESKTOP, PHONE } from '../scripts/stardust-test-kit.mjs';
+import { openStation } from '../scripts/stardust-hangar-kit.mjs';
 
 const G = '../projects/Space-Shooter';
 const { createVoyageStore } = await import(`${G}/voyage/store.js`);
@@ -141,7 +142,7 @@ test('quest race: the race leg flies live with the upgraded ship, the time comes
   t.after(() => P.context.close().catch(() => {}));
   const { page } = P;
 
-  await page.getByRole('tab', { name: 'Jobs' }).click();
+  await openStation(page, 'board');
   await page.locator('#pane-jobs .qs-race').waitFor();
   const before = withoutNewGame(await storageSnapshot(page));
   assert.equal(before[OLD_BEST.key], OLD_BEST.value);
