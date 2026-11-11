@@ -11,6 +11,7 @@ import { SECTORS } from './quests/data/sectors.js';
 import { availability } from './quests/engine.js';
 import { createQuestPlayer, el, button, portrait, shipSummary } from './quests/ui/player.js';
 import { REP_MAX, DEATH } from './data.js';
+import { flyQuestRace, takeReturnedRace } from './races/launch.js';
 import { repBand } from './economy.js';
 
 /**
@@ -25,7 +26,8 @@ const deadly = (quest) => Object.values(quest.nodes).some((n) => n.type === 'end
 // aboard() is passed to the engine so crew jobs apply; step(events) runs after
 // each committed step (the crew's share and screen); changed() when a job
 // starts or ends.
-const NO_CREW = Object.freeze({ aboard: () => null, step: () => {}, changed: () => {} });
+// live(frame) (optional): a live fight frame for the crew's turret scope.
+const NO_CREW = Object.freeze({ aboard: () => null, step: () => {}, changed: () => {}, live: () => {} });
 
 export function createJobs({ pane, store, say, toast, dev = false, onCaptain = () => {}, onPlaying = () => {}, crew = NO_CREW }) {
   let seedBox = null;
@@ -46,6 +48,10 @@ export function createJobs({ pane, store, say, toast, dev = false, onCaptain = (
     },
     onExit: () => { render(); crew.changed(); },
     onChange: () => { onPlaying(player.active); crew.changed(); },
+    // Race legs fly live on today's racing page, in a frame over the hangar
+    // (voyage/races/launch.js); the time comes back as the engine's live action.
+    liveRace: () => flyQuestRace({ store, title: player.quest?.title || '', onResult: (r) => player.raceResult(r) }),
+    crewLive: (frame) => crew.live?.(frame),
   });
 
   function take(quest) {
@@ -109,6 +115,9 @@ export function createJobs({ pane, store, say, toast, dev = false, onCaptain = (
 
   store.subscribe((save) => render(save));
   if (player.resume()) { player.render(); onPlaying(true); } else render();
+  // A race flown on the racing page opened on its own comes back by link.
+  const returned = takeReturnedRace();
+  if (returned?.kind === 'quest' && player.active) player.raceResult(returned);
 
   return {
     render,

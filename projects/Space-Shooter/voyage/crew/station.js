@@ -13,6 +13,8 @@
 import { renderDpr, readRenderScale } from '../renderScale.js';
 import { CREW_RULES } from '../quests/parts/crew.js';
 import { STATS } from '../data.js';
+// Live (real-time) fights: the crew's scope, free-aim turret, repairs and abilities (races lane).
+import { createLiveScope } from '../races/liveScope.js';
 
 const STAT_NAME = Object.fromEntries(STATS.map((s) => [s.id, s.name]));
 const CIPHER_LIMIT = 6;
@@ -162,6 +164,8 @@ export function createStation({ root, send, me, reducedMotion = () => false }) {
   let repairs = [];
   let puzzleKey = '';
   const turret = createTurret({ reducedMotion, onFire: (hit) => send({ job: 'turret', hit }) });
+  let liveScope = null; // while the captain flies a fight live
+  const endLive = () => { liveScope?.stop(); liveScope = null; };
 
   function header(s) {
     return [
@@ -185,8 +189,19 @@ export function createStation({ root, send, me, reducedMotion = () => false }) {
     );
   }
 
+  function liveFight(s) {
+    const f = s.fight;
+    if (!liveScope) liveScope = createLiveScope({ send, me, reducedMotion });
+    return el('section', { class: 'cw-part cw-fight cw-live' },
+      el('h3', { text: `LIVE FIGHT · ${f.name}` }),
+      liveScope.node,
+      el('p', { class: 'vy-note', text: 'Point at them and fire: the turret swings from your ship to wherever you aim. Hold a repair when something breaks.' }),
+    );
+  }
+
   function fight(s) {
     const f = s.fight;
+    if (f.live) return liveFight(s);
     turret.set({ movement: f.movement, cloaked: f.cloaked, ready: f.turretReady && !f.live });
     const broken = Object.entries(f.systems).filter(([, b]) => b).map(([id]) => id);
     const names = { guns: 'Guns', engine: 'Engine' };
@@ -283,15 +298,22 @@ export function createStation({ root, send, me, reducedMotion = () => false }) {
       noteText ? el('p', { class: 'vy-note cw-note', role: 'status', text: noteText }) : null,
       state.log.length && state.step !== 'fight' ? el('ol', { class: 'qs-minilog' }, ...state.log.map((l) => el('li', { text: l }))) : null,
     ].filter(Boolean));
-    if (state.step === 'fight') turret.start(); else turret.stop();
+    if (state.step === 'fight' && !state.fight?.live) turret.start(); else turret.stop();
+    if (!(state.step === 'fight' && state.fight?.live)) endLive();
   }
 
   return {
     update(next) { state = next; draw(); },
+    /** A live fight frame from the pilot's browser (about 15 a second). */
+    liveFrame(frame) {
+      if (!liveScope && state?.step === 'fight') { state = { ...state, fight: { ...state.fight, live: true } }; draw(); }
+      liveScope?.frame(frame);
+    },
     note(text) { noteText = str(text, 200); draw(); },
     get state() { return state; },
     /** Keys while the Crew tab is open: Space fires, arrows aim, R holds a repair. */
     keydown(e) {
+      if (liveScope && state?.step === 'fight') return liveScope.keydown(e);
       if (state?.step !== 'fight' || e.target.closest?.('input, textarea, select, button')) return false;
       const step = 8;
       if (e.key === ' ') { e.preventDefault(); turret.fire(); return true; }
@@ -300,8 +322,8 @@ export function createStation({ root, send, me, reducedMotion = () => false }) {
       if ((e.key === 'r' || e.key === 'R') && !e.repeat) { const h = repairs.find((x) => !x.node.disabled); if (h) { h.begin(); return true; } }
       return false;
     },
-    keyup(e) { if (e.key === 'r' || e.key === 'R') for (const h of repairs) h.stop(); },
-    stop() { turret.stop(); },
+    keyup(e) { liveScope?.keyup(e); if (e.key === 'r' || e.key === 'R') for (const h of repairs) h.stop(); },
+    stop() { turret.stop(); endLive(); },
     statName: (id) => STAT_NAME[id] || id,
   };
 }
