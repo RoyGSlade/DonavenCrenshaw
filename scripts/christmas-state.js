@@ -13,7 +13,10 @@ const ids = (value) => (Array.isArray(value) ? value.filter((id) => typeof id ==
 
 // A list of short lines from an array of strings, one string, or an object of label: value.
 export function lines(value) {
-    if (Array.isArray(value)) return value.map((entry) => str(entry)).filter(Boolean);
+    if (Array.isArray(value)) {
+        return value.map((entry) => (entry && typeof entry === 'object' ? `${str(entry.label, 60)}: ${str(entry.value, 200)}` : str(entry)))
+            .filter((entry) => entry && entry !== ': ');
+    }
     if (typeof value === 'string') return value.split(/\n|·/).map((entry) => str(entry)).filter(Boolean);
     if (value && typeof value === 'object') return Object.entries(value).map(([label, entry]) => `${str(label, 60)}: ${str(entry, 200)}`);
     return [];

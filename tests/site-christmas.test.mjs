@@ -85,6 +85,7 @@ test('readList survives junk', () => {
     assert.equal(list.claims.unlocked, false);
     assert.deepEqual(readList(null).sections, []);
     assert.deepEqual(lines({ Shirts: 'S' }), ['Shirts: S']);
+    assert.deepEqual(lines([{ label: 'Shoes', value: '10' }, { label: '', value: '' }]), ['Shoes: 10']);  // the hub's shape
 });
 
 test('the offline wording is the one Donaven asked for', () => {
