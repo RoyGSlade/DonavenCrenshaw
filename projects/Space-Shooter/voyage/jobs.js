@@ -80,7 +80,7 @@ export function createJobs({ pane, store, say, toast, dev = false, onCaptain = (
     pane.replaceChildren(...[
       el('p', { class: 'vy-eyebrow', text: 'JOBS' }),
       el('h2', { text: 'Who is hiring' }),
-      el('p', { text: 'Take a job, fly it, get paid. Credits and parts buy upgrades in the Ship tab, and a better ship takes the next job further.' }),
+      el('p', { text: 'Take a job, fly it, get paid. Credits and parts buy upgrades from Chibby at the pad, and a better ship takes the next job further.' }),
       el('p', { class: 'vy-note vy-jobship', dataset: { shipHull: String(ship.hull), shipGuns: String(ship.guns), shipRace: String(ship.race) }, text: `Your ship for jobs: hull ${ship.hull} · guns ${ship.guns} · race +${ship.race}` }),
       fragments ? el('p', { class: 'vy-note', text: `The Knock: ${fragments} of 5 pieces found.` }) : null,
       seedBox ? el('label', { class: 'vy-seed' }, 'Seed (test tools) ', seedBox) : null,

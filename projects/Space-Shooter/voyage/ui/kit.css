@@ -303,3 +303,18 @@
   .hg-sheet-open[data-sheet-side=left] .vy-toast{left:calc(100vw - (100vw - min(560px,46vw)) / 2)}
   .vy-toast{z-index:14}
 }
+/* Seams: the hop's readout sits under the header; toasts never cover the dialogue box. */
+.hg-floor .of-hop-hud{top:60px}
+.hg-floor .of-hop-toast{top:96px;bottom:auto}
+@media (min-width:701px){body:not(.hg-sheet-open) .vy-toast{bottom:auto;top:120px}}
+@media (max-width:700px){
+  body:not(.hg-sheet-open) .vy-toast{top:auto;bottom:150px}
+  .ui-dialogue{min-height:0;align-items:center}
+  .ui-dialogue .ui-dlg-body{min-height:0}
+  .hg-floor .of-hud-help{top:auto;bottom:6px}
+}
+@media (max-width:700px){
+  .hg-objective{white-space:nowrap;max-width:92vw}
+  .hg-objective span{overflow:hidden;text-overflow:ellipsis;min-width:0}
+  body:not(.hg-sheet-open) .ui-dialogue{top:102px}
+}

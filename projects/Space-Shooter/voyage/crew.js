@@ -119,7 +119,7 @@ export function createCrew({ pane, recorder, store, toast = () => {}, say = () =
     invites = cleanCrewInvites(res.data);
     const fresh = invites.filter((i) => !seenInvites.has(i.id));
     for (const i of fresh) seenInvites.add(i.id);
-    if (fresh.length) toast(`${pilotName(fresh[0].from)} invited you aboard. Open the Crew tab to join.`);
+    if (fresh.length) toast(`${pilotName(fresh[0].from)} invited you aboard. Walk to the launch hatch and open Crew to join.`);
     if (mode === 'solo') render();
   }
   const dismiss = (id) => recorder.api(`/api/dogfight/invites/${encodeURIComponent(id)}`, { method: 'DELETE' });
@@ -332,7 +332,7 @@ export function createCrew({ pane, recorder, store, toast = () => {}, say = () =
     pane.replaceChildren(
       make('p', `CREW ROOM · ${code}`, 'vy-eyebrow'),
       make('h2', 'Your ship, two seats'),
-      make('p', 'Take a job in the Jobs tab. Your crew sees it on their station: they man the turret, repair the ship, read the scopes and take checks with their own stats.'),
+      make('p', 'Take a job at the job board. Your crew sees it on their station: they man the turret, repair the ship, read the scopes and take checks with their own stats.'),
       seats, code_, linkBox, copy, status,
       make('h3', 'INVITE A FRIEND'), friendStatus, friendList(friendStatus),
       close,
