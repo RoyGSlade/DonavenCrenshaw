@@ -25,6 +25,8 @@ function el(tag, props = {}, children = []) {
   for (const c of [].concat(children)) if (c != null && c !== false) node.append(c);
   return node;
 }
+// replaceChildren would print a null as the word "null"; leave such parts out.
+const fill = (node, ...kids) => node.replaceChildren(...kids.filter((k) => k != null && k !== false));
 const pips = (n, max = TOP_TIER) => '■'.repeat(n) + '□'.repeat(Math.max(0, max - n));
 const costText = (cost) => [cost.money ? money(cost.money) : null, ...Object.entries(cost.items || {}).map(([id, n]) => `${n} ${itemName(id)}`)].filter(Boolean).join(' · ');
 const fmt = (k, v) => (['speed', 'accel', 'turn'].includes(k) ? `${Math.round(v * 100)}%` : String(v));
@@ -70,7 +72,7 @@ export function createHangar({ panes, store, ship, crew, toast, dev = false, onT
         top ? null : el('small', {}, [`Tier ${next.tier}: ${costText(next.cost)}`, next.ok ? null : el('span', { class: 'vy-why', text: ` ${next.reasons.join(' ')}` })]),
       ]);
     });
-    panes.ship.replaceChildren(
+    fill(panes.ship, 
       el('p', { class: 'vy-eyebrow', text: `YOUR SHIP · TIER ${tier}` }),
       el('h2', { text: ship.name() }),
       el('p', { text: 'The same ship, made better one system at a time. Upgrades fly in jobs, fights and the new races; the classic circuits and weekly boards stay as they always were.' }),
@@ -111,7 +113,7 @@ export function createHangar({ panes, store, ship, crew, toast, dev = false, onT
       el('div', {}, [el('p', { class: 'vy-note', text: 'Colour' }), choice(COLORS, 'color', 'Colour')]),
       el('button', { type: 'submit', class: 'primary', text: 'Roll stats and sign on' }),
     ]);
-    panes.captain.replaceChildren(
+    fill(panes.captain, 
       el('p', { class: 'vy-eyebrow', text: 'NEW CAPTAIN' }),
       el('h2', { text: 'Who flies this ship?' }),
       el('p', { text: 'Four stats are rolled once, 1d6 each. If your captain dies, half of their skill points are lost and the stats are rolled again. Points from maxed-out rep are never lost.' }),
@@ -137,7 +139,7 @@ export function createHangar({ panes, store, ship, crew, toast, dev = false, onT
         ]);
       }),
     ]));
-    panes.captain.replaceChildren(
+    fill(panes.captain, 
       el('div', { class: 'vy-captain' }, [
         el('div', { class: 'vy-badge', style: `background:${c.look.color}`, 'aria-hidden': 'true', text: initials(c.name) }),
         el('div', {}, [el('p', { class: 'vy-eyebrow', text: `CAPTAIN · ${PORTRAITS.find((p) => p.id === c.look.portrait)?.name.toUpperCase() || ''}` }), el('h2', { text: c.name })]),
@@ -157,7 +159,7 @@ export function createHangar({ panes, store, ship, crew, toast, dev = false, onT
   function renderLedger(save) {
     const items = ITEMS.filter((i) => save.items[i.id]).map((i) => el('li', {}, [el('span', { text: i.name }), el('b', { text: String(save.items[i.id]) })]));
     const others = Object.keys(save.items).filter((id) => !ITEMS.some((i) => i.id === id)).map((id) => el('li', {}, [el('span', { text: id }), el('b', { text: String(save.items[id]) })]));
-    panes.ledger.replaceChildren(
+    fill(panes.ledger, 
       el('p', { class: 'vy-eyebrow', text: CURRENCY.name.toUpperCase() }),
       el('p', { class: 'vy-money', 'data-money': '', text: money(save.money) }),
       el('h3', { text: 'REPUTATION' }),
@@ -185,7 +187,7 @@ export function createHangar({ panes, store, ship, crew, toast, dev = false, onT
   function renderDev() {
     if (!dev || !panes.dev) return;
     panes.dev.hidden = false;
-    panes.dev.replaceChildren(
+    fill(panes.dev, 
       el('p', { class: 'vy-eyebrow', text: 'TEST TOOLS · THIS TAB ONLY' }),
       el('div', {}, [
         el('button', { type: 'button', id: 'vy-dev-job', text: 'Practice job', on: { click: () => say(store.grant({ money: 250, rep: { 'relay-guild': 10 }, items: { scrap: 6, ore: 2, circuit: 1 }, skillPoints: 1 })) } }),

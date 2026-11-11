@@ -1,13 +1,16 @@
-// Voyage ship upgrades: the same ship, better in tiers. Voyage only.
+// Ship upgrades for the new game: the same ship, better in tiers.
 //
-// Why a stat set of its own (P3, S8, S12): racing flies the equipped build on
-// shared leaderboards and its weekly physics is versioned for ghosts, so any
-// upgrade that touched engine/shipStats.js or the build would change ranked
-// times. Dogfight's three classes are balanced against each other for duels.
-// Voyage needs both movement and a fight model (hull, guns), so it derives its
-// own numbers each time from SHIP_BASE, a little of the equipped racing build's
-// feel (read only), the upgrade tiers and the captain. Nothing here is ever
-// written back to the build, the garage or the account ship.
+// Why a stat set of its own (P3, S8, S12): today's racing flies the equipped
+// build on shared leaderboards and its weekly physics is versioned for ghosts,
+// so an upgrade that touched engine/shipStats.js or the build would change
+// ranked times. Dogfight's three classes are balanced against each other for
+// duels. The new game needs movement and a fight model (hull, guns), so it
+// derives its own numbers each time from SHIP_BASE, a little of the equipped
+// build's feel (read only), the upgrade tiers and the captain. Races and fights
+// inside the new game read them through raceStats / combatStats, gated by the
+// ACTIVITIES table in data.js: the classic boards and the Dogfight arena fly
+// exactly as today. Nothing here is written back to the build, the garage or
+// the account ship.
 import { buildStats } from '../engine/shipStats.js';
 import { effect } from './character.js';
 import { canAfford, missing, priceFor, spend } from './economy.js';
