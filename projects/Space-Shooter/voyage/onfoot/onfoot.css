@@ -1,0 +1,94 @@
+/* On foot and the exploration hop. Same tokens as the hangar (voyage.css). */
+.of-stage{position:relative;width:100%;height:100%;min-height:320px;overflow:hidden;background:#05080d;touch-action:none;user-select:none;-webkit-user-select:none}
+.of-world,.of-hop{position:absolute;inset:0}
+.of-canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.of-prompt{position:absolute;left:0;top:0;pointer-events:none;animation:of-pop .16s ease-out;padding:6px 10px;border:1px solid #81e6df88;border-radius:4px;background:#070d17e6;color:#eaf4f5;font:600 12px Inter,"Segoe UI",sans-serif;letter-spacing:.03em;white-space:nowrap;box-shadow:0 4px 16px #0008}
+.of-prompt[data-kind=door]{border-color:#b9a4ff88}
+.of-place{position:absolute;left:50%;top:14px;transform:translateX(-50%);font:700 11px Consolas,monospace;letter-spacing:.16em;color:#b5c8d5;text-transform:uppercase;opacity:0;pointer-events:none}
+.of-place.show{animation:of-place 2.6s ease-out}
+@keyframes of-pop{from{opacity:0}to{opacity:1}}
+@keyframes of-place{0%{opacity:0;transform:translate(-50%,6px)}15%,70%{opacity:1;transform:translate(-50%,0)}100%{opacity:0}}
+.of-fade{position:absolute;inset:0;background:#05080d;opacity:0;pointer-events:none;transition:opacity .18s}
+.of-fade.on{opacity:1}
+.of-hud{position:absolute;left:12px;right:12px;top:10px;pointer-events:none}
+.of-hud-row{display:flex;align-items:center;gap:10px;font:600 12px Consolas,monospace;color:#eaf4f5}
+.of-hp{flex:0 1 200px;height:8px;border:1px solid #2a4152;border-radius:4px;background:#0a1624;overflow:hidden}
+.of-hp span{display:block;height:100%;background:linear-gradient(90deg,#81e6df,#9fe870);transition:width .15s}
+.of-hud-note{color:#ffad72}
+.of-hud-help{position:absolute;left:12px;right:12px;bottom:10px;margin:0;font:11px Consolas,monospace;color:#8fa6b7;text-align:center;pointer-events:none}
+.of-hop .of-hud-help{bottom:12px}
+.of-hop-hud{position:absolute;left:12px;top:12px;font:700 11px Consolas,monospace;letter-spacing:.1em;color:#81e6df;pointer-events:none}
+.of-hop-toast,.of-toast{position:absolute;left:50%;bottom:44px;transform:translate(-50%,8px);max-width:min(560px,calc(100% - 32px));padding:10px 14px;border:1px solid #2a4152;border-left:3px solid #f4d35e;border-radius:4px;background:#0d1826f2;color:#eaf4f5;font:13px/1.5 Inter,"Segoe UI",sans-serif;opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;z-index:6}
+.of-toast{border-left-color:#81e6df;top:52px;bottom:auto}
+.of-hop-toast.show,.of-toast.show{opacity:1;transform:translate(-50%,0)}
+/* Panels over the world: mining, puzzle, helm. */
+.of-panel{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:8;width:min(440px,calc(100% - 32px));max-height:calc(100% - 32px);overflow:auto;padding:16px;border:1px solid #2a4152;border-top:2px solid #81e6df;border-radius:6px;background:#0d1826f5;box-shadow:0 18px 48px #000a;color:#eaf4f5}
+.of-eyebrow{margin:0 0 10px;font:700 10px Consolas,monospace;letter-spacing:.14em;color:#81e6df}
+.of-help{margin:8px 0 0;color:#8fa6b7;font-size:12px;line-height:1.5}
+.of-mine-canvas{display:block;width:100%;height:210px;border:1px solid #2a4152;border-radius:4px;background:#070d17}
+.of-mine-status{min-height:1.5em;margin:10px 0;font:600 13px Inter,"Segoe UI",sans-serif;color:#eaf4f5}
+.of-drill-btn{width:100%;min-height:58px;font-size:15px;touch-action:none}
+.of-drill-btn.is-down{background:#ffad72;border-color:#ffad72;color:#2a1608}
+.of-grid{display:grid;gap:4px;margin:4px 0}
+.of-tile{position:relative;aspect-ratio:1;min-height:0;padding:0;border-radius:4px;background:#0a1624;border:1px solid #2a4152}
+.of-tile:disabled{opacity:1;cursor:default}
+.of-tile.is-empty{background:#070d17;border-style:dashed}
+.of-tile .of-arm{position:absolute;background:#3c556a;display:none}
+.of-tile .of-arm-n,.of-tile .of-arm-s{left:calc(50% - 4px);width:8px;height:50%}
+.of-tile .of-arm-e,.of-tile .of-arm-w{top:calc(50% - 4px);height:8px;width:50%}
+.of-tile .of-arm-n{top:0}.of-tile .of-arm-s{bottom:0}.of-tile .of-arm-e{right:0}.of-tile .of-arm-w{left:0}
+.of-tile.on-n .of-arm-n,.of-tile.on-e .of-arm-e,.of-tile.on-s .of-arm-s,.of-tile.on-w .of-arm-w{display:block}
+.of-tile .of-hub{position:absolute;left:calc(50% - 7px);top:calc(50% - 7px);width:14px;height:14px;border-radius:50%;background:#3c556a}
+.of-tile.is-empty .of-hub{display:none}
+.of-tile.is-powered .of-arm,.of-tile.is-powered .of-hub{background:#81e6df;box-shadow:0 0 10px #81e6df88}
+.of-tile.is-source{border-color:#f4d35e}.of-tile.is-source .of-hub{background:#f4d35e;width:22px;height:22px;left:calc(50% - 11px);top:calc(50% - 11px)}
+.of-tile.is-sink{border-color:#ffad72}.of-tile.is-sink .of-hub{border-radius:3px;background:#ffad72;width:24px;height:24px;left:calc(50% - 12px);top:calc(50% - 12px)}
+.of-tile.is-sink.is-powered .of-hub{background:#9fe870}
+.of-tile.is-hint{border-color:#f4d35e;box-shadow:0 0 0 2px #f4d35e66 inset;animation:of-hint 1.2s ease-in-out infinite}
+@keyframes of-hint{50%{box-shadow:0 0 0 4px #f4d35e33 inset}}
+.of-puzzle.is-solved{border-top-color:#9fe870;animation:of-solved .5s ease-out}
+@keyframes of-solved{0%{box-shadow:0 0 0 0 #9fe87088}100%{box-shadow:0 0 0 24px #9fe87000}}
+.of-objective{position:absolute;left:12px;top:40px;max-width:min(320px,calc(100% - 24px));margin:0;padding:6px 10px;border-left:3px solid #f4d35e;background:#0d1826d9;color:#eaf4f5;font:600 12px/1.4 Inter,"Segoe UI",sans-serif;pointer-events:none;z-index:4}
+.of-tile.spin{animation:of-spin .14s ease-out}
+@keyframes of-spin{from{transform:rotate(-90deg)}to{transform:none}}
+.of-helm{display:grid;gap:8px}
+.of-course{display:grid;text-align:left;gap:2px;padding:12px 14px}
+.of-course b{font-size:14px;letter-spacing:0}
+.of-course span{font-weight:400;color:#8fa6b7;letter-spacing:0}
+/* Conversation box. */
+.of-talk{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);z-index:9;width:min(620px,calc(100% - 24px));padding:14px 16px;border:1px solid #2a4152;border-left:3px solid #81e6df;border-radius:6px;background:#0d1826f5;box-shadow:0 12px 40px #000a;display:grid;grid-template-columns:1fr auto;gap:4px 14px;align-items:end}
+.of-talk-name{grid-column:1/-1;font:700 11px Consolas,monospace;letter-spacing:.12em;text-transform:uppercase}
+.of-talk-text{margin:0;color:#eaf4f5;font:15px/1.55 Inter,"Segoe UI",sans-serif}
+/* Touch controls. */
+.of-touch{position:absolute;inset:auto 0 0 0;height:0;z-index:7}
+.of-stick{position:absolute;bottom:22px;width:116px;height:116px;border-radius:50%;border:1px solid #81e6df44;background:#0d182688;touch-action:none}
+.of-stick-left{left:18px}.of-stick-right{right:18px}
+.of-knob{position:absolute;left:36px;top:36px;width:44px;height:44px;border-radius:50%;background:#81e6dfaa;box-shadow:0 0 12px #81e6df66;pointer-events:none}
+.of-stick-right .of-knob{background:#ffad72aa;box-shadow:0 0 12px #ffad7266}
+.of-tbtn{position:absolute;min-width:76px;min-height:56px;border-radius:28px;background:#0d1826cc;border-color:#81e6df88;font-size:13px;touch-action:none}
+.of-tbtn-use{right:22px;bottom:40px}
+.of-tbtn-dash{right:150px;bottom:30px}
+.of-tbtn.is-down{background:#81e6df;color:#082126}
+.is-fight .of-prompt{display:none}
+@media (max-width:520px){.of-stick{width:104px;height:104px}.of-knob{left:30px;top:30px}.of-tbtn-dash{right:132px}.of-talk-text{font-size:14px}}
+@media (prefers-reduced-motion:reduce){.of-place.show{animation:none;opacity:1}.of-tile.is-hint{border-color:#f4d35e;box-shadow:0 0 0 2px #f4d35e66 inset;animation:of-hint 1.2s ease-in-out infinite}
+@keyframes of-hint{50%{box-shadow:0 0 0 4px #f4d35e33 inset}}
+.of-puzzle.is-solved{border-top-color:#9fe870;animation:of-solved .5s ease-out}
+@keyframes of-solved{0%{box-shadow:0 0 0 0 #9fe87088}100%{box-shadow:0 0 0 24px #9fe87000}}
+.of-objective{position:absolute;left:12px;top:40px;max-width:min(320px,calc(100% - 24px));margin:0;padding:6px 10px;border-left:3px solid #f4d35e;background:#0d1826d9;color:#eaf4f5;font:600 12px/1.4 Inter,"Segoe UI",sans-serif;pointer-events:none;z-index:4}
+.of-tile.spin{animation:none}.of-fade{transition:none}}
+/* The preview page. */
+.of-page{position:fixed;inset:0;display:grid;grid-template-rows:auto 1fr;background:#05080d}
+.of-page .vy-top{position:relative}
+.of-steps{position:absolute;right:12px;top:52px;z-index:5;width:min(250px,calc(100% - 24px));margin:0;padding:10px 12px;list-style:none;border:1px solid #2a4152;border-radius:6px;background:#0d1826d9;font:12px/1.4 Inter,"Segoe UI",sans-serif;color:#8fa6b7}
+.of-steps li{display:flex;gap:8px;padding:3px 0}
+.of-steps li:before{content:'○';color:#2a4152}
+.of-steps li.done{color:#eaf4f5}.of-steps li.done:before{content:'●';color:#9fe870}
+.of-steps-title{display:block;width:100%;min-height:0;margin:0 0 4px;padding:0;border:0;background:none;text-align:left;font:700 10px Consolas,monospace;letter-spacing:.14em;color:#81e6df}
+.of-steps-title:hover{background:none!important}
+.of-steps[data-collapsed] li{display:none}
+@media (max-width:620px){.of-steps{top:44px;right:8px;width:auto;max-width:220px;font-size:11px;padding:6px 10px}.of-steps[data-collapsed] .of-steps-title{margin:0}}
+/* The live on-foot fight overlay (job board). */
+.of-overlay{position:fixed;inset:0;z-index:50;display:grid;grid-template-rows:auto 1fr auto;gap:8px;padding:12px;background:#05080df2}
+.of-overlay .of-stage{border:1px solid #2a4152;border-radius:6px}
+.of-overlay-quit{justify-self:center}

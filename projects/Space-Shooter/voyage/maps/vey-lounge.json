@@ -1,0 +1,36 @@
+{
+  "id": "vey-lounge",
+  "name": "Vey's lounge",
+  "kind": "interior",
+  "tile": 48,
+  "floor": "deck-dark",
+  "ambient": "lounge",
+  "grid": [
+    "############",
+    "#..........#",
+    "#.,,,,,,,..#",
+    "#.,,,,,,,..#",
+    "#.,,,,,,,..#",
+    "#..........#",
+    "#..........#",
+    "#####..#####"
+  ],
+  "props": [
+    {"art":"couch","at":[2,2],"size":[3,1],"block":"low"},
+    {"art":"couch","at":[2,4],"size":[3,1],"block":"low"},
+    {"art":"holo-table","at":[5.5,2.6],"size":[2,1.8],"block":true,"interact":{"kind":"console","id":"holo","label":"Holo-table"}},
+    {"art":"bar","at":[9,1],"size":[2,3],"block":true},
+    {"art":"plant","at":[1,1],"size":[1,1],"block":true},
+    {"art":"plant","at":[10,6],"size":[1,1],"block":true}
+  ],
+  "npcs": [
+    {"id":"vey","at":[8,5],"face":"left","wander":0.6}
+  ],
+  "doors": [
+    {"id":"out","to":"ship","arrive":"from-dock","label":"Back aboard your ship","at":[5,7],"size":[2,1]}
+  ],
+  "spawns": {
+    "default": [5.5,6,"up"],
+    "from-dock": [5.5,6,"up"]
+  }
+}

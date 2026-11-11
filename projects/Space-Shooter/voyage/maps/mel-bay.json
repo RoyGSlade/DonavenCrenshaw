@@ -1,0 +1,38 @@
+{
+  "id": "mel-bay",
+  "name": "Mel's fitting bay",
+  "kind": "interior",
+  "tile": 48,
+  "floor": "deck",
+  "ambient": "workshop",
+  "grid": [
+    "############",
+    "#..........#",
+    "#..........#",
+    "#...,,,,...#",
+    "#...,,,,....",
+    "#...,,,,....",
+    "#..........#",
+    "#..........#",
+    "############"
+  ],
+  "props": [
+    {"art":"locker","at":[1,1],"size":[1,1],"block":true},
+    {"art":"locker","at":[2,1],"size":[1,1],"block":true},
+    {"art":"locker","at":[3,1],"size":[1,1],"block":true},
+    {"art":"armor-stand","at":[5,3.5],"size":[2,2],"block":true,"station":"locker","interact":{"kind":"station","id":"locker","label":"Mel's gear: fit out"}},
+    {"art":"mirror","at":[8,1],"size":[2,0.5],"block":true},
+    {"art":"workbench","at":[1,6],"size":[1,2],"block":"low"},
+    {"art":"crate","at":[9,7],"size":[1,1],"block":"low"}
+  ],
+  "npcs": [
+    {"id":"mel","at":[8,3],"face":"left","wander":0.5}
+  ],
+  "doors": [
+    {"id":"out","at":[11,4],"size":[1,2],"to":"hangar","arrive":"from-mel-bay","label":"Back to the hangar"}
+  ],
+  "spawns": {
+    "default": [10,4.5,"left"],
+    "from-hangar": [10,4.5,"left"]
+  }
+}

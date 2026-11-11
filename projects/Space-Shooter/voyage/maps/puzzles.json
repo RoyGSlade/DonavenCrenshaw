@@ -1,0 +1,18 @@
+{
+  "lockbox": {
+    "name": "Edna's lockbox",
+    "blurb": "A mag-lock with its power cell knocked loose. Turn the conduits until the line runs from the cell to the lock.",
+    "cols": 4,
+    "rows": 3,
+    "cells": ["*E", "SW", "ES", "@W", "SE", "NE", "NW", "-", "NE", "EW", "EW", "NW"],
+    "turns": [0, 3, 3, 0, 3, 2, 3, 0, 1, 1, 3, 2]
+  },
+  "airlock": {
+    "name": "Airlock bypass",
+    "blurb": "The airlock's panel is fried. Route the backup cell around the burnt sockets.",
+    "cols": 5,
+    "rows": 4,
+    "cells": ["ES", "EW", "SW", "SE", "@W", "ES", "SE", "EW", "NW", "NS", "*E", "NW", "NES", "EW", "NS", "NE", "EW", "NW", "-", "NW"],
+    "turns": [1, 2, 3, 1, 0, 2, 1, 1, 3, 1, 0, 2, 1, 1, 3, 1, 3, 2, 0, 1]
+  }
+}

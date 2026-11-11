@@ -1,0 +1,57 @@
+{
+  "id": "ship",
+  "name": "Your ship",
+  "kind": "interior",
+  "tile": 48,
+  "floor": "deck",
+  "ambient": "ship-hum",
+  "grid": [
+    "      ###      ",
+    "     ##.##     ",
+    "    ##...##    ",
+    "    #.....#    ",
+    "    #.....#    ",
+    "    ###.###    ",
+    "  ###.....###  ",
+    "  #.........#  ",
+    "  #.........#  ",
+    "  #.........#  ",
+    "  #####.#####  ",
+    " ##=========## ",
+    " #===========# ",
+    " #===========# ",
+    " ######.###### ",
+    " #...........# ",
+    " #...........# ",
+    " #...........# ",
+    " ####/////#### ",
+    "     #####     "
+  ],
+  "props": [
+    {"art":"pilot-seat","at":[7,1.2],"size":[1,1],"block":true,"interact":{"kind":"ship","id":"helm","label":"Helm: fly"}},
+    {"art":"console","at":[5,3],"size":[1,1],"block":"low","interact":{"kind":"console","id":"nav","label":"Nav console"}},
+    {"art":"console","at":[9,3],"size":[1,1],"block":"low","interact":{"kind":"repair","id":"guns","label":"Gun feed"}},
+    {"art":"bunk","at":[3,7],"size":[1,2],"block":true},
+    {"art":"bunk","at":[11,7],"size":[1,2],"block":true},
+    {"art":"table","at":[6,8],"size":[3,1],"block":"low"},
+    {"art":"locker","at":[3,9],"size":[1,1],"block":true},
+    {"art":"vending","at":[11,9],"size":[1,1],"block":true,"interact":{"kind":"console","id":"galley","label":"Galley"}},
+    {"art":"engine-core","at":[6,11.6],"size":[3,2],"block":true,"interact":{"kind":"repair","id":"engine","label":"Engine core"}},
+    {"art":"pipe","at":[2,11],"size":[1,3],"block":true},
+    {"art":"pipe","at":[12,11],"size":[1,3],"block":true},
+    {"art":"crate","at":[2,15],"size":[1,1],"block":"low"},
+    {"art":"crate","at":[2,16],"size":[1,1],"block":"low"},
+    {"art":"crate-stack","at":[11,15],"size":[1,2],"block":true},
+    {"art":"hull-panel","at":[12,17],"size":[1,1],"block":true,"interact":{"kind":"repair","id":"hull","label":"Hull patch panel"}}
+  ],
+  "npcs": [],
+  "doors": [
+    {"id":"ramp","at":[5,18],"size":[5,1],"to":"hangar","arrive":"ship-ramp","label":"Down the ramp"}
+  ],
+  "spawns": {
+    "default": [7,16,"up"],
+    "from-hangar": [7,17,"up"],
+    "from-dock": [7,17,"up"],
+    "helm": [7,2,"up"]
+  }
+}

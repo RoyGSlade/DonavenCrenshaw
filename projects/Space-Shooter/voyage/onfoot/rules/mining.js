@@ -1,0 +1,61 @@
+// The mining minigame: a drill on a heat meter. Hold to drill: heat climbs.
+// Keep the heat inside the green band (it drifts as the drill bites into the
+// vein) and the bit goes deep fast; under it the drill only scratches, over it
+// the bit glows and jams if the meter tops out. Each quarter of the depth
+// cracks loose a chunk of ore; a run with no jams adds a clean-core bonus.
+// Pure and deterministic; the page feeds { drill } each step.
+
+// Numbers in ../tuning.json "mining": duration (s before the vein closes),
+// heatUp / coolDown (per s), band (green width), fast / slow / hot (depth per s
+// in, under and over the band), jamTime (s), chunks (ore chunks in a vein).
+import TUNING from '../tuning.json' with { type: 'json' };
+
+export const MINING = Object.freeze({ ...TUNING.mining });
+
+/** speed: the captain's dig multiplier, 1 + effect(c, 'mine.speed') (Constitution), clamped at 0.5. */
+export function createMining({ seed = 1, chunks = MINING.chunks, speed = 1 } = {}) {
+  return { t: 0, speed: Math.max(0.5, speed), seed: (seed % 997) / 997 * Math.PI * 2, heat: 0, progress: 0, drilling: false, jam: 0, jams: 0, cracks: 0, chunks, inBand: false, zone: 'cold', done: false, result: null, events: [] };
+}
+
+/** The green band's [low, high] at time t. */
+export function bandAt(s) {
+  const centre = 0.56 + 0.17 * Math.sin(s.t * 0.62 + s.seed) * Math.min(1, 0.3 + s.progress);
+  return [centre - MINING.band / 2, centre + MINING.band / 2];
+}
+
+export function stepMining(s, { drill = false } = {}, dt = 1 / 60) {
+  if (s.done) return s;
+  s.t += dt;
+  s.events = [];
+  if (s.jam > 0) {
+    s.jam = Math.max(0, s.jam - dt);
+    s.heat = Math.max(0, s.heat - MINING.coolDown * 1.4 * dt);
+    s.drilling = false;
+  } else {
+    s.drilling = Boolean(drill);
+    s.heat = Math.min(1, Math.max(0, s.heat + (s.drilling ? MINING.heatUp : -MINING.coolDown) * dt));
+    const [lo, hi] = bandAt(s);
+    s.zone = s.heat < lo ? 'cold' : s.heat <= hi ? 'green' : 'hot';
+    s.inBand = s.zone === 'green';
+    if (s.drilling) {
+      const rate = s.zone === 'green' ? MINING.fast : s.zone === 'hot' ? MINING.hot : MINING.slow;
+      s.progress = Math.min(1, s.progress + rate * (s.speed || 1) * dt);
+    }
+    if (s.heat >= 1) { s.jam = MINING.jamTime; s.jams++; s.events.push({ type: 'jam' }); }
+  }
+  const cracked = Math.floor(s.progress * s.chunks + 1e-9);
+  while (s.cracks < cracked) { s.cracks++; s.events.push({ type: 'crack', n: s.cracks }); }
+  if (s.progress >= 1 || s.t >= MINING.duration) {
+    s.done = true;
+    s.result = miningResult(s);
+    s.events.push({ type: 'done', ...s.result });
+  }
+  return s;
+}
+
+/** What the run yields: ore count and a reward in core's format. */
+export function miningResult(s) {
+  const clean = s.progress >= 1 && s.jams === 0;
+  const ore = s.cracks + (clean ? 1 : 0);
+  return { ore, clean, jams: s.jams, time: Math.round(s.t * 10) / 10, reward: ore > 0 ? { items: { ore } } : null };
+}

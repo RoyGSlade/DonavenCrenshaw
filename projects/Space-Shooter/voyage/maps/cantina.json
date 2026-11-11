@@ -1,0 +1,44 @@
+{
+  "id": "cantina",
+  "name": "The cantina",
+  "kind": "interior",
+  "tile": 48,
+  "floor": "deck-warm",
+  "ambient": "cantina",
+  "grid": [
+    "################",
+    "#..............#",
+    "#..............#",
+    "#..............#",
+    "#....,,,,,,....#",
+    "#....,,,,,,....#",
+    "#....,,,,,,....#",
+    "#..............#",
+    "#..............#",
+    "#..............#",
+    "#######..#######"
+  ],
+  "props": [
+    {"art":"bar","at":[1,1],"size":[6,1],"block":true,"interact":{"kind":"console","id":"bar","label":"The bar"}},
+    {"art":"shelf","at":[8,1],"size":[3,0.5],"block":true},
+    {"art":"jukebox","at":[14,1],"size":[1,1],"block":true,"interact":{"kind":"console","id":"jukebox","label":"Jukebox"}},
+    {"art":"table","at":[3,4],"size":[1,1],"block":"low"},
+    {"art":"table","at":[11,4],"size":[1,1],"block":"low"},
+    {"art":"table","at":[7,5],"size":[2,1],"block":"low"},
+    {"art":"table","at":[3,7.5],"size":[1,1],"block":"low"},
+    {"art":"table","at":[12,7.5],"size":[1,1],"block":"low"},
+    {"art":"stool","at":[2,2],"size":[0.6,0.6],"block":false},
+    {"art":"stool","at":[4,2],"size":[0.6,0.6],"block":false},
+    {"art":"vending","at":[14,8],"size":[1,1],"block":true,"interact":{"kind":"console","id":"vending","label":"Vending machine"}},
+    {"art":"plant","at":[1,9],"size":[1,1],"block":true},
+    {"art":"plant","at":[14,4],"size":[1,1],"block":true}
+  ],
+  "npcs": [],
+  "doors": [
+    {"id":"out","at":[7,10],"size":[2,1],"to":"hangar","arrive":"from-cantina","label":"Back to the hangar"}
+  ],
+  "spawns": {
+    "default": [7.5,9,"up"],
+    "from-hangar": [7.5,9,"up"]
+  }
+}
