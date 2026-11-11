@@ -3,7 +3,7 @@
 // reaches the page through textContent. Reads and writes go through the store.
 import {
   STATS, TREES, SKILLS, GIVERS, UPGRADES, PORTRAITS, COLORS, NAME_MAX, REP_MAX, MAX_REP_REWARDS,
-  SHIP_STAT_NAMES, TOP_TIER, UNLOCK_NAMES, ITEMS, CURRENCY, ACTIVITIES,
+  SHIP_STAT_NAMES, TOP_TIER, UNLOCK_NAMES, ITEMS, CURRENCY, ACTIVITIES, DEATH,
 } from './data.js';
 import { unspentPoints, treePoints, canLearn, spentPoints } from './character.js';
 import { money, giverName, itemName, repBand, discount } from './economy.js';
@@ -220,7 +220,7 @@ export function createHangar({ panes, store, ship, crew, toast, dev = false, onT
         el('button', { type: 'button', id: 'vy-dev-maxrep', text: 'Max Hask rep', on: { click: () => say(store.grant({ rep: { hask: REP_MAX } })) } }),
         el('button', { type: 'button', id: 'vy-dev-die', text: 'Test death', on: { click: () => {
           const lost = store.die();
-          toast(lost == null ? 'Make a captain first.' : `Your captain died. ${lost} skill point${lost === 1 ? '' : 's'} lost, stats rolled again, skills refunded.`);
+          toast(lost == null ? 'Make a captain first.' : `Your captain died. ${lost} skill point${lost === 1 ? '' : 's'} lost, stats rolled again, skills refunded${DEATH.loseUpgrades ? ', ship upgrades lost' : ''}.`);
         } } }),
         el('button', { type: 'button', id: 'vy-dev-reset', text: 'Fresh save', on: { click: () => { if (confirm('Start a fresh save on this device? Your account copy is replaced on the next sync.')) store.reset(); } } }),
       ]),

@@ -10,7 +10,7 @@ import { QUEST_GIVERS } from './quests/data/givers.js';
 import { SECTORS } from './quests/data/sectors.js';
 import { availability } from './quests/engine.js';
 import { createQuestPlayer, el, button, portrait, shipSummary } from './quests/ui/player.js';
-import { REP_MAX } from './data.js';
+import { REP_MAX, DEATH } from './data.js';
 import { repBand } from './economy.js';
 
 /**
@@ -35,7 +35,7 @@ export function createJobs({ pane, store, say, toast, dev = false, onCaptain = (
     onEnd: (ended) => {
       if (!ended.death) return;
       const lost = store.die();
-      if (lost != null) toast(`Your captain died. ${lost} skill point${lost === 1 ? '' : 's'} lost, stats rolled again, skills refunded.`);
+      if (lost != null) toast(`Your captain died. ${lost} skill point${lost === 1 ? '' : 's'} lost, stats rolled again, skills refunded${DEATH.loseUpgrades ? ', ship upgrades lost' : ''}.`);
     },
     onExit: () => render(),
     onChange: () => onPlaying(player.active),

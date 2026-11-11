@@ -66,7 +66,8 @@ export const SKILLS = Object.freeze([
 // Death (P4, Donaven: "they lose half of their skill points and roll fresh
 // stats"). The half lost is rounded down; every learned skill is refunded so
 // the player spends what is left again. Permanent (max-rep) points are kept.
-export const DEATH = Object.freeze({ keepShare: 0.5, refundSkills: true, rerollStats: true });
+// S11 (Donaven, 2026-11-11): ship upgrades are lost on death too.
+export const DEATH = Object.freeze({ keepShare: 0.5, refundSkills: true, rerollStats: true, loseUpgrades: true });
 
 // Small customisation (S26): a portrait and a colour.
 export const PORTRAITS = Object.freeze([

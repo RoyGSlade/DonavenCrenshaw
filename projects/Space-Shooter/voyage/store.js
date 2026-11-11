@@ -1,11 +1,11 @@
 // The live Voyage save for a page: reads and writes this browser's storage and
 // tells listeners about every change. No DOM; storage and the clock are handed
 // in, so tests run it with fakes. Account sync (voyage/sync.js) listens to it.
-import { cleanSave, decodeSave, encodeSave, emptySave, LOCAL_KEY } from './save.js';
+import { cleanSave, decodeSave, encodeSave, emptySave, emptyUpgrades, LOCAL_KEY } from './save.js';
 import { grant, spend, canAfford, meets, missing } from './economy.js';
 import { createCharacter, learn, die } from './character.js';
 import { upgrade } from './upgrades.js';
-import { START_KIT } from './data.js';
+import { START_KIT, DEATH } from './data.js';
 
 export const BACKUP_KEY = 'stardust.voyage.backup.v1';
 
@@ -77,7 +77,7 @@ export function createVoyageStore({ storage = globalThis.localStorage, now = Dat
     die(rng = Math.random) {
       if (!save.character) return null;
       const out = die(save.character, rng);
-      commit({ ...save, character: out.character });
+      commit({ ...save, character: out.character, ...(DEATH.loseUpgrades ? { upgrades: emptyUpgrades() } : {}) });
       return out.lost;
     },
     upgrade(systemId) {

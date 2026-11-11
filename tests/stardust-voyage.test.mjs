@@ -265,8 +265,10 @@ test('store: changes save at once in this browser, stamp the clock, and survive 
   const copy = store.get();
   copy.money = 1e6;
   assert.equal(store.get().money, 233, 'get() hands out a copy (80 start kit + 300, less hull tier 1 at 150 with charisma 4\'s 2% off)');
+  assert.equal(store.get().upgrades.hull, 1);
   const lost = store.die(seq(0));
   assert.equal(lost, 1);
+  assert.equal(store.get().upgrades.hull, 0, 'S11: ship upgrades are lost on death');
   assert.deepEqual(seen, ['local', 'local', 'local', 'local', 'local']);
   const reloaded = createVoyageStore({ storage, now: () => t });
   assert.deepEqual(reloaded.get(), store.get());
