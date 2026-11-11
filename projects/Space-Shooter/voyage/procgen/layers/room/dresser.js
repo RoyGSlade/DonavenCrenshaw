@@ -53,6 +53,18 @@ export function dressRoom(input, catalogs) {
 
   // doorways and aprons stay clear for good
   for (const d of shell.doors) for (const [x, y] of d.apron) S.reserve([[x, y]], RES_DOOR);
+  // caller's keep-clear areas (a firing range, a ship's berth) and cells that must stay reachable (npcs, spawns)
+  for (const k of input.keep || []) {
+    const [kx, ky] = k.at, [kw, kh] = k.size || [1, 1];
+    const cells = [];
+    for (let y = Math.floor(ky); y < Math.ceil(ky + kh); y++) for (let x = Math.floor(kx); x < Math.ceil(kx + kw); x++) cells.push([x, y]);
+    S.reserve(cells, RES_DOOR);
+  }
+  for (const [rx, ry] of input.reach || []) {
+    const c = [Math.floor(rx), Math.floor(ry)];
+    if (shell.grid.walk(c[0], c[1])) { S.spotCells.push(c); S.reserve([c], RES_DOOR); }
+  }
+  const allowed = input.art ? new Set(input.art) : null;
 
   // locked props first, exactly where they were
   const lockedRoots = new Map(); // rule id -> count of locked group roots
@@ -61,6 +73,9 @@ export function dressRoom(input, catalogs) {
     (ok ? report.locked : report.dropped).push(lp.art + '@' + lp.at);
     if (ok && lp.rule && !lp.sat) lockedRoots.set(lp.rule, (lockedRoots.get(lp.rule) || 0) + 1);
   }
+
+  // a hand-made map may start imperfect (kept props sealing a corner): the guarantee is then "no worse than it was"
+  report.baseline = S.takeBaseline();
 
   // rules for this room + theme extras, with must-haves bound in
   const rules = room.rules.map(r => ({ ...r }));
@@ -82,7 +97,14 @@ export function dressRoom(input, catalogs) {
   const refArea = (((minW - 2) * (minH - 2)) + ((maxW - 2) * (maxH - 2))) / 2;
   const densityMul = 0.5 + density;
 
-  const runRule = (rule) => {
+  const runRule = (rawRule) => {
+    let rule = rawRule;
+    if (allowed) {
+      // only props the caller can draw
+      if (rule.prop && !allowed.has(rule.prop)) return;
+      if (rule.pick) { const pick = rule.pick.filter(p => allowed.has(p.prop || p)); if (!pick.length) return; rule = { ...rule, pick }; }
+      if (rule.satellites) rule = { ...rule, satellites: rule.satellites.filter(sat => allowed.has(sat.prop)) };
+    }
     const rng = S.rng.fork('rule', rule.id);
     if (rule.themes && !rule.themes.includes(theme) && !rule.must) return;
     if (rule.minArea && floorArea < rule.minArea && !rule.must) return;
@@ -231,17 +253,33 @@ class State {
     }
   }
 
+  /** Before dressing: what the shell and kept props already break, so later checks only refuse new harm. */
+  takeBaseline() {
+    const g = this.g;
+    const { seen, n } = g.flood(this.doorStarts);
+    let walk = 0;
+    for (const i of this.walkCells) if (!g.block[i]) walk++;
+    this.basePockets = walk - n;
+    this.baseDoorsCut = this.doorStarts.filter(([x, y]) => !seen[g.idx(x, y)]).map(([x, y]) => g.idx(x, y));
+    const dropped = this.spotCells.filter(([x, y]) => !seen[g.idx(x, y)]);
+    this.spotCells = this.spotCells.filter(([x, y]) => seen[g.idx(x, y)]);
+    let lockedUnreached = 0;
+    for (const p of this.props) if (p.interact && !this.useCells(p).some(([x, y]) => g.in(x, y) && seen[g.idx(x, y)])) { p.skipReach = true; lockedUnreached++; }
+    return { pockets: this.basePockets, doorsCut: this.baseDoorsCut.length, unreachableSpots: dropped.length, unreachableKept: lockedUnreached };
+  }
+
   /** The hard guarantees, on the live grid. */
   hardOk() {
     this.checks++;
     const g = this.g;
     const { seen, n } = g.flood(this.doorStarts);
-    for (const [x, y] of this.doorStarts) if (!seen[g.idx(x, y)]) return false;
+    const cut = this.baseDoorsCut || [];
+    for (const [x, y] of this.doorStarts) { const i = g.idx(x, y); if (!seen[i] && !cut.includes(i)) return false; }
     let walk = 0;
     for (const i of this.walkCells) if (!g.block[i]) walk++;
-    if (walk !== n) return false; // a sealed pocket
+    if (walk - n > (this.basePockets || 0)) return false; // a (new) sealed pocket
     for (const p of this.props) {
-      if (!p.interact) continue;
+      if (!p.interact || p.skipReach) continue;
       if (!this.useCells(p).some(([x, y]) => g.in(x, y) && seen[g.idx(x, y)])) return false;
     }
     for (const [x, y] of this.spotCells) if (!seen[g.idx(x, y)]) return false;
@@ -276,16 +314,33 @@ class State {
   }
 
   placeLocked(lp) {
-    const d = this.PROPS[lp.art];
-    if (!d) return false;
-    const turns = turnsFromRot(lp.rot || 0);
-    const p = this.piece(lp.art, Math.round(lp.at[0]), Math.round(lp.at[1]), turns, lp.face != null ? dirIndex(lp.face) : null, {
+    const d = this.PROPS[lp.art] || { size: lp.size || [1, 1], front: 'none', block: lp.block ?? true, clear: 0, layer: lp.layer, under: lp.under };
+    const turns = this.PROPS[lp.art] ? turnsFromRot(lp.rot || 0) : 0;
+    // cover every tile the prop touches (hand-placed props may sit on fractions)
+    const x0 = Math.floor(lp.at[0] + 1e-6), y0 = Math.floor(lp.at[1] + 1e-6);
+    const sz = lp.size || turnedSize(d.size, turns);
+    const x1 = Math.ceil(lp.at[0] + sz[0] - 1e-6), y1 = Math.ceil(lp.at[1] + sz[1] - 1e-6);
+    const p = {
+      art: lp.art, x: x0, y: y0, w: Math.max(1, x1 - x0), h: Math.max(1, y1 - y0), turns, facing: lp.face != null ? dirIndex(lp.face) : null,
+      // a kept prop is exactly what the map says: no layer field means it stands on the floor as an object
+      block: lp.block ?? d.block ?? true, layer: lp.layer === 'floor' ? 'floor' : 'obj', under: !!lp.under,
       rule: lp.rule || null, role: lp.role || 'functional', sat: !!lp.sat, locked: true, interact: lp.interact || null, use: lp.use || null, station: lp.station || null,
-    });
-    const [w, h] = lp.size ? lp.size.map(Math.round) : [p.w, p.h];
-    p.w = w; p.h = h;
-    if (!this.fits(p, p.layer, -99)) return false;
+      lockIndex: lp.lockIndex ?? null,
+    };
     p.group = this.props.length;
+    if (lp.lockIndex != null) {
+      // returned verbatim whatever happens, so it always claims its tiles (even a hand-placed one that clips a wall)
+      p.i = this.props.length; this.props.push(p);
+      const g = this.g;
+      for (let y = p.y; y < p.y + p.h; y++) for (let x = p.x; x < p.x + p.w; x++) {
+        if (!g.in(x, y) || g.type[g.idx(x, y)] !== FLOOR) continue;
+        const i = g.idx(x, y);
+        if (p.layer === 'floor') g.flr[i] = p.i; else { g.obj[i] = p.i; if (p.block) g.block[i] = 1; g.res[i] = RES_DOOR; }
+      }
+      this.addMass(p, 1);
+      return true;
+    }
+    if (!this.fits(p, p.layer, -99)) return false;
     if (!this.commit([p])) return false;
     this.reserveAround(p, d, {});
     return true;
@@ -788,7 +843,7 @@ class State {
       if (p.facing != null) out.face = dirName(p.facing);
       out.role = p.role; out.rule = p.rule; out.group = p.group;
       if (p.sat) out.sat = true;
-      if (p.locked) out.locked = true;
+      if (p.locked) { out.locked = true; if (p.lockIndex != null) out.lockIndex = p.lockIndex; }
       if (p.interact) { out.interact = p.interact; out.use = p.use; }
       if (p.station) out.station = p.station;
       if (p.must) out.must = p.must;

@@ -1,6 +1,7 @@
 {
   "version": 1,
   "about": "Room types for the procgen dresser (layer: room). Each room type is a list of rules placed in order: anchors, then functional groups, then clutter and decor. Rule fields are documented in lhc-lanes/stardust/procgen/API.md. Sizes are outer tiles (walls included).",
+  "mapTypes": {"workshop": "workshop", "mel-bay": "fitting-bay", "edna-den": "den", "hask-office": "relay-office", "vey-lounge": "broker-lounge", "garrity-office": "salvage-office", "cantina": "cantina", "hangar": "hangar-bay", "cockpit": "cockpit", "crew-deck": "crew-deck", "engine-room": "engine-room", "cargo-hold": "cargo-hold"},
   "themes": {
     "tidy": {"name": "Tidy", "clutter": 0.45, "decor": 1.0, "jitter": 0.25, "rotJitter": 0, "wide": 2, "extra": []},
     "lived-in": {"name": "Lived-in", "clutter": 1.0, "decor": 1.0, "jitter": 0.6, "rotJitter": 0, "wide": 2, "extra": []},

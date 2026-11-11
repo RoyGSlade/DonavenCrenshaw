@@ -391,3 +391,69 @@ test('cli.mjs: JSON in, the same map out', async () => {
   assert.equal(run({ op: 'validate', map: out.result }).result.ok, true);
   assert.equal(run({ op: 'bogus' }).ok, false);
 });
+
+// ---- dress.js: the shape the Studio and onfoot call (STUDIO-SCHEMA.md section 6) ----------
+test('dress.js: dressRoom(map, { seed, locked, art }) keeps locks, stations, npcs, walls and doors', async () => {
+  const { dressRoom: studioDress } = await import('../projects/Space-Shooter/voyage/procgen/dress.js');
+  const workshop = {
+    id: 'workshop', name: "Chibby's workshop", kind: 'interior', tile: 48, floor: 'deck',
+    grid: ['##############', '#............#', '#............#', '#....====....#', '#....====....#', '#............#', '#............#', '#............#', '#............#', '######..######'],
+    props: [
+      { art: 'workbench', at: [1, 1], size: [3, 1], block: 'low', station: 'pad', interact: { kind: 'station', id: 'pad', label: "Chibby's bench: ship upgrades" } },
+      { art: 'tool-rack', at: [5, 1], size: [3, 0.6], block: true },
+      { art: 'engine-stand', at: [5.5, 3.2], size: [3, 1.6], block: true },
+      { art: 'dog-bed', at: [11, 5], size: [1.4, 1], block: false, station: 'kennel' },
+      { art: 'mystery-console', at: [12, 7], size: [1, 1], block: true, interact: { kind: 'console', id: 'odd', label: 'Odd console' } },
+    ],
+    npcs: [{ id: 'chibby', at: [2, 2], face: 'down', wander: 0.5 }, { id: 'ralph', at: [11, 5], face: 'left', wander: 1.2 }],
+    doors: [{ id: 'out', at: [6, 9], size: [2, 1], to: 'hangar', arrive: 'from-workshop', label: 'Back to the hangar' }],
+    spawns: { default: [6.5, 8, 'up'], 'from-hangar': [6.5, 8, 'up'] },
+  };
+  const frozen = JSON.stringify(workshop);
+  for (let seed = 1; seed <= 60; seed++) {
+    const r = studioDress(workshop, { seed, locked: [1] });
+    assert.equal(JSON.stringify(workshop), frozen, 'the input map is not touched');
+    assert.ok(r.props.length > 5 && r.props.length <= 300);
+    assert.ok(Array.isArray(r.notes) && r.notes.length);
+    assert.deepEqual(r.props.find(p => p.art === 'tool-rack' && p.at[0] === 5), workshop.props[1], 'locked prop comes back unchanged');
+    assert.ok(r.props.some(p => p.station === 'pad' && p.interact?.id === 'pad'), 'the bench station survives');
+    assert.ok(r.props.some(p => p.station === 'kennel'), 'Ralph\'s kennel survives');
+    assert.deepEqual(r.props.find(p => p.art === 'mystery-console'), workshop.props[4], 'an interactive prop with no catalog art stays put');
+    const after = { ...workshop, props: r.props };
+    const v = validateMap(after, { strictPockets: false });
+    const base = new Set(validateMap(workshop, { strictPockets: false }).problems.map(p => p.text));
+    assert.deepEqual(v.problems.filter(p => !base.has(p.text)).map(p => p.text), [], `seed ${seed}: no new problems`);
+    assert.deepEqual(studioDress(workshop, { seed, locked: [1] }), r, 'deterministic');
+  }
+  // art filter: only ids the studio can draw
+  const onlyBench = studioDress(workshop, { seed: 3, art: ['workbench', 'crate-small', 'locker'] });
+  for (const p of onlyBench.props) assert.ok(['workbench', 'crate-small', 'locker', 'tool-rack', 'engine-stand', 'dog-bed', 'mystery-console'].includes(p.art), p.art);
+});
+
+test('dress.js: a multi-room map (the ship) is dressed room by room', async () => {
+  const { dressRoom: studioDress, subShell } = await import('../projects/Space-Shooter/voyage/procgen/dress.js');
+  const ship = {
+    id: 'ship', name: 'Your ship', kind: 'interior', tile: 48, floor: 'deck',
+    rooms: [{ room: 'cockpit', at: [0, 0], size: [13, 7] }, { room: 'crew-deck', at: [0, 7], size: [13, 7] }, { room: 'cargo-hold', at: [0, 14], size: [13, 8] }],
+    grid: [
+      '#############', '#...........#', '#...........#', '#...........#', '#...........#', '#...........#', '#####..######',
+      '#...........#', '#...........#', '#...........#', '#...........#', '#...........#', '#...........#', '######..#####',
+      '#...........#', '#...........#', '#...........#', '#...........#', '#...........#', '#...........#', '#...........#', '#####...#####',
+    ],
+    props: [],
+    npcs: [],
+    doors: [{ id: 'ramp', at: [5, 21], size: [3, 1], to: 'hangar', arrive: 'ship-ramp', label: 'Down the ramp' }],
+    spawns: { default: [6, 20, 'up'] },
+  };
+  const sub = subShell(ship, { x: 0, y: 7, w: 13, h: 7 });
+  assert.equal(sub.doors.length, 2, 'the crew deck links up to the cockpit and down to the hold');
+  for (let seed = 1; seed <= 30; seed++) {
+    const r = studioDress(ship, { seed });
+    const after = { ...ship, props: r.props };
+    const v = validateMap(after);
+    assert.ok(v.ok, `seed ${seed}: ${v.problems.map(p => p.text).join('; ')}`);
+    assert.ok(r.props.some(p => p.art === 'nav-console' && p.at[1] < 7), 'helm in the cockpit');
+    assert.ok(r.props.some(p => p.art === 'bunk' && p.at[1] >= 7 && p.at[1] < 14), 'bunks on the crew deck');
+    assert.ok(r.props.some(p => p.art === 'cargo-container' && p.at[1] >= 14), 'containers in the hold');
+  }
+});
