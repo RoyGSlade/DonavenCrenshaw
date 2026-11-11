@@ -302,3 +302,14 @@ test('shop items bought for quests open those quests\' options', () => {
   for (const id of ['breach-kit', 'scan-goggles', 'syndicate-codes', 'ghost-transponder']) assert.ok(asks.has(id), `${id} opens something`);
   for (const id of ['medkit', 'hull-patch', 'shield-cell']) assert.ok(costs.has(id), `${id} is spent in a job`);
 });
+
+test('the counters mount at the hangar\'s stations (mountStation) and unmount cleanly', async () => {
+  const { registerShops } = await import('../projects/Space-Shooter/voyage/shops/ui.js');
+  const mounted = [];
+  const api = { mountStation: (station, view) => { const entry = { station, view }; mounted.push(entry); return () => mounted.splice(mounted.indexOf(entry), 1); } };
+  const off = registerShops(api);
+  assert.deepEqual(mounted.map((m) => [m.station, m.view.id]), [['locker', 'shop-mel'], ['backroom', 'shop-edna'], ['pad', 'shop-chibby']]);
+  for (const m of mounted) assert.equal(typeof m.view.render, 'function');
+  off();
+  assert.equal(mounted.length, 0);
+});

@@ -13,7 +13,7 @@
 // All text goes in with textContent.
 import { el, button } from '../quests/ui/player.js';
 import { shopView, buy, sell, tryDeal, equip, unequip, GEAR, SLOTS, SHOPS } from './shop.js';
-import { ITEMS } from '../quests/core.js';
+import { ITEMS, rollText } from '../quests/core.js';
 
 const money = (n) => `${Math.trunc(n).toLocaleString('en-US')} cr`;
 const itemName = (id) => ITEMS[id]?.name || id;
@@ -40,9 +40,10 @@ export function mountShop({ root, shop: shopId, store, speak = null, bus = null,
 
   function commit(out, after) {
     if (!out.ok) { note = out.reason; say(out.line); render(); return; }
-    store.update(() => out.save);
-    say(out.line);
+    note = '';
     after?.();
+    store.update(() => out.save); // the store's listener redraws the counter with the note
+    say(out.line);
   }
 
   function row(v, s) {
@@ -98,14 +99,14 @@ export function mountShop({ root, shop: shopId, store, speak = null, bus = null,
       el('h4', { text: 'RISKY DEALS' }),
       el('ul', { class: 'sh-list' }, ...v.deals.map((d) => el('li', { class: 'sh-item sh-deal', dataset: { deal: d.id } },
         el('div', { class: 'sh-what' }, el('strong', { text: d.name }), el('p', { text: d.blurb }),
-          el('small', { class: 'sh-tag', text: `A roll: d6 + ${d.statName}, ${d.dc} or more` })),
+          el('small', { class: 'sh-tag', text: `A roll: ${d.statName}, 2d6 ${d.mod < 0 ? '-' : '+'} ${Math.abs(d.mod)} vs ${d.dc} (${Math.round(d.chance * 100)}%)` })),
         el('div', { class: 'sh-buy' }, el('span', { class: 'sh-price', text: costText(d.cost) }),
           button(d.ok ? 'Take the deal' : d.reasons[0], () => {
             const out = tryDeal(store.get(), shopId, d.id, { rng });
             commit(out, () => {
-              note = `${out.roll.roll} + ${out.roll.bonus} = ${out.roll.total} vs ${out.roll.dc}: ${out.pass ? 'it pays off.' : 'no luck.'} ${out.text}`;
+              note = `${rollText(out.roll)}: ${out.pass ? (out.roll.natural ? 'double six, it pays off!' : 'it pays off.') : 'no luck.'} ${out.text}`;
+              emit('roll:attempt', { ...out.roll, who: store.get().character?.name || null, label: d.name });
               emit('shop:deal', { shop: shopId, deal: d.id, pass: out.pass });
-              render();
             });
           }, { disabled: !d.ok }))),
       )),
@@ -138,3 +139,22 @@ export function mountShop({ root, shop: shopId, store, speak = null, bus = null,
   return { render, destroy: () => { off?.(); root.replaceChildren(); } };
 }
 
+
+/**
+ * The three counters as hangar station views (hangar's mountStation, contract
+ * "Proposed by hangar" 1): Mel's at `locker`, Edna's at `backroom`, Chibby's at
+ * `pad`. Call once at hangar boot: registerShops(hangarApi, { speak }).
+ * Returns a function that unmounts all three.
+ */
+export function registerShops(hangarApi, { speak = null, rng = Math.random } = {}) {
+  const offs = Object.entries(SHOPS).map(([id, shop], i) => hangarApi.mountStation(shop.station, {
+    id: `shop-${id}`,
+    label: id === 'chibby' ? 'Parts' : id === 'edna' ? 'Wares' : 'Gear',
+    order: 20 + i,
+    render(el, ctx) {
+      const counter = mountShop({ root: el, shop: id, store: ctx.store, toast: ctx.toast, bus: ctx.bus, speak, rng });
+      return () => counter.destroy();
+    },
+  }));
+  return () => offs.forEach((off) => off?.());
+}

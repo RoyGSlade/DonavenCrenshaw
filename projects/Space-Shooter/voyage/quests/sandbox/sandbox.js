@@ -70,7 +70,7 @@ function renderSide() {
   const c = save.character;
   $('qs-captain').replaceChildren(
     el('p', { class: 'qs-name', text: c.name }),
-    el('dl', { class: 'qs-stats' }, ...['cha', 'con', 'dex', 'wis'].flatMap(id => [el('dt', { text: STAT_NAMES[id] }), el('dd', { text: String(c.stats[id]) })])),
+    el('dl', { class: 'qs-stats' }, ...['str', 'con', 'dex', 'wis', 'cha'].flatMap(id => [el('dt', { text: STAT_NAMES[id] }), el('dd', { text: String(c.stats[id]) })])),
     el('p', { class: 'qs-note', text: `Skill points earned: ${c.earned || 0}` }),
   );
   const items = Object.entries(save.items || {}).map(([id, n]) => `${ITEMS[id]?.name || id} × ${n}`);
@@ -148,10 +148,11 @@ if (newGameFlag({ config: runtimeConfig, search: location.search }).enabled) {
   const linked = QUESTS[params.get('quest')];
   if (linked) {
     if (player.active) player.exit();
+    save = { ...save, quests: { ...save.quests, active: {} } };
     player.start(linked, Number.parseInt(params.get('seed'), 10) > 0 ? Number.parseInt(params.get('seed'), 10) : 1);
     const node = linked.nodes[params.get('node')];
-    if (node && (node.type === 'dialogue' || node.type === 'end') && player.run) {
-      save = { ...save, quests: { ...save.quests, active: { ...save.quests?.active, [linked.id]: { ...player.run, node: params.get('node'), part: null } } } };
+    if (node?.type === 'dialogue' && player.run && !player.run.ended) {
+      save = { ...save, quests: { ...save.quests, active: { [linked.id]: { ...player.run, node: params.get('node'), part: null } } } };
       persist();
       player.exit();
       player.resume();

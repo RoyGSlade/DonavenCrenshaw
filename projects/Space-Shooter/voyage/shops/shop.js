@@ -13,7 +13,7 @@
 // Gear is items in the save (one of each) plus `save.gear = { armour, weapon }`,
 // the pieces worn. Tools count just by being owned (quests ask for the item).
 import { SHOPS_DATA } from '../quests/data/shops.js';
-import { grant, spend, missing, check, ITEMS, STAT_NAMES } from '../quests/core.js';
+import { grant, spend, missing, check, checkChance, ITEMS, STAT_NAMES } from '../quests/core.js';
 import { priceFor } from '../economy.js';
 
 export const SHOPS = SHOPS_DATA.shops;
@@ -106,7 +106,8 @@ export function shopView(shopId, save) {
     deals: (shop.deals || []).map((d) => {
       const cost = costOf(shopId, save, d.price);
       const reasons = missing(save, { money: cost.money, items: cost.items });
-      return { id: d.id, name: d.name, blurb: d.blurb, cost, stat: d.check.stat, statName: STAT_NAMES[d.check.stat] || d.check.stat, dc: d.check.dc, ok: reasons.length === 0, reasons };
+      const mod = (save.character?.stats?.[d.check.stat] ?? 3) - 3;
+      return { id: d.id, name: d.name, blurb: d.blurb, cost, stat: d.check.stat, statName: STAT_NAMES[d.check.stat] || d.check.stat, dc: d.check.dc, mod, chance: save.character ? checkChance(save.character, d.check) : 0, ok: reasons.length === 0, reasons };
     }),
     gear,
   };
@@ -140,7 +141,7 @@ export function sell(save, shopId, itemId) {
   return { ok: true, save: next, events: [{ type: 'item', id: itemId, amount: -1, total: next.items?.[itemId] || 0 }, ...out.events], reason: '', line: lineOf(shopId, 'sell') };
 }
 
-/** A risky deal: pay, roll the attempt (d6 + stat vs the difficulty), take what comes. */
+/** A risky deal: pay, roll the attempt (2d6 + stat bonus vs the target, contract section 6), take what comes. */
 export function tryDeal(save, shopId, dealId, { rng = Math.random } = {}) {
   const deal = (SHOPS[shopId]?.deals || []).find((d) => d.id === dealId);
   if (!deal) return { ok: false, save, events: [], reason: 'No such deal.', line: null };
