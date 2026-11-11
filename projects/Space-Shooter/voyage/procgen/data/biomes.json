@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "about": "Biome rule sets for the outdoor dresser (layer: region). Art ids are the approved desert and moon pack sprites (lhc-lanes/stardust/art/packs/). Sizes are tiles. Fields are documented in lhc-lanes/stardust/procgen/API.md.",
+  "biomes": {
+    "desert": {
+      "name": "Desert landing site", "ground": "desert-sand", "rock": "desert-rock",
+      "size": { "min": [34, 24], "max": [42, 30] },
+      "border": { "depth": 3, "noise": 5 },
+      "patches": [
+        { "char": ",", "texture": "desert-dunes", "scale": 8, "above": 0.62 },
+        { "char": ";", "texture": "desert-saltflat", "scale": 10, "below": 0.3 }
+      ],
+      "path": { "char": "p", "texture": "desert-saltflat", "width": 2 },
+      "outcrops": { "scale": 4.5, "above": 0.8 },
+      "pad": { "art": "landing-pad", "size": [4, 4], "ring": ":" },
+      "landmarks": { "count": [2, 3], "pick": [
+        { "art": "habitat-dome", "size": [4, 4], "name": "Habitat dome" },
+        { "art": "fuel-depot", "size": [4, 4], "name": "Fuel depot" },
+        { "art": "comm-array", "size": [4, 4], "name": "Comm array" },
+        { "art": "water-plant", "size": [4, 4], "name": "Water plant" }
+      ] },
+      "nearLandmark": { "count": [2, 4], "pick": [
+        { "art": "cargo-crate", "size": [1, 1], "block": "low", "w": 3 },
+        { "art": "fuel-barrel", "size": [1, 1], "block": "low", "w": 3 },
+        { "art": "solar-panel", "size": [2, 2], "block": true, "w": 1 }
+      ] },
+      "scatter": [
+        { "id": "rocks", "pick": [{ "art": "boulder", "size": [1, 1], "block": true, "scale": [0.6, 1.0] }], "radius": 1.25, "clusters": [5, 7], "spread": 1.7, "density": 0.95, "rotate": true },
+        { "id": "big-rocks", "pick": [{ "art": "boulder", "size": [2, 2], "block": true, "scale": [0.8, 1.0] }], "radius": 3, "clusters": [3, 4], "spread": 2.2, "density": 0.8, "rotate": true },
+        { "id": "scrub", "pick": [{ "art": "desert-plant", "size": [1, 1], "block": false, "scale": [0.55, 0.95] }], "radius": 1.2, "clusters": [4, 6], "spread": 1.8, "density": 0.85, "rotate": true },
+        { "id": "bones", "pick": [{ "art": "bone-ribs", "size": [2, 2], "block": "low", "scale": [0.8, 1.0] }], "radius": 8, "clusters": [1, 2], "spread": 4, "density": 0.35, "rotate": true },
+        { "id": "wreck", "pick": [{ "art": "wrecked-rover", "size": [2, 2], "block": true, "scale": [0.9, 1.0] }], "radius": 10, "clusters": [1, 1], "spread": 3, "density": 0.3, "rotate": true }
+      ]
+    },
+    "moon": {
+      "name": "Moon outpost", "ground": "moon-regolith", "rock": "moon-rock",
+      "size": { "min": [34, 24], "max": [42, 30] },
+      "border": { "depth": 3, "noise": 6 },
+      "patches": [
+        { "char": ",", "texture": "moon-craters", "scale": 7, "above": 0.6 }
+      ],
+      "path": { "char": "p", "texture": "base-plating", "width": 2 },
+      "outcrops": { "scale": 5, "above": 0.8 },
+      "pad": { "art": "landing-pad", "size": [4, 4], "ring": ":" },
+      "landmarks": { "count": [2, 3], "pick": [
+        { "art": "airlock-hub", "size": [4, 4], "name": "Airlock hub" },
+        { "art": "greenhouse-module", "size": [4, 4], "name": "Greenhouse" },
+        { "art": "reactor-block", "size": [4, 4], "name": "Reactor block" },
+        { "art": "radar-dish", "size": [4, 4], "name": "Radar dish" }
+      ] },
+      "nearLandmark": { "count": [2, 4], "pick": [
+        { "art": "supply-pod", "size": [1, 1], "block": "low", "w": 3 },
+        { "art": "cargo-crate", "size": [1, 1], "block": "low", "w": 2 },
+        { "art": "antenna-mast", "size": [1, 1], "block": true, "w": 1 },
+        { "art": "drill-rig", "size": [2, 2], "block": true, "w": 1 }
+      ] },
+      "scatter": [
+        { "id": "rocks", "pick": [{ "art": "boulder", "size": [1, 1], "block": true, "scale": [0.55, 0.95] }], "radius": 1.4, "clusters": [3, 5], "spread": 1.6, "density": 0.7, "rotate": true },
+        { "id": "big-rocks", "pick": [{ "art": "boulder", "size": [2, 2], "block": true, "scale": [0.8, 1.0] }], "radius": 3, "clusters": [3, 4], "spread": 2.2, "density": 0.8, "rotate": true },
+        { "id": "rover", "pick": [{ "art": "rover-buggy", "size": [2, 2], "block": true, "scale": [0.9, 1.0] }], "radius": 10, "clusters": [1, 1], "spread": 3, "density": 0.45, "rotate": true }
+      ]
+    }
+  }
+}
