@@ -74,11 +74,14 @@ function inside(root, candidate) {
 
 async function locateFile(requestPath) {
   if (requestPath === '/projects/Space-Shooter') return { redirect: '/projects/Space-Shooter/' };
-  if (requestPath === '/projects/Space-Shooter/dogfight') return { redirect: '/projects/Space-Shooter/dogfight/' };
-  if (requestPath === '/projects/Space-Shooter/dogfight/') return {
-    file: path.join(servedRoot, 'projects', 'Space-Shooter', 'dogfight', 'index.html'),
-    allowedRoot: path.join(servedRoot, 'projects', 'Space-Shooter'),
-  };
+  // Pages of their own inside the game: Dogfight and the new game's hangar (voyage/).
+  for (const page of ['dogfight', 'voyage']) {
+    if (requestPath === `/projects/Space-Shooter/${page}`) return { redirect: `/projects/Space-Shooter/${page}/` };
+    if (requestPath === `/projects/Space-Shooter/${page}/`) return {
+      file: path.join(servedRoot, 'projects', 'Space-Shooter', page, 'index.html'),
+      allowedRoot: path.join(servedRoot, 'projects', 'Space-Shooter'),
+    };
+  }
   for (const route of routeRoots) {
     if (requestPath === route.url && route.url.endsWith('/')) {
       if (!route.url.startsWith('/projects/')) return null;

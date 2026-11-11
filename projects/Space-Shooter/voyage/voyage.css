@@ -1,0 +1,71 @@
+/* Voyage hangar: a menu over a top-down hangar bay. Same tokens as the racing hangar (game.css). */
+:root{color-scheme:dark;--bg:#070d17;--panel:#101c2b;--text:#eaf4f5;--muted:#8fa6b7;--cyan:#81e6df;--orange:#ffad72;--violet:#b9a4ff;--line:#2a4152;font-family:Inter,"Segoe UI",sans-serif}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text)}
+body{overflow-x:hidden}
+[hidden]{display:none!important}
+a{color:var(--muted);text-decoration:none}a:hover{color:var(--cyan)}
+button{font:600 12px Inter,"Segoe UI",sans-serif;letter-spacing:.05em;border:1px solid var(--line);border-radius:4px;padding:10px 14px;min-height:40px;background:#132232;color:var(--text);cursor:pointer;transition:background .15s,border-color .15s}
+button:hover:not(:disabled){border-color:var(--cyan);background:#1b3344}
+button:disabled{opacity:.45;cursor:not-allowed}
+button.primary{background:var(--cyan);color:#082126;border-color:var(--cyan)}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid var(--orange);outline-offset:3px}
+input[type=text]{font:15px Inter,"Segoe UI",sans-serif;color:var(--text);background:#0a1624;border:1px solid var(--line);border-radius:4px;padding:10px 12px;width:100%}
+#voyage-scene{position:fixed;inset:0;width:100vw;height:100vh;display:block;z-index:0}
+.vy-top{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:16px;padding:14px clamp(16px,3vw,36px);background:linear-gradient(#070d17f2,#070d1700)}
+.vy-top a{font:11px Consolas,monospace;letter-spacing:.12em}
+.vy-wordmark{margin:0;font:700 11px Consolas,monospace;letter-spacing:.14em;color:#b5c8d5}
+.vy-wordmark b{margin:0 10px;color:var(--cyan)}
+.vy-chip{margin-left:auto;border:1px solid #385851;border-radius:20px;padding:6px 12px;color:var(--cyan);font:10px Consolas,monospace;letter-spacing:.08em}
+.vy-chip:before{content:'●';margin-right:7px}
+.vy-chip[data-status=no-slot],.vy-chip[data-status=offline]{color:var(--orange);border-color:#6e4f3a}
+.vy-eyebrow{font:10px Consolas,monospace;letter-spacing:.14em;color:var(--cyan);margin:0 0 6px}
+.vy-closed{position:relative;z-index:2;max-width:520px;margin:12vh auto 0;padding:28px;border:1px solid var(--line);border-top:2px solid var(--cyan);background:#101c2bf2;border-radius:6px}
+.vy-closed h2{margin:6px 0 12px;font-size:28px;letter-spacing:-.03em}
+.vy-closed p{color:var(--muted)}
+.vy-link{display:inline-block;margin-top:8px;color:var(--cyan);text-decoration:underline;text-underline-offset:4px}
+.vy-hangar{position:relative;z-index:2;width:min(580px,100%);padding:0 clamp(16px,3vw,36px) 48px}
+.vy-tabs{display:flex;gap:6px;margin:6px 0 12px;flex-wrap:wrap}
+.vy-tabs button{flex:1 1 0;min-width:0}
+.vy-tabs button[aria-selected=true]{border-color:var(--cyan);background:#163342;color:var(--cyan)}
+.vy-pane,.vy-dev{border:1px solid var(--line);border-top:2px solid var(--cyan);background:#0d1826ee;border-radius:6px;padding:18px;backdrop-filter:blur(6px)}
+.vy-pane h2{margin:0 0 4px;font-size:22px;letter-spacing:-.025em}
+.vy-pane h3{margin:18px 0 8px;font:700 11px Consolas,monospace;letter-spacing:.12em;color:var(--cyan)}
+.vy-pane p{color:var(--muted);font-size:13px;line-height:1.6;margin:6px 0}
+.vy-note{font-size:12px!important}
+.vy-stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px;margin:10px 0}
+.vy-stat{border:1px solid var(--line);border-radius:4px;padding:8px 10px;background:#0a1624}
+.vy-stat span{display:block;font:10px Consolas,monospace;letter-spacing:.06em;color:var(--muted)}
+.vy-stat b{font:600 18px Consolas,monospace;color:var(--text)}
+.vy-row{display:grid;grid-template-columns:1fr auto;gap:6px 12px;align-items:center;padding:10px 0;border-top:1px solid #2a415288}
+.vy-row:first-of-type{border-top:0}
+.vy-row strong{font-size:14px}
+.vy-row small{grid-column:1/-1;color:var(--muted);font-size:12px;line-height:1.5}
+.vy-row .vy-why{color:var(--orange)}
+.vy-pips{font:13px Consolas,monospace;letter-spacing:.2em;color:var(--cyan);margin-left:8px}
+.vy-form{display:grid;gap:12px;margin-top:10px}
+.vy-form label{display:grid;gap:6px;font-size:13px;color:var(--muted)}
+.vy-choices{display:flex;flex-wrap:wrap;gap:6px}
+.vy-choices button[aria-pressed=true]{border-color:var(--cyan);background:#163342}
+.vy-swatch{width:40px;padding:0}
+.vy-swatch i{display:block;width:18px;height:18px;margin:auto;border-radius:50%}
+.vy-captain{display:flex;gap:14px;align-items:center}
+.vy-badge{flex:none;width:56px;height:56px;border-radius:50%;display:grid;place-items:center;font:700 20px Consolas,monospace;color:#071017}
+.vy-points{display:flex;flex-wrap:wrap;gap:6px 14px;font:12px Consolas,monospace;color:var(--muted);margin:10px 0}
+.vy-points b{color:var(--text)}
+.vy-trees{display:grid;gap:12px}
+.vy-tree{border:1px solid var(--line);border-radius:5px;padding:10px 12px;background:#0a1624}
+.vy-tree h3{margin:0 0 2px}
+.vy-tree > p{margin:0 0 6px}
+.vy-bar{height:6px;border-radius:3px;background:#1a2a3a;overflow:hidden;margin-top:4px}
+.vy-bar i{display:block;height:100%;background:var(--cyan)}
+.vy-list{list-style:none;margin:6px 0;padding:0;display:grid;gap:4px;font-size:13px}
+.vy-list li{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:4px 0}
+.vy-money{font:700 26px Consolas,monospace;color:var(--orange);margin:4px 0}
+.vy-dev{margin-top:12px;border-top-color:var(--violet)}
+.vy-dev .vy-eyebrow{color:var(--violet)}
+.vy-dev div{display:flex;flex-wrap:wrap;gap:6px}
+.vy-toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:10;background:#112535f5;border:1px solid var(--cyan);border-radius:4px;padding:10px 18px;max-width:min(560px,92vw);font-size:13px;line-height:1.5;white-space:pre-line;opacity:0;pointer-events:none;transition:opacity .2s}
+.vy-toast.show{opacity:1}
+@media(max-width:700px){.vy-hangar{width:100%;margin-top:32vh}.vy-wordmark{font-size:9px}.vy-wordmark b{margin:0 5px}.vy-top{gap:10px}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
