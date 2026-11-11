@@ -105,9 +105,10 @@
       "doors": [{"side": "s"}],
       "rules": [
         {"id": "counter", "role": "anchor", "prop": "shop-counter", "place": "wall", "wallGap": 1, "keeper": "back", "zone": "shop", "prefer": {"far": 2, "facesDoor": 3, "centered": 3}, "interact": {"kind": "station", "id": "locker", "label": "Mel's counter: gear"}, "use": "front"},
-        {"id": "racks", "role": "anchor", "prop": "weapon-rack", "place": "wall", "mirror": true, "zone": "shop", "prefer": {"facesDoor": 1, "spread": 2}},
-        {"id": "armour", "role": "functional", "prop": "armour-stand", "run": [2, 3], "place": "wall", "zone": "armour", "prefer": {"balance": 2}},
-        {"id": "cases", "role": "functional", "prop": "display-case", "count": [1, 2], "place": "open", "prefer": {"centered": 1, "spread": 2, "facesDoor": 1}},
+        {"id": "racks", "role": "anchor", "prop": "weapon-rack", "count": [2, 3], "place": "wall", "mirror": true, "zone": "shop", "prefer": {"facesDoor": 1, "spread": 2}},
+        {"id": "armour", "role": "functional", "prop": "armour-stand", "run": [2, 3], "place": "wall", "mirror": "tidy", "zone": "armour", "prefer": {"balance": 2}},
+        {"id": "cases", "role": "functional", "prop": "display-case", "count": [2, 3], "scale": "area", "place": "open", "prefer": {"centered": 1, "spread": 2}},
+        {"id": "fitting", "role": "functional", "prop": "workbench", "place": "wall", "chance": 0.75, "zone": "armour", "prefer": {"balance": 1}, "interact": {"kind": "console", "id": "fitting", "label": "Fitting bench"}, "use": "front", "satellites": [{"prop": "toolbox-chest", "side": "left", "gap": 0, "count": [1, 1], "face": "same", "chance": 0.6}]},
         {"id": "lockers", "role": "functional", "prop": "locker", "run": [2, 3], "place": "wall", "zone": "armour", "prefer": {"door": 1}},
         {"id": "shelf", "role": "functional", "prop": "parts-shelf", "place": "wall", "chance": 0.6, "zone": "shop", "prefer": {"balance": 1}},
         {"id": "plants", "role": "decor", "prop": "potted-plant", "count": [1, 2], "place": "corner", "mirror": "tidy", "themes": ["tidy", "lived-in"], "prefer": {"spread": 2}},
@@ -182,7 +183,7 @@
         {"id": "shelf", "role": "functional", "prop": "parts-shelf", "place": "wall", "zone": "yard", "prefer": {"spread": 1}},
         {"id": "rack", "role": "functional", "prop": "tool-rack", "place": "wall", "chance": 0.6, "zone": "yard"},
         {"id": "files", "role": "functional", "prop": "filing-cabinet", "run": [1, 2], "place": "wall", "zone": "desk"},
-        {"id": "heap", "role": "functional", "pick": ["oil-drum", "crate-small", "scrap-bin"], "place": "open", "chance": 0.6, "minArea": 70, "cluster": [2, 3], "zone": "yard", "prefer": {"balance": 2}},
+        {"id": "heap", "role": "functional", "pick": ["oil-drum", "crate-small", "scrap-bin"], "place": "open", "chance": 0.8, "minArea": 60, "cluster": [2, 3], "zone": "yard", "prefer": {"balance": 2}},
         {"id": "drums", "role": "clutter", "pick": ["oil-drum", "scrap-bin", "crate-small"], "count": [1, 3], "scale": "area", "place": "wall", "cluster": [1, 3], "zone": "yard", "prefer": {"corner": 1}},
         {"id": "pipes", "role": "decor", "prop": "pipe-run", "count": [0, 1], "place": "wall", "prefer": {"spread": 2}}
       ]
