@@ -146,7 +146,7 @@ export function missing(input, req = {}) {
   for (const [g, n] of entries(req.rep)) if ((save.rep[g] || 0) < whole(n)) out.push(`Needs ${whole(n)} rep with ${giverName(g)}.`);
   for (const [id, n] of entries(req.items)) if ((save.items[id] || 0) < whole(n)) out.push(`Needs ${whole(n)} ${itemName(id)}.`);
   for (const [id, n] of entries(req.stats)) if ((c?.stats?.[id] || 0) < whole(n)) out.push(`Needs ${STAT_NAME[id] || id} ${whole(n)}.`);
-  for (const [id, n] of entries(req.skills)) if ((c?.skills?.[id] || 0) < whole(n)) out.push(`Needs ${SKILL_NAME[id] || id} rank ${whole(n)}.`);
+  for (const [id, n] of entries(req.skills)) if ((c?.skills?.[id] || 0) < whole(n)) out.push(whole(n) > 1 ? `Needs ${SKILL_NAME[id] || id} rank ${whole(n)}.` : `Needs the ${SKILL_NAME[id] || id} skill.`);
   for (const [id, n] of entries(req.trees)) if (treePoints(c, id) < whole(n)) out.push(`Needs ${whole(n)} points in ${TREE_NAME[id] || id}.`);
   for (const [id, n] of entries(req.upgrades)) if ((save.upgrades[id] || 0) < whole(n)) out.push(`Needs ${UPGRADE_NAME[id] || id} tier ${whole(n)}.`);
   for (const [id, n] of entries(req.flags)) if ((save.flags[id] || 0) < whole(n)) out.push(`Not unlocked yet.`);

@@ -7,7 +7,7 @@
 // No DOM. Lines go out through say.js ('story:say'); whatever draws them is up
 // to the page (caption.js is the default).
 import { grant, missing } from '../economy.js';
-import { STAT_OPTION_MIN } from '../data.js';
+import { check, checkChance, skillById } from '../character.js';
 import { storyBus } from './bus.js';
 import { createSay } from './say.js';
 import { STEPS, STEP_BY_ID, ALL_UNLOCKS, TALKS, PICKS, SKIP_IF, NUDGE_MS, unlockName } from './tutorial.js';
@@ -37,9 +37,10 @@ const matches = (wait, type, detail) => wait && wait.type === type
  * createDirector({ store, bus, say, audio, timer, nudgeMs }) -> { start, skip, replay, state, objective, choose, stop }.
  * store: voyage/store.js (get, update). say: a speak function (default createSay on the bus).
  * timer: { set(fn, ms) -> handle, clear(handle) } for the nudges (tests pass a fake).
+ * rng: () => [0, 1) for talk attempts (tests pass a seeded one).
  */
 export function createDirector({
-  store, bus = storyBus, say = null, audio = null, nudgeMs = NUDGE_MS,
+  store, bus = storyBus, say = null, audio = null, nudgeMs = NUDGE_MS, rng = Math.random,
   timer = { set: (fn, ms) => setTimeout(fn, ms), clear: (h) => clearTimeout(h) },
 } = {}) {
   const speak = say || createSay({ bus, audio });
@@ -137,9 +138,12 @@ export function createDirector({
     return true;
   }
 
-  // A talk the director runs: the prompt, the options (stat-gated ones locked
-  // with their reason), then choose(i) plays the reply and 'tutorial:talked'
-  // completes the step. Waiting for the choice does not hold the line queue.
+  // A talk the director runs: the prompt, then the options. A plain option just
+  // answers; a stat attempt is a fresh 2d6 roll plus the stat bonus (anyone may
+  // try; the odds are shown); a skill-gated option is locked, with its reason,
+  // until the captain has the skill. choose(i) plays the reply (the pass or
+  // fail line for an attempt, and 'roll:attempt' for the die), then
+  // 'tutorial:talked' completes the step. In the tutorial both outcomes move on.
   async function runTalk(step) {
     const talk = TALKS[step.talk];
     if (!talk || read().step !== step.id) return;
@@ -147,8 +151,17 @@ export function createDirector({
     if (!running || read().step !== step.id) return;
     const save = store.get();
     const options = talk.options.map((o, index) => {
-      const reasons = o.stat ? missing(save, { stats: { [o.stat]: STAT_OPTION_MIN } }) : [];
-      return { index, label: o.stat ? `${optionTag(o.stat)} ${o.label}` : o.label, locked: reasons.length > 0, reason: reasons[0] || '', stat: o.stat || null };
+      if (o.stat) {
+        const p = checkChance(save.character, { stat: o.stat, dc: o.dc });
+        return { index, kind: 'attempt', label: `${optionTag(o.stat)} ${o.label}`, stat: o.stat, dc: o.dc, chance: p, locked: false, reason: '' };
+      }
+      if (o.requires) {
+        const reasons = missing(save, o.requires);
+        const skill = Object.keys(o.requires.skills || {})[0];
+        const name = skillById(skill)?.name || skill;
+        return { index, kind: 'skill', label: `[${name}] ${o.label}`, skill: skill || null, locked: reasons.length > 0, reason: reasons[0] || '' };
+      }
+      return { index, kind: 'say', label: o.label, locked: false, reason: '' };
     });
     pendingTalk = { step: step.id, talk: step.talk, options };
     bus.emit('story:choices', { talk: step.talk, options });
@@ -161,9 +174,17 @@ export function createDirector({
     if (read().step !== t.step) { pendingTalk = null; return false; }
     pendingTalk = null;
     bus.emit('story:choices', null);
+    const o = TALKS[t.talk].options[index];
+    let reply = o.reply;
+    let attempt = null;
+    if (o.stat) {
+      attempt = { ...check(store.get().character, { stat: o.stat, dc: o.dc }, rng), who: store.get().character?.name || null, label: o.label };
+      bus.emit('roll:attempt', attempt);
+      reply = attempt.pass ? o.pass : o.fail;
+    }
     enqueue(async () => {
-      await speak(TALKS[t.talk].options[index].reply, { vars: vars() });
-      bus.emit('tutorial:talked', { talk: t.talk, choice: index });
+      await speak(reply, { vars: vars() });
+      bus.emit('tutorial:talked', { talk: t.talk, choice: index, pass: attempt ? attempt.pass : null });
     });
     return true;
   }
@@ -195,6 +216,12 @@ export function createDirector({
       if (!save.story && !save.character) write(freshStory());
       const step = STEP_BY_ID.get(read().step);
       if (step && !read().finished) enterStep(step);
+      // An old captain meets a new stat (Strength): Chibby asks for one roll; the hangar rolls the die.
+      const missingStats = store.get().character?.toRoll || [];
+      if (missingStats.length) {
+        playLines(['chibby.roll.late']);
+        bus.emit('story:roll-missing', { stats: [...missingStats] });
+      }
       return api;
     },
     /** Ends the tutorial now: unpaid rewards are paid, everything unlocks. */

@@ -5,6 +5,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   createCharacter, rollStats, canLearn, learn, unspentPoints, treePoints, die, check, effect, skillBonus,
+  checkChance, hasSkill, hasUnlock, activityValue, skillsGranting, skillLevels, skillUnlocks, rollMissingStats,
   cleanCharacter, cleanName, addEarned,
 } from '../projects/Space-Shooter/voyage/character.js';
 import { grant, spend, canAfford, meets, missing, priceFor, discount, repBand } from '../projects/Space-Shooter/voyage/economy.js';
@@ -29,8 +30,8 @@ const withCaptain = (over = {}, save = {}) => cleanSave({ ...emptySave(), ...sav
 
 // --- data -------------------------------------------------------------------------
 
-test('data: four stats, three trees with a small overlap, every skill in a known tree, ids unique', () => {
-  assert.deepEqual(STATS.map((s) => s.id), ['cha', 'con', 'dex', 'wis']);
+test('data: five stats, three trees with a small overlap, every skill in a known tree, ids unique', () => {
+  assert.deepEqual(STATS.map((s) => s.id), ['str', 'con', 'dex', 'wis', 'cha']);
   assert.equal(TREES.length, 3);
   const trees = new Set(TREES.map((t) => t.id));
   for (const s of SKILLS) for (const t of s.trees) assert.ok(trees.has(t), `${s.id} in unknown tree ${t}`);
@@ -38,12 +39,26 @@ test('data: four stats, three trees with a small overlap, every skill in a known
   assert.ok(overlap.length >= 1 && overlap.length <= 4, 'a touch of overlap, not a merge');
   for (const list of [STATS, TREES, SKILLS, GIVERS, ITEMS, UPGRADES]) assert.equal(new Set(list.map((x) => x.id)).size, list.length);
   for (const g of GIVERS) assert.ok(MAX_REP_REWARDS[g.id], `${g.id} has a max-rep reward`);
+  // Skills unlock things (Donaven, SKILL LEVELS): 2-3 levels each, every level unlocks something, a mix of all three kinds.
+  const kinds = new Set();
+  for (const s of SKILLS) {
+    assert.ok(s.levels.length >= 2 && s.levels.length <= 3, `${s.id} has 2-3 levels`);
+    assert.equal(s.max, s.levels.length, `${s.id}: max is its number of levels`);
+    s.levels.forEach((l, i) => {
+      assert.equal(l.level, i + 1);
+      assert.ok(l.unlocks.length >= 1);
+      for (const u of l.unlocks) { assert.ok(['access', 'activity', 'ability'].includes(u.type)); assert.match(u.id, /^[a-z0-9][a-z0-9.-]{0,47}$/); assert.ok(u.text); kinds.add(u.type); }
+    });
+    assert.equal(s.effects, undefined, `${s.id}: skills never add numbers to rolls`);
+  }
+  assert.equal(kinds.size, 3);
+  assert.ok(SKILLS.find((s) => s.id === 'hacker'), 'there is a hacking skill');
   assert.equal(runtimeConfig.newGame, false, 'the new game stays off on main until Donaven switches it on');
 });
 
 // --- character --------------------------------------------------------------------
 
-test('character: a name, a look and four 1d6 stats; bad names are refused or cleaned', () => {
+test('character: a name, a look and five 1d6 stats; bad names are refused or cleaned', () => {
   const c = createCharacter({ name: '  Vela   <b>Quint</b>  ', look: { portrait: 'p3', color: '#FFAD72' } }, seq(0, 0.99, 0.5, 0.2, 0.7), () => 1234);
   assert.equal(c.name, 'Vela bQuint/b');
   assert.deepEqual(c.look, { portrait: 'p3', color: '#ffad72' });
@@ -53,64 +68,91 @@ test('character: a name, a look and four 1d6 stats; bad names are refused or cle
   assert.equal(createCharacter({ name: '   ' }), null);
   assert.equal(cleanName('x'.repeat(40)).length, 24);
   const stats = rollStats(seq(0, 0.999));
-  assert.deepEqual(stats, { cha: 1, con: 6, dex: 1, wis: 6 });
+  assert.deepEqual(stats, { str: 1, con: 6, dex: 1, wis: 6, cha: 1 });
 });
 
-test('character: spending points, tree requirements and an overlap skill counting for both trees', () => {
+test('character: spending points on skill levels, tree requirements and an overlap skill counting for both trees', () => {
   let c = captain({ earned: 6 });
   assert.equal(unspentPoints(c), 6);
-  assert.equal(canLearn(c, 'star-charts').ok, false, 'needs 2 points in Helm first');
-  assert.match(canLearn(c, 'star-charts').reason, /2 points in Helm/);
-  c = learn(learn(c, 'smooth-burn'), 'tight-turns');
+  assert.equal(canLearn(c, 'smuggler').ok, false, 'needs 2 points in Helm first');
+  assert.match(canLearn(c, 'smuggler').reason, /2 points in Helm/);
+  c = learn(learn(c, 'pilot'), 'pilot');
+  assert.equal(c.skills.pilot, 2, 'Pilot level 2');
   assert.equal(treePoints(c, 'helm'), 2);
-  assert.equal(canLearn(c, 'star-charts').ok, true);
+  assert.equal(canLearn(c, 'smuggler').ok, true);
   assert.equal(canLearn(c, 'strafe-run').ok, false, 'overlap needs a point in Guns too');
-  c = learn(c, 'steady-aim');
+  c = learn(c, 'gunner');
   c = learn(c, 'strafe-run');
   assert.equal(c.skills['strafe-run'], 1);
-  assert.equal(treePoints(c, 'helm'), 3, 'the overlap rank counts in Helm');
+  assert.equal(treePoints(c, 'helm'), 3, 'the overlap level counts in Helm');
   assert.equal(treePoints(c, 'guns'), 2, 'and in Guns');
   assert.equal(unspentPoints(c), 2);
-  c = learn(learn(c, 'smooth-burn'), 'smooth-burn');
+  c = learn(learn(c, 'pilot'), 'hacker');
   assert.equal(unspentPoints(c), 0);
-  assert.equal(learn(c, 'patch-kit'), c, 'no points: nothing changes');
-  assert.match(canLearn(c, 'patch-kit').reason, /No skill points/);
-  assert.match(canLearn(captain({ earned: 9, skills: { 'smooth-burn': 3 } }), 'smooth-burn').reason, /top rank/);
+  assert.equal(learn(c, 'mechanic'), c, 'no points: nothing changes');
+  assert.match(canLearn(c, 'mechanic').reason, /No skill points/);
+  assert.match(canLearn(captain({ earned: 9, skills: { pilot: 3 } }), 'pilot').reason, /top rank/);
+});
+
+test('skills unlock access, activity upgrades and abilities by level', () => {
+  const c = captain({ earned: 5, skills: { hacker: 2, mechanic: 1 } });
+  assert.equal(hasSkill(c, 'hacker', 2), true);
+  assert.equal(hasSkill(c, 'hacker', 3), false);
+  assert.equal(hasUnlock(c, 'access:door.sealed'), true, 'Hacker 2 opens sealed doors');
+  assert.equal(hasUnlock(c, 'ability', 'ship.hack-jam'), true);
+  assert.equal(hasUnlock(c, 'ability:ship.hack-shields'), false, 'that is Hacker 3');
+  assert.equal(activityValue(c, 'hack.time'), 5);
+  assert.equal(activityValue(captain({ earned: 3, skills: { hacker: 3 } }), 'hack.time'), 10, 'activity upgrades stack');
+  assert.deepEqual(skillsGranting('access', 'door.sealed'), [{ skill: 'hacker', level: 2 }]);
+  assert.ok(skillLevels().every((l) => l.skill && l.level >= 1 && Array.isArray(l.unlocks)));
+  assert.equal(skillUnlocks(c).length, 6);
 });
 
 test('character: death loses half the earned points (spent and unspent), refunds skills, rerolls stats, keeps permanent points', () => {
-  const c = captain({ earned: 7, permanent: 2, skills: { 'smooth-burn': 3, 'patch-kit': 2 }, stats: { cha: 6, con: 6, dex: 6, wis: 6 } });
+  const c = captain({ earned: 7, permanent: 2, skills: { pilot: 3, mechanic: 2 }, stats: { str: 6, cha: 6, con: 6, dex: 6, wis: 6 } });
   const { character, lost } = die(c, seq(0));
   assert.equal(lost, 3, 'half of 7, rounded down');
   assert.equal(character.earned, 4);
   assert.equal(character.permanent, 2, 'max-rep points are safe');
   assert.deepEqual(character.skills, {});
   assert.equal(unspentPoints(character), 6);
-  assert.deepEqual(character.stats, { cha: 1, con: 1, dex: 1, wis: 1 }, 'fresh 1d6 rolls');
+  assert.deepEqual(character.stats, { str: 1, con: 1, dex: 1, wis: 1, cha: 1 }, 'fresh 1d6 rolls');
   assert.equal(character.deaths, 1);
   assert.equal(character.name, c.name);
   assert.equal(die(captain({ earned: 1 }), seq(0.5)).lost, 0, 'one point: nothing to halve away');
 });
 
-test('character: checks are 1d6 + stat + skill bonus; stat effects count from a baseline of 3', () => {
-  const c = captain({ stats: { cha: 5, con: 1, dex: 3, wis: 3 }, skills: { 'smooth-talk': 2 }, earned: 4 });
-  assert.equal(skillBonus(c, 'talk'), 2);
-  assert.deepEqual(check(c, { stat: 'cha', tag: 'talk', dc: 10 }, seq(0.5)), { roll: 4, bonus: 7, total: 11, dc: 10, pass: true });
-  assert.equal(check(null, { stat: 'cha', dc: 7 }, seq(0)).total, 4, 'no captain counts the stat as 3');
+test('character: attempts are 2d6 + stat bonus (never skills), with double six and double one deciding; passive effects count from 3', () => {
+  const c = captain({ stats: { str: 3, cha: 5, con: 1, dex: 3, wis: 3 }, skills: { trader: 2 }, earned: 4 });
+  assert.equal(skillBonus(c, 'talk'), 0, 'skills add nothing to rolls');
+  assert.deepEqual(check(c, { stat: 'cha', tag: 'talk', dc: 10 }, seq(0.5)),
+    { kind: 'attempt', stat: 'cha', tag: 'talk', dc: 10, dice: [4, 4], roll: 8, statMod: 2, extra: 0, bonus: 2, total: 10, pass: true, natural: null });
+  assert.equal(check(null, { stat: 'cha', dc: 7 }, seq(0)).total, 2, 'no captain counts the stat as 3 (+0)');
+  assert.equal(check(c, { stat: 'cha', dc: 3 }, seq(0)).pass, false, 'snake eyes always fail');
+  assert.equal(check(captain({ stats: { str: 1, cha: 1, con: 1, dex: 1, wis: 1 } }), { stat: 'cha', dc: 20 }, seq(0.99)).pass, true, 'double six always passes');
+  assert.equal(check(c, { stat: 'dex', dc: 9, extra: 2 }, seq(0.5)).total, 10, 'an extra bonus (a ship) adds on');
+  assert.ok(checkChance(c, { stat: 'cha', dc: 7 }) > checkChance(c, { stat: 'con', dc: 7 }));
   assert.equal(effect(c, 'price'), 4, 'charisma 5 is two over the baseline at 2% each');
-  assert.equal(effect(c, 'ship.hp'), -10, 'constitution 1 costs hull');
-  assert.equal(effect(c, 'rep'), 20, 'two over baseline at 5%, plus Smooth Talker 2 x 5%');
+  assert.equal(effect(c, 'ship.hp'), -10, 'health 1 costs hull');
+  assert.equal(effect(c, 'rep'), 10, 'two over baseline at 5%; skills add nothing');
 });
 
-test('character: cleaning repairs bad saves and refunds ranks that no longer fit the points', () => {
+test('character: cleaning repairs bad saves, refunds levels that no longer fit, and marks a missing stat to roll once', () => {
   assert.equal(cleanCharacter(null), null);
   assert.equal(cleanCharacter({ name: '' }), null);
-  const c = cleanCharacter({ name: 'Ash', stats: { cha: 9, con: 'x' }, skills: { 'smooth-burn': 7, nope: 1 }, earned: 10 });
+  const c = cleanCharacter({ name: 'Ash', stats: { cha: 9, con: 'x' }, skills: { pilot: 7, nope: 1, 'smooth-burn': 2 }, earned: 10 });
   assert.equal(c.stats.cha, 3);
   assert.equal(c.stats.con, 3);
-  assert.deepEqual(c.skills, { 'smooth-burn': 3 });
-  assert.deepEqual(cleanCharacter({ name: 'Ash', skills: { 'smooth-burn': 3 }, earned: 1 }).skills, {});
-  assert.deepEqual(addEarned(captain({ earned: 2, skills: { 'smooth-burn': 2 } }), -2).skills, {}, 'taking points back refunds');
+  assert.deepEqual(c.skills, { pilot: 3 }, 'old skill ids are dropped (their points come back)');
+  assert.deepEqual(cleanCharacter({ name: 'Ash', skills: { pilot: 3 }, earned: 1 }).skills, {});
+  assert.deepEqual(addEarned(captain({ earned: 2, skills: { pilot: 2 } }), -2).skills, {}, 'taking points back refunds');
+  const old = cleanCharacter({ name: 'Old', stats: { cha: 4, con: 3, dex: 5, wis: 2 }, earned: 1 });
+  assert.equal(old.stats.str, 3, 'Strength counts as average until rolled');
+  assert.deepEqual(old.toRoll, ['str']);
+  const rolled = rollMissingStats(old, seq(0.99));
+  assert.deepEqual(rolled.rolled, { str: 6 });
+  assert.equal(rolled.character.toRoll, undefined);
+  assert.equal(cleanCharacter(rolled.character).toRoll, undefined, 'once rolled, never again');
 });
 
 // --- money and rep ----------------------------------------------------------------
@@ -156,7 +198,7 @@ test('economy: rep gains are raised by the captain rep bonus; prices lowered by 
 });
 
 test('economy: spend, canAfford, meets and missing', () => {
-  const s = withCaptain({ stats: { cha: 4, con: 3, dex: 3, wis: 3 }, skills: { 'patch-kit': 1 }, earned: 2 }, { money: 100, items: { scrap: 3 }, rep: { hask: 20 }, flags: { 'met-ossa': 1 } });
+  const s = withCaptain({ stats: { cha: 4, con: 3, dex: 3, wis: 3 }, skills: { mechanic: 1 }, earned: 2 }, { money: 100, items: { scrap: 3 }, rep: { hask: 20 }, flags: { 'met-ossa': 1 } });
   assert.equal(canAfford(s, { money: 100, items: { scrap: 3 } }), true);
   assert.equal(canAfford(s, { money: 101 }), false);
   const paid = spend(s, { money: 40, items: { scrap: 3 } });
@@ -167,7 +209,7 @@ test('economy: spend, canAfford, meets and missing', () => {
   assert.equal(refused.ok, false);
   assert.match(refused.reason, /1 Ore/);
   assert.equal(refused.save.money, 100);
-  assert.equal(meets(s, { rep: { hask: 20 }, stats: { cha: 4 }, skills: { 'patch-kit': 1 }, trees: { wrench: 1 }, flags: { 'met-ossa': 1 }, notFlags: ['betrayed'] }), true);
+  assert.equal(meets(s, { rep: { hask: 20 }, stats: { cha: 4 }, skills: { mechanic: 1 }, trees: { wrench: 1 }, flags: { 'met-ossa': 1 }, notFlags: ['betrayed'] }), true);
   assert.equal(meets(s, { notFlags: ['met-ossa'] }), false);
   assert.equal(meets(s, { anyOf: [{ items: { permit: 1 } }, { rep: { hask: 10 } }] }), true);
   assert.equal(meets(s, { anyOf: [{ items: { permit: 1 } }, { rep: { hask: 50 } }] }), false);
@@ -203,8 +245,8 @@ test('upgrades: the equipped build gives the ship its feel (read only) and the c
   const raw = buildStats('needle:0-0-0-0');
   assert.equal(needle.speed, 1 + (raw.topSpeed - 1) * 0.5);
   assert.deepEqual(buildFeel(null), { speed: 1, accel: 1, turn: 1 });
-  const s = withCaptain({ stats: { cha: 3, con: 5, dex: 3, wis: 3 }, skills: { reinforced: 2 }, earned: 2 });
-  assert.equal(voyageShipStats(s).hp, 100 + 10 + 20);
+  const s = withCaptain({ stats: { cha: 3, con: 5, dex: 3, wis: 3 }, skills: {}, earned: 2 });
+  assert.equal(voyageShipStats(s).hp, 100 + 10, 'health 5 adds hull; skills add no numbers');
   assert.deepEqual(buildStats('needle:0-0-0-0'), raw, 'the racing stat table is never changed');
 });
 
@@ -261,7 +303,7 @@ test('store: changes save at once in this browser, stamp the clock, and survive 
   store.grant({ money: 300, items: { scrap: 4 } });
   assert.equal(store.get().updatedAt, 1001);
   assert.equal(store.upgrade('hull').ok, true);
-  assert.equal(store.learn('patch-kit'), true);
+  assert.equal(store.learn('mechanic'), true);
   const copy = store.get();
   copy.money = 1e6;
   assert.equal(store.get().money, 233, 'get() hands out a copy (80 start kit + 300, less hull tier 1 at 150 with charisma 4\'s 2% off)');

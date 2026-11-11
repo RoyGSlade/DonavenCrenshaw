@@ -181,7 +181,7 @@ export function createStation({ root, send, me, reducedMotion = () => false }) {
       el('ul', { class: 'vy-list cw-checks' }, ...s.checks.map((c) => el('li', {},
         el('span', { text: c.label }),
         el('button', { type: 'button', dataset: { check: String(c.index) }, onclick: () => send({ job: 'check', index: c.index }),
-          text: `Take it: your ${c.statName} ${card?.stats?.[c.stat] ?? '?'} + d6 vs ${c.dc}` })))),
+          text: `Take it: 2d6 + your ${c.statName} bonus vs ${c.dc}` })))),
     );
   }
 
@@ -218,7 +218,7 @@ export function createStation({ root, send, me, reducedMotion = () => false }) {
         el('button', { type: 'button', 'aria-pressed': String(t.mark === r.id), onclick: () => send({ job: 'mark', route: r.id }), text: t.mark === r.id ? 'Recommended' : 'Recommend' })))),
       t.next ? el('p', { class: 'qs-text', dataset: { odds: String(t.nextOdds) }, text: `Next jump: ${t.next}, ${t.nextOdds}% chance of trouble${t.scanned ? ' (scanned)' : ''}.` }) : null,
       el('button', { type: 'button', id: 'cw-scan', disabled: !t.canScan, onclick: () => send({ job: 'scan' }),
-        text: t.canScan ? `Scan the next jump (Wisdom ${me()?.stats?.wis ?? '?'} + d6 vs ${CREW_RULES.scan.dc})` : 'Next jump scanned' }),
+        text: t.canScan ? `Scan the next jump (2d6 + your Wisdom bonus vs ${CREW_RULES.scan.dc})` : 'Next jump scanned' }),
       el('p', { class: 'vy-note', text: 'A good scan spots trouble early and halves the next jump\'s odds.' }),
     );
   }

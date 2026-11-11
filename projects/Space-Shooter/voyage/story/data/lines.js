@@ -101,8 +101,8 @@ export const LINES_DATA = {
       "id": "chibby.roll.con",
       "speaker": "chibby",
       "emotion": "excited",
-      "text": "Sturdy! You could headbutt a hull plate. Please never do that.",
-      "direction": "Impressed, then a worried aside."
+      "text": "Iron stomach! You could eat Garrity's chili and live. Twice.",
+      "direction": "Impressed, then a little queasy at the thought."
     },
     {
       "id": "chibby.roll.dex",
@@ -124,6 +124,27 @@ export const LINES_DATA = {
       "emotion": "tender",
       "text": "Well. Dice are dice. I've seen worse rolls fly further.",
       "direction": "Kind, means it, pats your shoulder."
+    },
+    {
+      "id": "chibby.roll.str",
+      "speaker": "chibby",
+      "emotion": "excited",
+      "text": "Look at those arms! You can carry the heavy end for once.",
+      "direction": "Delighted, flexing his own skinny arm."
+    },
+    {
+      "id": "chibby.roll.late",
+      "speaker": "chibby",
+      "emotion": "worried",
+      "text": "Sweet stars, I never did your strength test! Roll it now, before the inspector notices.",
+      "direction": "Panicked whisper, then a nervous laugh."
+    },
+    {
+      "id": "chibby.roll.late-done",
+      "speaker": "chibby",
+      "emotion": "warm",
+      "text": "There. Signed, stamped, and nobody the wiser.",
+      "direction": "Relieved, patting the form."
     },
     {
       "id": "chibby.create.done",
@@ -425,8 +446,8 @@ export const LINES_DATA = {
       "id": "edna.talk.con",
       "speaker": "edna",
       "emotion": "warm",
-      "text": "So you did. Strong back, quiet mouth. I like those.",
-      "direction": "Approving, patting your arm."
+      "text": "You drank it all? Nobody drinks it all. Your stomach is made of hull plate.",
+      "direction": "Astonished, a little offended, then delighted."
     },
     {
       "id": "edna.talk.dex",
@@ -441,6 +462,55 @@ export const LINES_DATA = {
       "emotion": "sly",
       "text": "Clever duckling. Too clever. I'll be keeping an eye on you.",
       "direction": "Pleased and wary at once."
+    },
+    {
+      "id": "edna.talk.str",
+      "speaker": "edna",
+      "emotion": "warm",
+      "text": "So you did. Strong back, quiet mouth. I like those.",
+      "direction": "Approving, patting your arm."
+    },
+    {
+      "id": "edna.talk.trader",
+      "speaker": "edna",
+      "emotion": "sly",
+      "text": "Ooh, a professional. The back shelf is behind the tea cosy. Don't tell Chibby.",
+      "direction": "Delighted conspiracy, a wink in the voice."
+    },
+    {
+      "id": "edna.talk.cha-fail",
+      "speaker": "edna",
+      "emotion": "dry",
+      "text": "Flattery from a stranger. I had better from my last parole officer.",
+      "direction": "Unmoved, then a tiny smile."
+    },
+    {
+      "id": "edna.talk.str-fail",
+      "speaker": "edna",
+      "emotion": "playful",
+      "text": "You dropped one. That was my good china. Well, you tried, duckling.",
+      "direction": "Wincing at the crash, then forgiving."
+    },
+    {
+      "id": "edna.talk.dex-fail",
+      "speaker": "edna",
+      "emotion": "playful",
+      "text": "Butterfingers! Never mind, that was Vey's cup.",
+      "direction": "A cackle at the smash."
+    },
+    {
+      "id": "edna.talk.wis-fail",
+      "speaker": "edna",
+      "emotion": "sly",
+      "text": "Wrong, duckling. I trust everyone. That's why I keep a blaster in the knitting.",
+      "direction": "Sweetly menacing."
+    },
+    {
+      "id": "edna.talk.con-fail",
+      "speaker": "edna",
+      "emotion": "worried",
+      "text": "Oh dear. Sit down. Head between your knees. It gets everyone the first time.",
+      "direction": "Motherly fuss, trying not to laugh."
     },
     {
       "id": "edna.talk.done",

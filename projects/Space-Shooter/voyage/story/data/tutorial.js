@@ -2,6 +2,8 @@
 // Stardust Studio (Focus) can read and write it (lhc-lanes/stardust/STUDIO-SCHEMA.md,
 // ROUND2-CONTRACT.md). No code, comments or trailing commas inside the JSON.
 // A step's lines are line ids, or { "pick": name } (a line chosen in code: story/tutorial.js PICKS).
+// A talk option is one of: plain ({ label, reply }), a stat attempt ({ stat, dc, label, pass, fail }: a fresh
+// 2d6 roll, both outcomes move on in the tutorial) or skill-gated ({ requires: { skills: { id: level } }, label, reply }).
 // skipIf names a condition in story/tutorial.js SKIP_IF. nudge: lines played once each, in order, when the
 // player has done nothing on that step for nudgeMs.
 export const TUTORIAL_DATA = {
@@ -481,23 +483,47 @@ export const TUTORIAL_DATA = {
         },
         {
           "stat": "cha",
+          "dc": 7,
           "label": "\"Because you clearly have the best taste on this station.\"",
-          "reply": "edna.talk.cha"
+          "pass": "edna.talk.cha",
+          "fail": "edna.talk.cha-fail"
+        },
+        {
+          "stat": "str",
+          "dc": 7,
+          "label": "Carry her crates in without being asked.",
+          "pass": "edna.talk.str",
+          "fail": "edna.talk.str-fail"
         },
         {
           "stat": "con",
-          "label": "Carry her crates in without being asked.",
-          "reply": "edna.talk.con"
+          "dc": 7,
+          "label": "Drink the whole cup of her tea. All of it.",
+          "pass": "edna.talk.con",
+          "fail": "edna.talk.con-fail"
         },
         {
           "stat": "dex",
+          "dc": 7,
           "label": "Catch the teacup she \"accidentally\" knocks off the table.",
-          "reply": "edna.talk.dex"
+          "pass": "edna.talk.dex",
+          "fail": "edna.talk.dex-fail"
         },
         {
           "stat": "wis",
+          "dc": 7,
           "label": "\"You don't trust anyone. That's why you're still in business.\"",
-          "reply": "edna.talk.wis"
+          "pass": "edna.talk.wis",
+          "fail": "edna.talk.wis-fail"
+        },
+        {
+          "requires": {
+            "skills": {
+              "trader": 1
+            }
+          },
+          "label": "Ask to see the back shelf.",
+          "reply": "edna.talk.trader"
         }
       ]
     }

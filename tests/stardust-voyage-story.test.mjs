@@ -5,12 +5,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createVoyageStore } from '../projects/Space-Shooter/voyage/store.js';
 import { STATS, STAT_IDS } from '../projects/Space-Shooter/voyage/data.js';
-import { effect } from '../projects/Space-Shooter/voyage/character.js';
+import { effect, check } from '../projects/Space-Shooter/voyage/character.js';
 import { createBus } from '../projects/Space-Shooter/voyage/story/bus.js';
 import { LINES, LINE_ID, EMOTIONS, lineById, fillLine } from '../projects/Space-Shooter/voyage/story/lines.js';
 import { CAST, CAST_IDS } from '../projects/Space-Shooter/voyage/story/cast.js';
 import { createSay, readMs } from '../projects/Space-Shooter/voyage/story/say.js';
-import { chance, boonFor, statCard, sixText, optionTag, passiveWords } from '../projects/Space-Shooter/voyage/story/stats.js';
+import { chance, statCard, sixText, oneText, optionTag, passiveWords, oddsTable, HOW_CHECKS_WORK } from '../projects/Space-Shooter/voyage/story/stats.js';
 import { STEPS, TALKS, ALL_UNLOCKS, PICKS, UNLOCK_ID } from '../projects/Space-Shooter/voyage/story/tutorial.js';
 import { storyOf, cleanStory, isUnlocked, currentStep, metGivers, idleLine } from '../projects/Space-Shooter/voyage/story/progress.js';
 import { createDirector, mergeRewards } from '../projects/Space-Shooter/voyage/story/director.js';
@@ -21,10 +21,10 @@ function memoryStore() {
   return { getItem: (k) => (map.has(k) ? map.get(k) : null), setItem: (k, v) => map.set(k, String(v)), removeItem: (k) => map.delete(k) };
 }
 const seq = (values) => { let i = 0; return () => values[i++ % values.length]; };
-// rng values that roll cha 6, con 2, dex 1, wis 5 (die = floor(r * 6) + 1), after the id's 8 draws.
-const ROLL = [...Array(8).fill(0.1), 0.95, 0.2, 0.01, 0.7];
+// rng values that roll str 2, con 2, dex 1, wis 5, cha 6 (die = floor(r * 6) + 1), after the id's 8 draws.
+const ROLL = [...Array(8).fill(0.1), 0.2, 0.2, 0.01, 0.7, 0.95];
 
-function setup({ storage = memoryStore() } = {}) {
+function setup({ storage = memoryStore(), rng = null } = {}) {
   let t = 1_762_800_000_000;
   const store = createVoyageStore({ storage, now: () => (t += 1000) });
   const bus = createBus();
@@ -32,7 +32,8 @@ function setup({ storage = memoryStore() } = {}) {
   const speak = async (id) => { said.push(id); return { id, skipped: false }; };
   const seen = [];
   bus.on('*', (type, detail) => seen.push({ type, detail }));
-  const director = createDirector({ store, bus, say: speak, nudgeMs: 0 });
+  // Talk attempts roll 4 + 3 (0.55 -> 4, 0.4 -> 3) unless a test says otherwise.
+  const director = createDirector({ store, bus, say: speak, nudgeMs: 0, rng: rng || seq([0.55, 0.4]) });
   return { store, bus, said, seen, director, storage };
 }
 
@@ -111,9 +112,10 @@ test('every line the tutorial, talks and picks name exists', () => {
     for (const x of [...(s.enter || []), ...(s.after || []), ...(s.nudge || [])]) if (typeof x === 'string') named.push(x);
     for (const a of s.also || []) named.push(...a.lines);
   }
-  for (const t of Object.values(TALKS)) named.push(t.prompt, ...t.options.map((o) => o.reply));
-  for (const stat of STAT_IDS) named.push(PICKS.roll({ character: { stats: { cha: 1, con: 1, dex: 1, wis: 1, [stat]: 6 } } }));
-  named.push(PICKS.roll({ character: { stats: { cha: 3, con: 2, dex: 3, wis: 1 } } }), PICKS.shot({ hits: 6, shots: 6 }), PICKS.shot({ hits: 6, shots: 9 }));
+  for (const t of Object.values(TALKS)) named.push(t.prompt, ...t.options.flatMap((o) => (o.stat ? [o.pass, o.fail] : [o.reply])));
+  for (const stat of STAT_IDS) named.push(PICKS.roll({ character: { stats: { str: 1, cha: 1, con: 1, dex: 1, wis: 1, [stat]: 6 } } }));
+  named.push('chibby.roll.late', 'chibby.roll.late-done');
+  named.push(PICKS.roll({ character: { stats: { str: 2, cha: 3, con: 2, dex: 3, wis: 1 } } }), PICKS.shot({ hits: 6, shots: 6 }), PICKS.shot({ hits: 6, shots: 9 }));
   for (const id of named) assert.ok(lineById(id), `missing line ${id}`);
   for (const [giver, data] of Object.entries(QUEST_GIVERS)) {
     for (const q of data.quests) assert.ok(lineById(`${giver}.job.${q}`), `${giver} has no pitch for ${q}`);
@@ -148,38 +150,49 @@ test('say shows a line, holds it for its reading time, and a tap cuts it short',
 
 // --- Stats -------------------------------------------------------------------------------
 
-test('success chances match 1d6 + stat against the target', () => {
-  assert.equal(chance(3, 7), 0.5);
-  assert.equal(chance(6, 7), 1);
-  assert.equal(chance(1, 8), 0);
-  assert.equal(chance(1, 7), 1 / 6);
-  assert.equal(chance(4, 9, 1), 0.5);
+test('attempts are a fresh 2d6 + stat bonus: no stat auto-passes or auto-fails', () => {
+  const six = { stats: { str: 6, con: 3, dex: 3, wis: 3, cha: 6 }, skills: { hacker: 3 } };
+  const one = { stats: { str: 1, con: 3, dex: 3, wis: 3, cha: 1 }, skills: {} };
+  // Snake eyes fail even at a 6, and boxcars pass even at a 1 against an impossible target.
+  assert.equal(check(six, { stat: 'cha', dc: 2 }, () => 0).pass, false);
+  assert.equal(check(six, { stat: 'cha', dc: 2 }, () => 0).natural, 'fail');
+  assert.equal(check(one, { stat: 'cha', dc: 99 }, () => 0.99).pass, true);
+  const r = check(one, { stat: 'str', dc: 7 }, seq([0.5, 0.5]));
+  assert.deepEqual([r.dice, r.roll, r.statMod, r.bonus, r.total, r.pass], [[4, 4], 8, -2, -2, 6, false]);
+  assert.equal(check(six, { stat: 'cha', tag: 'hack', dc: 7 }, seq([0.5, 0.5])).bonus, 3, 'skills never add to a roll');
+  for (const v of [1, 2, 3, 4, 5, 6]) for (const dc of [2, 6, 7, 9, 11, 30]) {
+    const p = chance(v, dc);
+    assert.ok(p > 0 && p < 1, `stat ${v} vs ${dc} is ${p}`);
+  }
+  assert.equal(chance(3, 7).toFixed(4), (21 / 36).toFixed(4));
+  assert.equal(chance(6, 9).toFixed(4), (26 / 36).toFixed(4));
+  assert.equal(chance(1, 9).toFixed(4), (3 / 36).toFixed(4));
+  const table = oddsTable();
+  assert.deepEqual(table.map((row) => row.name), ['easy', 'normal', 'tough', 'hard', 'heroic']);
+  for (const row of table) for (let i = 1; i < 6; i++) assert.ok(row.byStat[i] >= row.byStat[i - 1]);
 });
 
-test('the stat data keeps the slice effects and adds the round-2 tags', () => {
-  const c = { stats: { cha: 6, con: 1, dex: 5, wis: 3 }, skills: {} };
+test('five stats with passive effects; the words come from the numbers', () => {
+  assert.deepEqual(STAT_IDS, ['str', 'con', 'dex', 'wis', 'cha']);
+  const c = { stats: { str: 5, cha: 6, con: 1, dex: 5, wis: 3 }, skills: {} };
   assert.equal(effect(c, 'price'), 6);
   assert.equal(effect(c, 'ship.hp'), -10);
-  assert.equal(effect(c, 'repair.speed'), -0.2);
+  assert.equal(effect(c, 'melee'), 2);
   assert.equal(effect(c, 'aim'), 0.2);
   assert.equal(effect(c, 'hint'), 0);
-  assert.equal(boonFor(c, 'black-market'), 10);
-  assert.equal(boonFor(c, 'aim.assist'), 0, 'dex 5 is not a 6');
-  for (const s of STATS) assert.ok(s.options && s.boon?.tag, `${s.id} needs options and a boon`);
-});
-
-test('every stat explains itself, and the words come from the numbers', () => {
   for (const id of STAT_IDS) {
-    const six = sixText(id);
-    assert.match(six, /^A 6: /);
+    assert.match(sixText(id), /^A 6: \+3 on every roll \(easy \d+%, normal \d+%, hard \d+%\)/);
+    assert.match(oneText(id), /double six still always works/);
     const card = statCard(id, 6);
-    assert.ok(card.line && card.boon && card.now.endsWith('.'));
-    assert.equal(statCard(id, 3).now, 'Average: no bonus, no penalty.');
+    assert.ok(card.line && card.rolls && card.odds && card.now.endsWith('.'));
+    assert.equal(statCard(id, 3).now, 'Average: no extra effects.');
+    assert.equal(statCard(id, 3).bonus, '+0');
   }
   assert.deepEqual(passiveWords('cha', 6), ['prices 6% lower', 'rep 15% faster']);
   assert.match(sixText('con'), /\+15 hull/);
-  assert.equal(optionTag('dex'), '[Quick hands]');
+  assert.equal(optionTag('dex'), '[Dexterity]');
   assert.match(statCard('wis', 1).now, /hints 2 misses later/);
+  assert.ok(HOW_CHECKS_WORK.every((line) => !/[{}]/.test(line)), 'every placeholder filled');
 });
 
 // --- The director ----------------------------------------------------------------------------
@@ -225,18 +238,24 @@ test('a new save starts at the intro, and the whole tutorial plays in order', as
   await new Promise((r) => setImmediate(r));
   const choices = env.seen.filter((e) => e.type === 'story:choices' && e.detail).pop().detail;
   assert.equal(choices.talk, 'edna');
-  const byStat = Object.fromEntries(choices.options.filter((o) => o.stat).map((o) => [o.stat, o]));
-  assert.equal(byStat.cha.locked, false, 'charisma 6 opens Charm');
-  assert.equal(byStat.wis.locked, false, 'wisdom 5 opens Read the room');
-  assert.equal(byStat.dex.locked, true);
-  assert.equal(byStat.dex.reason, 'Needs Dexterity 5.');
-  assert.match(byStat.cha.label, /^\[Charm\] /);
-  assert.equal(env.director.choose(byStat.dex.index), false, 'a locked option cannot be picked');
-  env.bus.emit('story:choose', { index: byStat.cha.index });
+  const attempts = choices.options.filter((o) => o.kind === 'attempt');
+  assert.deepEqual(attempts.map((o) => o.stat), ['cha', 'str', 'con', 'dex', 'wis'], 'one attempt per stat');
+  assert.ok(attempts.every((o) => !o.locked && o.chance > 0 && o.chance < 1), 'anyone may try; the stat only moves the odds');
+  const cha = attempts.find((o) => o.stat === 'cha');
+  assert.match(cha.label, /^\[Charisma\] /);
+  assert.equal(cha.chance.toFixed(4), (33 / 36).toFixed(4), 'charisma 6 vs 7: anything but 2 or 3 on 2d6');
+  const gated = choices.options.find((o) => o.kind === 'skill');
+  assert.equal(gated.locked, true);
+  assert.equal(gated.reason, 'Needs the Trader skill.');
+  assert.match(gated.label, /^\[Trader\] /);
+  assert.equal(env.director.choose(gated.index), false, 'a locked option cannot be picked');
+  env.bus.emit('story:choose', { index: cha.index });
   await env.director.idle();
+  const roll = env.seen.find((e) => e.type === 'roll:attempt').detail;
+  assert.deepEqual([roll.dice, roll.bonus, roll.total, roll.dc, roll.pass, roll.who], [[4, 3], 3, 10, 7, true, 'Vela Quint']);
   assert.ok(env.said.includes('edna.talk.cha'));
   assert.equal(env.director.state().step, 'puzzle');
-  assert.equal(env.director.state().choices.edna, byStat.cha.index);
+  assert.equal(env.director.state().choices.edna, cha.index);
 
   await playTo(env, 'open');
   await env.director.idle();
@@ -449,4 +468,50 @@ test('a quiet player gets a nudge line once, and doing something restarts the wa
   assert.equal(said.at(-1), 'chibby.nudge.ship');
   env.director.stop();
   assert.equal(pending.filter((x) => x.live).length, 0);
+});
+
+test('a failed attempt in Edna\'s talk still moves the tutorial on, with its own line', async () => {
+  const env = setup({ rng: seq([0.2, 0.2]) }); // 2 + 2
+  env.director.start();
+  await playTo(env, 'talk');
+  await new Promise((r) => setImmediate(r));
+  await new Promise((r) => setImmediate(r));
+  const str = env.seen.filter((e) => e.type === 'story:choices' && e.detail).pop().detail.options.find((o) => o.stat === 'str');
+  assert.equal(env.director.choose(str.index), true);
+  await env.director.idle();
+  assert.ok(env.said.includes('edna.talk.str-fail'), 'strength 2 with 2 + 2: a miss');
+  assert.equal(env.director.state().step, 'puzzle');
+});
+
+test('a Trader can take the skill-gated option', async () => {
+  const env = setup();
+  env.director.start();
+  await playTo(env, 'edna');
+  env.store.update((s) => ({ ...s, character: { ...s.character, earned: 3, skills: { trader: 1 } } }));
+  await playTo(env, 'talk');
+  await new Promise((r) => setImmediate(r));
+  await new Promise((r) => setImmediate(r));
+  const gated = env.seen.filter((e) => e.type === 'story:choices' && e.detail).pop().detail.options.find((o) => o.kind === 'skill');
+  assert.equal(gated.locked, false);
+  assert.equal(env.director.choose(gated.index), true);
+  await env.director.idle();
+  assert.ok(env.said.includes('edna.talk.trader'));
+  assert.equal(env.seen.some((e) => e.type === 'roll:attempt'), false, 'a skill option does not roll');
+});
+
+test('an old captain without Strength is asked to roll it once', async () => {
+  const storage = memoryStore();
+  const old = { v: 1, updatedAt: 1, character: { id: 'c-old', name: 'Old Hand', stats: { cha: 4, con: 3, dex: 5, wis: 2 }, earned: 2, permanent: 0, skills: {}, deaths: 0, createdAt: 1 }, money: 10 };
+  storage.setItem('stardust.voyage.v1', JSON.stringify(old));
+  const env = setup({ storage });
+  assert.equal(env.store.get().character.stats.str, 3, 'average until rolled');
+  assert.deepEqual(env.store.get().character.toRoll, ['str']);
+  env.director.start();
+  await env.director.idle();
+  assert.ok(env.said.includes('chibby.roll.late'));
+  assert.deepEqual(env.seen.find((e) => e.type === 'story:roll-missing').detail, { stats: ['str'] });
+  assert.deepEqual(env.store.rollMissingStats(() => 0.9), { str: 6 });
+  assert.equal(env.store.get().character.stats.str, 6);
+  assert.equal(env.store.get().character.toRoll, undefined);
+  assert.deepEqual(env.store.rollMissingStats(() => 0.1), {}, 'only once');
 });

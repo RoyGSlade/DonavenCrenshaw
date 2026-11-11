@@ -132,16 +132,18 @@ test('relay: a crew room carries crew messages both ways and keeps Dogfight room
 // ---- card and share ----------------------------------------------------------
 
 test('crew card: name, stats and known skills only; anything else is refused', () => {
-  const c = { ...testCharacter({ cha: 2, con: 5, dex: 4, wis: 6 }, 'Nova'), skills: { 'patch-kit': 2, nope: 3 } };
+  const c = { ...testCharacter({ str: 3, cha: 2, con: 5, dex: 4, wis: 6 }, 'Nova'), skills: { mechanic: 2, nope: 3 } };
   const card = crewCard(c);
-  assert.deepEqual(card, { name: 'Nova', stats: { cha: 2, con: 5, dex: 4, wis: 6 }, skills: { 'patch-kit': 2 } });
-  assert.deepEqual(cleanCrewCard({ ...card, skills: { 'patch-kit': 2, nope: 3 } }).skills, { 'patch-kit': 2 }, 'unknown skills are dropped');
-  assert.deepEqual(cleanCrewCard(card), { name: 'Nova', stats: { cha: 2, con: 5, dex: 4, wis: 6 }, skills: { 'patch-kit': 2 } });
+  assert.deepEqual(card, { name: 'Nova', stats: { str: 3, cha: 2, con: 5, dex: 4, wis: 6 }, skills: { mechanic: 2 } });
+  assert.deepEqual(cleanCrewCard({ ...card, skills: { mechanic: 2, nope: 3 } }).skills, { mechanic: 2 }, 'unknown skills are dropped');
+  assert.deepEqual(cleanCrewCard(card), { name: 'Nova', stats: { str: 3, cha: 2, con: 5, dex: 4, wis: 6 }, skills: { mechanic: 2 } });
+  const { str, ...older } = card.stats;
+  assert.equal(cleanCrewCard({ ...card, stats: older }).stats.str, 3, 'a crewmate on an older page counts Strength as average');
   assert.equal(crewCard(null), null, 'no captain, no card');
   assert.equal(cleanCrewCard({ ...card, stats: { ...card.stats, dex: 9 } }), null);
   assert.equal(cleanCrewCard({ ...card, name: '   ' }), null);
-  assert.deepEqual(cleanCrewCard({ ...card, name: '<b>Nova</b>', skills: { 'patch-kit': 9 } }).name, 'bNova/b');
-  assert.deepEqual(cleanCrewCard({ ...card, skills: { 'patch-kit': 9 } }).skills, {}, 'ranks past the max are dropped');
+  assert.deepEqual(cleanCrewCard({ ...card, name: '<b>Nova</b>', skills: { mechanic: 9 } }).name, 'bNova/b');
+  assert.deepEqual(cleanCrewCard({ ...card, skills: { mechanic: 9 } }).skills, {}, 'levels past the max are dropped');
 });
 
 test('crew share: credits, rep, skill points and materials; never keys, parts, cargo or losses; capped', () => {
@@ -184,8 +186,10 @@ test('docked (S55): the crew takes a dialogue check with their own stats; other 
   assert.equal(act(TEST_QUEST, run, save, { type: 'crew', job: 'check', index: 0 }).error, 'No crew aboard.', 'no crew, no crew jobs');
   const out = act(TEST_QUEST, run, save, { type: 'crew', job: 'check', index: 0 }, { crew: CREW });
   assert.equal(out.error, undefined);
-  assert.equal(out.run.lastCheck.bonus, 6, 'the roll used the crew\'s Charisma 6, not the captain\'s 1');
-  assert.match(out.run.log.join('\n'), /Nova takes it\. Charisma check/);
+  assert.equal(out.run.lastCheck.bonus, 3, 'the roll used the crew\'s Charisma 6 (+3), not the captain\'s 1 (-2)');
+  assert.equal(out.rolls.length, 1, 'the attempt is reported for the die');
+  assert.equal(out.rolls[0].who, 'Nova');
+  assert.match(out.run.log.join('\n'), /Nova takes it\. Charisma: /);
   assert.equal(out.run.node, 'fight');
 });
 

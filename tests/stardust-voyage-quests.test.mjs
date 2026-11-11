@@ -146,7 +146,8 @@ test('dialogue: stats unlock options, local flags unlock options, costs lock whe
   assert.equal(rich.choices.find(c => c.label.startsWith('Name the debt')).locked, false);
   assert.equal(rich.choices.find(c => c.label.startsWith('Vent two scrap')).locked, false);
   const check = rich.choices.find(c => c.check);
-  assert.match(check.check.text, /check, \d+ or more/);
+  assert.match(check.check.text, /: 2d6 [+-] \d+ vs \d+ \(\d+%\)$/);
+  assert.ok(check.check.chance > 0 && check.check.chance < 1, 'the odds are shown and never certain');
   // Picking a locked option is refused and changes nothing.
   let { run, save } = startQuest(quest, low(), { seed: 1 });
   run = { ...run, node: 'ambush-waiting', part: null };

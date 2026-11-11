@@ -113,11 +113,22 @@ export function createCaption({ root = document.body, bus, onSkip = null, skippa
         b.type = 'button';
         b.disabled = o.locked;
         if (o.stat) b.dataset.stat = o.stat;
+        if (o.kind) b.dataset.kind = o.kind;
+        if (o.kind === 'attempt' && Number.isFinite(o.chance)) b.append(el('small', 'sy-odds', ` Roll 2d6 + ${o.stat ? 'your stat' : 'bonus'} vs ${o.dc}: ${Math.round(o.chance * 100)}%`));
         if (o.locked) b.append(el('small', 'sy-why', ` ${o.reason}`));
         b.addEventListener('click', () => bus.emit('story:choose', { index: o.index }));
         choices.append(b);
       }
       choices.querySelector('button:not(:disabled)')?.focus();
+    }),
+    bus.on('roll:attempt', (r) => {
+      const t = el('p', 'sy-toast sy-roll');
+      t.dataset.pass = String(Boolean(r.pass));
+      const nat = r.natural === 'pass' ? ' Double six!' : r.natural === 'fail' ? ' Snake eyes.' : '';
+      t.append(el('b', '', r.pass ? 'PASS' : 'MISS'), document.createTextNode(` ${r.dice.join(' + ')} ${r.bonus < 0 ? '-' : '+'} ${Math.abs(r.bonus)} = ${r.total} vs ${r.dc}.${nat}`));
+      toasts.append(t);
+      setTimeout(() => t.classList.add('sy-gone'), 3600);
+      setTimeout(() => t.remove(), 4100);
     }),
     bus.on('story:unlock', (d) => {
       const t = el('p', 'sy-toast');

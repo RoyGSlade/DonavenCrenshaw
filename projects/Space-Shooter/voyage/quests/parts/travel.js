@@ -4,7 +4,7 @@
 // fight hook. Everything rolls from the run's seed.
 import { SECTORS, LANES } from '../data/sectors.js';
 import { EVENTS } from '../data/events.js';
-import { check, meets, missing, skillBonus } from '../core.js';
+import { check, meets, missing, skillBonus, rollText } from '../core.js';
 import { rollEnemy } from '../rolls.js';
 import { createSkirmish, viewSkirmish, actSkirmish, hullAfter } from './skirmish.js';
 
@@ -96,7 +96,7 @@ export function actCard(state, action, ctx) {
     if (choice.cost && !ctx.spend(choice.cost)) return { state, error: 'Cannot afford that' };
     if (choice.check) {
       const r = check(ctx.save.character, choice.check, ctx.rng.next);
-      ctx.log(`${choice.check.stat.toUpperCase()} check: ${r.roll}+${r.bonus} vs ${r.dc}, ${r.pass ? 'pass' : 'fail'}`);
+      ctx.log(`${choice.check.stat.toUpperCase()} check: ${rollText(r)}, ${r.pass ? 'pass' : 'fail'}`);
       applyOutcome(state, r.pass ? choice.pass : choice.fail, ctx);
     } else applyOutcome(state, choice.outcome || {}, ctx);
     return { state };

@@ -40,7 +40,7 @@ export const UNLOCK_ID = /^(ship|jobs|(station|explore|giver):[a-z0-9][a-z0-9-]{
 // Every option works here: the tutorial talk teaches, it does not fail you.
 export const TALKS = freeze(structuredClone(TUTORIAL_DATA.talks));
 
-const ORDER = ['cha', 'con', 'dex', 'wis'];
+const ORDER = ['str', 'con', 'dex', 'wis', 'cha'];
 // Lines chosen from what happened: (event detail, save) -> line id.
 export const PICKS = Object.freeze({
   /** Chibby reacts to the captain's best stat (the first of a tie), or kindly to a low roll. */

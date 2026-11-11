@@ -1,8 +1,8 @@
-// The Voyage captain: name, look, four 1d6 stats, skill points in three trees,
-// and death. Pure rules: no DOM, no clock or randomness of their own (rng and
+// The Voyage captain: name, look, five 1d6 stats (the bonus on attempt rolls),
+// skill points in three trees (skills unlock things), and death. Pure rules: no DOM, no clock or randomness of their own (rng and
 // now are handed in), and every change returns a new character.
 import {
-  NAME_MAX, STAT_DIE, STAT_BASELINE, START_POINTS, STATS, STAT_IDS, TREES, SKILLS, DEATH, PORTRAITS, COLORS,
+  NAME_MAX, STAT_DIE, STAT_BASELINE, START_POINTS, STATS, STAT_IDS, TREES, SKILLS, DEATH, PORTRAITS, COLORS, CHECK,
 } from './data.js';
 
 const SKILL = new Map(SKILLS.map((s) => [s.id, s]));
@@ -138,16 +138,108 @@ export function statBonus(c, tag) {
 /** Everything the captain adds to a passive tag: stats and skills. Rounded to 3 places. */
 export const effect = (c, tag) => Math.round((statBonus(c, tag) + skillBonus(c, tag)) * 1000) / 1000;
 
+/** A stat's bonus to attempts: its distance from the baseline (-2 at a 1, +3 at a 6). */
+export const statMod = (value) => (Number.isInteger(value) ? value : STAT_BASELINE) - STAT_BASELINE;
+
 /**
- * A stat check: 1d6 + the stat + the captain's skill bonus for the tag, against dc.
- * { roll, bonus, total, dc, pass }. Without a captain the stat counts as STAT_BASELINE.
+ * An attempt (a "check"): a fresh roll of CHECK.dice x d{CHECK.sides}, plus the
+ * stat's bonus and any `extra` (a ship's race bonus, say), against dc. Skills
+ * never add to a roll (they unlock things); `tag` is kept for logs only. A
+ * natural CHECK.alwaysPass always passes and a natural CHECK.alwaysFail always
+ * fails, so the stat alone never decides it. Returns the attempt:
+ * { kind: 'attempt', stat, tag, dc, dice, roll, statMod, extra, bonus, total,
+ * pass, natural } (natural: 'pass' | 'fail' | null). Without a captain the
+ * stat counts as STAT_BASELINE. Deterministic in rng (CHECK.dice draws).
  */
-export function check(c, { stat, tag = null, dc = 7 } = {}, rng = Math.random) {
-  const roll = rollDie(rng);
-  const value = STAT_IDS.includes(stat) ? (c?.stats?.[stat] ?? STAT_BASELINE) : 0;
-  const bonus = value + (tag ? skillBonus(c, tag) : 0);
+export function check(c, { stat = null, tag = null, dc = CHECK.levels.normal, extra = 0 } = {}, rng = Math.random) {
+  const dice = [];
+  for (let i = 0; i < CHECK.dice; i++) dice.push(rollDie(rng, CHECK.sides));
+  const roll = dice.reduce((a, b) => a + b, 0);
+  const mod = STAT_IDS.includes(stat) ? statMod(c?.stats?.[stat] ?? STAT_BASELINE) : 0;
+  const more = Number.isFinite(extra) ? extra : 0;
+  const bonus = mod + more;
   const total = roll + bonus;
-  return { roll, bonus, total, dc, pass: total >= dc };
+  const natural = roll >= CHECK.alwaysPass ? 'pass' : roll <= CHECK.alwaysFail ? 'fail' : null;
+  const pass = natural ? natural === 'pass' : total >= dc;
+  return { kind: 'attempt', stat: STAT_IDS.includes(stat) ? stat : null, tag: tag || null, dc, dice, roll, statMod: mod, extra: more, bonus, total, pass, natural };
+}
+/** The same roll under the name the round-2 contract uses for it. */
+export const rollAttempt = check;
+
+// The chance of each total of the dice, built once.
+const SUMS = (() => {
+  let dist = new Map([[0, 1]]);
+  for (let i = 0; i < CHECK.dice; i++) {
+    const next = new Map();
+    for (const [sum, n] of dist) for (let f = 1; f <= CHECK.sides; f++) next.set(sum + f, (next.get(sum + f) || 0) + n);
+    dist = next;
+  }
+  const all = CHECK.sides ** CHECK.dice;
+  return [...dist].map(([sum, n]) => [sum, n / all]);
+})();
+
+/** Chance (0..1) an attempt passes with this total bonus against dc. Never 0 or 1. */
+export function attemptChance(bonus, dc) {
+  let p = 0;
+  for (const [roll, q] of SUMS) {
+    const natural = roll >= CHECK.alwaysPass ? true : roll <= CHECK.alwaysFail ? false : null;
+    if (natural === true || (natural === null && roll + bonus >= dc)) p += q;
+  }
+  return p;
+}
+
+/** The chance for a captain and a check spec (what a choice can show before it is taken). */
+export function checkChance(c, { stat = null, dc = CHECK.levels.normal, extra = 0 } = {}) {
+  const mod = STAT_IDS.includes(stat) ? statMod(c?.stats?.[stat] ?? STAT_BASELINE) : 0;
+  return attemptChance(mod + (Number.isFinite(extra) ? extra : 0), dc);
+}
+
+const signed = (n) => (n < 0 ? `- ${-n}` : `+ ${n}`);
+/** An attempt in words for logs: "4+3 + 2 = 9 vs 8" (with "double six!" / "snake eyes" on a natural). */
+export function rollText(r) {
+  const nat = r.natural === 'pass' ? ' (double six!)' : r.natural === 'fail' ? ' (snake eyes)' : '';
+  return `${(r.dice || [r.roll]).join('+')} ${signed(r.bonus)} = ${r.total} vs ${r.dc}${nat}`;
+}
+
+// --- Skills unlock things (levels -> access, activity, ability) -----------------
+
+/** Every skill level as { skill, level, unlocks: [{ type, id, value?, text }] } (ROUND2-CONTRACT.md section 9). */
+export function skillLevels() {
+  return SKILLS.flatMap((s) => (s.levels || []).map((l) => ({ skill: s.id, level: l.level, unlocks: l.unlocks || [] })));
+}
+
+/** The captain's level in a skill (0 = not learned). */
+export const skillLevel = (c, skillId) => c?.skills?.[skillId] || 0;
+/** Has the captain learned this skill (to at least `level`)? */
+export const hasSkill = (c, skillId, level = 1) => skillLevel(c, skillId) >= level;
+
+/** Everything the captain's learned levels unlock: [{ type, id, value, text, skill, level }]. */
+export function skillUnlocks(c) {
+  const out = [];
+  for (const s of SKILLS) {
+    const have = skillLevel(c, s.id);
+    for (const l of s.levels || []) if (l.level <= have) for (const u of l.unlocks || []) out.push({ ...u, skill: s.id, level: l.level });
+  }
+  return out;
+}
+
+const splitToken = (type, id) => (id === undefined && typeof type === 'string' && type.includes(':') ? type.split(/:(.*)/s).slice(0, 2) : [type, id]);
+
+/** Does the captain have this unlock? hasUnlock(c, 'ability', 'ship.hack-jam') or hasUnlock(c, 'ability:ship.hack-jam'). */
+export function hasUnlock(c, type, id) {
+  const [t, i] = splitToken(type, id);
+  return skillUnlocks(c).some((u) => u.type === t && u.id === i);
+}
+
+/** The summed `value` of an activity upgrade (e.g. 'hack.time' -> 10 seconds at Hacker 3); 0 without it. */
+export function activityValue(c, id) {
+  return skillUnlocks(c).filter((u) => u.type === 'activity' && u.id === id).reduce((n, u) => n + (Number(u.value) || 0), 0);
+}
+
+/** Which skill levels give an unlock: [{ skill, level }] (for "needs Hacker 2" hints). */
+export function skillsGranting(type, id) {
+  const [t, i] = splitToken(type, id);
+  return skillLevels().filter((l) => l.unlocks.some((u) => u.type === t && u.id === i)).map(({ skill, level }) => ({ skill, level }));
 }
 
 // --- Death ---------------------------------------------------------------------
@@ -161,9 +253,10 @@ export function die(c, rng = Math.random) {
   if (!c) return { character: c, lost: 0 };
   const kept = Math.ceil(c.earned * DEATH.keepShare);
   const lost = c.earned - kept;
+  const { toRoll, ...rest } = c; // fresh stats leave nothing to roll later
   return {
     character: {
-      ...c,
+      ...(DEATH.rerollStats ? rest : c),
       earned: kept,
       skills: DEATH.refundSkills ? {} : c.skills,
       stats: DEATH.rerollStats ? rollStats(rng) : c.stats,
@@ -171,6 +264,19 @@ export function die(c, rng = Math.random) {
     },
     lost,
   };
+}
+
+/**
+ * Rolls, once, each stat the captain is missing (old saves made before
+ * Strength existed hold it at average until then). Returns { character, rolled:
+ * { statId: value } }; the same captain when there is nothing to roll.
+ */
+export function rollMissingStats(c, rng = Math.random) {
+  if (!c?.toRoll?.length) return { character: c, rolled: {} };
+  const rolled = {};
+  for (const id of c.toRoll) if (STAT_IDS.includes(id)) rolled[id] = rollDie(rng);
+  const { toRoll, ...rest } = c;
+  return { character: { ...rest, stats: { ...c.stats, ...rolled } }, rolled };
 }
 
 // --- Cleaning ------------------------------------------------------------------
@@ -181,7 +287,14 @@ export function cleanCharacter(input) {
   const name = cleanName(input.name);
   if (!name) return null;
   const stats = {};
-  for (const id of STAT_IDS) stats[id] = int(input.stats?.[id], 1, STAT_DIE, STAT_BASELINE);
+  const toRoll = [];
+  for (const id of STAT_IDS) {
+    // A stat added after this captain was made (Strength, round 2) counts as
+    // average until the player rolls it once (rollMissingStats).
+    if (input.stats && typeof input.stats === 'object' && !(id in input.stats) && Object.keys(input.stats).length) toRoll.push(id);
+    stats[id] = int(input.stats?.[id], 1, STAT_DIE, STAT_BASELINE);
+  }
+  for (const id of Array.isArray(input.toRoll) ? input.toRoll : []) if (STAT_IDS.includes(id) && !toRoll.includes(id)) toRoll.push(id);
   const skills = {};
   for (const [id, rank] of Object.entries(input.skills && typeof input.skills === 'object' ? input.skills : {})) {
     const skill = SKILL.get(id);
@@ -198,6 +311,7 @@ export function cleanCharacter(input) {
     deaths: int(input.deaths, 0, 1e6, 0),
     createdAt: int(input.createdAt, 0, Number.MAX_SAFE_INTEGER, 0),
   };
+  if (toRoll.length) out.toRoll = toRoll;
   // Retuned data can leave a save with more ranks than points: refund them all.
   if (spentPoints(out) > totalPoints(out)) out.skills = {};
   return out;

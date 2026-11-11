@@ -22,6 +22,8 @@
 .sy-choice:disabled{opacity:1;color:#6f8597;background:#0c1520f7;border-style:dashed}
 .sy-ask{margin:0 0 2px;padding:12px 14px;border:1px solid #2a4152;border-top:2px solid var(--sy-accent,#81e6df);border-radius:8px;background:#122233f7;font:500 16px/1.4 Inter,"Segoe UI",sans-serif;color:#eaf4f5}
 .sy-ask b{font:700 11px Consolas,monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--sy-accent,#81e6df)}
+.sy-odds{display:block;margin-top:2px;font:11px Consolas,monospace;color:#81e6df}
+.sy-roll[data-pass=false] b{color:#ff8fa3}
 .sy-why{display:block;margin-top:2px;font:11px Consolas,monospace;color:var(--orange,#ffad72)}
 .sy-goal.sy-fresh{animation:sy-pulse 1.1s ease-out}
 .sy-toasts{display:flex;flex-direction:column;align-items:center;gap:6px}

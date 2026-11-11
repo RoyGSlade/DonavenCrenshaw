@@ -22,33 +22,53 @@ export const START_POINTS = 2;
 // captain is made; a death does not pay it again.
 export const START_KIT = Object.freeze({ money: 80, items: { scrap: 4 } });
 
-// Round 2 (story lane, lhc-lanes/stardust/story/STATS.md): what each stat does
-// in play. `effects` are passive, per point over STAT_BASELINE (the same rule as
-// before; the slice's tags are unchanged, the round-2 systems get new tags:
-// repair and mining speed, aim, walking speed, scan range, puzzle hints).
-// `options` names the dialogue options a stat of STAT_OPTION_MIN or more opens
-// (a choice with `requires: { stats: { cha: 5 } }`). `boon` is what a 6 adds on
-// top (read with boonFor in voyage/story/stats.js). The explanation text the
-// player reads is built from these numbers (voyage/story/stats.js), so retuning
-// here retunes the words too.
-export const STAT_OPTION_MIN = 5;
-export const STAT_BOON_AT = 6;
+// Round 2 (story lane, lhc-lanes/stardust/story/STATS.md; Donaven 2026-11-11):
+// STATS are rolled once (1d6 each) and are the BONUS on everyday attempt rolls:
+// talking, brawling and lifting, shrugging off poison and bad food, reflexes,
+// noticing, gambling. SKILLS never add to rolls; they unlock things (SKILLS below).
+// `rolls`: what attempts the stat is the bonus for (words for the player).
+// `effects`: small passive numbers, per point over STAT_BASELINE (negative
+// below), read with effect(c, tag). Ids are what saves keep: rename the name.
+
+// Attempts (Donaven, 2026-11-11: "you roll to get stats which improve your
+// attempts at stuff; they do not predetermine your attempts as fail or success
+// until rolled again"). Every attempt is a fresh roll of 2d6, plus the stat's
+// bonus (stat - STAT_BASELINE: -2 at a 1, +3 at a 6), against a target. A
+// natural 12 always works and a natural 2 never does, so no stat decides an
+// attempt on its own. Named targets below; quests may use plain numbers.
+export const CHECK = Object.freeze({
+  dice: 2,
+  sides: 6,
+  alwaysPass: 12,
+  alwaysFail: 2,
+  levels: { easy: 6, normal: 7, tough: 8, hard: 9, heroic: 11 },
+});
+
 export const STATS = Object.freeze([
   {
-    id: 'cha', name: 'Charisma', blurb: 'Talking, haggling and how fast people warm to you.',
-    effects: { price: 2, rep: 5 }, options: 'Charm', boon: { tag: 'black-market', value: 10 },
+    id: 'str', name: 'Strength', blurb: 'Brawling, lifting, hauling and digging.',
+    rolls: 'punching a guy when the bullets run out, lifting, hauling, digging, forcing a door',
+    effects: { melee: 1, 'mine.speed': 0.1 },
   },
   {
-    id: 'con', name: 'Constitution', blurb: 'Hull you can take, hard work, and staying up on foot.',
-    effects: { 'ship.hp': 5, 'foot.hp': 10, 'repair.speed': 0.1, 'mine.speed': 0.1 }, options: 'Muscle', boon: { tag: 'foot.guard', value: 1 },
+    id: 'con', name: 'Health', blurb: 'Soaking hits and shrugging off poison, sickness and bad meatloaf.',
+    rolls: 'shrugging off poison, sickness, bad air and bad meatloaf, staying on your feet',
+    effects: { 'ship.hp': 5, 'foot.hp': 10 },
   },
   {
-    id: 'dex', name: 'Dexterity', blurb: 'Handling, dodging and aim.',
-    effects: { 'ship.turn': 0.03, dodge: 1, aim: 0.1, 'foot.speed': 0.04 }, options: 'Quick hands', boon: { tag: 'aim.assist', value: 1 },
+    id: 'dex', name: 'Dexterity', blurb: 'Reflexes, aim and quick hands.',
+    rolls: 'dodging, slipping past, quick hands, shooting, flying tricks',
+    effects: { 'ship.turn': 0.03, aim: 0.1, 'foot.speed': 0.04, 'repair.speed': 0.1 },
   },
   {
-    id: 'wis', name: 'Wisdom', blurb: 'Routes, scans, puzzles and reading people.',
-    effects: { nav: 1, scan: 1, puzzle: 1, 'scan.range': 0.1, hint: 1 }, options: 'Read the room', boon: { tag: 'hint.free', value: 1 },
+    id: 'wis', name: 'Wisdom', blurb: 'Noticing things and reading people.',
+    rolls: 'noticing, scanning, finding the way, reading a lie, working out a puzzle',
+    effects: { 'scan.range': 0.1, hint: 1 },
+  },
+  {
+    id: 'cha', name: 'Charisma', blurb: 'Talking, haggling, gambling and being liked.',
+    rolls: 'talking someone round, haggling, bluffing, gambling',
+    effects: { price: 2, rep: 5 },
   },
 ]);
 export const STAT_IDS = Object.freeze(STATS.map((s) => s.id));
@@ -61,29 +81,114 @@ export const TREES = Object.freeze([
   { id: 'wrench', name: 'Wrench', blurb: 'Repair, tech, puzzles and trade.' },
 ]);
 
-// needs: points already in a tree before the first rank can be learned.
-// Each rank costs one point.
+// SKILLS UNLOCK things; they never add to a roll (Donaven, 2026-11-11: "Skills
+// should be for neat stuff or locked areas"; SKILL LEVELS: each level unlocks
+// any of three kinds). Each level costs one point. `max` = the number of levels.
+// `needs`: points already in a tree before level 1. A skill in two trees counts
+// for both. Each level's `unlocks`: { type, id, value?, text }, type one of
+//   access    a gate content checks ("needs Hacker 2": door, area, lane, option)
+//   activity  the skill's own minigame gets better (`value` stacks, in the
+//             unit its text says: seconds, a share, a count)
+//   ability   a new action (hack an enemy ship, a drift turn, a field repair)
+// Ids are ROUND2-CONTRACT.md section 9; content gates with core's requirement
+// { skills: { hacker: 2 } }. `text` is the player's "this lets you..." line.
+export const SKILL_UNLOCK_TYPES = Object.freeze(['access', 'activity', 'ability']);
 export const SKILLS = Object.freeze([
-  // Helm
-  { id: 'smooth-burn', name: 'Smooth Burn', trees: ['helm'], max: 3, effects: { 'ship.speed': 0.03 }, blurb: 'Top speed.' },
-  { id: 'tight-turns', name: 'Tight Turns', trees: ['helm'], max: 3, effects: { 'ship.turn': 0.04 }, blurb: 'Turn rate.' },
-  { id: 'star-charts', name: 'Star Charts', trees: ['helm'], max: 2, needs: { helm: 2 }, effects: { nav: 1 }, blurb: 'Better routes and fewer nasty surprises on the way.' },
-  { id: 'evasive', name: 'Evasive Pilot', trees: ['helm'], max: 2, needs: { helm: 3 }, effects: { dodge: 1 }, blurb: 'Harder to hit.' },
-  // Guns
-  { id: 'steady-aim', name: 'Steady Aim', trees: ['guns'], max: 3, effects: { 'ship.damage': 1 }, blurb: 'Ship gun damage.' },
-  { id: 'cool-barrels', name: 'Cool Barrels', trees: ['guns'], max: 3, effects: { 'ship.heat': 10 }, blurb: 'Fire longer before the gun overheats.' },
-  { id: 'brawler', name: 'Brawler', trees: ['guns'], max: 2, needs: { guns: 2 }, effects: { fight: 1, 'foot.hp': 10 }, blurb: 'On-foot fights.' },
-  { id: 'hard-stare', name: 'Hard Stare', trees: ['guns'], max: 1, needs: { guns: 3 }, effects: { talk: 1 }, blurb: 'Some talks go better with a threat behind them.' },
-  // Wrench
-  { id: 'patch-kit', name: 'Patch Kit', trees: ['wrench'], max: 3, effects: { repair: 1 }, blurb: 'Repairs go faster.' },
-  { id: 'reinforced', name: 'Reinforced Hull', trees: ['wrench'], max: 3, effects: { 'ship.hp': 10 }, blurb: 'More hull.' },
-  { id: 'slicer', name: 'Slicer', trees: ['wrench'], max: 2, needs: { wrench: 2 }, effects: { hack: 1, puzzle: 1 }, blurb: 'Locks, terminals and puzzles.' },
-  { id: 'smooth-talk', name: 'Smooth Talker', trees: ['wrench'], max: 2, effects: { talk: 1, rep: 5 }, blurb: 'Dialogue checks and rep.' },
-  { id: 'haggler', name: 'Haggler', trees: ['wrench'], max: 2, needs: { wrench: 1 }, effects: { trade: 1, price: 3 }, blurb: 'Cheaper upgrades and better trades.' },
-  // Overlap: one skill, two trees
-  { id: 'strafe-run', name: 'Strafe Run', trees: ['helm', 'guns'], max: 2, needs: { helm: 1, guns: 1 }, effects: { 'ship.damage': 1, dodge: 1 }, blurb: 'Fly and fight at once.' },
-  { id: 'field-patch', name: 'Field Patch', trees: ['guns', 'wrench'], max: 2, needs: { guns: 1, wrench: 1 }, effects: { repair: 1, 'foot.hp': 5 }, blurb: 'Fix things while they shoot at you.' },
-  { id: 'nav-computer', name: 'Nav Computer', trees: ['helm', 'wrench'], max: 2, needs: { helm: 1, wrench: 1 }, effects: { nav: 1, scan: 1, 'ship.cargo': 1 }, blurb: 'Smarter routes and a tidier hold.' },
+  {
+    id: 'pilot', name: 'Pilot', trees: ['helm'], max: 3, blurb: 'Flying tricks and speed.',
+    levels: [
+      { level: 1, unlocks: [{ type: 'ability', id: 'ship.afterburner', text: 'Kick in an afterburner boost in fights and races.' }, { type: 'activity', id: 'race.boost', value: 1, text: 'One more boost charge in races.' }] },
+      { level: 2, unlocks: [{ type: 'access', id: 'lane.shortcut', text: 'Fly the shortcut lanes on the sector map.' }, { type: 'ability', id: 'ship.drift', text: 'Drift: swing the nose round without losing speed.' }] },
+      { level: 3, unlocks: [{ type: 'ability', id: 'ship.barrel-roll', text: 'Roll out of a locked-on shot, once a fight.' }, { type: 'activity', id: 'race.boost', value: 1, text: 'One more boost charge in races.' }] },
+    ],
+  },
+  {
+    id: 'navigator', name: 'Navigator', trees: ['helm'], max: 2, needs: { helm: 1 }, blurb: 'Finding the way, and the ways nobody charts.',
+    levels: [
+      { level: 1, unlocks: [{ type: 'access', id: 'poi.hidden', text: 'See hidden places on the sector map.' }, { type: 'activity', id: 'explore.scan', value: 0.25, text: 'Scanner pulse reaches 25% further.' }] },
+      { level: 2, unlocks: [{ type: 'ability', id: 'trip.pick-route', text: 'Pick your own route on trips.' }, { type: 'access', id: 'lane.dark', text: 'Fly the dark lanes nobody charts.' }] },
+    ],
+  },
+  {
+    id: 'smuggler', name: 'Running Dark', trees: ['helm'], max: 2, needs: { helm: 2 }, blurb: 'Getting places without being seen.',
+    levels: [
+      { level: 1, unlocks: [{ type: 'ability', id: 'ship.lights-out', text: 'Kill your lights and slip past trouble on the lanes.' }, { type: 'access', id: 'option.running-dark', text: 'Sneak options in travel events.' }] },
+      { level: 2, unlocks: [{ type: 'access', id: 'dock.back-door', text: 'Dock at back-door pads: no tolls, no questions.' }, { type: 'activity', id: 'stealth.time', value: 3, text: 'Stay hidden 3 seconds longer.' }] },
+    ],
+  },
+  {
+    id: 'gunner', name: 'Gunner', trees: ['guns'], max: 3, blurb: 'Turrets and ship guns.',
+    levels: [
+      { level: 1, unlocks: [{ type: 'activity', id: 'turret.aim', value: 0.15, text: 'Turret sway 15% steadier.' }, { type: 'ability', id: 'ship.called-shot', text: "Aim for an enemy ship's guns or engines." }] },
+      { level: 2, unlocks: [{ type: 'ability', id: 'ship.overcharge', text: 'Fire one big charged shot.' }, { type: 'activity', id: 'turret.aim', value: 0.15, text: 'Turret sway another 15% steadier.' }] },
+      { level: 3, unlocks: [{ type: 'ability', id: 'ship.flak', text: 'Throw up a flak screen that eats missiles.' }, { type: 'access', id: 'arena.ace', text: "Enter the arena's ace bracket." }] },
+    ],
+  },
+  {
+    id: 'brawler', name: 'Brawler', trees: ['guns'], max: 2, needs: { guns: 1 }, blurb: 'Fists, when the bullets run out.',
+    levels: [
+      { level: 1, unlocks: [{ type: 'ability', id: 'foot.haymaker', text: 'Throw a real haymaker on foot.' }, { type: 'access', id: 'option.brawl', text: 'Pick a fight in talks.' }] },
+      { level: 2, unlocks: [{ type: 'activity', id: 'brawl.combo', value: 1, text: 'One more hit in a punch combo.' }, { type: 'access', id: 'area.fight-pit', text: "Get into the cantina's fight pit." }] },
+    ],
+  },
+  {
+    id: 'hard-stare', name: 'Hard Stare', trees: ['guns'], max: 2, needs: { guns: 2 }, blurb: 'Leaning on people.',
+    levels: [
+      { level: 1, unlocks: [{ type: 'access', id: 'option.threaten', text: 'Threat options in talks.' }] },
+      { level: 2, unlocks: [{ type: 'ability', id: 'foot.stare-down', text: 'Make a gang back down without a fight, once a job.' }, { type: 'activity', id: 'stare.time', value: 3, text: 'Threats hold 3 seconds longer in stand-offs.' }] },
+    ],
+  },
+  {
+    id: 'mechanic', name: 'Mechanic', trees: ['wrench'], max: 3, blurb: 'Fixing ships and things that rattle.',
+    levels: [
+      { level: 1, unlocks: [{ type: 'ability', id: 'ship.patch', text: 'Patch the hull between fights.' }, { type: 'activity', id: 'repair.time', value: 0.2, text: 'Repairs take 20% less time.' }] },
+      { level: 2, unlocks: [{ type: 'access', id: 'area.engine-room', text: 'Get into locked engine rooms and service ducts.' }, { type: 'activity', id: 'repair.time', value: 0.2, text: 'Repairs take another 20% less time.' }] },
+      { level: 3, unlocks: [{ type: 'ability', id: 'ship.field-repair', text: "Repair while they're shooting at you." }] },
+    ],
+  },
+  {
+    id: 'hacker', name: 'Hacker', trees: ['wrench'], max: 3, blurb: 'Terminals, sealed doors and other ships.',
+    levels: [
+      { level: 1, unlocks: [{ type: 'access', id: 'terminal', text: 'Get into terminals.' }, { type: 'activity', id: 'hack.time', value: 5, text: '5 more seconds on the hack timer.' }] },
+      { level: 2, unlocks: [{ type: 'access', id: 'door.sealed', text: 'Open sealed doors: warehouses, vaults, the good stuff.' }, { type: 'ability', id: 'ship.hack-jam', text: 'Hack an enemy ship to jam its guns for a round.' }] },
+      { level: 3, unlocks: [{ type: 'ability', id: 'ship.hack-shields', text: "Drop an enemy ship's shields for a round." }, { type: 'activity', id: 'hack.time', value: 5, text: '5 more seconds on the hack timer.' }] },
+    ],
+  },
+  {
+    id: 'salvager', name: 'Salvager', trees: ['wrench'], max: 2, needs: { wrench: 1 }, blurb: 'Wrecks, scrap and what is inside them.',
+    levels: [
+      { level: 1, unlocks: [{ type: 'access', id: 'area.salvage', text: "Cut into salvage rooms on wrecks and in Garrity's yard." }, { type: 'activity', id: 'mine.sweet-spot', value: 0.2, text: 'Mining sweet spot 20% bigger.' }] },
+      { level: 2, unlocks: [{ type: 'ability', id: 'foot.cutter', text: 'Cut through weak walls with a torch.' }, { type: 'activity', id: 'salvage.yield', value: 1, text: 'One more part from every salvage.' }] },
+    ],
+  },
+  {
+    id: 'lockpick', name: 'Lockpick', trees: ['wrench'], max: 2, blurb: 'Old-fashioned locks.',
+    levels: [
+      { level: 1, unlocks: [{ type: 'access', id: 'door.locked', text: 'Open locked crates, lockers and simple doors.' }, { type: 'activity', id: 'lock.pins', value: 1, text: 'One pin fewer on every lock.' }] },
+      { level: 2, unlocks: [{ type: 'access', id: 'area.lockup', text: 'Get into lock-ups and evidence rooms.' }, { type: 'activity', id: 'lock.pins', value: 1, text: 'Another pin fewer.' }] },
+    ],
+  },
+  {
+    id: 'trader', name: 'Trader', trees: ['wrench'], max: 2, blurb: 'Deals, papers and the back shelf.',
+    levels: [
+      { level: 1, unlocks: [{ type: 'access', id: 'option.haggle', text: 'Haggle at shops.' }, { type: 'access', id: 'shop.back-shelf', text: "See Edna's back shelf." }] },
+      { level: 2, unlocks: [{ type: 'access', id: 'option.forge', text: 'Forge permits and manifests when the paperwork says no.' }, { type: 'activity', id: 'haggle.rounds', value: 1, text: 'One more round when haggling.' }] },
+    ],
+  },
+  {
+    id: 'strafe-run', name: 'Strafe Run', trees: ['helm', 'guns'], max: 2, needs: { helm: 1, guns: 1 }, blurb: 'Flying and shooting at once.',
+    levels: [
+      { level: 1, unlocks: [{ type: 'ability', id: 'ship.strafe', text: 'A strafing pass: fly and fire in one move.' }] },
+      { level: 2, unlocks: [{ type: 'ability', id: 'ship.wingover', text: 'Wingover: turn the fight around in one move.' }, { type: 'activity', id: 'turret.aim', value: 0.1, text: 'Turret sway 10% steadier.' }] },
+    ],
+  },
+  {
+    id: 'demolitions', name: 'Demolitions', trees: ['guns', 'wrench'], max: 2, needs: { guns: 1, wrench: 1 }, blurb: 'Things that go bang, on purpose.',
+    levels: [
+      { level: 1, unlocks: [{ type: 'ability', id: 'foot.charge', text: 'Set a charge to blow a door or a wall.' }, { type: 'access', id: 'door.rubble', text: 'Clear rubble-blocked doors.' }] },
+      { level: 2, unlocks: [{ type: 'activity', id: 'charge.radius', value: 0.25, text: 'Charges blow 25% wider.' }, { type: 'ability', id: 'ship.mine', text: 'Drop a space mine behind you in fights.' }] },
+    ],
+  },
 ]);
 
 // Death (P4, Donaven: "they lose half of their skill points and roll fresh
