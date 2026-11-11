@@ -10,7 +10,7 @@ import { grant, missing } from '../economy.js';
 import { STAT_OPTION_MIN } from '../data.js';
 import { storyBus } from './bus.js';
 import { createSay } from './say.js';
-import { STEPS, STEP_BY_ID, ALL_UNLOCKS, TALKS, PICKS, SKIP_IF } from './tutorial.js';
+import { STEPS, STEP_BY_ID, ALL_UNLOCKS, TALKS, PICKS, SKIP_IF, unlockName } from './tutorial.js';
 import { storyOf, freshStory, cleanStory, objectiveFor } from './progress.js';
 import { optionTag } from './stats.js';
 
@@ -66,7 +66,9 @@ export function createDirector({ store, bus = storyBus, say = null, audio = null
   }
 
   function announceUnlocks(before, after) {
-    for (const id of after) if (!before.includes(id)) bus.emit('story:unlock', { id });
+    const fresh = after.filter((id) => !before.includes(id));
+    for (const id of fresh) bus.emit('story:unlock', { id, name: unlockName(id) });
+    if (fresh.length) bus.emit('story:cue', { cue: 'unlock' });
   }
 
   function enterStep(step) {
@@ -75,6 +77,7 @@ export function createDirector({ store, bus = storyBus, say = null, audio = null
     const index = STEPS.indexOf(step);
     bus.emit('story:step', { id: step.id, leg: step.leg, index, total: STEPS.length });
     bus.emit('story:objective', objectiveFor(step));
+    if (step.objective) bus.emit('story:cue', { cue: 'objective' });
     if (step.enter?.length) playLines(step.enter);
     if (step.talk) enqueue(() => runTalk(step));
     if (!step.wait) enqueue(() => complete(step, {}));
@@ -104,7 +107,7 @@ export function createDirector({ store, bus = storyBus, say = null, audio = null
       if (after.length) playLines(after);
     }
     if (next) enqueue(() => enterStep(next));
-    else enqueue(() => bus.emit('story:done', { skipped: false }));
+    else enqueue(() => { bus.emit('story:cue', { cue: 'done' }); bus.emit('story:done', { skipped: false }); });
     return true;
   }
 

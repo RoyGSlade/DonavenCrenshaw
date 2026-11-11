@@ -1,0 +1,51 @@
+/* Story lane: the intro overlay, the speech strip, talk options and the objective chip.
+   sy-* classes only; the hangar lane may restyle any of it. Tokens match voyage.css. */
+.sy-layer{position:fixed;left:0;right:0;bottom:0;z-index:40;display:flex;flex-direction:column;align-items:center;gap:8px;padding:0 16px max(16px,env(safe-area-inset-bottom));pointer-events:none}
+.sy-layer>*{pointer-events:auto;width:min(640px,100%)}
+.sy-goal{position:fixed;top:max(12px,env(safe-area-inset-top));left:50%;transform:translateX(-50%);width:min(640px,calc(100% - 32px));display:flex;align-items:center;gap:10px;padding:8px 10px 8px 12px;border:1px solid #2a4152;border-left:3px solid var(--orange,#ffad72);border-radius:6px;background:#0b1622ee;box-shadow:0 8px 28px #0008}
+.sy-goal-mark{font:700 10px Consolas,monospace;letter-spacing:.14em;color:var(--orange,#ffad72)}
+.sy-goal-text{flex:1;margin:0;font:600 14px Inter,"Segoe UI",sans-serif;color:#eaf4f5}
+.sy-skip{min-height:32px;padding:6px 10px;font-size:11px;background:transparent;color:#8fa6b7}
+.sy-strip{--sy-accent:#81e6df;display:flex;gap:14px;align-items:flex-start;padding:14px 16px;border:1px solid #2a4152;border-top:2px solid var(--sy-accent);border-radius:8px;background:linear-gradient(180deg,#122233f5,#0b1622f5);box-shadow:0 12px 40px #000a;cursor:pointer;animation:sy-up .22s ease-out}
+.sy-strip:focus-visible{outline:3px solid var(--orange,#ffad72);outline-offset:3px}
+.sy-face{flex:0 0 64px;height:64px;border-radius:50%;overflow:hidden;border:2px solid var(--sy-accent);background:#0a1624;display:grid;place-items:center}
+.sy-face img{width:100%;height:100%;object-fit:cover}
+.sy-initials{font:700 20px Consolas,monospace;color:var(--sy-accent)}
+.sy-body{min-width:0;flex:1}
+.sy-who{margin:0 0 4px;font:700 11px Consolas,monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--sy-accent)}
+.sy-text{margin:0;font:500 17px/1.4 Inter,"Segoe UI",sans-serif;color:#eaf4f5}
+.sy-sound .sy-text{font-style:italic;letter-spacing:.04em}
+.sy-tap{margin:6px 0 0;font:10px Consolas,monospace;letter-spacing:.12em;color:#5d7486;text-align:right}
+.sy-choices{display:flex;flex-direction:column;gap:6px}
+.sy-choice{text-align:left;font:500 15px/1.35 Inter,"Segoe UI",sans-serif;letter-spacing:0;padding:12px 14px;background:#101c2bf2}
+.sy-choice[data-stat]:not(:disabled){border-color:#4f6f63}
+.sy-choice:disabled{opacity:1;color:#6f8597;background:#0c1520f7;border-style:dashed}
+.sy-ask{margin:0 0 2px;padding:12px 14px;border:1px solid #2a4152;border-top:2px solid var(--sy-accent,#81e6df);border-radius:8px;background:#122233f7;font:500 16px/1.4 Inter,"Segoe UI",sans-serif;color:#eaf4f5}
+.sy-ask b{font:700 11px Consolas,monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--sy-accent,#81e6df)}
+.sy-why{display:block;margin-top:2px;font:11px Consolas,monospace;color:var(--orange,#ffad72)}
+.sy-goal.sy-fresh{animation:sy-pulse 1.1s ease-out}
+.sy-toasts{display:flex;flex-direction:column;align-items:center;gap:6px}
+.sy-toast{margin:0;width:auto!important;padding:7px 14px;border:1px solid #4f6f63;border-radius:20px;background:#0b1622f2;color:#eaf4f5;font:600 13px Inter,"Segoe UI",sans-serif;box-shadow:0 6px 20px #0008;animation:sy-pop .35s cubic-bezier(.2,1.6,.4,1);transition:opacity .45s,transform .45s}
+.sy-toast b{font:700 10px Consolas,monospace;letter-spacing:.16em;color:#9fe870;margin-right:4px}
+.sy-toast.sy-gone{opacity:0;transform:translateY(-8px)}
+@keyframes sy-pulse{0%{box-shadow:0 0 0 0 #ffad72aa}60%{box-shadow:0 0 0 10px #ffad7200}100%{box-shadow:0 8px 28px #0008}}
+@keyframes sy-pop{from{opacity:0;transform:scale(.7)}to{opacity:1;transform:none}}
+@keyframes sy-up{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+.sy-intro{position:fixed;inset:0;z-index:60;background:#070d17;display:grid;place-items:center;overflow:hidden;transition:opacity .45s}
+.sy-intro.sy-out{opacity:0;pointer-events:none}
+.sy-intro-canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.sy-intro-title{position:relative;text-align:center;padding:16px;max-width:520px}
+.sy-intro-mark{margin:0;font:800 clamp(40px,11vw,88px)/1 Inter,"Segoe UI",sans-serif;letter-spacing:.18em;color:#eaf4f5;text-shadow:0 0 30px #81e6df66}
+.sy-intro-sub{margin:14px 0 26px;color:#b5c8d5;font:500 16px/1.5 Inter,"Segoe UI",sans-serif}
+.sy-begin{min-width:180px;min-height:48px;font-size:14px;letter-spacing:.2em}
+.sy-intro-skipall{display:block;margin:14px auto 0;background:transparent;border:0;color:#8fa6b7;text-decoration:underline;text-underline-offset:4px;font-weight:500;letter-spacing:0}
+.sy-intro-words{position:absolute;left:16px;right:16px;bottom:max(64px,12vh);margin:0 auto;max-width:720px;text-align:center;cursor:pointer}
+.sy-intro-words.sy-in{animation:sy-fade .5s ease-out}
+.sy-intro-who{margin:0 0 8px;font:700 11px Consolas,monospace;letter-spacing:.2em}
+.sy-intro-text{margin:0;font:500 clamp(19px,4.6vw,28px)/1.4 Inter,"Segoe UI",sans-serif;color:#eaf4f5;text-shadow:0 2px 16px #000}
+.sy-intro-tap{margin:14px 0 0;font:10px Consolas,monospace;letter-spacing:.14em;color:#5d7486}
+.sy-intro-skip{position:absolute;top:max(14px,env(safe-area-inset-top));right:16px;min-height:36px;background:#0b1622cc}
+@keyframes sy-fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.sy-strip,.sy-intro-words.sy-in,.sy-toast,.sy-goal.sy-fresh{animation:none}.sy-intro,.sy-toast{transition:none}}
+@media (max-width:480px){.sy-face{flex-basis:48px;height:48px}.sy-text{font-size:16px}.sy-goal-text{font-size:13px}}

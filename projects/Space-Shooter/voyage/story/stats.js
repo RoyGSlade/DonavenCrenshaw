@@ -8,6 +8,7 @@
 // Added in round 2 (data.js): a stat of 5+ opens that stat's dialogue options,
 // a 6 adds the stat's boon.
 import { STATS, STAT_BASELINE, STAT_DIE, STAT_OPTION_MIN, STAT_BOON_AT } from '../data.js';
+import { STAT_TEXT_DATA } from './data/stat-text.js';
 
 const STAT = new Map(STATS.map((s) => [s.id, s]));
 const pct = (v) => `${Math.round(Math.abs(v) * 100)}%`;
@@ -76,14 +77,8 @@ export function passiveWords(statId, value) {
 const join = (parts) => (parts.length < 2 ? parts.join('') : `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}`);
 const cap = (t) => t.charAt(0).toUpperCase() + t.slice(1);
 
-// One line each: what the stat is for and what rolls it. Hand-written; the
-// numbers come after, from data.
-export const STAT_LINES = Object.freeze({
-  cha: 'How well you talk, haggle and win people over. Talk and trade checks roll it.',
-  con: 'How much you and your ship can take, and how hard you can graft. Hauling, digging and brawls roll it.',
-  dex: 'Hands, reflexes and aim. Slipping past, dodging and ship fights roll it.',
-  wis: 'Noticing things. Scans, routes, puzzles and reading people roll it.',
-});
+// One line each: what the stat is for and what rolls it (data: ./data/stat-text.js).
+export const STAT_LINES = Object.freeze({ ...STAT_TEXT_DATA.lines });
 
 /** "What a 6 gets you", built from the data. */
 export function sixText(statId) {
@@ -119,9 +114,6 @@ export function statCard(statId, value) {
   };
 }
 
+const fillHow = (t) => t.replaceAll('{baseline}', String(STAT_BASELINE)).replaceAll('{optionMin}', String(STAT_OPTION_MIN));
 /** How rolls work, for the stats screen and the dice. */
-export const HOW_CHECKS_WORK = Object.freeze([
-  'A check rolls one die and adds the stat. Meet the target number and you pass. Skills add more.',
-  `Every point over ${STAT_BASELINE} helps a little all the time. Every point under ${STAT_BASELINE} costs a little.`,
-  `At ${STAT_OPTION_MIN} or more a stat opens its own options in talks. A 6 also gives a boon.`,
-]);
+export const HOW_CHECKS_WORK = Object.freeze(STAT_TEXT_DATA.how.map((t) => fillHow(t)));

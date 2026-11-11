@@ -51,7 +51,7 @@ export function createSay({ bus, voiceUrl = defaultVoiceUrl, audio = null, wait 
     const durationMs = voiceMs(lineId) || readMs(text);
     const cast = CAST[line.speaker];
     bus.emit('story:say', {
-      seq: n, id: line.id, speaker: line.speaker, name: cast?.name || line.speaker, text,
+      seq: n, id: line.id, speaker: line.speaker, name: cast?.name || line.name || line.speaker, text,
       emotion: line.emotion, sound: Boolean(cast?.sound), audio: url, durationMs, channel,
     });
     let skipped = false;

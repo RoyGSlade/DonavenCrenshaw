@@ -4,28 +4,27 @@
 // until then `portrait` is null and the caption shows initials. The quest
 // givers' portraits already live in core's art map (voyage/art.js).
 import { giverPortrait } from '../art.js';
+import { CAST_DATA } from './data/cast.js';
 
-export const CAST = Object.freeze({
-  chibby: { name: 'Chibby', role: 'Your mechanic', station: 'pad', color: '#ffc46b' },
-  ralph: { name: 'Ralph', role: "Chibby's dog (mostly)", station: 'kennel', color: '#9fe870', sound: true },
-  mel: { name: 'Mel', role: 'Outfitter', station: 'locker', color: '#ff8fa3' },
-  edna: { name: 'Edna', role: 'Tea, knitting, other things', station: 'backroom', color: '#b9a4ff' },
-  hask: { name: 'Hask', role: 'Stationmaster, Alpha Relay', sector: 'alpha', color: '#81e6df', giver: true },
-  vey: { name: 'Vey', role: 'Broker, Beacon Prime', sector: 'beacon', color: '#f4d35e', giver: true },
-  garrity: { name: 'Garrity', role: 'Salvage boss, Dustfall', sector: 'dustfall', color: '#ffad72', giver: true },
-  narrator: { name: 'Relay Night', role: 'Late-night lane radio', color: '#cfe8ff' },
-});
+export const CAST = Object.freeze(Object.fromEntries(Object.entries(CAST_DATA.cast).map(([id, c]) => [id, Object.freeze({ ...c })])));
 export const CAST_IDS = Object.freeze(Object.keys(CAST));
 export const HANGAR_CAST = Object.freeze(['chibby', 'ralph', 'mel', 'edna']);
 export const GIVER_CAST = Object.freeze(['garrity', 'hask', 'vey']);
 
-// Cast-lane portraits, filled in when they land (file names under voyage/art/cast/).
-const PORTRAITS = Object.freeze({});
+// Cast-lane portraits (data: CAST_DATA.portraits, file names under voyage/art/cast/)
+// and which expression each line emotion shows.
+const PORTRAITS = CAST_DATA.portraits || {};
+const EXPRESSION = new Map(Object.entries(CAST_DATA.expressions || {}).flatMap(([face, emotions]) => emotions.map((e) => [e, face])));
 
-/** A portrait URL for a cast member, or null (show initials). */
-export function castPortrait(id) {
-  if (CAST[id]?.giver) return giverPortrait(id);
-  return PORTRAITS[id] ? new URL(`../art/cast/${PORTRAITS[id]}`, import.meta.url).href : null;
+/** The expression a line's emotion shows: 'neutral', 'happy' or 'annoyed'. */
+export const expressionFor = (emotion) => EXPRESSION.get(emotion) || 'neutral';
+
+/** A portrait URL for a cast member (in the expression for `emotion`), or null (show initials). */
+export function castPortrait(id, emotion = 'neutral') {
+  const set = PORTRAITS[id];
+  const file = set && (set[expressionFor(emotion)] || set.neutral);
+  if (file) return new URL(`../art/cast/${file}`, import.meta.url).href;
+  return CAST[id]?.giver ? giverPortrait(id) : null;
 }
 
 export const castName = (id) => CAST[id]?.name || id;

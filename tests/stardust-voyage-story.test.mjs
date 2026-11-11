@@ -386,3 +386,37 @@ test('cast and tutorial ids follow the contract', () => {
   for (const s of STEPS) assert.match(s.id, /^[a-z0-9][a-z0-9-]{0,31}$/);
   assert.deepEqual(Object.keys(CAST).filter((id) => CAST[id].giver), ['hask', 'vey', 'garrity']);
 });
+
+test('story data files are strict JSON after "= " (the Stardust Studio edits them)', async () => {
+  const { readFile, readdir } = await import('node:fs/promises');
+  const dir = new URL('../projects/Space-Shooter/voyage/story/data/', import.meta.url);
+  const files = (await readdir(dir)).filter((f) => f.endsWith('.js'));
+  assert.ok(files.length >= 5);
+  for (const f of files) {
+    const text = await readFile(new URL(f, dir), 'utf8');
+    const m = text.match(/^export const ([A-Z_]+) = ([\s\S]*);\s*$/m);
+    assert.ok(m, `${f} has one export`);
+    const body = text.slice(text.indexOf(' = ', text.indexOf('export const')) + 3).replace(/;\s*$/, '');
+    const data = JSON.parse(body);
+    assert.equal(data.version, 1, `${f} carries a version`);
+  }
+});
+
+test('other lanes can add lines in the same shape', async () => {
+  const { addLines, lineById: byId, allLines } = await import('../projects/Space-Shooter/voyage/story/lines.js');
+  const before = allLines().length;
+  const out = addLines({ version: 1, lines: [
+    { id: 'clerk.paper.1', speaker: 'clerk', name: 'Clerk Ossa', emotion: 'dry', text: 'Form nine. In triplicate.', direction: 'Bored.' },
+    { id: 'chibby.ship.1', speaker: 'chibby', emotion: 'warm', text: 'Taken already.', direction: '' },
+    { id: 'clerk.paper.2', speaker: 'clerk', emotion: 'dry', text: 'Hello {name}.', direction: '' },
+  ] });
+  assert.deepEqual(out, { added: 1, skipped: ['chibby.ship.1', 'clerk.paper.2'] });
+  assert.equal(byId('clerk.paper.1').name, 'Clerk Ossa');
+  assert.equal(allLines().length, before + 1);
+  const bus = createBus();
+  const seen = [];
+  bus.on('story:say', (d) => seen.push(d));
+  const speak = createSay({ bus, voiceUrl: () => null, wait: () => Promise.resolve() });
+  await speak('clerk.paper.1');
+  assert.equal(seen[0].name, 'Clerk Ossa');
+});

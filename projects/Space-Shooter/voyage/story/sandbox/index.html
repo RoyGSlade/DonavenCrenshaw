@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#070d17">
+  <meta name="robots" content="noindex">
+  <title>Stardust story sandbox</title>
+  <meta name="description" content="A test bench for the new Stardust's intro and tutorial: it stands in for the hangar, on-foot and exploration events. Not open to players yet.">
+  <link rel="stylesheet" href="../../voyage.css">
+  <link rel="stylesheet" href="../story.css">
+  <link rel="stylesheet" href="./sandbox.css">
+</head>
+<body class="ss">
+  <section id="ss-closed" class="vy-closed" hidden>
+    <p class="vy-eyebrow">COMING LATER</p>
+    <h2>Not open yet</h2>
+    <p>The new Stardust is still being built. This page is a test bench for its story.</p>
+    <a class="vy-link" href="../../../">Back to Stardust</a>
+  </section>
+  <main id="ss-app" class="ss-app" hidden>
+    <header class="ss-head">
+      <p class="vy-eyebrow">STORY SANDBOX</p>
+      <h1>The tutorial, with buttons for the other lanes' events</h1>
+      <p class="ss-note">Its own save (not your captain). Each button sends the event the hangar, on-foot or exploration code will send.</p>
+    </header>
+    <section class="ss-card" aria-labelledby="ss-events-title">
+      <h2 id="ss-events-title">Send an event</h2>
+      <div id="ss-events" class="ss-buttons"></div>
+    </section>
+    <section class="ss-card" aria-labelledby="ss-tools-title">
+      <h2 id="ss-tools-title">Tools</h2>
+      <div class="ss-buttons">
+        <button type="button" id="ss-replay">Replay the tutorial</button>
+        <button type="button" id="ss-skip">Skip the tutorial</button>
+        <button type="button" id="ss-reset">Reset the sandbox save</button>
+      </div>
+    </section>
+    <section class="ss-card" aria-labelledby="ss-state-title">
+      <h2 id="ss-state-title">Progress</h2>
+      <p id="ss-step" class="ss-step"></p>
+      <ul id="ss-unlocks" class="ss-unlocks"></ul>
+      <ol id="ss-log" class="ss-log"></ol>
+    </section>
+  </main>
+  <script type="module" src="./sandbox.js"></script>
+</body>
+</html>
