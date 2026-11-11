@@ -18,6 +18,9 @@ import { repBand } from './economy.js';
  * reward toast. toast(text). dev: show a seed box (test tools only).
  * onCaptain(): open the Captain tab. onPlaying(active): a job started or ended.
  */
+// A job with a death ending says so on the board (S25: deaths only where marked).
+const deadly = (quest) => Object.values(quest.nodes).some((n) => n.type === 'end' && n.death);
+
 export function createJobs({ pane, store, say, toast, dev = false, onCaptain = () => {}, onPlaying = () => {} }) {
   let seedBox = null;
 
@@ -82,6 +85,7 @@ export function createJobs({ pane, store, say, toast, dev = false, onCaptain = (
             return el('li', { dataset: { quest: qid } },
               el('strong', { text: q.title }),
               el('span', { text: q.summary }),
+              deadly(q) ? el('small', { class: 'vy-why', text: 'Deadly: lose the fight on this job and your captain dies.' }) : null,
               done ? el('small', { text: `Last time: ${done.result === 'success' ? 'done' : 'failed'} (${done.outcome})${done.times > 1 ? `, ${done.times} runs` : ''}` }) : null,
               button(can.ok ? 'Take the job' : can.reasons[0], () => take(q), { disabled: !can.ok, class: can.ok ? 'primary' : null }),
             );

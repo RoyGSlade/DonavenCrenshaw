@@ -96,3 +96,4 @@ input[type=text]{font:15px Inter,"Segoe UI",sans-serif;color:var(--text);backgro
 .vy-jobs-pane .qs-locked{color:var(--orange)}
 .vy-jobs-pane .qs-part h3,.vy-jobs-pane .qs-end h3{margin:0 0 10px;font:700 18px Inter,"Segoe UI",sans-serif;letter-spacing:-.01em;color:var(--text)}
 .vy-jobs-pane .qs-event h4{margin:0 0 6px;font-size:16px}
+.vy-jobs .vy-why{color:var(--orange)}
