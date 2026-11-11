@@ -103,9 +103,9 @@ test('results come back clean, once, for the right ticket; the engine takes a li
   const target = run.part.state.targetMs;
   const won = act(QUESTS['black-lane'], run, save, { type: 'live', timeMs: target - 500, finished: true });
   assert.equal(won.error, undefined);
-  assert.equal(won.run.ended?.outcome, 'caught-him');
+  assert.equal(won.run.ended?.outcome, 'caught-her');
   const dnf = act(QUESTS['black-lane'], run, save, { type: 'live', timeMs: target - 500, finished: false });
-  assert.notEqual(dnf.run.ended?.outcome, 'caught-him', 'a race not finished is lost');
+  assert.notEqual(dnf.run.ended?.outcome, 'caught-her', 'a race not finished is lost');
   assert.match(dnf.run.log.join(' '), /race: lose/);
 });
 

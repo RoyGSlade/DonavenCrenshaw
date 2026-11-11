@@ -14,7 +14,7 @@ export const storyOf = (save) => storyBlock(save);
 /** Is the tutorial running for this save? (respec is free while it is) */
 export function tutorialOn(save) {
   const s = storyBlock(save);
-  return Boolean(save?.character) && !s.finished && !s.skipped;
+  return !s.finished && !s.skipped;
 }
 
 // What each stat is for, in plain words, built from story's stat cards (one source of truth).

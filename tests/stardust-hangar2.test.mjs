@@ -97,14 +97,15 @@ test('licence: pending rolls survive a reload and are cleaned; roll words explai
   const s = memory({ [PENDING_KEY]: JSON.stringify({ cha: 5, con: 9, dex: 'x', wis: 1 }) });
   assert.deepEqual(readPending(s), { cha: 5, wis: 1 });
   assert.deepEqual(readPending(memory({ [PENDING_KEY]: '{oops' })), {});
-  assert.match(rollWords('dex', 6), /Above average \(\+3/);
-  assert.match(rollWords('dex', 6), /Quick hands/);
-  assert.match(rollWords('dex', 6), /turret and sidearm/);
-  assert.match(rollWords('wis', 3), /Average/);
-  assert.match(rollWords('con', 1), /Below average \(-2/);
-  assert.match(rollWords('cha', 4), /Passes a normal check 4 times in 6/, 'a 4 + 1d6 meets 7 on a 3 or more');
-  assert.equal(chance(4, LICENCE_COPY.checkDc), 4 / 6);
+  // Contract v1.2: a stat is the bonus on a fresh 2d6 attempt; the words say the bonus and the odds.
+  assert.match(rollWords('dex', 6), /\+3 on every attempt/);
+  assert.match(rollWords('dex', 6), /Your odds: easy 97%/);
+  assert.match(rollWords('wis', 3), /\+0 on every attempt[\s\S]*Average/);
+  assert.match(rollWords('con', 1), /-2 on every attempt/);
+  assert.ok(Math.abs(chance(4, 7) - 0.72) < 0.01, '2d6 + 1 meets 7 about 72% of the time');
+  assert.ok(chance(1, 30) > 0, 'a double six always works');
   for (const s2 of STATS) assert.ok(STAT_TEXT[s2.id]?.short, `${s2.id} has plain words`);
+  assert.equal(STATS.length, 5, 'five stats, Strength included');
 });
 
 // --- Skill tree ------------------------------------------------------------------------
@@ -132,35 +133,38 @@ test('skill unlocks: skills that unlock things read as a list of doors, terminal
   assert.equal(unlockList({ unlocks: [{ kind: 'weird', name: 'Barrel roll' }] })[0].kind, 'move');
 });
 
-test('skill words: every effect tag a skill uses reads in plain words', () => {
-  for (const s of SKILLS) for (const tag of Object.keys(s.effects)) assert.ok(EFFECT_WORDS[tag], `${s.id}: ${tag} has words`);
+test('skill words: every skill says what each level unlocks, in plain words', () => {
+  for (const s of SKILLS) {
+    const list = unlockList(s);
+    assert.ok(list.length >= s.max, `${s.id}: something at every level`);
+    for (const u of list) assert.ok(u.text && u.rank >= 1 && u.rank <= s.max, `${s.id}: ${u.text}`);
+  }
   assert.equal(effectWords('ship.speed', 0.03), '+3% top speed');
-  assert.equal(effectWords('nav', 1), '+1 to navigation rolls');
-  const w = skillWords(SKILLS.find((s) => s.id === 'strafe-run'), 2);
+  const w = skillWords(SKILLS.find((s) => s.id === 'strafe-run'), 1);
   assert.match(w.needs, /1 point in Helm and 1 point in Guns/);
-  assert.match(w.now, /\+2 gun damage/);
   assert.deepEqual(w.trees, ['Helm', 'Guns']);
+  assert.ok(w.unlocks.some((u) => u.type === 'ability'));
 });
 
 test('respec: a rank comes back unless another skill stands on it; a full respec refunds everything', () => {
   let c = captain();
-  for (const id of ['smooth-burn', 'smooth-burn', 'star-charts']) c = learn(c, id);
-  assert.equal(c.skills['star-charts'], 1);
+  for (const id of ['pilot', 'pilot', 'smuggler']) c = learn(c, id);
+  assert.equal(c.skills.smuggler, 1);
   assert.equal(unspentPoints(c), 7);
-  const blocked = canUnlearn(c, 'smooth-burn');
-  assert.equal(blocked.ok, false, 'Star Charts needs 2 Helm points');
-  assert.match(blocked.reason, /Star Charts needs these points/);
-  assert.equal(unlearn(c, 'smooth-burn'), c, 'unchanged when blocked');
-  c = unlearn(c, 'star-charts');
-  assert.equal(c.skills['star-charts'], undefined);
+  const blocked = canUnlearn(c, 'pilot');
+  assert.equal(blocked.ok, false, 'Running Dark needs 2 Helm points');
+  assert.match(blocked.reason, /Running Dark needs these points/);
+  assert.equal(unlearn(c, 'pilot'), c, 'unchanged when blocked');
+  c = unlearn(c, 'smuggler');
+  assert.equal(c.skills.smuggler, undefined);
   assert.equal(unspentPoints(c), 8, 'a full refund');
-  c = unlearn(c, 'smooth-burn');
-  assert.equal(c.skills['smooth-burn'], 1);
-  assert.equal(canUnlearn(c, 'tight-turns').ok, false, 'nothing to take back');
-  const all = respecAll(learn(learn(c, 'tight-turns'), 'steady-aim'));
+  c = unlearn(c, 'pilot');
+  assert.equal(c.skills.pilot, 1);
+  assert.equal(canUnlearn(c, 'gunner').ok, false, 'nothing to take back');
+  const all = respecAll(learn(learn(c, 'gunner'), 'mechanic'));
   assert.deepEqual(all.skills, {});
   assert.equal(unspentPoints(all), 10);
-  assert.ok(canLearn(all, 'smooth-burn').ok);
+  assert.ok(canLearn(all, 'pilot').ok);
 });
 
 test('respec: free while the tutorial runs, a small fee per point after (data, not code)', () => {
@@ -168,7 +172,7 @@ test('respec: free while the tutorial runs, a small fee per point after (data, n
   assert.deepEqual(respecCost(3, { tutorial: false }), { money: 3 * RESPEC.feePerPoint });
   assert.deepEqual(respecCost(0, { tutorial: false }), { money: 0 });
   assert.deepEqual(respecCost(2, {}, { feePerPoint: 0, freeInTutorial: true }), { money: 0 });
-  const c = learn(learn(captain(), 'smooth-burn'), 'patch-kit');
+  const c = learn(learn(captain(), 'pilot'), 'mechanic');
   assert.deepEqual(respecQuote(c, { tutorial: false }), { points: 2, cost: { money: 2 * RESPEC.feePerPoint } });
 });
 
@@ -200,19 +204,21 @@ test('stations: exactly the contract\'s ids, each with words, a footprint inside
   assert.ok(f.scale * HANGAR.width <= 390 && f.ox >= 0);
 });
 
-test('stations: locked until the story unlocks them; old saves and saves without a story have everything open', () => {
+test('stations: locked until the story unlocks them; old captains have everything open', () => {
   const pad = STATIONS.find((s) => s.id === 'pad');
   const kennel = STATIONS.find((s) => s.id === 'kennel');
   const tutorial = { story: { v: 1, step: 'walk', unlocks: ['station:quarters'], finished: false, skipped: false } };
   assert.equal(stationState(tutorial, pad, isUnlocked).locked, true);
   assert.equal(stationState(tutorial, kennel, isUnlocked).locked, false, 'Ralph\'s kennel is always open');
   assert.equal(stationState({ story: { ...tutorial.story, unlocks: ['station:pad'] } }, pad, isUnlocked).locked, false);
-  assert.equal(stationState({ story: { ...tutorial.story, skipped: true } }, pad, isUnlocked).locked, false);
-  assert.equal(stationState({}, pad, isUnlocked).locked, false, 'no story block: open');
+  assert.equal(stationState({ story: { ...tutorial.story, finished: true, skipped: true } }, pad, isUnlocked).locked, false);
+  assert.equal(stationState({}, pad, isUnlocked).locked, true, 'a brand new save starts at the intro: shut');
+  assert.equal(stationState({ character: { name: 'Old Hand' } }, pad, isUnlocked).locked, false, 'a captain from before the tutorial: everything open');
   assert.equal(stationState(tutorial, pad, isUnlocked, { station: 'pad' }).objective, true);
   assert.equal(tutorialOn(tutorial), true);
   assert.equal(tutorialOn({ story: { finished: true } }), false);
-  assert.equal(tutorialOn({}), false);
+  assert.equal(tutorialOn({}), true, 'a brand new save is in the tutorial');
+  assert.equal(tutorialOn({ character: { name: 'Old Hand' } }), false, 'an old captain is not');
 });
 
 // --- Bus, API and mounts ---------------------------------------------------------------

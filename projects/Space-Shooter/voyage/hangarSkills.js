@@ -94,6 +94,15 @@ function guessKind(text) {
 }
 /** [{ kind, text, rank }] for a skill's unlocks (empty when it has none). */
 export function unlockList(skill) {
+  // Contract v1.2 section 9: each level unlocks access, an activity upgrade or an ability.
+  if (Array.isArray(skill?.levels)) {
+    return skill.levels.flatMap((lv) => (lv.unlocks || []).map((u) => ({
+      kind: u.type === 'ability' ? 'move' : u.type === 'activity' ? 'tool' : guessKind(`${u.id || ''} ${u.text || ''}`),
+      type: u.type,
+      text: String(u.text || u.id || ''),
+      rank: Number.isInteger(lv.level) && lv.level > 0 ? lv.level : 1,
+    }))).filter((u) => u.text);
+  }
   const raw = skill?.unlocks;
   if (!raw) return [];
   const list = Array.isArray(raw) ? raw : Object.entries(raw).map(([id, v]) => (v && typeof v === 'object' ? { id, ...v } : { id, name: v }));
