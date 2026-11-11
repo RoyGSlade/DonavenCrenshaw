@@ -16,6 +16,9 @@ export const SPRITE_FILES = Object.freeze({
   'cargo-crate': 'cargo-crate.png', 'fuel-barrel': 'fuel-barrel.png', 'supply-pod': 'supply-pod.png',
   'drill-rig': 'drill-rig.png', 'airlock-hub': 'airlock-hub.png', 'reactor-block': 'reactor-block.png',
   'antenna-mast': 'antenna-mast.png', 'boulder': 'boulder.png', 'solar-panel': 'solar-panel.png',
+  'moon-boulder-s': 'moon-boulder-s.png', 'moon-boulder-m': 'moon-boulder-m.png', 'moon-boulder-l': 'moon-boulder-l.png',
+  'moon-rock-cluster-a': 'moon-rock-cluster-a.png', 'moon-rock-cluster-b': 'moon-rock-cluster-b.png',
+  'moon-rubble-a': 'moon-rubble-a.png', 'moon-rubble-b': 'moon-rubble-b.png', 'moon-crater-rim': 'moon-crater-rim.png',
   'asteroid': 'asteroid.png', 'relay-station': 'relay-station.png', 'relay-gate': 'relay-gate.png', 'warden': 'warden.png',
 });
 

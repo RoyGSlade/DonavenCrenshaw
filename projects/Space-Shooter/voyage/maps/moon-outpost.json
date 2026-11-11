@@ -33,7 +33,7 @@
     {"art":"cargo-crate","at":[9,9],"size":[1,1],"block":"low"},
     {"art":"cargo-crate","at":[10,9],"size":[1,1],"block":"low"},
     {"art":"supply-pod","at":[14,8],"size":[1.6,1.6],"block":true,"interact":{"kind":"hack","id":"outpost-cache","level":1,"label":"Sealed supply cache","reward":{"items":{"scrap":2,"circuit":1}},"rewardText":"The cache pops: two scrap and a circuit."}},
-    {"art":"boulder","at":[6,6],"size":[1.4,1.4],"block":true},
+    {"art":"moon-boulder-l","at":[6,6],"size":[1.4,1.4],"block":true},
     {"art":"antenna-mast","at":[17,10],"size":[1.2,1.2],"block":true},
     {"art":"solar-panel","at":[12,1],"size":[2,1.2],"block":true}
   ],

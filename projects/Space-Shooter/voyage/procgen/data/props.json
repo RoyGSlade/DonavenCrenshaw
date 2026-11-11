@@ -50,6 +50,14 @@
     "fuel-barrel": {"size":[1,1],"pack":"desert-planet","front":"none","wall":"any","clear":0,"block":"low","tags":["barrel","clutter"],"suits":["hangar-bay"]},
     "supply-pod": {"size":[2,2],"pack":"moon-base","front":"none","wall":"any","clear":0,"block":true,"tags":["cargo"],"suits":["hangar-bay"]},
     "drill-rig": {"size":[2,2],"pack":"moon-base","front":"none","wall":"any","clear":0,"block":true,"tags":["machine"],"suits":["hangar-bay"]},
-    "player-ship": {"size":[5,5],"pack":"ship-tiers","front":"up","wall":"none","clear":0,"block":true,"tags":["ship"],"suits":["hangar-bay"]}
+    "player-ship": {"size":[5,5],"pack":"ship-tiers","front":"up","wall":"none","clear":0,"block":true,"tags":["ship"],"suits":["hangar-bay"]},
+    "moon-boulder-s": {"size":[1,1],"pack":"moon-base","front":"none","wall":"any","clear":0,"block":true,"tags":["rock","nature"],"suits":[]},
+    "moon-boulder-m": {"size":[1,1],"pack":"moon-base","front":"none","wall":"any","clear":0,"block":true,"tags":["rock","nature"],"suits":[]},
+    "moon-boulder-l": {"size":[2,2],"pack":"moon-base","front":"none","wall":"any","clear":0,"block":true,"tags":["rock","nature"],"suits":[]},
+    "moon-rock-cluster-a": {"size":[2,2],"pack":"moon-base","front":"none","wall":"any","clear":0,"block":true,"tags":["rock","nature"],"suits":[]},
+    "moon-rock-cluster-b": {"size":[2,1],"pack":"moon-base","front":"none","wall":"any","clear":0,"block":true,"tags":["rock","nature"],"suits":[]},
+    "moon-rubble-a": {"size":[1,1],"pack":"moon-base","front":"none","wall":"any","clear":0,"block":false,"tags":["rock","nature"],"suits":[]},
+    "moon-rubble-b": {"size":[1,1],"pack":"moon-base","front":"none","wall":"any","clear":0,"block":"low","tags":["rock","nature"],"suits":[]},
+    "moon-crater-rim": {"size":[3,3],"pack":"moon-base","front":"none","wall":"any","clear":0,"block":true,"tags":["rock","nature"],"suits":[]}
   }
 }
