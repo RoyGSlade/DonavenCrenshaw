@@ -21,7 +21,10 @@ import { paintShip, shipThumb } from './ship-ui.js';
 import { familyName } from './ship-info.js';
 import { emailConfirmationToken, createEmailVerificationUi } from './email-verification.js';
 
+import { passwordResetToken, createPasswordResetUi } from './password-reset.js';
+
 let verificationToken = emailConfirmationToken(location, history);
+let resetToken = passwordResetToken(location, history);
 
 const tag = document.querySelector('script[data-hub]');
 const HUB = (tag?.dataset.hub || 'https://api.donavencrenshaw.com').replace(/\/+$/, '');
@@ -83,6 +86,14 @@ function runAccountPage(root, first) {
     let user = first.user;
     const paintEmailVerification = createEmailVerificationUi({ root, hub: HUB, token: verificationToken });
     verificationToken = null;
+    const resetUi = createPasswordResetUi({
+        root, hub: HUB, token: resetToken,
+        onDone: (message, kind = 'ok') => { selectTab('signin'); status($('[data-acct-form="signin"]'), message, kind); },
+    });
+    resetToken = null;
+    window.addEventListener('hashchange', () => {
+        if (location.hash.startsWith('#reset=')) resetUi.setToken(passwordResetToken(location, history));
+    });
     window.addEventListener('hashchange', async () => {
         if (!location.hash.startsWith('#verify=')) return;
         paintEmailVerification.setToken?.(emailConfirmationToken(location, history));
@@ -185,6 +196,7 @@ function runAccountPage(root, first) {
         }
         $('[data-acct-form="signin"]').hidden = name !== 'signin';
         $('[data-acct-form="signup"]').hidden = name !== 'signup';
+        $('[data-acct-forgot]').hidden = name !== 'signin';
     }
     for (const tab of $$('[data-acct-tab]')) {
         tab.addEventListener('click', () => selectTab(tab.dataset.acctTab));
