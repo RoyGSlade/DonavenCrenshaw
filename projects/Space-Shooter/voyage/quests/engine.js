@@ -9,6 +9,12 @@
 //   view(quest, run, save)                  -> what to show
 //   act(quest, run, save, action, { now })  -> { run, save, events, error }
 //
+// With a crew aboard (P11) the page passes { now, crew } (crew: the second
+// player's card, voyage/crew/card.js). Crew actions are { type: 'crew', job }:
+// 'turret', 'repair', 'scan', 'mark' (parts/crew.js), 'check' (take a dialogue
+// choice's check with the crew's stats) and 'puzzle' (play the cipher or riddle
+// turn). Without a crew none of it applies and solo play is unchanged (S57).
+//
 // Rewards, costs and requirements use core's formats (INTERFACES.md section 3).
 import { hashSeed, roller } from './rng.js';
 import { roll, fill } from './rolls.js';
@@ -20,6 +26,7 @@ import { createCipher, viewCipher, actCipher } from './parts/cipher.js';
 import { createRiddle, viewRiddle, actRiddle } from './parts/riddle.js';
 import { createRace, viewRace, actRace } from './parts/race.js';
 import { createTrip, viewTrip, actTrip, createEventStep, viewEventStep, actEventStep } from './parts/travel.js';
+import { actCrew } from './parts/crew.js';
 
 export const RUN_VERSION = 1;
 const LOG_LIMIT = 40;
@@ -103,10 +110,11 @@ function scope(quest, run, save) {
   };
 }
 
-function makeCtx(run, save, out) {
+function makeCtx(run, save, out, crew = null) {
   const ctx = {
     run,
     save,
+    crew,
     ship: shipFor(save),
     rng: roller(run),
     log: line => pushLog(run, line),
@@ -312,40 +320,76 @@ export function view(quest, run, save) {
   return base;
 }
 
-export function act(quest, runIn, saveIn, action, { now = 0 } = {}) {
+// The minigame turns a crew may play (S55): a cipher guess or a riddle answer.
+const CREW_PUZZLE = Object.freeze({ cipher: 'guess', riddle: 'answer' });
+
+// Pick dialogue choice `index`; its check (if any) rolls for `roller` (the
+// captain, or the crew taking it). Returns an error string or null.
+function choose(quest, run, ctx, node, index, roller, now) {
+  const raw = node.choices?.[index];
+  if (!raw) return 'No such option.';
+  const choice = { ...choiceFor(raw, run, ctx.save) };
+  if (choice.cost) choice.cost = resolveReward(choice.cost, run);
+  const reasons = reqReasons(choice.requires, run, ctx.save);
+  if (reasons.length) return reasons[0];
+  if (roller !== ctx.save.character && !choice.check) return 'The captain makes that call.';
+  if (choice.cost && !ctx.spend(choice.cost)) return missing(ctx.save, { money: choice.cost.money, items: choice.cost.items })[0] || 'Cannot afford that.';
+  run.steps++;
+  if (choice.reward) ctx.grant(resolveReward(choice.reward, run));
+  if (choice.set) Object.assign(run.local, choice.set);
+  let target = choice.to;
+  if (choice.check) {
+    const r = check(roller, choice.check, ctx.rng.next);
+    const who = roller === ctx.save.character ? '' : `${roller.name || 'Your crew'} takes it. `;
+    pushLog(run, `${who}${STAT_NAMES[choice.check.stat] || choice.check.stat} check: ${r.roll} + ${r.bonus} = ${r.total} vs ${r.dc}, ${r.pass ? 'pass' : 'fail'}.`);
+    run.lastCheck = r;
+    target = r.pass ? choice.check.pass : choice.check.fail;
+  }
+  enter(quest, target, ctx, now);
+  return null;
+}
+
+function actAsCrew(quest, run, ctx, node, action, now) {
+  if (!ctx.crew) return 'No crew aboard.';
+  if (action.job === 'check') {
+    if (run.part || node.type !== 'dialogue') return 'No check to take right now.';
+    return choose(quest, run, ctx, node, action.index, ctx.crew, now);
+  }
+  if (action.job === 'puzzle') {
+    const kind = run.part?.kind;
+    if (!CREW_PUZZLE[kind] || action.action?.type !== CREW_PUZZLE[kind]) return 'No puzzle to work on right now.';
+    const result = PARTS[kind].act(run.part.state, action.action, ctx);
+    if (result.error) return result.error;
+  } else {
+    const error = actCrew(action, ctx);
+    if (error) return error;
+  }
+  run.steps++;
+  if (run.part?.state.done) finishPart(quest, node, ctx, now);
+  return null;
+}
+
+export function act(quest, runIn, saveIn, action, { now = 0, crew = null } = {}) {
   if (runIn.ended) return { run: runIn, save: saveIn, events: [], error: 'This quest is over.' };
   if (runIn.steps >= MAX_STEPS) return { run: runIn, save: saveIn, events: [], error: 'Too many steps.' };
   const run = structuredClone(runIn);
   const out = { events: [] };
-  const ctx = makeCtx(run, saveIn, out);
+  const ctx = makeCtx(run, saveIn, out, crew);
   const node = quest.nodes[run.node];
   const fail = error => ({ run: runIn, save: saveIn, events: [], error });
 
-  if (run.part) {
+  if (action?.type === 'crew') {
+    const error = actAsCrew(quest, run, ctx, node, action, now);
+    if (error) return fail(error);
+  } else if (run.part) {
     const result = PARTS[run.part.kind].act(run.part.state, action, ctx);
     if (result.error) return fail(result.error);
     run.steps++;
     if (run.part.state.done) finishPart(quest, node, ctx, now);
   } else if (node.type === 'dialogue') {
     if (action?.type !== 'choose') return fail('Choose an option.');
-    const raw = node.choices?.[action.index];
-    if (!raw) return fail('No such option.');
-    const choice = { ...choiceFor(raw, run, ctx.save) };
-    if (choice.cost) choice.cost = resolveReward(choice.cost, run);
-    const reasons = reqReasons(choice.requires, run, ctx.save);
-    if (reasons.length) return fail(reasons[0]);
-    if (choice.cost && !ctx.spend(choice.cost)) return fail(missing(ctx.save, { money: choice.cost.money, items: choice.cost.items })[0] || 'Cannot afford that.');
-    run.steps++;
-    if (choice.reward) ctx.grant(resolveReward(choice.reward, run));
-    if (choice.set) Object.assign(run.local, choice.set);
-    let target = choice.to;
-    if (choice.check) {
-      const r = check(ctx.save.character, choice.check, ctx.rng.next);
-      pushLog(run, `${STAT_NAMES[choice.check.stat] || choice.check.stat} check: ${r.roll} + ${r.bonus} = ${r.total} vs ${r.dc}, ${r.pass ? 'pass' : 'fail'}.`);
-      run.lastCheck = r;
-      target = r.pass ? choice.check.pass : choice.check.fail;
-    }
-    enter(quest, target, ctx, now);
+    const error = choose(quest, run, ctx, node, action.index, ctx.save.character, now);
+    if (error) return fail(error);
   } else return fail('Nothing to do here.');
 
   return { run, save: storeRun(ctx.save, run), events: out.events };

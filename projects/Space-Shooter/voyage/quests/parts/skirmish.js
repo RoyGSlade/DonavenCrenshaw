@@ -21,6 +21,16 @@ export const ABILITIES = Object.freeze({
   cloak: 'Its first moment in the fight it is cloaked: your first shot misses.',
 });
 
+// Ship systems an enemy hit can knock out, only while a crew is aboard to fix
+// them (P11, S53). Solo fights never break a system, so they play as before.
+export const SYSTEMS = Object.freeze({
+  guns: { name: 'Guns', effect: 'half damage' },
+  engine: { name: 'Engine', effect: 'evading and breaking off are harder' },
+});
+export const SYSTEM_BREAK_CHANCE = 0.35;
+const ENGINE_PENALTY = 2;
+const broken = (state, id) => Boolean(state.systems?.[id]);
+
 const MOVES = Object.freeze({
   fire: 'Fire',
   evade: 'Evade',
@@ -63,12 +73,14 @@ export function viewSkirmish(state) {
     log: state.log.slice(-6),
     live: { kind: 'dogfight', activity: 'ship-fight', setup: liveFightSetup(state.enemy, { hull: state.ship.hp, damage: state.ship.damage }, state.liveSeed) },
     moves: Object.entries(MOVES).map(([id, label]) => ({ id, label: id === 'hail' && !parley ? `${label} (they may not answer)` : label })),
+    systems: Object.fromEntries(Object.keys(SYSTEMS).map(id => [id, broken(state, id)])),
+    crewUsed: { turret: state.crew?.turret === state.round, repair: state.crew?.repair === state.round },
     done: state.done,
     outcome: state.outcome,
   };
 }
 
-function damageEnemy(state, amount) {
+export function damageEnemy(state, amount) {
   const e = state.enemy;
   const soaked = Math.min(e.shield, amount);
   e.shield -= soaked;
@@ -103,15 +115,17 @@ export function actSkirmish(state, action, ctx) {
     } else {
       const r = check(c, { stat: 'dex', tag: 'fight', dc: 6 + evasion(state) }, ctx.rng.next);
       if (r.pass) {
-        const dmg = state.ship.damage + ctx.rng.d6();
+        let dmg = state.ship.damage + ctx.rng.d6();
+        if (broken(state, 'guns')) dmg = Math.ceil(dmg / 2);
         const soaked = damageEnemy(state, dmg);
-        say(`Hit for ${dmg}${soaked ? ` (${soaked} into the shield)` : ''}. Roll ${r.roll}+${r.bonus} vs ${r.dc}.`);
+        say(`Hit for ${dmg}${broken(state, 'guns') ? ' (guns damaged)' : ''}${soaked ? ` (${soaked} into the shield)` : ''}. Roll ${r.roll}+${r.bonus} vs ${r.dc}.`);
       } else say(`Miss. Roll ${r.roll}+${r.bonus} vs ${r.dc}.`);
     }
   } else if (move === 'evade') {
-    const r = check(c, { stat: 'dex', tag: 'dodge', dc: 6 }, ctx.rng.next);
+    const dc = 6 + (broken(state, 'engine') ? ENGINE_PENALTY : 0);
+    const r = check(c, { stat: 'dex', tag: 'dodge', dc }, ctx.rng.next);
     evading = r.pass;
-    say(r.pass ? `You slip out of the line of fire. Roll ${r.roll}+${r.bonus} vs 6.` : `You jink, too slow. Roll ${r.roll}+${r.bonus} vs 6.`);
+    say(r.pass ? `You slip out of the line of fire. Roll ${r.roll}+${r.bonus} vs ${dc}.` : `You jink, too slow. Roll ${r.roll}+${r.bonus} vs ${dc}.`);
     if ((state.enemy.abilities || []).includes('mines')) {
       state.ship.hp = Math.max(0, state.ship.hp - 4);
       say('A mine clips you for 4.');
@@ -128,7 +142,7 @@ export function actSkirmish(state, action, ctx) {
       say(`They laugh you off the channel. Roll ${r.roll}+${r.bonus} vs ${r.dc}.`);
     }
   } else if (move === 'flee') {
-    const dc = 7 + (state.enemy.movement === 'charge' ? 1 : 0);
+    const dc = 7 + (state.enemy.movement === 'charge' ? 1 : 0) + (broken(state, 'engine') ? ENGINE_PENALTY : 0);
     const r = check(c, { stat: 'dex', tag: 'nav', dc }, ctx.rng.next);
     if (r.pass) {
       say(`You burn clear. Roll ${r.roll}+${r.bonus} vs ${dc}.`);
@@ -163,6 +177,7 @@ export function actSkirmish(state, action, ctx) {
     if (volley) dmg *= 2;
     state.ship.hp = Math.max(0, state.ship.hp - dmg);
     say(volley ? `Missile volley: ${dmg} damage.` : `They hit you for ${dmg}.`);
+    if (ctx.crew && state.ship.hp > 0) breakSystem(state, ctx, say);
   } else say('Their shots go wide.');
 
   if (state.ship.hp <= 0) {
@@ -172,6 +187,16 @@ export function actSkirmish(state, action, ctx) {
   }
   state.round++;
   return { state };
+}
+
+// With a crew aboard, a hit may knock a system out until the crew repairs it.
+function breakSystem(state, ctx, say) {
+  if (!ctx.rng.chance(SYSTEM_BREAK_CHANCE)) return;
+  const working = Object.keys(SYSTEMS).filter(id => !broken(state, id));
+  if (!working.length) return;
+  const id = ctx.rng.pick(working);
+  state.systems = { ...(state.systems || {}), [id]: true };
+  say(`${SYSTEMS[id].name} knocked out: ${SYSTEMS[id].effect} until your crew repairs them.`);
 }
 
 // Hull carried back to the run when the fight ends (a lost fight leaves 1).

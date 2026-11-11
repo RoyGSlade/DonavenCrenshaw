@@ -39,6 +39,15 @@ export function routes(from, to) {
   return out;
 }
 
+// A crew's scan of the next jump (P11, S56) halves its chance of trouble.
+export const SCAN_FACTOR = 0.5;
+
+// Chance of at least one event along a lane, for the crew's navigation screen.
+export function routeOdds(route, params, ctx) {
+  const clear = route.path.slice(1).reduce((p, id) => p * (1 - eventChance(id, params, ctx)), 1);
+  return Math.round((1 - clear) * 100);
+}
+
 // ---- Event cards -------------------------------------------------------
 
 export function createCard(cardId) {
@@ -95,14 +104,7 @@ export function actCard(state, action, ctx) {
   if (state.phase === 'fight') {
     const result = actSkirmish(state.fight, action, ctx);
     if (result.error) return { state, error: result.error };
-    if (state.fight.done) {
-      // Losing a fight on the way leaves you limping, not crippled for the job itself.
-      ctx.run.hull = state.fight.outcome === 'lose' ? Math.max(1, Math.round(ctx.run.hullMax * 0.3)) : hullAfter(state.fight);
-      const after = state.fightOutcomes[state.fight.outcome] || state.fightOutcomes.win || {};
-      state.text = after.text || '';
-      if (after.reward) ctx.grant(after.reward);
-      state.phase = 'after';
-    }
+    if (state.fight.done) settleCardFight(state, ctx);
     return { state };
   }
   if (state.phase === 'after') {
@@ -111,6 +113,17 @@ export function actCard(state, action, ctx) {
     state.outcome = 'resolved';
   }
   return { state };
+}
+
+// A card's fight just ended (the pilot's move, or the crew's turret).
+export function settleCardFight(state, ctx) {
+  if (state.phase !== 'fight' || !state.fight?.done) return;
+  // Losing a fight on the way leaves you limping, not crippled for the job itself.
+  ctx.run.hull = state.fight.outcome === 'lose' ? Math.max(1, Math.round(ctx.run.hullMax * 0.3)) : hullAfter(state.fight);
+  const after = state.fightOutcomes[state.fight.outcome] || state.fightOutcomes.win || {};
+  state.text = after.text || '';
+  if (after.reward) ctx.grant(after.reward);
+  state.phase = 'after';
 }
 
 // ---- Trips -------------------------------------------------------------
@@ -142,6 +155,7 @@ export function viewTrip(state, ctx) {
     card: state.card ? viewCard(state.card, ctx) : null,
     log: [...state.log],
     done: state.done,
+    crewMark: state.crewMark || null,
   };
 }
 
@@ -152,7 +166,8 @@ function arrive(state, ctx) {
   const sector = SECTORS[here];
   state.log.push(`Jumped to ${sector.name}.`);
   const roll = ctx.rng.next();
-  if (roll < eventChance(here, state, ctx)) {
+  const scanned = state.scanned === state.leg ? SCAN_FACTOR : 1;
+  if (roll < eventChance(here, state, ctx) * scanned) {
     const deck = sector.deck.filter(id => !state.seen.includes(id));
     const cardId = ctx.rng.pick(deck.length ? deck : sector.deck);
     state.seen.push(cardId);
