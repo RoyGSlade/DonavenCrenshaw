@@ -72,7 +72,7 @@ export function createJobs({ pane, store, say, toast, dev = false, onCaptain = (
           el('div', {},
             el('h3', { text: giver.name }),
             el('p', { class: 'vy-role', text: `${giver.role} · ${SECTORS[giver.sector].name}` }),
-            el('p', { class: 'vy-rep', dataset: { rep: id }, text: `Rep ${rep} / ${REP_MAX} · ${repBand(rep)}` }),
+            el('p', { class: 'vy-rep', dataset: { giverRep: id }, text: `Rep ${rep} / ${REP_MAX} · ${repBand(rep)}` }),
             el('p', { class: 'vy-greet', text: `"${giver.greeting}"` }),
           ),
           el('ul', { class: 'vy-jobs' }, ...giver.quests.map((qid) => {

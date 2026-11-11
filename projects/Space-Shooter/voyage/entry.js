@@ -26,7 +26,7 @@ function addPreviewCard() {
   title.id = 'newgame-card-title';
   title.textContent = 'The new Stardust';
   const text = document.createElement('p');
-  text.textContent = 'Your captain, ship upgrades, credits and rep. Saved on this device and, signed in, on your account.';
+  text.textContent = 'Jobs from three quest givers, your own captain, ship upgrades, credits and rep. Saved on this device and, signed in, on your account.';
   copy.append(eyebrow, title, text);
   const link = document.createElement('a');
   link.className = 'mode-link';
