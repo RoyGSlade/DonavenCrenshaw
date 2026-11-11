@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // A JSON-in, JSON-out door to the procgen API for tools that are not
 // JavaScript (the Stardust Studio in Focus is Python). One request on stdin:
+//   { "op": "dress", "map": {...}, "options": { "seed": 7, "locked": [0] } }   (STUDIO-SCHEMA section 6)
 //   { "op": "dressRoom", "input": { "type": "cantina", "seed": 7 } }
 //   { "op": "rerollRoom", "map": {...}, "seed": 8 }            (seed optional)
 //   { "op": "lockAndReroll", "map": {...}, "keep": [0, 3], "seed": 9 }
@@ -12,8 +13,10 @@
 // Reply on stdout: { "ok": true, "result": ... } or { "ok": false, "error": "..." }.
 // Pure: reads nothing but stdin, writes nothing but stdout.
 import * as api from './index.js';
+import { dressRoom as dressMap } from './dress.js';
 
 const OPS = {
+  dress: (q) => dressMap(q.map, q.options || {}),
   dressRoom: (q) => api.dressRoom(q.input),
   rerollRoom: (q) => api.rerollRoom(q.map, q.seed),
   lockAndReroll: (q) => api.lockAndReroll(q.map, q.keep || [], q.seed),
