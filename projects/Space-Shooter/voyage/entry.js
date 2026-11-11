@@ -1,28 +1,29 @@
 // Loaded by today's hangar page (../index.html). It does one of two things and
 // nothing else, so today's game runs exactly as before:
-//   - switch on (runtimeConfig.voyage): a bare visit goes to the new hangar;
-//   - switch off, tab opened with ?voyage=on: a "Preview the new Stardust" card
-//     joins the "Try another flight" cards.
+//   - switch on (runtimeConfig.newGame): a bare visit goes to the new hangar;
+//   - switch off, previewing (?newgame=1, voyage/flag.js): a "Preview the new
+//     Stardust" card joins the "Try another flight" cards.
 import { runtimeConfig } from '../runtime-config.js';
-import { voyageFlag, cutOverTarget } from './flag.js';
+import { newGameFlag, cutOverTarget } from './flag.js';
 
 const target = cutOverTarget({ config: runtimeConfig, search: location.search });
 if (target) location.replace(target);
-else if (voyageFlag({ config: runtimeConfig, search: location.search }).enabled) addPreviewCard();
+else if (newGameFlag({ config: runtimeConfig, search: location.search }).enabled) addPreviewCard();
 
 function addPreviewCard() {
   const grid = document.querySelector('.hangar-mode-grid');
-  if (!grid || document.getElementById('voyage-card')) return;
+  if (!grid || document.getElementById('newgame-card')) return;
   const card = document.createElement('section');
-  card.id = 'voyage-card';
+  card.id = 'newgame-card';
+  card.dataset.newgame = '';
   card.className = 'dogfight-card';
-  card.setAttribute('aria-labelledby', 'voyage-card-title');
+  card.setAttribute('aria-labelledby', 'newgame-card-title');
   const copy = document.createElement('div');
   const eyebrow = document.createElement('p');
   eyebrow.className = 'eyebrow';
   eyebrow.textContent = 'PREVIEW / NOT PUBLIC YET';
   const title = document.createElement('h2');
-  title.id = 'voyage-card-title';
+  title.id = 'newgame-card-title';
   title.textContent = 'The new Stardust';
   const text = document.createElement('p');
   text.textContent = 'Your captain, ship upgrades, credits and rep. Saved on this device and, signed in, on your account.';

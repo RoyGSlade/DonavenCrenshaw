@@ -8,6 +8,7 @@ import {
 import { unspentPoints, treePoints, canLearn, spentPoints } from './character.js';
 import { money, giverName, itemName, repBand, discount } from './economy.js';
 import { voyageShipStats, canUpgrade, visualTier } from './upgrades.js';
+import { RENDER_SCALES, readRenderScale, writeRenderScale } from './renderScale.js';
 
 // --- Tiny DOM helpers ----------------------------------------------------------------
 
@@ -86,7 +87,20 @@ export function createHangar({ panes, store, ship, crew, toast, dev = false, onT
         el('li', {}, [el('span', { text: `${ACTIVITIES.arena.name}: today's classes` }), el('a', { class: 'vy-link', href: '../dogfight/', text: 'Open ↗' })]),
       ]),
       el('p', { class: 'vy-note' }, ['Paint and parts are changed in the ', el('a', { class: 'vy-link', href: '../?activity=classic', text: 'ship garage' }), '. Your look carries over here.']),
+      renderSetting(),
     );
+  }
+
+  // Render quality: canvas pixels per screen pixel, capped at 2 (voyage/renderScale.js).
+  function renderSetting() {
+    const now = readRenderScale();
+    return el('div', {}, [
+      el('h3', { text: 'DISPLAY' }),
+      el('div', { class: 'vy-choices', role: 'group', 'aria-label': 'Render quality' }, RENDER_SCALES.map((r) => el('button', {
+        type: 'button', 'aria-pressed': String(now === r.id), 'data-render': r.id, title: r.blurb, text: r.name,
+        on: { click: () => { writeRenderScale(r.id); renderShip(store.get()); toast(`Render quality: ${r.name}. ${r.blurb}`); } },
+      }))),
+    ]);
   }
 
   // --- Captain ---
@@ -183,7 +197,7 @@ export function createHangar({ panes, store, ship, crew, toast, dev = false, onT
     );
   }
 
-  // --- Test tools (only with ?voyage=on&dev=1) ---
+  // --- Test tools (only with ?newgame=1&dev=1) ---
   function renderDev() {
     if (!dev || !panes.dev) return;
     panes.dev.hidden = false;

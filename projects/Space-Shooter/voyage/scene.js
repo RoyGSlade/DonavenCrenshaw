@@ -2,6 +2,8 @@
 // Straight top-down like the ships: a landing pad, deck plating, guide lights
 // and the equipped ship nose-up on the pad. Drawn on one canvas; it only
 // animates the lights, and not at all with reduced motion.
+import { renderDpr, readRenderScale } from './renderScale.js';
+
 const TAU = Math.PI * 2;
 
 export function createHangarScene(canvas, { reducedMotion = () => false } = {}) {
@@ -13,7 +15,7 @@ export function createHangarScene(canvas, { reducedMotion = () => false } = {}) 
   let visible = true;
 
   function size() {
-    dpr = Math.min(2, globalThis.devicePixelRatio || 1);
+    dpr = renderDpr(globalThis.devicePixelRatio || 1, readRenderScale());
     canvas.width = Math.round(innerWidth * dpr);
     canvas.height = Math.round(innerHeight * dpr);
   }
@@ -97,10 +99,12 @@ export function createHangarScene(canvas, { reducedMotion = () => false } = {}) 
 
   size();
   addEventListener('resize', () => { size(); draw(performance.now()); });
+  addEventListener('stardust:render-scale', () => { size(); draw(performance.now()); });
   document.addEventListener('visibilitychange', () => { visible = document.visibilityState === 'visible'; if (visible) start(); });
   start();
   return {
     setShip(image) { ship = image; draw(performance.now()); start(); },
     setTier(n) { tier = n; draw(performance.now()); },
+    get dpr() { return dpr; },
   };
 }

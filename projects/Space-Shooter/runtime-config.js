@@ -3,8 +3,9 @@
 // build names this version of the game to the hub, which can refuse runs from a broken one.
 // bossFight: false switches off the hidden Warden fight behind Iron Veil's gate (and its
 // cues) until it is ready to come back.
-// voyage: false keeps the Voyage mode (voyage/) closed to the public; a tab opened
-// with ?voyage=on sees it for its session (voyage/flag.js).
+// newGame: false keeps the new Stardust (voyage/) closed to the public and today's
+// game as the front door; true is the cut-over. ?newgame=1 previews it in one
+// browser (voyage/flag.js).
 //
 // Local testing: ?hub=http://localhost:3100 points the game at a hub on this
 // machine for the rest of the tab's session. Only plain-HTTP loopback hubs are
@@ -23,4 +24,4 @@ function localHub() {
     return `${url.origin}/api/games/stardust`;
   } catch { return null; }
 }
-export const runtimeConfig = Object.freeze({ backendBaseUrl: localHub() || 'https://api.donavencrenshaw.com/api/games/stardust', requestTimeoutMs: 2500, build: 'stardust-2026.09.29', bossFight: false, voyage: false });
+export const runtimeConfig = Object.freeze({ backendBaseUrl: localHub() || 'https://api.donavencrenshaw.com/api/games/stardust', requestTimeoutMs: 2500, build: 'stardust-2026.09.29', bossFight: false, newGame: false });

@@ -1,16 +1,16 @@
 // The new game's hangar page. Closed unless the switch is on or this tab was
-// opened with ?voyage=on (voyage/flag.js).
+// opened with ?newgame=1 (voyage/flag.js).
 import { runtimeConfig } from '../runtime-config.js';
 import { initCourierAppearance, getCourierAppearance, getEquippedAppearance, SHIP_STYLES } from '../systems/shipAppearance.js';
 import { equippedBuild } from '../systems/shipBuild.js';
-import { voyageFlag } from './flag.js';
+import { newGameFlag } from './flag.js';
 import { createVoyageStore } from './store.js';
 import { startVoyageSync } from './live.js';
 import { createHangar } from './hangar.js';
 import { createHangarScene } from './scene.js';
 import { createCrew } from './crew.js';
 
-const flag = voyageFlag({ config: runtimeConfig, search: location.search });
+const flag = newGameFlag({ config: runtimeConfig, search: location.search });
 const $ = (id) => document.getElementById(id);
 
 if (!flag.enabled) {

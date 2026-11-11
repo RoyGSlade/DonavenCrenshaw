@@ -14,7 +14,8 @@ import {
 import { emptySave, cleanSave, encodeSave, decodeSave, hasProgress, MAX_SAVE_BYTES, LOCAL_KEY } from '../projects/Space-Shooter/voyage/save.js';
 import { createVoyageStore, BACKUP_KEY } from '../projects/Space-Shooter/voyage/store.js';
 import { createVoyageSync, readVoyageSave, VOYAGE_SLOT } from '../projects/Space-Shooter/voyage/sync.js';
-import { voyageFlag, cutOverTarget, FLAG_KEY } from '../projects/Space-Shooter/voyage/flag.js';
+import { newGameFlag, cutOverTarget, FLAG } from '../projects/Space-Shooter/voyage/flag.js';
+import { renderDpr, readRenderScale, writeRenderScale, RENDER_KEY } from '../projects/Space-Shooter/voyage/renderScale.js';
 import { cleanFriends } from '../projects/Space-Shooter/voyage/crew.js';
 import { STATS, TREES, SKILLS, GIVERS, ITEMS, UPGRADES, MAX_REP_REWARDS, REP_MAX, START_POINTS, ACTIVITIES } from '../projects/Space-Shooter/voyage/data.js';
 import { buildStats } from '../projects/Space-Shooter/engine/shipStats.js';
@@ -37,7 +38,7 @@ test('data: four stats, three trees with a small overlap, every skill in a known
   assert.ok(overlap.length >= 1 && overlap.length <= 4, 'a touch of overlap, not a merge');
   for (const list of [STATS, TREES, SKILLS, GIVERS, ITEMS, UPGRADES]) assert.equal(new Set(list.map((x) => x.id)).size, list.length);
   for (const g of GIVERS) assert.ok(MAX_REP_REWARDS[g.id], `${g.id} has a max-rep reward`);
-  assert.equal(runtimeConfig.voyage, false, 'the new game stays off on main until Donaven switches it on');
+  assert.equal(runtimeConfig.newGame, false, 'the new game stays off on main until Donaven switches it on');
 });
 
 // --- character --------------------------------------------------------------------
@@ -384,22 +385,38 @@ test('sync: no free slot keeps the save on this device; an unreachable hub reads
 
 // --- the switch -------------------------------------------------------------------
 
-test('flag: off by default; ?voyage=on opens the tab for its session; dev tools only with the override', () => {
-  const session = memoryStore();
-  assert.deepEqual(voyageFlag({ config: { voyage: false }, search: '', session }), { enabled: false, override: false, dev: false });
-  assert.equal(voyageFlag({ config: {}, search: '?voyage=on&dev=1', session }).dev, true);
-  assert.equal(session.getItem(FLAG_KEY), 'on');
-  assert.equal(voyageFlag({ config: {}, search: '', session }).enabled, true, 'remembered for the session');
-  assert.equal(voyageFlag({ config: {}, search: '?voyage=off', session }).enabled, false);
-  assert.equal(session.getItem(FLAG_KEY), null);
-  assert.deepEqual(voyageFlag({ config: { voyage: true }, search: '?dev=1', session }), { enabled: true, override: false, dev: false });
+test('flag: off by default; ?newgame=1 turns it on in this browser, ?newgame=0 forgets it; dev tools only when previewing', () => {
+  const storage = memoryStore();
+  assert.deepEqual(newGameFlag({ config: { newGame: false }, search: '', storage }), { enabled: false, override: false, dev: false });
+  assert.equal(newGameFlag({ config: {}, search: '?newgame=1&dev=1', storage }).dev, true);
+  assert.equal(storage.getItem('stardust.newgame'), '1', 'the bench test kit contract');
+  assert.deepEqual(FLAG, { query: 'newgame', storageKey: 'stardust.newgame', on: '1', off: '0' });
+  assert.equal(newGameFlag({ config: {}, search: '', storage }).enabled, true, 'remembered');
+  assert.equal(newGameFlag({ config: {}, search: '?newgame=0', storage }).enabled, false);
+  assert.equal(storage.getItem('stardust.newgame'), null);
+  assert.deepEqual(newGameFlag({ config: { newGame: true }, search: '?dev=1', storage }), { enabled: true, override: false, dev: false });
+});
+
+test('render scale: never above 2 or the device, and the player can go down to 1', () => {
+  assert.equal(renderDpr(3), 2);
+  assert.equal(renderDpr(3, 'balanced'), 1.5);
+  assert.equal(renderDpr(3, 'fast'), 1);
+  assert.equal(renderDpr(1, 'auto'), 1);
+  assert.equal(renderDpr(1.25, 'balanced'), 1.25);
+  assert.equal(renderDpr(NaN, 'bogus'), 1);
+  const storage = memoryStore();
+  assert.equal(readRenderScale(storage), 'auto');
+  assert.equal(writeRenderScale('fast', storage), true);
+  assert.equal(storage.getItem(RENDER_KEY), 'fast');
+  assert.equal(readRenderScale(storage), 'fast');
+  assert.equal(writeRenderScale('ultra', storage), false);
 });
 
 test('cut-over: with the switch on a bare visit goes to the new hangar; deep links keep today\'s pages', () => {
-  assert.equal(cutOverTarget({ config: { voyage: false }, search: '' }), null);
-  assert.equal(cutOverTarget({ config: { voyage: true }, search: '' }), './voyage/');
+  assert.equal(cutOverTarget({ config: { newGame: false }, search: '' }), null);
+  assert.equal(cutOverTarget({ config: { newGame: true }, search: '' }), './voyage/');
   for (const search of ['?weekly=weekly-02', '?vs=pilot', '?import=ship&from=x', '?challenge=abc', '?lab=grip', '?activity=classic'])
-    assert.equal(cutOverTarget({ config: { voyage: true }, search }), null, search);
+    assert.equal(cutOverTarget({ config: { newGame: true }, search }), null, search);
 });
 
 test('crew: friends from the hub are cleaned and capped', () => {
