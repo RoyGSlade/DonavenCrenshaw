@@ -1,17 +1,18 @@
-// The new game is off by default (INTERFACES.md section 7). It shows only when
-// runtimeConfig.voyage is true or the tab was opened with ?voyage=on (kept for
-// the tab's session; ?voyage=off clears it). Core owns the real switch; this is
-// the same rule for quests' sandbox page until core's helper lands.
-export const PREVIEW_KEY = 'stardust.voyage.preview';
+// The new game's switch, the same contract as core's voyage/flag.js (core owns
+// it; this copy only keeps the quest sandbox shut until core's branch lands):
+// on when runtimeConfig.newGame is true, or when a page was opened with
+// ?newgame=1 (remembered in localStorage 'stardust.newgame'); ?newgame=0 forgets.
+export const FLAG = Object.freeze({ query: 'newgame', storageKey: 'stardust.newgame', on: '1', off: '0' });
 
-export function voyageEnabled(config, { location = globalThis.location, storage } = {}) {
-  if (config?.voyage === true) return true;
+export function newGameEnabled(config, { search = globalThis.location?.search || '', storage } = {}) {
+  if (config?.newGame === true) return true;
   let store = storage;
-  try { store ??= globalThis.sessionStorage; } catch { store = null; }
+  try { store ??= globalThis.localStorage; } catch { store = null; }
+  let asked = null;
+  try { asked = new URLSearchParams(search).get(FLAG.query); } catch { /* no query */ }
   try {
-    const param = new URLSearchParams(location?.search || '').get('voyage');
-    if (param === 'off') { store?.removeItem(PREVIEW_KEY); return false; }
-    if (param === 'on') { store?.setItem(PREVIEW_KEY, '1'); return true; }
-    return store?.getItem(PREVIEW_KEY) === '1';
-  } catch { return false; }
+    if (asked === FLAG.off) { store?.removeItem(FLAG.storageKey); return false; }
+    if (asked === FLAG.on) { store?.setItem(FLAG.storageKey, FLAG.on); return true; }
+    return store?.getItem(FLAG.storageKey) === FLAG.on;
+  } catch { return asked === FLAG.on; }
 }

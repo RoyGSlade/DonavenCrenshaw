@@ -8,24 +8,20 @@
 export const REP_MAX = 100;
 export const STATS = Object.freeze(['cha', 'con', 'dex', 'wis']);
 export const STAT_NAMES = Object.freeze({ cha: 'Charisma', con: 'Constitution', dex: 'Dexterity', wis: 'Wisdom' });
+// Same three as core's data.js GIVERS (world lane's recommendation, S29).
 export const GIVERS = Object.freeze({
-  // Proposed by quests (world lane's recommended three, QUEST-GIVERS.md):
-  hask: { name: 'Stationmaster Hask', faction: 'relay-guild' },
-  vey: { name: 'Lucan Vey', faction: 'none' },
-  garrity: { name: 'Hob Garrity', faction: 'driftborn' },
-  // Core's placeholders (INTERFACES.md 1.1):
-  'relay-guild': { name: 'Relay Guild' },
-  'ember-syndicate': { name: 'Ember Syndicate' },
-  'hollow-choir': { name: 'Hollow Choir' },
+  hask: { name: 'Stationmaster Orrin Hask', short: 'Hask' },
+  vey: { name: 'Lucan Vey', short: 'Vey' },
+  garrity: { name: 'Hob Garrity', short: 'Garrity' },
 });
 export const ITEMS = Object.freeze({
   scrap: { name: 'Scrap', kind: 'material', max: 99 },
   ore: { name: 'Ore', kind: 'material', max: 99 },
   circuit: { name: 'Circuit', kind: 'material', max: 99 },
   'fuel-cell': { name: 'Fuel cell', kind: 'part', max: 9 },
-  permit: { name: 'Permit', kind: 'key', max: 1 },
+  permit: { name: 'Docking permit', kind: 'key', max: 1 },
   'nav-chip': { name: 'Nav chip', kind: 'part', max: 9 },
-  railgun: { name: 'Railgun', kind: 'part', max: 1 },
+  railgun: { name: 'Railgun', kind: 'part', max: 9 },
   'cargo-crate': { name: 'Cargo crate', kind: 'cargo', max: 9 },
   // Proposed by quests in INTERFACES.md:
   'mining-drill': { name: 'Mining drill', kind: 'key', max: 1 },

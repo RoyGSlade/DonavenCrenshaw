@@ -96,7 +96,7 @@ test('quest sandbox: closed without the flag; Cold Run plays start to finish in 
   const closedPage = await closed.newPage();
   await closedPage.goto(server.origin + SANDBOX);
   await closedPage.waitForSelector('#qs-closed:not([hidden])');
-  assert.equal(await closedPage.locator('#qs-app').isHidden(), true, 'the sandbox stays shut without ?voyage=on');
+  assert.equal(await closedPage.locator('#qs-app').isHidden(), true, 'the sandbox stays shut without ?newgame=1');
   await closed.close();
 
   const runOnce = async ({ seed = '8', stats = { cha: 3, con: 4, dex: 5, wis: 3 }, prefer = null } = {}) => {
@@ -107,7 +107,7 @@ test('quest sandbox: closed without the flag; Cold Run plays start to finish in 
     const errors = [];
     page.on('pageerror', e => errors.push(e.message));
     page.on('console', m => { if (m.type() === 'error' && !/api\.donavencrenshaw\.com/.test(m.text())) errors.push(m.text()); });
-    await page.goto(`${server.origin}${SANDBOX}?voyage=on`);
+    await page.goto(`${server.origin}${SANDBOX}?newgame=1`);
     await page.waitForSelector('.qs-giver');
     assert.equal(await page.locator('.qs-giver').count(), 3);
     await page.fill('#qs-seed', seed);

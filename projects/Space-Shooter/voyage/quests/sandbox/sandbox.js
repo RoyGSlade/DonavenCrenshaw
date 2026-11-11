@@ -2,7 +2,7 @@
 // and its parts; this file only draws them and turns clicks and keys into
 // actions. All text goes in with textContent.
 import { runtimeConfig } from '../../../runtime-config.js';
-import { voyageEnabled } from '../flag.js';
+import { newGameEnabled } from '../flag.js';
 import { QUESTS, SLICE_QUEST } from '../data/quests/index.js';
 import { QUEST_GIVERS } from '../data/givers.js';
 import { SECTORS, LANES } from '../data/sectors.js';
@@ -473,7 +473,7 @@ $('qs-reset').addEventListener('click', () => {
   save = freshSave(); current = null; persist(); render(); status('Sandbox save reset.');
 });
 
-if (voyageEnabled(runtimeConfig)) {
+if (newGameEnabled(runtimeConfig)) {
   $('qs-app').hidden = false;
   resume();
   render();
