@@ -13,6 +13,7 @@ function currentSection(pathname = window.location.pathname) {
         'infinite-ages',
         'kingdoms-caravans',
         'build-log',
+        'christmas',
         'about',
         'contact',
         'support'
