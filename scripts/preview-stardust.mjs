@@ -3,6 +3,7 @@ import { realpath, stat } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import os from 'node:os';
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(scriptDir, '..');
@@ -42,6 +43,18 @@ const routeRoots = [
   { url: '/assets/audio/', disk: path.join(servedRoot, 'assets', 'audio') },
 ];
 
+// DEV ONLY: placeholder (Kokoro) voice lines stay out of the repo and the built site. With
+// STARDUST_SCRATCH_VOICE=1 (or a directory path) this server also serves the voice lane's folder
+// under /__stardust-scratch-voice/ (manifest.json, mp3, ogg only) so a page opened with
+// ?voice=scratch can speak (voyage/story/voice.js). Without the variable the route does not exist.
+const SCRATCH_ROUTE = '/__stardust-scratch-voice/';
+const scratchSetting = process.env.STARDUST_SCRATCH_VOICE;
+const scratchRoot = scratchSetting && scratchSetting !== '0'
+  ? path.resolve(scratchSetting === '1' ? path.join(os.homedir(), 'Desktop', 'lhc-lanes', 'stardust', 'voice') : scratchSetting)
+  : null;
+const scratchRealRoot = scratchRoot ? await realpath(scratchRoot).catch(() => null) : null;
+if (scratchRoot && !scratchRealRoot) throw new Error(`STARDUST_SCRATCH_VOICE directory does not exist: ${scratchRoot}`);
+
 function reject(res, statusCode = 404, message = 'Not found') {
   res.writeHead(statusCode, {
     'Content-Type': 'text/plain; charset=utf-8',
@@ -74,6 +87,11 @@ function inside(root, candidate) {
 }
 
 async function locateFile(requestPath) {
+  if (scratchRealRoot && requestPath.startsWith(SCRATCH_ROUTE)) {
+    const tail = requestPath.slice(SCRATCH_ROUTE.length);
+    if (!/^[\w./-]+\.(json|mp3|ogg)$/.test(tail) || tail.includes('..')) return null;
+    return { file: path.resolve(scratchRealRoot, ...tail.split('/')), allowedRoot: scratchRealRoot, scratch: true };
+  }
   if (requestPath === '/projects/Space-Shooter') return { redirect: '/projects/Space-Shooter/' };
   // Pages of their own inside the game: Dogfight and the new game's hangar (voyage/).
   for (const page of ['dogfight', 'voyage']) {
@@ -121,7 +139,7 @@ async function serve(req, res) {
       realpath(located.allowedRoot),
       realpath(located.file),
     ]);
-    if (!inside(canonicalServeRoot, canonicalRoot) || !inside(canonicalRoot, canonicalFile)) return reject(res);
+    if ((!located.scratch && !inside(canonicalServeRoot, canonicalRoot)) || !inside(canonicalRoot, canonicalFile)) return reject(res);
     const info = await stat(canonicalFile);
     if (!info.isFile()) return reject(res);
     const contentType = mimeTypes.get(path.extname(canonicalFile).toLowerCase());
@@ -146,5 +164,6 @@ server.on('clientError', (_error, socket) => socket.end('HTTP/1.1 400 Bad Reques
 server.listen(port, '127.0.0.1', () => {
   const address = server.address();
   console.log(`Stardust preview: http://127.0.0.1:${address.port}/projects/Space-Shooter/`);
+  if (scratchRealRoot) console.log(`DEV scratch voices on: add ?voice=scratch to a voyage page (files from ${scratchRealRoot}).`);
   console.log(`Source: ${useDist ? 'dist/stardust' : 'repository files'}; loopback only.`);
 });

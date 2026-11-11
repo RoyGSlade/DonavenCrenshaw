@@ -19,9 +19,12 @@ const EXPRESSION = new Map(Object.entries(CAST_DATA.expressions || {}).flatMap((
 /** The expression a line's emotion shows: 'neutral', 'happy' or 'annoyed'. */
 export const expressionFor = (emotion) => EXPRESSION.get(emotion) || 'neutral';
 
-/** A portrait URL for a cast member (in the expression for `emotion`), or null (show initials). */
+// The hangar's captain look ids (data.js PORTRAITS p1..p4) are the cast lane's cap-a..cap-d.
+const LOOK_ID = Object.freeze({ p1: 'cap-a', p2: 'cap-b', p3: 'cap-c', p4: 'cap-d' });
+
+/** A portrait URL for a cast member or captain look (in the expression for `emotion`), or null (show initials). */
 export function castPortrait(id, emotion = 'neutral') {
-  const set = PORTRAITS[id];
+  const set = PORTRAITS[LOOK_ID[id] || id];
   const file = set && (set[expressionFor(emotion)] || set.neutral);
   if (file) return new URL(`../art/cast/${file}`, import.meta.url).href;
   return CAST[id]?.giver ? giverPortrait(id) : null;

@@ -1,8 +1,8 @@
 // The on-foot and exploration art map: the only file that names art paths for
 // these layers. Pack art (approved desert, moon base, enemies and on-foot
 // straight-down sprites) is resized into ./art/ by
-// lhc-lanes/stardust/onfoot/tools/prep-art.py. Cast sprites and interior
-// tiles and props are not delivered yet: every id below without a file draws a
+// lhc-lanes/stardust/onfoot/tools/prep-art.py; the cast sprites by
+// scripts/stardust-art.py. Every id without a file draws a
 // placeholder (draw.js), so swapping art in is one line per id here.
 import { INTERIOR_ART } from './interiorArt.js';
 
@@ -22,19 +22,44 @@ export const SPRITE_FILES = Object.freeze({
 // Seamless ground textures for exterior maps (one pattern fill each).
 export const GROUND_FILES = Object.freeze({ plating: 'tile-plating.png', regolith: 'tile-regolith.png', sand: 'tile-sand.png' });
 
-// The cast's top-down sprites from the cast lane, when they land (file under ./art/cast/).
-export const CAST_FILES = Object.freeze({ chibby: null, ralph: null, mel: null, edna: null, captain: null, hask: null, vey: null, garrity: null });
+// The cast's top-down sprites (cast lane, resized by scripts/stardust-art.py into ./art/cast/):
+// 128 px WebP, facing UP like the player's frames, the body centre moved to the canvas centre
+// so drawBody's centred rotate spins them about their middle. `captain` is whichever of the
+// four captain looks is current (captainSprite below); the walk "frames" are drawBody's sway.
+export const CAST_FILES = Object.freeze({
+  chibby: 'chibby.webp', ralph: 'ralph.webp', mel: 'mel.webp', edna: 'edna.webp', captain: 'cap-a.webp',
+  hask: 'hask.webp', vey: 'vey.webp', garrity: 'garrity.webp',
+});
 
-// How the placeholder for each cast member looks, and the name on the prompt.
+// The four captain looks. The hangar's look ids are p1..p4 (data.js PORTRAITS); the cast lane
+// calls the same four cap-a..cap-d (jacket trim cyan, crimson, pink, azure).
+export const CAPTAIN_LOOKS = Object.freeze({ 'cap-a': 'cap-a.webp', 'cap-b': 'cap-b.webp', 'cap-c': 'cap-c.webp', 'cap-d': 'cap-d.webp' });
+const LOOK_ALIAS = Object.freeze({ p1: 'cap-a', p2: 'cap-b', p3: 'cap-c', p4: 'cap-d', a: 'cap-a', b: 'cap-b', c: 'cap-c', d: 'cap-d' });
+/** The cap-a..cap-d id for a look id (cap-x, p1..p4 or a..d); anything else is cap-a. */
+export const captainLookId = lookId => (CAPTAIN_LOOKS[lookId] ? lookId : LOOK_ALIAS[lookId] || 'cap-a');
+let captainLook = 'cap-a';
+/** Choose which captain look castImage('captain') draws (the page calls this with save.character.look.portrait). */
+export const setCaptainLook = lookId => { captainLook = captainLookId(lookId); };
+/** The captain's top-down sprite image for a look id (default: the current look, else cap-a), or null while loading. */
+export const captainSprite = (lookId = captainLook) => loadImage(at(`cast/${CAPTAIN_LOOKS[captainLookId(lookId)]}`));
+
+// Canvas side in px at which each sprite's figure stands 72 px tall (Ralph 56, Vey and Garrity 84),
+// from scripts/stardust-art.py. drawBody draws a sprite at 46 * scale, so scale = side / 46.
+// CAST_FIGURE_PX is the one knob for "how tall a person is on screen" (the player is drawn about 52).
+export const CAST_FIGURE_PX = 72;
+const CAST_CANVAS = { chibby: 93, ralph: 66.5, mel: 92, edna: 87, captain: 98.9, hask: 85.7, vey: 101.6, garrity: 116.4 };
+const castScale = id => Math.round((CAST_CANVAS[id] * (CAST_FIGURE_PX / 72)) / 46 * 1000) / 1000;
+
+// How each cast member looks on the prompt label (and the stand-in colour), and the sprite scale.
 export const CAST_LOOK = Object.freeze({
-  chibby: { name: 'Chibby', color: '#ffad72', scale: 1.05 },
-  ralph: { name: 'Ralph', color: '#f4d35e', scale: 0.62, dog: true },
-  mel: { name: 'Mel', color: '#ff8fa3', scale: 1 },
-  edna: { name: 'Edna', color: '#b9a4ff', scale: 0.95 },
-  captain: { name: 'Captain', color: '#81e6df', scale: 1 },
-  hask: { name: 'Hask', color: '#9fe870', scale: 1.05 },
-  vey: { name: 'Vey', color: '#c8a2ff', scale: 1 },
-  garrity: { name: 'Garrity', color: '#e0b061', scale: 1.1 },
+  chibby: { name: 'Chibby', color: '#ffad72', scale: castScale('chibby') },
+  ralph: { name: 'Ralph', color: '#f4d35e', scale: castScale('ralph'), dog: true },
+  mel: { name: 'Mel', color: '#ff8fa3', scale: castScale('mel') },
+  edna: { name: 'Edna', color: '#b9a4ff', scale: castScale('edna') },
+  captain: { name: 'Captain', color: '#81e6df', scale: castScale('captain') },
+  hask: { name: 'Hask', color: '#9fe870', scale: castScale('hask') },
+  vey: { name: 'Vey', color: '#c8a2ff', scale: castScale('vey') },
+  garrity: { name: 'Garrity', color: '#e0b061', scale: castScale('garrity') },
 });
 
 const images = new Map();
@@ -71,7 +96,7 @@ export function roomArt(room) {
   return { floor: floor ? loadImage(floor.url) : null, floorCovers: floor?.covers || [4, 4], wall: piece => (walls[piece] ? loadImage(walls[piece]) : null) };
 }
 export const interiorProp = id => INTERIOR_ART.props[id] || null;
-export const castImage = id => (CAST_FILES[id] ? loadImage(at(`cast/${CAST_FILES[id]}`)) : null);
+export const castImage = id => (id === 'captain' ? captainSprite() : CAST_FILES[id] ? loadImage(at(`cast/${CAST_FILES[id]}`)) : null);
 export const playerFrames = () => ['player-f1', 'player-f2', 'player-f3', 'player-f4'].map(sprite);
 
 /** Start loading everything a map needs, so the first frames have art. */

@@ -1,8 +1,11 @@
 // The hangar's asset map: the FLUX UI kit, the station props, the cast's
 // portraits and the ambience. The only file in voyage/ui naming these paths,
 // so a picture or a sound is swapped with one file and one line. The cast
-// lane's portraits arrive with a manifest (lhc-lanes/stardust/cast); until
-// then a portrait is null and the dialogue box shows the speaker's initial.
+// lane's portraits (lhc-lanes/stardust/cast) are copied small into voyage/art/cast
+// by scripts/stardust-art.py; a character without one shows the speaker's initial.
+import { CAST_DATA } from '../story/data/cast.js';
+import { castPortrait as storyPortrait } from '../story/cast.js';
+
 const at = (path) => new URL(`./${path}`, import.meta.url).href;
 
 // UI kit pieces: kit/<name>.webp (sliced and keyed from the FLUX picks; see
@@ -46,18 +49,27 @@ export const HANGAR_ART = Object.freeze({
   }),
 });
 
-// Cast portraits (the cast lane's manifest). Empty until those land.
-export const CAST_PORTRAITS = Object.freeze({});
+// Cast portraits: one source of truth, story's cast data (story/data/cast.js `portraits`, files in
+// voyage/art/cast/, made by scripts/stardust-art.py). cap-a..cap-d are the four captain looks.
+export const CAST_PORTRAITS = CAST_DATA.portraits;
 
-/** URL of a cast member's portrait, or null (the dialogue box shows an initial). */
-export function castPortrait(id) {
-  return CAST_PORTRAITS[id] ? at(CAST_PORTRAITS[id]) : null;
+/**
+ * URL of a cast member's portrait for a line emotion (neutral, happy, annoyed, or any story
+ * emotion such as 'warm' or 'grumpy'), or null (the dialogue box shows an initial).
+ * The same function as story's castPortrait, so both boxes show the same face.
+ */
+export function castPortrait(id, emotion = 'neutral') {
+  return storyPortrait(id, emotion);
 }
 
 // Ambience beds from the voice lane (lhc-lanes/stardust/voice/ambience/manifest.json):
 // seamless loops; OGG loops without a gap, MP3 for browsers without Vorbis.
 export const AMBIENCE = Object.freeze({
   hangar: { ogg: '../audio/ambience/hangar-hum.ogg', mp3: '../audio/ambience/hangar-hum.mp3', gain: 0.8 },
+  // Chibby's workshop (slide guitar, warm synth) and Edna's den (electric piano, sub bass): about 80 kbps,
+  // re-encoded by scripts/stardust-assets.mjs ambience. The hangar page wires which map plays which bed.
+  workshop: { ogg: '../audio/ambience/tinker-bench.ogg', mp3: '../audio/ambience/tinker-bench.mp3', gain: 0.8 },
+  den: { ogg: '../audio/ambience/night-shift.ogg', mp3: '../audio/ambience/night-shift.mp3', gain: 0.8 },
 });
 
 /** The ambience file this browser can loop: { url, gain } or null. */

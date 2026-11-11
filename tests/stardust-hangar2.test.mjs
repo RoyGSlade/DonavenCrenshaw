@@ -321,7 +321,10 @@ test('assets: every UI kit picture, station prop, deck texture and ambience file
     assert.ok(existsSync(p), `${name} exists`);
     assert.ok(statSync(p).size < 120_000, `${name} is small`);
   }
-  for (const i of ITEMS) assert.ok(iconFor(i.id), `${i.id} has an icon`);
+  // An item without a kit picture (gear such as the flak vest) gets no icon and the hold list draws an empty slot (hangar.js itemRow); a kit icon must exist as a file.
+  for (const i of ITEMS) { const icon = iconFor(i.id); assert.ok(icon === null || existsSync(file(icon)), `${i.id} has an icon file or none`); }
+  for (const id of ['scrap', 'ore', 'circuit', 'fuel-cell', 'permit', 'nav-chip']) assert.ok(iconFor(id), `${id} keeps its kit icon`);
+  assert.equal(iconFor('flak-vest'), null);
   for (const s of STATS) assert.ok(iconFor(s.id), `${s.id} has an icon`);
   for (const s of STATIONS) assert.ok(s.art, `${s.id} has art`);
   const amb = ambienceFor('hangar', (t) => (t.includes('ogg') ? 'probably' : ''));
