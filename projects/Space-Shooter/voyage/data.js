@@ -22,11 +22,34 @@ export const START_POINTS = 2;
 // captain is made; a death does not pay it again.
 export const START_KIT = Object.freeze({ money: 80, items: { scrap: 4 } });
 
+// Round 2 (story lane, lhc-lanes/stardust/story/STATS.md): what each stat does
+// in play. `effects` are passive, per point over STAT_BASELINE (the same rule as
+// before; the slice's tags are unchanged, the round-2 systems get new tags:
+// repair and mining speed, aim, walking speed, scan range, puzzle hints).
+// `options` names the dialogue options a stat of STAT_OPTION_MIN or more opens
+// (a choice with `requires: { stats: { cha: 5 } }`). `boon` is what a 6 adds on
+// top (read with boonFor in voyage/story/stats.js). The explanation text the
+// player reads is built from these numbers (voyage/story/stats.js), so retuning
+// here retunes the words too.
+export const STAT_OPTION_MIN = 5;
+export const STAT_BOON_AT = 6;
 export const STATS = Object.freeze([
-  { id: 'cha', name: 'Charisma', blurb: 'Talking, prices and how fast givers warm to you.', effects: { price: 2, rep: 5 } },
-  { id: 'con', name: 'Constitution', blurb: 'Hull you can take, and staying up on foot.', effects: { 'ship.hp': 5, 'foot.hp': 10 } },
-  { id: 'dex', name: 'Dexterity', blurb: 'Handling, dodging and aim.', effects: { 'ship.turn': 0.03, dodge: 1 } },
-  { id: 'wis', name: 'Wisdom', blurb: 'Navigation, scanning and seeing through puzzles.', effects: { nav: 1, scan: 1, puzzle: 1 } },
+  {
+    id: 'cha', name: 'Charisma', blurb: 'Talking, haggling and how fast people warm to you.',
+    effects: { price: 2, rep: 5 }, options: 'Charm', boon: { tag: 'black-market', value: 10 },
+  },
+  {
+    id: 'con', name: 'Constitution', blurb: 'Hull you can take, hard work, and staying up on foot.',
+    effects: { 'ship.hp': 5, 'foot.hp': 10, 'repair.speed': 0.1, 'mine.speed': 0.1 }, options: 'Muscle', boon: { tag: 'foot.guard', value: 1 },
+  },
+  {
+    id: 'dex', name: 'Dexterity', blurb: 'Handling, dodging and aim.',
+    effects: { 'ship.turn': 0.03, dodge: 1, aim: 0.1, 'foot.speed': 0.04 }, options: 'Quick hands', boon: { tag: 'aim.assist', value: 1 },
+  },
+  {
+    id: 'wis', name: 'Wisdom', blurb: 'Routes, scans, puzzles and reading people.',
+    effects: { nav: 1, scan: 1, puzzle: 1, 'scan.range': 0.1, hint: 1 }, options: 'Read the room', boon: { tag: 'hint.free', value: 1 },
+  },
 ]);
 export const STAT_IDS = Object.freeze(STATS.map((s) => s.id));
 
