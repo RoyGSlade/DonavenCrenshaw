@@ -13,6 +13,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import path from 'node:path';
 import { loadPlaywright, startServer, DESKTOP, PHONE } from '../scripts/stardust-test-kit.mjs';
+import { signOnCaptain, openStation } from '../scripts/stardust-hangar-kit.mjs';
 
 const HANGAR = '/projects/Space-Shooter/voyage/?newgame=1';
 const SAVE_KEY = 'stardust.voyage.v1';
@@ -83,12 +84,8 @@ async function open(browser, server, hub, who, seed, profile = DESKTOP) {
   return { context, page, errors };
 }
 
-async function signOn(page, name) {
-  await page.getByRole('tab', { name: 'Captain' }).click();
-  await page.locator('#vy-name').fill(name);
-  await page.getByRole('button', { name: 'Roll stats and sign on' }).click();
-  await page.locator('#pane-captain h2', { hasText: name }).waitFor();
-}
+// Round 2: a new player signs the captain's licence with the dice; stations open in place.
+const signOn = (page, name) => signOnCaptain(page, name);
 
 const readSave = (page) => page.evaluate((key) => JSON.parse(localStorage.getItem(key)), SAVE_KEY);
 const snap = async (page, name) => { if (proofDir) await page.screenshot({ path: path.join(proofDir, name), fullPage: true }); };
@@ -165,7 +162,7 @@ test('crew: invite, join, turret, repair, scan, checks, rewards to both saves; t
   const P = await open(browser, server, hub, 'nova', 20261111);
   t.after(() => P.context.close().catch(() => {}));
   await signOn(P.page, 'Vela Quint');
-  await P.page.getByRole('tab', { name: 'Crew' }).click();
+  await openStation(P.page, 'hatch', 'crew');
   await P.page.locator('#cw-open').click();
   const code = await P.page.locator('.cw-code').getAttribute('data-code', { timeout: 10000 });
   assert.match(code, /^[A-HJ-NP-Z2-9]{8}$/);
@@ -178,7 +175,7 @@ test('crew: invite, join, turret, repair, scan, checks, rewards to both saves; t
   const C = await open(browser, server, hub, 'vega', 777);
   t.after(() => C.context.close().catch(() => {}));
   await signOn(C.page, 'Ossa Vey');
-  await C.page.getByRole('tab', { name: 'Crew' }).click();
+  await openStation(C.page, 'hatch', 'crew');
   await C.page.locator(`[data-crew-invite="${code}"]`).waitFor({ timeout: 20000 });
   await C.page.locator(`[data-crew-invite="${code}"] button.primary`).click();
   await C.page.locator('.cw-station', { hasText: 'CREW STATION' }).waitFor();
@@ -193,7 +190,7 @@ test('crew: invite, join, turret, repair, scan, checks, rewards to both saves; t
   let paid = false;
   const results = [];
   for (let job = 0; job < 8 && !(paid && did.has('turret') && [...did].some((d) => d.startsWith('repair'))); job++) {
-    await P.page.getByRole('tab', { name: 'Jobs' }).click();
+    await openStation(P.page, 'board');
     await P.page.locator('[data-quest="cold-run"] button').click();
     await P.page.locator('#pane-jobs .qs-crew', { hasText: 'Ossa Vey' }).waitFor();
     if (job === 0) { await C.page.locator('.cw-station h2', { hasText: 'Cold Run' }).waitFor(); await snap(C.page, 'crew-03-crew-on-the-job.png'); }
@@ -219,7 +216,7 @@ test('crew: invite, join, turret, repair, scan, checks, rewards to both saves; t
   assert.equal(crewSave.character.name, 'Ossa Vey', 'the crew kept their own captain');
 
   // S58: the pilot leaves mid-job. The crew is told and keeps their pay; the job stays in the pilot's save.
-  await P.page.getByRole('tab', { name: 'Jobs' }).click();
+  await openStation(P.page, 'board');
   await P.page.locator('[data-quest="cold-run"] button').click();
   await P.page.locator('#pane-jobs .qs-quest-head').waitFor();
   await C.page.locator('.cw-station h2', { hasText: 'Cold Run' }).waitFor();
@@ -232,10 +229,10 @@ test('crew: invite, join, turret, repair, scan, checks, rewards to both saves; t
   const back = await P.context.newPage();
   await back.goto(`${server.origin}${HANGAR}`);
   await back.locator('#pane-jobs .qs-quest-head').waitFor();
-  assert.equal(await back.getByRole('tab', { name: 'Jobs' }).getAttribute('aria-selected'), 'true', 'the pilot\'s job resumes from the pilot\'s save');
+  assert.equal(await back.locator('#hg-sheet').getAttribute('data-open-station'), 'board', 'the pilot\'s job resumes from the pilot\'s save');
 
   // A link join, and the station at phone size with no sideways scroll.
-  await back.getByRole('tab', { name: 'Crew' }).click();
+  await openStation(back, 'hatch', 'crew');
   await back.locator('#cw-open').click();
   const code2 = await back.locator('.cw-code').getAttribute('data-code', { timeout: 10000 });
   const phone = await browser.newContext({ ...PHONE });
