@@ -30,7 +30,7 @@ export function createPuzzle(id = 'lockbox', { hintBonus = 0, freeHint = false }
   // Hints: after `hintAfter` turns that don't add power, one wrong tile on the
   // solution line glows. Wisdom's hint tag brings it one turn sooner per point;
   // a Wisdom of 6 starts with one shown (contract section 6).
-  const state = { id, name: layout.name, blurb: layout.blurb || '', cols: layout.cols, rows: layout.rows, tiles, moves: 0, solved: false, powered: [],
+  const state = { id, name: layout.name, blurb: layout.blurb || '', solvedText: layout.solvedText || 'Power is through.', cols: layout.cols, rows: layout.rows, tiles, moves: 0, solved: false, powered: [],
     hintAfter: Math.max(2, TUNING.puzzleHintAfter - Math.round(hintBonus)), idle: 0, best: 0, hint: null };
   refresh(state);
   if (state.solved) throw new Error(`Puzzle ${id} starts solved`);

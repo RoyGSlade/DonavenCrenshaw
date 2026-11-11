@@ -277,5 +277,6 @@
         }
       ]
     }
-  ]
+  ],
+  "statBoons": true
 }

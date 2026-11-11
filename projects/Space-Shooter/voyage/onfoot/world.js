@@ -310,10 +310,11 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     if (!objective?.station) return null;
     const n = npcs.find(x => x.station === objective.station && !hidden.has(x.id) && x.id === objective.npc);
     if (n) return { x: n.x, y: n.y };
-    const r = map.rings.find(x => x.station === objective.station);
-    if (r) return r.rect ? { x: r.rect.x + r.rect.w / 2, y: r.rect.y + r.rect.h / 2 } : { x: r.x, y: r.y };
+    // The person who runs the station first (Chibby for the pad), then the station's own ring.
     const n2 = npcs.find(x => x.station === objective.station && !hidden.has(x.id));
-    return n2 ? { x: n2.x, y: n2.y } : null;
+    if (n2) return { x: n2.x, y: n2.y };
+    const r = map.rings.find(x => x.station === objective.station);
+    return r ? (r.rect ? { x: r.rect.x + r.rect.w / 2, y: r.rect.y + r.rect.h / 2 } : { x: r.x, y: r.y }) : null;
   }
 
   function drawObjective() {

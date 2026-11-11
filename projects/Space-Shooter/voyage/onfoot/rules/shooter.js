@@ -292,8 +292,9 @@ export function footStats(character, { effect, skillBonus, mods = {} } = {}) {
     rateScale: Math.max(0.5, 1 + (mods.rate || 0)),
     speedScale: Math.max(0.5, 1 + fx('foot.speed')),
     spreadScale: Math.max(0.2, (1 - fx('aim')) * (1 + (mods.spread || 0))),
-    guard: character?.stats?.con === 6,
-    assist: character?.stats?.dex === 6,
+    // Contract v1.0 boons (a 6 in the stat). Story proposes dropping boons: set tuning.json statBoons to false.
+    guard: TUNING.statBoons !== false && character?.stats?.con === 6,
+    assist: TUNING.statBoons !== false && character?.stats?.dex === 6,
   };
 }
 

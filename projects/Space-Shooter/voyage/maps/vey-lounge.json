@@ -17,12 +17,17 @@
     "#####..#####"
   ],
   "props": [
+    {"art":"rug","at":[2,2],"size":[7,3],"block":false},
     {"art":"sofa","at":[2,2],"size":[3,1],"block":"low"},
     {"art":"sofa","at":[2,4],"size":[3,1],"block":"low"},
     {"art":"holo-table","at":[5.5,2.6],"size":[2,1.8],"block":true,"interact":{"kind":"console","id":"holo","label":"Holo-table"}},
     {"art":"bar-counter","at":[9,1],"size":[2,3],"block":true},
     {"art":"potted-plant","at":[1,1],"size":[1,1],"block":true},
-    {"art":"potted-plant","at":[10,6],"size":[1,1],"block":true}
+    {"art":"potted-plant","at":[10,6],"size":[1,1],"block":true},
+    {"art":"display-case","at":[1,6],"size":[2,0.9],"block":true},
+    {"art":"coffee-table","at":[2.6,3.05],"size":[1.8,0.9],"block":"low"},
+    {"art":"office-chair","at":[7.6,5.6],"size":[0.8,0.8],"block":false},
+    {"art":"safe","at":[7,1],"size":[1,1],"block":true}
   ],
   "npcs": [
     {"id":"vey","at":[8,5],"face":"left","wander":0.6}

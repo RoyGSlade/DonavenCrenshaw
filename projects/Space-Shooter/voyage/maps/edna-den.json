@@ -17,13 +17,16 @@
     "###########"
   ],
   "props": [
-    {"art":"contraband-shelf","at":[1,1],"size":[4,0.5],"block":true},
+    {"art":"contraband-shelf","at":[1,1],"size":[2,0.9],"block":true},
+    {"art":"contraband-shelf","at":[3.2,1],"size":[2,0.9],"block":true},
     {"art":"safe","at":[8,1],"size":[1,1],"block":true},
+    {"art":"rug","at":[2,2],"size":[5,3],"block":false},
     {"art":"shop-counter","at":[3,3],"size":[3,1],"block":"low","station":"backroom","interact":{"kind":"station","id":"backroom","label":"Edna's counter: black market"}},
     {"art":"toolbox-chest","at":[8,3.2],"size":[1,1],"block":true,"interact":{"kind":"puzzle","id":"lockbox","label":"Edna's lockbox"}},
-    {"art":"crate-large","at":[1,5],"size":[1,2],"block":true},
-    {"art":"potted-plant","at":[8,6],"size":[1,1],"block":true},
-    {"art":"crate-small","at":[6,6],"size":[1,1],"block":"low"}
+    {"art":"low-table-cushions","at":[6.4,5.4],"size":[1.8,1.6],"block":"low"},
+    {"art":"crate-large","at":[1,6],"size":[2,1],"block":"low"},
+    {"art":"weapon-rack","at":[8,6.1],"size":[2,0.9],"block":true},
+    {"art":"floor-vent","at":[5,6],"size":[1,1],"block":false}
   ],
   "npcs": [
     {"id":"edna","at":[4,2],"face":"down","wander":0.3,"station":"backroom"}

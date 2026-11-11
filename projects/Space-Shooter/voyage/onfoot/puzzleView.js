@@ -52,7 +52,7 @@ export function playPuzzle(root, { id = 'lockbox', title = null, hintBonus = 0, 
     if (r.solvedNow) {
       sound('unlock');
       panel.classList.add('is-solved');
-      status.textContent = `Power's through. The door unlocks. ${state.moves} turns (par ${par}).`;
+      status.textContent = `${state.solvedText} ${state.moves} turns (par ${par}).`;
       leave.textContent = 'Continue';
       leave.classList.add('primary');
       leave.focus({ preventScroll: true });

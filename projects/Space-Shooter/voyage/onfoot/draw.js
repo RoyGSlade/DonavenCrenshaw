@@ -4,7 +4,7 @@
 // bodies. Missing art draws a placeholder in the approved palette (gunmetal,
 // cyan lights, amber for hostiles).
 import { wallPiece } from './rules/walls.js';
-import { sprite, groundImage, tileImage, castImage, roomArt, CAST_LOOK } from './assets.js';
+import { sprite, groundImage, tileImage, castImage, roomArt, interiorProp, CAST_LOOK } from './assets.js';
 
 const TAU = Math.PI * 2;
 
@@ -183,7 +183,14 @@ export function buildStaticLayer(map, scale, { extraArt = null, isLocked = () =>
   for (const p of props) {
     if (extraArt?.(ctx, p)) continue;
     const img = sprite(p.art);
-    if (img) drawContained(ctx, img, p);
+    const meta = interiorProp(p.art);
+    // A long counter or shelf made of one art piece repeats it along its length.
+    const nx = img && meta ? Math.max(1, Math.round(p.w / T / meta.tiles[0])) : 1;
+    const ny = img && meta ? Math.max(1, Math.round(p.h / T / meta.tiles[1])) : 1;
+    if (img && nx * ny > 1) {
+      const w = p.w / nx, h = p.h / ny;
+      for (let i = 0; i < nx; i++) for (let j = 0; j < ny; j++) drawContained(ctx, img, { ...p, x: p.x + i * w, y: p.y + j * h, w, h, cx: p.x + i * w + w / 2, cy: p.y + j * h + h / 2 });
+    } else if (img) drawContained(ctx, img, p);
     else drawPropPlaceholder(ctx, p);
   }
   return { canvas, scale: s };

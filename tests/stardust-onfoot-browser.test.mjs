@@ -220,7 +220,7 @@ test('on foot: walk, talk, mine, shoot, lockbox, fly to a giver (1440), then the
   assert.ok((await log(page)).includes('tutorial:solved'));
 
   // Fly: back to the hangar, the launch hatch, Dustfall, then meet Garrity.
-  const out = await page.evaluate(() => { const d = document.querySelector('.of-world').__world.map.doors[0]; return { x: d.x + d.w / 2, y: d.y + d.h / 2 }; });
+  const out = await page.evaluate(() => { const d = document.querySelector('.of-world').__world.map.doors.find(x => x.id === 'out'); return { x: d.x + d.w / 2, y: d.y + d.h / 2 }; });
   await walkTo(page, out.x - 40, out.y);
   await walkTo(page, out.x + 10, out.y, { near: 6, tries: 30 });
   await page.waitForFunction(() => document.querySelector('.of-world').__world.map.id === 'hangar', null, { timeout: 5000 });
@@ -282,6 +282,21 @@ test('on foot: walk, talk, mine, shoot, lockbox, fly to a giver (1440), then the
   await p2.evaluate(() => { window.__mine = window.__onfoot.onfoot.mine({ title: 'Ore seam' }); });
   await sleep(800);
   await shot(p2, '15-mining-390');
+  await p2.evaluate(() => document.querySelector('.of-mine')?.remove());
+  // The hack: open the outpost cache's bypass and splice it open with taps on the button.
+  await p2.evaluate(() => { window.__hack = window.__onfoot.onfoot.hack({ id: 'test-cache', label: 'Sealed supply cache', level: 1 }); });
+  await p2.waitForSelector('.of-hack');
+  await sleep(500);
+  await shot(p2, '16-hack-390');
+  for (let i = 0; i < 400; i++) {
+    const s = await p2.evaluate(() => { const st = document.querySelector('.of-hack')?.__state; if (!st) return null; const tb = st.tumblers[st.index]; const d = tb ? Math.abs(((st.cursor - tb.at + Math.PI * 3) % (Math.PI * 2)) - Math.PI) : 9; return { done: st.done, inside: d < tb?.width / 2 - 0.08 }; });
+    if (!s || s.done) break;
+    if (s.inside) await p2.locator('.of-hack .of-drill-btn').tap();
+    await sleep(16);
+  }
+  if (await p2.locator('.of-hack').count()) { await sleep(400); await p2.keyboard.press('Enter'); }
+  const hack = await p2.evaluate(() => window.__hack);
+  assert.equal(hack?.success, true, 'the bypass opens with taps');
   assert.deepEqual(errors2, []);
   await phone.close();
 });

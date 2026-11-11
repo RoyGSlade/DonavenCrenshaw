@@ -23,7 +23,9 @@ function boot() {
   $('of-page').hidden = false;
   const params = new URLSearchParams(location.search);
   const start = MAP_DEFS[params.get('map')] ? params.get('map') : 'hangar';
-  const store = createVoyageStore();
+  const spawnName = params.get('spawn') || 'default';
+  // Studio playtests (studio=1) use their own save, so they never touch a real captain (STUDIO-SCHEMA section 5).
+  const store = createVoyageStore(params.get('studio') === '1' ? { key: 'studio.stardust.voyage.v1' } : {});
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
   const stage = $('of-stage');
   const talkBox = createTalk(stage);
@@ -65,8 +67,11 @@ function boot() {
     toggle.textContent = `TUTORIAL PREVIEW ${n}/${steps.length}`;
   });
 
-  const onfoot = createOnFoot({ root: stage, store, bus, mapId: start, reducedMotion: () => reducedMotion.matches, hooks: { talk: (who) => talkStandIn(who) } });
+  const onfoot = createOnFoot({ root: stage, store, bus, mapId: start, spawn: spawnName, reducedMotion: () => reducedMotion.matches, hooks: { talk: (who) => talkStandIn(who) } });
   bus.emit('story:objective', objective());
+  // ?explore=<placeId>: straight into a hop to that place (Studio's sector-map play link).
+  const explore = params.get('explore');
+  if (['alpha', 'beacon', 'dustfall'].includes(explore)) onfoot.flyTo(explore);
   // For tests and poking around in the console.
   window.__onfoot = { onfoot, store, log };
 }

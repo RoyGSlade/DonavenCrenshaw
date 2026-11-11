@@ -27,8 +27,9 @@ export const GIVER_PLACES = Object.freeze(Object.fromEntries(sector.places.map(p
 // Maps can also come from the procedural room dresser (voyage/procgen,
 // `dressRoom(shell, seed)`), which outputs this same format:
 //   - registerMap(def): add a map made at runtime (a dressed room, a Studio preview);
-//   - setRoomDresser(fn): a hand-made map with `"dress": { "seed": 7 }` and no
-//     props is dressed by fn(shell, seed) when it is first entered.
+//   - setRoomDresser(dressRoom): a hand-made map with `"dress": { "seed": 7 }` and
+//     no props is dressed when first entered: dressRoom(map, { seed }) -> { props }
+//     (the API in STUDIO-SCHEMA.md section 6).
 const runtime = new Map();
 let dresser = null;
 const cache = new Map();
@@ -47,7 +48,7 @@ export function getMap(id) {
   if (!cache.has(id)) {
     let def = mapDef(id);
     if (!def) throw new Error(`No map ${id}`);
-    if (dresser && def.dress && !(def.props || []).length) def = dresser(def, def.dress.seed ?? 1);
+    if (dresser && def.dress && !(def.props || []).length) def = { ...def, props: dresser(def, { seed: def.dress.seed ?? 1, locked: [], art: null })?.props || [] };
     cache.set(id, compileMap(def));
   }
   return cache.get(id);

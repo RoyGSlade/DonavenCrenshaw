@@ -70,6 +70,7 @@
 .of-tbtn-dash{right:150px;bottom:30px}
 .of-tbtn.is-down{background:#81e6df;color:#082126}
 .is-fight .of-prompt{display:none}
+@media (max-width:620px){.of-hud-help{bottom:auto;top:72px}.of-hop .of-hud-help{top:34px}.of-hop-toast{bottom:auto;top:64px}}
 @media (max-width:520px){.of-stick{width:104px;height:104px}.of-knob{left:30px;top:30px}.of-tbtn-dash{right:132px}.of-talk-text{font-size:14px}}
 @media (prefers-reduced-motion:reduce){.of-place.show{animation:none;opacity:1}.of-tile.is-hint{border-color:#f4d35e;box-shadow:0 0 0 2px #f4d35e66 inset;animation:of-hint 1.2s ease-in-out infinite}
 @keyframes of-hint{50%{box-shadow:0 0 0 4px #f4d35e33 inset}}

@@ -8,8 +8,15 @@
 // activity id changes). Story's contract publishes the real ids; a page can
 // pass its own `levels` (story or core data) and nothing here changes.
 import TUNING from '../tuning.json' with { type: 'json' };
+import { SKILLS } from '../../data.js';
 
-export const SKILL_LEVELS = Object.freeze(TUNING.skillLevels);
+/** Core/story skills with levels ({ id, levels: [{ level, unlocks }] }) as the flat list used here. */
+export function levelsFromSkills(skills = []) {
+  return skills.flatMap(s => (s.levels || []).map(l => ({ skill: s.id, level: l.level, unlocks: l.unlocks || [] })));
+}
+// Story's skill levels win once they are in data.js (SKILLS[].levels); until then tuning.json's stand-in table.
+const FROM_DATA = levelsFromSkills(SKILLS);
+export const SKILL_LEVELS = Object.freeze(FROM_DATA.length ? FROM_DATA : TUNING.skillLevels);
 export const ACTIVITY_IDS = Object.freeze(Object.fromEntries(Object.entries(TUNING.activities).filter(([k]) => !k.startsWith('_'))));
 
 /** Every unlock the captain has: for each skill, the entries of every level up to its rank. */
@@ -31,7 +38,9 @@ export function activityMods(character, activity, { levels = SKILL_LEVELS, ids =
     if (!def || def.activity !== activity) continue;
     mods.ids.push(u.id);
     if (def.text || u.text) mods.texts.push(u.text || def.text);
-    for (const [k, v] of Object.entries(def)) if (typeof v === 'number') mods[k] = (mods[k] || 0) + v;
+    // An unlock may carry its own size (story data: { id, value }); it replaces the default amount.
+    const nums = Object.entries(def).filter(([, v]) => typeof v === 'number');
+    for (const [k, v] of nums) mods[k] = (mods[k] || 0) + (typeof u.value === 'number' && nums.length === 1 ? u.value : v);
   }
   return mods;
 }

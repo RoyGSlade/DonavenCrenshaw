@@ -63,7 +63,7 @@ export function createInput(root, { mode = 'walk', canvas = null, touch = isTouc
       state.x = dx / R; state.y = dy / R;
       knob.style.transform = `translate(${dx}px, ${dy}px)`;
     };
-    base.addEventListener('pointerdown', (e) => { e.preventDefault(); state.active = true; state.id = e.pointerId; base.setPointerCapture?.(e.pointerId); set(e); });
+    base.addEventListener('pointerdown', (e) => { e.preventDefault(); state.active = true; state.id = e.pointerId; try { base.setPointerCapture?.(e.pointerId); } catch { /* synthetic or already-lifted pointer */ } set(e); });
     base.addEventListener('pointermove', (e) => { if (state.active && e.pointerId === state.id) set(e); });
     const end = (e) => { if (e.pointerId !== state.id) return; state.active = false; state.x = state.y = 0; knob.style.transform = ''; };
     base.addEventListener('pointerup', end); base.addEventListener('pointercancel', end);

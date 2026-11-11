@@ -318,10 +318,10 @@ test('maps can come from the procedural dresser or be registered at runtime', ()
   assert.equal(compiled.id, 'test-room');
   assert.equal(mapDef('test-room'), shell);
   let called = null;
-  setRoomDresser((s, seed) => { called = seed; return { ...s, props: [{ art: 'crate-small', at: [1, 1], block: 'low' }] }; });
+  setRoomDresser((map, { seed }) => { called = seed; return { props: [{ art: 'crate-small', at: [1, 1], block: 'low' }] }; });
   try {
     registerMap({ ...shell, id: 'test-room-2' });
+    assert.equal(called, null, 'registered maps are used as given');
     assert.throws(() => registerMap({ id: 'bad', grid: ['?'] }));
   } finally { setRoomDresser(null); }
-  assert.equal(called, null, 'registered maps are used as given');
 });
