@@ -18,6 +18,10 @@
 import { createWorld } from './world.js';
 import { playMining } from './miningView.js';
 import { playPuzzle } from './puzzleView.js';
+import { playHack } from './hackView.js';
+import { activityMods, hasAccess, accessReason } from './rules/activity.js';
+import { missing } from '../economy.js';
+import { skillById } from '../character.js';
 import { createTalk } from './talk.js';
 import { createSfx } from './sfx.js';
 import { createEmitter, TUTORIAL_EVENTS, metEvent } from './events.js';
@@ -59,7 +63,28 @@ export function createOnFoot({ root, store = null, bus = null, hooks = {}, mapId
   const save = () => store?.get() || null;
   const captain = () => save()?.character || null;
   const fx = tag => (captain() ? effect(captain(), tag) : 0);
-  const stats = () => footStats(captain(), { effect, skillBonus });
+  const mods = (activity) => activityMods(captain(), activity, { levels: hooks.skillLevels || undefined });
+  const stats = () => footStats(captain(), { effect, skillBonus, mods: mods('foot') });
+
+  // Gates on doors and interacts (map data): an access id from a skill level
+  // ("needs Slicer 2"), a core requirement, or a lock you can hack open.
+  function gate(def) {
+    if (!def) return null;
+    if (def.access && !hasAccess(captain(), def.access, { levels: hooks.skillLevels || undefined })) return { reason: accessReason(def.access, { levels: hooks.skillLevels || undefined, skillName: id => skillById(id)?.name || id }) };
+    if (def.requires && store) { const why = missing(save(), def.requires); if (why.length) return { reason: why[0] }; }
+    if (def.lock?.hack) return { reason: 'Locked', hack: def.lock.hack };
+    return null;
+  }
+
+  async function hack(target) {
+    const r = await playHack(root, { title: target.label || 'Lock', difficulty: target.level || 1, seed: Date.now() % 100000, mods: mods('hack'), sound, reducedMotion });
+    emit(TUTORIAL_EVENTS.hacked, { id: target.id, success: r.success, level: target.level || 1 });
+    if (r.success && target.reward && !save()?.flags?.[`hack-${target.id}`]) {
+      store?.grant({ ...(inTutorial() ? {} : target.reward), flags: { [`hack-${target.id}`]: 1 } });
+      toast(target.rewardText || 'Cracked it.');
+    } else if (r.success) toast('Lock open.');
+    return r;
+  }
   const inTutorial = () => Boolean(hooks.tutorial?.());
   const grant = (reward) => (store && reward && !inTutorial() ? store.grant(reward) : null);
 
@@ -71,7 +96,7 @@ export function createOnFoot({ root, store = null, bus = null, hooks = {}, mapId
   }
 
   async function mine(opts = {}) {
-    const r = await playMining(root, { title: opts.title || 'Ore seam', seed: opts.seed || Date.now() % 100000, speed: 1 + fx('mine.speed'), sound, reducedMotion });
+    const r = await playMining(root, { title: opts.title || 'Ore seam', seed: opts.seed || Date.now() % 100000, speed: 1 + fx('mine.speed'), mods: mods('mine'), sound, reducedMotion });
     const g = grant(r.reward);
     if (g && r.ore) toast(`+${r.ore} ore in the hold`);
     emit(TUTORIAL_EVENTS.mined, { ore: r.ore });
@@ -80,7 +105,7 @@ export function createOnFoot({ root, store = null, bus = null, hooks = {}, mapId
 
   async function puzzle(id = 'lockbox', opts = {}) {
     const c = captain();
-    const r = await playPuzzle(root, { id, title: opts.title, hintBonus: fx('hint'), freeHint: c?.stats?.wis === 6, sound });
+    const r = await playPuzzle(root, { id, title: opts.title, hintBonus: fx('hint') + (mods('puzzle').hintSooner || 0), freeHint: c?.stats?.wis === 6, sound });
     if (r.solved) { world.unlock(id); emit(TUTORIAL_EVENTS.solved, { puzzle: id }); }
     return r;
   }
@@ -164,7 +189,11 @@ export function createOnFoot({ root, store = null, bus = null, hooks = {}, mapId
 
   async function interact(target) {
     if (hooks.allow && hooks.allow(target) === false) return null;
+    const shut = target.kind === 'hack' && target.door ? null : gate(target);
+    if (shut && !shut.hack) { toast(`${target.label}: ${shut.reason}.`); sound('jam'); return null; }
+    if (shut?.hack) return hack({ ...target, level: shut.hack });
     switch (target.kind) {
+      case 'hack': return hack(target);
       case 'npc': return talk(target.id, { map: world.map.id });
       case 'station': {
         if (hooks.openStation) return hooks.openStation(target.id);
@@ -185,7 +214,8 @@ export function createOnFoot({ root, store = null, bus = null, hooks = {}, mapId
     root, mapId, spawn, emit, shipArt, reducedMotion, unlocked, sound,
     hooks: {
       interact,
-      locked: (door) => toast(`${door.label} is locked.`),
+      locked: (door) => { toast(`${door.label}: ${door.gate?.reason || 'locked'}.`); sound('jam'); },
+      gate,
       entered: (map) => hooks.entered?.(map),
     },
   });
@@ -201,7 +231,7 @@ export function createOnFoot({ root, store = null, bus = null, hooks = {}, mapId
   }
 
   return {
-    world, emit, talk, mine, puzzle, practice, fight, flyTo, helm, toast, sound,
+    world, emit, talk, mine, puzzle, hack, practice, fight, flyTo, helm, toast, sound, gate, mods,
     questFight: (enemy, seed) => fight(questFightSetup(enemy, seed)),
     destroy() { for (const off of offs) off?.(); world.destroy(); toastNode.remove(); },
   };

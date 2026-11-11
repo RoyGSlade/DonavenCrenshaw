@@ -3,6 +3,7 @@
   "name": "Chibby's workshop",
   "kind": "interior",
   "tile": 48,
+  "room": "workshop",
   "floor": "deck",
   "ambient": "workshop",
   "grid": [
@@ -20,13 +21,13 @@
   "props": [
     {"art":"workbench","at":[1,1],"size":[3,1],"block":"low","station":"pad","interact":{"kind":"station","id":"pad","label":"Chibby's bench: ship upgrades"}},
     {"art":"tool-rack","at":[5,1],"size":[3,0.6],"block":true},
-    {"art":"shelf","at":[9,1],"size":[2,0.6],"block":true},
-    {"art":"shelf","at":[11,1],"size":[2,0.6],"block":true},
-    {"art":"engine-stand","at":[5.5,3.2],"size":[3,1.6],"block":true},
-    {"art":"crate","at":[1,7],"size":[1,1],"block":"low"},
-    {"art":"barrel","at":[12,7],"size":[1,1],"block":"low"},
+    {"art":"parts-shelf","at":[9,1],"size":[2,0.6],"block":true},
+    {"art":"parts-shelf","at":[11,1],"size":[2,0.6],"block":true},
+    {"art":"welding-cart","at":[5.5,3.2],"size":[3,1.6],"block":true},
+    {"art":"crate-small","at":[1,7],"size":[1,1],"block":"low"},
+    {"art":"oil-drum","at":[12,7],"size":[1,1],"block":"low"},
     {"art":"dog-bed","at":[11,5],"size":[1.4,1],"block":false},
-    {"art":"pipe","at":[1,4],"size":[0.6,3],"block":true}
+    {"art":"pipe-run","at":[1,4],"size":[0.6,3],"block":true}
   ],
   "npcs": [
     {"id":"chibby","at":[2,2],"face":"down","wander":0.5},

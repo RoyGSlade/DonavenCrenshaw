@@ -57,17 +57,31 @@ export function loadImage(url) {
 
 /** A loaded sprite image for an art id, or null (draw a placeholder). Starts the load. */
 export function sprite(id) {
-  if (INTERIOR_ART.props[id]) return loadImage(INTERIOR_ART.props[id]);
+  if (INTERIOR_ART.props[id]) return loadImage(INTERIOR_ART.props[id].url);
   return SPRITE_FILES[id] ? loadImage(at(SPRITE_FILES[id])) : null;
 }
 export const groundImage = id => (GROUND_FILES[id] ? loadImage(at(GROUND_FILES[id])) : null);
-export const tileImage = id => (INTERIOR_ART.tiles[id] ? loadImage(INTERIOR_ART.tiles[id]) : null);
+export const tileImage = () => null; // single tiles: none yet (interiors come as room floors and wall sets)
+/** The art room ('workshop', 'cockpit', ...) -> { floor: image|null, wall(piece): image|null }, or null without art. */
+export function roomArt(room) {
+  const r = room && INTERIOR_ART.rooms[room];
+  if (!r) return null;
+  const floor = INTERIOR_ART.floors[r.floor];
+  const walls = INTERIOR_ART.walls[r.wall] || {};
+  return { floor: floor ? loadImage(floor.url) : null, floorCovers: floor?.covers || [4, 4], wall: piece => (walls[piece] ? loadImage(walls[piece]) : null) };
+}
+export const interiorProp = id => INTERIOR_ART.props[id] || null;
 export const castImage = id => (CAST_FILES[id] ? loadImage(at(`cast/${CAST_FILES[id]}`)) : null);
 export const playerFrames = () => ['player-f1', 'player-f2', 'player-f3', 'player-f4'].map(sprite);
 
 /** Start loading everything a map needs, so the first frames have art. */
 export function preload(map) {
   for (const p of map.props) sprite(p.art);
+  for (const room of [map.def.room, ...(map.def.rooms || []).map(r => r.room)]) {
+    const art = roomArt(room);
+    if (art) for (const piece of ['edge-n', 'edge-s', 'edge-w', 'edge-e', 'corner-nw', 'corner-ne', 'corner-sw', 'corner-se', 'outer-nw', 'outer-ne', 'outer-sw', 'outer-se']) art.wall(piece);
+  }
+  sprite('door-open'); sprite('door-closed');
   groundImage(map.floor);
   playerFrames();
   sprite('npc-stand-in');

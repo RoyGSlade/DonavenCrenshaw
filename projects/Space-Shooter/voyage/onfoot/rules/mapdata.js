@@ -22,7 +22,10 @@
 // block: true stops walking and shots; 'low' (crates, consoles) stops walking
 // and shots too but reads as cover; false is decoration you walk over.
 // Interact kinds the walk layer routes (world.js): npc, station, door, mine,
-// puzzle, range, repair, console, ship.
+// puzzle, hack, range, repair, console, ship. Gates (doors and interacts):
+// `locked` (a puzzle id), `access` (a skill-level access id, 'access:slicer.2'),
+// `requires` (core's requirement format, { skills: { slicer: 2 } }) and
+// `lock: { hack: level }` (hack it open). See onfoot.js gate().
 
 export const FACES = Object.freeze({ up: -Math.PI / 2, down: Math.PI / 2, left: Math.PI, right: 0 });
 
@@ -39,7 +42,7 @@ export const DEFAULT_LEGEND = Object.freeze({
   ':': { tile: 'pad' },
 });
 
-export const INTERACT_KINDS = Object.freeze(['npc', 'station', 'door', 'mine', 'puzzle', 'range', 'repair', 'console', 'ship']);
+export const INTERACT_KINDS = Object.freeze(['npc', 'station', 'door', 'mine', 'puzzle', 'hack', 'range', 'repair', 'console', 'ship']);
 const ID = /^[a-z0-9][a-z0-9-]{0,31}$/;
 
 /** Compiles map data to world px: solid rects, blockers, interact points, doors, spawns. Throws on bad data. */

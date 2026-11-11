@@ -21,7 +21,7 @@ import { createEl } from './dom.js';
 import { TUTORIAL_EVENTS } from './events.js';
 import { createSfx } from './sfx.js';
 
-const VERBS = { npc: 'Talk to', station: 'Use', mine: 'Drill', puzzle: 'Fix', range: 'Practice', repair: 'Repair', console: 'Look at', ship: 'Fly', door: 'Go to' };
+const VERBS = { npc: 'Talk to', station: 'Use', mine: 'Drill', puzzle: 'Fix', hack: 'Hack', range: 'Practice', repair: 'Repair', console: 'Look at', ship: 'Fly', door: 'Go to' };
 
 export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks = {}, emit = () => {}, shipArt = null, reducedMotion = () => false, unlocked = [], sound = createSfx() }) {
   const el = createEl('div', { class: 'of-world' });
@@ -31,7 +31,8 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
   const hud = createEl('div', { class: 'of-hud' });
   const fade = createEl('div', { class: 'of-fade' });
   const objectiveLine = createEl('p', { class: 'of-objective', role: 'status', 'aria-live': 'polite', hidden: true });
-  el.append(canvas, hud, objectiveLine, prompt, placeName, fade);
+  const fightHelp = createEl('p', { class: 'of-hud-help' });
+  el.append(canvas, hud, fightHelp, objectiveLine, prompt, placeName, fade);
   el.__world = null; // set to the api below (tests and the dev console reach the world through the element)
   root.append(el);
   const ctx = canvas.getContext('2d');
@@ -97,7 +98,15 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     layerDirty = false;
   }
   const findDoorDef = d => map.def.doors?.find(x => x.id === d.id);
-  const doorLocked = d => { const lock = findDoorDef(d)?.locked; return Boolean(lock) && !opened.has(lock); };
+  // A door's gate: null when open, else { reason, hack?: level, key } (puzzle locks here; skill and hack gates from the page).
+  const doorGate = d => {
+    const def = findDoorDef(d) || {};
+    if (def.locked && !opened.has(def.locked)) return { reason: 'Locked', key: def.locked };
+    const g = hooks.gate?.(def, map) || null;
+    if (g?.hack && opened.has(`hack:${map.id}:${d.id}`)) return null;
+    return g;
+  };
+  const doorLocked = d => Boolean(doorGate(d));
 
   function resize() {
     view = fitCanvas(canvas);
@@ -152,7 +161,14 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
   function use(it) {
     if (it.kind === 'door') {
       const d = map.doors.find(x => x.id === it.id);
-      if (doorLocked(d)) { hooks.locked?.({ ...d, locked: findDoorDef(d).locked }, api); return; }
+      const gate = doorGate(d);
+      if (gate?.hack) {
+        const key = `hack:${map.id}:${d.id}`;
+        const r = hooks.interact?.({ kind: 'hack', id: key, level: gate.hack, label: d.label, door: true }, api);
+        if (r?.then) { busy = true; input.enabled = false; r.then(res => { if (res?.success) { opened.add(key); layerDirty = true; } }).finally(() => { busy = false; input.enabled = true; }); }
+        return;
+      }
+      if (gate) { hooks.locked?.({ ...d, gate }, api); return; }
       go(it.to, it.arrive);
       return;
     }
@@ -168,14 +184,14 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
   function showPrompt(it) {
     if (!it) { prompt.hidden = true; input.prompt(null); return; }
     const d = it.kind === 'door' ? map.doors.find(x => x.id === it.id) : null;
-    const locked = d && doorLocked(d);
-    const label = it.kind === 'npc' ? `${VERBS.npc} ${it.label || castLook(it.id).name}` : locked ? `${it.label}: locked` : it.label || `${VERBS[it.kind]} ${it.id}`;
+    const gate = d ? doorGate(d) : hooks.gate?.(it, map) || null;
+    const label = it.kind === 'npc' ? `${VERBS.npc} ${it.label || castLook(it.id).name}` : gate ? `${it.label}: ${gate.hack ? `locked (hack, level ${gate.hack})` : gate.reason}` : it.label || `${VERBS[it.kind]} ${it.id}`;
     const key = input.touch ? '' : 'E  ';
     const text = `${key}${label}`;
     if (prompt.textContent !== text) prompt.textContent = text;
     prompt.hidden = false;
     prompt.dataset.kind = it.kind;
-    input.prompt(it.kind === 'npc' ? 'Talk' : locked ? 'Locked' : it.kind === 'door' ? 'Go' : 'Use');
+    input.prompt(it.kind === 'npc' ? 'Talk' : gate?.hack ? 'Hack' : gate ? 'Locked' : it.kind === 'door' ? 'Go' : 'Use');
   }
 
   // ---- fighting ----
@@ -200,6 +216,7 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     mode = 'walk';
     el.classList.remove('is-fight');
     hud.replaceChildren();
+    fightHelp.textContent = '';
     input.destroy();
     input = createInput(el, { mode: 'walk', canvas });
     const done = fightDone; fightDone = null;
@@ -237,8 +254,8 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     const text = fight.ended
       ? (fight.ended.outcome === 'win' ? 'Area clear.' : fight.ended.outcome === 'lose' ? 'You go down.' : 'You got out.')
       : `${left} hostile${left === 1 ? '' : 's'} left`;
-    hud.replaceChildren(createEl('div', { class: 'of-hud-row' }, createEl('b', { text: `HP ${Math.ceil(p.hp)}` }), bar, createEl('span', { class: 'of-hud-note', text })),
-      fight.ended ? null : createEl('p', { class: 'of-hud-help', text: input.touch ? 'Left stick: move. Right stick: aim and fire. Dash dodges.' : 'WASD move · mouse or arrows aim and fire · Space dashes' }));
+    hud.replaceChildren(createEl('div', { class: 'of-hud-row' }, createEl('b', { text: `HP ${Math.ceil(p.hp)}` }), bar, createEl('span', { class: 'of-hud-note', text })));
+    fightHelp.textContent = fight.ended ? '' : input.touch ? 'Left stick: move. Right stick: aim and fire. Dash dodges.' : 'WASD move · mouse or arrows aim and fire · Space dashes';
   }
 
   // ---- drawing ----
@@ -450,6 +467,7 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     },
     sound,
     isUnlocked: id => opened.has(id),
+    open: id => { opened.add(id); layerDirty = true; },
     setNpcVisible(id, on) { if (on) hidden.delete(id); else hidden.add(id); },
     follow(id, on) { if (on) following.add(id); else following.delete(id); },
     redraw() { layerDirty = true; },

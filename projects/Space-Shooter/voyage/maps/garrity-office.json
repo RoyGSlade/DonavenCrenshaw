@@ -3,6 +3,7 @@
   "name": "Garrity's yard office",
   "kind": "interior",
   "tile": 48,
+  "room": "salvage-office",
   "floor": "grate",
   "ambient": "salvage-yard",
   "grid": [
@@ -17,11 +18,11 @@
   ],
   "props": [
     {"art":"desk","at":[7,1.4],"size":[3,1],"block":"low"},
-    {"art":"scrap-pile","at":[1,1],"size":[2,2],"block":true,"interact":{"kind":"console","id":"scrap","label":"Scrap pile"}},
-    {"art":"scrap-pile","at":[1,4.5],"size":[1.6,1.6],"block":true},
-    {"art":"crate-stack","at":[10,4],"size":[1,2],"block":true},
-    {"art":"barrel","at":[4,5.5],"size":[1,1],"block":"low"},
-    {"art":"engine-stand","at":[4,2.5],"size":[2,1.2],"block":true}
+    {"art":"salvage-pile","at":[1,1],"size":[2,2],"block":true,"interact":{"kind":"console","id":"scrap","label":"Scrap pile"}},
+    {"art":"salvage-pile","at":[1,4.5],"size":[1.6,1.6],"block":true},
+    {"art":"crate-large","at":[10,4],"size":[1,2],"block":true},
+    {"art":"oil-drum","at":[4,5.5],"size":[1,1],"block":"low"},
+    {"art":"welding-cart","at":[4,2.5],"size":[2,1.2],"block":true}
   ],
   "npcs": [
     {"id":"garrity","at":[8,2.6],"face":"down","wander":0.7}

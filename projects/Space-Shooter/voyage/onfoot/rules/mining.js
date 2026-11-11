@@ -13,14 +13,16 @@ import TUNING from '../tuning.json' with { type: 'json' };
 export const MINING = Object.freeze({ ...TUNING.mining });
 
 /** speed: the captain's dig multiplier, 1 + effect(c, 'mine.speed') (Constitution), clamped at 0.5. */
-export function createMining({ seed = 1, chunks = MINING.chunks, speed = 1 } = {}) {
-  return { t: 0, speed: Math.max(0.5, speed), seed: (seed % 997) / 997 * Math.PI * 2, heat: 0, progress: 0, drilling: false, jam: 0, jams: 0, cracks: 0, chunks, inBand: false, zone: 'cold', done: false, result: null, events: [] };
+/** mods: activityMods(c, 'mine'): band (wider sweet spot), heatUp (slower heating), time (longer vein). */
+export function createMining({ seed = 1, chunks = MINING.chunks, speed = 1, mods = {} } = {}) {
+  return { t: 0, speed: Math.max(0.5, speed), band: MINING.band + (mods.band || 0), heatUp: Math.max(0.2, MINING.heatUp + (mods.heatUp || 0)), duration: MINING.duration + (mods.time || 0), seed: (seed % 997) / 997 * Math.PI * 2, heat: 0, progress: 0, drilling: false, jam: 0, jams: 0, cracks: 0, chunks, inBand: false, zone: 'cold', done: false, result: null, events: [] };
 }
 
 /** The green band's [low, high] at time t. */
 export function bandAt(s) {
   const centre = 0.56 + 0.17 * Math.sin(s.t * 0.62 + s.seed) * Math.min(1, 0.3 + s.progress);
-  return [centre - MINING.band / 2, centre + MINING.band / 2];
+  const band = s.band ?? MINING.band;
+  return [centre - band / 2, centre + band / 2];
 }
 
 export function stepMining(s, { drill = false } = {}, dt = 1 / 60) {
@@ -33,7 +35,7 @@ export function stepMining(s, { drill = false } = {}, dt = 1 / 60) {
     s.drilling = false;
   } else {
     s.drilling = Boolean(drill);
-    s.heat = Math.min(1, Math.max(0, s.heat + (s.drilling ? MINING.heatUp : -MINING.coolDown) * dt));
+    s.heat = Math.min(1, Math.max(0, s.heat + (s.drilling ? (s.heatUp ?? MINING.heatUp) : -MINING.coolDown) * dt));
     const [lo, hi] = bandAt(s);
     s.zone = s.heat < lo ? 'cold' : s.heat <= hi ? 'green' : 'hot';
     s.inBand = s.zone === 'green';
@@ -45,7 +47,7 @@ export function stepMining(s, { drill = false } = {}, dt = 1 / 60) {
   }
   const cracked = Math.floor(s.progress * s.chunks + 1e-9);
   while (s.cracks < cracked) { s.cracks++; s.events.push({ type: 'crack', n: s.cracks }); }
-  if (s.progress >= 1 || s.t >= MINING.duration) {
+  if (s.progress >= 1 || s.t >= (s.duration ?? MINING.duration)) {
     s.done = true;
     s.result = miningResult(s);
     s.events.push({ type: 'done', ...s.result });

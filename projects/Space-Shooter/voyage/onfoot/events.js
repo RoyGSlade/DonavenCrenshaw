@@ -18,6 +18,7 @@ export const TUTORIAL_EVENTS = Object.freeze({
   entered: 'onfoot:entered',       // { map } walked into a place
   poi: 'explore:poi',              // { id } scanned a point of interest
   fight: 'onfoot:fight',           // { outcome, hits, shots, kills } any on-foot fight ended
+  hacked: 'onfoot:hacked',         // { id, success, level } a hack finished
 });
 /** Opening a talk with someone: met:<castId>, every time (contract section 4). */
 export const metEvent = castId => `met:${castId}`;

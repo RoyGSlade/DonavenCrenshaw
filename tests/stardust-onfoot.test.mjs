@@ -240,3 +240,88 @@ test('the on-foot layers name no CDN and use textContent for text (offline, safe
     assert.doesNotMatch(text, /innerHTML|insertAdjacentHTML|document\.write/, `${f} uses textContent`);
   }
 });
+
+import { activityMods, hasAccess, accessReason, unlocksFor } from '../projects/Space-Shooter/voyage/onfoot/rules/activity.js';
+import { createHack, stepHack, splice, cursorInWindow } from '../projects/Space-Shooter/voyage/onfoot/rules/hack.js';
+import { wallPiece } from '../projects/Space-Shooter/voyage/onfoot/rules/walls.js';
+import { registerMap, setRoomDresser, mapDef } from '../projects/Space-Shooter/voyage/maps/index.js';
+
+test('skill levels upgrade the activities themselves and open access gates (one function each)', () => {
+  const none = { skills: {} };
+  const slicer2 = { stats: { cha: 3, con: 3, dex: 3, wis: 3 }, earned: 0, permanent: 0, skills: { slicer: 2, brawler: 2, 'patch-kit': 2 } };
+  assert.deepEqual(activityMods(none, 'hack').ids, []);
+  const h = activityMods(slicer2, 'hack');
+  assert.ok(h.time > 0 && h.window > 0 && h.misses > 0, 'Slicer 2: more time, wider window, an extra miss');
+  assert.ok(activityMods({ skills: { slicer: 1 } }, 'hack').window === undefined, 'level 1 alone gives only the time');
+  assert.ok(activityMods(slicer2, 'mine').band > 0);
+  assert.ok(activityMods(slicer2, 'foot').spread < 0);
+  assert.ok(activityMods(slicer2, 'puzzle').hintSooner > 0);
+  // The minigames read them.
+  const easy = createHack({ difficulty: 2, seed: 3, mods: h }), hard = createHack({ difficulty: 2, seed: 3 });
+  assert.ok(easy.time > hard.time && easy.tumblers[0].width > hard.tumblers[0].width && easy.allowed > hard.allowed);
+  const f = footStats(slicer2, { effect, skillBonus, mods: activityMods(slicer2, 'foot') });
+  assert.ok(f.spreadScale < footStats(slicer2, { effect, skillBonus }).spreadScale);
+  assert.ok(createMining({ mods: activityMods(slicer2, 'mine') }).band > createMining({}).band);
+  // Access: "needs Slicer 2".
+  assert.equal(hasAccess(none, 'access:slicer.2'), false);
+  assert.equal(hasAccess(slicer2, 'access:slicer.2'), true);
+  assert.equal(hasAccess(slicer2, 'access:slicer.1'), true, 'a higher level holds the lower access');
+  assert.equal(accessReason('access:slicer.2', { skillName: () => 'Slicer' }), 'Needs Slicer 2');
+  assert.ok(unlocksFor(slicer2).every(u => ['activity', 'access', 'ability'].includes(u.type)));
+  // A page can hand in its own levels (story or core data).
+  const own = [{ skill: 'slicer', level: 1, unlocks: [{ type: 'activity', id: 'activity:hack.time+' }, { type: 'access', id: 'access:vault' }] }];
+  assert.equal(hasAccess({ skills: { slicer: 1 } }, 'access:vault', { levels: own }), true);
+});
+
+test('hacking: splicing inside the window sets tumblers and opens the lock; misses trip the trace; time runs out', () => {
+  const play = (good) => {
+    const h = createHack({ difficulty: 1, seed: 11 });
+    for (let i = 0; i < 60 * 30 && !h.done; i++) {
+      stepHack(h, 1 / 60);
+      if (good ? cursorInWindow(h) : i % 20 === 0 && !cursorInWindow(h)) splice(h);
+    }
+    return h.result;
+  };
+  assert.equal(play(true).success, true);
+  const bad = play(false);
+  assert.equal(bad.success, false); assert.equal(bad.how, 'trace');
+  const idle = createHack({ difficulty: 1 });
+  for (let i = 0; i < 60 * 40 && !idle.done; i++) stepHack(idle, 1 / 60);
+  assert.equal(idle.result.how, 'timeout');
+  assert.ok(createHack({ difficulty: 3 }).tumblers.length > createHack({ difficulty: 1 }).tumblers.length);
+});
+
+test('gated content is data: a hackable staff door, a skill-gated console, a hackable cache', () => {
+  assert.deepEqual(MAP_DEFS.cantina.doors.find(d => d.id === 'staff').lock, { hack: 1 });
+  assert.equal(MAP_DEFS['moon-outpost'].props.find(p => p.interact?.id === 'reactor').interact.access, 'access:slicer.2');
+  assert.equal(MAP_DEFS['moon-outpost'].props.find(p => p.interact?.kind === 'hack').interact.level, 1);
+});
+
+test('interior walls: the right piece for each wall tile (art/interiors README)', () => {
+  // A 4x4 room: corners, edges.
+  const grid = ['####', '#..#', '#..#', '####'];
+  const open = (r, c) => grid[r]?.[c] === '.';
+  assert.equal(wallPiece(open, 0, 1), 'edge-n');
+  assert.equal(wallPiece(open, 3, 1), 'edge-s');
+  assert.equal(wallPiece(open, 1, 0), 'edge-w');
+  assert.equal(wallPiece(open, 1, 3), 'edge-e');
+  assert.equal(wallPiece(open, 0, 0), 'corner-nw');
+  assert.equal(wallPiece(open, 3, 3), 'corner-se');
+  const l = ['####', '#..#', '#.##', '####'];
+  const openL = (r, c) => l[r]?.[c] === '.';
+  assert.equal(wallPiece(openL, 2, 2), 'outer-nw', 'the corner sticking into an L-shaped room');
+});
+
+test('maps can come from the procedural dresser or be registered at runtime', () => {
+  const shell = { id: 'test-room', name: 'Test room', grid: ['#####', '#...#', '#...#', '#####'], spawns: { default: [2, 2, 'up'] }, doors: [{ id: 'out', at: [2, 3], to: 'hangar', arrive: 'default' }], dress: { seed: 4 } };
+  const compiled = registerMap(shell);
+  assert.equal(compiled.id, 'test-room');
+  assert.equal(mapDef('test-room'), shell);
+  let called = null;
+  setRoomDresser((s, seed) => { called = seed; return { ...s, props: [{ art: 'crate-small', at: [1, 1], block: 'low' }] }; });
+  try {
+    registerMap({ ...shell, id: 'test-room-2' });
+    assert.throws(() => registerMap({ id: 'bad', grid: ['?'] }));
+  } finally { setRoomDresser(null); }
+  assert.equal(called, null, 'registered maps are used as given');
+});

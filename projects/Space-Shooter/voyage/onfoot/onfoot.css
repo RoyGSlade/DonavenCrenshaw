@@ -92,3 +92,5 @@
 .of-overlay{position:fixed;inset:0;z-index:50;display:grid;grid-template-rows:auto 1fr auto;gap:8px;padding:12px;background:#05080df2}
 .of-overlay .of-stage{border:1px solid #2a4152;border-radius:6px}
 .of-overlay-quit{justify-self:center}
+.of-hack-canvas{display:block;width:100%;height:230px;border:1px solid #2a4152;border-radius:4px;background:#070d17}
+.of-perks{color:#9fe870!important}

@@ -25,10 +25,10 @@
   ],
   "props": [
     {"art":"player-ship","at":[4,2.6],"size":[8,5],"block":true,"station":"pad"},
-    {"art":"hatch-console","at":[1,2],"size":[1,1.4],"block":true,"station":"hatch","interact":{"kind":"ship","id":"helm","label":"Launch hatch: set a course"}},
+    {"art":"nav-console","at":[1,2],"size":[1,1.4],"block":true,"station":"hatch","interact":{"kind":"ship","id":"helm","label":"Launch hatch: set a course"}},
     {"art":"job-board","at":[14,1],"size":[2.4,1],"block":true,"station":"board","interact":{"kind":"station","id":"board","label":"Job board"}},
     {"art":"bunk","at":[21,1],"size":[2.4,1],"block":true},
-    {"art":"terminal","at":[23.6,1],"size":[1,1],"block":true,"station":"quarters","interact":{"kind":"station","id":"quarters","label":"Your bunk: skills and stats"}},
+    {"art":"engineering-console","at":[23.6,1],"size":[1,1],"block":true,"station":"quarters","interact":{"kind":"station","id":"quarters","label":"Your bunk: skills and stats"}},
     {"art":"locker","at":[24.4,3],"size":[0.8,1],"block":true},
     {"art":"locker","at":[24.4,4],"size":[0.8,1],"block":true,"station":"locker","interact":{"kind":"station","id":"locker","label":"Mel's gear wall"}},
     {"art":"locker","at":[24.4,5],"size":[0.8,1],"block":true},
@@ -38,13 +38,13 @@
     {"art":"fuel-barrel","at":[14,7],"size":[1,1],"block":"low"},
     {"art":"fuel-barrel","at":[14.9,7.2],"size":[0.8,0.8],"block":"low"},
     {"art":"supply-pod","at":[22,8.6],"size":[1.8,1.8],"block":true},
-    {"art":"scrap-pile","at":[3,13.4],"size":[2.2,1.6],"block":true},
+    {"art":"salvage-pile","at":[3,13.4],"size":[2.2,1.6],"block":true},
     {"art":"ore-slab","at":[5.4,13.2],"size":[1.8,1.8],"block":true,"station":"scrap","interact":{"kind":"mine","id":"scrap-seam","label":"The seam Ralph dug up: drill it"}},
     {"art":"drill-rig","at":[7.4,13.4],"size":[1.5,1.5],"block":true},
     {"art":"dog-bed","at":[9.2,13.6],"size":[1.4,1],"block":false,"station":"kennel"},
     {"art":"range-mat","at":[14,10],"size":[6,4],"block":false,"station":"range","interact":{"kind":"range","id":"range","label":"Mel's range"}},
-    {"art":"cargo-crate","at":[15.2,10.4],"size":[1,1],"block":"low"},
-    {"art":"cargo-crate","at":[17.6,12.4],"size":[1,1],"block":"low"}
+    {"art":"cargo-crate","at":[14.1,13.1],"size":[0.9,0.9],"block":"low"},
+    {"art":"fuel-barrel","at":[20.2,10.1],"size":[0.8,0.8],"block":"low"}
   ],
   "npcs": [
     {"id":"chibby","at":[13,5],"face":"left","wander":0.5,"station":"pad"},

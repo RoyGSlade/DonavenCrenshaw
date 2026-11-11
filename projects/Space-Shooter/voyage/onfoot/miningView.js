@@ -4,8 +4,8 @@ import { createMining, stepMining, bandAt, MINING } from './rules/mining.js';
 import { fitCanvas } from './viewport.js';
 import { createEl } from './dom.js';
 
-export function playMining(root, { title = 'Ore seam', seed = 1, speed = 1, sound = () => {}, reducedMotion = () => false } = {}) {
-  const state = createMining({ seed, speed });
+export function playMining(root, { title = 'Ore seam', seed = 1, speed = 1, mods = {}, sound = () => {}, reducedMotion = () => false } = {}) {
+  const state = createMining({ seed, speed, mods });
   let drillTick = 0;
   const canvas = createEl('canvas', { class: 'of-mine-canvas', 'aria-hidden': 'true' });
   const status = createEl('p', { class: 'of-mine-status', role: 'status', 'aria-live': 'polite', text: 'Hold to drill. Keep the heat in the green band.' });
@@ -13,6 +13,7 @@ export function playMining(root, { title = 'Ore seam', seed = 1, speed = 1, soun
   const panel = createEl('section', { class: 'of-panel of-mine', role: 'dialog', 'aria-label': `Mining: ${title}` },
     createEl('p', { class: 'of-eyebrow', text: `MINING · ${title.toUpperCase()}` }),
     canvas, status, drill,
+    mods.texts?.length ? createEl('p', { class: 'of-help of-perks', text: `Your skills: ${mods.texts.join(' · ')}` }) : null,
     createEl('p', { class: 'of-help', text: 'Space or hold the button. Under the band the bit only scratches; over it, it glows and jams at the top.' }));
   panel.__state = state;
   root.append(panel);
@@ -27,7 +28,7 @@ export function playMining(root, { title = 'Ore seam', seed = 1, speed = 1, soun
   const kd = (e) => { if (e.code === 'Space' || e.code === 'Enter' || e.code === 'KeyE') { e.preventDefault(); if (!e.repeat) down(e); } };
   const ku = (e) => { if (e.code === 'Space' || e.code === 'Enter' || e.code === 'KeyE') up(); };
   addEventListener('keydown', kd); addEventListener('keyup', ku);
-  drill.addEventListener('keydown', (e) => { if (e.code === 'Space' || e.code === 'Enter') e.preventDefault(); });
+  drill.addEventListener('keydown', (e) => { if (!state.done && (e.code === 'Space' || e.code === 'Enter')) e.preventDefault(); });
 
   function frame(now) {
     raf = requestAnimationFrame(frame);
@@ -92,7 +93,7 @@ export function playMining(root, { title = 'Ore seam', seed = 1, speed = 1, soun
     ctx.fillStyle = '#8fa6b7'; ctx.font = '10px Consolas, monospace'; ctx.textAlign = 'center';
     ctx.fillText('HEAT', mx + mw / 2, h - 2);
     // Time left.
-    ctx.fillStyle = '#81e6df'; ctx.fillRect(rx, h - 6, rw * Math.max(0, 1 - state.t / MINING.duration), 3);
+    ctx.fillStyle = '#81e6df'; ctx.fillRect(rx, h - 6, rw * Math.max(0, 1 - state.t / state.duration), 3);
   }
 
   function finishUp() {

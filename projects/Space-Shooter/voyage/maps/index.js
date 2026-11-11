@@ -24,12 +24,30 @@ export const PUZZLES = puzzles;
 // Where each quest giver is met after the exploration hop (from the sector map).
 export const GIVER_PLACES = Object.freeze(Object.fromEntries(sector.places.map(p => [p.giver, p.map])));
 
+// Maps can also come from the procedural room dresser (voyage/procgen,
+// `dressRoom(shell, seed)`), which outputs this same format:
+//   - registerMap(def): add a map made at runtime (a dressed room, a Studio preview);
+//   - setRoomDresser(fn): a hand-made map with `"dress": { "seed": 7 }` and no
+//     props is dressed by fn(shell, seed) when it is first entered.
+const runtime = new Map();
+let dresser = null;
 const cache = new Map();
+
+export function registerMap(def) {
+  const compiled = compileMap(def); // throws on bad data before it is kept
+  runtime.set(def.id, def);
+  cache.set(def.id, compiled);
+  return compiled;
+}
+export function setRoomDresser(fn) { dresser = typeof fn === 'function' ? fn : null; cache.clear(); }
+export const mapDef = id => runtime.get(id) || MAP_DEFS[id] || null;
+
 /** The compiled map for an id (compiled once). */
 export function getMap(id) {
   if (!cache.has(id)) {
-    const def = MAP_DEFS[id];
+    let def = mapDef(id);
     if (!def) throw new Error(`No map ${id}`);
+    if (dresser && def.dress && !(def.props || []).length) def = dresser(def, def.dress.seed ?? 1);
     cache.set(id, compileMap(def));
   }
   return cache.get(id);

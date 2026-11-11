@@ -3,6 +3,7 @@
   "name": "Edna's back room",
   "kind": "interior",
   "tile": 48,
+  "room": "den",
   "floor": "deck-dark",
   "ambient": "den",
   "grid": [
@@ -11,27 +12,29 @@
     "#.,,,,,...#",
     "#.,,,,,...#",
     "#.,,,,,....",
-    "#.........#",
+    "..........#",
     "#.........#",
     "###########"
   ],
   "props": [
-    {"art":"curtain","at":[1,1],"size":[4,0.5],"block":true},
+    {"art":"contraband-shelf","at":[1,1],"size":[4,0.5],"block":true},
     {"art":"safe","at":[8,1],"size":[1,1],"block":true},
-    {"art":"counter","at":[3,3],"size":[3,1],"block":"low","station":"backroom","interact":{"kind":"station","id":"backroom","label":"Edna's counter: black market"}},
-    {"art":"lockbox","at":[8,3.2],"size":[1,1],"block":true,"interact":{"kind":"puzzle","id":"lockbox","label":"Edna's lockbox"}},
-    {"art":"crate-stack","at":[1,5],"size":[1,2],"block":true},
-    {"art":"plant","at":[8,6],"size":[1,1],"block":true},
-    {"art":"crate","at":[6,6],"size":[1,1],"block":"low"}
+    {"art":"shop-counter","at":[3,3],"size":[3,1],"block":"low","station":"backroom","interact":{"kind":"station","id":"backroom","label":"Edna's counter: black market"}},
+    {"art":"toolbox-chest","at":[8,3.2],"size":[1,1],"block":true,"interact":{"kind":"puzzle","id":"lockbox","label":"Edna's lockbox"}},
+    {"art":"crate-large","at":[1,5],"size":[1,2],"block":true},
+    {"art":"potted-plant","at":[8,6],"size":[1,1],"block":true},
+    {"art":"crate-small","at":[6,6],"size":[1,1],"block":"low"}
   ],
   "npcs": [
     {"id":"edna","at":[4,2],"face":"down","wander":0.3,"station":"backroom"}
   ],
   "doors": [
+    {"id":"cantina","at":[0,5],"size":[1,1],"to":"cantina","arrive":"from-edna-den","label":"The cantina (Edna's back way)"},
     {"id":"out","at":[10,4],"size":[1,1],"to":"hangar","arrive":"from-edna-den","label":"Back to the hangar"}
   ],
   "spawns": {
     "default": [9,4,"left"],
-    "from-hangar": [9,4,"left"]
+    "from-hangar": [9,4,"left"],
+    "from-cantina": [2.4,5,"right"]
   }
 }

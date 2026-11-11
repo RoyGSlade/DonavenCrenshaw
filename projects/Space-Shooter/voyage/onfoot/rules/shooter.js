@@ -42,7 +42,7 @@ export function createFight({ map, spawn = 'default', enemies = [], player = {},
   return {
     map, t: 0, rng: hashSeed('foot', seed), exit: exitRect, exitHold: 0,
     player: { x: s.x, y: s.y, vx: 0, vy: 0, angle: s.angle ?? 0, hp, maxHp: hp, cool: 0, dashT: 0, dashCd: 0, dashX: 0, dashY: 0, iframes: 0, hit: 0,
-      gun: { ...PLAYER_GUN, damage: player.damage ?? PLAYER_GUN.damage, spread: PLAYER_GUN.spread * (player.spreadScale ?? 1) }, dashCooldown: player.dashCooldown ?? DASH.cooldown,
+      gun: { ...PLAYER_GUN, damage: player.damage ?? PLAYER_GUN.damage, spread: PLAYER_GUN.spread * (player.spreadScale ?? 1), rate: PLAYER_GUN.rate * (player.rateScale ?? 1) }, dashCooldown: player.dashCooldown ?? DASH.cooldown,
       speed: TUNING.footSpeed * (player.speedScale ?? 1), guard: player.guard ? 1 : 0, assist: Boolean(player.assist), shots: 0, hits: 0 },
     enemies: enemies.map((e, i) => spawnEnemy(e, i, map)),
     bullets: [], events: [], ended: null, kills: 0,
@@ -279,7 +279,7 @@ export const fightResult = f => f.ended;
  * aim (Dexterity; multipliers clamp at 0.5). A 6 in Constitution adds the guard
  * boon (first hit shrugged off), a 6 in Dexterity the aim assist.
  */
-export function footStats(character, { effect, skillBonus } = {}) {
+export function footStats(character, { effect, skillBonus, mods = {} } = {}) {
   const fx = tag => (effect ? effect(character, tag) : 0);
   const hp = TUNING.footHp + fx('foot.hp');
   const fightBonus = skillBonus ? skillBonus(character, 'fight') : 0;
@@ -287,9 +287,11 @@ export function footStats(character, { effect, skillBonus } = {}) {
   return {
     hp: Math.max(30, Math.round(hp)),
     damage: PLAYER_GUN.damage + fightBonus * 2,
-    dashCooldown: Math.max(0.45, DASH.cooldown - dodge * 0.12),
+    // Skill levels change the sidearm itself (activityMods(c, 'foot')): steadier aim, faster follow-ups, quicker dashes.
+    dashCooldown: Math.max(0.45, (DASH.cooldown - dodge * 0.12) * (1 + (mods.dash || 0))),
+    rateScale: Math.max(0.5, 1 + (mods.rate || 0)),
     speedScale: Math.max(0.5, 1 + fx('foot.speed')),
-    spreadScale: Math.max(0.3, 1 - fx('aim')),
+    spreadScale: Math.max(0.2, (1 - fx('aim')) * (1 + (mods.spread || 0))),
     guard: character?.stats?.con === 6,
     assist: character?.stats?.dex === 6,
   };

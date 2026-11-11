@@ -3,7 +3,8 @@
 // an offscreen layer, and each frame blits it, then draws the few moving
 // bodies. Missing art draws a placeholder in the approved palette (gunmetal,
 // cyan lights, amber for hostiles).
-import { sprite, groundImage, tileImage, castImage, CAST_LOOK } from './assets.js';
+import { wallPiece } from './rules/walls.js';
+import { sprite, groundImage, tileImage, castImage, roomArt, CAST_LOOK } from './assets.js';
 
 const TAU = Math.PI * 2;
 
@@ -83,10 +84,12 @@ function drawTile(ctx, id, x, y, T, row, col, faceBelow = true, overlay = false)
   const img = tileImage(id);
   if (img) { ctx.drawImage(img, x, y, T, T); return; }
   const look = TILE_LOOK[id] || TILE_LOOK.floor;
-  if (overlay && id === 'pad') {
-    // Pad markings over an exterior ground texture: a translucent cyan line grid.
-    ctx.fillStyle = '#0b1a2455'; ctx.fillRect(x, y, T, T);
-    ctx.strokeStyle = '#81e6df44'; ctx.lineWidth = 1.5; ctx.strokeRect(x + 1, y + 1, T - 2, T - 2);
+  if (overlay && !look.solid) {
+    // Markings over a painted floor (ground texture or room floor art): translucent, so the art shows through.
+    if (id === 'pad') { ctx.fillStyle = '#0b1a2455'; ctx.fillRect(x, y, T, T); ctx.strokeStyle = '#81e6df44'; ctx.lineWidth = 1.5; ctx.strokeRect(x + 1, y + 1, T - 2, T - 2); }
+    else if (id === 'grate') { ctx.fillStyle = '#05090e55'; ctx.fillRect(x, y, T, T); ctx.fillStyle = '#0a121a99'; for (let i = 6; i < T; i += 8) ctx.fillRect(x + 4, y + i, T - 8, 2); }
+    else if (id === 'rug') { ctx.fillStyle = '#5a2a4640'; ctx.fillRect(x, y, T, T); }
+    else if (id === 'hazard') { ctx.save(); ctx.globalAlpha = 0.7; ctx.beginPath(); ctx.rect(x, y, T, T); ctx.clip(); ctx.fillStyle = look.stripes; for (let i = -T; i < T; i += 16) { ctx.beginPath(); ctx.moveTo(x + i, y + T); ctx.lineTo(x + i + 8, y + T); ctx.lineTo(x + i + T + 8, y); ctx.lineTo(x + i + T, y); ctx.fill(); } ctx.restore(); }
     return;
   }
   ctx.fillStyle = look.base; ctx.fillRect(x, y, T, T);
@@ -131,6 +134,30 @@ export function buildStaticLayer(map, scale, { extraArt = null, isLocked = () =>
     ctx.fillStyle = '#070d1733'; ctx.fillRect(0, 0, map.w, map.h);
   } else if (map.kind === 'exterior') { ctx.fillStyle = '#1a2430'; ctx.fillRect(0, 0, map.w, map.h); }
   const solidTile = id => Boolean(TILE_LOOK[id]?.solid) || Object.values(map.legend).some(l => l.tile === id && l.solid);
+  const cellAt = (r, c) => map.cells[r]?.[c];
+  // Door cells count as wall for picking wall pieces: a door sits in a gap in the wall and the wall runs on.
+  const inDoor = (r, c) => map.doors.some(d => c * T >= d.x - 1 && (c + 1) * T <= d.x + d.w + 1 && r * T >= d.y - 1 && (r + 1) * T <= d.y + d.h + 1);
+  const open = (r, c) => { const id = cellAt(r, c); return id !== undefined && !solidTile(id) && !inDoor(r, c); };
+  // Which art room each cell belongs to (map "room", or "rooms" regions for a multi-room map like the ship).
+  const regions = (map.def.rooms || []).map(r => ({ room: r.room, x0: r.at[0], y0: r.at[1], x1: r.at[0] + r.size[0], y1: r.at[1] + r.size[1] }));
+  const roomOf = (r, c) => regions.find(g => c >= g.x0 && c < g.x1 && r >= g.y0 && r < g.y1)?.room || map.def.room || null;
+  const artFor = new Map();
+  const art = room => { if (!artFor.has(room)) artFor.set(room, roomArt(room)); return artFor.get(room); };
+  // Floors: a room's seamless floor repeats every 4 tiles under everything that isn't outside the map.
+  const floorRooms = new Set();
+  for (let r = 0; r < map.rows; r++) for (let c = 0; c < map.cols; c++) if (cellAt(r, c) !== 'void' && art(roomOf(r, c))?.floor) floorRooms.add(roomOf(r, c));
+  for (const room of floorRooms) {
+    const a = art(room);
+    ctx.save();
+    ctx.beginPath();
+    for (let r = 0; r < map.rows; r++) for (let c = 0; c < map.cols; c++) if (cellAt(r, c) !== 'void' && roomOf(r, c) === room) ctx.rect(c * T, r * T, T, T);
+    ctx.clip();
+    const pattern = ctx.createPattern(a.floor, 'repeat');
+    const k = (T * a.floorCovers[0]) / a.floor.width;
+    pattern.setTransform?.(new DOMMatrix([k, 0, 0, k, 0, 0]));
+    ctx.fillStyle = pattern; ctx.fillRect(0, 0, map.w, map.h);
+    ctx.restore();
+  }
   // Three passes: floors, then the soft shadow walls cast on the floor, then the walls.
   for (const pass of ['floor', 'solid']) {
     if (pass === 'solid') {
@@ -143,10 +170,11 @@ export function buildStaticLayer(map, scale, { extraArt = null, isLocked = () =>
         const solid = solidTile(id);
         if ((pass === 'solid') !== solid) continue;
         const floorish = id === 'floor';
-        if (floorish && ground) continue;
+        if (floorish && (ground || floorRooms.has(roomOf(r, c)))) continue;
+        if (solid && id !== 'void' && drawWallPiece(ctx, art(roomOf(r, c)), r, c, T, open, id === 'window')) continue;
         const below = map.cells[r + 1]?.[c];
         const faceBelow = below !== undefined && !solidTile(below);
-        drawTile(ctx, floorish ? map.floor : id, c * T, r * T, T, r, c, faceBelow, Boolean(ground));
+        drawTile(ctx, floorish ? map.floor : id, c * T, r * T, T, r, c, faceBelow, Boolean(ground) || floorRooms.has(roomOf(r, c)));
       }
     }
   }
@@ -161,7 +189,27 @@ export function buildStaticLayer(map, scale, { extraArt = null, isLocked = () =>
   return { canvas, scale: s };
 }
 
+function drawWallPiece(ctx, art, r, c, T, open, glass) {
+  if (!art) return false;
+  const piece = wallPiece(open, r, c);
+  if (!piece) { ctx.fillStyle = '#080d14'; ctx.fillRect(c * T, r * T, T, T); return true; }
+  const img = art.wall(piece);
+  if (!img) return false;
+  ctx.drawImage(img, c * T, r * T, T, T);
+  if (glass) { ctx.fillStyle = '#0b2a3acc'; ctx.fillRect(c * T + 4, r * T + T * 0.3, T - 8, T * 0.3); ctx.fillStyle = '#81e6df44'; ctx.fillRect(c * T + 4, r * T + T * 0.3, T - 8, 2); }
+  return true;
+}
+
 function drawDoor(ctx, d, locked) {
+  const ratio = Math.max(d.w, d.h) / Math.min(d.w, d.h);
+  const img = ratio >= 1.5 && ratio <= 2.6 ? (!locked ? sprite('door-open') : sprite('door-closed')) : null;
+  if (img) {
+    ctx.save();
+    if (d.w >= d.h) ctx.drawImage(img, d.x, d.y, d.w, d.h);
+    else { ctx.translate(d.x + d.w / 2, d.y + d.h / 2); ctx.rotate(Math.PI / 2); ctx.drawImage(img, -d.h / 2, -d.w / 2, d.h, d.w); }
+    ctx.restore();
+    if (!locked) return;
+  }
   ctx.save();
   ctx.fillStyle = '#0b1622'; ctx.fillRect(d.x, d.y, d.w, d.h);
   ctx.fillStyle = locked ? '#ffad72' : '#81e6df';
