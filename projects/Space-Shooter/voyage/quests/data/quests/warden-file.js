@@ -10,6 +10,12 @@ export default {
   "giver": "vey",
   "location": "beacon",
   "summary": "The Guild purges its old Warden records tonight. One of them is your licence file.",
+  "pitch": {
+    "line": "vey.job.warden-file",
+    "emotion": "sly",
+    "direction": "Velvet excitement, a real secret.",
+    "text": "The Guild purges its old Warden files tonight. One of them is yours. Shall we go and read it first?"
+  },
   "requires": {
     "flags": {
       "fragment-2": 1

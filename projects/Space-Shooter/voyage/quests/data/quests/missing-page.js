@@ -10,6 +10,12 @@ export default {
   "giver": "vey",
   "location": "beacon",
   "summary": "A pickpocket lifted one page from Vey's ledger. The page with everyone's secrets on it.",
+  "pitch": {
+    "line": "vey.job.missing-page",
+    "emotion": "worried",
+    "direction": "Casual on top, rattled underneath.",
+    "text": "One page of my ledger has gone walking. The important page. Find the thief before lunch."
+  },
   "repeatable": true,
   "rolls": {
     "hideout": {

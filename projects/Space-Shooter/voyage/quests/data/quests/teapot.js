@@ -10,6 +10,12 @@ export default {
   "giver": "vey",
   "location": "beacon",
   "summary": "Vey owes Edna a teapot. It is on a duchess's yacht. Go and get it.",
+  "pitch": {
+    "line": "vey.job.teapot",
+    "emotion": "sly",
+    "direction": "Charming, and quietly terrified of Edna.",
+    "text": "A duchess has a teapot that belongs to Edna. I owe Edna. You see my problem."
+  },
   "rolls": {
     "yacht": {
       "pick": [

@@ -10,6 +10,12 @@ export default {
   "giver": "garrity",
   "location": "dustfall",
   "summary": "The hulk's log points to a sealed Warden courier ship deep in the field. Deadly.",
+  "pitch": {
+    "line": "garrity.job.black-box",
+    "emotion": "worried",
+    "direction": "Not laughing. A warning.",
+    "text": "A sealed Warden courier ship in the field. Another courier, before you. This one can kill you. Careful."
+  },
   "requires": {
     "flags": {
       "fragment-3": 1

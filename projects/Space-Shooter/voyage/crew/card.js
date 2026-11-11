@@ -39,6 +39,8 @@ export function cleanCrewCard(card) {
   if (!name) return null;
   const stats = {};
   for (const id of STAT_IDS) {
+    // A crewmate on an older page has no Strength yet: count it as average.
+    if (card.stats && typeof card.stats === 'object' && card.stats[id] === undefined && id === 'str') { stats[id] = 3; continue; }
     const v = int(card.stats?.[id], 1, 6);
     if (v == null) return null;
     stats[id] = v;

@@ -10,6 +10,12 @@ export default {
   "giver": "hask",
   "location": "alpha",
   "summary": "A Guild wedding cake for Beacon Prime. On time, in one piece, tiers all upright.",
+  "pitch": {
+    "line": "hask.job.three-tiers",
+    "emotion": "dry",
+    "direction": "Briefing voice, a cake treated like live ordnance.",
+    "text": "Wedding cake to Beacon Prime. Three tiers, sugar stars, one very nervous chef. On time and upright."
+  },
   "repeatable": true,
   "rolls": {
     "flavour": {

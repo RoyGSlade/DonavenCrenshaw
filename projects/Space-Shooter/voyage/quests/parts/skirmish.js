@@ -2,7 +2,7 @@
 // fight: it takes the rolled enemy (hp, movement, abilities) and resolves with
 // win / lose / flee / parley. A real-time fight can replace it later by
 // returning the same outcomes.
-import { check } from '../core.js';
+import { check, rollText } from '../core.js';
 import { liveFightSetup } from '../live/dogfight.js';
 
 export const MOVEMENTS = Object.freeze({
@@ -118,14 +118,14 @@ export function actSkirmish(state, action, ctx) {
         let dmg = state.ship.damage + ctx.rng.d6();
         if (broken(state, 'guns')) dmg = Math.ceil(dmg / 2);
         const soaked = damageEnemy(state, dmg);
-        say(`Hit for ${dmg}${broken(state, 'guns') ? ' (guns damaged)' : ''}${soaked ? ` (${soaked} into the shield)` : ''}. Roll ${r.roll}+${r.bonus} vs ${r.dc}.`);
-      } else say(`Miss. Roll ${r.roll}+${r.bonus} vs ${r.dc}.`);
+        say(`Hit for ${dmg}${broken(state, 'guns') ? ' (guns damaged)' : ''}${soaked ? ` (${soaked} into the shield)` : ''}. Roll ${rollText(r)}.`);
+      } else say(`Miss. Roll ${rollText(r)}.`);
     }
   } else if (move === 'evade') {
     const dc = 6 + (broken(state, 'engine') ? ENGINE_PENALTY : 0);
     const r = check(c, { stat: 'dex', tag: 'dodge', dc }, ctx.rng.next);
     evading = r.pass;
-    say(r.pass ? `You slip out of the line of fire. Roll ${r.roll}+${r.bonus} vs ${dc}.` : `You jink, too slow. Roll ${r.roll}+${r.bonus} vs ${dc}.`);
+    say(r.pass ? `You slip out of the line of fire. Roll ${rollText(r)}.` : `You jink, too slow. Roll ${rollText(r)}.`);
     if ((state.enemy.abilities || []).includes('mines')) {
       state.ship.hp = Math.max(0, state.ship.hp - 4);
       say('A mine clips you for 4.');
@@ -135,21 +135,21 @@ export function actSkirmish(state, action, ctx) {
     else {
       const r = check(c, { stat: 'cha', tag: 'talk', dc: state.enemy.parleyDc || 8 }, ctx.rng.next);
       if (r.pass) {
-        say(`They answer. Roll ${r.roll}+${r.bonus} vs ${r.dc}. Weapons go cold.`);
+        say(`They answer. Roll ${rollText(r)}. Weapons go cold.`);
         state.done = true; state.outcome = 'parley';
         return { state };
       }
-      say(`They laugh you off the channel. Roll ${r.roll}+${r.bonus} vs ${r.dc}.`);
+      say(`They laugh you off the channel. Roll ${rollText(r)}.`);
     }
   } else if (move === 'flee') {
     const dc = 7 + (state.enemy.movement === 'charge' ? 1 : 0) + (broken(state, 'engine') ? ENGINE_PENALTY : 0);
     const r = check(c, { stat: 'dex', tag: 'nav', dc }, ctx.rng.next);
     if (r.pass) {
-      say(`You burn clear. Roll ${r.roll}+${r.bonus} vs ${dc}.`);
+      say(`You burn clear. Roll ${rollText(r)}.`);
       state.done = true; state.outcome = 'flee';
       return { state };
     }
-    say(`They stay on your tail. Roll ${r.roll}+${r.bonus} vs ${dc}.`);
+    say(`They stay on your tail. Roll ${rollText(r)}.`);
   }
 
   if (state.enemy.hp <= 0) {

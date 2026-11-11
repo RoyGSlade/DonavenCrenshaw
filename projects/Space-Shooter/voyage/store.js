@@ -3,7 +3,7 @@
 // in, so tests run it with fakes. Account sync (voyage/sync.js) listens to it.
 import { cleanSave, decodeSave, encodeSave, emptySave, emptyUpgrades, LOCAL_KEY } from './save.js';
 import { grant, spend, canAfford, meets, missing } from './economy.js';
-import { createCharacter, learn, die } from './character.js';
+import { createCharacter, learn, die, rollMissingStats } from './character.js';
 import { upgrade } from './upgrades.js';
 import { START_KIT, DEATH } from './data.js';
 
@@ -79,6 +79,13 @@ export function createVoyageStore({ storage = globalThis.localStorage, now = Dat
       const out = die(save.character, rng);
       commit({ ...save, character: out.character, ...(DEATH.loseUpgrades ? { upgrades: emptyUpgrades() } : {}) });
       return out.lost;
+    },
+    /** Rolls any stat the captain is missing (an old save meeting Strength). { statId: value }, {} when none. */
+    rollMissingStats(rng = Math.random) {
+      const out = rollMissingStats(save.character, rng);
+      if (!Object.keys(out.rolled).length) return {};
+      commit({ ...save, character: out.character });
+      return out.rolled;
     },
     upgrade(systemId) {
       const out = upgrade(save, systemId);

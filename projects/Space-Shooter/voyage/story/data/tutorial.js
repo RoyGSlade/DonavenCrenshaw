@@ -1,0 +1,550 @@
+// Stardust story data: the tutorial (legs, steps, talks). DATA ONLY: the body after "= " is strict JSON so the
+// Stardust Studio (Focus) can read and write it (lhc-lanes/stardust/STUDIO-SCHEMA.md,
+// ROUND2-CONTRACT.md). No code, comments or trailing commas inside the JSON.
+// A step's lines are line ids, or { "pick": name } (a line chosen in code: story/tutorial.js PICKS).
+// A talk option is one of: plain ({ label, reply }), a stat attempt ({ stat, dc, label, pass, fail }: a fresh
+// 2d6 roll, both outcomes move on in the tutorial) or skill-gated ({ requires: { skills: { id: level } }, label, reply }).
+// skipIf names a condition in story/tutorial.js SKIP_IF. nudge: lines played once each, in order, when the
+// player has done nothing on that step for nudgeMs.
+export const TUTORIAL_DATA = {
+  "version": 1,
+  "legs": [
+    {
+      "id": "setup",
+      "who": "chibby",
+      "name": "Signing on"
+    },
+    {
+      "id": "ralph",
+      "who": "ralph",
+      "giver": "garrity",
+      "name": "Ralph's find"
+    },
+    {
+      "id": "mel",
+      "who": "mel",
+      "giver": "hask",
+      "name": "Mel's range"
+    },
+    {
+      "id": "edna",
+      "who": "edna",
+      "giver": "vey",
+      "name": "Edna's lockbox"
+    },
+    {
+      "id": "wrap",
+      "who": "chibby",
+      "name": "Open for business"
+    }
+  ],
+  "steps": [
+    {
+      "id": "intro",
+      "leg": "setup",
+      "wait": {
+        "type": "intro:done"
+      }
+    },
+    {
+      "id": "create",
+      "leg": "setup",
+      "objective": "Sign your licence.",
+      "station": "quarters",
+      "enter": [
+        "chibby.create.name",
+        "chibby.create.dice"
+      ],
+      "wait": {
+        "type": "captain:created"
+      },
+      "after": [
+        {
+          "pick": "roll"
+        },
+        "chibby.create.done"
+      ],
+      "unlocks": [
+        "station:quarters"
+      ],
+      "skipIf": "hasCaptain"
+    },
+    {
+      "id": "walk",
+      "leg": "setup",
+      "objective": "Walk to Chibby at the pad.",
+      "station": "pad",
+      "enter": [
+        "chibby.walk.1"
+      ],
+      "also": [
+        {
+          "type": "tutorial:moved",
+          "lines": [
+            "chibby.walk.moving"
+          ]
+        }
+      ],
+      "wait": {
+        "type": "tutorial:arrived",
+        "match": {
+          "station": "pad"
+        }
+      },
+      "nudge": [
+        "chibby.nudge.walk"
+      ]
+    },
+    {
+      "id": "ship",
+      "leg": "setup",
+      "objective": "Talk to Chibby.",
+      "station": "pad",
+      "wait": {
+        "type": "met:chibby"
+      },
+      "after": [
+        "chibby.ship.1",
+        "chibby.ship.2",
+        "chibby.ship.3",
+        "chibby.ship.4"
+      ],
+      "unlocks": [
+        "ship",
+        "station:pad"
+      ],
+      "nudge": [
+        "chibby.nudge.ship"
+      ]
+    },
+    {
+      "id": "ralph",
+      "leg": "ralph",
+      "objective": "Ralph found something. Follow him.",
+      "station": "kennel",
+      "enter": [
+        "chibby.ralph.1"
+      ],
+      "wait": {
+        "type": "met:ralph"
+      },
+      "after": [
+        "ralph.ralph.1",
+        "chibby.ralph.2",
+        "ralph.ralph.2",
+        "chibby.ralph.3"
+      ],
+      "unlocks": [
+        "station:scrap"
+      ],
+      "nudge": [
+        "chibby.nudge.ralph"
+      ]
+    },
+    {
+      "id": "mine",
+      "leg": "ralph",
+      "objective": "Mine the seam Ralph dug up.",
+      "station": "scrap",
+      "wait": {
+        "type": "tutorial:mined"
+      },
+      "after": [
+        "ralph.mine.1",
+        "chibby.mine.1",
+        "chibby.mine.2",
+        "chibby.mine.3"
+      ],
+      "reward": {
+        "items": {
+          "ore": 3
+        }
+      },
+      "unlocks": [
+        "explore:dustfall",
+        "station:hatch"
+      ],
+      "nudge": [
+        "chibby.nudge.mine"
+      ]
+    },
+    {
+      "id": "hop-garrity",
+      "leg": "ralph",
+      "objective": "Fly to Dustfall Station.",
+      "station": "hatch",
+      "target": "dustfall",
+      "also": [
+        {
+          "type": "explore:launched",
+          "lines": [
+            "chibby.launch.1"
+          ],
+          "once": "first-launch"
+        }
+      ],
+      "wait": {
+        "type": "explore:arrived",
+        "match": {
+          "target": "dustfall"
+        }
+      },
+      "after": [
+        "garrity.arrive.1"
+      ],
+      "nudge": [
+        "chibby.nudge.hatch"
+      ]
+    },
+    {
+      "id": "garrity",
+      "leg": "ralph",
+      "objective": "Find Hob Garrity.",
+      "target": "dustfall",
+      "wait": {
+        "type": "met:garrity"
+      },
+      "after": [
+        "garrity.meet.1",
+        "garrity.meet.2",
+        "garrity.meet.3",
+        "garrity.meet.4"
+      ],
+      "reward": {
+        "rep": {
+          "garrity": 5
+        },
+        "flags": {
+          "met-garrity": 1
+        }
+      },
+      "unlocks": [
+        "giver:garrity"
+      ],
+      "nudge": [
+        "garrity.nudge.1"
+      ]
+    },
+    {
+      "id": "mel",
+      "leg": "mel",
+      "objective": "Mel wants a word at the locker.",
+      "station": "locker",
+      "enter": [
+        "chibby.mel.1"
+      ],
+      "wait": {
+        "type": "met:mel"
+      },
+      "after": [
+        "mel.meet.1",
+        "mel.meet.2",
+        "mel.meet.3"
+      ],
+      "reward": {
+        "flags": {
+          "kit-sidearm": 1
+        }
+      },
+      "unlocks": [
+        "station:locker"
+      ],
+      "nudge": [
+        "mel.nudge.1"
+      ]
+    },
+    {
+      "id": "shoot",
+      "leg": "mel",
+      "objective": "Knock down every target on Mel's range.",
+      "station": "range",
+      "enter": [
+        "mel.shoot.0"
+      ],
+      "wait": {
+        "type": "tutorial:shot"
+      },
+      "after": [
+        {
+          "pick": "shot"
+        },
+        "mel.shoot.2",
+        "mel.shoot.3"
+      ],
+      "unlocks": [
+        "station:range",
+        "explore:alpha"
+      ],
+      "nudge": [
+        "mel.nudge.2"
+      ]
+    },
+    {
+      "id": "hop-hask",
+      "leg": "mel",
+      "objective": "Fly to Alpha Relay.",
+      "station": "hatch",
+      "target": "alpha",
+      "also": [
+        {
+          "type": "explore:launched",
+          "lines": [
+            "chibby.launch.1"
+          ],
+          "once": "first-launch"
+        }
+      ],
+      "wait": {
+        "type": "explore:arrived",
+        "match": {
+          "target": "alpha"
+        }
+      },
+      "after": [
+        "hask.arrive.1"
+      ],
+      "nudge": [
+        "chibby.nudge.hatch"
+      ]
+    },
+    {
+      "id": "hask",
+      "leg": "mel",
+      "objective": "Find Stationmaster Hask.",
+      "target": "alpha",
+      "wait": {
+        "type": "met:hask"
+      },
+      "after": [
+        "hask.meet.1",
+        "hask.meet.2",
+        "hask.meet.3",
+        "hask.meet.4"
+      ],
+      "reward": {
+        "rep": {
+          "hask": 5
+        },
+        "flags": {
+          "met-hask": 1
+        }
+      },
+      "unlocks": [
+        "giver:hask"
+      ],
+      "nudge": [
+        "hask.nudge.1"
+      ]
+    },
+    {
+      "id": "edna",
+      "leg": "edna",
+      "objective": "Someone is whistling in the back room.",
+      "station": "backroom",
+      "enter": [
+        "chibby.edna.1"
+      ],
+      "wait": {
+        "type": "met:edna"
+      },
+      "after": [
+        "edna.meet.1",
+        "edna.meet.2"
+      ],
+      "unlocks": [
+        "station:backroom"
+      ],
+      "nudge": [
+        "edna.nudge.1"
+      ]
+    },
+    {
+      "id": "talk",
+      "leg": "edna",
+      "objective": "Talk your way into Edna's good books.",
+      "station": "backroom",
+      "talk": "edna",
+      "wait": {
+        "type": "tutorial:talked",
+        "match": {
+          "talk": "edna"
+        }
+      },
+      "after": [
+        "edna.talk.done"
+      ]
+    },
+    {
+      "id": "puzzle",
+      "leg": "edna",
+      "objective": "Open Edna's lockbox.",
+      "station": "backroom",
+      "enter": [
+        "edna.puzzle.0"
+      ],
+      "wait": {
+        "type": "tutorial:solved",
+        "match": {
+          "puzzle": "lockbox"
+        }
+      },
+      "after": [
+        "edna.puzzle.1",
+        "edna.puzzle.2"
+      ],
+      "unlocks": [
+        "explore:beacon"
+      ],
+      "nudge": [
+        "edna.nudge.2"
+      ]
+    },
+    {
+      "id": "hop-vey",
+      "leg": "edna",
+      "objective": "Fly to Beacon Prime.",
+      "station": "hatch",
+      "target": "beacon",
+      "also": [
+        {
+          "type": "explore:launched",
+          "lines": [
+            "chibby.launch.1"
+          ],
+          "once": "first-launch"
+        }
+      ],
+      "wait": {
+        "type": "explore:arrived",
+        "match": {
+          "target": "beacon"
+        }
+      },
+      "after": [
+        "vey.arrive.1"
+      ],
+      "nudge": [
+        "chibby.nudge.hatch"
+      ]
+    },
+    {
+      "id": "vey",
+      "leg": "edna",
+      "objective": "Find Lucan Vey.",
+      "target": "beacon",
+      "wait": {
+        "type": "met:vey"
+      },
+      "after": [
+        "vey.meet.1",
+        "vey.meet.2",
+        "vey.meet.3",
+        "vey.meet.4"
+      ],
+      "reward": {
+        "rep": {
+          "vey": 5
+        },
+        "flags": {
+          "met-vey": 1
+        }
+      },
+      "unlocks": [
+        "giver:vey"
+      ],
+      "nudge": [
+        "vey.nudge.1"
+      ]
+    },
+    {
+      "id": "open",
+      "leg": "wrap",
+      "enter": [
+        "chibby.open.1",
+        "chibby.open.2",
+        "chibby.open.3",
+        "ralph.open.1",
+        "chibby.open.4"
+      ],
+      "unlocks": [
+        "jobs",
+        "station:board"
+      ]
+    }
+  ],
+  "talks": {
+    "edna": {
+      "who": "edna",
+      "prompt": "edna.talk.ask",
+      "options": [
+        {
+          "label": "\"I'm Chibby's captain. That should count.\"",
+          "reply": "edna.talk.plain"
+        },
+        {
+          "stat": "cha",
+          "dc": 7,
+          "label": "\"Because you clearly have the best taste on this station.\"",
+          "pass": "edna.talk.cha",
+          "fail": "edna.talk.cha-fail"
+        },
+        {
+          "stat": "str",
+          "dc": 7,
+          "label": "Carry her crates in without being asked.",
+          "pass": "edna.talk.str",
+          "fail": "edna.talk.str-fail"
+        },
+        {
+          "stat": "con",
+          "dc": 7,
+          "label": "Drink the whole cup of her tea. All of it.",
+          "pass": "edna.talk.con",
+          "fail": "edna.talk.con-fail"
+        },
+        {
+          "stat": "dex",
+          "dc": 7,
+          "label": "Catch the teacup she \"accidentally\" knocks off the table.",
+          "pass": "edna.talk.dex",
+          "fail": "edna.talk.dex-fail"
+        },
+        {
+          "stat": "wis",
+          "dc": 7,
+          "label": "\"You don't trust anyone. That's why you're still in business.\"",
+          "pass": "edna.talk.wis",
+          "fail": "edna.talk.wis-fail"
+        },
+        {
+          "requires": {
+            "skills": {
+              "trader": 1
+            }
+          },
+          "label": "Ask to see the back shelf.",
+          "reply": "edna.talk.trader"
+        }
+      ]
+    }
+  },
+  "unlockNames": {
+    "ship": "Your ship. She's cozy.",
+    "jobs": "The job board is open",
+    "station:quarters": "Your bunk: stats and skills",
+    "station:pad": "Chibby's pad: upgrades",
+    "station:scrap": "The scrap pile",
+    "station:hatch": "The launch hatch",
+    "station:locker": "Mel's fitting bay",
+    "station:range": "Mel's range",
+    "station:backroom": "Edna's back room",
+    "station:board": "The job board",
+    "explore:dustfall": "Course laid in: Dustfall Station",
+    "explore:alpha": "Course laid in: Alpha Relay",
+    "explore:beacon": "Course laid in: Beacon Prime",
+    "giver:garrity": "Hob Garrity will hire you",
+    "giver:hask": "Stationmaster Hask will hire you",
+    "giver:vey": "Lucan Vey will hire you"
+  },
+  "nudgeMs": 30000
+};

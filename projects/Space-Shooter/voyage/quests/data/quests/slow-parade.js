@@ -10,6 +10,12 @@ export default {
   "giver": "hask",
   "location": "alpha",
   "summary": "Escort six pilgrim haulers to Dustfall. Slow ships, sweet grandmothers, rude raiders.",
+  "pitch": {
+    "line": "hask.job.slow-parade",
+    "emotion": "neutral",
+    "direction": "Even and patient, a hint of a smile about the grandmothers.",
+    "text": "Six pilgrim haulers to Dustfall. Slow ships, sweet passengers, rude raiders. Keep the parade together."
+  },
   "repeatable": true,
   "rolls": {
     "pay": {

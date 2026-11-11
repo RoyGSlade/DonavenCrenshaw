@@ -13,11 +13,13 @@ import { BADGES_DATA } from '../projects/Space-Shooter/voyage/quests/data/badges
 import { validateQuest, questLines, SPEAKERS, LINE_ID } from '../projects/Space-Shooter/voyage/quests/validate.js';
 import { startQuest, view, act, availability } from '../projects/Space-Shooter/voyage/quests/engine.js';
 import { contentLines } from '../projects/Space-Shooter/voyage/quests/lines.js';
-import { emptySave, testCharacter, ITEMS, SKILLS, check, grant } from '../projects/Space-Shooter/voyage/quests/core.js';
+import { emptySave, testCharacter, ITEMS, check, grant } from '../projects/Space-Shooter/voyage/quests/core.js';
+import { SKILLS as SKILL_LIST } from '../projects/Space-Shooter/voyage/data.js';
 import { cleanSave } from '../projects/Space-Shooter/voyage/save.js';
 import { priceFor } from '../projects/Space-Shooter/voyage/economy.js';
 import { shopView, buy, sell, tryDeal, equip, unequip, gearOf, loadout, priceAt, SHOP_IDS, GEAR } from '../projects/Space-Shooter/voyage/shops/shop.js';
 
+const SKILLS = Object.fromEntries(SKILL_LIST.map((s) => [s.id, s]));
 const root = new URL('../projects/Space-Shooter/voyage/quests/data/', import.meta.url);
 const body = (file, marker) => {
   const src = readFileSync(fileURLToPath(new URL(file, root)), 'utf8');
@@ -115,12 +117,14 @@ test('dice rule: stats never gate an option, they add to a fresh roll; the set h
   assert.ok(checks.some((c) => c.tag === 'brawl' && c.stat === 'str'), 'a brawl on Strength');
   assert.ok(checks.some((c) => c.tag === 'food' && c.stat === 'con'), 'bad food on Health');
   for (const c of checks) assert.ok(c.dc >= 6 && c.dc <= 10, `${c.q}: dc ${c.dc}`);
-  // Strength reads the captain's own value even before core lists it.
+  // The attempt (contract section 6): 2d6 + (stat - 3), fresh every time.
   const strong = testCharacter({ cha: 3, con: 3, dex: 3, wis: 3, str: 6 });
   const r = check(strong, { stat: 'str', tag: 'brawl', dc: 8 }, () => 0);
-  assert.equal(r.roll, 1);
-  assert.equal(r.total, 7, 'a 1 on the die plus Strength 6');
+  assert.deepEqual(r.dice, [1, 1]);
+  assert.equal(r.total, 2 + 3, 'double one plus Strength 6');
   assert.equal(r.pass, false, 'a strong captain can still miss');
+  const weak = testCharacter({ cha: 1, con: 1, dex: 1, wis: 1, str: 1 });
+  assert.equal(check(weak, { stat: 'str', tag: 'brawl', dc: 11 }, () => 0.99).pass, true, 'a weak one can still land a double six');
 });
 
 test('skill gates: level 1 and level 2-3 doors, routes and options, shown with their level while locked', () => {
@@ -139,11 +143,11 @@ test('skill gates: level 1 and level 2-3 doors, routes and options, shown with t
   const q = QUESTS['railgun-paper-trail'];
   const { run, save } = startQuest(q, captain(), { seed: 1 });
   const v = view(q, { ...run, node: 'steal-plan', part: null }, save);
-  const door = v.choices.find((c) => /Slicer 2/.test(c.label));
+  const door = v.choices.find((c) => /Hacker 2/.test(c.label));
   assert.equal(door.locked, true);
-  assert.deepEqual(door.reasons, ['Needs Slicer rank 2.']);
-  const skilled = cleanSave({ ...save, character: { ...save.character, earned: 10, skills: { slicer: 2 } } });
-  assert.equal(view(q, { ...run, node: 'steal-plan', part: null }, skilled).choices.find((c) => /Slicer 2/.test(c.label)).locked, false);
+  assert.deepEqual(door.reasons, ['Needs Hacker rank 2.']);
+  const skilled = cleanSave({ ...save, character: { ...save.character, earned: 10, skills: { hacker: 2 } } });
+  assert.equal(view(q, { ...run, node: 'steal-plan', part: null }, skilled).choices.find((c) => /Hacker 2/.test(c.label)).locked, false);
 });
 
 test('story chain: three quests open after the first fragments and leave a lead; the Knock still counts five', () => {
@@ -220,8 +224,8 @@ test('buying: core\'s price and spend, the shop\'s own discounts, limits, gates 
   const view0 = shopView('edna', save);
   const gun = view0.stock.find((e) => e.item === 'railgun');
   assert.equal(gun.locked, true);
-  assert.deepEqual(gun.reasons, ['Needs Haggler rank 2.']);
-  const haggler = cleanSave({ ...captain(3, { money: 2000 }), character: { ...testCharacter({ cha: 3, con: 3, dex: 3, wis: 3 }), earned: 10, skills: { haggler: 2 } }, rep: { hask: 30 } });
+  assert.deepEqual(gun.reasons, ['Needs the Trader skill.']);
+  const haggler = cleanSave({ ...captain(3, { money: 2000 }), character: { ...testCharacter({ cha: 3, con: 3, dex: 3, wis: 3 }), earned: 10, skills: { trader: 1 } }, rep: { hask: 30 } });
   const bought = buy(haggler, 'edna', 'railgun');
   assert.equal(bought.ok, true);
   assert.equal(bought.save.items.railgun, 1);
@@ -250,7 +254,7 @@ test('Edna\'s risky deals: a fresh d6 + stat roll each time, either way it lands
   const unlucky = tryDeal(save, 'edna', 'mystery-crate', { rng: seq(0) });
   assert.equal(unlucky.pass, false);
   assert.equal(unlucky.save.items.scrap, 3);
-  assert.equal(unlucky.roll.total, 1 + 3);
+  assert.equal(unlucky.roll.total, unlucky.roll.roll + 0, 'Wisdom 3 adds nothing');
   const hot = tryDeal(cleanSave({ ...save, rep: { hask: 20 } }), 'edna', 'hot-crate', { rng: seq(0) });
   assert.equal(hot.save.rep.hask, 14);
   assert.equal(hot.save.money, 160, 'the fine');

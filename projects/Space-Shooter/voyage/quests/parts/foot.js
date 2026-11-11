@@ -2,7 +2,7 @@
 // Until then the fight resolves with one Constitution check, so quests that
 // call for it can already be played and tested. A real on-foot fight replaces
 // this by returning the same outcomes: win, lose or flee.
-import { check } from '../core.js';
+import { check, rollText } from '../core.js';
 
 export function createFoot(params) {
   return {
@@ -34,7 +34,7 @@ export function actFoot(state, action, ctx) {
   if (action?.move === 'retreat') { state.done = true; state.outcome = 'flee'; state.log.push('You back out the way you came.'); return { state }; }
   if (action?.move !== 'fight') return { state, error: 'Unknown move' };
   const r = check(ctx.save.character, { stat: 'con', tag: 'fight', dc: state.dc }, ctx.rng.next);
-  state.log.push(`Roll ${r.roll}+${r.bonus} vs ${r.dc}: ${r.pass ? 'you come out on top' : 'you are beaten back'}.`);
+  state.log.push(`Roll ${rollText(r)}: ${r.pass ? 'you come out on top' : 'you are beaten back'}.`);
   state.done = true;
   state.outcome = r.pass ? 'win' : 'lose';
   return { state };

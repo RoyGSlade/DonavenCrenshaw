@@ -23,7 +23,7 @@ const low = () => ({ ...emptySave(), character: testCharacter({ cha: 1, con: 1, 
 // Every shop item a quest can ask for, and every skill gate's level (round 2:
 // skills unlock options, stats only add to rolls).
 const KIT = { scrap: 20, ore: 10, circuit: 4, 'fuel-cell': 4, permit: 1, 'mining-drill': 1, 'breach-kit': 1, 'scan-goggles': 1, medkit: 1, 'hull-patch': 1, 'shield-cell': 1, 'ghost-transponder': 1, 'syndicate-codes': 1 };
-const SKILLED = { 'smooth-talk': 2, 'star-charts': 2, slicer: 2, 'patch-kit': 3, 'tight-turns': 3, 'nav-computer': 2, 'steady-aim': 2, 'smooth-burn': 3, evasive: 2 };
+const SKILLED = { pilot: 3, navigator: 2, smuggler: 2, gunner: 2, brawler: 1, 'hard-stare': 2, mechanic: 3, hacker: 2, salvager: 1, lockpick: 2, trader: 2, demolitions: 1 };
 const high = () => ({ ...emptySave(), money: 500, items: { ...KIT }, flags: { 'fragment-1': 1, 'fragment-2': 1, 'fragment-3': 1, 'edna-teapot': 1 }, character: { ...testCharacter({ cha: 6, con: 6, dex: 6, wis: 6, str: 6 }), earned: 40, skills: { ...SKILLED } } });
 const mid = () => ({ ...emptySave(), money: 200, items: { scrap: 2 }, character: testCharacter({ cha: 3, con: 4, dex: 3, wis: 4, str: 4 }) });
 // A weak captain with a full kit bag: the only way to need a medkit or a patch.
@@ -146,19 +146,20 @@ test('dialogue: skills unlock options, local flags unlock options, costs lock wh
   const nameDrop = poor.choices.find(c => c.label.startsWith('Name the debt'));
   assert.equal(nameDrop.locked, true);
   assert.equal(nameDrop.reasons.length, 1);
-  assert.match(nameDrop.reasons[0], /^Needs Smooth Talker rank 1\.?$/, 'a skill gate names its level even while locked');
+  assert.match(nameDrop.reasons[0], /^Needs the Hard Stare skill\.?$/, 'a skill gate names its level even while locked');
   assert.equal(poor.choices.find(c => c.label.startsWith('Vent two scrap')).locked, true);
   assert.equal(poor.choices.find(c => c.label.startsWith('Tap the Knock')).locked, true);
   const rich = findAmbush(high());
   assert.equal(rich.choices.find(c => c.label.startsWith('Name the debt')).locked, false);
   assert.equal(rich.choices.find(c => c.label.startsWith('Vent two scrap')).locked, false);
   const check = rich.choices.find(c => c.check);
-  assert.match(check.check.text, /check, \d+ or more/);
+  assert.match(check.check.text, /: 2d6 [+-] \d+ vs \d+ \(\d+%\)$/);
+  assert.ok(check.check.chance > 0 && check.check.chance < 1, 'the odds are shown and never certain');
   // Picking a locked option is refused and changes nothing.
   let { run, save } = startQuest(quest, low(), { seed: 1 });
   run = { ...run, node: 'ambush-waiting', part: null };
   const refused = act(quest, run, save, { type: 'choose', index: 3 });
-  assert.match(refused.error, /^Needs Smooth Talker rank 1\.?$/);
+  assert.match(refused.error, /^Needs the Hard Stare skill\.?$/);
   assert.equal(refused.run, run);
 });
 

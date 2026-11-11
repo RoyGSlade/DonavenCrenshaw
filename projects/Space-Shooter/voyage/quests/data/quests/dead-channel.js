@@ -10,6 +10,12 @@ export default {
   "giver": "hask",
   "location": "alpha",
   "summary": "An old Warden relay buoy is reading out a licence number. Yours. Hask wants it quiet.",
+  "pitch": {
+    "line": "hask.job.dead-channel",
+    "emotion": "worried",
+    "direction": "Low and careful, he does not like this one.",
+    "text": "The old relay buoy is knocking. And it's reading out your licence. Go and make it stop."
+  },
   "requires": {
     "flags": {
       "fragment-1": 1

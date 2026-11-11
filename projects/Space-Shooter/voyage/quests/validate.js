@@ -151,6 +151,13 @@ export function questLines(quests) {
   const errors = [];
   const seen = new Map();
   for (const quest of quests) {
+    // pitch: the giver's one-breath sell of the job on the board (<giver>.job.<questId>).
+    const p = quest.pitch;
+    if (p) {
+      if (p.line !== `${quest.giver}.job.${quest.id}` || !p.text || !EMOTIONS.includes(p.emotion) || !p.direction) errors.push(`${quest.id}: pitch needs line ${quest.giver}.job.${quest.id}, text, emotion and direction`);
+      seen.set(p.line, `${quest.id}: pitch`);
+      lines.push({ id: p.line, quest: quest.id, node: 'pitch', speaker: quest.giver, name: null, text: p.text, emotion: p.emotion, direction: p.direction });
+    }
     for (const [node, n] of Object.entries(quest.nodes || {})) {
       if (!n.line) continue;
       if (seen.has(n.line)) errors.push(`line ${n.line} is used by ${seen.get(n.line)} and ${quest.id}: ${node}`);

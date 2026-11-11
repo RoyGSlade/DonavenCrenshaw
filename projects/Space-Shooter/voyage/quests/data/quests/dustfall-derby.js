@@ -9,6 +9,12 @@ export default {
   "giver": "garrity",
   "location": "dustfall",
   "summary": "Build a racer out of junk and win Garrity the Derby trophy. He has never won it.",
+  "pitch": {
+    "line": "garrity.job.dustfall-derby",
+    "emotion": "excited",
+    "direction": "A kid on his birthday.",
+    "text": "Derby day! Build a racer out of my junk and win me a trophy. Thirty years I've waited."
+  },
   "repeatable": true,
   "rolls": {
     "rival": {

@@ -9,6 +9,12 @@ export default {
   "giver": "garrity",
   "location": "dustfall",
   "summary": "The old lighthouse in the debris field has gone dark. Haulers keep hitting rocks.",
+  "pitch": {
+    "line": "garrity.job.lighthouse",
+    "emotion": "worried",
+    "direction": "The big voice gone soft.",
+    "text": "The field lighthouse is dark and the haulers keep hitting rocks. Fix it, kid. Be nice to Wren."
+  },
   "repeatable": true,
   "rolls": {
     "fault": {

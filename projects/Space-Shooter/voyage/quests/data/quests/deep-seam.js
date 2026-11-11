@@ -9,6 +9,12 @@ export default {
   "giver": "garrity",
   "location": "dustfall",
   "summary": "A tumbling rock with a seam of blue ore. Dig it before the claim-jumpers do.",
+  "pitch": {
+    "line": "garrity.job.deep-seam",
+    "emotion": "excited",
+    "direction": "Booming greed, rubbing his hands.",
+    "text": "Blue ore in a tumbling rock! Dig it before the claim-jumpers do. Eat some stew first."
+  },
   "repeatable": true,
   "rolls": {
     "rock": {
