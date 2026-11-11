@@ -26,6 +26,7 @@ import { createHangarAudio } from './ui/audio.js';
 import { createDialogueBox } from './ui/dialogue.js';
 import { createLicence } from './ui/licence.js';
 import { createSettings } from './ui/settings.js';
+import { createAttemptRoller } from './ui/attemptRoll.js';
 
 const flag = newGameFlag({ config: runtimeConfig, search: location.search });
 const $ = (id) => document.getElementById(id);
@@ -63,6 +64,11 @@ if (!flag.enabled) {
   addEventListener('keydown', unlock, true);
   createSettings({ root: $('hg-settings'), button: $('hg-settings-btn'), audio, toast });
   createDialogueBox({ root: $('hg-dialogue'), bus, audio, reducedMotion: still });
+  // Every check in play is its own roll; the corner die shows it (the rules already decided the number).
+  createAttemptRoller({ root: $('hg-attempt'), bus, reducedMotion: still });
+  // The director's sound and juice hooks: a soft chime (no file; muted with the rest).
+  bus.on('story:cue', (d) => audio.cue?.(d?.cue));
+  bus.on('story:unlock', (d) => { if (d?.name) toast(`Open now: ${d.name}`); });
 
   let place = null;
   const scene = createHangarScene($('voyage-scene'), {
@@ -170,8 +176,11 @@ if (!flag.enabled) {
   crew.render();
   ready.then(() => crew.refresh());
 
-  // Where to start: the licence for a new player, a job or crew in progress where it left off.
-  if (!store.get().character) licence.open();
+  // Where to start: the licence for a new player (after the story's intro, when
+  // the director is running), a job or crew in progress where it left off.
+  bus.on('story:step', (d) => { if (d?.id === 'create' && !store.get().character) licence.open(); });
+  const step = store.get().story?.step;
+  if (!store.get().character && (!step || step === 'create')) licence.open();
   else if (crew.pending) place.openStation('hatch', { via: 'refresh', view: 'crew' });
   else if (jobs.playing) place.openStation('board', { via: 'refresh' });
 }

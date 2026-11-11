@@ -5,16 +5,16 @@
 // says which talk ring the player stands in, and the page opens it with
 // `hangarApi.openStation(id)`. Geometry only, no DOM; the data is hangarData.js.
 
-import { HANGAR_FLOOR, HANGAR_STATIONS, HANGAR_CAST } from './hangarData.js';
+import { HANGAR_DATA } from './hangarData.js';
 
-export const HANGAR = HANGAR_FLOOR;
+export const HANGAR = HANGAR_DATA.floor;
 // The stations, their positions and their panel words live in hangarData.js.
-export const STATIONS = HANGAR_STATIONS;
+export const STATIONS = HANGAR_DATA.stations;
 export const STATION_IDS = Object.freeze(STATIONS.map((s) => s.id));
 const BY_ID = new Map(STATIONS.map((s) => [s.id, s]));
 export const stationById = (id) => BY_ID.get(id) || null;
 
-export const CAST_NAMES = HANGAR_CAST;
+export const CAST_NAMES = HANGAR_DATA.cast;
 
 /** The station whose talk ring (x, y) is inside, nearest first; null when none. */
 export function stationNear(x, y, stations = STATIONS) {

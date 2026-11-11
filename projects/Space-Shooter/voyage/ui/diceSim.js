@@ -102,16 +102,48 @@ export function throwDie(rng, aim = null) {
   };
 }
 
-/** Which way is up for each face right now: [{ value, up }], up = world z of the face normal. */
-export function faceUps(q) {
-  return FACES.map((f) => ({ value: f.value, up: rotate(q, f.n)[2] }));
+// --- Labels --------------------------------------------------------------------------
+// A cube looks the same after any of its 24 turns onto itself, so the same
+// tumble can be drawn with the numbers moved round. That is how an ATTEMPT
+// roll (a check whose number the seeded game rules already decided) is shown
+// landing on its number: the physics play out, then the faces are labelled so
+// the decided number is the one on top. The STAT roll at captain creation
+// never does this; there the landed face is the roll.
+const IDENTITY = Object.freeze([[1, 0, 0], [0, 1, 0], [0, 0, 1]]);
+export const CUBE_TURNS = Object.freeze((() => {
+  const out = [];
+  const perms = [[0, 1, 2], [0, 2, 1], [1, 0, 2], [1, 2, 0], [2, 0, 1], [2, 1, 0]];
+  for (const p of perms) for (const sx of [1, -1]) for (const sy of [1, -1]) for (const sz of [1, -1]) {
+    const m = [[0, 0, 0], [0, 0, 0], [0, 0, 0]];
+    const signs = [sx, sy, sz];
+    for (let r = 0; r < 3; r++) m[r][p[r]] = signs[r];
+    const det = m[0][0] * (m[1][1] * m[2][2] - m[1][2] * m[2][1]) - m[0][1] * (m[1][0] * m[2][2] - m[1][2] * m[2][0]) + m[0][2] * (m[1][0] * m[2][1] - m[1][1] * m[2][0]);
+    if (det === 1) out.push(Object.freeze(m.map((row) => Object.freeze(row))));
+  }
+  return out;
+})());
+/** Apply a 3x3 turn to a body-frame vector. */
+export const turn = (S, v) => (S ? [S[0][0] * v[0] + S[0][1] * v[1] + S[0][2] * v[2], S[1][0] * v[0] + S[1][1] * v[1] + S[1][2] * v[2], S[2][0] * v[0] + S[2][1] * v[1] + S[2][2] * v[2]] : v);
+
+/** Which way is up for each face right now: [{ value, up }], up = world z of the face normal. S: an optional relabel turn. */
+export function faceUps(q, S = null) {
+  return FACES.map((f) => ({ value: f.value, up: rotate(q, turn(S, f.n))[2] }));
 }
 
 /** The face pointing most nearly straight up, and how flat it sits (1 = flat). */
-export function topFace(q) {
+export function topFace(q, S = null) {
   let best = null;
-  for (const f of faceUps(q)) if (!best || f.up > best.up) best = f;
+  for (const f of faceUps(q, S)) if (!best || f.up > best.up) best = f;
   return { value: best.value, flatness: best.up };
+}
+
+/** The turn that, drawn on a die resting as q, puts `value` on top (for attempt rolls whose number is already decided). */
+export function labelFor(q, value) {
+  const want = FACES.find((f) => f.value === value)?.n;
+  if (!want) return IDENTITY;
+  const top = topFace(q);
+  const landed = FACES.find((f) => f.value === top.value).n;
+  return CUBE_TURNS.find((S) => { const v = turn(S, want); return v[0] === landed[0] && v[1] === landed[1] && v[2] === landed[2]; }) || IDENTITY;
 }
 
 const PLANES = [

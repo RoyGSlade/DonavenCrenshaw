@@ -200,10 +200,12 @@
 .ui-locked strong{color:var(--ui-amber);font:700 11px Consolas,monospace;letter-spacing:.12em}
 
 /* The place replaces the old menu column. */
-.hg-place{position:static;width:auto;padding:0;margin:0}
+.hg-place{position:fixed;inset:0;z-index:4;width:auto;padding:0;margin:0;pointer-events:none}
+.hg-place > *{pointer-events:auto}
+.hg-place > .hg-layer,.hg-place > .hg-objective{pointer-events:none}
 .hg-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .hg-place .vy-dev{position:fixed;z-index:11;left:12px;bottom:12px;max-width:min(420px,92vw);padding:10px}
-.hg-sheet-open .hg-place .vy-dev{display:none}
+
 .ui-launches{list-style:none;margin:6px 0;padding:0;display:grid;gap:8px}
 .ui-launches li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;align-items:center;padding:10px 12px;background:#0a1624cc;border:1px solid #2a4152;border-radius:5px}
 .ui-launches small{grid-column:1;color:var(--ui-muted);font-size:12px}
@@ -216,7 +218,7 @@
 .ui-swatch:hover:not(:disabled){background:#0a1624}
 
 /* The bunk's panel is wider: the skill tree needs the room. */
-@media (min-width:701px){.hg-sheet[data-station=quarters],.hg-sheet[data-station=board]{width:min(720px,56vw)}}
+@media (min-width:701px){.hg-sheet[data-open-station=quarters],.hg-sheet[data-open-station=board]{width:min(720px,56vw)}}
 .hg-place .vy-dev{padding:6px 10px}
 .hg-dev summary{cursor:pointer;margin:0;list-style:none}
 .hg-dev[open] summary{margin-bottom:8px}
@@ -227,3 +229,33 @@
   .hg-top #vy-back{font-size:9px;white-space:nowrap}
   .hg-top .vy-chip{max-width:96px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:5px 8px;font-size:9px}
 }
+
+/* What a skill unlocks: a door, a terminal, a lane, a move, a tool, a talk option or an area. */
+.ui-glyph{width:16px;height:16px;flex:none;color:var(--ui-cyan)}
+.ui-node-kind{position:absolute;right:-4px;top:-4px;width:18px;height:18px;padding:2px;border-radius:50%;background:#05090fe6;border:1px solid #3f5566;color:var(--tree)}
+.ui-unlocks{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.ui-unlocks li{display:flex;gap:8px;align-items:center;color:var(--ui-muted)}
+.ui-unlocks li.is-open{color:var(--ui-text)}
+.ui-unlocks li.is-open .ui-glyph{color:var(--ui-amber)}
+
+/* The attempt roller: a small die in the corner for each check in play. */
+.ui-attempt{position:fixed;z-index:13;right:16px;top:108px;display:grid;grid-template-columns:120px minmax(0,1fr);gap:10px;align-items:center;width:min(340px,92vw);cursor:pointer}
+.hg-sheet-open .ui-attempt{right:auto;left:16px}
+.hg-sheet-open[data-sheet-side=left] .ui-attempt{left:auto;right:16px}
+.ui-attempt-die{width:120px;height:96px;display:block;border-radius:4px;background:#060c14}
+.ui-attempt p{margin:0}
+.ui-attempt-what{font:10px Consolas,monospace;letter-spacing:.12em;color:var(--ui-cyan);text-transform:uppercase}
+.ui-attempt-sum{font:700 15px Consolas,monospace;color:var(--ui-text);margin:4px 0!important}
+.ui-attempt-verdict{font:700 13px Inter,sans-serif;opacity:0;transition:opacity .2s}
+.ui-attempt.is-done .ui-attempt-verdict{opacity:1}
+.ui-attempt[data-pass=true] .ui-attempt-verdict{color:var(--ui-cyan)}
+.ui-attempt[data-pass=false] .ui-attempt-verdict{color:var(--ui-amber)}
+@media (max-width:700px){.ui-attempt{left:50%;right:auto;transform:translateX(-50%);top:64px;bottom:auto}}
+.ui-node[data-label=up] .ui-node-name{top:auto;bottom:100%;transform:translate(-50%,-4px)}
+.ui-node[data-label=up] .ui-node-rank{bottom:auto;top:-4px;transform:translate(-50%,-50%)}
+.ui-node[data-label=right] .ui-node-name{left:100%;top:50%;transform:translate(6px,-50%)}
+.ui-node[data-label=left] .ui-node-name{left:auto;right:100%;top:50%;transform:translate(-6px,-50%)}
+.hg-sheet-open .hg-objective{left:16px;transform:none;max-width:min(520px,44vw)}
+.hg-sheet-open[data-sheet-side=left] .hg-objective{left:auto;right:16px}
+@media (max-width:700px){.hg-sheet-open .hg-objective{left:50%;transform:translateX(-50%);max-width:92vw}}
+@media (max-width:700px){.hg-sheet-open .vy-toast{bottom:auto;top:64px}}

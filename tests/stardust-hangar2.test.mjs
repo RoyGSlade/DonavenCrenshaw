@@ -4,10 +4,13 @@
 // player and the API other lanes mount into. Pure modules and fakes only.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { DIE, FACES, throwDie, step, settle, rollOnce, topFace, restingOn, rotate, faceUps } from '../projects/Space-Shooter/voyage/ui/diceSim.js';
-import { treeLayout, canUnlearn, unlearn, respecAll, respecCost, respecQuote, effectWords, skillWords } from '../projects/Space-Shooter/voyage/hangarSkills.js';
+import { DIE, FACES, throwDie, step, settle, rollOnce, topFace, restingOn, rotate, faceUps, labelFor, CUBE_TURNS } from '../projects/Space-Shooter/voyage/ui/diceSim.js';
+import { treeLayout, unlockList, canUnlearn, unlearn, respecAll, respecCost, respecQuote, effectWords, skillWords } from '../projects/Space-Shooter/voyage/hangarSkills.js';
 import { STATIONS, STATION_IDS, stationNear, stationAt, stationState, fitHangar, HANGAR } from '../projects/Space-Shooter/voyage/hangarStations.js';
-import { HANGAR_STATIONS, EFFECT_WORDS, RESPEC, LICENCE_COPY } from '../projects/Space-Shooter/voyage/hangarData.js';
+import { HANGAR_DATA } from '../projects/Space-Shooter/voyage/hangarData.js';
+import { readFileSync } from 'node:fs';
+
+const { stations: HANGAR_STATIONS, effectWords: EFFECT_WORDS, respec: RESPEC, licence: LICENCE_COPY } = HANGAR_DATA;
 import { isUnlocked, tutorialOn, createBus, chance, STAT_TEXT } from '../projects/Space-Shooter/voyage/hangarLinks.js';
 import { createHangarAudio, readAudioSettings, AUDIO_KEY } from '../projects/Space-Shooter/voyage/ui/audio.js';
 import { hangarApi, provideHangar, mountStation, stationMounts, addLaunch, launches, watchRegistry } from '../projects/Space-Shooter/voyage/hangarApi.js';
@@ -75,6 +78,19 @@ test('dice: the same throw lands the same way; a flick bends the throw but stays
   assert.ok(Math.abs(Math.hypot(...r) - 1) < 1e-9);
 });
 
+test('dice: attempt rolls land on the number the rules decided (the faces are relabelled; stat rolls never are)', () => {
+  assert.equal(CUBE_TURNS.length, 24, 'every turn of a cube onto itself');
+  for (let seed = 1; seed <= 40; seed++) {
+    const { die } = rollOnce(mulberry(500 + seed));
+    for (let v = 1; v <= 6; v++) {
+      const S = labelFor(die.q, v);
+      const top = topFace(die.q, S);
+      assert.equal(top.value, v, `seed ${seed} shows ${v}`);
+      assert.ok(top.flatness > 0.985);
+    }
+  }
+});
+
 // --- The licence -----------------------------------------------------------------------
 
 test('licence: pending rolls survive a reload and are cleaned; roll words explain a value', () => {
@@ -106,6 +122,14 @@ test('skill tree: every skill has a node, shared skills are fed by both trees, n
   for (const n of L.nodes) assert.ok(Math.hypot(n.x, n.y) <= 1.05, `${n.id} fits the screen`);
   assert.equal(L.branches.length, TREES.length);
   assert.deepEqual(treeLayout(), treeLayout(), 'stable');
+});
+
+test('skill unlocks: skills that unlock things read as a list of doors, terminals, lanes, moves and tools', () => {
+  assert.deepEqual(unlockList({}), []);
+  assert.deepEqual(unlockList({ unlocks: ['Sealed doors', 'Shortcut lane'] }).map((u) => u.kind), ['door', 'lane']);
+  assert.deepEqual(unlockList({ unlocks: [{ kind: 'terminal', name: 'Station terminals', rank: 2 }] }), [{ kind: 'terminal', text: 'Station terminals', rank: 2 }]);
+  assert.deepEqual(unlockList({ unlocks: { 'salvage-room': 'The salvage room' } }), [{ kind: 'area', text: 'The salvage room', rank: 1 }]);
+  assert.equal(unlockList({ unlocks: [{ kind: 'weird', name: 'Barrel roll' }] })[0].kind, 'move');
 });
 
 test('skill words: every effect tag a skill uses reads in plain words', () => {
@@ -146,6 +170,14 @@ test('respec: free while the tutorial runs, a small fee per point after (data, n
   assert.deepEqual(respecCost(2, {}, { feePerPoint: 0, freeInTutorial: true }), { money: 0 });
   const c = learn(learn(captain(), 'smooth-burn'), 'patch-kit');
   assert.deepEqual(respecQuote(c, { tutorial: false }), { points: 2, cost: { money: 2 * RESPEC.feePerPoint } });
+});
+
+test('data: hangarData.js is a comment header and one export of strict JSON (Studio-ready)', () => {
+  const text = readFileSync(new URL('../projects/Space-Shooter/voyage/hangarData.js', import.meta.url), 'utf8');
+  const body = text.slice(text.indexOf('export const HANGAR_DATA = ') + 'export const HANGAR_DATA = '.length).trim().replace(/;$/, '');
+  assert.deepEqual(JSON.parse(body), HANGAR_DATA);
+  assert.equal(HANGAR_DATA.version, 1);
+  assert.equal(text.split('\n').filter((l) => l.startsWith('export ')).length, 1, 'one export');
 });
 
 // --- Stations --------------------------------------------------------------------------

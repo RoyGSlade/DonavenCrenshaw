@@ -150,7 +150,7 @@ export function createHangarPlace({ scene, layer, sheet, panes, renderStation, s
     sheet.root.dataset.side = side;
     document.body.classList.add('hg-sheet-open');
     document.body.dataset.sheetSide = side;
-    sheet.root.dataset.station = id;
+    sheet.root.dataset.openStation = id;
     sheet.root.hidden = false;
     sheet.title.textContent = s.name;
     sheet.who.textContent = s.who ? `${(CAST_NAMES[s.who] || s.who).toUpperCase()}${st.locked ? ' · NOT YET' : ''}` : st.locked ? 'LOCKED' : 'STATION';

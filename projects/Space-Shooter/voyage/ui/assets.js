@@ -13,7 +13,7 @@ export const UI_KIT = Object.freeze([
   'button-primary', 'button-primary-hover', 'button-primary-pressed', 'button-primary-disabled',
   'tab', 'tab-active',
   'node-locked', 'node-available', 'node-learned', 'connector',
-  'icon-cha', 'icon-con', 'icon-dex', 'icon-wis', 'icon-credits', 'icon-skillpoint',
+  'icon-str', 'icon-cha', 'icon-con', 'icon-dex', 'icon-wis', 'icon-credits', 'icon-skillpoint',
   'icon-helm', 'icon-guns', 'icon-wrench',
   'icon-scrap', 'icon-ore', 'icon-circuit', 'icon-fuel-cell', 'icon-permit', 'icon-nav-chip', 'icon-railgun', 'icon-cargo-crate', 'icon-mining-drill',
 ]);

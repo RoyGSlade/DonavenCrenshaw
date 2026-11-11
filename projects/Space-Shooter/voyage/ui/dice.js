@@ -7,7 +7,7 @@
 // a "lite" mode (render scale Fast, or a weak device) drops the shadow blur
 // and glow; with no 2D canvas at all the throw is still simulated and the
 // caller shows the number as text. No libraries; works offline.
-import { DIE, FACES, CORNERS, throwDie, step, topFace, restingOn, settle, rotate } from './diceSim.js';
+import { DIE, FACES, CORNERS, throwDie, step, topFace, restingOn, settle, rotate, labelFor, turn } from './diceSim.js';
 import { renderDpr, readRenderScale } from '../renderScale.js';
 
 const H = DIE.size / 2;
@@ -47,15 +47,18 @@ function liteDevice() {
  * reducedMotion(): true settles at once. onSettle(value) after each roll.
  * Returns { roll(aim?) -> Promise<value>, show(value), rolling, destroy() }.
  */
-export function createDiceTray(canvas, { rng, reducedMotion = () => false, onSettle = () => {}, lite = liteDevice() } = {}) {
+export function createDiceTray(canvas, { rng, reducedMotion = () => false, onSettle = () => {}, lite = liteDevice(), timeScale = 1, framing = DIE.tray + 0.6, follow = false } = {}) {
   const ctx = canvas.getContext?.('2d') || null;
   let die = restingOn(1);
+  let label = null; // attempt rolls: the relabel turn, found once the throw is simulated
+  let speed = timeScale;
   let frame = 0;
   let last = 0;
   let acc = 0;
   let dpr = 1;
   let w = 0, h = 0, fpx = 1, cx = 0, cy = 0;
   let glow = 0; // the result's glow after a settle
+  let cam = [0, 0]; // with follow, the camera drifts after the die (small trays)
   let resolveRoll = null;
   let alive = true;
 
@@ -67,14 +70,14 @@ export function createDiceTray(canvas, { rng, reducedMotion = () => false, onSet
     canvas.width = Math.round(w * dpr);
     canvas.height = Math.round(h * dpr);
     // Fit the tray's far and near edges: the near edge is wider on screen.
-    const span = DIE.tray + 0.6;
+    const span = framing;
     fpx = Math.min(w / (2 * span), h / (2 * span * 0.78)) * (DIST - span * Math.sin(TILT)) * 0.98;
     cx = w / 2;
     cy = h / 2 + h * 0.03;
   }
 
   function project(pw) {
-    const d = sub(pw, CAM);
+    const d = sub([pw[0] - cam[0], pw[1] - cam[1], pw[2]], CAM);
     const z = dot(d, FWD);
     return [cx + (fpx * dot(d, RIGHT)) / z, cy - (fpx * dot(d, UP)) / z, z];
   }
@@ -139,17 +142,18 @@ export function createDiceTray(canvas, { rng, reducedMotion = () => false, onSet
 
   function drawDie() {
     const faces = [];
+    const S = label; // relabel turn for an attempt roll (null for a stat roll)
     for (const f of FACES) {
-      const n = rotate(die.q, f.n);
+      const n = rotate(die.q, turn(S, f.n));
       const centre = [die.p[0] + n[0] * H, die.p[1] + n[1] * H, die.p[2] + n[2] * H];
       if (dot(n, sub(CAM, centre)) <= 0) continue; // facing away
       faces.push({ f, n, depth: dot(sub(centre, CAM), FWD) });
     }
     faces.sort((a, b) => b.depth - a.depth);
-    const top = die.settled ? topFace(die.q).value : 0;
+    const top = die.settled ? topFace(die.q, S).value : 0;
     for (const { f, n } of faces) {
       const [ax, bx] = faceAxes(f.n);
-      const local = (u, v) => [f.n[0] * H + ax[0] * u + bx[0] * v, f.n[1] * H + ax[1] * u + bx[1] * v, f.n[2] * H + ax[2] * u + bx[2] * v];
+      const local = (u, v) => turn(S, [f.n[0] * H + ax[0] * u + bx[0] * v, f.n[1] * H + ax[1] * u + bx[1] * v, f.n[2] * H + ax[2] * u + bx[2] * v]);
       const world = (l) => { const r = rotate(die.q, l); return [die.p[0] + r[0], die.p[1] + r[1], die.p[2] + r[2]]; };
       // Slightly rounded look: an inset face over a darker edge.
       const corners = [[-H, -H], [H, -H], [H, H], [-H, H]].map(([u, v]) => project(world(local(u, v))));
@@ -182,6 +186,10 @@ export function createDiceTray(canvas, { rng, reducedMotion = () => false, onSet
 
   function draw() {
     if (!ctx) return;
+    if (follow) {
+      const k = reducedMotion() || die.settled ? 1 : 0.18;
+      cam = [cam[0] + (die.p[0] - cam[0]) * k, cam[1] + (die.p[1] - cam[1]) * k];
+    }
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
     drawTray();
@@ -190,7 +198,7 @@ export function createDiceTray(canvas, { rng, reducedMotion = () => false, onSet
   }
 
   function finish() {
-    const value = topFace(die.q).value;
+    const value = topFace(die.q, label).value;
     glow = 1;
     draw();
     const done = resolveRoll;
@@ -213,7 +221,7 @@ export function createDiceTray(canvas, { rng, reducedMotion = () => false, onSet
   function loop(t) {
     frame = 0;
     if (!alive) return;
-    const dt = Math.min(0.1, last ? (t - last) / 1000 : DIE.dt);
+    const dt = Math.min(0.1, last ? (t - last) / 1000 : DIE.dt) * speed;
     last = t;
     acc += dt;
     while (acc >= DIE.dt && !die.settled) { step(die); acc -= DIE.dt; }
@@ -229,10 +237,11 @@ export function createDiceTray(canvas, { rng, reducedMotion = () => false, onSet
   addEventListener('stardust:render-scale', onResize);
 
   return {
-    /** Throw the die. Resolves with the face that lands on top. */
+    /** Throw the die. Resolves with the face that lands on top (a STAT roll: the landed face is the roll). */
     roll(aim = null) {
       if (resolveRoll) return Promise.reject(new Error('already rolling'));
       die = throwDie(rng, aim);
+      label = null;
       glow = 0;
       return new Promise((resolve) => {
         resolveRoll = resolve;
@@ -245,10 +254,35 @@ export function createDiceTray(canvas, { rng, reducedMotion = () => false, onSet
         frame = requestAnimationFrame(loop);
       });
     },
+    /**
+     * Show an ATTEMPT roll whose number is already decided (seeded game rules):
+     * a real tumble, then the faces labelled so `value` lands on top. Resolves with value.
+     */
+    rollTo(value, aim = null) {
+      if (resolveRoll) return Promise.reject(new Error('already rolling'));
+      // Simulate the throw once on a recorded rng to see where it lands, label
+      // the faces to match, then play the identical throw (same draws) on screen.
+      const tape = [];
+      const copy = throwDie(() => { const v = rng(); tape.push(v); return v; }, aim);
+      settle(copy);
+      label = labelFor(copy.q, value);
+      let i = 0;
+      die = throwDie(() => (i < tape.length ? tape[i++] : rng()), aim);
+      glow = 0;
+      return new Promise((resolve) => {
+        resolveRoll = resolve;
+        if (reducedMotion() || !ctx) { settle(die); finish(); return; }
+        last = 0; acc = 0;
+        frame = requestAnimationFrame(loop);
+      });
+    },
+    /** Finish the current roll now (the player tapped to skip). */
+    skip() { if (!resolveRoll) return; cancelAnimationFrame(frame); settle(die); finish(); },
+    set timeScale(v) { speed = Math.max(0.25, Number(v) || 1); },
     /** Draw the die resting on a known face (a saved stat). */
-    show(value) { die = restingOn(value); glow = 0.6; draw(); },
+    show(value) { die = restingOn(value); label = null; glow = 0.6; draw(); },
     get rolling() { return Boolean(resolveRoll); },
-    get value() { return die.settled ? topFace(die.q).value : null; },
+    get value() { return die.settled ? topFace(die.q, label).value : null; },
     get dpr() { return dpr; },
     get canDraw() { return Boolean(ctx); },
     destroy() {

@@ -56,8 +56,9 @@ export function tutorialOn(save) {
 // What each stat is for, in plain words (contract section 6). Story's
 // `STAT_TEXT` (voyage/story/stats.js) replaces this at integration.
 export const STAT_TEXT = Object.freeze({
+  str: { short: 'Brawling, lifting and hauling: for when the bullets run out.', rolls: 'Punches, shoves, heavy lifting.', options: '[Muscle]', boon: 'A 6: you hit like a cargo door.' },
   cha: { short: 'Talking, prices and how fast people warm to you.', rolls: 'Talking and trading rolls.', options: '[Charm]', boon: 'A 6: Edna sells to you 10% cheaper.' },
-  con: { short: 'Hull, health on foot, hauling and digging.', rolls: 'Repair, towing and on-foot brawls.', options: '[Muscle]', boon: 'A 6: the first hit in each on-foot fight bounces off.' },
+  con: { short: 'Health: soaking hits, shrugging off poison, bad air and worse meatloaf.', rolls: 'Repair, towing and on-foot brawls.', options: '[Muscle]', boon: 'A 6: the first hit in each on-foot fight bounces off.' },
   dex: { short: 'Handling, dodging, aim and quick hands.', rolls: 'Navigation, dodging, ship fights and race legs.', options: '[Quick hands]', boon: 'A 6: your turret and sidearm pull onto nearby targets.' },
   wis: { short: 'Scanning, puzzles and reading people.', rolls: 'Scanning, puzzles and reading a room.', options: '[Read the room]', boon: 'A 6: every puzzle starts with one hint showing.' },
 });

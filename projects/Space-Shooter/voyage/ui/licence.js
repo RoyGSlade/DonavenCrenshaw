@@ -9,7 +9,9 @@ import { cleanName } from '../character.js';
 import { createDiceTray, cryptoRng } from './dice.js';
 import { iconFor } from './assets.js';
 import { STAT_TEXT, chance } from '../hangarLinks.js';
-import { LICENCE_COPY as COPY } from '../hangarData.js';
+import { HANGAR_DATA } from '../hangarData.js';
+
+const COPY = HANGAR_DATA.licence;
 
 export const PENDING_KEY = 'stardust.newgame.pendingRolls';
 const STAT_IDS = STATS.map((s) => s.id);
@@ -28,7 +30,7 @@ function writePending(rolls, storage = globalThis.localStorage) {
 
 /** What a rolled value means, in a line: the stat's passive at this value and its odds on a typical check. */
 export function rollWords(statId, value) {
-  const text = STAT_TEXT[statId];
+  const text = STAT_TEXT[statId] || { options: 'stat', boon: '' };
   const over = value - 3;
   const odds = Math.round(chance(value, COPY.checkDc) * 6);
   const parts = [];
@@ -37,7 +39,7 @@ export function rollWords(statId, value) {
   else parts.push('Average: no bonus, no penalty.');
   parts.push(`Passes a normal check ${odds} times in 6.`);
   if (value >= 5) parts.push(`Opens ${text.options} choices.`);
-  if (value === 6) parts.push(text.boon);
+  if (value === 6 && text.boon) parts.push(text.boon);
   return parts.join(' ');
 }
 
@@ -108,7 +110,7 @@ export function createLicence({ root, store, bus, toast = () => {}, reducedMotio
       const row = refs[s.id];
       const v = rolls[s.id];
       row.value.textContent = v ? String(v) : '?';
-      row.words.textContent = v ? rollWords(s.id, v) : STAT_TEXT[s.id].short;
+      row.words.textContent = v ? rollWords(s.id, v) : (STAT_TEXT[s.id]?.short || s.blurb || '');
       row.node.classList.toggle('is-rolled', Boolean(v));
       row.node.classList.toggle('is-next', s.id === next);
       row.node.dataset.value = v ? String(v) : '';

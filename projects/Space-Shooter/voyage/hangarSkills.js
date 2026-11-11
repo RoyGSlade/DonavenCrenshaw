@@ -4,7 +4,9 @@
 // trees, ranks, effects, needs) stay in core's data.js.
 import { TREES, SKILLS, CURRENCY } from './data.js';
 import { treePoints, spentPoints } from './character.js';
-import { RESPEC, EFFECT_WORDS, SKILL_TREE_SHAPE } from './hangarData.js';
+import { HANGAR_DATA } from './hangarData.js';
+
+const { respec: RESPEC, effectWords: EFFECT_WORDS, skillTree: SKILL_TREE_SHAPE } = HANGAR_DATA;
 
 // --- Respec (Donaven: "unspend skill points if the player didn't read them first") ---
 // Every refund is a full refund. Free while the tutorial runs. After it, a
@@ -74,12 +76,42 @@ export function effectWords(tag, value) {
   return words ? words.replace('{pct}', pct(value)).replace('{v}', String(value)) : `+${value} ${tag}`;
 }
 
+// Skills UNLOCK things (Donaven, 2026-11-11: "skills should be for neat stuff
+// or locked areas"): an ability or move, a tool, or access to a door, a
+// terminal, a lane or a dialogue option. The story lane's data gives each skill
+// an `unlocks` list; this reads it loosely (strings, objects or an id map) so
+// the format can settle without touching the screen.
+export const UNLOCK_KINDS = Object.freeze(['door', 'terminal', 'lane', 'move', 'tool', 'option', 'area']);
+function guessKind(text) {
+  const t = String(text).toLowerCase();
+  if (/door|hatch|vault|gate|seal/.test(t)) return 'door';
+  if (/terminal|console|hack|computer/.test(t)) return 'terminal';
+  if (/lane|route|shortcut|jump/.test(t)) return 'lane';
+  if (/tool|kit|drill|pick|torch/.test(t)) return 'tool';
+  if (/option|talk|say|choice/.test(t)) return 'option';
+  if (/room|area|yard|bay|deck/.test(t)) return 'area';
+  return 'move';
+}
+/** [{ kind, text, rank }] for a skill's unlocks (empty when it has none). */
+export function unlockList(skill) {
+  const raw = skill?.unlocks;
+  if (!raw) return [];
+  const list = Array.isArray(raw) ? raw : Object.entries(raw).map(([id, v]) => (v && typeof v === 'object' ? { id, ...v } : { id, name: v }));
+  return list.map((u) => {
+    if (typeof u === 'string') return { kind: guessKind(u), text: u, rank: 1 };
+    const text = String(u.name || u.text || u.label || u.id || '');
+    const kind = UNLOCK_KINDS.includes(u.kind) ? u.kind : guessKind(`${u.kind || ''} ${u.id || ''} ${text}`);
+    return { kind, text, rank: Number.isInteger(u.rank) && u.rank > 0 ? u.rank : 1 };
+  }).filter((u) => u.text);
+}
+
 /** A skill's effect per rank, and at the given rank, in plain words. */
 export function skillWords(skill, rank = 0) {
   const per = Object.entries(skill.effects || {}).map(([tag, v]) => effectWords(tag, v));
   const now = rank ? Object.entries(skill.effects || {}).map(([tag, v]) => effectWords(tag, Math.round(v * rank * 1000) / 1000)) : [];
   const needs = Object.entries(skill.needs || {}).map(([t, n]) => `${n} point${n === 1 ? '' : 's'} in ${TREE_NAME[t] || t}`);
   return {
+    unlocks: unlockList(skill),
     perRank: per.join(', '),
     now: now.join(', '),
     needs: needs.length ? `Needs ${needs.join(' and ')} first.` : 'Open from the start.',
@@ -152,7 +184,7 @@ export function treeLayout(trees = TREES, skills = SKILLS, { r0 = SKILL_TREE_SHA
       edges.push({ from, to: n.id, trees: [tree] });
     }
   }
-  const branches = trees.map((t) => ({ tree: t.id, angle: angles[t.id], x: Math.cos(rad(angles[t.id])) * (radius(4) + 0.15), y: Math.sin(rad(angles[t.id])) * (radius(4) + 0.15) }));
+  const branches = trees.map((t) => ({ tree: t.id, angle: angles[t.id], x: Math.cos(rad(angles[t.id])) * (radius(4) + 0.25), y: Math.sin(rad(angles[t.id])) * (radius(4) + 0.25) }));
   return { nodes, edges, branches, byId };
 }
 

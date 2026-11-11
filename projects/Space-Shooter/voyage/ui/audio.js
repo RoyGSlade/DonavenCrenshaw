@@ -39,6 +39,7 @@ export function createHangarAudio({ createAudio = (src) => new Audio(src), stora
   let bed = null; // { audio, url, gain }
   let line = null; // { audio, done }
   let wantBed = null;
+  let chime = null; // Web Audio context for cue chimes, made on first use
 
   function bedVolume() {
     if (!bed) return 0;
@@ -114,6 +115,36 @@ export function createHangarAudio({ createAudio = (src) => new Audio(src), stora
       current.settle('stopped');
     },
     get speaking() { return Boolean(line); },
+
+    /**
+     * A short synthesized chime for the director's cues (objective, unlock, done):
+     * two soft sine notes, no file. Silent before a gesture, when muted, or where
+     * Web Audio is missing. Returns whether it played.
+     */
+    cue(kind = 'objective') {
+      if (!unlocked || prefs.muted || prefs.voice <= 0) return false;
+      const Ctx = globalThis.AudioContext || globalThis.webkitAudioContext;
+      if (!Ctx) return false;
+      try {
+        chime ||= new Ctx();
+        const notes = { objective: [660, 880], unlock: [523, 784, 1047], done: [392, 523, 659, 784] }[kind] || [660, 880];
+        const t0 = chime.currentTime + 0.01;
+        notes.forEach((f, i) => {
+          const osc = chime.createOscillator();
+          const gain = chime.createGain();
+          osc.type = 'sine';
+          osc.frequency.value = f;
+          const at = t0 + i * 0.09;
+          gain.gain.setValueAtTime(0, at);
+          gain.gain.linearRampToValueAtTime(0.08 * prefs.voice, at + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.0001, at + 0.45);
+          osc.connect(gain).connect(chime.destination);
+          osc.start(at);
+          osc.stop(at + 0.5);
+        });
+        return true;
+      } catch { return false; }
+    },
 
     settings: () => ({ ...prefs }),
     /** Change mute or a volume; saved for this device at once. */

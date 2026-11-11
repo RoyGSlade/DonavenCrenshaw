@@ -304,6 +304,12 @@ export function createHangar({ panes, store, ship, crew, toast, dev = false, onT
           toast(lost == null ? 'Make a captain first.' : `Your captain died. ${lost} skill point${lost === 1 ? '' : 's'} lost, stats rolled again, skills refunded${DEATH.loseUpgrades ? ', ship upgrades lost' : ''}.`);
         } } }),
         el('button', { type: 'button', id: 'vy-dev-line', text: 'Test a line', on: { click: () => bus?.emit('story:say', { seq: `dev-${++n}`, id: 'dev.line', speaker: 'chibby', name: 'Chibby', text: 'Test line, Captain. If you can read this, the dialogue box works. If you can hear it, the voice lane does too.', audio: null, durationMs: 4200 }) } }),
+        el('button', { type: 'button', id: 'vy-dev-check', text: 'Test a check', on: { click: () => {
+          const c = store.get().character;
+          const roll = 1 + Math.floor(Math.random() * 6);
+          const bonus = c?.stats?.dex ?? 3;
+          bus?.emit('check:rolled', { roll, bonus, total: roll + bonus, dc: 8, pass: roll + bonus >= 8, stat: 'dex', label: 'Test: thread the needle' });
+        } } }),
         el('button', { type: 'button', id: 'vy-dev-reset', text: 'Fresh save', on: { click: () => { if (confirm('Start a fresh save on this device? Your account copy is replaced on the next sync.')) store.reset(); } } }),
       ]),
     ]));

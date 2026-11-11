@@ -7,15 +7,32 @@
 import { TREES, SKILLS } from '../data.js';
 import { unspentPoints, treePoints, canLearn, spentPoints } from '../character.js';
 import { spend } from '../economy.js';
-import { treeLayout, skillWords, canUnlearn, unlearn, respecAll, respecCost, respecQuote } from '../hangarSkills.js';
+import { treeLayout, skillWords, unlockList, canUnlearn, unlearn, respecAll, respecCost, respecQuote } from '../hangarSkills.js';
 import { uiArt } from './assets.js';
-import { SKILL_TREE_SHAPE } from '../hangarData.js';
+import { HANGAR_DATA } from '../hangarData.js';
+
+const SKILL_TREE_SHAPE = HANGAR_DATA.skillTree;
 
 const SVG = 'http://www.w3.org/2000/svg';
+// Small line glyphs for what a skill unlocks (24-unit boxes, drawn with currentColor).
+const GLYPHS = {
+  door: 'M6 21V4h12v17M3 21h18M15 12h.01',
+  terminal: 'M3 5h18v11H3zM8 20h8M12 16v4M7 9l3 2-3 2M12 13h4',
+  lane: 'M4 20 10 4M20 20 14 4M12 6v2M12 11v2M12 16v2',
+  move: 'M13 3 5 13h6l-1 8 8-10h-6z',
+  tool: 'M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z',
+  option: 'M4 5h16v10H9l-5 4z',
+  area: 'M3 10 12 3l9 7v11H3zM9 21v-6h6v6',
+};
+function glyph(kind, cls = 'ui-glyph') {
+  const g = svg('svg', { viewBox: '0 0 24 24', class: cls, 'aria-hidden': 'true', 'data-kind': kind });
+  g.append(svg('path', { d: GLYPHS[kind] || GLYPHS.move, fill: 'none', stroke: 'currentColor', 'stroke-width': '2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }));
+  return g;
+}
 const TREE_COLOUR = SKILL_TREE_SHAPE.colours;
 const SKILL = new Map(SKILLS.map((s) => [s.id, s]));
 const TREE_NAME = Object.fromEntries(TREES.map((t) => [t.id, t.name]));
-const VB = 1.27; // the layout is in [-1, 1]; leave room for branch labels
+const VB = 1.34; // the layout is in [-1, 1]; leave room for branch labels
 const pct = (v) => `${((v + VB) / (2 * VB)) * 100}%`;
 const money = (n) => `${n} credits`;
 
@@ -142,8 +159,12 @@ export function createSkillTree({ root, store, toast = () => {}, tutorialOn = ()
     const state = nodeState(c, n.id);
     const art = state === 'locked' ? 'node-locked' : rank > 0 ? 'node-learned' : 'node-available';
     const shared = s.trees.length > 1;
+    // Names sit on the outside of the node, away from the root, so neighbours never cover them.
+    const cos = Math.cos((n.angle * Math.PI) / 180), sin = Math.sin((n.angle * Math.PI) / 180);
+    const side = sin < -0.45 ? 'up' : cos > 0.55 ? 'right' : cos < -0.55 ? 'left' : 'down';
     const b = el('button', {
       type: 'button',
+      'data-label': side,
       class: `ui-node is-${state}${shared ? ' is-shared' : ''}${selected === n.id ? ' is-selected' : ''}${fresh === n.id && !reducedMotion() ? ' is-fresh' : ''}`,
       style: `left:${pct(n.x)};top:${pct(n.y)};--node-art:url("${uiArt(art)}");--tree:${TREE_COLOUR[s.trees[0]]};--tree2:${TREE_COLOUR[s.trees[1] || s.trees[0]]}`,
       'data-skill': n.id,
@@ -154,6 +175,8 @@ export function createSkillTree({ root, store, toast = () => {}, tutorialOn = ()
     },
     el('span', { class: 'ui-node-rank', text: `${rank}/${s.max}`, 'aria-hidden': 'true' }),
     el('span', { class: 'ui-node-name', text: s.name, 'aria-hidden': 'true' }));
+    const unlocks = unlockList(s);
+    if (unlocks.length) b.append(glyph(unlocks[0].kind, 'ui-node-kind'));
     if (fresh === n.id && !reducedMotion()) b.append(el('i', { class: 'ui-burst', 'aria-hidden': 'true' }));
     return b;
   }
@@ -177,8 +200,15 @@ export function createSkillTree({ root, store, toast = () => {}, tutorialOn = ()
       el('h4', { text: s.name }),
       el('p', { class: 'ui-skill-blurb', text: s.blurb }),
       el('dl', { class: 'ui-skill-facts' },
-        el('dt', { text: 'Each rank' }), el('dd', { text: words.perRank }),
-        el('dt', { text: 'You have' }), el('dd', { text: rank ? `Rank ${rank} of ${s.max}: ${words.now}` : `Rank 0 of ${s.max}` }),
+        ...(words.unlocks.length ? [
+          el('dt', { text: 'Unlocks' }),
+          el('dd', {}, el('ul', { class: 'ui-unlocks' }, words.unlocks.map((u) => el('li', { class: rank >= u.rank ? 'is-open' : null },
+            glyph(u.kind), el('span', { text: u.rank > 1 ? `${u.text} (rank ${u.rank})` : u.text }))))),
+          el('dt', { text: 'You have' }), el('dd', { text: `Rank ${rank} of ${s.max}` }),
+        ] : [
+          el('dt', { text: 'Each rank' }), el('dd', { text: words.perRank }),
+          el('dt', { text: 'You have' }), el('dd', { text: rank ? `Rank ${rank} of ${s.max}: ${words.now}` : `Rank 0 of ${s.max}` }),
+        ]),
         el('dt', { text: 'Cost' }), el('dd', { text: words.cost }),
         el('dt', { text: 'Needs' }), el('dd', { text: words.needs })),
       el('div', { class: 'ui-skill-actions' },
