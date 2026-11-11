@@ -1,0 +1,51 @@
+{
+  "id": "moon-outpost",
+  "name": "Moon outpost",
+  "kind": "exterior",
+  "tile": 48,
+  "floor": "regolith",
+  "ambient": "moon-wind",
+  "legend": {"R":{"tile":"rock","solid":true}},
+  "grid": [
+    "RRRRRRRRRRRRRRRRRRRR",
+    "R..................R",
+    "R..................R",
+    "R..................R",
+    "R..................R",
+    "R..................R",
+    "R..................R",
+    "R..................R",
+    "R..................R",
+    "R..................R",
+    "R..................R",
+    "R..................R",
+    "RRRRRRRRRRRRRRRRRRRR"
+  ],
+  "props": [
+    {"art":"airlock-hub","at":[1,1],"size":[4,4],"block":true},
+    {"art":"power-panel","at":[5,2],"size":[1,1],"block":true,"interact":{"kind":"puzzle","id":"airlock","label":"Airlock panel"}},
+    {"art":"reactor-block","at":[15,1],"size":[3,2.4],"block":true,"interact":{"kind":"console","id":"reactor","label":"Reactor block","access":"access:slicer.2"}},
+    {"art":"drill-rig","at":[2,9],"size":[2,2],"block":true},
+    {"art":"ore-vein","at":[4,9.5],"size":[1.5,1.5],"block":true,"interact":{"kind":"mine","id":"ore-vein","label":"Ore vein: drill it"}},
+    {"art":"cargo-crate","at":[8,3],"size":[1,1],"block":"low"},
+    {"art":"cargo-crate","at":[8,4],"size":[1,1],"block":"low"},
+    {"art":"cargo-crate","at":[11,6],"size":[1,1],"block":"low"},
+    {"art":"cargo-crate","at":[9,9],"size":[1,1],"block":"low"},
+    {"art":"cargo-crate","at":[10,9],"size":[1,1],"block":"low"},
+    {"art":"supply-pod","at":[14,8],"size":[1.6,1.6],"block":true,"interact":{"kind":"hack","id":"outpost-cache","level":1,"label":"Sealed supply cache","reward":{"items":{"scrap":2,"circuit":1}},"rewardText":"The cache pops: two scrap and a circuit."}},
+    {"art":"boulder","at":[6,6],"size":[1.4,1.4],"block":true},
+    {"art":"antenna-mast","at":[17,10],"size":[1.2,1.2],"block":true},
+    {"art":"solar-panel","at":[12,1],"size":[2,1.2],"block":true}
+  ],
+  "npcs": [],
+  "doors": [
+    {"id":"shuttle","at":[1,6],"size":[1,2],"to":"ship","arrive":"from-dock","label":"Back to your ship"}
+  ],
+  "spawns": {
+    "default": [3,7,"right"],
+    "fight": [3,7,"right"]
+  },
+  "zones": [
+    {"id":"exit","at":[1,6],"size":[1,2]}
+  ]
+}

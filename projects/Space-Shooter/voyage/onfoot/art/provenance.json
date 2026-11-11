@@ -1,0 +1,221 @@
+{
+ "note": "Made 2026-11-11 by the Stardust art lane with FLUX 3 Klein on our own machine (sprite-forge); approved packs (desert, moon base, enemies, on-foot straight down). Resized for the game by lhc-lanes/stardust/onfoot/tools/prep-art.py.",
+ "files": {
+  "player-f1.png": {
+   "from": "art/packs/on-foot/anim/pilot-top-strip-s11m-f1.png",
+   "px": [
+    81,
+    128
+   ],
+   "bytes": 17859
+  },
+  "player-f2.png": {
+   "from": "art/packs/on-foot/anim/pilot-top-strip-s11m-f2.png",
+   "px": [
+    94,
+    128
+   ],
+   "bytes": 20946
+  },
+  "player-f3.png": {
+   "from": "art/packs/on-foot/anim/pilot-top-strip-s11m-f3.png",
+   "px": [
+    81,
+    128
+   ],
+   "bytes": 17914
+  },
+  "player-f4.png": {
+   "from": "art/packs/on-foot/anim/pilot-top-strip-s11m-f4.png",
+   "px": [
+    93,
+    128
+   ],
+   "bytes": 20765
+  },
+  "npc-stand-in.png": {
+   "from": "art/packs/on-foot/pilot-top.png",
+   "px": [
+    128,
+    128
+   ],
+   "bytes": 20877
+  },
+  "raider-grunt.png": {
+   "from": "art/packs/enemies/runtime/raider-grunt.png",
+   "px": [
+    128,
+    128
+   ],
+   "bytes": 16184
+  },
+  "raider-heavy.png": {
+   "from": "art/packs/enemies/runtime/raider-heavy.png",
+   "px": [
+    144,
+    144
+   ],
+   "bytes": 23720
+  },
+  "scout-drone.png": {
+   "from": "art/packs/enemies/runtime/scout-drone.png",
+   "px": [
+    112,
+    112
+   ],
+   "bytes": 20833
+  },
+  "gun-drone.png": {
+   "from": "art/packs/enemies/runtime/gun-drone.png",
+   "px": [
+    128,
+    128
+   ],
+   "bytes": 31812
+  },
+  "turret.png": {
+   "from": "art/packs/enemies/runtime/turret.png",
+   "px": [
+    128,
+    128
+   ],
+   "bytes": 22232
+  },
+  "swarm-bug.png": {
+   "from": "art/packs/enemies/runtime/swarm-bug.png",
+   "px": [
+    96,
+    96
+   ],
+   "bytes": 14683
+  },
+  "tile-plating.png": {
+   "from": "art/packs/moon-base/runtime/base-plating.png",
+   "px": [
+    256,
+    256
+   ],
+   "bytes": 64709
+  },
+  "tile-regolith.png": {
+   "from": "art/packs/moon-base/runtime/moon-regolith.png",
+   "px": [
+    256,
+    256
+   ],
+   "bytes": 64165
+  },
+  "tile-sand.png": {
+   "from": "art/packs/desert-planet/runtime/desert-sand.png",
+   "px": [
+    256,
+    256
+   ],
+   "bytes": 65872
+  },
+  "airlock-hub.png": {
+   "from": "art/packs/moon-base/runtime/airlock-hub.png",
+   "px": [
+    320,
+    320
+   ],
+   "bytes": 33365
+  },
+  "reactor-block.png": {
+   "from": "art/packs/moon-base/runtime/reactor-block.png",
+   "px": [
+    256,
+    256
+   ],
+   "bytes": 23178
+  },
+  "drill-rig.png": {
+   "from": "art/packs/moon-base/runtime/drill-rig.png",
+   "px": [
+    224,
+    224
+   ],
+   "bytes": 20464
+  },
+  "supply-pod.png": {
+   "from": "art/packs/moon-base/runtime/supply-pod.png",
+   "px": [
+    160,
+    160
+   ],
+   "bytes": 7429
+  },
+  "antenna-mast.png": {
+   "from": "art/packs/moon-base/runtime/antenna-mast.png",
+   "px": [
+    160,
+    160
+   ],
+   "bytes": 5604
+  },
+  "cargo-crate.png": {
+   "from": "art/packs/desert-planet/runtime/cargo-crate.png",
+   "px": [
+    128,
+    128
+   ],
+   "bytes": 28578
+  },
+  "fuel-barrel.png": {
+   "from": "art/packs/desert-planet/runtime/fuel-barrel.png",
+   "px": [
+    96,
+    96
+   ],
+   "bytes": 21860
+  },
+  "boulder.png": {
+   "from": "art/packs/desert-planet/runtime/boulder.png",
+   "px": [
+    160,
+    160
+   ],
+   "bytes": 11218
+  },
+  "solar-panel.png": {
+   "from": "art/packs/desert-planet/runtime/solar-panel.png",
+   "px": [
+    160,
+    160
+   ],
+   "bytes": 9230
+  },
+  "asteroid.png": {
+   "from": "projects/Space-Shooter/art/asteroid-v1.png (shipped Stardust art, see art/provenance.json)",
+   "px": [
+    125,
+    128
+   ],
+   "bytes": 7048
+  },
+  "relay-station.png": {
+   "from": "projects/Space-Shooter/art/relay-station-v1.png (shipped Stardust art, see art/provenance.json)",
+   "px": [
+    256,
+    229
+   ],
+   "bytes": 15859
+  },
+  "relay-gate.png": {
+   "from": "projects/Space-Shooter/art/relay-gate-v1.png (shipped Stardust art, see art/provenance.json)",
+   "px": [
+    224,
+    224
+   ],
+   "bytes": 14138
+  },
+  "warden.png": {
+   "from": "projects/Space-Shooter/art/warden-v1.png (shipped Stardust art, see art/provenance.json)",
+   "px": [
+    183,
+    192
+   ],
+   "bytes": 13325
+  }
+ }
+}

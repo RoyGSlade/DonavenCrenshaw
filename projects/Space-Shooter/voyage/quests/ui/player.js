@@ -22,6 +22,7 @@ import { BADGES_DATA } from '../data/badges.js';
 import { UNLOCK_NAMES } from '../../data.js';
 import { RULES, NEUTRAL } from '../../../dogfight/simulation.js';
 import { drawCustomShip } from '../../../dogfight/shipArt.js';
+import { playFootFight } from '../../onfoot/footFight.js';
 
 // ---- tiny DOM helper ------------------------------------------------------
 export function el(tag, props = {}, ...children) {
@@ -317,6 +318,7 @@ export function createQuestPlayer({ root, session, status = () => {}, onEnd = ()
   function renderFoot(p) {
     const box = el('section', { class: 'qs-part' }, el('h3', { text: `${p.title}: ${p.enemy.name}` }), el('p', { class: 'qs-note', text: p.note }));
     box.append(el('div', { class: 'qs-moves' }, ...p.moves.map(m => button(m.label, () => doAct({ move: m.id })))));
+    if (p.live) box.append(el('p', { class: 'qs-live-row' }, button('Fight it live (on foot)', () => openFootFight(p.live.setup, p.enemy.name)), el('small', { text: ' WASD to move, mouse or arrows to aim and fire, Space to dash. Sticks on phones.' })));
     return box;
   }
 
@@ -379,6 +381,16 @@ export function createQuestPlayer({ root, session, status = () => {}, onEnd = ()
       el('p', { class: 'qs-note', text: `Your ship adds +${p.shipBonus || 0} to the roll (engine, thrusters and flying skills). Flying this leg live on today's racing engine comes later; for now it resolves with a Dexterity roll.` }),
       el('div', { class: 'qs-moves' }, ...p.moves.map(m => button(m.label, () => doAct({ type: 'quick', style: m.id })))),
     );
+  }
+
+  // ---- live on-foot fight (voyage/onfoot) ----
+  function openFootFight(setup, name) {
+    if (live) return;
+    live = { close: () => {} };
+    playFootFight(setup, { character: session.get().character, title: name }).then(result => {
+      live = null;
+      if (result) doAct({ type: 'live', outcome: result.outcome, hp: result.hp });
+    });
   }
 
   // ---- live fight on Dogfight's simulation ----

@@ -1,0 +1,282 @@
+{
+  "sidearm": {
+    "damage": 10,
+    "rate": 0.14,
+    "speed": 640,
+    "spread": 0.035,
+    "life": 0.9
+  },
+  "dash": {
+    "speed": 520,
+    "time": 0.16,
+    "cooldown": 0.9,
+    "iframes": 0.22
+  },
+  "footSpeed": 185,
+  "footHp": 60,
+  "enemies": {
+    "target": {
+      "name": "Practice target",
+      "art": "scout-drone",
+      "hp": 20,
+      "radius": 15,
+      "speed": 0,
+      "brain": "still"
+    },
+    "drone": {
+      "name": "Scout drone",
+      "art": "scout-drone",
+      "hp": 18,
+      "radius": 15,
+      "speed": 140,
+      "brain": "rush",
+      "touch": 8
+    },
+    "bug": {
+      "name": "Swarm bug",
+      "art": "swarm-bug",
+      "hp": 10,
+      "radius": 11,
+      "speed": 185,
+      "brain": "rush",
+      "touch": 6
+    },
+    "grunt": {
+      "name": "Raider",
+      "art": "raider-grunt",
+      "hp": 34,
+      "radius": 15,
+      "speed": 95,
+      "brain": "gunner",
+      "range": [
+        170,
+        290
+      ],
+      "shot": {
+        "damage": 7,
+        "speed": 360,
+        "rate": 1.3,
+        "burst": 3,
+        "gap": 0.12,
+        "spread": 0.08
+      }
+    },
+    "heavy": {
+      "name": "Raider heavy",
+      "art": "raider-heavy",
+      "hp": 70,
+      "radius": 19,
+      "speed": 62,
+      "brain": "gunner",
+      "range": [
+        110,
+        210
+      ],
+      "shot": {
+        "damage": 5,
+        "speed": 320,
+        "rate": 1.8,
+        "burst": 1,
+        "pellets": 5,
+        "spread": 0.32
+      }
+    },
+    "turret": {
+      "name": "Turret",
+      "art": "turret",
+      "hp": 50,
+      "radius": 20,
+      "speed": 0,
+      "brain": "turret",
+      "turn": 1.8,
+      "shot": {
+        "damage": 6,
+        "speed": 400,
+        "rate": 0.55,
+        "burst": 1,
+        "spread": 0.04
+      }
+    },
+    "gundrone": {
+      "name": "Gun drone",
+      "art": "gun-drone",
+      "hp": 26,
+      "radius": 17,
+      "speed": 120,
+      "brain": "gunner",
+      "range": [
+        200,
+        320
+      ],
+      "shot": {
+        "damage": 5,
+        "speed": 380,
+        "rate": 0.9,
+        "burst": 2,
+        "gap": 0.1,
+        "spread": 0.06
+      }
+    }
+  },
+  "mining": {
+    "duration": 24,
+    "heatUp": 0.5,
+    "coolDown": 0.75,
+    "band": 0.24,
+    "fast": 0.14,
+    "slow": 0.03,
+    "hot": 0.07,
+    "jamTime": 1.6,
+    "chunks": 4
+  },
+  "puzzleHintAfter": 6,
+  "hack": {
+    "time": 16,
+    "timePerLevel": -1.5,
+    "window": 0.62,
+    "windowPerLevel": -0.07,
+    "speed": 2.1,
+    "speedStep": 0.45,
+    "misses": 2,
+    "tumblers": 3
+  },
+  "activities": {
+    "_note": "What each activity modifier id does. Skill levels below grant them. Story's ROUND2-CONTRACT ids win when published.",
+    "activity:hack.time+": {
+      "activity": "hack",
+      "time": 4,
+      "text": "+4 s on the hack timer"
+    },
+    "activity:hack.window+": {
+      "activity": "hack",
+      "window": 0.25,
+      "text": "Bypass windows 25% wider"
+    },
+    "activity:hack.trace+": {
+      "activity": "hack",
+      "misses": 1,
+      "text": "One more miss before the trace trips"
+    },
+    "activity:puzzle.hint+": {
+      "activity": "puzzle",
+      "hintSooner": 2,
+      "text": "Puzzle hints come two turns sooner"
+    },
+    "activity:mine.sweet+": {
+      "activity": "mine",
+      "band": 0.06,
+      "text": "Bigger sweet spot on the drill"
+    },
+    "activity:mine.cool+": {
+      "activity": "mine",
+      "heatUp": -0.12,
+      "text": "The drill heats up slower"
+    },
+    "activity:foot.steady+": {
+      "activity": "foot",
+      "spread": -0.3,
+      "text": "Steadier sidearm"
+    },
+    "activity:foot.reload+": {
+      "activity": "foot",
+      "rate": -0.15,
+      "text": "Faster follow-up shots"
+    },
+    "activity:foot.dash+": {
+      "activity": "foot",
+      "dash": -0.2,
+      "text": "Dash recovers faster"
+    }
+  },
+  "skillLevels": [
+    {
+      "skill": "slicer",
+      "level": 1,
+      "unlocks": [
+        {
+          "type": "activity",
+          "id": "activity:hack.time+"
+        },
+        {
+          "type": "activity",
+          "id": "activity:puzzle.hint+"
+        },
+        {
+          "type": "access",
+          "id": "access:slicer.1",
+          "text": "Staff-only doors"
+        }
+      ]
+    },
+    {
+      "skill": "slicer",
+      "level": 2,
+      "unlocks": [
+        {
+          "type": "activity",
+          "id": "activity:hack.window+"
+        },
+        {
+          "type": "activity",
+          "id": "activity:hack.trace+"
+        },
+        {
+          "type": "access",
+          "id": "access:slicer.2",
+          "text": "Secure doors and safes"
+        }
+      ]
+    },
+    {
+      "skill": "patch-kit",
+      "level": 1,
+      "unlocks": [
+        {
+          "type": "activity",
+          "id": "activity:mine.cool+"
+        }
+      ]
+    },
+    {
+      "skill": "patch-kit",
+      "level": 2,
+      "unlocks": [
+        {
+          "type": "activity",
+          "id": "activity:mine.sweet+"
+        }
+      ]
+    },
+    {
+      "skill": "brawler",
+      "level": 1,
+      "unlocks": [
+        {
+          "type": "activity",
+          "id": "activity:foot.reload+"
+        }
+      ]
+    },
+    {
+      "skill": "brawler",
+      "level": 2,
+      "unlocks": [
+        {
+          "type": "activity",
+          "id": "activity:foot.steady+"
+        }
+      ]
+    },
+    {
+      "skill": "evasive",
+      "level": 1,
+      "unlocks": [
+        {
+          "type": "activity",
+          "id": "activity:foot.dash+"
+        }
+      ]
+    }
+  ],
+  "statBoons": true
+}
