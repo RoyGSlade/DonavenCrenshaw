@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import ejs from 'ejs';
-import { readList, lines, itemState, isClosed, closesText, joinProblem, claimProblem, safeHref, OFFLINE_TEXT } from '../scripts/christmas-state.js';
+import { readList, lines, itemState, hubReason, isClosed, closesText, joinProblem, claimProblem, safeHref, OFFLINE_TEXT } from '../scripts/christmas-state.js';
 
 const read = (name) => fs.readFileSync(new URL(`../${name}`, import.meta.url), 'utf8');
 
@@ -13,7 +13,10 @@ const answer = () => ({
         { id: 's1', title: 'First', blurb: 'About first', locked: false, items: [
             { id: 'a-one', name: 'Thing one (the big one)', why: 'Because', price: '~$1', link: 'https://shop.test/a', linkLabel: 'Shop', star: true, kit: false },
             { id: 'a-two', name: 'Thing two (instead of one)', why: 'Cheaper', price: '~$2', link: 'javascript:alert(1)', star: false, kit: false },
-            { id: 'a-kit', name: 'Supply', why: 'Needs a printer', price: '~$3', link: 'http://insecure.test', linkLabel: 'Shop', star: false, kit: true }
+            { id: 'a-kit', name: 'Supply', why: 'Needs a printer', price: '~$3', link: 'http://insecure.test', linkLabel: 'Shop', star: false, kit: true },
+            { id: 'a-lock', name: 'Refill', why: 'Needs a thing', price: '~$5', link: 'https://shop.test/r', linkLabel: 'Shop', needs: ['a-one'], ready: false },
+            { id: 'a-lock2', name: 'Extra', why: 'Needs either', price: '~$6', link: 'https://shop.test/e', linkLabel: 'Shop', needs: ['a-one', 'a-two'], ready: false },
+            { id: 'a-lock3', name: 'Hidden need', why: 'x', price: '~$7', link: 'https://shop.test/h', linkLabel: 'Shop', needs: ['not-sent'], ready: false }
         ] },
         { id: 's2', title: 'Locked one', locked: true, items: [{ id: 'b-one', name: 'Kit thing', why: 'Kit', price: '~$4', link: 'https://shop.test/b', linkLabel: 'Shop', star: true, kit: true }] },
         { id: 'empty', title: 'Nothing', items: [] }
@@ -46,12 +49,33 @@ test('pick-one notes come from the pairs and name the partner without its parent
 test('item states: your claim wins, then taken, then covered', () => {
     const { claims } = readList(answer());
     assert.equal(claims.unlocked, true);
-    assert.equal(itemState('a-one', claims), 'mine');
-    assert.equal(itemState('a-two', claims), 'taken');
-    assert.equal(itemState('a-kit', claims), 'covered');
-    assert.equal(itemState('b-one', claims), 'open');
-    assert.equal(itemState('b-one', null), 'unknown');
+    assert.equal(itemState({ id: 'a-one' }, claims), 'mine');
+    assert.equal(itemState({ id: 'a-two' }, claims), 'taken');
+    assert.equal(itemState({ id: 'a-kit' }, claims), 'covered');
+    assert.equal(itemState({ id: 'b-one', ready: true }, claims), 'open');
+    assert.equal(itemState({ id: 'b-one' }, null), 'unknown');
+    assert.equal(itemState({ id: 'a-lock', ready: false }, claims), 'locked');
+    assert.equal(itemState({ id: 'a-one', ready: false }, claims), 'mine', 'a claim stays once made, even if its prerequisite is released');
     assert.equal(claims.taken.size, 1, 'non-string ids are ignored');
+});
+
+test('items that are not ready say what unlocks them, by the needed item names', () => {
+    const items = readList(answer()).sections[0].items;
+    const byId = Object.fromEntries(items.map((i) => [i.id, i]));
+    assert.equal(byId['a-one'].ready, true);
+    assert.equal(byId['a-lock'].ready, false);
+    assert.equal(byId['a-lock'].lockNote, 'Unlocks once someone gets the Thing one');
+    assert.equal(byId['a-lock2'].lockNote, 'Unlocks once someone gets the Thing one or the Thing two');
+    assert.equal(byId['a-lock3'].lockNote, 'Unlocks once something it needs is claimed');
+    assert.equal(byId['a-one'].lockNote, '');
+});
+
+test('a 409 shows the hub\'s own plain reason, and never a bare code', () => {
+    assert.equal(claimProblem({ status: 409, data: { error: 'Get the soldering iron first.' } }), 'Get the soldering iron first.');
+    assert.equal(claimProblem({ status: 409, data: { reason: 'Someone already has the filament dryer.' } }), 'Someone already has the filament dryer.');
+    assert.equal(claimProblem({ status: 409, data: null, text: 'Needs a charger first.' }), 'Needs a charger first.');
+    assert.match(claimProblem({ status: 409, data: { error: 'taken' } }), /took that one/);
+    assert.equal(hubReason({ data: { message: 'x'.repeat(300) + ' y' } }), '');
 });
 
 test('readList survives junk', () => {

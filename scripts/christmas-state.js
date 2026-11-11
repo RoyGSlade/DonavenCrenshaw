@@ -42,6 +42,15 @@ function pickNotes(pairs, names) {
     return notes;
 }
 
+// "Unlocks once someone gets the A or the B." from an item's `needs` ids and the names the list carries.
+// Any one of the needed items is enough. Names the list does not carry (still hidden) are left out.
+function lockNote(needs, names) {
+    const named = needs.filter((id) => names.has(id)).map((id) => `the ${names.get(id).replace(/\s*\([^)]*\)/g, '')}`);
+    if (!named.length) return 'Unlocks once something it needs is claimed';
+    const text = named.length === 1 ? named[0] : `${named.slice(0, -1).join(', ')} or ${named[named.length - 1]}`;
+    return `Unlocks once someone gets ${text}`;
+}
+
 // The hub's GET /list answer, made safe to draw: strings only, https links only,
 // sections in the order sent. Claims are sets of ids.
 export function readList(data) {
@@ -58,12 +67,19 @@ export function readList(data) {
             link: safeHref(item.link),
             linkLabel: str(item.linkLabel, 80) || 'Store',
             star: item.star === true,
-            kit: item.kit === true
+            kit: item.kit === true,
+            needs: ids(item.needs),
+            ready: item.ready !== false
         }))
     })).filter((section) => section.id && section.items.length);
     const names = new Map(sections.flatMap((section) => section.items.map((item) => [item.id, item.name])));
     const notes = pickNotes(data?.pairs, names);
-    for (const section of sections) for (const item of section.items) item.pick = notes.get(item.id) || '';
+    for (const section of sections) {
+        for (const item of section.items) {
+            item.pick = notes.get(item.id) || '';
+            item.lockNote = item.ready ? '' : lockNote(item.needs, names);
+        }
+    }
     return {
         title: str(data?.title, 120),
         intro: str(data?.intro, 600),
@@ -81,12 +97,15 @@ export function readList(data) {
     };
 }
 
-// open | mine | taken | covered. Your own claim wins, then taken, then covered by a pair.
-export function itemState(id, claims) {
+// open | mine | taken | covered | locked. Your own claim wins (a claim stays once made), then taken,
+// then covered by a pair, then locked until something it needs is claimed. `item` is {id, ready}.
+export function itemState(item, claims) {
     if (!claims) return 'unknown';
+    const id = item.id;
     if (claims.mine.has(id)) return 'mine';
     if (claims.taken.has(id)) return 'taken';
     if (claims.covered.has(id)) return 'covered';
+    if (item.ready === false) return 'locked';
     return 'open';
 }
 
@@ -118,10 +137,21 @@ export function joinProblem(res) {
     return 'Something went wrong. Try again.';
 }
 
+// The hub's own plain reason for a refusal: a sentence in the JSON (reason, message or error) or plain text.
+// A bare code like "taken" is not a sentence, so it is not shown.
+export function hubReason(res) {
+    const candidates = [res?.data?.reason, res?.data?.message, res?.data?.error, res?.text];
+    for (const value of candidates) {
+        const text = typeof value === 'string' ? value.trim() : '';
+        if (text && /\s/.test(text) && text.length <= 240) return text;
+    }
+    return '';
+}
+
 // Plain words for a claim or release that did not work.
 export function claimProblem(res, action = 'claim') {
     if (!res || res.offline) return OFFLINE_TEXT;
-    if (res.status === 409) return 'Someone just took that one. The list is updated.';
+    if (res.status === 409) return hubReason(res) || 'Someone just took that one. The list is updated.';
     if (res.status === 410) return 'This list has closed.';
     if (res.status === 404) return action === 'claim' ? 'That item is not open right now.' : 'You have not claimed that one.';
     if (res.status === 401 || res.status === 403) return 'You need to be approved before you can claim.';

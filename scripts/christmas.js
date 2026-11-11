@@ -174,10 +174,12 @@ function run(page) {
 
     function paintActions() {
         if (!list) return;
+        const byId = new Map(list.sections.flatMap((section) => section.items.map((item) => [item.id, item])));
         for (const row of listRoot.querySelectorAll('[data-item-id]')) {
             const slot = row.querySelector('[data-xm-action]');
             const id = row.dataset.itemId;
-            const state = itemState(id, list.claims);
+            const item = byId.get(id) || { id };
+            const state = itemState(item, list.claims);
             row.dataset.state = state;
             const parts = [];
             if (closed) { /* no buttons once the list has closed */ }
@@ -185,7 +187,8 @@ function run(page) {
             else if (state === 'mine') {
                 parts.push(el('span', 'xm-state xm-state--mine', STATE_LABEL.mine));
                 parts.push(actionButton('Release', 'release', () => release(id)));
-            } else parts.push(el('span', `xm-state xm-state--${state}`, STATE_LABEL[state]));
+            } else if (state === 'locked') parts.push(el('span', 'xm-state xm-state--locked', item.lockNote));
+            else parts.push(el('span', `xm-state xm-state--${state}`, STATE_LABEL[state]));
             slot.replaceChildren(...parts);
         }
     }

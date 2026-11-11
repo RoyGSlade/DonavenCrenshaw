@@ -60,7 +60,8 @@
 .xm-state { font-family: var(--font-mono); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-secondary); text-align: right; }
 .xm-state--mine { color: #b9f5d0; }
 .xm-state--covered { color: var(--text-muted); }
-.xm-item[data-state="taken"], .xm-item[data-state="covered"] { opacity: 0.62; }
+.xm-state--locked { max-width: 16rem; line-height: 1.5; text-transform: none; letter-spacing: 0.02em; font-weight: 600; color: var(--text-muted); }
+.xm-item[data-state="taken"], .xm-item[data-state="covered"], .xm-item[data-state="locked"] { opacity: 0.62; }
 .xm-btn:focus-visible, .xm-link:focus-visible, .xm-form input:focus-visible { outline: 2px solid var(--line-bright); outline-offset: 2px; }
 
 @media (max-width: 40rem) {
@@ -69,5 +70,6 @@
     .xm-action { justify-items: stretch; }
     .xm-action .xm-btn { width: 100%; }
     .xm-state { text-align: left; }
+    .xm-state--locked { max-width: none; }
     .xm-form > button { justify-self: stretch; }
 }
