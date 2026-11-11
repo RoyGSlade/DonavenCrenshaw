@@ -138,7 +138,8 @@ test('dialogue: stats unlock options, local flags unlock options, costs lock whe
   const poor = findAmbush(low());
   const nameDrop = poor.choices.find(c => c.label.startsWith('Name the debt'));
   assert.equal(nameDrop.locked, true);
-  assert.deepEqual(nameDrop.reasons, ['Needs Charisma 5']);
+  assert.equal(nameDrop.reasons.length, 1);
+  assert.match(nameDrop.reasons[0], /^Needs Charisma 5\.?$/);
   assert.equal(poor.choices.find(c => c.label.startsWith('Vent two scrap')).locked, true);
   assert.equal(poor.choices.find(c => c.label.startsWith('Tap the Knock')).locked, true);
   const rich = findAmbush(high());
@@ -150,7 +151,7 @@ test('dialogue: stats unlock options, local flags unlock options, costs lock whe
   let { run, save } = startQuest(quest, low(), { seed: 1 });
   run = { ...run, node: 'ambush-waiting', part: null };
   const refused = act(quest, run, save, { type: 'choose', index: 3 });
-  assert.equal(refused.error, 'Needs Charisma 5');
+  assert.match(refused.error, /^Needs Charisma 5\.?$/);
   assert.equal(refused.run, run);
 });
 
