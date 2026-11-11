@@ -256,6 +256,24 @@ export const ITEMS = Object.freeze([
   // Proposed by quests (INTERFACES.md 1.4): a tool you have to procure for the
   // railgun's build route at Garrity's yard.
   { id: 'mining-drill', name: 'Mining drill', kind: 'key', max: 1 },
+  // Round 2 shops (content lane; prices and what each does: quests/data/shops.js).
+  // Mel's gear: worn or carried on foot; quests also open options for some.
+  { id: 'flak-vest', name: 'Flak vest', kind: 'gear', max: 1 },
+  { id: 'plated-coat', name: 'Plated longcoat', kind: 'gear', max: 1 },
+  { id: 'hardsuit', name: 'Dustfall hardsuit', kind: 'gear', max: 1 },
+  { id: 'scatter-pistol', name: 'Scatter pistol', kind: 'gear', max: 1 },
+  { id: 'bolt-carbine', name: 'Bolt carbine', kind: 'gear', max: 1 },
+  { id: 'longshot', name: 'Longshot rifle', kind: 'gear', max: 1 },
+  { id: 'breach-kit', name: 'Breach kit', kind: 'gear', max: 1 },
+  { id: 'scan-goggles', name: 'Scan goggles', kind: 'gear', max: 1 },
+  { id: 'mag-boots', name: 'Mag boots', kind: 'gear', max: 1 },
+  { id: 'medkit', name: 'Medkit', kind: 'consumable', max: 9 },
+  // Chibby's consumables: spent in jobs (a patch mid-fight, a shield cell).
+  { id: 'hull-patch', name: 'Hull patch', kind: 'consumable', max: 9 },
+  { id: 'shield-cell', name: 'Shield cell', kind: 'consumable', max: 9 },
+  // Edna's back room: not strictly legal anywhere near the Guild.
+  { id: 'ghost-transponder', name: 'Ghost transponder', kind: 'key', max: 1 },
+  { id: 'syndicate-codes', name: 'Syndicate codes', kind: 'key', max: 1 },
 ]);
 
 // --- The Voyage ship -----------------------------------------------------------------

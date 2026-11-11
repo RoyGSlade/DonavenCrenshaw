@@ -7,7 +7,8 @@ import { createVoyageStore } from '../projects/Space-Shooter/voyage/store.js';
 import { STATS, STAT_IDS } from '../projects/Space-Shooter/voyage/data.js';
 import { effect, check } from '../projects/Space-Shooter/voyage/character.js';
 import { createBus } from '../projects/Space-Shooter/voyage/story/bus.js';
-import { LINES, LINE_ID, EMOTIONS, lineById, fillLine } from '../projects/Space-Shooter/voyage/story/lines.js';
+import { LINES, LINE_ID, EMOTIONS, lineById, fillLine, addLines } from '../projects/Space-Shooter/voyage/story/lines.js';
+import { contentLines } from '../projects/Space-Shooter/voyage/quests/lines.js';
 import { CAST, CAST_IDS } from '../projects/Space-Shooter/voyage/story/cast.js';
 import { createSay, readMs } from '../projects/Space-Shooter/voyage/story/say.js';
 import { chance, statCard, sixText, oneText, optionTag, passiveWords, oddsTable, HOW_CHECKS_WORK } from '../projects/Space-Shooter/voyage/story/stats.js';
@@ -117,6 +118,7 @@ test('every line the tutorial, talks and picks name exists', () => {
   named.push('chibby.roll.late', 'chibby.roll.late-done');
   named.push(PICKS.roll({ character: { stats: { str: 2, cha: 3, con: 2, dex: 3, wis: 1 } } }), PICKS.shot({ hits: 6, shots: 6 }), PICKS.shot({ hits: 6, shots: 9 }));
   for (const id of named) assert.ok(lineById(id), `missing line ${id}`);
+  addLines(contentLines()); // the content lane's quests carry their own pitches (contract section 2)
   for (const [giver, data] of Object.entries(QUEST_GIVERS)) {
     for (const q of data.quests) assert.ok(lineById(`${giver}.job.${q}`), `${giver} has no pitch for ${q}`);
     assert.ok(lineById(`${giver}.done.success`) && lineById(`${giver}.done.failure`));

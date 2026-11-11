@@ -18,6 +18,8 @@ import { shipRaceBonus } from '../parts/race.js';
 import { CIPHER_SYMBOLS } from '../parts/cipher.js';
 import { createLiveFight, stepLiveFight, liveFightResult } from '../live/dogfight.js';
 import { giverPortrait } from '../../art.js';
+import { BADGES_DATA } from '../data/badges.js';
+import { UNLOCK_NAMES } from '../../data.js';
 import { RULES, NEUTRAL } from '../../../dogfight/simulation.js';
 import { drawCustomShip } from '../../../dogfight/shipArt.js';
 
@@ -49,7 +51,10 @@ export function eventText(e) {
   if (e.type === 'skill-points') return `${sign(e.amount)} skill point${e.amount === 1 ? '' : 's'}`;
   if (e.type === 'flag') return 'A Knock fragment';
   if (e.type === 'max-rep') return `Max rep with ${GIVERS[e.giver]?.name || e.giver}`;
-  if (e.type === 'unlock') return `Unlocked ${e.id}`;
+  if (e.type === 'unlock') {
+    const badge = e.id.startsWith('badge:') ? BADGES_DATA.badges[e.id.slice(6)] : null;
+    return badge ? `New badge: ${badge.name}` : `Unlocked ${UNLOCK_NAMES[e.id] || e.id}`;
+  }
   return e.type;
 }
 
@@ -76,8 +81,12 @@ export function shipSummary(save) {
  * crew(): the crew aboard (voyage/crew/card.js card) or null; crew actions
  * come in through crewAct (P11).
  */
-export function createQuestPlayer({ root, session, status = () => {}, onEnd = () => {}, onExit = () => {}, onChange = () => {}, exitLabel = 'Back to the job board', announceEvents = true, crew = () => null }) {
+// voice({ line, speaker, text }): a spoken node just came on screen (once per
+// visit). The page plays the line's audio (story's voiceUrl / speak) and keeps
+// showing `text` from the view; without a voice hook the player is text only.
+export function createQuestPlayer({ root, session, status = () => {}, onEnd = () => {}, onExit = () => {}, onChange = () => {}, exitLabel = 'Back to the job board', announceEvents = true, crew = () => null, voice = null }) {
   let current = null; // { quest, run }
+  let voiced = '';
   let lastEvents = [];
   let ui = { key: '', cipher: [], riddle: [] };
   let keyHandlers = [];
@@ -161,6 +170,11 @@ export function createQuestPlayer({ root, session, status = () => {}, onEnd = ()
     if (!ui.key.startsWith(`${v.node}:`) || !v.part) ui = { key: uiKey, cipher: [], riddle: [] };
     ui.key = uiKey;
     const ship = shipSummary(save);
+    const said = `${current.quest.id}:${v.node}:${current.run.visits?.[v.node] || 0}`;
+    if (v.line && voice && said !== voiced && !v.part) {
+      voiced = said;
+      try { voice({ line: v.line, speaker: v.speaker, text: v.text }); } catch (error) { console.warn('Stardust: quest voice failed', error); }
+    }
     const head = el('div', { class: 'qs-quest-head' },
       el('h2', { class: 'qs-title', text: v.quest.title }),
       el('p', { class: 'qs-where', text: `${v.locationName} · seed ${current.run.seed}` }),
@@ -179,8 +193,9 @@ export function createQuestPlayer({ root, session, status = () => {}, onEnd = ()
     return el('section', { class: 'qs-dialogue', 'aria-live': 'polite' },
       v.portrait ? portrait(v.portrait) : null,
       el('div', { class: 'qs-box' },
+        v.beat ? el('p', { class: 'qs-beat', text: v.beat }) : null,
         v.speaker ? el('p', { class: 'qs-speaker', text: v.speaker }) : null,
-        el('p', { class: 'qs-text', text: v.text }),
+        el('p', { class: v.speaker ? 'qs-text qs-said' : 'qs-text', text: v.text }),
         choiceList(v.choices, choice => doAct({ type: 'choose', index: choice.index })),
       ),
     );
@@ -192,7 +207,11 @@ export function createQuestPlayer({ root, session, status = () => {}, onEnd = ()
     return el('section', { class: `qs-end ${win ? 'is-win' : 'is-fail'}` },
       el('p', { class: 'qs-eyebrow', text: win ? 'JOB DONE' : 'JOB FAILED' }),
       el('h3', { text: v.ended.title }),
-      el('p', { class: 'qs-text', text: v.ended.text }),
+      v.beat ? el('p', { class: 'qs-beat', text: v.beat }) : null,
+      v.speaker ? el('div', { class: 'qs-end-say' },
+        v.portrait ? portrait(v.portrait, 72) : null,
+        el('div', {}, el('p', { class: 'qs-speaker', text: v.speaker }), el('p', { class: 'qs-text qs-said', text: v.ended.text })),
+      ) : el('p', { class: 'qs-text', text: v.ended.text }),
       lines.length ? el('ul', { class: 'qs-rewards' }, ...lines.map(e => el('li', { text: eventText(e) }))) : el('p', { class: 'qs-note', text: 'No reward.' }),
       v.ended.death ? el('p', { class: 'qs-locked qs-death', text: 'Your captain died on this job. Half of their skill points are gone, the rest are refunded to spend again, and their stats were rolled fresh.' }) : null,
       v.ended.followUp ? el('p', { class: 'qs-note', text: `Follow-up: ${QUESTS[v.ended.followUp]?.title || v.ended.followUp} is on the board again.` }) : null,
