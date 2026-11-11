@@ -1,0 +1,70 @@
+<%# The Christmas list shell. This repo is public: no list data here. Approved givers get the list from the hub (scripts/christmas.js). %>
+<!DOCTYPE html>
+<html lang="en">
+<%- components.head %>
+<body class="site-shell skin-<%= page.skin %> christmas-page" data-branch="<%= page.branch %>">
+    <div class="page-light light-source parallax" aria-hidden="true"></div>
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+    <%- components.nav %>
+    <div class="content-wrapper">
+        <main id="main-content" class="page-shell" tabindex="-1">
+            <div class="container page-content xm" data-xmas data-view="loading">
+                <header class="xm-head">
+                    <p class="xm-eyebrow mono">Christmas list</p>
+                    <h1 class="section-title xm-title">Donaven's Christmas list</h1>
+                    <p class="xm-lede" data-xm-shell-lede>Ask to join to see it.</p>
+                </header>
+
+                <section class="noir-card noir-card--lit xm-account" aria-labelledby="xm-account-title" data-xm-account>
+                    <h2 id="xm-account-title" class="xm-card-title mono">Giving a gift</h2>
+
+                    <div class="xm-view" data-xm-only="loading" role="status" hidden><p>Checking this device…</p></div>
+
+                    <div class="xm-view" data-xm-only="guest" hidden>
+                        <h3 class="xm-ask">Want to get something? Ask to join</h3>
+                        <p>Add your name and email. Donaven approves each person before they can see the list or claim a gift. Only people he has approved can see what is taken, and Donaven cannot see who claimed what, so it stays a surprise.</p>
+                        <form class="xm-form" data-xm-form novalidate>
+                            <label>Name<input name="name" type="text" autocomplete="name" required maxlength="40"></label>
+                            <label>Email<input name="email" type="email" autocomplete="email" required maxlength="120"></label>
+                            <button class="btn-noir btn-noir--solid" type="submit">Ask to join</button>
+                        </form>
+                        <p class="xm-fine">Joining saves your name and email, and a cookie on this device, on Donaven's own server (api.donavencrenshaw.com). Nothing is emailed to you. A new device needs a new request.</p>
+                    </div>
+
+                    <div class="xm-view" data-xm-only="pending" hidden>
+                        <h3 class="xm-ask">Thanks, <span data-xm-name></span></h3>
+                        <p>Donaven will approve you soon. Check back on this device; the list will show here once he has.</p>
+                    </div>
+
+                    <div class="xm-view" data-xm-only="denied" hidden>
+                        <h3 class="xm-ask">This request was not approved</h3>
+                        <p>If that looks like a mistake, tell Donaven.</p>
+                    </div>
+
+                    <div class="xm-view" data-xm-only="approved" hidden>
+                        <h3 class="xm-ask">You are approved, <span data-xm-name></span></h3>
+                        <p>Press Claim on whatever you will buy. Taken items are marked, and you can Release one you claimed. Where there is a pick-one pair, claiming one covers the other.</p>
+                        <p class="xm-unlocked" data-xm-unlocked-note hidden>A 3D printer has been claimed, so more of the list is open below.</p>
+                    </div>
+
+                    <div class="xm-view" data-xm-only="offline" hidden>
+                        <h3 class="xm-ask">The list is offline right now; try again later.</h3>
+                        <p>It runs on a small server at home that is not answering.</p>
+                        <button class="btn-noir" type="button" data-xm-retry>Try again</button>
+                    </div>
+
+                    <p class="xm-status mono" role="status" aria-live="polite" data-xm-status></p>
+                    <noscript><p>Joining and the list need JavaScript.</p></noscript>
+                </section>
+
+                <div class="xm-list" data-xm-list></div>
+            </div>
+        </main>
+        <%- components.footer %>
+    </div>
+    <script src="<%= siteRoot %>scripts/script.js"></script>
+    <script src="<%= siteRoot %>scripts/light-engine.js"></script>
+    <script src="<%= siteRoot %>scripts/smoke.js"></script>
+    <script type="module" src="<%= siteRoot %>scripts/christmas.js" data-christmas-hub="<%= hubUrl %>"></script>
+</body>
+</html>

@@ -218,7 +218,7 @@ async function initPublicDir(site) {
     await fs.writeFile(gameEntry, gameHtml.replaceAll('https://donavencrenshaw.com/games/stardust/', routeUrl(site, 'games/stardust/')));
     if (fs.existsSync(path.join(ROOT_DIR, 'scripts'))) {
         await fs.ensureDir(path.join(PUBLIC_DIR, 'scripts'));
-        for (const filename of ['script.js', 'smoke.js', 'light-engine.js', 'account.js', 'email-verification.js', 'voting.js', 'voting-carousel.js', 'visits.js', 'stardust-boards.js', 'stardust-challenge.js', 'social.js', 'share.js', 'profile.js', 'pilot-ui.js', 'stardust-weekly.js', 'pilot-profile.js', 'ship-info.js', 'ship-ui.js']) {
+        for (const filename of ['script.js', 'smoke.js', 'light-engine.js', 'account.js', 'email-verification.js', 'voting.js', 'voting-carousel.js', 'visits.js', 'stardust-boards.js', 'stardust-challenge.js', 'social.js', 'share.js', 'profile.js', 'pilot-ui.js', 'stardust-weekly.js', 'pilot-profile.js', 'ship-info.js', 'ship-ui.js', 'christmas.js', 'christmas-state.js']) {
             await copyIfPresent(path.join(ROOT_DIR, 'scripts', filename), path.join(PUBLIC_DIR, 'scripts', filename));
         }
     }

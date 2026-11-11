@@ -31,6 +31,7 @@ const requiredRoutes = [
     '/community/',
     '/community/manage/',
     '/build-log/',
+    '/christmas/',
     '/support/',
     '/about/',
     '/contact/',
@@ -176,7 +177,7 @@ for (const url of sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)) {
 }
 const primaryNav = home.match(/<nav class="site-nav"[\s\S]*?<\/nav>/i)?.[0] || '';
 if (!primaryNav.includes('aria-label="Donaven Crenshaw home"') || !primaryNav.includes('BUILD FREEDOM')) failures.push('primary brand must identify Donaven Crenshaw and Build freedom');
-for (const label of ['Community', 'Privacy', 'underplain', 'BetterFingers', 'GetFast', 'PDFManager', 'Infinite Ages', 'Infinite Ages TTRPG', 'Infinite Ages Evolved', 'Build Log', 'About', 'Contact']) {
+for (const label of ['Community', 'Privacy', 'underplain', 'BetterFingers', 'GetFast', 'PDFManager', 'Infinite Ages', 'Infinite Ages TTRPG', 'Infinite Ages Evolved', 'Build Log', 'Christmas list', 'About', 'Contact']) {
     // Nav labels may be bare (>Label</a>) or wrapped (<span class="nav-label">Label</span></a>).
     if (!primaryNav.includes(`>${label}</a>`) && !primaryNav.includes(`>${label}</span>`)) failures.push(`primary navigation is missing ${label}`);
 }
@@ -232,6 +233,19 @@ for (const image of ['construction.png', 'supply.png', 'city.png', 'defense.png'
     if (!fs.existsSync(asset)) failures.push(`missing Kingdoms & Caravans showcase asset ${image}`);
     if (!new RegExp(`assets/kingdoms-caravans/${image}`, 'i').test(kingdomsCaravansPage)) failures.push(`Kingdoms & Caravans page does not reference showcase asset ${image}`);
 }
+
+// The Christmas list lives in the private hub. This repo is public, so the page is a shell and
+// no list data (items, sizes, rules, claims) may be in the repo or the built site.
+const christmasPage = fs.existsSync(routeFile('/christmas/')) ? fs.readFileSync(routeFile('/christmas/'), 'utf8') : '';
+if (!/data-route="christmas"/.test(primaryNav)) failures.push('primary navigation is missing the Christmas list tab');
+if (!/Ask to join/.test(christmasPage)) failures.push('/christmas/ must offer the join form');
+if (/data-item-id|data-section-id|kits\.json|RTX|waist|\$\d/.test(christmasPage)) failures.push('/christmas/ must not contain any list data; the list comes from the hub for approved givers');
+for (const leaked of ['data/christmas.json', 'data/christmas-hub-config.json', 'data/christmas-claims.json']) {
+    if (fs.existsSync(path.join(ROOT, leaked))) failures.push(`${leaked} must not exist in the public repo`);
+}
+if (fs.existsSync(path.join(PUBLIC, 'christmas', 'kits.json'))) failures.push('christmas/kits.json must not be published');
+const christmasScripts = ['christmas.js', 'christmas-state.js'].map((name) => fs.existsSync(path.join(PUBLIC, 'scripts', name)) ? fs.readFileSync(path.join(PUBLIC, 'scripts', name), 'utf8') : '').join('\n');
+if (/pc-motherboard|printer-h2s|Ryzen|ProArt/i.test(christmasScripts)) failures.push('Christmas scripts must not embed item data');
 
 for (const route of ['/projects/', '/about/', '/contact/']) {
     const publicSurface = fs.existsSync(routeFile(route)) ? fs.readFileSync(routeFile(route), 'utf8') : '';
