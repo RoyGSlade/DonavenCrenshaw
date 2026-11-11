@@ -153,3 +153,51 @@ export function assessMap(map) {
     mostRepeated: Math.max(0, ...counts.values()),
   };
 }
+
+/**
+ * Design checks: what a level designer would flag that the hard rules allow.
+ * Needs the prop catalog (data/props.json `props`). Counts:
+ *   wall    a prop that belongs against a wall (shelves, lockers, consoles) standing free
+ *   front   a prop that needs room in front, with something solid there
+ *   pair    a seat (stool, chair, pilot seat) touching nothing it could belong to
+ *   facing  an anchor whose front looks straight into a wall
+ * Desks and counters set off the wall on purpose (a chair or a keeper behind) are not "free".
+ */
+export function designChecks(map, catalog) {
+  const QUARTER = ['down', 'left', 'up', 'right'];
+  const VEC4 = { down: [0, 1], left: [-1, 0], up: [0, -1], right: [1, 0] };
+  const opp = { down: 'up', up: 'down', left: 'right', right: 'left' };
+  const solidChars = new Set(['#', '|', ' ', 'R', ...Object.entries(map.legend || {}).filter(([, v]) => v.solid).map(([k]) => k)]);
+  const solid = (x, y) => solidChars.has(map.grid[y]?.[x] ?? ' ');
+  const props = map.props || [];
+  const occ = new Map();
+  const rugAt = new Set(); // seats around a rug form a seating group
+  props.forEach((p, i) => { const r = coverRect(p); for (let y = r.y; y < r.y + r.h; y++) for (let x = r.x; x < r.x + r.w; x++) { if (p.layer === 'floor') { if ((catalog[p.art]?.tags || []).includes('rug')) rugAt.add(`${x},${y}`); } else occ.set(`${x},${y}`, i); } });
+  const faceOf = (p) => {
+    if (p.face) return p.face;
+    const d = catalog[p.art];
+    if (!d || !d.front || d.front === 'none') return null;
+    const turns = ((Math.round((p.rot || 0) / (Math.PI / 2)) % 4) + 4) % 4;
+    return QUARTER[(QUARTER.indexOf(d.front) + turns) % 4];
+  };
+  const side = (p, dir) => sideCells(coverRect(p), QUARTER.indexOf(dir), 1);
+  void VEC4;
+  const out = { wall: 0, front: 0, pair: 0, facing: 0, notes: [] };
+  props.forEach((p) => {
+    if (p.layer === 'floor') return;
+    const d = catalog[p.art];
+    if (!d) return;
+    const f = faceOf(p);
+    const offWallOnPurpose = p.role !== undefined && props.some(q => q.sat && q.group === p.group && q !== p && (catalog[q.art]?.tags || []).includes('seat')) && (d.tags || []).some(t => t === 'desk' || t === 'counter');
+    const isSeat = (d.tags || []).includes('seat');
+    const seatPaired = isSeat && QUARTER.some(k => side(p, k).some(([x, y]) => rugAt.has(`${x},${y}`) || (occ.has(`${x},${y}`) && !(catalog[props[occ.get(`${x},${y}`)].art]?.tags || []).includes('seat'))));
+    if (d.wall === 'back' && f && !offWallOnPurpose && !seatPaired && !(d.tags || []).includes('counter')) {
+      if (!side(p, opp[f]).every(([x, y]) => solid(x, y))) { out.wall++; out.notes.push(`${p.art} at ${p.at} stands off the wall`); }
+    }
+    if (f && d.clear > 0 && side(p, f).some(([x, y]) => { const j = occ.get(`${x},${y}`); return j != null && props[j].block; })) { out.front++; out.notes.push(`${p.art} at ${p.at} has its front blocked`); }
+    if (isSeat && !seatPaired) { out.pair++; out.notes.push(`${p.art} at ${p.at} is a seat with nothing to sit at`); }
+    if (p.role === 'anchor' && f && side(p, f).every(([x, y]) => solid(x, y))) { out.facing++; out.notes.push(`${p.art} at ${p.at} faces a wall`); }
+  });
+  out.total = out.wall + out.front + out.pair + out.facing;
+  return out;
+}

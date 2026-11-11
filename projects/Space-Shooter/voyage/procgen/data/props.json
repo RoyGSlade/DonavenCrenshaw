@@ -15,7 +15,7 @@
     "crate-small": {"size":[1,1],"pack":"interiors","suits":["cargo-hold","workshop","den","salvage-office"],"front":"none","wall":"any","clear":0,"block":"low","tags":["crate","clutter"]},
     "crew-table": {"size":[3,2],"pack":"interiors","suits":["crew-deck","cantina"],"front":"none","wall":"none","clear":0,"block":true,"tags":["table"]},
     "desk": {"size":[2,1],"pack":"interiors","suits":["relay-office","salvage-office","broker-lounge"],"front":"down","wall":"none","clear":0,"block":true,"tags":["desk"]},
-    "display-case": {"size":[2,1],"pack":"interiors","suits":["fitting-bay","broker-lounge"],"front":"down","wall":"back","clear":1,"block":true,"tags":["gear","display"]},
+    "display-case": {"size":[2,1],"pack":"interiors","suits":["fitting-bay","broker-lounge"],"front":"none","wall":"any","clear":0,"block":true,"tags":["gear","display"]},
     "dog-bed": {"size":[1,1],"pack":"interiors","suits":["workshop","crew-deck"],"front":"none","wall":"any","clear":0,"block":false,"tags":["ralph"]},
     "engineering-console": {"size":[2,1],"pack":"interiors","suits":["engine-room","workshop","cockpit"],"front":"down","wall":"back","clear":1,"block":"low","tags":["console"]},
     "floor-vent": {"size":[1,1],"pack":"interiors","suits":["engine-room","cargo-hold","workshop","den","crew-deck"],"front":"none","wall":"none","clear":0,"block":false,"layer":"floor","tags":["vent"]},

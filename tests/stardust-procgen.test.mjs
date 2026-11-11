@@ -6,7 +6,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  dressRoom, rerollRoom, lockAndReroll, suggestShell, dressArea, rerollArea, validateMap, assessMap,
+  dressRoom, rerollRoom, lockAndReroll, suggestShell, dressArea, rerollArea, validateMap, assessMap, designChecks,
   ROOM_TYPES, THEMES, BIOME_TYPES, nextSeed,
 } from '../projects/Space-Shooter/voyage/procgen/index.js';
 
@@ -281,6 +281,35 @@ test('quality: no long lines of one prop, both halves used, variety', () => {
     }
   }
   assert.ok(balance / n > 0.45, `mean worst-axis balance ${(balance / n).toFixed(2)}`);
+});
+
+test('design checks: dressed rooms almost never break what a designer would flag; random scatter does', () => {
+  let breaks = 0, rooms = 0, scatterBreaks = 0;
+  for (const type of ROOM_TYPES) {
+    for (let seed = 0; seed < 100; seed++) {
+      for (const theme of ['tidy', 'lived-in']) {
+        const map = dressRoom({ type, seed, theme, shell: suggestShell(type, seed) });
+        breaks += designChecks(map).total; rooms++;
+        if (theme === 'tidy' && seed < 10) {
+          // the same props shuffled to random free tiles and turns
+          const free = [];
+          map.grid.forEach((row, y) => [...row].forEach((c, x) => { if (c === '.') free.push([x, y]); }));
+          const taken = new Set();
+          let k = seed * 7919;
+          const shuffled = { ...map, props: map.props.filter(p => p.layer !== 'floor' && p.size[0] === 1 && p.size[1] === 1).map((p) => {
+            let cell;
+            do { k = (k * 1103515245 + 12345) % 2147483648; cell = free[k % free.length]; } while (taken.has(`${cell}`) && taken.size < free.length);
+            taken.add(`${cell}`);
+            const { face, ...rest } = p; void face;
+            return { ...rest, at: cell, rot: (k % 4) * Math.PI / 2 };
+          }) };
+          scatterBreaks += designChecks(shuffled).total;
+        }
+      }
+    }
+  }
+  assert.ok(breaks / rooms < 0.01, `${breaks} design breaks over ${rooms} rooms`);
+  assert.ok(scatterBreaks > breaks * 10, `random scatter should break far more (${scatterBreaks} vs ${breaks})`);
 });
 
 // ---- the validator itself ---------------------------------------------------------

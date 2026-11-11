@@ -323,7 +323,12 @@ class State {
       const facings = directional ? [0, 1, 2, 3] : [null];
       for (const facing of facings) {
         const turnsList = directional ? [turnsFor(facing, native)] : (d.size[0] === d.size[1] ? [0] : [0, 1]);
-        for (const turns of turnsList) variants.push({ s: null, facing, turns, along: facing == null ? 'x' : (facing % 2 === 0 ? 'x' : 'y') });
+        for (const turns of turnsList) {
+          // free-standing runs line up along the piece's long side (track sections, a row of cases)
+          const [tw, th] = turnedSize(d.size, turns);
+          const along = facing == null ? (th > tw ? 'y' : 'x') : (facing % 2 === 0 ? 'x' : 'y');
+          variants.push({ s: null, facing, turns, along });
+        }
       }
     }
     const nearTargets = rule.near ? this.props.filter(p => rule.near.includes(p.rule) || (this.PROPS[p.art].tags || []).some(t => rule.near.includes(t))) : [];
@@ -520,31 +525,43 @@ class State {
     const art = this.pickArt(rule, rng);
     const d = this.def(art);
     const n = rule.run ? rng.int(rule.run[0], rule.run[1]) : 1;
-    const group = this.props.length;
+    const tried = new Set();
     // a run that does not fit shrinks before giving up
     for (let len = n; len >= 1; len--) {
-      const cands = this.candidates(art, rule, len, group);
-      const got = this.choose(cands, art, rule, rng, (c) => c.pieces.map((pc, k) => {
-        const mid = k === Math.floor((c.pieces.length - 1) / 2);
-        const interact = mid ? (must?.interact || rule.interact || null) : null;
-        return this.piece(art, pc.x, pc.y, c.turns, c.facing, {
-          rule: rule.id, role: rule.role || 'functional', group, sat: false, wallSide: c.wallSide, zone: rule.zone || null,
-          interact, use: interact ? (rule.use || (c.facing == null ? 'any' : 'front')) : null,
-          station: mid ? (must?.station || rule.station || null) : null,
-          must: mid && must ? must.id : null,
-        });
-      }));
-      if (!got) continue;
-      for (const p of got.pieces) this.reserveAround(p, d, rule);
-      if (rule.ring) this.paintRing(got.c, rule.ring);
-      const whole = { ...got.c, facing: got.c.facing, group, rule: rule.id };
-      this.placeSatellites(whole, rule, rng);
-      if (rule.cluster) this.growCluster(got.pieces, rule, rng, group);
-      if (must?.npc) this.placeKeeper(must, got.pieces, rule, group);
-      if ((rule.mirror === true || (rule.mirror === 'tidy' && this.theme === 'tidy')) && this.placeMirror(got.c, art, rule, rng)) return 2;
-      return 1;
+      for (let attempt = 0; attempt < 6; attempt++) {
+        const group = this.props.length;
+        const cands = this.candidates(art, rule, len, group).filter(c => !tried.has(`${c.x},${c.y},${c.turns},${c.facing}`));
+        const got = this.choose(cands, art, rule, rng, (c) => c.pieces.map((pc, k) => {
+          const mid = k === Math.floor((c.pieces.length - 1) / 2);
+          const interact = mid ? (must?.interact || rule.interact || null) : null;
+          return this.piece(art, pc.x, pc.y, c.turns, c.facing, {
+            rule: rule.id, role: rule.role || 'functional', group, sat: false, wallSide: c.wallSide, zone: rule.zone || null,
+            interact, use: interact ? (rule.use || (c.facing == null ? 'any' : 'front')) : null,
+            station: mid ? (must?.station || rule.station || null) : null,
+            must: mid && must ? must.id : null,
+          });
+        }));
+        if (!got) break;
+        tried.add(`${got.c.x},${got.c.y},${got.c.turns},${got.c.facing}`);
+        for (const p of got.pieces) this.reserveAround(p, d, rule);
+        const whole = { ...got.c, facing: got.c.facing, group, rule: rule.id };
+        const missing = this.placeSatellites(whole, rule, rng);
+        if (missing) { this.rollbackTo(group); continue; } // a sofa without its table is not a seating group
+        if (rule.ring) this.paintRing(got.c, rule.ring);
+        if (rule.cluster) this.growCluster(got.pieces, rule, rng, group);
+        if (must?.npc) this.placeKeeper(must, got.pieces, rule, group);
+        if ((rule.mirror === true || (rule.mirror === 'tidy' && this.theme === 'tidy')) && this.placeMirror(got.c, art, rule, rng)) return 2;
+        return 1;
+      }
     }
-    return false;
+    return 0;
+  }
+
+  /** Undo everything placed from prop index `n` on (pieces, companions and their kept cells). */
+  rollbackTo(n) {
+    const g = this.g;
+    while (this.props.length > n) this.unapply(this.props.pop());
+    for (let i = 0; i < g.res.length; i++) if (g.res[i] >= n) g.res[i] = RES_FREE;
   }
 
   /** Symmetry: the same unit mirrored across the room's door axis (tidy rooms, paired consoles). */
@@ -592,9 +609,11 @@ class State {
 
   /** Companions around a placed parent: stools along a bar, a chair at a desk, sofas round a rug. */
   placeSatellites(parent, rule, rng) {
+    let missing = 0;
     for (const [si, sat] of (rule.satellites || []).entries()) {
       const srng = rng.fork('sat', si, parent.x, parent.y);
       if (sat.chance != null && srng.next() >= sat.chance) continue;
+      const before = this.props.length;
       const d = this.def(sat.prop);
       // a parent with no front (rug, table) treats its long sides as front and back
       const pf = parent.facing ?? (parent.h > parent.w ? 3 : 0);
@@ -605,6 +624,7 @@ class State {
         const x = parent.x + Math.floor((parent.w - fw) / 2), y = parent.y + Math.floor((parent.h - fh) / 2);
         const p = this.piece(sat.prop, x, y, turns, null, { rule: rule.id, role: rule.role, group: parent.group, sat: true });
         if (this.fits(p, p.layer, parent.group)) this.commit([p]);
+        if (sat.required && this.props.length === before) missing++;
         continue;
       }
       const sides = sat.side === 'sides' ? [(pf + 1) % 4, (pf + 3) % 4] : [{ front: pf, back: opposite(pf), left: (pf + 3) % 4, right: (pf + 1) % 4 }[sat.side] ?? pf];
@@ -651,7 +671,9 @@ class State {
           this.commit([p]);
         }
       }
+      if (sat.required && this.props.length === before) missing++;
     }
+    return missing;
   }
 
   /** Stacks: more pieces grown edge-to-edge beside the first (crates against a wall). */
@@ -664,19 +686,23 @@ class State {
       const art = this.pickArt(rule, rng, rule.pick && rng.next() < 0.7 ? last : null);
       const d = this.def(art);
       const cands = [];
-      for (const turns of d.size[0] === d.size[1] ? [0] : [0, 1]) {
-        const [fw, fh] = turnedSize(d.size, turns);
+      const directional = d.front && d.front !== 'none';
+      // wall-backed pieces (toolbox chests) only join a stack where their back meets a wall
+      const variants = directional ? [0, 1, 2, 3].map(s => ({ s, facing: opposite(s), turns: turnsFor(opposite(s), dirIndex(d.front)) })) : (d.size[0] === d.size[1] ? [0] : [0, 1]).map(turns => ({ s: null, facing: null, turns }));
+      for (const v of variants) {
+        const [fw, fh] = turnedSize(d.size, v.turns);
         for (const m of members) for (let y = m.y - fh; y <= m.y + m.h; y++) for (let x = m.x - fw; x <= m.x + m.w; x++) {
           const r = { x, y, w: fw, h: fh };
           const xTouch = (r.x + r.w === m.x || m.x + m.w === r.x) && r.y < m.y + m.h && m.y < r.y + r.h;
           const yTouch = (r.y + r.h === m.y || m.y + m.h === r.y) && r.x < m.x + m.w && m.x < r.x + r.w;
           if (!xTouch && !yTouch) continue;
+          if (v.s != null && (d.wall === 'back' && !this.touchesWall(r, v.s))) continue;
           if (!this.fits(r, 'obj', group)) continue;
-          cands.push({ ...r, turns, facing: null, wallSide: null });
+          cands.push({ ...r, turns: v.turns, facing: v.facing, wallSide: v.s });
         }
       }
       const clusterRule = { id: rule.id, prefer: { wall: wallish ? 3 : 0.5, balance: 0.2 } };
-      const got = this.choose(cands, art, clusterRule, rng, (c) => [this.piece(art, c.x, c.y, c.turns, null, { rule: rule.id, role: rule.role, group, sat: true, zone: rule.zone || null })]);
+      const got = this.choose(cands, art, clusterRule, rng, (c) => [this.piece(art, c.x, c.y, c.turns, c.facing, { rule: rule.id, role: rule.role, group, sat: true, zone: rule.zone || null })]);
       if (!got) break;
       members.push(...got.pieces);
       last = art;

@@ -20,7 +20,7 @@ import ROOMS from './data/rooms.json' with { type: 'json' };
 import BIOMES from './data/biomes.json' with { type: 'json' };
 import { dressRoom as dressRoomWith, defaultShell, DRESSER_VERSION } from './layers/room/dresser.js';
 import { dressArea as dressAreaWith, REGION_VERSION } from './layers/region/dresser.js';
-import { validateMap, assessMap } from './core/validate.js';
+import { validateMap, assessMap, designChecks as designChecksWith } from './core/validate.js';
 import { makeRng, hash32 } from './core/rng.js';
 
 export const CATALOGS = Object.freeze({ props: PROPS, rooms: ROOMS, biomes: BIOMES });
@@ -29,6 +29,11 @@ export const THEMES = Object.freeze(Object.keys(ROOMS.themes));
 export const BIOME_TYPES = Object.freeze(Object.keys(BIOMES.biomes));
 export const VERSION = Object.freeze({ room: DRESSER_VERSION, region: REGION_VERSION });
 export { validateMap, assessMap };
+
+/** Design checks for any map (dressed or hand-edited): off-wall shelves, blocked fronts, lone seats, anchors facing walls. */
+export function designChecks(map, catalogs = CATALOGS) {
+  return designChecksWith(map, catalogs.props.props);
+}
 
 /** "Dress this room." See API.md for the input shape. */
 export function dressRoom(input, catalogs = CATALOGS) {

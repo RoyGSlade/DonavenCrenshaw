@@ -6,7 +6,7 @@
 //   { "op": "lockAndReroll", "map": {...}, "keep": [0, 3], "seed": 9 }
 //   { "op": "dressArea", "input": { "biome": "moon", "seed": 3 } }
 //   { "op": "rerollArea", "map": {...}, "keep": [2], "seed": 4 }
-//   { "op": "validate", "map": {...} }   { "op": "assess", "map": {...} }
+//   { "op": "validate", "map": {...} }   { "op": "assess", "map": {...} }   { "op": "design", "map": {...} }
 //   { "op": "suggestShell", "type": "den", "seed": 2 }
 //   { "op": "catalog" }   (room types, themes, biomes, prop ids)
 // Reply on stdout: { "ok": true, "result": ... } or { "ok": false, "error": "..." }.
@@ -21,6 +21,7 @@ const OPS = {
   rerollArea: (q) => api.rerollArea(q.map, q.seed, q.keep || null),
   validate: (q) => api.validateMap(q.map),
   assess: (q) => api.assessMap(q.map),
+  design: (q) => api.designChecks(q.map),
   suggestShell: (q) => api.suggestShell(q.type, q.seed ?? 1),
   catalog: () => ({
     roomTypes: Object.fromEntries(api.ROOM_TYPES.map(t => [t, { name: api.CATALOGS.rooms.rooms[t].name, size: api.CATALOGS.rooms.rooms[t].size }])),
