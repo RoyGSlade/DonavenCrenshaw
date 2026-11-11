@@ -225,7 +225,9 @@ export function createCrew({ pane, recorder, store, toast = () => {}, say = () =
     }
     if (e.type === 'data') {
       const d = e.data;
-      if (d.kind === 'state' && drawableState(d)) station?.update(d);
+      // A live fight frame (races lane): the scope draws it; no full redraw.
+      if (d.kind === 'state' && d.step === 'live' && d.frame && typeof d.frame === 'object') station?.liveFrame(d.frame);
+      else if (d.kind === 'state' && drawableState(d)) station?.update(d);
       else if (d.kind === 'reward') {
         const reward = cleanCrewReward(d.reward);
         if (!reward) return;
@@ -418,6 +420,11 @@ export function createCrew({ pane, recorder, store, toast = () => {}, say = () =
         sendState(true);
       },
       changed() { sendState(true); },
+      /** A live fight frame for the crew's scope (races lane), sent as a crew-room 'state'. */
+      live(frame) {
+        if (!aboard() || !link) return;
+        link.send({ kind: 'state', v: 1, step: 'live', captain: (captain()?.name || 'The captain').slice(0, 40), checks: [], log: [], frame });
+      },
     },
     keydown: (e) => (mode === 'guest' && station ? station.keydown(e) : false),
     keyup: (e) => { if (mode === 'guest') station?.keyup(e); },

@@ -8,9 +8,11 @@ import { buildLevel, pauseTimer, updateRoadmap } from './modes/roadmap.js';
 import { CUSTOM_LEVEL } from './levels.js';
 import { buildArena, updateArena } from './modes/arena.js';
 import { startWeekly, updateWeekly } from './modes/weekly.js';
+import { startQuestRace, updateQuestRace } from './modes/questRace.js';
 import { ensureEngineRunning } from './core.js';
 import { startCountdown } from './lifecycle.js';
 import { canLaunchWeeklyMode } from '../systems/weeklyAccess.js';
+import { isQuestRace } from '../systems/questRace.js';
 export { startCountdown } from './lifecycle.js';
 // NEW: Explicit mode transition functions
 export function enterArena() {
@@ -34,7 +36,8 @@ export function updateCurrentMode(dt) {
   }
 
   if (state.mode === 'roadmap') {
-    if (state.run?.kind === 'weekly') updateWeekly(dt);
+    if (state.run?.questRace) updateQuestRace(dt);
+    else if (state.run?.kind === 'weekly') updateWeekly(dt);
     else updateRoadmap(dt);
   } else if (state.mode === 'arena') {
     updateArena(dt);
@@ -46,8 +49,11 @@ export function updateCurrentMode(dt) {
 // challenges and boards never see it. 'weekly' is the weekly time trial of
 // `event` (engine/modes/weekly.js). preview (custom/weekly) is never saved.
 // ship: 'equipped' flies a weekly preview as the equipped garage build (see startWeekly).
-export function startNewRun({ kind = 'network', preview = false, event = null, ship = null } = {}) {
-  if (!canLaunchWeeklyMode({ kind, event, preview })) {
+// questRace: a race for the new game (systems/questRace.js), only in quest race
+// mode. It saves nothing, so the release window of the layout it borrows does not apply.
+export function startNewRun({ kind = 'network', preview = false, event = null, ship = null, questRace = null } = {}) {
+  const quest = kind === 'weekly' && event && questRace && isQuestRace() ? questRace : null;
+  if (!quest && !canLaunchWeeklyMode({ kind, event, preview })) {
     toast('This mode is retired or awaiting release. Fly the current weekly track.');
     openStartOverlay();
     return false;
@@ -61,9 +67,11 @@ export function startNewRun({ kind = 'network', preview = false, event = null, s
   state.ui.showBossUI = false;
   state.ui.showStartOverlay = false;
   if (kind === 'weekly' && event) {
-    state.run = { runId: Date.now().toString(36), kind: 'weekly', event, preview: !!preview, ship: preview ? ship : null, totalActiveMs: 0, levelIndex: 1, seeds: [], current: null };
+    state.run = { runId: Date.now().toString(36), kind: 'weekly', event, preview: !!preview || !!quest, ship: preview ? ship : null, totalActiveMs: 0, levelIndex: 1, seeds: [], current: null, ...(quest ? { questRace: quest } : {}) };
     state.ui.paused = false;
-    startWeekly(event, { preview: !!preview, ship: preview ? ship : null });
+    // A quest race flies in its own mode beside the weekly one (engine/modes/questRace.js).
+    if (quest) startQuestRace(event, quest);
+    else startWeekly(event, { preview: !!preview, ship: preview ? ship : null });
     startCountdown(config.COUNTDOWN_DURATION, state.run.current);
     return;
   }
@@ -95,7 +103,7 @@ export function retryRun() {
   closePauseOverlay();
 
   // Retry is a fresh run of the same kind with the same deterministic authored routes.
-  startNewRun({ kind: state.run.kind, preview: state.run.preview, event: state.run.event, ship: state.run.ship });
+  startNewRun({ kind: state.run.kind, preview: state.run.preview, event: state.run.event, ship: state.run.ship, questRace: state.run.questRace || null });
 }
 
 export function quitRun() {

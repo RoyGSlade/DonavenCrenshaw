@@ -1,0 +1,31 @@
+/* The race frame (today's racing page over the hangar) and the flight deck card. */
+.rc-shell{position:fixed;inset:0;z-index:200;background:#03070d;animation:rc-in .3s ease}
+.rc-frame{position:absolute;inset:0;width:100%;height:100%;border:0;display:block;background:#03070d}
+.rc-quit{position:absolute;top:max(8px,env(safe-area-inset-top));right:max(8px,env(safe-area-inset-right));z-index:2;width:40px;height:40px;padding:0;border-radius:50%;border:1px solid #ffad7288;background:#0b1828cc;color:#ffe3cf;font-size:16px;cursor:pointer}
+.rc-quit:focus-visible{outline:3px solid #ffad72;outline-offset:3px}
+body.rc-racing{overflow:hidden}
+.rc-deck{margin:16px 0;padding:16px;border:1px solid #2a4152;border-top:3px solid #ffad72;border-radius:10px;background:linear-gradient(180deg,#132438,#0c1726)}
+.rc-deck h2{margin:0 0 6px}
+.rc-eyebrow{margin:0 0 6px;font:700 11px Consolas,monospace;letter-spacing:.16em;color:#ffad72}
+.rc-note{margin:6px 0;color:#8fa6b7;font-size:13px;line-height:1.5}
+.rc-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:12px;margin-top:12px}
+.rc-tile{display:flex;flex-direction:column;gap:4px;padding:14px;border:1px solid #2a4152;border-radius:8px;background:#0a1624}
+.rc-tile h3{margin:0;font-size:18px}
+.rc-tile button{margin-top:auto;min-height:44px}
+.rc-tile.is-arena{border-color:#ffad7266}
+.rc-best{margin:4px 0 8px;font:700 13px Consolas,monospace;color:#81e6df}
+.rc-modes{margin:4px 0 8px;padding-left:18px;color:#c9d8e0;font-size:13px}
+@keyframes rc-in{from{opacity:0}to{opacity:1}}
+@media(prefers-reduced-motion:reduce){.rc-shell{animation:none}}
+/* Live fights: the ability bar, the status line and the crew's scope. */
+.rc-live .qs-live-canvas{width:min(100%,800px);height:auto;aspect-ratio:5/3}
+.rc-live-status{min-height:1.4em;margin:6px 0;color:#c9d8e0;font-size:13px}
+.rc-abilities{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+.rc-ability{position:relative;overflow:hidden;display:grid;place-items:center;gap:2px;min-width:84px;min-height:52px;padding:6px 10px;border:1px solid #b48cff;border-radius:8px;background:#1a1430;color:#eadfff;touch-action:none;cursor:pointer}
+.rc-ability b{position:relative;font:700 12px Consolas,monospace;letter-spacing:.08em}
+.rc-ability small{position:relative;font:10px Consolas,monospace;color:#b9a7e6}
+.rc-ability-cd{position:absolute;inset:0;transform-origin:left;transform:scaleX(var(--cd,0));background:#0007;pointer-events:none}
+.rc-ability[data-ready="1"]{box-shadow:0 0 12px #b48cff55}
+.rc-abilities-none{font-size:12px}
+.rc-scope{display:block;width:100%;max-width:520px;height:auto;aspect-ratio:5/3;border:1px solid #2a4152;border-radius:6px;background:#050b14;touch-action:none;cursor:crosshair}
+@media(max-width:420px){.rc-ability{min-width:calc(50% - 4px)}}

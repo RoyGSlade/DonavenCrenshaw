@@ -60,7 +60,9 @@ export function actRace(state, action, ctx) {
     if (!Number.isFinite(action.timeMs) || action.timeMs <= 0) return { state, error: 'No time reported' };
     state.timeMs = Math.round(action.timeMs);
     const won = action.finished !== false && state.timeMs <= state.targetMs;
-    state.log.push(`You crossed in ${seconds(state.timeMs)}. ${state.rival.name}: ${seconds(state.targetMs)}.`);
+    state.log.push(action.finished === false
+      ? `You didn't finish. ${state.rival.name} crossed in ${seconds(state.targetMs)}.`
+      : `You crossed in ${seconds(state.timeMs)}. ${state.rival.name}: ${seconds(state.targetMs)}.`);
     state.done = true; state.outcome = won ? 'win' : 'lose';
     return { state };
   }

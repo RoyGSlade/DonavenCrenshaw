@@ -15,6 +15,8 @@ import { isLapReady } from '../engine/track.js';
 import { drawCourier, drawRelayGate, drawShield, drawExplosion, drawFlightEnvironment, drawShard } from '../gfx/stardustVfx.js';
 import { drawWeeklyWorld, drawWeeklyHud } from '../gfx/weeklyVfx.js';
 import { ghostPosesNow } from '../engine/modes/weekly.js';
+import { isQuestRace } from '../systems/questRace.js';
+import { renderDpr, readRenderScale } from '../voyage/renderScale.js';
 import { mallThemeOf, drawMallDistrict, drawMallLane } from '../gfx/mallTheme.js';
 import { updateFlightUi } from './flightUi.js';
 import { drawHitboxDebug } from '../gfx/hitboxDebug.js';
@@ -97,7 +99,10 @@ export function resizeCanvas() {
   const canvas = gfx.canvas;
   if (!canvas) return;
 
-  const dpr = window.devicePixelRatio || 1;
+  // A quest race for the new game draws at the new game's render scale (capped
+  // at 2, voyage/renderScale.js); today's racing keeps the full pixel ratio.
+  const device = window.devicePixelRatio || 1;
+  const dpr = isQuestRace() ? renderDpr(device, readRenderScale()) : device;
   const rect = canvas.getBoundingClientRect();
   const w = rect.width;
   const h = rect.height;

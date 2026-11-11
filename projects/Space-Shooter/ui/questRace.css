@@ -1,0 +1,35 @@
+/* Quest race and practice circuit screens on the racing page (ui/questRaceUi.js).
+   Bright frontier space opera: warm orange for the rival, cyan for you. */
+.qr-root{position:fixed;inset:0;z-index:70;display:grid;place-items:center;padding:16px;background:radial-gradient(ellipse at 50% 30%,#1c3a4ccc,transparent 60%),#050a14e8;backdrop-filter:blur(8px);overflow:auto}
+.qr-root[hidden]{display:none}
+.qr-panel{width:min(560px,100%);border:1px solid var(--line,#2a4152);border-top:3px solid var(--orange,#ffad72);border-radius:10px;background:linear-gradient(180deg,#132438f7,#0c1726f7);box-shadow:0 30px 90px #000a,0 0 0 1px #ffad7222;padding:26px 24px;animation:qr-in .35s cubic-bezier(.2,1.4,.4,1)}
+.qr-result,.qr-intro{border-top-color:var(--cyan,#81e6df)}
+.qr-wreck{border-top-color:#eb6f7c}
+.qr-eyebrow{margin:0 0 8px;font:700 11px Consolas,monospace;letter-spacing:.18em;color:var(--orange,#ffad72)}
+.qr-eyebrow.is-lose{color:#eb6f7c}
+.qr-panel h2{margin:0 0 12px;font-size:clamp(26px,6vw,36px);line-height:1.05;letter-spacing:-.03em}
+.qr-text{color:var(--text,#eaf4f5);font-size:15px;line-height:1.55;margin:8px 0}
+.qr-rival{font-size:16px}
+.qr-note{color:var(--muted,#8fa6b7);font-size:13px;line-height:1.5;margin:8px 0}
+.qr-note.is-win{color:#8ff0c3}
+.qr-offbooks{border-left:2px solid var(--orange,#ffad72);padding-left:10px}
+.qr-label{margin:16px 0 6px;font:10px Consolas,monospace;letter-spacing:.16em;color:var(--muted,#8fa6b7)}
+.qr-stats{list-style:none;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0;padding:0}
+.qr-stats li{display:grid;gap:2px;padding:10px;border:1px solid #2a4152;border-radius:6px;background:#0a1624}
+.qr-stats span{font:10px Consolas,monospace;letter-spacing:.1em;color:var(--muted,#8fa6b7);text-transform:uppercase}
+.qr-stats b{font:700 20px Consolas,monospace;color:var(--text,#eaf4f5)}
+.qr-stats li.is-up{border-color:#81e6df88;box-shadow:0 0 14px #81e6df22}
+.qr-stats li.is-up b{color:var(--cyan,#81e6df)}
+.qr-time{margin:4px 0;font:800 clamp(44px,13vw,72px) Consolas,monospace;letter-spacing:-.04em;font-variant-numeric:tabular-nums;line-height:1}
+.qr-time.is-win{color:var(--cyan,#81e6df);text-shadow:0 0 30px #81e6df55}
+.qr-time.is-lose{color:var(--orange,#ffad72)}
+.qr-vs{margin:4px 0 10px;font:14px Consolas,monospace;color:var(--muted,#8fa6b7)}
+.qr-moves{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+.qr-moves button{flex:1 1 200px;min-height:48px}
+.qr-banner{position:fixed;left:50%;top:18%;transform:translateX(-50%);z-index:65;margin:0;padding:12px 22px;border-radius:999px;background:#0b1828ee;border:1px solid var(--orange,#ffad72);color:var(--text,#eaf4f5);font:700 14px Consolas,monospace;letter-spacing:.08em;text-align:center;max-width:min(560px,92vw);pointer-events:none;animation:qr-banner 2.6s ease forwards}
+.qr-banner.is-win{border-color:var(--cyan,#81e6df);color:var(--cyan,#81e6df);font-size:22px}
+.qr-banner.is-lose{font-size:22px;color:var(--orange,#ffad72)}
+@keyframes qr-in{from{opacity:0;transform:translateY(14px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes qr-banner{0%{opacity:0;transform:translate(-50%,-10px) scale(.9)}12%{opacity:1;transform:translate(-50%,0) scale(1.04)}20%{transform:translate(-50%,0) scale(1)}80%{opacity:1}100%{opacity:0}}
+@media(max-width:420px){.qr-panel{padding:20px 16px}.qr-stats b{font-size:17px}.qr-moves button{flex-basis:100%}}
+@media(prefers-reduced-motion:reduce){.qr-panel,.qr-banner{animation:none}}

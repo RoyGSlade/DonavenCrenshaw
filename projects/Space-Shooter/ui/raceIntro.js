@@ -10,6 +10,10 @@ import { state, config } from '../state.js';
 import { pointOnTrack } from '../engine/track.js';
 import { flightSettings, updateFlightSettings } from '../systems/flightSettings.js';
 import { artImage } from './uiArt.js';
+import { allowPersistentWrite, questRaceMode } from '../systems/questRace.js';
+// Quest race mode keeps nothing, so intros it has shown are remembered for this page only.
+const seenHere = new Set();
+const introSeen = (key) => Boolean(flightSettings().introSeen[key] || seenHere.has(key));
 
 const VOICE = null; // e.g. new URL('../art/ui/voice-ready-set-go.mp3', import.meta.url).href
 const FLY_MIN = 3, FLY_MAX = 6, FLY_CELLS_PER_S = 70;
@@ -24,12 +28,13 @@ export function introKey(scene) {
 export function planIntro(scene, seconds) {
   const key = introKey(scene);
   const track = scene?.track;
-  const fly = !!(track && key && seconds >= 3 && !flightSettings().introSeen[key]);
+  const fly = !!(track && key && seconds >= 3 && !introSeen(key));
   const flyDur = fly ? Math.max(FLY_MIN, Math.min(FLY_MAX, track.length / FLY_CELLS_PER_S)) : 0;
   return { key, fly, flyDur, ready: seconds, total: flyDur + seconds };
 }
 
 function kicker(scene) {
+  if (scene?.questRace) return questRaceMode()?.kind === 'circuit' ? 'PRACTICE CIRCUIT · THE HANGAR' : 'QUEST RACE · OFF THE BOOKS';
   if (scene?.weekly) return `WEEKLY TIME TRIAL · WEEK ${scene.weekly.week}`;
   if (state.run?.kind === 'custom') return 'CUSTOM TRACK';
   if (Number.isInteger(scene?.level)) return `CIRCUIT ${String(scene.level).padStart(2, '0')} / 05`;
@@ -87,8 +92,9 @@ export function updateRaceIntro() {
     cam.zoom = (cam._baseZoom || config.CAMERA_BASE_ZOOM) * 0.7;
     els.call.textContent = '';
   } else {
-    if (intro?.fly && intro.key && !flightSettings().introSeen[intro.key]) {
-      updateFlightSettings((s) => { s.introSeen[intro.key] = true; });
+    if (intro?.fly && intro.key && !introSeen(intro.key)) {
+      if (allowPersistentWrite('settings')) updateFlightSettings((s) => { s.introSeen[intro.key] = true; });
+      else seenHere.add(intro.key);
     }
     releaseCamera(scene);
     const readyLeft = Math.min(left, intro?.ready ?? left);
