@@ -17,6 +17,10 @@ export const STAT_DIE = 6; // stats are 1d6
 export const STAT_BASELINE = 3;
 // Points a new captain starts with, so the hangar has something to spend (S22).
 export const START_POINTS = 2;
+// What a new captain signs on with (S27, slice tuning): enough that the first
+// paid job puts a tier-1 hull or thruster upgrade in reach. Paid once, when the
+// captain is made; a death does not pay it again.
+export const START_KIT = Object.freeze({ money: 80, items: { scrap: 4 } });
 
 export const STATS = Object.freeze([
   { id: 'cha', name: 'Charisma', blurb: 'Talking, prices and how fast givers warm to you.', effects: { price: 2, rep: 5 } },
@@ -119,6 +123,9 @@ export const ITEMS = Object.freeze([
   { id: 'nav-chip', name: 'Nav chip', kind: 'part', max: 9 },
   { id: 'railgun', name: 'Railgun', kind: 'part', max: 9 },
   { id: 'cargo-crate', name: 'Cargo crate', kind: 'cargo', max: 99 },
+  // Proposed by quests (INTERFACES.md 1.4): a tool you have to procure for the
+  // railgun's build route at Garrity's yard.
+  { id: 'mining-drill', name: 'Mining drill', kind: 'key', max: 1 },
 ]);
 
 // --- The Voyage ship -----------------------------------------------------------------

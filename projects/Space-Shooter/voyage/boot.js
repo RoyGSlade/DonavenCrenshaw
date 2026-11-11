@@ -9,6 +9,8 @@ import { startVoyageSync } from './live.js';
 import { createHangar } from './hangar.js';
 import { createHangarScene } from './scene.js';
 import { createCrew } from './crew.js';
+import { createJobs } from './jobs.js';
+import { shipTierArt } from './art.js';
 
 const flag = newGameFlag({ config: runtimeConfig, search: location.search });
 const $ = (id) => document.getElementById(id);
@@ -42,21 +44,45 @@ if (!flag.enabled) {
   };
   const panes = { ship: $('pane-ship'), captain: $('pane-captain'), ledger: $('pane-ledger'), crew: $('pane-crew'), dev: $('vy-dev') };
   const crew = createCrew({ recorder, captain: () => store.get().character?.name || null });
+  // The ship on the pad. Tier 0 with a custom garage ship shows that ship; the
+  // standard ship and every upgraded tier show the tier art (voyage/art.js,
+  // Mk I to Mk IV, drawn on one shared canvas so the ship grows tier by tier).
+  const TIER_ART_SCALE = 1.4; // the tier art's canvas has more margin than a garage picture
+  const tierImages = new Map();
+  let tier = 0;
+  let custom = null;
+  const showShip = () => {
+    if (tier === 0 && custom) { scene.setShip(custom); return; }
+    let image = tierImages.get(tier);
+    if (!image) {
+      image = new Image();
+      image.dataset.tier = String(tier);
+      image.onload = () => showShip();
+      image.src = shipTierArt(tier);
+      tierImages.set(tier, image);
+    }
+    if (image.complete && image.naturalWidth) scene.setShip(image, TIER_ART_SCALE);
+  };
+
   const hangar = createHangar({
     panes, store, toast, dev: flag.dev, crew,
     ship: { name: shipName, build: () => equippedBuild() },
-    onTier: (n) => scene.setTier(n),
+    onTier: (n) => { scene.setTier(n); if (n !== tier) { tier = n; showShip(); } },
   });
-
-  // The equipped garage ship on the pad; the standard ship's picture until it loads.
-  const standard = new Image();
-  standard.onload = () => { if (!getCourierAppearance()) scene.setShip(standard); };
-  standard.src = '../art/player-ship.png';
+  showShip();
   initCourierAppearance().then(() => {
-    const c = getCourierAppearance();
-    if (c) scene.setShip(c);
+    custom = getCourierAppearance() || null;
+    showShip();
     hangar.render();
   }).catch((error) => console.warn('Stardust: the equipped ship could not load', error));
+
+  const jobs = createJobs({
+    pane: $('pane-jobs'), store, toast, dev: flag.dev,
+    say: (events) => hangar.say(events),
+    onCaptain: () => select($('tab-captain')),
+  });
+  // Quest keys (1-9 for choices, F/E/H/B in fights, Enter, Backspace) while the Jobs tab is open.
+  addEventListener('keydown', (e) => { if (!$('pane-jobs').hidden) jobs.keydown(e); });
 
   ready.then(() => crew.refresh(panes.crew));
 
@@ -83,4 +109,5 @@ if (!flag.enabled) {
     });
   });
   if (!store.get().character) select($('tab-captain'));
+  else if (jobs.playing) select($('tab-jobs'));
 }

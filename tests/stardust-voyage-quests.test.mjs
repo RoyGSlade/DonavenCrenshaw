@@ -11,7 +11,7 @@ import { QUESTS, SLICE_QUEST } from '../projects/Space-Shooter/voyage/quests/dat
 import { QUEST_GIVERS } from '../projects/Space-Shooter/voyage/quests/data/givers.js';
 import { ENEMIES } from '../projects/Space-Shooter/voyage/quests/data/enemies.js';
 import { TRACKS } from '../projects/Space-Shooter/voyage/quests/data/tracks.js';
-import { emptySave, testCharacter, GIVERS } from '../projects/Space-Shooter/voyage/quests/coreStub.js';
+import { emptySave, testCharacter, GIVERS } from '../projects/Space-Shooter/voyage/quests/core.js';
 import { scoreGuess, createCipher, actCipher } from '../projects/Space-Shooter/voyage/quests/parts/cipher.js';
 import { createRiddle, actRiddle } from '../projects/Space-Shooter/voyage/quests/parts/riddle.js';
 import { createSkirmish, actSkirmish } from '../projects/Space-Shooter/voyage/quests/parts/skirmish.js';

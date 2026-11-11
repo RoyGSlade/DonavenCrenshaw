@@ -69,3 +69,30 @@ input[type=text]{font:15px Inter,"Segoe UI",sans-serif;color:var(--text);backgro
 .vy-toast.show{opacity:1}
 @media(max-width:700px){.vy-hangar{width:100%;margin-top:32vh}.vy-wordmark{font-size:9px}.vy-wordmark b{margin:0 5px}.vy-top{gap:10px}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+/* Jobs tab: the givers and their jobs; a running job uses quests/ui/player.css */
+.vy-giver{display:grid;grid-template-columns:72px minmax(0,1fr);gap:8px 14px;padding:14px 0;border-top:1px solid #2a415288}
+.vy-giver h3{margin:0;font:700 15px Inter,"Segoe UI",sans-serif;letter-spacing:0;color:var(--text)}
+.vy-portrait{width:72px;height:72px;border-radius:6px;background:#102030;border:1px solid var(--line)}
+.vy-pane .vy-role{margin:2px 0;font:10px Consolas,monospace;letter-spacing:.08em;color:var(--cyan)}
+.vy-pane .vy-rep{margin:2px 0;font:11px Consolas,monospace;color:var(--orange)}
+.vy-pane .vy-greet{margin:4px 0;font-style:italic;font-size:12px}
+.vy-jobs{grid-column:1/-1;list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.vy-jobs li{display:grid;gap:3px;border:1px solid var(--line);border-radius:5px;padding:10px 12px;background:#0a1624;font-size:13px}
+.vy-jobs span,.vy-jobs small{color:var(--muted);font-size:12px;line-height:1.5}
+.vy-jobs button{justify-self:start;margin-top:4px}
+.vy-seed{display:flex;align-items:center;gap:8px;font:11px Consolas,monospace;color:var(--violet)}
+.vy-seed input{width:130px;font:13px Consolas,monospace;color:var(--text);background:#0a1624;border:1px solid var(--line);border-radius:4px;padding:8px}
+.vy-jobs-pane .qs-title{font-size:22px}
+.vy-jobs-pane .qs-dialogue{grid-template-columns:96px minmax(0,1fr)}
+.vy-jobs-pane .qs-portrait{width:96px;height:96px}
+.vy-jobs-pane .qs-box,.vy-jobs-pane .qs-part,.vy-jobs-pane .qs-end{padding:14px}
+@media(max-width:520px){.vy-jobs-pane .qs-dialogue{grid-template-columns:1fr}.vy-jobs-pane .qs-portrait{width:72px;height:72px}.vy-tabs button{padding:10px 6px;letter-spacing:.02em}}
+/* The hangar's pane text rules are stronger than the quest player's; give the player its own back. */
+.vy-jobs-pane .qs-text{color:var(--text);font-size:15px;line-height:1.6;margin:0 0 12px}
+.vy-jobs-pane .qs-speaker{color:var(--cyan);font:700 12px Consolas,monospace;letter-spacing:.1em;margin:0 0 6px}
+.vy-jobs-pane .qs-where,.vy-jobs-pane .qs-eyebrow{font:11px Consolas,monospace;letter-spacing:.1em;margin:0}
+.vy-jobs-pane .qs-eyebrow{color:var(--cyan);margin:0 0 4px}
+.vy-jobs-pane .qs-result{color:var(--text);font-size:14px}
+.vy-jobs-pane .qs-locked{color:var(--orange)}
+.vy-jobs-pane .qs-part h3,.vy-jobs-pane .qs-end h3{margin:0 0 10px;font:700 18px Inter,"Segoe UI",sans-serif;letter-spacing:-.01em;color:var(--text)}
+.vy-jobs-pane .qs-event h4{margin:0 0 6px;font-size:16px}

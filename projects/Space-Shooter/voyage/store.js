@@ -5,6 +5,7 @@ import { cleanSave, decodeSave, encodeSave, emptySave, LOCAL_KEY } from './save.
 import { grant, spend, canAfford, meets, missing } from './economy.js';
 import { createCharacter, learn, die } from './character.js';
 import { upgrade } from './upgrades.js';
+import { START_KIT } from './data.js';
 
 export const BACKUP_KEY = 'stardust.voyage.backup.v1';
 
@@ -64,7 +65,8 @@ export function createVoyageStore({ storage = globalThis.localStorage, now = Dat
       if (!c) return { ok: false, reason: 'Give your captain a name.' };
       // Max-rep points earned before there was a captain were banked on the account part.
       const banked = save.account.bank;
-      commit({ ...save, character: { ...c, permanent: c.permanent + banked }, account: { ...save.account, bank: 0 } });
+      const signed = { ...save, character: { ...c, permanent: c.permanent + banked }, account: { ...save.account, bank: 0 } };
+      commit(grant(signed, START_KIT).save);
       return { ok: true, reason: '' };
     },
     learn(skillId) {

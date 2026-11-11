@@ -70,11 +70,47 @@ export function cleanSave(input) {
     : [];
   out.account.maxRep = cleanCounts(account.maxRep, 0, () => 1);
   out.account.bank = int(account.bank, 0, 9999);
-  // Quest state belongs to the quests lane; core only keeps it, within its budget.
-  if (s.quests && typeof s.quests === 'object' && !Array.isArray(s.quests)) {
-    try { out.quests = byteLength(JSON.stringify(s.quests)) <= QUESTS_MAX_BYTES ? structuredClone(s.quests) : {}; }
-    catch { out.quests = {}; }
-  }
+  out.quests = cleanQuests(s.quests);
+  return out;
+}
+
+const plainObject = (v) => Boolean(v) && typeof v === 'object' && !Array.isArray(v);
+const QUEST_RESULTS = new Set(['success', 'failure']);
+// Runs in progress kept at once (the hangar plays one at a time).
+const ACTIVE_MAX = 4;
+
+/**
+ * Quest state (INTERFACES.md 1.4, section 5): { active: { questId: run }, done:
+ * { questId: { result, outcome, at, times } } }. A run is the quest engine's own
+ * JSON and is kept as it came; done entries are repaired. Other keys are kept
+ * for newer pages. Over QUESTS_MAX_BYTES the runs in progress are dropped first
+ * (a job can be taken again), then everything.
+ */
+export function cleanQuests(input) {
+  if (!plainObject(input)) return {};
+  let out = {};
+  try {
+    for (const [key, value] of Object.entries(input)) if (key !== 'active' && key !== 'done' && ID.test(key)) out[key] = structuredClone(value);
+    const active = {};
+    for (const [id, run] of Object.entries(plainObject(input.active) ? input.active : {})) {
+      if (Object.keys(active).length >= ACTIVE_MAX) break;
+      if (ID.test(id) && plainObject(run) && run.quest === id) active[id] = structuredClone(run);
+    }
+    const done = {};
+    for (const [id, d] of Object.entries(plainObject(input.done) ? input.done : {})) {
+      if (Object.keys(done).length >= MAX_ENTRIES || !ID.test(id) || !plainObject(d) || !QUEST_RESULTS.has(d.result)) continue;
+      done[id] = {
+        result: d.result,
+        outcome: typeof d.outcome === 'string' ? d.outcome.slice(0, 32) : '',
+        at: int(d.at, 0, Number.MAX_SAFE_INTEGER),
+        times: int(d.times, 1, 1e6, 1),
+      };
+    }
+    if (Object.keys(active).length) out.active = active;
+    if (Object.keys(done).length) out.done = done;
+    if (byteLength(JSON.stringify(out)) > QUESTS_MAX_BYTES) delete out.active;
+    if (byteLength(JSON.stringify(out)) > QUESTS_MAX_BYTES) out = {};
+  } catch { out = {}; }
   return out;
 }
 

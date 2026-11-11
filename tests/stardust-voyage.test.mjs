@@ -264,7 +264,7 @@ test('store: changes save at once in this browser, stamp the clock, and survive 
   assert.equal(store.learn('patch-kit'), true);
   const copy = store.get();
   copy.money = 1e6;
-  assert.equal(store.get().money, 153, 'get() hands out a copy (300 less hull tier 1 at 150 with charisma 4\'s 2% off)');
+  assert.equal(store.get().money, 233, 'get() hands out a copy (80 start kit + 300, less hull tier 1 at 150 with charisma 4\'s 2% off)');
   const lost = store.die(seq(0));
   assert.equal(lost, 1);
   assert.deepEqual(seen, ['local', 'local', 'local', 'local', 'local']);

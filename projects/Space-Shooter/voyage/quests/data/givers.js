@@ -3,6 +3,7 @@
 // proposal (lhc-lanes/stardust/world/QUEST-GIVERS.md): Hask, Vey, Garrity.
 // Names and lines are drafts for Donaven to edit. Swapping a giver is a data
 // change: quests name their giver by id and call them by role in text.
+// Portraits live in core's art map (voyage/art.js giverPortrait), keyed by id.
 export const QUEST_GIVERS = Object.freeze({
   hask: {
     name: 'Stationmaster Orrin Hask',
@@ -10,7 +11,6 @@ export const QUEST_GIVERS = Object.freeze({
     role: 'Relay Guild stationmaster',
     faction: 'relay-guild',
     sector: 'alpha',
-    portrait: 'art/hask.png',
     greeting: 'Bad coffee, worse budgets, and a lane that keeps trying to die. Pull up a crate, courier.',
     quests: ['cold-run', 'black-lane'],
   },
@@ -20,7 +20,6 @@ export const QUEST_GIVERS = Object.freeze({
     role: 'information broker',
     faction: 'none',
     sector: 'beacon',
-    portrait: 'art/vey.png',
     greeting: 'Everything is a favour, captain. The trick is knowing whose.',
     quests: ['railgun-paper-trail', 'listening-gate'],
   },
@@ -30,7 +29,6 @@ export const QUEST_GIVERS = Object.freeze({
     role: 'Driftborn salvage boss',
     faction: 'driftborn',
     sector: 'dustfall',
-    portrait: 'art/garrity.png',
     greeting: 'If it floats, I can sell it. If it sinks, I can sell it slower.',
     quests: ['dead-weight'],
   },

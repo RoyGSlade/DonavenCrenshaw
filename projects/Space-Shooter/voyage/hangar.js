@@ -9,6 +9,7 @@ import { unspentPoints, treePoints, canLearn, spentPoints } from './character.js
 import { money, giverName, itemName, repBand, discount } from './economy.js';
 import { voyageShipStats, canUpgrade, visualTier } from './upgrades.js';
 import { RENDER_SCALES, readRenderScale, writeRenderScale } from './renderScale.js';
+import { QUESTS } from './quests/data/quests/index.js';
 
 // --- Tiny DOM helpers ----------------------------------------------------------------
 
@@ -190,11 +191,22 @@ export function createHangar({ panes, store, ship, crew, toast, dev = false, onT
       }),
       el('h3', { text: 'HOLD' }),
       items.length + others.length ? el('ul', { class: 'vy-list' }, [...items, ...others]) : el('p', { class: 'vy-note', text: 'Nothing in the hold yet. Jobs pay in parts as well as credits.' }),
+      el('h3', { text: 'JOB RECORD' }),
+      jobRecord(save),
       el('h3', { text: 'ACCOUNT REWARDS' }),
       save.account.unlocks.length
         ? el('ul', { class: 'vy-list' }, save.account.unlocks.map((u) => el('li', { text: UNLOCK_NAMES[u] || u })))
         : el('p', { class: 'vy-note', text: `Max out rep with a giver (${REP_MAX}) for rewards that stay with your account.` }),
     );
+  }
+
+  function jobRecord(save) {
+    const done = Object.entries(save.quests?.done || {}).filter(([id]) => QUESTS[id]);
+    if (!done.length) return el('p', { class: 'vy-note', text: 'No jobs yet. The Jobs tab has three people who are hiring.' });
+    return el('ul', { class: 'vy-list', 'data-jobs': '' }, done.map(([id, d]) => el('li', { 'data-job': id }, [
+      el('span', { text: `${QUESTS[id].title}: ${d.result === 'success' ? 'done' : 'failed'} (${d.outcome})` }),
+      el('b', { text: `${d.times}×` }),
+    ])));
   }
 
   // --- Test tools (only with ?newgame=1&dev=1) ---

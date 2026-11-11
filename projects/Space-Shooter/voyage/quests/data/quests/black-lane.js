@@ -3,6 +3,7 @@
 // fight him, talk him down, or chase him through a race leg.
 // Random pieces: the ambush point, the wave raider, the lieutenant (an ace with
 // two rolled abilities), the trip events.
+// The one deadly job in the slice: losing a fight here ends in death (S25).
 export default {
   id: 'black-lane',
   title: 'Black Lane',
@@ -61,8 +62,8 @@ export default {
       reward: { money: 60, rep: { hask: 6 }, skillPoints: 1, flags: { 'fragment-4': 1, 'spared-lieutenant': 1 } },
     },
     'end-towed': {
-      type: 'end', result: 'failure', outcome: 'towed', title: 'Towed back',
-      text: 'A Guild tug hauls you home with your hull open to the stars. Hask pays for the tow and writes it on the note.',
+      type: 'end', result: 'failure', outcome: 'towed', title: 'Towed back', death: true,
+      text: 'A Guild tug hauls your ship home with the hull open to the stars and you not breathing. The Guild med bay brings you back, mostly. Hask pays for the tow and writes it on the note.',
       reward: { money: -30, rep: { hask: -3 } },
     },
     'end-turned-back': {

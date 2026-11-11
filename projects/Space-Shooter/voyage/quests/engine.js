@@ -12,7 +12,7 @@
 // Rewards, costs and requirements use core's formats (INTERFACES.md section 3).
 import { hashSeed, roller } from './rng.js';
 import { roll, fill } from './rolls.js';
-import { grant, spend, meets, missing, check, voyageShipStats, GIVERS, STAT_NAMES } from './core.js';
+import { grant, spend, meets, missing, check, combatStats, GIVERS, STAT_NAMES } from './core.js';
 import { SECTORS } from './data/sectors.js';
 import { createSkirmish, viewSkirmish, actSkirmish, hullAfter } from './parts/skirmish.js';
 import { createFoot, viewFoot, actFoot } from './parts/foot.js';
@@ -23,6 +23,10 @@ import { createTrip, viewTrip, actTrip, createEventStep, viewEventStep, actEvent
 
 export const RUN_VERSION = 1;
 const LOG_LIMIT = 40;
+
+// Quest fights fly the upgraded ship: core's ship-fight activity (upgrades and
+// the captain count, no board is written). Races read raceStats in parts/race.js.
+export const shipFor = save => combatStats(save, null, 'ship-fight');
 const MAX_STEPS = 2000;
 
 export const PARTS = Object.freeze({
@@ -103,7 +107,7 @@ function makeCtx(run, save, out) {
   const ctx = {
     run,
     save,
-    ship: voyageShipStats(save),
+    ship: shipFor(save),
     rng: roller(run),
     log: line => pushLog(run, line),
     grant(reward) {
@@ -180,7 +184,9 @@ function enter(quest, nodeId, ctx, now, depth = 0) {
   }
   if (node.type === 'end') {
     if (node.reward) ctx.grant(resolveReward(node.reward, run));
-    run.ended = { result: node.result, outcome: node.outcome || nodeId, title: node.title || '', followUp: node.followUp || null, node: nodeId };
+    // death: true marks an ending the captain does not walk away from (S25). The
+    // page calls core's store.die() when it sees it; the engine only reports it.
+    run.ended = { result: node.result, outcome: node.outcome || nodeId, title: node.title || '', followUp: node.followUp || null, node: nodeId, death: Boolean(node.death) };
     pushLog(run, `Quest ${node.result === 'success' ? 'complete' : 'failed'}: ${node.title || node.outcome || nodeId}.`);
     const quests = { ...(ctx.save.quests || {}) };
     const done = { ...(quests.done || {}) };
@@ -230,7 +236,7 @@ export function rollQuest(quest, seed) {
 }
 
 export function startQuest(quest, save, { seed = 1, now = 0 } = {}) {
-  const ship = voyageShipStats(save);
+  const ship = shipFor(save);
   const run = {
     v: RUN_VERSION,
     quest: quest.id,
@@ -300,7 +306,7 @@ export function view(quest, run, save) {
     }).filter(c => !c.hidden);
   }
   if (run.part) {
-    const ctx = { run, save, ship: voyageShipStats(save) };
+    const ctx = { run, save, ship: shipFor(save) };
     base.part = { kind: run.part.kind, ...PARTS[run.part.kind].view(run.part.state, ctx) };
   }
   return base;

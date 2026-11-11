@@ -9,6 +9,7 @@ const TAU = Math.PI * 2;
 export function createHangarScene(canvas, { reducedMotion = () => false } = {}) {
   const ctx = canvas.getContext('2d');
   let ship = null; // an image or canvas
+  let shipScale = 1; // tier art carries more margin than a garage picture
   let tier = 0;
   let frame = 0;
   let dpr = 1;
@@ -81,7 +82,7 @@ export function createHangarScene(canvas, { reducedMotion = () => false } = {}) 
     }
     // The ship, nose up.
     if (ship) {
-      const s = p.r * 1.45;
+      const s = p.r * 1.45 * shipScale;
       ctx.shadowColor = '#000c';
       ctx.shadowBlur = 24;
       ctx.drawImage(ship, -s / 2, -s / 2, s, s);
@@ -103,7 +104,8 @@ export function createHangarScene(canvas, { reducedMotion = () => false } = {}) 
   document.addEventListener('visibilitychange', () => { visible = document.visibilityState === 'visible'; if (visible) start(); });
   start();
   return {
-    setShip(image) { ship = image; draw(performance.now()); start(); },
+    setShip(image, scale = 1) { ship = image; shipScale = scale; draw(performance.now()); start(); },
+    get ship() { return ship; },
     setTier(n) { tier = n; draw(performance.now()); },
     get dpr() { return dpr; },
   };
