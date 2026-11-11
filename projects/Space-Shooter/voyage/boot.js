@@ -40,7 +40,7 @@ import { storyOf, currentStep } from './story/progress.js';
 import { STEP_IDS } from './story/tutorial.js';
 import { addLines, lineById } from './story/lines.js';
 import { contentLines } from './quests/lines.js';
-import { voiceUrl } from './story/voice.js';
+import { voiceUrl, scratchReady } from './story/voice.js';
 import { QUESTS } from './quests/data/quests/index.js';
 import { registerShops } from './shops/ui.js';
 import { registerRaceLaunches } from './races/hangarLaunches.js';
@@ -58,7 +58,8 @@ const params = new URLSearchParams(location.search);
 if (!flag.enabled) {
   $('vy-closed').hidden = false;
 } else {
-  boot();
+  // Scratch voices (dev server only, ?voice=scratch) load their list first; otherwise this is instant.
+  scratchReady.catch(() => 0).then(() => boot());
 }
 
 function boot() {

@@ -195,7 +195,7 @@ export function createLicence({ root, store, bus, toast = () => {}, reducedMotio
       const value = el('b', { class: 'ui-roll-value', 'aria-live': 'polite', text: '?' });
       const words = el('small', { text: STAT_TEXT[id]?.short || s.blurb || '' });
       const icon = iconFor(id);
-      const node = el('li', { class: 'ui-roll-row', dataset: { rollRow: id } }, icon ? el('img', { src: icon, alt: '' }) : null, el('div', {}, el('strong', { text: s.name }), words), value);
+      const node = el('li', { class: 'ui-roll-row', dataset: { rollRow: id } }, icon ? el('img', { src: icon, alt: '', class: 'ui-roll-icon' }) : null, el('div', {}, el('strong', { text: s.name }), words), value);
       rows[id] = { node, value, words };
       return node;
     }));
