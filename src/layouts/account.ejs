@@ -40,7 +40,18 @@
                         </div>
                     </section>
 
-                    <section class="noir-card noir-card--lit acct-card acct-auth" aria-labelledby="acct-auth-title">
+                    <section class="noir-card noir-card--lit acct-card" aria-labelledby="acct-reset-title" data-password-reset-choose hidden>
+                        <h2 id="acct-reset-title" class="acct-card-title mono">Choose a new password</h2>
+                        <form class="acct-form" novalidate>
+                            <label>New password<input name="password" type="password" autocomplete="new-password" required minlength="10" maxlength="200" aria-describedby="acct-reset-hint"></label>
+                            <label>Repeat new password<input name="repeat" type="password" autocomplete="new-password" required minlength="10" maxlength="200"></label>
+                            <p class="acct-hint" id="acct-reset-hint">At least 10 characters, with a letter and a number.</p>
+                            <p class="acct-status" role="alert" data-password-reset-status></p>
+                            <button class="btn-noir btn-noir--solid" type="submit">Set new password</button>
+                        </form>
+                    </section>
+
+                    <section class="noir-card noir-card--lit acct-card acct-auth" aria-labelledby="acct-auth-title" data-acct-auth>
                         <h2 id="acct-auth-title" class="visually-hidden">Sign in or create an account</h2>
                         <div class="acct-tabs mono" role="tablist" aria-label="Account">
                             <button type="button" role="tab" id="acct-tab-signin" aria-controls="acct-signin" aria-selected="true" data-acct-tab="signin">Sign in</button>
@@ -52,8 +63,19 @@
                             <label>Password<input name="password" type="password" autocomplete="current-password" required maxlength="200"></label>
                             <p class="acct-status" role="alert" data-acct-status></p>
                             <button class="btn-noir btn-noir--solid" type="submit">Sign in</button>
-                            <p class="acct-fine">Forgot your password? There's no reset email yet. <a href="contact/">Get in touch</a> and it can be reset by hand.</p>
                         </form>
+
+                        <div class="acct-form acct-forgot" data-acct-forgot data-password-forgot>
+                            <details>
+                                <summary class="acct-fine">Forgot your password?</summary>
+                                <form class="acct-form" novalidate>
+                                    <label>Email<input name="email" type="email" autocomplete="email" required maxlength="254"></label>
+                                    <p class="acct-status" role="status" data-password-forgot-status></p>
+                                    <button class="btn-noir" type="submit">Send reset link</button>
+                                </form>
+                            </details>
+                            <p class="acct-fine" data-password-forgot-contact hidden>There's no reset email yet. <a href="contact/">Get in touch</a> and it can be reset by hand.</p>
+                        </div>
 
                         <form id="acct-signup" class="acct-form" role="tabpanel" aria-labelledby="acct-tab-signup" data-acct-form="signup" novalidate hidden>
                             <label>Email<input name="email" type="email" autocomplete="email" required maxlength="254"></label>
