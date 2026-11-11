@@ -11,7 +11,7 @@ import { check, checkChance, skillById } from '../character.js';
 import { storyBus } from './bus.js';
 import { createSay } from './say.js';
 import { STEPS, STEP_BY_ID, ALL_UNLOCKS, TALKS, PICKS, SKIP_IF, NUDGE_MS, unlockName } from './tutorial.js';
-import { storyOf, freshStory, cleanStory, objectiveFor } from './progress.js';
+import { storyOf, freshStory, cleanStory, objectiveFor, idleLine } from './progress.js';
 import { optionTag } from './stats.js';
 
 /** Adds rewards together: money, items and rep summed, flags and unlocks merged. */
@@ -49,6 +49,7 @@ export function createDirector({
   let running = false;
   let pendingTalk = null; // { step, talk, options }
   const seen = new Set(); // `also` lines already played this session
+  const talks = new Map(); // castId -> idle talks so far (picks the next idle line)
   let nudgeTimer = null;
   let nudged = { step: null, n: 0 }; // which nudge line plays next on this step
 
@@ -195,8 +196,16 @@ export function createDirector({
     if (type === 'story:choose') { choose(Number(detail?.index)); return; }
     if (!type.startsWith('story:') && nudgeTimer !== null) armNudge();
     const s = read();
-    if (s.finished) return;
-    const step = STEP_BY_ID.get(s.step);
+    const step = s.finished ? null : STEP_BY_ID.get(s.step);
+    // Talking to someone the tutorial is not waiting on: they say one of their idle lines
+    // (onfoot's ask, contract 1.2), so every page gets the same behaviour.
+    if (type.startsWith('met:') && !matches(step?.wait, type, detail)) {
+      const who = type.slice(4);
+      const n = talks.get(who) || 0;
+      const line = idleLine(who, store.get(), n);
+      if (line) { talks.set(who, n + 1); playLines([line]); }
+      return;
+    }
     if (!step) return;
     for (const also of step.also || []) {
       const key = also.once || `${step.id}:${also.type}`;
@@ -250,6 +259,28 @@ export function createDirector({
       seen.clear();
       write({ ...freshStory(), paid: s.paid, unlocks: s.unlocks });
       if (running) enterStep(STEPS[0]);
+      return true;
+    },
+    /**
+     * Jumps to a step as if the earlier ones were played: their rewards are paid
+     * (once) and their unlocks given. For the Studio's "play this step" link on a
+     * throwaway save (`?step=<id>`). False for an unknown step.
+     */
+    jumpTo(stepId) {
+      const target = STEP_BY_ID.get(stepId);
+      if (!target) return false;
+      const s = read();
+      const before = STEPS.slice(0, STEPS.indexOf(target));
+      const unpaid = before.filter((st) => st.reward && !s.paid.includes(st.id));
+      pendingTalk = null;
+      const story = {
+        ...s, step: target.id, finished: false, skipped: false,
+        done: before.map((st) => st.id),
+        paid: [...s.paid, ...unpaid.map((st) => st.id)],
+        unlocks: [...new Set([...s.unlocks, ...before.flatMap((st) => st.unlocks || [])])],
+      };
+      write(story, unpaid.length ? mergeRewards(unpaid.map((st) => st.reward)) : null);
+      if (running) enterStep(target);
       return true;
     },
     state: () => read(),

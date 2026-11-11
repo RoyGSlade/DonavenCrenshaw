@@ -124,7 +124,8 @@ export function createCaption({ root = document.body, bus, onSkip = null, skippa
     bus.on('roll:attempt', (r) => {
       const t = el('p', 'sy-toast sy-roll');
       t.dataset.pass = String(Boolean(r.pass));
-      const nat = r.natural === 'pass' ? ' Double six!' : r.natural === 'fail' ? ' Snake eyes.' : '';
+      const nat = r.natural ? ' Double six!' : '';
+      if (r.natural) t.classList.add('sy-natural');
       t.append(el('b', '', r.pass ? 'PASS' : 'MISS'), document.createTextNode(` ${r.dice.join(' + ')} ${r.bonus < 0 ? '-' : '+'} ${Math.abs(r.bonus)} = ${r.total} vs ${r.dc}.${nat}`));
       toasts.append(t);
       setTimeout(() => t.classList.add('sy-gone'), 3600);

@@ -150,20 +150,23 @@ test('say shows a line, holds it for its reading time, and a tap cuts it short',
 
 // --- Stats -------------------------------------------------------------------------------
 
-test('attempts are a fresh 2d6 + stat bonus: no stat auto-passes or auto-fails', () => {
+test('attempts are a fresh 2d6 + stat bonus; a double six always passes; no auto-fail', () => {
   const six = { stats: { str: 6, con: 3, dex: 3, wis: 3, cha: 6 }, skills: { hacker: 3 } };
   const one = { stats: { str: 1, con: 3, dex: 3, wis: 3, cha: 1 }, skills: {} };
-  // Snake eyes fail even at a 6, and boxcars pass even at a 1 against an impossible target.
-  assert.equal(check(six, { stat: 'cha', dc: 2 }, () => 0).pass, false);
-  assert.equal(check(six, { stat: 'cha', dc: 2 }, () => 0).natural, 'fail');
-  assert.equal(check(one, { stat: 'cha', dc: 99 }, () => 0.99).pass, true);
+  const boxcars = check(one, { stat: 'cha', dc: 99 }, () => 0.99);
+  assert.deepEqual([boxcars.dice, boxcars.natural, boxcars.pass], [[6, 6], true, true], 'a double six beats any target with any stat');
+  const snake = check(six, { stat: 'cha', dc: 5 }, () => 0);
+  assert.deepEqual([snake.total, snake.natural, snake.pass], [5, false, true], 'double one is just a low roll: 2 + 3 meets 5');
+  assert.equal(check(six, { stat: 'cha', dc: 6 }, () => 0).pass, false);
   const r = check(one, { stat: 'str', dc: 7 }, seq([0.5, 0.5]));
-  assert.deepEqual([r.dice, r.roll, r.statMod, r.bonus, r.total, r.pass], [[4, 4], 8, -2, -2, 6, false]);
+  assert.deepEqual([r.dice, r.roll, r.statMod, r.bonus, r.total, r.pass, r.natural], [[4, 4], 8, -2, -2, 6, false, false]);
   assert.equal(check(six, { stat: 'cha', tag: 'hack', dc: 7 }, seq([0.5, 0.5])).bonus, 3, 'skills never add to a roll');
-  for (const v of [1, 2, 3, 4, 5, 6]) for (const dc of [2, 6, 7, 9, 11, 30]) {
+  for (const v of [1, 2, 3, 4, 5, 6]) for (const dc of [6, 7, 9, 11, 30]) {
     const p = chance(v, dc);
     assert.ok(p > 0 && p < 1, `stat ${v} vs ${dc} is ${p}`);
   }
+  assert.equal(chance(1, 30).toFixed(4), (1 / 36).toFixed(4), 'only a double six');
+  assert.equal(chance(6, 5), 1, 'with no auto-fail, an easy enough target is certain for a 6');
   assert.equal(chance(3, 7).toFixed(4), (21 / 36).toFixed(4));
   assert.equal(chance(6, 9).toFixed(4), (26 / 36).toFixed(4));
   assert.equal(chance(1, 9).toFixed(4), (3 / 36).toFixed(4));
@@ -514,4 +517,35 @@ test('an old captain without Strength is asked to roll it once', async () => {
   assert.equal(env.store.get().character.stats.str, 6);
   assert.equal(env.store.get().character.toRoll, undefined);
   assert.deepEqual(env.store.rollMissingStats(() => 0.1), {}, 'only once');
+});
+
+test('talking to someone the tutorial is not waiting on plays their idle line, in turn', async () => {
+  const env = setup();
+  env.director.start();
+  await playTo(env, 'walk');
+  await emit(env, 'met:mel');
+  assert.equal(env.said.at(-1), 'mel.locked.1', 'Mel is not open yet');
+  await emit(env, 'met:chibby');
+  assert.equal(env.said.at(-1), 'chibby.idle.1');
+  await emit(env, 'met:chibby');
+  assert.equal(env.said.at(-1), 'chibby.idle.2');
+  assert.equal(env.director.state().step, 'walk', 'idle talk never moves the tutorial');
+  await emit(env, 'met:nobody');
+  assert.equal(env.said.at(-1), 'chibby.idle.2');
+});
+
+test('jumpTo starts at any step with the earlier rewards and unlocks in place (the Studio play link)', async () => {
+  const env = setup();
+  env.director.start();
+  env.store.createCharacter({ name: 'Studio Test' }, seq(ROLL));
+  assert.equal(env.director.jumpTo('nope'), false);
+  assert.equal(env.director.jumpTo('hask'), true);
+  await env.director.idle();
+  const save = env.store.get();
+  assert.equal(env.director.state().step, 'hask');
+  assert.equal(save.items.ore >= 3, true, 'the mining reward was paid');
+  assert.ok(isUnlocked(save, 'giver:garrity') && isUnlocked(save, 'explore:alpha'));
+  assert.equal(isUnlocked(save, 'giver:hask'), false);
+  await emit(env, 'met:hask');
+  assert.equal(env.director.state().step, 'edna');
 });

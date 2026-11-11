@@ -34,13 +34,14 @@ export const START_KIT = Object.freeze({ money: 80, items: { scrap: 4 } });
 // attempts at stuff; they do not predetermine your attempts as fail or success
 // until rolled again"). Every attempt is a fresh roll of 2d6, plus the stat's
 // bonus (stat - STAT_BASELINE: -2 at a 1, +3 at a 6), against a target. A
-// natural 12 always works and a natural 2 never does, so no stat decides an
-// attempt on its own. Named targets below; quests may use plain numbers.
+// natural top face, double six (alwaysPass 12), always works whatever the bonus
+// or target (Donaven: "yes, a natural 6 always passes"). alwaysFail is off (0):
+// a double one is just a low roll. Named targets below; quests may use numbers.
 export const CHECK = Object.freeze({
   dice: 2,
   sides: 6,
   alwaysPass: 12,
-  alwaysFail: 2,
+  alwaysFail: 0,
   levels: { easy: 6, normal: 7, tough: 8, hard: 9, heroic: 11 },
 });
 

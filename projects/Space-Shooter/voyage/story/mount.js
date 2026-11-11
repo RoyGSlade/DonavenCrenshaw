@@ -15,13 +15,13 @@ import { playIntro } from './intro.js';
 import { storyOf } from './progress.js';
 
 /**
- * mountStory({ store, root, bus, reducedMotion, volume, muted, caption }) ->
+ * mountStory({ store, root, bus, reducedMotion, volume, muted, caption, startAt }) ->
  * { director, caption, bus, speak, stop }. caption: false when the page draws lines itself.
  */
 export function mountStory({
   store, root = document.body, bus = storyBus,
   reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches,
-  volume = () => 1, muted = () => false, caption = true,
+  volume = () => 1, muted = () => false, caption = true, startAt = null,
 } = {}) {
   const speak = createSay({ bus, audio: browserAudio({ volume, muted }) });
   const director = createDirector({ store, bus, say: speak });
@@ -36,6 +36,8 @@ export function mountStory({
     else bus.emit('intro:done', { skipped: out.skipped });
   });
   director.start();
+  // The Studio's "play this step" link (?step=<id>): only pass it with a throwaway save.
+  if (startAt) director.jumpTo(startAt);
   return {
     director, caption: box, bus, speak,
     stop() { off(); director.stop(); box?.destroy(); },

@@ -145,11 +145,12 @@ export const statMod = (value) => (Number.isInteger(value) ? value : STAT_BASELI
  * An attempt (a "check"): a fresh roll of CHECK.dice x d{CHECK.sides}, plus the
  * stat's bonus and any `extra` (a ship's race bonus, say), against dc. Skills
  * never add to a roll (they unlock things); `tag` is kept for logs only. A
- * natural CHECK.alwaysPass always passes and a natural CHECK.alwaysFail always
- * fails, so the stat alone never decides it. Returns the attempt:
- * { kind: 'attempt', stat, tag, dc, dice, roll, statMod, extra, bonus, total,
- * pass, natural } (natural: 'pass' | 'fail' | null). Without a captain the
- * stat counts as STAT_BASELINE. Deterministic in rng (CHECK.dice draws).
+ * natural CHECK.alwaysPass (double six) always passes, whatever the bonus or
+ * target. CHECK.alwaysFail (0 = off) would make a roll at or below it always
+ * fail. Returns the attempt: { kind: 'attempt', stat, tag, dc, dice, roll,
+ * statMod, extra, bonus, total, pass, natural } with natural: true on a double
+ * six (the UI celebrates it). Without a captain the stat counts as
+ * STAT_BASELINE. Deterministic in rng (CHECK.dice draws).
  */
 export function check(c, { stat = null, tag = null, dc = CHECK.levels.normal, extra = 0 } = {}, rng = Math.random) {
   const dice = [];
@@ -159,8 +160,9 @@ export function check(c, { stat = null, tag = null, dc = CHECK.levels.normal, ex
   const more = Number.isFinite(extra) ? extra : 0;
   const bonus = mod + more;
   const total = roll + bonus;
-  const natural = roll >= CHECK.alwaysPass ? 'pass' : roll <= CHECK.alwaysFail ? 'fail' : null;
-  const pass = natural ? natural === 'pass' : total >= dc;
+  const natural = roll >= CHECK.alwaysPass;
+  const fumble = CHECK.alwaysFail > 0 && roll <= CHECK.alwaysFail;
+  const pass = natural || (!fumble && total >= dc);
   return { kind: 'attempt', stat: STAT_IDS.includes(stat) ? stat : null, tag: tag || null, dc, dice, roll, statMod: mod, extra: more, bonus, total, pass, natural };
 }
 /** The same roll under the name the round-2 contract uses for it. */
@@ -174,18 +176,18 @@ const SUMS = (() => {
     for (const [sum, n] of dist) for (let f = 1; f <= CHECK.sides; f++) next.set(sum + f, (next.get(sum + f) || 0) + n);
     dist = next;
   }
-  const all = CHECK.sides ** CHECK.dice;
-  return [...dist].map(([sum, n]) => [sum, n / all]);
+  return [...dist]; // [sum, ways]
 })();
+const ALL_WAYS = CHECK.sides ** CHECK.dice;
 
-/** Chance (0..1) an attempt passes with this total bonus against dc. Never 0 or 1. */
+/** Chance (0..1) an attempt passes with this total bonus against dc. Never 0 (double six). */
 export function attemptChance(bonus, dc) {
-  let p = 0;
-  for (const [roll, q] of SUMS) {
-    const natural = roll >= CHECK.alwaysPass ? true : roll <= CHECK.alwaysFail ? false : null;
-    if (natural === true || (natural === null && roll + bonus >= dc)) p += q;
+  let ways = 0; // whole numbers, so 36/36 is exactly 1
+  for (const [roll, n] of SUMS) {
+    const fumble = CHECK.alwaysFail > 0 && roll <= CHECK.alwaysFail;
+    if (roll >= CHECK.alwaysPass || (!fumble && roll + bonus >= dc)) ways += n;
   }
-  return p;
+  return ways / ALL_WAYS;
 }
 
 /** The chance for a captain and a check spec (what a choice can show before it is taken). */
@@ -195,9 +197,9 @@ export function checkChance(c, { stat = null, dc = CHECK.levels.normal, extra = 
 }
 
 const signed = (n) => (n < 0 ? `- ${-n}` : `+ ${n}`);
-/** An attempt in words for logs: "4+3 + 2 = 9 vs 8" (with "double six!" / "snake eyes" on a natural). */
+/** An attempt in words for logs: "4+3 + 2 = 9 vs 8" (with "double six!" on a natural). */
 export function rollText(r) {
-  const nat = r.natural === 'pass' ? ' (double six!)' : r.natural === 'fail' ? ' (snake eyes)' : '';
+  const nat = r.natural ? ' (double six!)' : '';
   return `${(r.dice || [r.roll]).join('+')} ${signed(r.bonus)} = ${r.total} vs ${r.dc}${nat}`;
 }
 

@@ -122,14 +122,17 @@ test('character: death loses half the earned points (spent and unspent), refunds
   assert.equal(die(captain({ earned: 1 }), seq(0.5)).lost, 0, 'one point: nothing to halve away');
 });
 
-test('character: attempts are 2d6 + stat bonus (never skills), with double six and double one deciding; passive effects count from 3', () => {
+test('character: attempts are 2d6 + stat bonus (never skills), a double six always passes; passive effects count from 3', () => {
   const c = captain({ stats: { str: 3, cha: 5, con: 1, dex: 3, wis: 3 }, skills: { trader: 2 }, earned: 4 });
   assert.equal(skillBonus(c, 'talk'), 0, 'skills add nothing to rolls');
   assert.deepEqual(check(c, { stat: 'cha', tag: 'talk', dc: 10 }, seq(0.5)),
-    { kind: 'attempt', stat: 'cha', tag: 'talk', dc: 10, dice: [4, 4], roll: 8, statMod: 2, extra: 0, bonus: 2, total: 10, pass: true, natural: null });
+    { kind: 'attempt', stat: 'cha', tag: 'talk', dc: 10, dice: [4, 4], roll: 8, statMod: 2, extra: 0, bonus: 2, total: 10, pass: true, natural: false });
   assert.equal(check(null, { stat: 'cha', dc: 7 }, seq(0)).total, 2, 'no captain counts the stat as 3 (+0)');
-  assert.equal(check(c, { stat: 'cha', dc: 3 }, seq(0)).pass, false, 'snake eyes always fail');
-  assert.equal(check(captain({ stats: { str: 1, cha: 1, con: 1, dex: 1, wis: 1 } }), { stat: 'cha', dc: 20 }, seq(0.99)).pass, true, 'double six always passes');
+  assert.equal(check(c, { stat: 'cha', dc: 4 }, seq(0)).pass, true, 'no automatic fail: 1+1 + 2 meets 4');
+  assert.equal(check(c, { stat: 'cha', dc: 5 }, seq(0)).pass, false);
+  const nat = check(captain({ stats: { str: 1, cha: 1, con: 1, dex: 1, wis: 1 } }), { stat: 'cha', dc: 20 }, seq(0.99));
+  assert.equal(nat.pass, true, 'double six always passes');
+  assert.equal(nat.natural, true);
   assert.equal(check(c, { stat: 'dex', dc: 9, extra: 2 }, seq(0.5)).total, 10, 'an extra bonus (a ship) adds on');
   assert.ok(checkChance(c, { stat: 'cha', dc: 7 }) > checkChance(c, { stat: 'con', dc: 7 }));
   assert.equal(effect(c, 'price'), 4, 'charisma 5 is two over the baseline at 2% each');

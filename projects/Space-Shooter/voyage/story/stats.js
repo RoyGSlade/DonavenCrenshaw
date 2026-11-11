@@ -4,8 +4,8 @@
 //
 // The rules (Donaven, 2026-11-11):
 //   Stats are rolled once (1d6 each) and are the BONUS on attempts.
-//   An attempt is a fresh roll: 2d6 + (stat - 3) vs a target. A natural 12
-//   always works, a natural 2 never does: no stat decides an attempt alone.
+//   An attempt is a fresh roll: 2d6 + (stat - 3) vs a target. A double six
+//   always works, whatever the bonus or target ("a natural 6 always passes").
 //   Each point over 3 also adds the stat's small passive effects.
 //   Skills never add to rolls; they unlock access, activity upgrades and
 //   abilities (data.js SKILLS, character.js skillUnlocks).
@@ -18,7 +18,7 @@ const pct = (v) => `${Math.round(Math.abs(v) * 100)}%`;
 const n = (v) => Math.round(Math.abs(v) * 100) / 100;
 const signed = (v) => (v < 0 ? `-${-v}` : `+${v}`);
 
-/** Chance (0..1) that an attempt with this stat (and any extra bonus) meets dc. Never 0 or 1. */
+/** Chance (0..1) that an attempt with this stat (and any extra bonus) meets dc. Never 0: a double six always works. */
 export const chance = (stat, dc, extra = 0) => attemptChance(statMod(stat) + extra, dc);
 
 /** "72%" style text for a chance. */
