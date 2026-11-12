@@ -256,6 +256,8 @@ body .hg-layer .hg-spot:focus-visible{opacity:1!important;pointer-events:auto}
   .dp-tracker-title{font-size:14px}
   .dp-tracker-now{font-size:13px}
   .dp-tracker-next li{font-size:12px}
+  .dp-tracker-next li:nth-child(n+2){display:none} /* phones: the current step and the one after it */
+  .dp-tracker-hint{font-size:11px}
   /* A dialogue box is open on the phone: the tracker folds to one line (the current step) above it. */
   body:has(#hg-dialogue:not([hidden])) .dp-tracker{padding:4px 10px;max-height:38px;overflow:hidden}
   body:has(#hg-dialogue:not([hidden])) .dp-tracker .dp-tracker-head,body:has(#hg-dialogue:not([hidden])) .dp-tracker-next,body:has(#hg-dialogue:not([hidden])) .dp-tracker-hint{display:none}
@@ -318,3 +320,14 @@ img.dp-tracker-star{width:20px;height:20px}
 }
 img.dp-bag-art{width:74px;height:74px;object-fit:contain}
 @media (max-width:760px){img.dp-bag-art{width:64px;height:64px}}
+
+/* The art lane's amber notch, centred on the tracker frame's top edge; dim when folded. */
+.dp-tracker.has-art{overflow:visible}
+.dp-tracker.has-art::before{content:'';position:absolute;left:50%;top:-27px;width:88px;height:20px;transform:translateX(-50%);background:var(--dp-tracker-notch) center/100% 100% no-repeat;pointer-events:none}
+.dp-tracker.has-art.is-collapsed::before{opacity:.35}
+.dp-tracker.has-art{top:72px}
+@media (max-width:760px){
+  .dp-tracker.has-art{top:68px}
+  body:has(#hg-dialogue:not([hidden])) .dp-tracker.has-art{top:56px}
+  body:has(#hg-dialogue:not([hidden])) .dp-tracker.has-art::before{display:none}
+}

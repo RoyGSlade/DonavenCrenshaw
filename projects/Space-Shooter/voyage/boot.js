@@ -334,7 +334,12 @@ function boot() {
     onOpen: (station, pane) => { if (pane === 'crew') crew.refresh(); },
   });
   provideHangar(place);
-  place.subscribe((e) => { sheetOpen = e.type === 'open'; holdFloor(); });
+  place.subscribe((e) => {
+    sheetOpen = e.type === 'open';
+    // A station opening (a link, a screen reader's button) takes the screen from the datapad.
+    if (sheetOpen && pad?.isOpen) pad.close();
+    holdFloor();
+  });
 
   function allowLesson(target) {
     const need = LESSON_STEP[target.kind];
@@ -398,7 +403,7 @@ function boot() {
     onChange: (open) => { if (open) overlays.add('pause'); else overlays.delete('pause'); holdFloor(); },
   });
   function maybeControls() {
-    if (pad.isOpen) return;
+    if (pad.isOpen || screenBusy()) return; // only on a free floor; the next free moment tries again
     if (store.get().character && !overlays.has('intro') && !overlays.has('licence') && $('hg-licence').hidden) controls.maybeShow();
   }
   // Esc: close what is open (the pad and station panels close themselves), else pause.
@@ -414,6 +419,7 @@ function boot() {
   bus.on('datapad:open', () => controls.hide());
   bus.on('datapad:close', () => setTimeout(maybeControls, 300));
   bus.on('hangar:opened', () => controls.hide());
+  bus.on('hangar:closed', () => setTimeout(maybeControls, 300));
 
   // The intro holds the floor still while it plays; the licence opens on the create
   // step (or whenever there is no captain once the intro and tutorial are out of the way).

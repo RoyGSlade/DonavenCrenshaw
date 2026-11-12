@@ -72,5 +72,5 @@ export function createPause({ root = document.body, touch = false, settings = nu
     (opener?.isConnected && opener !== document.body ? opener : null)?.focus?.({ preventScroll: true });
     return true;
   }
-  return { open, close, get open_() { return Boolean(sheet); }, get isOpen() { return Boolean(sheet); }, button: btn };
+  return { open, close, get isOpen() { return Boolean(sheet); }, button: btn };
 }

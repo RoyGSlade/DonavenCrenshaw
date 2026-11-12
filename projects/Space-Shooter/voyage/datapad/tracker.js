@@ -26,6 +26,8 @@ export function createTracker({ root, store, bus = null, world = () => null, sta
   root.className = 'dp-tracker';
   const frame = hudArt('tracker-frame');
   if (frame) { root.classList.add('has-art'); root.style.setProperty('--dp-tracker-art', `url("${frame}")`); }
+  const notch = hudArt('tracker-notch'); // the amber notch on the frame's top edge (art lane)
+  if (notch) root.style.setProperty('--dp-tracker-notch', `url("${notch}")`);
   root.removeAttribute('hidden');
   root.setAttribute('role', 'status');
   root.setAttribute('aria-live', 'polite');

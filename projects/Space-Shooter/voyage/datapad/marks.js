@@ -45,7 +45,7 @@ export function createMarks({ root, reducedMotion = () => false, data = MARKS })
       const el = document.createElement('div');
       el.className = 'of-mark';
       el.dataset.mark = item.key;
-      if (item.station) el.dataset.station = item.station;
+      if (item.station) el.dataset.markStation = item.station; // not data-station: that is the station buttons' hook
       el.dataset.kind = item.kind;
       const label = document.createElement('span');
       el.append(icon(item.icon, 'of-mark-icon'), label);
@@ -80,6 +80,11 @@ export function createMarks({ root, reducedMotion = () => false, data = MARKS })
       const half = c.width / 2 + 8;
       let x = Math.max(half, Math.min(view.w - half, it.sx));
       let y = Math.max(safe.top + c.height + 6, Math.min(view.h - safe.bottom - 6, it.sy));
+      // A doorway (not this chip's own door) or a keep-clear strip: the chip moves above it.
+      for (const r of safe.keepClear || []) {
+        if (r.key && r.key === it.key) continue;
+        if (x + half - 8 > r.left && x - half + 8 < r.right && y > r.top && y - c.height < r.bottom) y = Math.max(safe.top + c.height + 6, r.top - 2);
+      }
       for (const r of safe.avoid || []) {
         if (x + half > r.left && x - half < r.right && y > r.top && y - c.height < r.bottom) {
           // Below the box if there is room, else beside it.
@@ -104,9 +109,10 @@ export function createMarks({ root, reducedMotion = () => false, data = MARKS })
   function pointTo(target, view, safe = { top: 0, bottom: 0 }) {
     if (!target) { edge.hidden = true; return; }
     const top = safe.top + 30, bottom = view.h - safe.bottom - 30;
-    const inside = target.sx > 30 && target.sx < view.w - 30 && target.sy > top && target.sy < bottom;
-    if (inside && !target.through) { edge.hidden = true; return; }
-    if (inside) { edge.hidden = true; return; } // a door on screen carries its own gold marker
+    // On screen (even under the header, where its chip is pushed down into view): its own gold marks say it.
+    // (The same reach as a chip's: a chip that is drawn already points at it.)
+    const inside = target.sx > -40 && target.sx < view.w + 40 && target.sy > -40 && target.sy < view.h + 40;
+    if (inside) { edge.hidden = true; return; }
     const cx = view.w / 2, cy = (top + bottom) / 2;
     const a = Math.atan2(target.sy - cy, target.sx - cx);
     const rx = view.w / 2 - 24, ry = (bottom - top) / 2 - 8;

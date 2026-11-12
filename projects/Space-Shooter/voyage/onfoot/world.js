@@ -11,7 +11,7 @@
 //   world.go(mapId, spawn) · world.fight(setup) -> Promise<{ outcome, hp }> · world.unlock(id)
 //   world.setNpcVisible(id, on) · world.follow(id, on) · world.pause() / resume() · world.destroy()
 import { enterMap, MAP_DEFS } from '../maps/index.js';
-import { createWalker, stepWalker, nearestInteract, stepNpc, WALK } from './rules/walk.js';
+import { createWalker, stepWalker, stepNpc, WALK } from './rules/walk.js';
 import { createFight, stepFight, STEP, ENEMY_TYPES } from './rules/shooter.js';
 import { buildStaticLayer, buildVignette, drawBody, drawContained, castSprite, castLook } from './draw.js';
 import { sprite, playerFrames, preload, onArtLoaded, captainSprite } from './assets.js';
@@ -305,7 +305,10 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
         inReach: target?.kind === 'npc' && target.id === n.id, ring: { x: n.x, y: n.y, r: 21 * castLook(n.id).scale }, ...at(n.x, n.y - 40 * castLook(n.id).scale),
       });
     }
-    return { items, aim: aim ? { ...aim, ...at(aim.x, aim.y) } : null };
+    // Chips never sit on a doorway or a strip the map keeps clear (a zone with "keepClear": true, e.g. the bay mouth).
+    const rect = (b, key) => { const p0 = at(b.x, b.y), p1 = at(b.x + b.w, b.y + b.h); return { key, left: p0.sx, top: p0.sy, right: p1.sx, bottom: p1.sy }; };
+    const keepClear = [...map.doors.map((d) => rect(d, `door:${d.id}:`)), ...map.zones.filter((z) => z.keepClear).map((z) => rect(z, null))];
+    return { items, keepClear, aim: aim ? { ...aim, ...at(aim.x, aim.y) } : null };
   }
 
   // ---- fighting ----
@@ -409,7 +412,7 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     if (marked) {
       // The prompt in reach is a box the chips step around too.
       const avoid = prompt.hidden ? safe.avoid : [...(safe.avoid || []), prompt.getBoundingClientRect()];
-      marks.show(); marks.update(marked.items, view, { ...safe, avoid }); marks.pointTo(marked.aim, view, safe);
+      marks.show(); marks.update(marked.items, view, { ...safe, avoid, keepClear: marked.keepClear }); marks.pointTo(marked.aim, view, safe);
     } else marks.hide();
     if (fight?.player.hit > 0) { ctx.fillStyle = `rgba(255,80,60,${fight.player.hit})`; ctx.fillRect(0, 0, canvas.width, canvas.height); }
     // Prompt follows its target on screen.

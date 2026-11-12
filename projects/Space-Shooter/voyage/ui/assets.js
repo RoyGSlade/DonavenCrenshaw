@@ -88,7 +88,7 @@ export function ambienceFor(id, canPlay = (type) => (typeof Audio === 'function'
 // Ids: bag-closed, bag-open, pad-landscape, pad-portrait, key-blank, key-tab, key-esc,
 // tracker-frame, step-tick, step-now, marker-objective, edge-arrow,
 // icon-<talk|use|door|shop|captain|pack|jobs|map>.
-// Copied by lhc-lanes/stardust/round3/basics/tools/prep-hud.sh (291 KB). The painted interact icons
+// Copied by lhc-lanes/stardust/round3/basics/tools/prep-hud.sh (294 KB). The painted interact icons
 // (prompt-<icon id>) dress the big prompt in reach; the floor's mark chips keep the line icons,
 // tinted in each station's own accent colour, so stations still read apart from across the room.
 export const HUD_ART = Object.freeze({
@@ -119,6 +119,7 @@ export const HUD_ART = Object.freeze({
   'step-todo': 'step-todo.webp',
   'marker-objective': 'marker-objective.webp',
   'edge-arrow': 'edge-arrow.webp',
+  'tracker-notch': 'tracker-notch.webp',
   'prompt-talk': 'interact-talk.webp',
   'prompt-use': 'interact-use.webp',
   'prompt-door': 'interact-door.webp',
