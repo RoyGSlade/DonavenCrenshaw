@@ -10,6 +10,46 @@ export default {
   "giver": "garrity",
   "location": "dustfall",
   "summary": "The hulk's log points to a sealed Warden courier ship deep in the field. Deadly.",
+  "steps": [
+    {
+      "id": "brief",
+      "text": "Hear Garrity out about the courier ship",
+      "where": "dustfall",
+      "nodes": [
+        "intro"
+      ]
+    },
+    {
+      "id": "out",
+      "text": "Fly deep into the field",
+      "where": "dustfall",
+      "nodes": [
+        "out"
+      ]
+    },
+    {
+      "id": "wreck",
+      "text": "Get aboard the wreck",
+      "where": "dustfall",
+      "nodes": [
+        "wreck",
+        "acolyte",
+        "choir-fight",
+        "airlock",
+        "sentry-fight",
+        "down"
+      ]
+    },
+    {
+      "id": "log",
+      "text": "Read the courier's last log",
+      "where": "dustfall",
+      "nodes": [
+        "console",
+        "message"
+      ]
+    }
+  ],
   "pitch": {
     "line": "garrity.job.black-box",
     "emotion": "worried",

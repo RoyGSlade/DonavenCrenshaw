@@ -1,0 +1,114 @@
+// Round 3 basics (no browser): the tracker's steps for the tutorial and for jobs, the
+// objective's way through doors, the nap's price, the skill tree's layout and the data shapes.
+import test from 'node:test';
+import assert from 'node:assert/strict';
+
+const V = '../projects/Space-Shooter/voyage';
+const { tutorialTrack, jobTrack, questSteps, deriveSteps, stepStates, trackerLines, currentTrack } = await import(`${V}/datapad/steps.js`);
+const { mapsHolding, doorToward } = await import(`${V}/datapad/route.js`);
+const { BASICS_DATA } = await import(`${V}/datapad/data.js`);
+const { napQuote } = await import(`${V}/datapad/nap.js`);
+const { QUESTS } = await import(`${V}/quests/data/quests/index.js`);
+const { validateQuest } = await import(`${V}/quests/validate.js`);
+const { MAP_DEFS } = await import(`${V}/maps/index.js`);
+const { treeLayout } = await import(`${V}/hangarSkills.js`);
+const { HANGAR_DATA } = await import(`${V}/hangarData.js`);
+const { startQuest, act } = await import(`${V}/quests/engine.js`);
+const { emptySave } = await import(`${V}/save.js`);
+const { createCharacter } = await import(`${V}/character.js`);
+
+const story = (step, done) => ({ v: 1, step, done, unlocks: [], paid: [], finished: false, skipped: false });
+
+test('tutorial tracker: the leg in progress, ticked off, aimed at the step\'s station or giver', () => {
+  const t = tutorialTrack({ story: story('shoot', ['intro', 'create', 'walk', 'ship', 'ralph', 'mine', 'hop-garrity', 'garrity', 'mel']) });
+  assert.equal(t.kind, 'tutorial');
+  assert.equal(t.title, 'Mel\'s range');
+  assert.deepEqual(t.steps.map((s) => s.state), ['done', 'now', 'next', 'next']);
+  assert.deepEqual(t.target, { station: 'range' });
+  const g = tutorialTrack({ story: story('garrity', ['intro', 'create', 'walk', 'ship', 'ralph', 'mine', 'hop-garrity']) });
+  assert.deepEqual(g.target, { npc: 'garrity' });
+  assert.equal(tutorialTrack({ story: { ...story(null, []), finished: true } }), null);
+  assert.deepEqual(trackerLines(t, 4).map((s) => s.id), ['shoot', 'hop-hask', 'hask']);
+});
+
+test('every quest has steps that validate, and each names real nodes in play order', () => {
+  for (const q of Object.values(QUESTS)) {
+    assert.ok(Array.isArray(q.steps) && q.steps.length >= 3, `${q.id} has steps`);
+    assert.deepEqual(validateQuest(q), [], q.id);
+    assert.ok(q.steps[0].nodes.includes(q.start), `${q.id}: the first step holds the start node`);
+  }
+  // A bad step is caught.
+  const bad = { ...QUESTS['cold-run'], steps: [{ id: 'x', text: 'X', nodes: ['nope'] }] };
+  assert.ok(validateQuest(bad).some((e) => /missing node nope/.test(e)));
+});
+
+test('job tracker follows a real run: the furthest step reached is now, the ones before are done', () => {
+  const quest = QUESTS['cold-run'];
+  const c = createCharacter({ name: 'Test', look: { portrait: 'p1', color: '#81e6df' } }, () => 0.5, () => 1);
+  let save = { ...emptySave(), character: c };
+  const started = startQuest(quest, save, { seed: 7, now: 1 });
+  save = started.save;
+  let track = jobTrack(save);
+  assert.equal(track.kind, 'job');
+  assert.equal(track.title, 'Cold Run');
+  assert.equal(track.steps[0].state, 'now');
+  assert.deepEqual(track.target, { station: 'board' });
+  // Walk the dialogue on until the run reaches the trip.
+  let run = started.run;
+  for (let i = 0; i < 8 && !run.visits.trip; i++) {
+    const out = act(quest, run, save, { type: 'choose', index: 0 }, { now: 2 });
+    if (out.error) break;
+    run = out.run; save = out.save;
+  }
+  assert.ok(run.visits.trip, 'the run reached the trip');
+  const states = stepStates(quest, run).map((s) => s.state);
+  assert.equal(states[0], 'done');
+  assert.equal(states[1], 'now');
+  assert.equal(currentTrack({ ...save, story: { ...story(null, []), finished: true } })?.kind ?? 'job', 'job');
+});
+
+test('a quest without steps still breaks down (made from its nodes)', () => {
+  const { steps, ...plain } = QUESTS['black-lane'];
+  const made = questSteps(plain);
+  assert.ok(deriveSteps(plain).some((s) => /Fly to/.test(s.text)));
+  assert.equal(made.at(-1).id, 'paid');
+});
+
+test('the objective marker finds its way through doors', () => {
+  const lockerMaps = mapsHolding({ station: 'locker' }, MAP_DEFS);
+  assert.ok(lockerMaps.includes('hangar'));
+  assert.equal(doorToward('hangar', lockerMaps, MAP_DEFS), null, 'already there');
+  assert.equal(doorToward('workshop', mapsHolding({ station: 'range' }, MAP_DEFS), MAP_DEFS), 'out');
+  assert.equal(doorToward('cantina', mapsHolding({ npc: 'edna' }, MAP_DEFS), MAP_DEFS), 'staff');
+});
+
+test('the nap: costs the existing respec rule, free in the tutorial, says why it can\'t', () => {
+  const c = { ...createCharacter({ name: 'N', look: { portrait: 'p1', color: '#fff' } }, () => 0.5, () => 1), skills: { pilot: 2, gunner: 1 } };
+  const fee = HANGAR_DATA.respec.feePerPoint;
+  const q = napQuote({ ...emptySave(), character: c, money: 500 }, false);
+  assert.equal(q.ok, true);
+  assert.equal(q.cost, 3 * fee);
+  assert.equal(napQuote({ ...emptySave(), character: c, money: 0 }, true).cost, 0);
+  assert.equal(napQuote({ ...emptySave(), character: c, money: 0 }, false).ok, false);
+  assert.equal(napQuote({ ...emptySave(), character: { ...c, skills: {} }, money: 500 }, false).reason, BASICS_DATA.nap.nothing);
+});
+
+test('the skill tree lays out with room: no two nodes on top of each other, branch names past the ends', () => {
+  const L = treeLayout();
+  for (const a of L.nodes) for (const b of L.nodes) if (a !== b) assert.ok(Math.hypot(a.x - b.x, a.y - b.y) > 0.24, `${a.id} vs ${b.id}`);
+  for (const br of L.branches) {
+    const own = L.nodes.filter((n) => n.trees.length === 1 && n.trees[0] === br.tree);
+    const far = Math.max(...own.map((n) => Math.hypot(n.x, n.y)));
+    assert.ok(Math.hypot(br.x, br.y) > far, `${br.tree} name sits past its last node`);
+  }
+});
+
+test('basics data is strict and complete', () => {
+  assert.equal(BASICS_DATA.version, 1);
+  assert.deepEqual(BASICS_DATA.pages.map((p) => p.id), ['captain', 'pack', 'jobs', 'map']);
+  for (const k of Object.keys(BASICS_DATA.marks.kinds)) assert.ok(BASICS_DATA.marks.kinds[k].icon && BASICS_DATA.marks.kinds[k].accent);
+  for (const s of HANGAR_DATA.stations) assert.ok(BASICS_DATA.marks.stations[s.id], `marks for station ${s.id}`);
+  for (const s of HANGAR_DATA.stations) assert.ok(s.prompt, `prompt words for ${s.id}`);
+  assert.ok(BASICS_DATA.tracker.maxLines <= 4);
+  assert.ok(BASICS_DATA.pad.openMs >= 250 && BASICS_DATA.pad.openMs <= 450);
+});

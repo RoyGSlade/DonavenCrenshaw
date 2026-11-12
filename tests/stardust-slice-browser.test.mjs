@@ -10,7 +10,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { loadPlaywright, startServer, blockHub, bootStardust, DESKTOP, PHONE } from '../scripts/stardust-test-kit.mjs';
-import { signOnCaptain, openStation } from '../scripts/stardust-hangar-kit.mjs';
+import { signOnCaptain, openStation, openPad, closePad } from '../scripts/stardust-hangar-kit.mjs';
 
 const HANGAR = '/projects/Space-Shooter/voyage/';
 const SAVE_KEY = 'stardust.voyage.v1';
@@ -148,11 +148,13 @@ test('slice loop: preview card -> captain -> job -> reward -> upgrade -> a stron
   assert.ok(runs.some((r) => /JOB DONE/.test(r.text)), 'at least one job paid');
   assert.ok(runs.some((r) => r.seen.includes('travel')), 'jobs travel on the sector map');
 
-  // The Ledger shows the reward: credits, Hask's rep and the job record.
-  await openStation(page, 'quarters', 'ledger');
-  assert.equal(await page.locator('[data-money]').innerText(), `${afterJobs.money.toLocaleString('en-US')} cr`);
-  assert.match(await page.locator('#pane-ledger [data-rep="hask"]').innerText(), new RegExp(`^${afterJobs.rep.hask} / 100`));
-  assert.match(await page.locator('[data-job="cold-run"]').innerText(), /Cold Run/);
+  // Round 3: the datapad shows the reward: credits on the Pack page, Hask's rep and the job record on Jobs.
+  await openPad(page, 'pack');
+  assert.equal(await page.locator('#pane-ledger [data-money]').innerText(), `${afterJobs.money.toLocaleString('en-US')} cr`);
+  await openPad(page, 'jobs');
+  assert.match(await page.locator('#dp-page-jobs [data-rep="hask"]').innerText(), new RegExp(`^${afterJobs.rep.hask} / 100`));
+  assert.match(await page.locator('#dp-page-jobs [data-job="cold-run"]').innerText(), /Cold Run/);
+  await closePad(page);
 
   // Spend it: hull tier 1.
   await openStation(page, 'pad');

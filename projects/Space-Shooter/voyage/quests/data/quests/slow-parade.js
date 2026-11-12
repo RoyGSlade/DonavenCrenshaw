@@ -10,6 +10,50 @@ export default {
   "giver": "hask",
   "location": "alpha",
   "summary": "Escort six pilgrim haulers to Dustfall. Slow ships, sweet grandmothers, rude raiders.",
+  "steps": [
+    {
+      "id": "brief",
+      "text": "Hear Hask out about the pilgrims",
+      "where": "alpha",
+      "nodes": [
+        "intro"
+      ]
+    },
+    {
+      "id": "meet",
+      "text": "Meet the parade",
+      "where": "alpha",
+      "nodes": [
+        "meet",
+        "faster",
+        "biscuit-ok",
+        "biscuit-bad"
+      ]
+    },
+    {
+      "id": "escort",
+      "text": "Escort them to Dustfall",
+      "where": "dustfall",
+      "nodes": [
+        "trip"
+      ]
+    },
+    {
+      "id": "raid",
+      "text": "Keep the raiders off the haulers",
+      "where": "dustfall",
+      "nodes": [
+        "raid",
+        "codes",
+        "fight",
+        "patch",
+        "patched",
+        "boarded",
+        "galley",
+        "galley-down"
+      ]
+    }
+  ],
   "pitch": {
     "line": "hask.job.slow-parade",
     "emotion": "neutral",

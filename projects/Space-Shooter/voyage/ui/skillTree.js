@@ -32,8 +32,6 @@ function glyph(kind, cls = 'ui-glyph') {
 const TREE_COLOUR = SKILL_TREE_SHAPE.colours;
 const SKILL = new Map(SKILLS.map((s) => [s.id, s]));
 const TREE_NAME = Object.fromEntries(TREES.map((t) => [t.id, t.name]));
-const VB = 1.34; // the layout is in [-1, 1]; leave room for branch labels
-const pct = (v) => `${((v + VB) / (2 * VB)) * 100}%`;
 const money = (n) => `${n} credits`;
 
 function el(tag, props = {}, ...kids) {
@@ -61,8 +59,53 @@ function svg(tag, attrs = {}) {
  * tutorialOn(save): respec is free while true. reducedMotion().
  * onLearned(skillId) / onRespec(points): for the story bus or sounds.
  */
-export function createSkillTree({ root, store, toast = () => {}, tutorialOn = () => false, reducedMotion = () => false, onLearned = () => {}, onRespec = () => {} }) {
+// r3 basics (the datapad): detailRoot / headRoot draw the skill card and the points line in
+// their own places (the pad's side columns); respec: false drops the take-back buttons (points
+// come back only with a nap at the bunk) and shows respecNote(save) instead.
+// fit: size the tree to fill its wrap (the datapad's middle column), keeping its shape.
+export function createSkillTree({ root, store, toast = () => {}, tutorialOn = () => false, reducedMotion = () => false, onLearned = () => {}, onRespec = () => {}, detailRoot = null, headRoot = null, respec = true, respecNote = () => '', fit = false }) {
   const layout = treeLayout();
+  // Where each node's name goes: the side (outward first) whose label box sits furthest from every
+  // other node, rank badge and branch name, so no name is ever covered (round 3, the datapad).
+  const labelSides = (() => {
+    const out = new Map();
+    const others = [...layout.nodes.map((m) => ({ id: m.id, x: m.x, y: m.y })), ...layout.branches.map((b) => ({ id: `b:${b.tree}`, x: b.x, y: b.y })), { id: 'root', x: 0, y: 0 }];
+    // Label box centres in layout units: a name is about 0.3 wide and 0.07 tall beside a 0.1-radius node.
+    const spots = { right: [0.27, 0], left: [-0.27, 0], down: [0, 0.16], up: [0, -0.16] };
+    for (const n of layout.nodes) {
+      const cos = Math.cos((n.angle * Math.PI) / 180), sin = Math.sin((n.angle * Math.PI) / 180);
+      const prefer = cos > 0.55 || sin < -0.45 ? ['right', 'left', 'down', 'up'] : cos < -0.55 ? ['left', 'down', 'right', 'up'] : ['down', 'right', 'left', 'up'];
+      let best = prefer[0], bestScore = -Infinity;
+      prefer.forEach((side, rank) => {
+        const [dx, dy] = spots[side];
+        const lx = n.x + dx, ly = n.y + dy;
+        let near = Infinity;
+        for (const o of others) {
+          if (o.id === n.id) continue;
+          // Distance from the label box (0.15 x 0.04 half sizes) to the other node, and to its rank badge just below it.
+          for (const oy of [o.y, o.y + 0.1]) near = Math.min(near, Math.hypot(Math.max(0, Math.abs(o.x - lx) - (dx ? 0.15 : 0.15)), Math.max(0, Math.abs(oy - ly) - 0.04)));
+        }
+        const score = Math.min(near, 0.12) - rank * 0.004; // clear enough wins in the preferred order
+        if (score > bestScore) { bestScore = score; best = side; }
+      });
+      out.set(n.id, best);
+    }
+    return out;
+  })();
+  // The tree's frame fitted to what it draws (nodes with their names, the branch names), not a
+  // square round the root: the tree fills its space instead of floating in the middle of it.
+  const box = (() => {
+    let x0 = -0.2, x1 = 0.2, y0 = -0.2, y1 = 0.2;
+    const grow = (a, b, c, d) => { x0 = Math.min(x0, a); x1 = Math.max(x1, b); y0 = Math.min(y0, c); y1 = Math.max(y1, d); };
+    for (const n of layout.nodes) {
+      const side = labelSides.get(n.id);
+      grow(n.x - (side === 'left' ? 0.5 : 0.13), n.x + (side === 'right' ? 0.5 : 0.13), n.y - 0.14, n.y + (side === 'down' ? 0.28 : 0.2));
+    }
+    for (const b of layout.branches) grow(b.x - 0.2, b.x + 0.2, b.y - 0.16, b.y + 0.16);
+    return { x0, y0, w: x1 - x0, h: y1 - y0 };
+  })();
+  const pctX = (v) => `${((v - box.x0) / box.w) * 100}%`;
+  const pctY = (v) => `${((v - box.y0) / box.h) * 100}%`;
   let selected = null;
   let fresh = null; // the node just learned, for its burst
   let freshTimer = 0;
@@ -121,7 +164,7 @@ export function createSkillTree({ root, store, toast = () => {}, tutorialOn = ()
   }
 
   function drawConnectors(c) {
-    const g = svg('svg', { viewBox: `${-VB} ${-VB} ${VB * 2} ${VB * 2}`, class: 'ui-tree-svg', 'aria-hidden': 'true' });
+    const g = svg('svg', { viewBox: `${box.x0} ${box.y0} ${box.w} ${box.h}`, class: 'ui-tree-svg', 'aria-hidden': 'true' });
     const defs = svg('defs');
     const blur = svg('filter', { id: 'ui-tree-glow', x: '-50%', y: '-50%', width: '200%', height: '200%' });
     blur.append(svg('feGaussianBlur', { stdDeviation: '0.012' }));
@@ -161,12 +204,12 @@ export function createSkillTree({ root, store, toast = () => {}, tutorialOn = ()
     const shared = s.trees.length > 1;
     // Names sit on the outside of the node, away from the root, so neighbours never cover them.
     const cos = Math.cos((n.angle * Math.PI) / 180), sin = Math.sin((n.angle * Math.PI) / 180);
-    const side = sin < -0.45 ? 'up' : cos > 0.55 ? 'right' : cos < -0.55 ? 'left' : 'down';
+    const side = labelSides.get(n.id) || (cos > 0.55 || sin < -0.45 ? 'right' : cos < -0.55 ? 'left' : 'down');
     const b = el('button', {
       type: 'button',
       'data-label': side,
       class: `ui-node is-${state}${shared ? ' is-shared' : ''}${selected === n.id ? ' is-selected' : ''}${fresh === n.id && !reducedMotion() ? ' is-fresh' : ''}`,
-      style: `left:${pct(n.x)};top:${pct(n.y)};--node-art:url("${uiArt(art)}");--tree:${TREE_COLOUR[s.trees[0]]};--tree2:${TREE_COLOUR[s.trees[1] || s.trees[0]]}`,
+      style: `left:${pctX(n.x)};top:${pctY(n.y)};--node-art:url("${uiArt(art)}");--tree:${TREE_COLOUR[s.trees[0]]};--tree2:${TREE_COLOUR[s.trees[1] || s.trees[0]]}`,
       'data-skill': n.id,
       'data-state': state,
       'aria-pressed': String(selected === n.id),
@@ -187,7 +230,7 @@ export function createSkillTree({ root, store, toast = () => {}, tutorialOn = ()
       return el('div', { class: 'ui-skill-card is-empty' },
         el('p', { class: 'ui-eyebrow', text: 'HOW IT WORKS' }),
         el('p', { text: 'Each rank costs 1 skill point. Lit nodes are ready to learn; locked ones need points in their tree first. Skills between two trees count toward both.' }),
-        el('p', { class: 'ui-note', text: tutorialOn(save) ? 'Changed your mind? Taking points back is free while Chibby is still showing you around.' : 'Changed your mind? You can take points back for a small fee.' }));
+        respec ? el('p', { class: 'ui-note', text: tutorialOn(save) ? 'Changed your mind? Taking points back is free while Chibby is still showing you around.' : 'Changed your mind? You can take points back for a small fee.' }) : null);
     }
     const s = SKILL.get(selected);
     const rank = c.skills[selected] || 0;
@@ -213,9 +256,10 @@ export function createSkillTree({ root, store, toast = () => {}, tutorialOn = ()
         el('dt', { text: 'Needs' }), el('dd', { text: words.needs })),
       el('div', { class: 'ui-skill-actions' },
         el('button', { type: 'button', class: 'ui-btn primary', 'data-learn': selected, disabled: !can.ok, text: rank >= s.max ? 'Top rank' : rank ? `Learn rank ${rank + 1}` : 'Learn', on: { click: () => learn(selected) } }),
-        el('button', { type: 'button', class: 'ui-btn', 'data-unlearn': selected, disabled: !back.ok, text: `Take back 1${fee ? ` (${fee} cr)` : ' (free)'}`, on: { click: () => takeBack(selected) } })),
+        respec ? el('button', { type: 'button', class: 'ui-btn', 'data-unlearn': selected, disabled: !back.ok, text: `Take back 1${fee ? ` (${fee} cr)` : ' (free)'}`, on: { click: () => takeBack(selected) } }) : null),
       !can.ok && rank < s.max ? el('p', { class: 'ui-why', text: can.reason }) : null,
-      !back.ok && rank > 0 ? el('p', { class: 'ui-why', text: back.reason }) : null);
+      respec && !back.ok && rank > 0 ? el('p', { class: 'ui-why', text: back.reason }) : null,
+      !respec && rank > 0 ? el('p', { class: 'ui-note', text: respecNote(save) }) : null);
   }
 
   function render(save = store.get()) {
@@ -223,11 +267,11 @@ export function createSkillTree({ root, store, toast = () => {}, tutorialOn = ()
     if (!c) { root.replaceChildren(); return; }
     const points = unspentPoints(c);
     const quote = respecQuote(c, { tutorial: tutorialOn(save) });
-    const stage = el('div', { class: 'ui-tree', role: 'group', 'aria-label': 'Skill tree' },
+    const stage = el('div', { class: 'ui-tree', role: 'group', 'aria-label': 'Skill tree', style: `aspect-ratio:${box.w.toFixed(3)} / ${box.h.toFixed(3)}` },
       drawConnectors(c),
-      el('div', { class: 'ui-tree-root', style: `left:50%;top:50%;--captain:${c.look.color}`, 'aria-hidden': 'true' }, el('span', { text: String(points) })),
+      el('div', { class: 'ui-tree-root', style: `left:${pctX(0)};top:${pctY(0)};--captain:${c.look.color}`, 'aria-hidden': 'true' }, el('span', { text: String(points) })),
       ...layout.branches.map((b) => el('div', {
-        class: 'ui-branch-label', style: `left:${pct(b.x)};top:${pct(b.y)};--tree:${TREE_COLOUR[b.tree]}`,
+        class: 'ui-branch-label', style: `left:${pctX(b.x)};top:${pctY(b.y)};--tree:${TREE_COLOUR[b.tree]}`,
       }, el('img', { src: uiArt(`icon-${b.tree}`), alt: '' }), el('span', { text: `${TREE_NAME[b.tree]} ${treePoints(c, b.tree)}` }))),
       ...layout.nodes.map((n) => nodeButton(c, n)));
     const respecBtn = el('button', {
@@ -235,25 +279,49 @@ export function createSkillTree({ root, store, toast = () => {}, tutorialOn = ()
       text: confirmAll ? `Refund all ${quote.points}${quote.cost.money ? ` for ${quote.cost.money} cr` : ''}? Yes` : `Respec all${quote.points ? (quote.cost.money ? ` (${quote.cost.money} cr)` : ' (free)') : ''}`,
       on: { click: () => { if (confirmAll) respecEverything(); else { confirmAll = true; render(store.get()); } } },
     });
-    root.replaceChildren(
-      el('div', { class: 'ui-tree-head' },
-        el('div', { class: 'ui-points' },
-          el('img', { src: uiArt('icon-skillpoint'), alt: '' }),
-          el('span', {}, el('b', { 'data-points': 'unspent', text: String(points) }), ` to spend · ${spentPoints(c)} spent`)),
-        respecBtn),
-      el('div', { class: 'ui-tree-wrap' }, stage),
-      detail(save),
-    );
-    // On a narrow screen the tree is wider than the panel: start centred on the root.
-    const wrap = root.querySelector('.ui-tree-wrap');
-    if (wrap && wrap.scrollWidth > wrap.clientWidth && !wrap.dataset.centred) {
-      wrap.scrollLeft = (wrap.scrollWidth - wrap.clientWidth) / 2;
-      wrap.dataset.centred = '1';
-    }
+    const head = el('div', { class: 'ui-tree-head' },
+      el('div', { class: 'ui-points' },
+        el('img', { src: uiArt('icon-skillpoint'), alt: '' }),
+        el('span', {}, el('b', { 'data-points': 'unspent', text: String(points) }), ` to spend · ${spentPoints(c)} spent`)),
+      respec ? respecBtn : null);
+    const prior = root.querySelector('.ui-tree-wrap');
+    const keepScroll = prior?.dataset.centred ? prior.scrollLeft : null; // a re-render (learning) keeps the pan
+    const wrap = el('div', { class: 'ui-tree-wrap' }, stage);
+    if (headRoot) headRoot.replaceChildren(head);
+    if (detailRoot) detailRoot.replaceChildren(detail(save));
+    root.replaceChildren(...[headRoot ? null : head, wrap, detailRoot ? null : detail(save)].filter(Boolean));
+    if (keepScroll != null) { wrap.scrollLeft = keepScroll; wrap.dataset.centred = '1'; }
+    if (fit) fitTree();
+    centre(wrap);
   }
+
+  // On a narrow screen the tree is wider than its panel: open it centred on the captain (the root).
+  function centre(wrap) {
+    if (!wrap || wrap.dataset.centred || !(wrap.scrollWidth > wrap.clientWidth)) return;
+    const rootX = (-box.x0 / box.w) * wrap.scrollWidth;
+    wrap.scrollLeft = Math.max(0, rootX - wrap.clientWidth / 2);
+    wrap.dataset.centred = '1';
+  }
+
+  function fitTree() {
+    const wrap = root.querySelector('.ui-tree-wrap');
+    const stage = wrap?.firstElementChild;
+    if (!stage || !wrap.clientWidth) return;
+    const ar = box.w / box.h;
+    const W = wrap.clientWidth, H = wrap.clientHeight;
+    if (getComputedStyle(wrap).position === 'static') {
+      // Phones: the CSS width and a sideways pan, opened centred on the captain.
+      centre(wrap);
+      return;
+    }
+    const width = H > 40 ? Math.min(W, H * ar) : W;
+    stage.style.width = `${Math.floor(width)}px`;
+  }
+  if (fit && typeof ResizeObserver === 'function') new ResizeObserver(() => fitTree()).observe(root);
 
   return {
     render,
+    fit: fitTree,
     select(id) { selected = SKILL.has(id) ? id : null; render(); },
     get selected() { return selected; },
   };

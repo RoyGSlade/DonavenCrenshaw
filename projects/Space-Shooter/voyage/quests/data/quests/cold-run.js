@@ -10,6 +10,55 @@ export default {
   "giver": "hask",
   "location": "alpha",
   "summary": "Fly a sealed data core to Beacon Prime. It hums. Raiders can hear it.",
+  "steps": [
+    {
+      "id": "brief",
+      "text": "Hear Hask out about the core",
+      "where": "alpha",
+      "nodes": [
+        "intro",
+        "intro-knows",
+        "intro-shrug",
+        "intro-advance",
+        "intro-no",
+        "depart"
+      ]
+    },
+    {
+      "id": "run",
+      "text": "Fly the core to Beacon Prime",
+      "where": "beacon",
+      "nodes": [
+        "trip",
+        "shortcut"
+      ]
+    },
+    {
+      "id": "raiders",
+      "text": "Deal with the raiders on the way",
+      "where": "beacon",
+      "nodes": [
+        "ambush-waiting",
+        "ambush-tailing",
+        "ambush-decoy",
+        "spooked",
+        "codes",
+        "fight",
+        "fled"
+      ]
+    },
+    {
+      "id": "dock",
+      "text": "Dock and hand the core over",
+      "where": "beacon",
+      "nodes": [
+        "dock-loud",
+        "seal",
+        "dock-quiet",
+        "handover"
+      ]
+    }
+  ],
   "repeatable": true,
   "rolls": {
     "cargo": {

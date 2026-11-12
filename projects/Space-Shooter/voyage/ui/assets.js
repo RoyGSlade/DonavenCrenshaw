@@ -79,3 +79,58 @@ export function ambienceFor(id, canPlay = (type) => (typeof Audio === 'function'
   const ogg = canPlay('audio/ogg; codecs="vorbis"');
   return { url: at(ogg ? bed.ogg : bed.mp3), gain: bed.gain };
 }
+
+// HUD kit v2 (round 3): the bag (closed and open), the datapad frame, key caps,
+// the tracker frame, step ticks, the objective marker, the edge arrow and the
+// interact and tab icons, from the art lane (lhc-lanes/stardust/round3/art-objects/out/hud/,
+// copied small into ui/hud/). Until a picture is listed here the HUD draws clean
+// CSS and line-icon stand-ins (datapad/icons.js), so a file swaps in with one line.
+// Ids: bag-closed, bag-open, pad-landscape, pad-portrait, key-blank, key-tab, key-esc,
+// tracker-frame, step-tick, step-now, marker-objective, edge-arrow,
+// icon-<talk|use|door|shop|captain|pack|jobs|map>.
+// Copied by lhc-lanes/stardust/round3/basics/tools/prep-hud.sh (291 KB). The painted interact icons
+// (prompt-<icon id>) dress the big prompt in reach; the floor's mark chips keep the line icons,
+// tinted in each station's own accent colour, so stations still read apart from across the room.
+export const HUD_ART = Object.freeze({
+  'bag-closed': 'bag-closed.webp',
+  'bag-open': 'bag-open.webp',
+  'datapad-landscape': 'datapad-landscape.webp',
+  'datapad-portrait': 'datapad-portrait.webp',
+  'tracker-frame': 'tracker-frame.webp',
+  'tab-captain-on': 'tab-captain-on.webp',
+  'tab-captain-off': 'tab-captain-off.webp',
+  'tab-pack-on': 'tab-pack-on.webp',
+  'tab-pack-off': 'tab-pack-off.webp',
+  'tab-jobs-on': 'tab-jobs-on.webp',
+  'tab-jobs-off': 'tab-jobs-off.webp',
+  'tab-map-on': 'tab-map-on.webp',
+  'tab-map-off': 'tab-map-off.webp',
+  'key-E': 'key-E.webp',
+  'key-Tab': 'key-Tab.webp',
+  'key-Esc': 'key-Esc.webp',
+  'key-K': 'key-K.webp',
+  'key-I': 'key-I.webp',
+  'key-J': 'key-J.webp',
+  'key-M': 'key-M.webp',
+  'key-blank': 'key-blank.webp',
+  'key-blank-wide': 'key-blank-wide.webp',
+  'step-current': 'step-current.webp',
+  'step-done': 'step-done.webp',
+  'step-todo': 'step-todo.webp',
+  'marker-objective': 'marker-objective.webp',
+  'edge-arrow': 'edge-arrow.webp',
+  'prompt-talk': 'interact-talk.webp',
+  'prompt-use': 'interact-use.webp',
+  'prompt-door': 'interact-door.webp',
+  'prompt-shop': 'interact-shop.webp',
+  'prompt-locked': 'interact-locked.webp',
+  'prompt-mine': 'interact-mine.webp',
+  'prompt-range': 'interact-range.webp',
+  'prompt-bunk': 'interact-sleep.webp',
+  'prompt-fly': 'interact-launch.webp'
+});
+
+/** URL of a HUD kit picture by id, or null while the stand-in draws. */
+export function hudArt(id) {
+  return HUD_ART[id] ? at(`hud/${HUD_ART[id]}`) : null;
+}

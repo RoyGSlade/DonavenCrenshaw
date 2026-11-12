@@ -94,6 +94,17 @@ export function validateQuest(quest) {
   if (quest.location && !SECTORS[quest.location]) err(`unknown location ${quest.location}`);
   if (!quest.nodes?.[quest.start]) err(`start node ${quest.start} is missing`);
   errors.push(...reqIssues(quest.requires, `${quest.id}: requires`));
+  // Round 3 tracker steps (optional): [{ id, text, where?, nodes: [nodeId] }], in play order.
+  if (quest.steps !== undefined) {
+    if (!Array.isArray(quest.steps)) err('steps must be a list');
+    else quest.steps.forEach((s, i) => {
+      if (!ID.test(s?.id || '')) err(`step ${i}: id must be a short lowercase id`);
+      if (!s?.text) err(`step ${s?.id || i}: missing text`);
+      if (s?.where && !SECTORS[s.where]) err(`step ${s.id}: unknown place ${s.where}`);
+      if (!Array.isArray(s?.nodes) || !s.nodes.length) err(`step ${s?.id || i}: needs nodes`);
+      else for (const n of s.nodes) if (!quest.nodes?.[n]) err(`step ${s.id}: names missing node ${n}`);
+    });
+  }
 
   for (const [id, node] of Object.entries(quest.nodes || {})) {
     if (!NODE_TYPES.includes(node.type)) { err(`${id}: unknown type ${node.type}`); continue; }

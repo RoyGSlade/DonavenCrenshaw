@@ -10,6 +10,48 @@ export default {
   "giver": "vey",
   "location": "beacon",
   "summary": "Vey owes Edna a teapot. It is on a duchess's yacht. Go and get it.",
+  "steps": [
+    {
+      "id": "brief",
+      "text": "Hear Vey out about the teapot",
+      "where": "beacon",
+      "nodes": [
+        "intro",
+        "why"
+      ]
+    },
+    {
+      "id": "aboard",
+      "text": "Get aboard the duchess's yacht",
+      "where": "beacon",
+      "nodes": [
+        "yacht",
+        "guards",
+        "out-of-ammo",
+        "party"
+      ]
+    },
+    {
+      "id": "find",
+      "text": "Find the teapot",
+      "where": "beacon",
+      "nodes": [
+        "cards",
+        "won",
+        "galley",
+        "swan",
+        "alarm"
+      ]
+    },
+    {
+      "id": "edna",
+      "text": "Get it to Edna",
+      "nodes": [
+        "swapped",
+        "edna"
+      ]
+    }
+  ],
   "pitch": {
     "line": "vey.job.teapot",
     "emotion": "sly",

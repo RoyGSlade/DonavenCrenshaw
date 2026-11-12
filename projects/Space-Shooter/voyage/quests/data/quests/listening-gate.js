@@ -9,6 +9,43 @@ export default {
   "giver": "vey",
   "location": "beacon",
   "summary": "Carry a Warden gate key to the Iron Veil and open the old gate. The Choir is listening.",
+  "steps": [
+    {
+      "id": "brief",
+      "text": "Take the gate key from Vey",
+      "where": "beacon",
+      "nodes": [
+        "intro"
+      ]
+    },
+    {
+      "id": "fly",
+      "text": "Carry it to the Iron Veil",
+      "where": "veil",
+      "nodes": [
+        "trip"
+      ]
+    },
+    {
+      "id": "choir",
+      "text": "Get past the Choir",
+      "where": "veil",
+      "nodes": [
+        "choir",
+        "choir-singing",
+        "choir-silent",
+        "choir-fight"
+      ]
+    },
+    {
+      "id": "gate",
+      "text": "Open the old gate",
+      "where": "veil",
+      "nodes": [
+        "gate"
+      ]
+    }
+  ],
   "rolls": {
     "riddle": {
       "mode": {

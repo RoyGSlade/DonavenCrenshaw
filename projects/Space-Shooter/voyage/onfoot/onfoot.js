@@ -14,6 +14,7 @@
 //     tutorial()            true while the tutorial runs: minigames then grant nothing (the director pays)
 //     allow(target)         false blocks an interaction (the director gates tutorial steps)
 //     sound(id)             real sound effects (ids: events.js SOUNDS); default: small synth blips
+//     stationInfo(id)       { name, locked } for a hangar station id (the interact marks and prompt)
 //     repair(job)           a crew repair point was used: { id: 'guns'|'engine'|'hull', label, timeScale } (timeScale
 //                           = 1 minus Mechanic's repair.time); without it a stand-in line plays
 // Skill levels come only from data.js through character.js (ROUND2-CONTRACT section 9): no table here.
@@ -236,6 +237,8 @@ export function createOnFoot({ root, store = null, bus = null, hooks = {}, mapId
       interact,
       locked: (door) => { toast(`${door.label}: ${door.gate?.reason || 'Locked.'}`); sound('jam'); },
       gate,
+      // r3 basics: a station's name and whether it is open, for the marks and the prompt.
+      stationInfo: (id) => hooks.stationInfo?.(id) || null,
       entered: (map) => hooks.entered?.(map),
       // Away from home, the ship's ramp opens onto the place it is docked at.
       doorTo: (door, map) => (map.id === 'ship' && door.id === 'ramp' && docked !== 'home' && PLACES[docked]?.map ? { to: PLACES[docked].map, arrive: 'from-dock' } : null),
@@ -246,7 +249,9 @@ export function createOnFoot({ root, store = null, bus = null, hooks = {}, mapId
   const offs = [];
   if (bus?.on) {
     offs.push(bus.on('story:objective', (o) => {
-      world.setObjective(o ? { text: o.text, station: o.station || null, npc: null } : null);
+      // A step met at a place (Garrity at Dustfall) marks that place's giver.
+      const giver = o?.target ? Object.keys(GIVER_PLACE).find(g => GIVER_PLACE[g] === o.target) : null;
+      world.setObjective(o ? { text: o.text, station: o.station || null, npc: o.npc || (o.station ? null : giver) || null, label: o.label || null } : null);
       const lead = o && LEADS[o.step];
       if (lead) world.leadTo(lead.npc, lead.to);
     }));

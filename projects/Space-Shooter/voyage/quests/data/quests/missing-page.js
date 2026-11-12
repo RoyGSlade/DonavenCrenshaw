@@ -10,6 +10,48 @@ export default {
   "giver": "vey",
   "location": "beacon",
   "summary": "A pickpocket lifted one page from Vey's ledger. The page with everyone's secrets on it.",
+  "steps": [
+    {
+      "id": "brief",
+      "text": "Hear Vey out about the page",
+      "where": "beacon",
+      "nodes": [
+        "intro",
+        "peek"
+      ]
+    },
+    {
+      "id": "market",
+      "text": "Find the pickpocket in the market",
+      "where": "beacon",
+      "nodes": [
+        "market",
+        "dice",
+        "dice-won",
+        "dice-lost",
+        "cold-trail"
+      ]
+    },
+    {
+      "id": "sable",
+      "text": "Get the page back from Sable",
+      "where": "beacon",
+      "nodes": [
+        "found",
+        "sable",
+        "scuffle",
+        "empty-gun"
+      ]
+    },
+    {
+      "id": "page",
+      "text": "Decide what to do with the page",
+      "where": "beacon",
+      "nodes": [
+        "page"
+      ]
+    }
+  ],
   "pitch": {
     "line": "vey.job.missing-page",
     "emotion": "worried",

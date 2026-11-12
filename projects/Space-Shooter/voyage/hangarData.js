@@ -7,7 +7,8 @@
 // ui/skillTree.js, ui/licence.js). Rename a name or retune a number freely; an
 // id is what saves and other lanes use.
 //
-// stations[]: id (ROUND2-CONTRACT.md section 5), name, who (cast id or null),
+// stations[]: id (ROUND2-CONTRACT.md section 5), name, prompt (round 3: the words
+//   on the interact prompt in reach, "E  Your bunk: take a nap"), who (cast id or null),
 //   panel (what it opens), unlock (story unlock id that opens it, or null),
 //   art (prop picture key in ui/assets.js), blurb, at {x,y} (where its person
 //   stands / talk ring centre, metres, x right, y down), ring (talk radius, m),
@@ -15,7 +16,8 @@
 //   shown while the station is not open yet).
 // respec: feePerPoint credits per point taken back after the tutorial (free
 //   during it when freeInTutorial). skillTree: branch angles (degrees, -90 is
-//   up), ring radii and node spacing in a [-1, 1] square, tree colours.
+//   up), ring radii and node spacing in a [-1, 1] square, tree colours; crowd
+//   (siblings before a ring staggers), stagger (part of a ring), labelGap.
 // effectWords: {v} is the number, {pct} the number as a percentage.
 // licence: the captain's licence words; checkDc is the normal check the odds quote.
 export const HANGAR_DATA = {
@@ -35,6 +37,7 @@ export const HANGAR_DATA = {
     {
       "id": "pad",
       "name": "The pad",
+      "prompt": "Your ship: upgrades and parts",
       "who": "chibby",
       "panel": "ship",
       "unlock": "station:pad",
@@ -58,6 +61,7 @@ export const HANGAR_DATA = {
     {
       "id": "kennel",
       "name": "Ralph's kennel",
+      "prompt": "Ralph's kennel",
       "who": "ralph",
       "panel": "kennel",
       "unlock": null,
@@ -90,6 +94,7 @@ export const HANGAR_DATA = {
     {
       "id": "scrap",
       "name": "The scrap pile",
+      "prompt": "Drill the seam Ralph dug up",
       "who": null,
       "panel": "scrap",
       "unlock": "station:scrap",
@@ -117,6 +122,7 @@ export const HANGAR_DATA = {
     {
       "id": "locker",
       "name": "Mel's locker",
+      "prompt": "Mel's locker: gear",
       "who": "mel",
       "panel": "locker",
       "unlock": "station:locker",
@@ -145,6 +151,7 @@ export const HANGAR_DATA = {
     {
       "id": "range",
       "name": "The range",
+      "prompt": "Step up to Mel's range",
       "who": "mel",
       "panel": "range",
       "unlock": "station:range",
@@ -171,6 +178,7 @@ export const HANGAR_DATA = {
     {
       "id": "backroom",
       "name": "The back room",
+      "prompt": "Edna's back room",
       "who": "edna",
       "panel": "backroom",
       "unlock": "station:backroom",
@@ -198,6 +206,7 @@ export const HANGAR_DATA = {
     {
       "id": "board",
       "name": "The job board",
+      "prompt": "Job board: who's hiring",
       "who": null,
       "panel": "jobs",
       "unlock": "jobs",
@@ -221,6 +230,7 @@ export const HANGAR_DATA = {
     {
       "id": "quarters",
       "name": "Your bunk",
+      "prompt": "Your bunk: take a nap",
       "who": null,
       "panel": "captain",
       "unlock": "station:quarters",
@@ -244,6 +254,7 @@ export const HANGAR_DATA = {
     {
       "id": "hatch",
       "name": "The launch hatch",
+      "prompt": "Launch hatch: fly out",
       "who": null,
       "panel": "hatch",
       "unlock": "station:hatch",
@@ -279,9 +290,12 @@ export const HANGAR_DATA = {
       "guns": 30,
       "wrench": 150
     },
-    "r0": 0.3,
-    "dr": 0.24,
-    "spacing": 0.27,
+    "r0": 0.4,
+    "dr": 0.32,
+    "spacing": 0.32,
+    "crowd": 2,
+    "stagger": 0.45,
+    "labelGap": 0.36,
     "colours": {
       "helm": "#81e6df",
       "guns": "#ffad72",

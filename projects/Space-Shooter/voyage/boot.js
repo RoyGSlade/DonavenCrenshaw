@@ -48,6 +48,12 @@ import { createOnFoot, TARGETS_IN_ORDER } from './onfoot/onfoot.js';
 import { setCaptainLook } from './onfoot/assets.js';
 import { PLACES } from './explore/rules.js';
 import { MAP_DEFS } from './maps/index.js';
+// Round 3 basics: the bag and datapad, the quest tracker, the controls card and the pause sheet.
+import { createDatapad } from './datapad/datapad.js';
+import { createTracker } from './datapad/tracker.js';
+import { createControlsCard, createPause } from './datapad/controls.js';
+import { isTouchDevice } from './onfoot/input.js';
+import { stationById } from './hangarStations.js';
 
 const flag = newGameFlag({ config: runtimeConfig, search: location.search });
 // The tutorial step each on-foot lesson belongs to (contract section 4).
@@ -126,7 +132,9 @@ function boot() {
   const unlock = () => { if (audio.unlock()) { removeEventListener('pointerdown', unlock, true); removeEventListener('keydown', unlock, true); } };
   addEventListener('pointerdown', unlock, true);
   addEventListener('keydown', unlock, true);
-  createSettings({ root: $('hg-settings'), button: $('hg-settings-btn'), audio, toast });
+  const settings = createSettings({ root: $('hg-settings'), button: $('hg-settings-btn'), audio, toast });
+  const touch = isTouchDevice();
+  document.body.classList.toggle('is-touch', touch);
   createDialogueBox({ root: $('hg-dialogue'), bus, audio, reducedMotion: still });
   // Every attempt in play is its own 2d6 roll; the corner dice show it (the rules already decided the numbers).
   createAttemptRoller({ root: $('hg-attempt'), bus, reducedMotion: still });
@@ -142,13 +150,14 @@ function boot() {
   let place = null;
   let onfoot = null;
   let sheetOpen = false;
-  const overlays = new Set(); // 'intro', 'licence': the floor holds still under them
+  const overlays = new Set(); // 'intro', 'licence', 'pad', 'pause', 'nap': the floor holds still under them
   const holdFloor = () => {
     if (!onfoot) return;
-    if (sheetOpen || overlays.size) onfoot.world.pause();
+    if (sheetOpen || place?.current || overlays.size) onfoot.world.pause();
     else if (!flying) onfoot.world.resume();
   };
   let flying = false;
+  let pad = null; // the datapad (round 3), made once the floor exists
 
   // Where a station stands on screen, from the hangar map's rings (props, doors, zones, npcs tagged with it).
   const stationScreen = (id) => {
@@ -165,6 +174,27 @@ function boot() {
     if (sx < 8 || sy < 96 || sx > innerWidth - 8 || sy > innerHeight - 8) return null;
     return { x: sx, y: sy };
   };
+  // A station's name, prompt words and whether it is open yet (the interact marks, prompt and map).
+  const stationInfo = (id) => {
+    const s = stationById(id);
+    if (!s) return null;
+    return { name: s.name, prompt: s.prompt || null, who: s.who, locked: Boolean(s.unlock) && !isUnlocked(store.get(), s.unlock) };
+  };
+  // The header names the place you are in (round 3: it said "The Hangar" everywhere).
+  const wordmark = document.querySelector('.vy-wordmark');
+  const setPlaceName = (name) => {
+    const b = document.createElement('b');
+    b.textContent = '/';
+    wordmark.replaceChildren('STARDUST', b, String(name || '').toUpperCase());
+    document.title = `${name} · Stardust`;
+  };
+  const placeNameFor = (map) => {
+    const docked = Object.values(PLACES).find((p) => p.map === map.id);
+    if (docked && docked.id !== 'home') return `${docked.name} · ${map.name}`;
+    if (map.id === 'ship' && onfoot && onfoot.docked !== 'home') return `${map.name} · docked at ${PLACES[onfoot.docked]?.name || ''}`;
+    return map.name;
+  };
+
   // The scene contract hangarPlace.js needs, on top of the walkable floor.
   const floorScene = {
     stationScreen,
@@ -205,7 +235,9 @@ function boot() {
       overlays.delete('licence'); holdFloor();
       setCaptainLook(character?.look?.portrait);
       // During the tutorial the director takes it from here (walk to Chibby); after it, the bunk.
-      if (!tutorialOn(store.get())) place?.openStation('quarters', { via: 'click' });
+      // After the tutorial the pad opens on the new captain; the controls card waits until it closes.
+      if (!tutorialOn(store.get()) && pad?.open('captain')) return;
+      maybeControls();
     },
   });
   const openLicence = () => {
@@ -260,6 +292,8 @@ function boot() {
     tutorialOn,
     reducedMotion: still,
     openLicence,
+    openPad: (page) => { place?.closeStation({ restoreFocus: false }); pad?.open(page); },
+    onNap: (on) => { if (on) overlays.add('nap'); else overlays.delete('nap'); holdFloor(); },
     // The station buttons for the on-foot lessons run them right here on the floor.
     hooks: {
       mine: () => lesson({ kind: 'mine', id: 'scrap-seam', label: 'The seam Ralph dug up' }, () => onfoot.mine({ title: 'The seam Ralph dug up' })),
@@ -312,12 +346,6 @@ function boot() {
     return false;
   }
 
-  // The director's objective, as a banner over the floor.
-  const objective = $('hg-objective');
-  bus.on('story:objective', (o) => {
-    objective.hidden = !o?.text;
-    objective.querySelector('span').textContent = o?.text || '';
-  });
 
   // The walkable floor. Walking up to a station and pressing E opens it in place.
   onfoot = createOnFoot({
@@ -332,12 +360,60 @@ function boot() {
       tutorial: () => tutorialOn(store.get()),
       // During the tutorial, a lesson waits for its turn (the director pays for each one once).
       allow: (target) => allowLesson(target),
-      entered: (map) => { setBed(map.ambient); place?.closeStation({ restoreFocus: false }); place?.place(); },
-      flying: (on) => { flying = on; holdFloor(); place?.place(); },
+      entered: (map) => { setBed(map.ambient); place?.closeStation({ restoreFocus: false }); place?.place(); setPlaceName(placeNameFor(map)); },
+      flying: (on) => { flying = on; holdFloor(); place?.place(); if (on) setPlaceName('The Drift'); else if (onfoot?.world?.map) setPlaceName(placeNameFor(onfoot.world.map)); },
+      stationInfo,
     },
   });
   setCaptainLook(store.get().character?.look?.portrait);
   store.subscribe((save) => setCaptainLook(save.character?.look?.portrait));
+  setPlaceName(placeNameFor(onfoot.world.map));
+
+  // --- Round 3 basics: the HUD keeps the header and the phone's thumbs clear ---
+  const header = document.querySelector('.vy-top');
+  const fitSafe = () => onfoot.world.setSafe({ top: Math.ceil(header.getBoundingClientRect().bottom), bottom: touch ? 112 : 0 });
+  fitSafe();
+  addEventListener('resize', fitSafe);
+  // Something else owns the screen: a station panel, the licence or intro, a minigame or talk, a flight, a fight.
+  const screenBusy = () => sheetOpen || Boolean(place.current) || overlays.has('intro') || overlays.has('licence') || overlays.has('nap') || overlays.has('pause') || flying
+    || onfoot.world.mode !== 'walk' || Boolean(floor.querySelector('.of-panel, .of-overlay, .of-talk')) || !$('hg-licence').hidden;
+  pad = createDatapad({
+    root: document.body, store, bus, toast, touch,
+    world: () => onfoot?.world || null,
+    tutorialOn, reducedMotion: still, stationInfo,
+    canOpen: () => !screenBusy(),
+    onChange: (open) => { if (open) overlays.add('pad'); else overlays.delete('pad'); holdFloor(); },
+    openLicence,
+  });
+  const tracker = createTracker({
+    root: $('hg-objective'), store, bus, touch,
+    world: () => onfoot?.world || null,
+    stationInfo,
+    boardOpen: () => place.current === 'board',
+  });
+  const controls = createControlsCard({ root: document.body, touch });
+  const pause = createPause({
+    root: document.body, touch, settings, controls,
+    canOpen: () => !screenBusy() && !pad.isOpen,
+    onChange: (open) => { if (open) overlays.add('pause'); else overlays.delete('pause'); holdFloor(); },
+  });
+  function maybeControls() {
+    if (pad.isOpen) return;
+    if (store.get().character && !overlays.has('intro') && !overlays.has('licence') && $('hg-licence').hidden) controls.maybeShow();
+  }
+  // Esc: close what is open (the pad and station panels close themselves), else pause.
+  addEventListener('keydown', (e) => {
+    if (e.code !== 'Escape' || e.defaultPrevented || e.repeat) return;
+    if (pause.isOpen) { e.preventDefault(); pause.close(); return; }
+    if (controls.open) { e.preventDefault(); controls.hide(); return; }
+    if (pad.isOpen || !$('hg-settings').hidden || screenBusy()) return;
+    e.preventDefault();
+    pause.open();
+  }, true);
+  // The controls card goes once the player uses something or opens the bag.
+  bus.on('datapad:open', () => controls.hide());
+  bus.on('datapad:close', () => setTimeout(maybeControls, 300));
+  bus.on('hangar:opened', () => controls.hide());
 
   // The intro holds the floor still while it plays; the licence opens on the create
   // step (or whenever there is no captain once the intro and tutorial are out of the way).
@@ -345,7 +421,7 @@ function boot() {
     if (d?.id === 'intro') { overlays.add('intro'); holdFloor(); }
     if (d?.id === 'create' && !store.get().character) openLicence();
   });
-  bus.on('intro:done', () => { overlays.delete('intro'); holdFloor(); });
+  bus.on('intro:done', () => { overlays.delete('intro'); holdFloor(); setTimeout(maybeControls, 400); });
   bus.on('story:done', () => {
     overlays.delete('intro'); holdFloor();
     if (!store.get().character) openLicence();
@@ -373,8 +449,14 @@ function boot() {
   });
 
   // Station nameplates ride the floor as you walk (hidden off screen and in other rooms).
+  const trackerBox = $('hg-objective');
+  const dialogueBox = $('hg-dialogue');
   const followPlates = () => {
     place.place();
+    // Marks keep out from under the tracker (round 3).
+    const avoid = [];
+    if (!document.body.classList.contains('dp-open')) for (const box of [trackerBox, dialogueBox, document.querySelector('.dp-controls')].filter(Boolean)) if (!box.hidden && getComputedStyle(box).opacity !== '0') avoid.push(box.getBoundingClientRect());
+    onfoot.world.setSafe({ avoid });
     // In an on-foot fight the dialogue box lets clicks through to the aim (its buttons still work).
     document.body.classList.toggle('hg-fight', onfoot.world.mode === 'fight');
     requestAnimationFrame(followPlates);
@@ -402,5 +484,6 @@ function boot() {
   else if (jobs.playing) place.openStation('board', { via: 'refresh' });
 
   // For tests and poking around in the console (no secrets: the save is the player's own).
-  window.__stardust = { store, story, onfoot, place, jobs, licence, bus };
+  setTimeout(maybeControls, 600);
+  window.__stardust = { store, story, onfoot, place, jobs, licence, bus, pad, tracker, controls, pause };
 }

@@ -10,7 +10,7 @@
 //   hooks.entered(map, world)      -> after every map change
 //   world.go(mapId, spawn) · world.fight(setup) -> Promise<{ outcome, hp }> · world.unlock(id)
 //   world.setNpcVisible(id, on) · world.follow(id, on) · world.pause() / resume() · world.destroy()
-import { enterMap } from '../maps/index.js';
+import { enterMap, MAP_DEFS } from '../maps/index.js';
 import { createWalker, stepWalker, nearestInteract, stepNpc, WALK } from './rules/walk.js';
 import { createFight, stepFight, STEP, ENEMY_TYPES } from './rules/shooter.js';
 import { buildStaticLayer, buildVignette, drawBody, drawContained, castSprite, castLook } from './draw.js';
@@ -20,27 +20,48 @@ import { createInput } from './input.js';
 import { createEl } from './dom.js';
 import { TUTORIAL_EVENTS } from './events.js';
 import { createSfx } from './sfx.js';
+// r3 basics: the one interact system (marks, prompt, objective marker) lives in datapad/.
+import { createMarks, lookFor } from '../datapad/marks.js';
+import { icon, keyCap, promptIcon } from '../datapad/icons.js';
+import { mapsHolding, doorToward } from '../datapad/route.js';
+import { BASICS_DATA } from '../datapad/data.js';
+import { hudArt } from '../ui/assets.js';
 
-const VERBS = { npc: 'Talk to', station: 'Use', mine: 'Drill', puzzle: 'Fix', hack: 'Hack', range: 'Practice', repair: 'Repair', console: 'Look at', ship: 'Fly', door: 'Go to' };
+const VERBS = Object.fromEntries(Object.entries(BASICS_DATA.marks.kinds).map(([k, v]) => [k, v.verb]));
+const NAME_NEAR = BASICS_DATA.marks.nameNear;
+const short = (label) => String(label || '').split(':')[0].trim();
+// A door label that already says where you go ("Back to the hangar", "Board your ship") needs no "Go to".
+const DOOR_SAYS_IT = new RegExp(`^(${(BASICS_DATA.marks.doorVerbs || []).join('|')})\\b`, 'i');
 
 export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks = {}, emit = () => {}, shipArt = null, reducedMotion = () => false, unlocked = [], sound = createSfx() }) {
   const el = createEl('div', { class: 'of-world' });
   const canvas = createEl('canvas', { class: 'of-canvas', 'aria-label': 'On foot. Move with WASD or the arrow keys, E to use.' });
-  const prompt = createEl('div', { class: 'of-prompt', role: 'status', 'aria-live': 'polite' });
+  // The prompt in reach: a key cap, an icon and the verb ("E  Talk to Chibby"); tap or click it to use.
+  const prompt = createEl('button', { type: 'button', class: 'of-prompt', 'aria-live': 'polite', hidden: true });
+  const promptKey = keyCap('E', 'of-key');
+  const promptIconBox = createEl('span', { class: 'of-prompt-icon' });
+  const promptText = createEl('span', { class: 'of-prompt-text' });
+  prompt.append(promptKey, promptIconBox, promptText);
   const placeName = createEl('div', { class: 'of-place', 'aria-live': 'polite' });
   const hud = createEl('div', { class: 'of-hud' });
   const fade = createEl('div', { class: 'of-fade' });
   const objectiveLine = createEl('p', { class: 'of-objective', role: 'status', 'aria-live': 'polite', hidden: true });
   const fightHelp = createEl('p', { class: 'of-hud-help' });
-  el.append(canvas, hud, fightHelp, objectiveLine, prompt, placeName, fade);
+  el.append(canvas, hud, fightHelp, objectiveLine, placeName, fade);
   el.__world = null; // set to the api below (tests and the dev console reach the world through the element)
   root.append(el);
+  const marks = createMarks({ root: el, reducedMotion });
+  el.append(prompt); // above the marks
+  let safe = { top: 0, bottom: 0, avoid: [] }; // avoid: screen boxes the HUD owns (the tracker)
+  let promptIconId = null;
+  prompt.addEventListener('click', () => { if (target && mode === 'walk' && !busy && !paused) use(target); });
   const ctx = canvas.getContext('2d');
 
   let map = null, walker = null, npcs = [], layer = null, layerScale = 0, layerDirty = true;
   let vignette = null, view = { w: 1, h: 1, dpr: 1 };
   let mode = 'walk', busy = false, paused = false, t = 0, raf = 0, last = 0, acc = 0;
   let input = createInput(el, { mode: 'walk', canvas });
+  promptKey.hidden = input.touch;
   let target = null, arrivedAt = 0, walkedSent = false;
   let camera = null, shake = 0, hitstop = 0, stepDist = 0, objective = null;
   let inRings = new Set();
@@ -134,7 +155,7 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     // Npc interact points follow the npc.
     const extra = npcs.filter(n => !hidden.has(n.id)).map(n => ({ kind: 'npc', id: n.id, label: castLook(n.id).name, x: n.x, y: n.y, reach: map.tile * 1.9 })); // reach: across a desk or a counter
     const base = { ...map, interacts: map.interacts.filter(i => i.kind !== 'npc') };
-    target = busy ? null : nearestInteract(walker, base, extra);
+    target = busy ? null : pickTarget(walker, base, extra);
     showPrompt(target);
     if (busy || paused) return;
     // Doors: walk into one (after a moment in a new room) or press Use.
@@ -144,6 +165,25 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
       if (inside && t - arrivedAt > 0.5 && !doorLocked(d)) { go(d.to, d.arrive || 'default'); return; }
     }
     if (useIt && target) use(target);
+  }
+
+  // r3 basics: which thing in reach E uses. Like rules/walk.js nearestInteract, but what you face
+  // counts for more (two things in reach: turn toward the one you want), and the current pick
+  // sticks unless another is clearly better, so the prompt never flickers between neighbours.
+  function pickTarget(w, m, extra) {
+    let best = null, bestScore = Infinity, keep = Infinity;
+    const face = BASICS_DATA.marks.facing ?? 40;
+    for (const it of [...m.interacts, ...extra]) {
+      if (it.hidden) continue;
+      const dx = it.x - w.x, dy = it.y - w.y;
+      const d = Math.hypot(dx, dy);
+      if (d > it.reach + WALK.reachBonus) continue;
+      const score = d - Math.cos(Math.atan2(dy, dx) - w.angle) * face;
+      if (target && it.kind === target.kind && it.id === target.id) keep = score;
+      if (score < bestScore) { bestScore = score; best = it; }
+    }
+    if (best && keep < bestScore + 14 && target) return [...m.interacts, ...extra].find((it) => it.kind === target.kind && it.id === target.id) || best;
+    return best;
   }
 
   // Station talk rings: tutorial:arrived { station } on the way in.
@@ -182,17 +222,90 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     }
   }
 
-  function showPrompt(it) {
-    if (!it) { prompt.hidden = true; input.prompt(null); return; }
+  function promptLabel(it) {
     const d = it.kind === 'door' ? map.doors.find(x => x.id === it.id) : null;
     const gate = d ? doorGate(d) : hooks.gate?.(it, map) || null;
-    const label = it.kind === 'npc' ? `${VERBS.npc} ${it.label || castLook(it.id).name}` : gate ? `${it.label}: ${gate.hack ? `locked (${gate.pick ? 'pick' : 'hack'}, level ${gate.hack})` : gate.reason}` : it.label || `${VERBS[it.kind]} ${it.id}`;
-    const key = input.touch ? '' : 'E  ';
-    const text = `${key}${label}`;
-    if (prompt.textContent !== text) prompt.textContent = text;
+    const station = stationOf(it);
+    const info = station ? hooks.stationInfo?.(station) : null;
+    if (it.kind === 'npc') return { text: `${VERBS.npc} ${it.label || castLook(it.id).name}`, gate, locked: false };
+    if (gate) return { text: `${short(it.label)}: ${gate.hack ? `locked (${gate.pick ? 'pick' : 'hack'}, level ${gate.hack})` : gate.reason}`, gate, locked: !gate.hack };
+    if (info?.locked) return { text: `${info.name}: not open yet`, gate: null, locked: true };
+    if (it.kind === 'door') return { text: DOOR_SAYS_IT.test(it.label || '') ? it.label : `${VERBS.door} ${it.label}`, gate: null, locked: false };
+    if (it.kind === 'station' && info?.prompt) return { text: info.prompt, gate: null, locked: false };
+    return { text: it.label || `${VERBS[it.kind] || 'Use'} ${it.id}`, gate: null, locked: false };
+  }
+
+  function showPrompt(it) {
+    if (!it || mode !== 'walk') { prompt.hidden = true; input.prompt(null); return; }
+    const { text, gate, locked } = promptLabel(it);
+    if (promptText.textContent !== text) promptText.textContent = text;
+    const look = lookFor(it.kind, stationOf(it));
+    const iconId = locked ? 'locked' : look.icon;
+    if (promptIconId !== iconId) { promptIconBox.replaceChildren(promptIcon(iconId, 'of-prompt-glyph')); promptIconBox.classList.toggle('is-painted', Boolean(promptIconBox.querySelector('img'))); promptIconId = iconId; }
+    prompt.style.setProperty('--accent', locked ? '#9db3c2' : look.accent);
     prompt.hidden = false;
     prompt.dataset.kind = it.kind;
-    input.prompt(it.kind === 'npc' ? 'Talk' : gate?.hack ? 'Hack' : gate ? 'Locked' : it.kind === 'door' ? 'Go' : 'Use');
+    prompt.setAttribute('aria-label', `${input.touch ? 'Tap' : 'Press E'}: ${text}`);
+    input.prompt(it.kind === 'npc' ? 'Talk' : gate?.hack ? 'Hack' : gate || locked ? 'Locked' : it.kind === 'door' ? 'Go' : 'Use', iconId);
+  }
+
+  // ---- marks: everything usable, from across the room (datapad/marks.js) ----
+  const stationOf = (it) => it.station || (it.kind === 'station' ? it.id : null);
+  /** Where the objective is: a point in this map, or the door that leads toward it. */
+  function objectiveAim() {
+    if (!objective || (!objective.station && !objective.npc)) return null;
+    const n = npcs.find(x => !hidden.has(x.id) && (objective.npc ? x.id === objective.npc : x.station === objective.station));
+    if (n) return { x: n.x, y: n.y, npc: n.id, label: objective.label || castLook(n.id).name };
+    if (objective.station) {
+      const r = map.rings.find(x => x.station === objective.station);
+      if (r) {
+        const info = hooks.stationInfo?.(objective.station);
+        return r.rect ? { x: r.rect.x + r.rect.w / 2, y: r.rect.y + r.rect.h / 2, station: objective.station, label: info?.name || objective.label } : { x: r.x, y: r.y, station: objective.station, label: info?.name || objective.label };
+      }
+    }
+    // Not in this room: the door that leads toward it.
+    const doorId = doorToward(map.id, mapsHolding(objective, MAP_DEFS), MAP_DEFS);
+    const d = doorId && map.doors.find(x => x.id === doorId);
+    return d ? { x: d.x + d.w / 2, y: d.y + d.h / 2, door: d.id, through: true, label: d.label } : null;
+  }
+
+  function markItems(cam) {
+    const items = [];
+    const aim = objectiveAim();
+    const tile = map.tile;
+    const at = (x, y) => ({ sx: (x - cam.x) * cam.zoom, sy: (y - cam.y) * cam.zoom });
+    for (const it of map.interacts) {
+      if (it.kind === 'npc' || it.hidden) continue;
+      const station = stationOf(it);
+      const info = station ? hooks.stationInfo?.(station) : null;
+      const look = lookFor(it.kind, station);
+      const door = it.kind === 'door' ? map.doors.find(x => x.id === it.id) : null;
+      const prop = it.prop != null ? map.props[it.prop] : null;
+      const box = door ? { x: door.x, y: door.y, w: door.w, h: door.h } : prop ? { x: prop.x, y: prop.y, w: prop.w, h: prop.h } : { x: it.x - tile / 2, y: it.y - tile / 2, w: tile, h: tile };
+      const gate = door ? doorGate(door) : hooks.gate?.(it, map) || null;
+      const locked = Boolean(info?.locked || (gate && !gate.hack));
+      const objectiveHere = Boolean(aim && ((aim.door && door && aim.door === door.id) || (aim.station && station === aim.station && !aim.npc)));
+      const dist = Math.hypot(walker.x - it.x, walker.y - it.y) / tile;
+      const label = info?.name || (door ? door.label : short(it.label));
+      items.push({
+        key: `${it.kind}:${it.id}:${it.prop ?? ''}`, kind: it.kind, station, icon: locked ? 'locked' : look.icon, accent: look.accent,
+        label, showLabel: Boolean(station || door || objectiveHere || dist < NAME_NEAR), locked, objective: objectiveHere,
+        inReach: target === it, box, ...at(box.x + box.w / 2, Math.min(box.y, it.y - tile * 0.4) - 6),
+      });
+    }
+    for (const n of npcs) {
+      if (hidden.has(n.id)) continue;
+      const look = lookFor('npc');
+      const name = castLook(n.id).name;
+      const dist = Math.hypot(walker.x - n.x, walker.y - n.y) / tile;
+      const objectiveHere = Boolean(aim?.npc === n.id);
+      items.push({
+        key: `npc:${n.id}`, kind: 'npc', station: n.station || null, icon: look.icon, accent: look.accent, label: name,
+        showLabel: objectiveHere || dist < NAME_NEAR, locked: false, objective: objectiveHere,
+        inReach: target?.kind === 'npc' && target.id === n.id, ring: { x: n.x, y: n.y, r: 21 * castLook(n.id).scale }, ...at(n.x, n.y - 40 * castLook(n.id).scale),
+      });
+    }
+    return { items, aim: aim ? { ...aim, ...at(aim.x, aim.y) } : null };
   }
 
   // ---- fighting ----
@@ -275,13 +388,9 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     const sw = Math.min(layer.canvas.width - sx, cam.vw * s), sh = Math.min(layer.canvas.height - sy, cam.vh * s);
     if (sw > 0 && sh > 0) ctx.drawImage(layer.canvas, sx, sy, sw, sh, dx, dy, (sw / s) * cam.zoom * dpr, (sh / s) * cam.zoom * dpr);
     ctx.setTransform(cam.zoom * dpr, 0, 0, cam.zoom * dpr, -cam.x * cam.zoom * dpr, -cam.y * cam.zoom * dpr);
-    // Interact highlight.
-    if (target && mode === 'walk') {
-      ctx.strokeStyle = '#81e6df'; ctx.globalAlpha = 0.45 + Math.sin(t * 5) * 0.2; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.arc(target.x, target.y, target.kind === 'npc' ? 26 : Math.min(40, target.reach * 0.55), 0, Math.PI * 2); ctx.stroke();
-      ctx.globalAlpha = 1;
-    }
-    if (objective && mode === 'walk') drawObjective();
+    // Everything usable, marked on the floor; the objective in gold with a bobbing chevron.
+    const marked = mode === 'walk' && !paused ? markItems(cam) : null;
+    if (marked) { marks.drawGround(ctx, marked.items, t); if (marked.aim) drawObjective(marked.aim); }
     const bodies = [];
     if (mode === 'walk') {
       for (const n of npcs) if (!hidden.has(n.id)) bodies.push({ y: n.y, draw: () => drawNpc(n) });
@@ -297,51 +406,38 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     for (const d of dust) { ctx.fillStyle = `rgba(160,170,180,${d.life * 0.5})`; ctx.beginPath(); ctx.arc(d.x, d.y, 4 + (0.5 - d.life) * 14, 0, Math.PI * 2); ctx.fill(); }
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     if (vignette) ctx.drawImage(vignette, 0, 0, canvas.width, canvas.height);
-    drawObjectiveEdge(cam);
+    if (marked) {
+      // The prompt in reach is a box the chips step around too.
+      const avoid = prompt.hidden ? safe.avoid : [...(safe.avoid || []), prompt.getBoundingClientRect()];
+      marks.show(); marks.update(marked.items, view, { ...safe, avoid }); marks.pointTo(marked.aim, view, safe);
+    } else marks.hide();
     if (fight?.player.hit > 0) { ctx.fillStyle = `rgba(255,80,60,${fight.player.hit})`; ctx.fillRect(0, 0, canvas.width, canvas.height); }
     // Prompt follows its target on screen.
     if (target && mode === 'walk' && !prompt.hidden) {
       const x = (target.x - cam.x) * cam.zoom, y = (target.y - cam.y) * cam.zoom;
-      prompt.style.transform = `translate(${Math.round(Math.max(70, Math.min(view.w - 70, x)))}px, ${Math.round(Math.max(30, y - 44))}px) translate(-50%, -100%)`;
+      const half = Math.min(view.w / 2 - 8, (prompt.offsetWidth || 200) / 2 + 8);
+      const lift = target.kind === 'npc' ? 46 : Math.min(70, (target.reach || 60) * 0.5 * cam.zoom + 18);
+      prompt.style.transform = `translate(${Math.round(Math.max(half, Math.min(view.w - half, x)))}px, ${Math.round(Math.max(safe.top + 54, Math.min(view.h - safe.bottom - 8, y - lift)))}px) translate(-50%, -100%)`;
     }
   }
 
-  // Where the objective's station is in this map: a ring, a prop, a door, a zone or an npc.
-  function objectivePoint() {
-    if (!objective?.station) return null;
-    const n = npcs.find(x => x.station === objective.station && !hidden.has(x.id) && x.id === objective.npc);
-    if (n) return { x: n.x, y: n.y };
-    // The person who runs the station first (Chibby for the pad), then the station's own ring.
-    const n2 = npcs.find(x => x.station === objective.station && !hidden.has(x.id));
-    if (n2) return { x: n2.x, y: n2.y };
-    const r = map.rings.find(x => x.station === objective.station);
-    return r ? (r.rect ? { x: r.rect.x + r.rect.w / 2, y: r.rect.y + r.rect.h / 2 } : { x: r.x, y: r.y }) : null;
-  }
-
-  function drawObjective() {
-    const p = objectivePoint();
-    if (!p) return;
+  // The objective marker: the HUD kit's pin bobbing over it, tip down (the brackets and chip are gold too).
+  const markerSrc = hudArt('marker-objective');
+  const markerImg = markerSrc ? Object.assign(new Image(), { src: markerSrc }) : null;
+  function drawObjective(p) {
     const bob = reducedMotion() ? 0 : Math.sin(t * 3) * 4;
+    if (markerImg?.complete && markerImg.naturalWidth) {
+      const h = 46, w = h * (markerImg.naturalWidth / markerImg.naturalHeight);
+      ctx.drawImage(markerImg, p.x - w / 2, p.y - (p.npc ? 40 : 26) - h + bob, w, h);
+      return;
+    }
     ctx.save();
-    ctx.translate(p.x, p.y - 40 + bob);
-    ctx.fillStyle = '#f4d35e';
-    ctx.beginPath(); ctx.moveTo(-8, -8); ctx.lineTo(8, -8); ctx.lineTo(0, 4); ctx.closePath(); ctx.fill();
+    ctx.translate(p.x, p.y - (p.npc ? 62 : 46) + bob);
+    ctx.fillStyle = BASICS_DATA.marks.objective;
+    ctx.strokeStyle = '#2a1d05';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(-10, -10); ctx.lineTo(10, -10); ctx.lineTo(0, 4); ctx.closePath(); ctx.stroke(); ctx.fill();
     ctx.restore();
-    ctx.strokeStyle = '#f4d35e66'; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.arc(p.x, p.y, 30 + (reducedMotion() ? 0 : (t * 20) % 14), 0, Math.PI * 2); ctx.stroke();
-  }
-
-  function drawObjectiveEdge(cam) {
-    const p = objective && mode === 'walk' ? objectivePoint() : null;
-    if (!p) return;
-    const x = (p.x - cam.x) * cam.zoom, y = (p.y - cam.y) * cam.zoom;
-    if (x > 24 && y > 24 && x < view.w - 24 && y < view.h - 24) return;
-    const a = Math.atan2(y - view.h / 2, x - view.w / 2);
-    const r = Math.min(view.w, view.h) / 2 - 30;
-    ctx.setTransform(view.dpr, 0, 0, view.dpr, 0, 0);
-    ctx.translate(view.w / 2 + Math.cos(a) * r, view.h / 2 + Math.sin(a) * r); ctx.rotate(a);
-    ctx.fillStyle = '#f4d35e'; ctx.beginPath(); ctx.moveTo(12, 0); ctx.lineTo(-6, -8); ctx.lineTo(-6, 8); ctx.closePath(); ctx.fill();
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
   }
 
   function drawPlayer(x, y, angle, moving, stride, hit, ghost = false) {
@@ -363,8 +459,8 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
   function drawNpc(n) {
     const look = castLook(n.id);
     const img = castSprite(n.id) || (look.dog ? null : sprite('npc-stand-in'));
-    const near = target?.kind === 'npc' && target.id === n.id;
-    drawBody(ctx, n.x, n.y, n.angle, img, { size: 46 * look.scale, t: t + n.x * 0.01, moving: n.moving, stride: (t * 3) % 4, tint: look.color, label: near || !castSprite(n.id) ? look.name : null, dog: look.dog });
+    // r3 basics: the mark chip and the prompt name people now; the drawn label only marks a stand-in sprite.
+    drawBody(ctx, n.x, n.y, n.angle, img, { size: 46 * look.scale, t: t + n.x * 0.01, moving: n.moving, stride: (t * 3) % 4, tint: look.color, label: !castSprite(n.id) ? look.name : null, dog: look.dog });
     if (img && !castSprite(n.id)) {
       // Stand-in sprite: a coloured ring says who it is until the cast lane's sprite lands.
       ctx.strokeStyle = look.color; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(n.x, n.y, 23 * look.scale, 0, Math.PI * 2); ctx.stroke();
@@ -459,7 +555,7 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     unlock(id) { opened.add(id); layerDirty = true; sound('unlock'); },
     /** The story's objective ({ text, station, npc? } or null): a marker in the world and a line on screen. */
     setObjective(o) {
-      objective = o || null;
+      objective = o ? { text: o.text || '', station: o.station || null, npc: o.npc || null, label: o.label || null } : null;
       objectiveLine.hidden = !objective?.text;
       if (objective?.text) objectiveLine.textContent = objective.text;
     },
@@ -486,7 +582,12 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     screenOf(x, y) { const c = lastCam || { x: 0, y: 0, zoom: 1 }; return { x: (x - c.x) * c.zoom, y: (y - c.y) * c.zoom }; },
     /** Teleport (tests, director cuts). */
     place(x, y, angle) { walker.x = x; walker.y = y; if (angle != null) walker.angle = angle; walker.vx = walker.vy = 0; },
-    destroy() { cancelAnimationFrame(raf); ro.disconnect(); input.destroy(); offArt(); el.remove(); },
+    /** The HUD's safe area (px kept clear at the top and bottom): marks and the prompt stay inside it. */
+    setSafe(next) { safe = { ...safe, top: Math.max(0, next?.top ?? safe.top), bottom: Math.max(0, next?.bottom ?? safe.bottom), avoid: next?.avoid ?? safe.avoid ?? [] }; },
+    /** The objective's aim this frame (tests): { x, y, label, through?, door?, station?, npc? } or null. */
+    objectiveAim: () => objectiveAim(),
+    get marks() { return marks; },
+    destroy() { cancelAnimationFrame(raf); ro.disconnect(); input.destroy(); offArt(); marks.destroy(); el.remove(); },
     el, canvas,
   };
 
