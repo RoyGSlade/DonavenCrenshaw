@@ -268,12 +268,15 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     ctx.fillStyle = '#05080d';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ensureLayer(cam.zoom);
+    if (layer.blit) layer.blit(ctx, cam, view); // r3-look hook: a look map draws its outside and padded layer itself (onfoot/look)
+    else {
     // The static layer, cropped to the view.
     const s = layer.scale;
     const sx = Math.max(0, cam.x * s), sy = Math.max(0, cam.y * s);
     const dx = Math.max(0, -cam.x) * cam.zoom * dpr, dy = Math.max(0, -cam.y) * cam.zoom * dpr;
     const sw = Math.min(layer.canvas.width - sx, cam.vw * s), sh = Math.min(layer.canvas.height - sy, cam.vh * s);
     if (sw > 0 && sh > 0) ctx.drawImage(layer.canvas, sx, sy, sw, sh, dx, dy, (sw / s) * cam.zoom * dpr, (sh / s) * cam.zoom * dpr);
+    } // r3-look hook end
     ctx.setTransform(cam.zoom * dpr, 0, 0, cam.zoom * dpr, -cam.x * cam.zoom * dpr, -cam.y * cam.zoom * dpr);
     // Interact highlight.
     if (target && mode === 'walk') {
@@ -296,7 +299,8 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     if (fight) drawFightFx();
     for (const d of dust) { ctx.fillStyle = `rgba(160,170,180,${d.life * 0.5})`; ctx.beginPath(); ctx.arc(d.x, d.y, 4 + (0.5 - d.life) * 14, 0, Math.PI * 2); ctx.fill(); }
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    if (vignette) ctx.drawImage(vignette, 0, 0, canvas.width, canvas.height);
+    if (layer.overlay) layer.overlay(ctx, cam, view, t); // r3-look hook: a look map's own light overlay and vignette
+    else if (vignette) ctx.drawImage(vignette, 0, 0, canvas.width, canvas.height);
     drawObjectiveEdge(cam);
     if (fight?.player.hit > 0) { ctx.fillStyle = `rgba(255,80,60,${fight.player.hit})`; ctx.fillRect(0, 0, canvas.width, canvas.height); }
     // Prompt follows its target on screen.

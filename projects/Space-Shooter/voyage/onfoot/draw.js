@@ -6,8 +6,13 @@
 import { wallPiece } from './rules/walls.js';
 import { unturnedBox } from './rules/geom.js';
 import { sprite, groundImage, tileImage, castImage, roomArt, interiorProp, CAST_LOOK } from './assets.js';
+import { buildLookLayer, lookFor, litCopy, silhouette } from './look/look.js';
+import { lookImage } from './look/lookArt.js';
 
 const TAU = Math.PI * 2;
+// The round-3 look of the map whose static layer was built last (null for maps without a `look` block):
+// props and people follow it (lift, shadows, scale) while that map is on screen.
+let activeLook = null, activeTile = 48;
 
 // ---- placeholders ----------------------------------------------------------
 const TILE_LOOK = {
@@ -117,6 +122,8 @@ function drawTile(ctx, id, x, y, T, row, col, faceBelow = true, overlay = false)
 // ---- the static layer ---------------------------------------------------------
 /** Draws a map's floor, walls and still props at `scale` into an offscreen canvas. extraArt(p) may draw special props. */
 export function buildStaticLayer(map, scale, { extraArt = null, isLocked = () => false } = {}) {
+  activeLook = lookFor(map); activeTile = map.tile;
+  if (activeLook) return buildLookLayer(map, scale, { isLocked, drawProps: c => drawProps(c, map, extraArt) });
   const maxSide = 4096, maxPixels = 9e6;
   let s = Math.min(scale, maxSide / map.w, maxSide / map.h);
   if (map.w * map.h * s * s > maxPixels) s = Math.sqrt(maxPixels / (map.w * map.h));
@@ -180,10 +187,18 @@ export function buildStaticLayer(map, scale, { extraArt = null, isLocked = () =>
     }
   }
   for (const d of map.doors) drawDoor(ctx, d, isLocked(d));
+  drawProps(ctx, map, extraArt);
+  return { canvas, scale: s };
+}
+
+/** A map's still props, lowest first (walk-over pieces under everything). extraArt(ctx, p) may draw special props. */
+function drawProps(ctx, map, extraArt) {
+  const T = map.tile;
   const props = [...map.props].sort((a, b) => (a.block === false ? -1 : 0) - (b.block === false ? -1 : 0) || a.y + a.h - (b.y + b.h));
   for (const p of props) {
+    if (activeLook?.props.hide?.includes(p.art)) continue; // the look paints it (the range) until art lands
     if (extraArt?.(ctx, p)) continue;
-    const img = sprite(p.art);
+    const img = (activeLook && lookImage('prop', p.art)) || sprite(p.art);
     const meta = interiorProp(p.art);
     // A long counter or shelf made of one art piece repeats it along its length.
     // The count is worked out in the UNturned box (a bar turned a quarter is still a row of counters).
@@ -196,7 +211,6 @@ export function buildStaticLayer(map, scale, { extraArt = null, isLocked = () =>
     } else if (img) drawContained(ctx, img, p);
     else drawPropPlaceholder(ctx, p);
   }
-  return { canvas, scale: s };
 }
 
 function drawWallPiece(ctx, art, r, c, T, open, glass) {
@@ -247,6 +261,17 @@ export function drawContained(ctx, img, p, pad = 0, piece = null) {
   const mx = box.x + box.w / 2, my = box.y + box.h / 2; // this piece's own centre, before the turn
   ctx.save();
   if (rot) { ctx.translate(p.cx, p.cy); ctx.rotate(rot); ctx.translate(-p.cx, -p.cy); }
+  if (activeLook) {
+    // Look maps: a soft shadow in the art's own shape, down and right, and the art lifted onto the value ladder.
+    const sh = activeLook.props.shadow, k = w / img.width;
+    const { canvas: sc, pad } = silhouette(img, (sh.blur * activeTile) / k);
+    // The shadow is cast in the world (down-right) even when the prop is turned.
+    const ox = (sh.dx * activeTile) * Math.cos(-rot) - (sh.dy * activeTile) * Math.sin(-rot), oy = (sh.dx * activeTile) * Math.sin(-rot) + (sh.dy * activeTile) * Math.cos(-rot);
+    ctx.globalAlpha = sh.alpha; ctx.drawImage(sc, x - pad * k + ox, y - pad * k + oy, sc.width * k, sc.height * k); ctx.globalAlpha = 1;
+    ctx.drawImage(litCopy(img, activeLook.props.byArt?.[p.art]?.lift ?? activeLook.props.lift), x, y, w, h);
+    ctx.restore();
+    return;
+  }
   ctx.globalAlpha = 0.35; ctx.filter = 'none';
   ctx.fillStyle = '#000'; ctx.beginPath(); ctx.ellipse(mx + 4, my + 6, w * 0.3, h * 0.3, 0, 0, TAU); ctx.fill();
   ctx.globalAlpha = 1;
@@ -265,7 +290,15 @@ export function drawBody(ctx, x, y, angle, img, { size = 44, t = 0, moving = fal
   const bob = moving ? 1 + Math.abs(Math.sin(stride * Math.PI)) * 0.035 : 1 + Math.sin(t * 2.1) * 0.01;
   ctx.save();
   ctx.translate(x, y);
-  ctx.fillStyle = '#0007'; ctx.beginPath(); ctx.ellipse(3, 5, size * 0.36, size * 0.3, 0, 0, TAU); ctx.fill();
+  if (activeLook) {
+    // Look maps: people are the brightest, most saturated things on screen, with a soft contact shadow down-right.
+    const pl = activeLook.people;
+    size *= pl.scale ?? 1;
+    img = litCopy(img, pl.lift);
+    const g = ctx.createRadialGradient(size * 0.08, size * 0.12, 0, size * 0.08, size * 0.12, size * 0.42);
+    g.addColorStop(0, `rgba(0,0,0,${pl.shadowAlpha ?? 0.5})`); g.addColorStop(0.6, `rgba(0,0,0,${(pl.shadowAlpha ?? 0.5) * 0.55})`); g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(size * 0.08, size * 0.12, size * 0.42, size * 0.38, 0, 0, TAU); ctx.fill();
+  } else { ctx.fillStyle = '#0007'; ctx.beginPath(); ctx.ellipse(3, 5, size * 0.36, size * 0.3, 0, 0, TAU); ctx.fill(); }
   ctx.rotate(angle + Math.PI / 2 + sway);
   ctx.scale(bob, bob);
   if (img) {

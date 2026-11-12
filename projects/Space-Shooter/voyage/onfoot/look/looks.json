@@ -1,0 +1,23 @@
+{
+  "_doc": "Look sets for maps that opt in with a `look` block (onfoot/look/look.js). Values are tuned to the round-3 value ladder (brightness in a screenshot): outside 8-20, wall cap 28-45, floor 50-70 with spread <= 6 per tile, lit lip 150-200, props 90-140, usable things 200+. A map's look block names a set here and may override any key.",
+  "sets": {
+    "hangar": {
+      "margin": 4,
+      "camera": { "margin": 0.5, "top": 40, "minTilePx": 40, "tilePx": 46 },
+      "outside": { "base": "#121519", "plate": "#171a1f", "seam": "#07080a", "beam": "#181c21", "light": ["#ffb35c", "#59d7e8"], "lightCount": 14 },
+      "floorSets": {
+        "deck": { "base": "#353b42", "tone": 3, "seam": "rgba(8,10,14,0.42)", "seamLit": "rgba(255,255,255,0.05)", "panels": [[2, 2, 6], [2, 1, 2], [1, 2, 2], [3, 2, 1], [2, 3, 1]], "noise": 0.05, "wear": 22 },
+        "pad": { "base": "#30353b", "tone": 2, "seam": "rgba(8,10,14,0.38)", "seamLit": "rgba(255,255,255,0.04)", "panels": [[2, 2, 1]], "noise": 0.04, "wear": 0 }
+      },
+      "floors": { "floor": "deck", "pad": "pad", "hazard": "deck", "grate": "deck", "rug": "deck" },
+      "wall": { "cap": "#21252b", "capPanel": "rgba(255,255,255,0.025)", "groove": "rgba(0,0,0,0.28)", "groovesEvery": 3, "outer": "#08090b", "lipLit": "#d2c7ab", "lipLitPx": 3.5, "lipShade": "#4e555e", "lipShadePx": 1.6, "shadow": 0.42, "shadowLen": 0.42 },
+      "doors": { "open": "#5ce1f0", "locked": "#ffad4d", "jamb": "#4a525c", "passage": 0.82, "spill": 0.2 },
+      "hazard": { "yellow": "#e7b53c", "dark": "#1c1d1f", "alpha": 0.78 },
+      "paint": { "lane": "#d8c27e", "laneAlpha": 0.5, "text": "#d8c27e" },
+      "props": { "lift": "brightness(1.32) saturate(1.12) contrast(1.04)", "shadow": { "dx": 0.07, "dy": 0.1, "blur": 0.07, "alpha": 0.55 } },
+      "people": { "scale": 1, "lift": "brightness(1.45) saturate(1.45) contrast(1.06)", "shadowAlpha": 0.5 },
+      "light": { "warm": "#ffb867", "cool": "#68dcef" },
+      "vignette": 0.42
+    }
+  }
+}
