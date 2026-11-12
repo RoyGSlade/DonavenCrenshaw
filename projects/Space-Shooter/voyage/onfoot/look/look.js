@@ -92,19 +92,31 @@ export function buildLookLayer(map, scale, { drawProps, isLocked = () => false }
         const x = (carrier.x - cam.x) * k0, y = (carrier.y - cam.y) * k0, r = pl.r * T * k0;
         c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.globalCompositeOperation = 'lighter';
         const gr = c.createRadialGradient(x, y, 0, x, y, r);
-        gr.addColorStop(0, `rgba(255,236,210,${pl.strength})`); gr.addColorStop(0.5, `rgba(255,236,210,${pl.strength * 0.4})`); gr.addColorStop(1, 'rgba(255,236,210,0)');
+        const cc = pl.color || '#ffc98a'; gr.addColorStop(0, hexA(cc, pl.strength)); gr.addColorStop(0.5, hexA(cc, pl.strength * 0.4)); gr.addColorStop(1, hexA(cc, 0));
         c.fillStyle = gr; c.fillRect(x - r, y - r, r * 2, r * 2); c.restore();
       }
-      // Overhead work lamps, above the people: a dark ring with a hot core and a small halo (no body detail).
+      // Overhead work lamps, above the people: a soft-edged lamp head (no ring outline), a small bright core tinted
+      // in the lamp's colour (only its very centre near white), and a halo in that colour.
       if (overheads.length) {
         c.save(); c.setTransform(1, 0, 0, 1, 0, 0);
         for (const l of overheads) {
           const x = (l.fx - cam.x) * k0, y = (l.fy - cam.y) * k0, s2 = (l.size?.[0] || 0.7) * T * k0;
-          if (x < -s2 || y < -s2 || x > c.canvas.width + s2 || y > c.canvas.height + s2) continue;
-          if (lightsOn()) { c.globalCompositeOperation = 'lighter'; const g2 = c.createRadialGradient(x, y, 0, x, y, s2 * 1.6); g2.addColorStop(0, hexA(l.color, 0.35)); g2.addColorStop(1, hexA(l.color, 0)); c.fillStyle = g2; c.fillRect(x - s2 * 1.6, y - s2 * 1.6, s2 * 3.2, s2 * 3.2); }
+          if (x < -s2 * 2 || y < -s2 * 2 || x > c.canvas.width + s2 * 2 || y > c.canvas.height + s2 * 2) continue;
+          const on = lightsOn();
+          // The housing: a dark disc that fades out at its edge.
           c.globalCompositeOperation = 'source-over';
-          c.strokeStyle = 'rgba(14,16,19,0.92)'; c.lineWidth = s2 * 0.16; c.beginPath(); c.arc(x, y, s2 * 0.36, 0, Math.PI * 2); c.stroke();
-          c.fillStyle = lightsOn() ? '#fff4dc' : '#8a8f96'; c.beginPath(); c.arc(x, y, s2 * 0.2, 0, Math.PI * 2); c.fill();
+          const hg = c.createRadialGradient(x, y, 0, x, y, s2 * 0.42);
+          hg.addColorStop(0, 'rgba(22,25,29,0.85)'); hg.addColorStop(0.65, 'rgba(22,25,29,0.6)'); hg.addColorStop(1, 'rgba(22,25,29,0)');
+          c.fillStyle = hg; c.fillRect(x - s2 * 0.42, y - s2 * 0.42, s2 * 0.84, s2 * 0.84);
+          if (!on) { c.fillStyle = 'rgba(120,126,134,0.9)'; c.beginPath(); c.arc(x, y, s2 * 0.12, 0, Math.PI * 2); c.fill(); continue; }
+          c.globalCompositeOperation = 'lighter';
+          const halo = c.createRadialGradient(x, y, 0, x, y, s2 * 1.5);
+          halo.addColorStop(0, hexA(l.color, 0.36)); halo.addColorStop(0.5, hexA(l.color, 0.17)); halo.addColorStop(1, hexA(l.color, 0));
+          c.fillStyle = halo; c.fillRect(x - s2 * 1.5, y - s2 * 1.5, s2 * 3, s2 * 3);
+          c.globalCompositeOperation = 'source-over';
+          const core = c.createRadialGradient(x, y, 0, x, y, s2 * 0.22);
+          core.addColorStop(0, 'rgba(255,255,250,0.95)'); core.addColorStop(0.35, hexA(l.color, 0.95)); core.addColorStop(1, hexA(l.color, 0));
+          c.fillStyle = core; c.fillRect(x - s2 * 0.22, y - s2 * 0.22, s2 * 0.44, s2 * 0.44);
         }
         c.restore();
       }
@@ -116,7 +128,7 @@ export function buildLookLayer(map, scale, { drawProps, isLocked = () => false }
           if (f < 0.05) continue;
           const x = (l.fx - cam.x) * k, y = (l.fy - cam.y) * k, r = Math.min(l.r * 0.5, T * 2) * k;
           const gr = c.createRadialGradient(x, y, 0, x, y, r);
-          gr.addColorStop(0, `rgba(255,220,170,${0.12 * f})`); gr.addColorStop(1, 'rgba(255,220,170,0)');
+          gr.addColorStop(0, hexA(l.color, 0.12 * f)); gr.addColorStop(1, hexA(l.color, 0));
           c.fillStyle = gr; c.fillRect(x - r, y - r, r * 2, r * 2);
         }
         c.restore();

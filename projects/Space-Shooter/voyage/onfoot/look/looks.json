@@ -157,7 +157,8 @@
    "vignette": 0.42,
    "carryLight": {
     "r": 1.5,
-    "strength": 0.1
+    "strength": 0.13,
+    "color": "#ffc98a"
    }
   }
  }
