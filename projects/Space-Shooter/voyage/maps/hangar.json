@@ -142,6 +142,8 @@
     {"art":"fuel-barrel","at":[14,7],"size":[1,1],"block":"low"},
     {"art":"fuel-barrel","at":[15,7],"size":[1,1],"block":"low"},
     {"art":"supply-pod","at":[23,13],"size":[2,2],"block":true},
+    {"art":"crate-closed","at":[4,13],"size":[1,1],"block":"low"},
+    {"art":"crate-closed","at":[4,14],"size":[1,1],"block":"low"},
     {"art":"ore-slab","at":[5,13],"size":[2,2],"block":true,"station":"scrap","interact":{"kind":"mine","id":"scrap-seam","label":"The seam Ralph dug up: drill it"}},
     {"art":"drill-rig","at":[7,13],"size":[2,2],"block":true},
     {"art":"dog-bed","at":[1,13],"size":[2,1],"block":false,"station":"kennel"},
@@ -172,6 +174,7 @@
     "from-cantina": [10.5,14,"up"]
   },
   "zones": [
+    {"id":"bay-mouth","at":[5,0],"size":[6,1.5],"keepClear":true},
     {"id":"range","at":[14,10],"size":[6,4],"station":"range"},
     {"id":"pad","at":[3,2],"size":[11,7],"station":"pad"}
   ]
