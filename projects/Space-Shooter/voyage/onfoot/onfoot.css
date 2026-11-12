@@ -119,3 +119,9 @@
 /* r3 basics: "job here": a giver or a board with offers you can take (mint, never gold). */
 .of-mark.is-offer{border-color:#9fe870;box-shadow:0 0 0 2px #9fe87033,0 4px 14px #000a,0 0 14px #9fe87044}
 .of-mark.is-offer .of-mark-icon{background:#9fe87033;color:#9fe870}
+/* r3: names pop in range (Donaven: 2 tiles), with a short fade; out of range the chip is the quiet icon alone. */
+.of-mark > span{display:inline-block;max-width:0;overflow:hidden;opacity:0;white-space:nowrap;transition:max-width .22s ease,opacity .18s ease}
+.of-mark.is-named > span{max-width:260px;opacity:1}
+.of-mark.is-icon{padding:3px;gap:0;opacity:.82}
+@media (prefers-reduced-motion:reduce){.of-mark > span{transition:opacity .12s linear}}
+.of-prompt.is-below::after{bottom:auto;top:-7px;transform:translateX(-50%) rotate(225deg)}

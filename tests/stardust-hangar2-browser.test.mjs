@@ -138,7 +138,8 @@ test('round-2 hangar: dice licence, stations in place, skill tree and respec, di
   await page.keyboard.press('Escape');
   assert.equal(await page.locator('#hg-sheet').isVisible(), false);
   // Focus goes back to the station's plate when it is on screen (the floor scrolls with the captain).
-  if (await page.locator('[data-station="pad"]').isVisible()) assert.equal(await page.evaluate(() => document.activeElement?.dataset?.station), 'pad', 'focus goes back to the station');
+  // (Round 3: the plates are the floor's mark chips now; the buttons stay for keyboards and screen readers, unseen until focused.)
+  if (await page.locator('[data-station="pad"]').evaluate((b) => getComputedStyle(b).opacity !== '0')) assert.equal(await page.evaluate(() => document.activeElement?.dataset?.station), 'pad', 'focus goes back to the station');
   // Walking up: the onfoot lane's way in.
   await page.evaluate(async () => (await import('/projects/Space-Shooter/voyage/hangarApi.js')).hangarApi.openStation('locker', { via: 'walk' }));
   await page.locator('#hg-sheet[data-open-station="locker"]').waitFor();

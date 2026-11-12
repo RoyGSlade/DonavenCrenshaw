@@ -28,8 +28,8 @@ import { BASICS_DATA } from '../datapad/data.js';
 import { hudArt } from '../ui/assets.js';
 
 const VERBS = Object.fromEntries(Object.entries(BASICS_DATA.marks.kinds).map(([k, v]) => [k, v.verb]));
-const NAME_NEAR = BASICS_DATA.marks.nameNear;
-const NAME_NEAR_TOUCH = BASICS_DATA.marks.nameNearTouch ?? 3;
+// Donaven: "what if the label only pops up when you are in range say 2 tiles or less from the interactable".
+const NAME_RANGE = BASICS_DATA.marks.nameRange ?? 2;
 const OFFER_ACCENT = BASICS_DATA.marks.offer ?? '#9fe870';
 const short = (label) => String(label || '').split(':')[0].trim();
 // A door label that already says where you go ("Back to the hangar", "Board your ship") needs no "Go to".
@@ -273,7 +273,6 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
 
   function markItems(cam) {
     const items = [];
-    const nameNear = input.touch ? NAME_NEAR_TOUCH : NAME_NEAR;
     const aim = objectiveAim();
     const tile = map.tile;
     const at = (x, y) => ({ sx: (x - cam.x) * cam.zoom, sy: (y - cam.y) * cam.zoom });
@@ -288,11 +287,12 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
       const gate = door ? doorGate(door) : hooks.gate?.(it, map) || null;
       const locked = Boolean(info?.locked || (gate && !gate.hack));
       const objectiveHere = Boolean(aim && ((aim.door && door && aim.door === door.id) || (aim.station && station === aim.station && !aim.npc)));
-      const dist = Math.hypot(walker.x - it.x, walker.y - it.y) / tile;
+      // Donaven: names pop up only within NAME_RANGE tiles of the thing's nearest edge (big things too).
+      const dist = Math.hypot(Math.max(box.x - walker.x, 0, walker.x - (box.x + box.w)), Math.max(box.y - walker.y, 0, walker.y - (box.y + box.h))) / tile;
       const label = info?.name || (door ? door.label : short(it.label));
       const offers = station === 'board' ? hooks.offers?.({ map: map.id, station }) || 0 : 0;
       // Phones name only what's close, the objective and job offers; desktops name stations and doors too.
-      const named = objectiveHere || offers > 0 || dist < nameNear || (!input.touch && Boolean(station || door));
+      const named = objectiveHere || dist <= NAME_RANGE; // the objective keeps its name from anywhere
       items.push({
         key: `${it.kind}:${it.id}:${it.prop ?? ''}`, kind: it.kind, station, icon: locked ? 'locked' : offers ? 'jobs' : look.icon, accent: offers ? OFFER_ACCENT : look.accent,
         label: offers ? `${label} · ${offers} job${offers === 1 ? '' : 's'}` : label, showLabel: named, locked, objective: objectiveHere, offers,
@@ -303,14 +303,14 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
       if (hidden.has(n.id)) continue;
       const look = lookFor('npc');
       const name = castLook(n.id).name;
-      const dist = Math.hypot(walker.x - n.x, walker.y - n.y) / tile;
+      const dist = Math.max(0, Math.hypot(walker.x - n.x, walker.y - n.y) - 20 * castLook(n.id).scale) / tile;
       const objectiveHere = Boolean(aim?.npc === n.id);
       const offers = hooks.offers?.({ map: map.id, npc: n.id }) || 0;
       items.push({
         key: `npc:${n.id}`, kind: 'npc', station: n.station || null, icon: offers ? 'jobs' : look.icon, accent: offers ? OFFER_ACCENT : look.accent,
         label: offers ? `${name} · ${offers} job${offers === 1 ? '' : 's'}` : name,
-        showLabel: objectiveHere || offers > 0 || dist < nameNear, locked: false, objective: objectiveHere, offers,
-        inReach: target?.kind === 'npc' && target.id === n.id, ring: { x: n.x, y: n.y, r: 21 * castLook(n.id).scale }, ...at(n.x, n.y - 40 * castLook(n.id).scale),
+        showLabel: objectiveHere || dist <= NAME_RANGE, locked: false, objective: objectiveHere, offers,
+        inReach: target?.kind === 'npc' && target.id === n.id, ring: { x: n.x, y: n.y, r: 21 * castLook(n.id).scale }, ...at(n.x, n.y - (24 * castLook(n.id).scale + 10)),
       });
     }
     // Chips never sit on a doorway or a strip the map keeps clear (a zone with "keepClear": true, e.g. the bay mouth).
@@ -435,7 +435,14 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
       const x = (target.x - cam.x) * cam.zoom, y = (target.y - cam.y) * cam.zoom;
       const half = Math.min(view.w / 2 - 8, (prompt.offsetWidth || 200) / 2 + 8);
       const lift = target.kind === 'npc' ? 46 : Math.min(70, (target.reach || 60) * 0.5 * cam.zoom + 18);
-      prompt.style.transform = `translate(${Math.round(Math.max(half, Math.min(view.w - half, x)))}px, ${Math.round(Math.max(safe.top + 54, Math.min(view.h - safe.bottom - 8, y - lift)))}px) translate(-50%, -100%)`;
+      const px = Math.round(Math.max(half, Math.min(view.w - half, x)));
+      let py = Math.round(Math.max(safe.top + 54, Math.min(view.h - safe.bottom - 8, y - lift)));
+      // Above its thing unless a HUD box (the tracker, the dialogue box) is there: then below it.
+      const ph = prompt.offsetHeight || 50;
+      const hit = (safe.avoid || []).some((r) => px + half - 8 > r.left && px - half + 8 < r.right && py > r.top && py - ph < r.bottom);
+      if (hit) py = Math.round(Math.min(view.h - safe.bottom - 8, y + lift * 0.6 + ph + 14));
+      prompt.classList.toggle("is-below", hit);
+      prompt.style.transform = `translate(${px}px, ${py}px) translate(-50%, -100%)`;
     }
   }
 

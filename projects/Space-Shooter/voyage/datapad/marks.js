@@ -73,12 +73,14 @@ export function createMarks({ root, reducedMotion = () => false, data = MARKS })
       const hide = off || it.inReach || covered;
       if (c.el.hidden !== hide) c.el.hidden = hide;
       if (hide) continue;
+      // The name is always in the chip; it pops open (a short fade) in range and folds away out of it.
+      if (c.text !== it.label) { c.label.textContent = it.label; c.text = it.label; c.labelW = null; }
       const text = it.showLabel ? it.label : '';
-      if (c.text !== text) { c.label.textContent = text; c.text = text; }
-      const cls = `of-mark${it.locked ? ' is-locked' : ''}${it.objective ? ' is-objective' : ''}${it.offers ? ' is-offer' : ''}${text ? '' : ' is-icon'}`;
+      const cls = `of-mark${it.locked ? ' is-locked' : ''}${it.objective ? ' is-objective' : ''}${it.offers ? ' is-offer' : ''}${text ? ' is-named' : ' is-icon'}`;
       if (c.cls !== cls) { c.el.className = cls; c.cls = cls; c.el.style.setProperty('--accent', it.accent); }
       // Pushed below the header, kept whole inside the screen and out from under the HUD's boxes; never hidden.
-      if (c.width == null || c.measured !== text) { c.width = c.el.offsetWidth || 30; c.height = c.el.offsetHeight || 26; c.measured = text; }
+      if (c.labelW == null) c.labelW = c.label.scrollWidth || 0;
+      if (c.width == null || c.measured !== text) { c.width = 30 + (text ? c.labelW + 8 : 0); c.height = c.el.offsetHeight || 26; c.measured = text; }
       const half = c.width / 2 + 8;
       let x = Math.max(half, Math.min(view.w - half, it.sx));
       let y = Math.max(safe.top + c.height + 6, Math.min(view.h - safe.bottom - 6, it.sy));

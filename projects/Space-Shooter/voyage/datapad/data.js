@@ -10,8 +10,8 @@
 // tracker: maxLines (current step plus what comes next), collapsed text.
 // marks: the interact system. kinds: the icon and accent per interact kind;
 //   stations: the icon and accent per hangar station id (wins over the kind);
-//   nameNear (tiles): people show their name inside this range (nameNearTouch on
-//   phones, where stations and doors also show just the icon until close);
+//   nameRange (tiles): a name pops up only this close to a thing's nearest edge
+//   (Donaven); farther, just the quiet icon mark; the objective is always named;
 //   offer: the "job here" colour (mint; gold stays the current objective); facing: px a
 //   thing you face counts as nearer when two are in reach; doorVerbs: door
 //   labels starting with these read as they are (no "Go to" in front);
@@ -53,8 +53,7 @@ export const BASICS_DATA = {
     "show": "Show"
   },
   "marks": {
-    "nameNear": 4.5,
-    "nameNearTouch": 3,
+    "nameRange": 2,
     "offer": "#9fe870",
     "facing": 40,
     "doorVerbs": ["Back", "Board", "Down", "Up", "Out", "Into", "Through", "Go"],

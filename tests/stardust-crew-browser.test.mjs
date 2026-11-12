@@ -99,6 +99,7 @@ async function crewTurn(crew, did) {
     if (!did.has('turret')) await snap(crew, 'crew-04-crew-turret.png');
     const scope = pane.locator('canvas.cw-scope');
     const box = await scope.boundingBox();
+    if (!box) return;
     const { tx, ty } = await scope.evaluate((c) => ({ tx: Number(c.dataset.tx), ty: Number(c.dataset.ty) }));
     await crew.mouse.click(box.x + (tx / 320) * box.width, box.y + (ty / 180) * box.height);
     did.add('turret');
@@ -108,6 +109,7 @@ async function crewTurn(crew, did) {
   if (await hold.count()) {
     const which = await hold.first().getAttribute('data-repair');
     const b = await hold.first().boundingBox();
+    if (!b) return; // the station redrew under us (the pilot moved on): next turn
     await crew.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
     await crew.mouse.down();
     await crew.waitForTimeout(1450);
