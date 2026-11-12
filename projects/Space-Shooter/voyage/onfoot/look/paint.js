@@ -53,7 +53,13 @@ export function gridOf(map, look) {
 export function paintOutside(ctx, map, look, M) {
   const o = look.outside, T = map.tile, x0 = -M, y0 = -M, w = map.w + M * 2, h = map.h + M * 2;
   const art = lookImage('backdrop', o.art);
-  if (art) { const p = ctx.createPattern(art, 'repeat'); ctx.fillStyle = p; ctx.fillRect(x0, y0, w, h); return; }
+  if (art) {
+    const p = ctx.createPattern(art, 'repeat'); const k = T / (o.artTilePx || 64);
+    p.setTransform?.(new DOMMatrix([k, 0, 0, k, 0, 0])); ctx.fillStyle = p; ctx.fillRect(x0, y0, w, h);
+    if (o.artLift) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = o.artLift; ctx.fillRect(x0, y0, w, h); ctx.restore(); }
+    ctx.strokeStyle = 'rgba(0,0,0,0.6)'; ctx.lineWidth = T * 0.5; ctx.strokeRect(-T * 0.25, -T * 0.25, map.w + T * 0.5, map.h + T * 0.5);
+    return;
+  }
   const r = rng(`${map.id}-outside`);
   ctx.fillStyle = o.base; ctx.fillRect(x0, y0, w, h);
   // Big hull plates of mixed sizes, a hair lighter or darker, soft seams (no even grid).
@@ -92,6 +98,13 @@ function paintBayMouth(ctx, g, r, c, look) {
   ctx.save();
   ctx.beginPath(); ctx.rect(x, y, T, T); ctx.clip();
   ctx.fillStyle = '#05070b'; ctx.fillRect(x, y, T, T);
+  const strip = lookImage('backdrop', look.outside.bayArt);
+  if (strip) {
+    let i = 0; while (g.cell(r, c - i - 1) === 'baymouth') i++;
+    const n = Math.round(strip.width / strip.height);
+    ctx.drawImage(strip, (i % n) * strip.height, 0, strip.height, strip.height, x, y, T, T);
+    ctx.restore(); return;
+  }
   const rand = rng(`stars-${r}-${c}`);
   for (let i = 0; i < 9; i++) { const v = 120 + rand() * 135; ctx.fillStyle = `rgba(${v},${v},${Math.min(255, v + 20)},${0.5 + rand() * 0.5})`; const s = rand() < 0.15 ? 2 : 1.2; ctx.fillRect(x + rand() * T, y + rand() * T * 0.8, s, s); }
   // The field: a faint cyan sheen thickening toward the room.
@@ -134,25 +147,34 @@ export function paintFloor(ctx, map, g) {
     const set = look.floorSets[id] || Object.values(look.floorSets)[0];
     ctx.save();
     ctx.beginPath(); for (const [r, c] of cells) ctx.rect(c * T, r * T, T, T); ctx.clip();
-    const art = lookImage('floor', set.art);
-    if (art) {
-      const p = ctx.createPattern(art, 'repeat'); const k = (T * (set.covers?.[0] || 4)) / art.width;
-      p.setTransform?.(new DOMMatrix([k, 0, 0, k, 0, 0])); ctx.fillStyle = p; ctx.fillRect(0, 0, map.w, map.h);
+    const variants = (Array.isArray(set.art) ? set.art : set.art ? [set.art] : []).map(v => lookImage('floor', v));
+    const kit = variants.length > 0 && variants.every(Boolean);
+    if (kit) {
+      // Kit floors: every tile comes from one of the variants (picked by a hash of its x,y) at the same spot in the
+      // 4x4 sheet, so the seams still meet but no plate lattice repeats. Built at the art's own size, then scaled once.
+      const px = set.artTilePx || 64, per = set.covers || 4;
+      const nat = document.createElement('canvas'); nat.width = map.cols * px; nat.height = map.rows * px;
+      const nc = nat.getContext('2d');
+      for (const [r, c] of cells) {
+        const v = variants[(((c * 73856093) ^ (r * 19349663)) >>> 0) % variants.length];
+        nc.drawImage(v, (c % per) * px, (r % per) * px, px, px, c * px, r * px, px, px);
+      }
+      ctx.drawImage(nat, 0, 0, map.w, map.h);
     } else {
       ctx.fillStyle = set.base; ctx.fillRect(0, 0, map.w, map.h);
+      // Stand-in panels: each a little lighter or darker, thin seams with a lit lower-right lip.
+      for (const p of panelLayout(map, set, `${map.id}-${id}`)) {
+        const x = p.x * T, y = p.y * T, w = p.w * T, h = p.h * T;
+        const a = Math.abs(p.tone) * set.tone / 255 * 2.2;
+        ctx.fillStyle = p.tone > 0 ? `rgba(255,255,255,${a})` : `rgba(0,0,0,${a * 1.4})`; ctx.fillRect(x, y, w, h);
+        ctx.fillStyle = set.seam; ctx.fillRect(x, y, w, 1.1); ctx.fillRect(x, y, 1.1, h);
+        ctx.fillStyle = set.seamLit; ctx.fillRect(x, y + 1.1, w, 1); ctx.fillRect(x + 1.1, y, 1, h);
+      }
     }
-    // Panels: each a little lighter or darker, thin seams with a lit lower-right lip. Breaks the repeat.
-    for (const p of panelLayout(map, set, `${map.id}-${id}`)) {
-      const x = p.x * T, y = p.y * T, w = p.w * T, h = p.h * T;
-      const a = Math.abs(p.tone) * set.tone / 255 * 2.2;
-      ctx.fillStyle = p.tone > 0 ? `rgba(255,255,255,${a})` : `rgba(0,0,0,${a * 1.4})`; ctx.fillRect(x, y, w, h);
-      ctx.fillStyle = set.seam; ctx.fillRect(x, y, w, 1.1); ctx.fillRect(x, y, 1.1, h);
-      ctx.fillStyle = set.seamLit; ctx.fillRect(x, y + 1.1, w, 1); ctx.fillRect(x + 1.1, y, 1, h);
-    }
-    if (set.noise) { const p = ctx.createPattern(noise(), 'repeat'); ctx.globalAlpha = set.noise; ctx.globalCompositeOperation = 'overlay'; ctx.fillStyle = p; ctx.fillRect(0, 0, map.w, map.h); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; }
+    if (set.noise && !kit) { const p = ctx.createPattern(noise(), 'repeat'); ctx.globalAlpha = set.noise; ctx.globalCompositeOperation = 'overlay'; ctx.fillStyle = p; ctx.fillRect(0, 0, map.w, map.h); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; }
     // Wear: big soft patches, never a pattern.
     const r = rng(`${map.id}-wear-${id}`);
-    for (let i = 0; i < (set.wear || 0); i++) {
+    for (let i = 0; i < (kit ? set.kitWear ?? 0 : set.wear || 0); i++) {
       const x = r() * map.w, y = r() * map.h, rad = T * (1.5 + r() * 3.5);
       const gr = ctx.createRadialGradient(x, y, 0, x, y, rad);
       const dark = r() < 0.65;
@@ -175,6 +197,18 @@ function hazardBand(ctx, x, y, w, h, look, alpha = look.hazard.alpha) {
   ctx.restore();
 }
 
+// A kit decal repainted in another accent: its worn alpha kept, its colour replaced (light keeps a little of the art's shading).
+const tints = new WeakMap();
+function tinted(img, color) {
+  if (!tints.has(img)) tints.set(img, new Map());
+  const m = tints.get(img);
+  if (m.has(color)) return m.get(color);
+  const c = document.createElement('canvas'); c.width = img.width; c.height = img.height;
+  const x = c.getContext('2d');
+  x.drawImage(img, 0, 0); x.globalCompositeOperation = 'source-in'; x.fillStyle = color; x.fillRect(0, 0, c.width, c.height);
+  m.set(color, c); return c;
+}
+
 function arrow(ctx, x, y, angle, size, color) {
   ctx.save(); ctx.translate(x, y); ctx.rotate(angle);
   ctx.fillStyle = color;
@@ -189,7 +223,13 @@ export function paintDecals(ctx, map, g) {
   for (const d of look.decals || []) {
     const color = d.color ? (look.accents?.[d.color] || d.color) : look.paint.lane;
     const art = d.art && lookImage('decal', d.art);
-    if (art && d.at) { const [x, y] = d.at, [w, h] = d.size || [1, 1]; ctx.globalAlpha = d.alpha ?? 1; ctx.drawImage(art, x * T, y * T, w * T, h * T); ctx.globalAlpha = 1; continue; }
+    if (art && d.at) {
+      const [x, y] = d.at, [w, h] = d.size || [1, 1];
+      ctx.save(); ctx.globalAlpha = d.alpha ?? 1;
+      if (d.rot) { ctx.translate((x + w / 2) * T, (y + h / 2) * T); ctx.rotate(d.rot); ctx.translate(-(x + w / 2) * T, -(y + h / 2) * T); }
+      ctx.drawImage(d.tint ? tinted(art, look.accents?.[d.tint] || d.tint) : art, x * T, y * T, w * T, h * T);
+      ctx.restore(); continue;
+    }
     ctx.save();
     if (d.kind === 'lane') {
       // A walkway: two thin painted edges, arrows at the far end.
@@ -289,16 +329,19 @@ export function paintWalls(ctx, map, g) {
     }
     // Edges: dark where the wall meets the outside, a dim rim on the shade sides, the lit lip on the sides facing the light.
     ctx.fillStyle = w.outer;
-    if (!g.inside(r - 1, c)) ctx.fillRect(x, y, T, 2);
-    if (!g.inside(r + 1, c)) ctx.fillRect(x, y + T - 2, T, 2);
-    if (!g.inside(r, c - 1)) ctx.fillRect(x, y, 2, T);
-    if (!g.inside(r, c + 1)) ctx.fillRect(x + T - 2, y, 2, T);
-    const lp = w.lipLitPx, sp = w.lipShadePx;
-    ctx.fillStyle = w.lipShade;
-    if (S) ctx.fillRect(x, y + T - sp, T, sp);
-    if (E) ctx.fillRect(x + T - sp, y, sp, T);
-    if (N) { ctx.fillStyle = w.lipLit; ctx.fillRect(x, y, T, lp); ctx.fillStyle = hex(w.lipLit, 0.35); ctx.fillRect(x, y + lp, T, 1.5); }
-    if (W) { ctx.fillStyle = w.lipLit; ctx.fillRect(x, y, lp, T); ctx.fillStyle = hex(w.lipLit, 0.35); ctx.fillRect(x + lp, y, 1.5, T); }
+    const outside = (rr2, cc2) => !g.inside(rr2, cc2) || g.cell(rr2, cc2) === 'void';
+    if (outside(r - 1, c)) ctx.fillRect(x, y, T, 2.2);
+    if (outside(r + 1, c)) ctx.fillRect(x, y + T - 2.2, T, 2.2);
+    if (outside(r, c - 1)) ctx.fillRect(x, y, 2.2, T);
+    if (outside(r, c + 1)) ctx.fillRect(x + T - 2.2, y, 2.2, T);
+    // The room's N and W walls (floor to their S or E) catch the light on their top edge: a bright, slightly warm lip,
+    // then the cast shadow on the floor (paintWallShadows). The S and E walls get only a thin dark contact line.
+    const lp = w.lipLitPx, cp = w.contactPx ?? 1.5;
+    if (S) { ctx.fillStyle = w.lipLit; ctx.fillRect(x, y + T - lp, T, lp); ctx.fillStyle = hex(w.lipLit, 0.4); ctx.fillRect(x, y + T - lp - 1.5, T, 1.5); }
+    if (E) { ctx.fillStyle = w.lipLit; ctx.fillRect(x + T - lp, y, lp, T); ctx.fillStyle = hex(w.lipLit, 0.4); ctx.fillRect(x + T - lp - 1.5, y, 1.5, T); }
+    ctx.fillStyle = w.contact || '#07080a';
+    if (N) ctx.fillRect(x, y, T, cp);
+    if (W) ctx.fillRect(x, y, cp, T);
   }
   // Bay mouths: the field's bright edge on the room side and hazard posts at each end.
   for (let r = 0; r < map.rows; r++) for (let c = 0; c < map.cols; c++) {
@@ -383,7 +426,7 @@ function paintRamp(ctx, d, look, T) {
 export function paintMounts(ctx, map, g) {
   const { T, look } = g;
   for (const m of look.mounts || []) {
-    const art = m.art && lookImage('prop', m.art);
+    const art = m.art && (lookImage('prop', m.art) || lookImage('decal', m.art));
     const [x, y] = m.at.map(v => v * T), [w, h] = (m.size || [1, 1]).map(v => v * T);
     if (art) { ctx.drawImage(art, x, y, w, h); continue; }
     const color = m.color ? (look.accents?.[m.color] || m.color) : look.light.cool;
@@ -496,9 +539,10 @@ export function paintPools(ctx, map, g) {
   }
   // Wall lamps throw a warm pool onto the floor in front of them.
   for (const m of look.mounts || []) {
-    if (m.kind !== 'lamp') continue;
+    if (m.kind !== 'lamp' && !m.glow) continue;
     const [x, y] = m.at.map(v => v * T), [w, h] = (m.size || [1, 1]).map(v => v * T);
-    glow(ctx, x + w / 2, y + h / 2, T * (m.r || 2.6), look.light.warm, m.alpha ?? 0.13);
+    const gc = m.glow ? (look.light[m.glow] || look.accents?.[m.glow] || m.glow) : look.light.warm;
+    glow(ctx, x + w / 2 + (m.gx || 0) * T, y + h / 2 + (m.gy || 0) * T, T * (m.r || 2.6), gc, m.alpha ?? 0.13);
   }
   // Doors spill their strip colour into the room.
   for (const d of map.doors) {
