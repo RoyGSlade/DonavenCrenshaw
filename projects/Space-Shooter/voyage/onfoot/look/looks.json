@@ -99,7 +99,7 @@
     "rug": "deck"
    },
    "wall": {
-    "cap": "#21252b",
+    "cap": "#181b20",
     "capPanel": "rgba(255,255,255,0.04)",
     "groove": "rgba(0,0,0,0.38)",
     "groovesEvery": 3,
@@ -116,7 +116,7 @@
     "locked": "#ffad4d",
     "jamb": "#4a525c",
     "passage": 0.82,
-    "spill": 0.2
+    "spill": 0.24
    },
    "hazard": {
     "yellow": "#e7b53c",
@@ -144,7 +144,8 @@
    },
    "light": {
     "warm": "#ffb867",
-    "cool": "#68dcef"
+    "cool": "#68dcef",
+    "ambient": "#d9dae0"
    },
    "vignette": 0.42
   }

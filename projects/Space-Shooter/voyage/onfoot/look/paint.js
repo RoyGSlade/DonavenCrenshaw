@@ -428,7 +428,13 @@ export function paintMounts(ctx, map, g) {
   for (const m of look.mounts || []) {
     const art = m.art && (lookImage('prop', m.art) || lookImage('decal', m.art));
     const [x, y] = m.at.map(v => v * T), [w, h] = (m.size || [1, 1]).map(v => v * T);
-    if (art) { ctx.drawImage(art, x, y, w, h); continue; }
+    if (art) {
+      ctx.save();
+      if (m.rot) { ctx.translate(x + w / 2, y + h / 2); ctx.rotate(m.rot); const q = Math.abs(Math.sin(m.rot)) > 0.5; const [uw, uh] = q ? [h, w] : [w, h]; ctx.drawImage(art, -uw / 2, -uh / 2, uw, uh); }
+      else if (m.face) ctx.drawImage(art, x, y, w, h);
+      else shadowed(ctx, () => ctx.drawImage(art, x, y, w, h), look, T);
+      ctx.restore(); continue;
+    }
     const color = m.color ? (look.accents?.[m.color] || m.color) : look.light.cool;
     ctx.save();
     shadowed(ctx, () => {
@@ -484,6 +490,14 @@ export function paintClutter(ctx, map, g) {
   const { T, look } = g;
   for (const k of look.clutter || []) {
     const art = k.art && lookImage('prop', k.art);
+    if (art && Array.isArray(k.size)) {
+      const [x, y] = k.at.map(v => v * T), [w, h] = k.size.map(v => v * T);
+      const sh = look.props.shadow, [ox, oy] = shadowOffset(g.lights, x + w / 2, y + h / 2, Math.hypot(sh.dx, sh.dy) * T * 0.7);
+      ctx.save(); ctx.globalAlpha = sh.alpha * 0.85; ctx.filter = `blur(${Math.max(1, sh.blur * T * 0.6 * (ctx.getTransform().a || 1))}px) brightness(0)`;
+      ctx.drawImage(art, x + ox, y + oy, w, h); ctx.restore();
+      ctx.drawImage(art, x, y, w, h);
+      continue;
+    }
     const [cx, cy] = k.at.map(v => v * T), s = (k.size || 0.4) * T;
     if (art) { const a = art.width / art.height; shadowed(ctx, () => ctx.drawImage(art, cx - s * a / 2, cy - s / 2, s * a, s), look, T); continue; }
     ctx.save(); ctx.translate(cx, cy); ctx.rotate(k.rot || 0);
@@ -529,41 +543,110 @@ export function paintClutter(ctx, map, g) {
 }
 
 // ---- light: pools on the floor, glows from the things you can use ------------------------
-export function paintPools(ctx, map, g) {
-  const { T, look } = g;
-  ctx.save();
-  ctx.globalCompositeOperation = 'lighter';
+// Lights are things in the map (look.lights): each has a fixture you can see (a hanging work lamp, a floor
+// flood, a strip on a wall cap, a lit screen on a station, a beacon, the station's own lit art, the bay-mouth
+// field) and a pool it throws. Pools build one lightmap: the room sits at a darker ambient and the pools lift it
+// back, so the lit stations and the pad pull the eye. Doors are lights too (their jamb strips).
+const colorOf = (look, c, fallback) => look.accents?.[c] || look.light[c] || c || fallback;
+export function lightsPx(map, look) {
+  const T = map.tile, out = [];
   for (const l of look.lights || []) {
-    const color = look.accents?.[l.color] || look.light[l.color] || l.color || look.light.warm;
-    glow(ctx, l.at[0] * T, l.at[1] * T, (l.r || 3) * T, color, l.alpha ?? 0.1);
+    const [x, y] = l.at.map(v => v * T), [w, h] = (l.size || [0, 0]).map(v => v * T);
+    const pool = l.pool ? l.pool.map(v => v * T) : [x + w / 2, y + h / 2];
+    out.push({ ...l, x: pool[0], y: pool[1], fx: x + w / 2, fy: y + h / 2, r: (l.r || 3) * T, color: colorOf(look, l.color, look.light.warm), strength: l.strength ?? 0.3 });
   }
-  // Wall lamps throw a warm pool onto the floor in front of them.
-  for (const m of look.mounts || []) {
-    if (m.kind !== 'lamp' && !m.glow) continue;
-    const [x, y] = m.at.map(v => v * T), [w, h] = (m.size || [1, 1]).map(v => v * T);
-    const gc = m.glow ? (look.light[m.glow] || look.accents?.[m.glow] || m.glow) : look.light.warm;
-    glow(ctx, x + w / 2 + (m.gx || 0) * T, y + h / 2 + (m.gy || 0) * T, T * (m.r || 2.6), gc, m.alpha ?? 0.13);
-  }
-  // Doors spill their strip colour into the room.
   for (const d of map.doors) {
     const side = d.y <= 0 ? [0, 1] : d.y + d.h >= map.h ? [0, -1] : d.x <= 0 ? [1, 0] : d.x + d.w >= map.w ? [-1, 0] : null;
     if (!side) continue;
-    const color = look.doorColors?.[d.id] ? (look.accents?.[look.doorColors[d.id]] || look.doorColors[d.id]) : look.doors.open;
-    glow(ctx, d.x + d.w / 2 + side[0] * T * 0.4, d.y + d.h / 2 + side[1] * T * 0.4, T * 1.7, color, look.doors.spill);
+    const color = look.doorColors?.[d.id] ? colorOf(look, look.doorColors[d.id]) : look.doors.open;
+    out.push({ kind: 'door', x: d.x + d.w / 2 + side[0] * T * 0.6, y: d.y + d.h / 2 + side[1] * T * 0.6, fx: d.x + d.w / 2, fy: d.y + d.h / 2, r: T * 2.2, color, strength: look.doors.spill });
+  }
+  return out;
+}
+
+/**
+ * Multiplies by the lightmap: ambient everywhere, coloured pools under the fixtures. Called twice: once on the
+ * bare floor, once (clipped to the floor) after the props, so the floor falls off further than the things on it.
+ */
+export function paintLightmap(ctx, map, g, lights, { floorOnly = false } = {}) {
+  const { T, look } = g, k = 16 / T; // 16 lightmap px per tile: pools are soft anyway
+  if (!g.lightmap) g.lightmap = buildLightmap(map, look, lights, k);
+  ctx.save();
+  if (floorOnly) { ctx.beginPath(); for (let r = 0; r < map.rows; r++) for (let c = 0; c < map.cols; c++) if (g.floor(r, c)) ctx.rect(c * T, r * T, T, T); ctx.clip(); }
+  ctx.globalCompositeOperation = 'multiply'; ctx.imageSmoothingEnabled = true;
+  ctx.drawImage(g.lightmap, 0, 0, map.w, map.h);
+  ctx.restore();
+}
+function buildLightmap(map, look, lights, k) {
+  const lm = document.createElement('canvas'); lm.width = Math.ceil(map.w * k); lm.height = Math.ceil(map.h * k);
+  const x = lm.getContext('2d');
+  x.fillStyle = look.light.ambient; x.fillRect(0, 0, lm.width, lm.height);
+  x.globalCompositeOperation = 'lighter';
+  for (const l of lights) {
+    const gr = x.createRadialGradient(l.x * k, l.y * k, 0, l.x * k, l.y * k, l.r * k);
+    gr.addColorStop(0, hex(l.color, l.strength)); gr.addColorStop(0.5, hex(l.color, l.strength * 0.5)); gr.addColorStop(1, hex(l.color, 0));
+    x.fillStyle = gr; x.fillRect((l.x - l.r) * k, (l.y - l.r) * k, l.r * 2 * k, l.r * 2 * k);
+  }
+  return lm;
+}
+
+/** The fixtures themselves and the hot glow right at each one (drawn over the props). */
+export function paintFixtures(ctx, map, g, lights) {
+  const { T, look } = g;
+  for (const l of lights) {
+    if (l.kind === 'door') continue;
+    const [x, y] = l.at.map(v => v * T), [w, h] = (l.size || [0.14, 0.14]).map(v => v * T);
+    const art = l.art && (lookImage('decal', l.art) || lookImage('prop', l.art));
+    if (l.kind === 'strip' && art) ctx.drawImage(art, x, y, w, h);
+    else if (l.kind === 'lamp') {
+      // A work lamp hanging from the roof beams, seen from above: a cage, a hot bulb, a soft shadow below-right.
+      const lampArt = lookImage('decal', 'light-fixture-caged'), s = (l.size?.[0] || 0.8) * T;
+      ctx.save(); ctx.fillStyle = 'rgba(0,0,0,0.28)'; ctx.filter = `blur(${Math.max(1, s * 0.12 * (ctx.getTransform().a || 1))}px)`;
+      ctx.beginPath(); ctx.arc(x + s * 0.25, y + s * 0.35, s * 0.42, 0, TAU); ctx.fill(); ctx.restore();
+      if (lampArt) ctx.drawImage(lampArt, x - s / 2, y - s / 2, s, s);
+      else { ctx.fillStyle = '#3c4249'; ctx.beginPath(); ctx.arc(x, y, s * 0.45, 0, TAU); ctx.fill(); ctx.fillStyle = '#fff3d8'; ctx.beginPath(); ctx.arc(x, y, s * 0.2, 0, TAU); ctx.fill(); }
+    } else if (l.kind === 'flood') {
+      // A floor floodlight: a squat housing with a bright lens facing its pool.
+      const a = Math.atan2(l.y - y, l.x - x), s = 0.42 * T;
+      ctx.save(); ctx.translate(x, y); ctx.rotate(a);
+      ctx.shadowColor = 'rgba(0,0,0,0.45)'; ctx.shadowBlur = 4 * (ctx.getTransform().a || 1); ctx.shadowOffsetX = 2; ctx.shadowOffsetY = 3;
+      ctx.fillStyle = '#4a5159'; rr(ctx, -s * 0.5, -s * 0.4, s, s * 0.8, s * 0.12); ctx.fill(); ctx.shadowColor = 'transparent';
+      ctx.fillStyle = '#ffe9c4'; rr(ctx, s * 0.28, -s * 0.3, s * 0.18, s * 0.6, s * 0.06); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.18)'; ctx.fillRect(-s * 0.45, -s * 0.36, s * 0.7, s * 0.08);
+      ctx.restore();
+    } else if (l.kind === 'screen' || l.kind === 'beacon') {
+      // The lit part of a station: a hot core in its accent colour (200+ in a screenshot).
+      ctx.fillStyle = hex(l.color, 1); rr(ctx, x, y, w, h, Math.min(w, h) * 0.4); ctx.fill();
+      ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = 'rgba(255,255,255,0.55)'; rr(ctx, x + w * 0.12, y + h * 0.12, w * 0.76, h * 0.76, Math.min(w, h) * 0.3); ctx.fill(); ctx.restore();
+    }
+  }
+  // The pools lift the floor (and what stands on it) past its base where the light is strong, and each fixture
+  // has a hot glow (props near a lamp catch its light). Both stay off the wall caps so the walls read.
+  if (globalThis.__stardustLookLights === false) return;
+  ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  ctx.beginPath(); for (let r = 0; r < map.rows; r++) for (let c = 0; c < map.cols; c++) if (g.floor(r, c)) ctx.rect(c * T, r * T, T, T);
+  ctx.clip();
+  for (const l of lights) glow(ctx, l.x, l.y, l.r * 0.8, l.color, l.poolGlow ?? l.strength * 0.42);
+  for (const l of lights) {
+    const small = l.kind === 'screen' || l.kind === 'beacon';
+    if (small || l.kind === 'lamp' || l.kind === 'flood' || l.kind === 'strip') glow(ctx, l.fx, l.fy, T * (small ? 1 : 0.9), l.color, l.glow ?? (small ? 0.26 : 0.2));
   }
   ctx.restore();
 }
 
-export function paintEmitters(ctx, map, g) {
-  const { T, look } = g;
-  for (const e of look.emitters || []) {
-    const color = look.accents?.[e.color] || e.color || look.light.cool;
-    const [x, y] = e.at.map(v => v * T), [w, h] = (e.size || [0.12, 0.12]).map(v => v * T);
-    ctx.save(); ctx.globalCompositeOperation = 'lighter';
-    glow(ctx, x + w / 2, y + h / 2, (e.glow || 1.1) * T, color, e.alpha ?? 0.22);
-    ctx.restore();
-    // The lit part itself: a hot core in the accent colour (200+ in a screenshot).
-    ctx.fillStyle = hex(color, 1); rr(ctx, x, y, w, h, Math.min(w, h) * 0.4); ctx.fill();
-    ctx.fillStyle = hex(color, 1); ctx.globalAlpha = 1; ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = 'rgba(255,255,255,0.55)'; rr(ctx, x + w * 0.12, y + h * 0.12, w * 0.76, h * 0.76, Math.min(w, h) * 0.3); ctx.fill(); ctx.restore();
+/**
+ * Where a thing's soft shadow falls, in world px: away from the nearest strong light it stands in,
+ * else down and right (the room's light comes from the upper left).
+ */
+export function shadowOffset(lights, x, y, mag, base = [0.57, 0.82]) {
+  let best = null, bw = 0;
+  for (const l of lights || []) {
+    if (l.kind !== 'lamp' && l.kind !== 'flood' && l.kind !== 'strip') continue;
+    const d = Math.hypot(x - l.fx, y - l.fy);
+    const w = 1 - d / l.r;
+    if (w > bw && d > 1) { bw = w; best = [(x - l.fx) / d, (y - l.fy) / d]; }
   }
+  let dx = base[0], dy = base[1];
+  if (best) { dx = dx * (1 - bw) + best[0] * bw; dy = dy * (1 - bw) + best[1] * bw; const n = Math.hypot(dx, dy) || 1; dx /= n; dy /= n; }
+  return [dx * mag, dy * mag];
 }

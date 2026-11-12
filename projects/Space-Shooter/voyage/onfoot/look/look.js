@@ -8,7 +8,12 @@
 //   "look": { "set": "hangar", "accents": { "board": "#6fe3ff" }, "decals": [...], "lights": [...],
 //             "emitters": [...], "mounts": [...], "clutter": [...], "doorColors": { "workshop": "pad" } }
 import LOOKS from './looks.json' with { type: 'json' };
-import { gridOf, paintOutside, paintFloor, paintDecals, paintWallShadows, paintWalls, paintDoors, paintMounts, paintClutter, paintPools, paintEmitters } from './paint.js';
+import { gridOf, paintOutside, paintFloor, paintDecals, paintWallShadows, paintWalls, paintDoors, paintMounts, paintClutter, paintLightmap, paintFixtures, lightsPx } from './paint.js';
+export { lightsPx, shadowOffset } from './paint.js';
+
+// Lights on (the game) unless a dev check turns them off for a before/after picture: globalThis.__stardustLookLights = false.
+const lightsOn = () => globalThis.__stardustLookLights !== false;
+const stillPlease = () => Boolean(globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
 
 const merge = (a, b) => {
   if (!b || typeof b !== 'object' || Array.isArray(b)) return b === undefined ? a : b;
@@ -45,21 +50,27 @@ export function buildLookLayer(map, scale, { drawProps, isLocked = () => false }
   const ctx = canvas.getContext('2d');
   ctx.setTransform(s, 0, 0, s, M * s, M * s);
   const g = gridOf(map, look);
+  const lights = lightsPx(map, look);
+  g.lights = lights;
+  // Baked once per map: floor, paint, the lightmap and the wall shadows, walls, doors, wall pieces, props with
+  // their soft shadows, clutter, then the fixtures and their hot glow. Only people and flicker are per frame.
   paintOutside(ctx, map, look, M);
   paintFloor(ctx, map, g);
   paintDecals(ctx, map, g);
-  paintPools(ctx, map, g);
+  if (lightsOn()) paintLightmap(ctx, map, g, lights);
   paintWallShadows(ctx, map, g);
   paintWalls(ctx, map, g);
   paintDoors(ctx, map, g, isLocked);
   paintMounts(ctx, map, g);
   drawProps(ctx);
   paintClutter(ctx, map, g);
-  paintEmitters(ctx, map, g);
+  if (lightsOn()) paintLightmap(ctx, map, g, lights, { floorOnly: true });
+  paintFixtures(ctx, map, g, lights);
+  const flickers = lights.filter(l => l.flicker);
 
   let vig = null, vigKey = '';
   return {
-    canvas, scale: s, margin: M, look,
+    canvas, scale: s, margin: M, look, lights,
     /** Draws the view: the outside colour, then the padded layer cropped to the camera. */
     blit(c, cam, view) {
       const k = cam.zoom * view.dpr;
@@ -69,8 +80,21 @@ export function buildLookLayer(map, scale, { drawProps, isLocked = () => false }
       const x0 = Math.max(0, sx), y0 = Math.max(0, sy), x1 = Math.min(canvas.width, sx + sw), y1 = Math.min(canvas.height, sy + sh);
       if (x1 > x0 && y1 > y0) c.drawImage(canvas, x0, y0, x1 - x0, y1 - y0, ((x0 - sx) / s) * k, ((y0 - sy) / s) * k, ((x1 - x0) / s) * k, ((y1 - y0) / s) * k);
     },
-    /** After the bodies: a soft vignette at the look's own strength (in place of the default one). */
-    overlay(c, cam, view) {
+    /** After the bodies: a gentle flicker on the odd faulty lamp (never under reduced motion), then the look's own vignette. */
+    overlay(c, cam, view, t = 0) {
+      if (flickers.length && lightsOn() && !stillPlease()) {
+        const k = cam.zoom * view.dpr;
+        c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.globalCompositeOperation = 'lighter';
+        for (const l of flickers) {
+          const f = Math.max(0, Math.sin(t * 13.1 + l.x) * Math.sin(t * 7.3) * Math.sin(t * 2.9 + l.y)); // mostly steady, the odd stutter
+          if (f < 0.05) continue;
+          const x = (l.fx - cam.x) * k, y = (l.fy - cam.y) * k, r = Math.min(l.r * 0.5, T * 2) * k;
+          const gr = c.createRadialGradient(x, y, 0, x, y, r);
+          gr.addColorStop(0, `rgba(255,220,170,${0.12 * f})`); gr.addColorStop(1, 'rgba(255,220,170,0)');
+          c.fillStyle = gr; c.fillRect(x - r, y - r, r * 2, r * 2);
+        }
+        c.restore();
+      }
       const key = `${c.canvas.width}x${c.canvas.height}`;
       if (key !== vigKey) {
         vigKey = key;

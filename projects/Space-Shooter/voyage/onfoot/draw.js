@@ -6,13 +6,13 @@
 import { wallPiece } from './rules/walls.js';
 import { unturnedBox } from './rules/geom.js';
 import { sprite, groundImage, tileImage, castImage, roomArt, interiorProp, CAST_LOOK } from './assets.js';
-import { buildLookLayer, lookFor, litCopy, silhouette } from './look/look.js';
-import { lookImage } from './look/lookArt.js';
+import { buildLookLayer, lookFor, litCopy, silhouette, lightsPx, shadowOffset } from './look/look.js';
+import { lookImage, LOOK_ART } from './look/lookArt.js';
 
 const TAU = Math.PI * 2;
 // The round-3 look of the map whose static layer was built last (null for maps without a `look` block):
 // props and people follow it (lift, shadows, scale) while that map is on screen.
-let activeLook = null, activeTile = 48;
+let activeLook = null, activeTile = 48, activeLights = [];
 
 // ---- placeholders ----------------------------------------------------------
 const TILE_LOOK = {
@@ -122,7 +122,7 @@ function drawTile(ctx, id, x, y, T, row, col, faceBelow = true, overlay = false)
 // ---- the static layer ---------------------------------------------------------
 /** Draws a map's floor, walls and still props at `scale` into an offscreen canvas. extraArt(p) may draw special props. */
 export function buildStaticLayer(map, scale, { extraArt = null, isLocked = () => false } = {}) {
-  activeLook = lookFor(map); activeTile = map.tile;
+  activeLook = lookFor(map); activeTile = map.tile; activeLights = activeLook ? lightsPx(map, activeLook) : [];
   if (activeLook) return buildLookLayer(map, scale, { isLocked, drawProps: c => drawProps(c, map, extraArt) });
   const maxSide = 4096, maxPixels = 9e6;
   let s = Math.min(scale, maxSide / map.w, maxSide / map.h);
@@ -265,10 +265,13 @@ export function drawContained(ctx, img, p, pad = 0, piece = null) {
     // Look maps: a soft shadow in the art's own shape, down and right, and the art lifted onto the value ladder.
     const sh = activeLook.props.shadow, k = w / img.width;
     const { canvas: sc, pad } = silhouette(img, (sh.blur * activeTile) / k);
-    // The shadow is cast in the world (down-right) even when the prop is turned.
-    const ox = (sh.dx * activeTile) * Math.cos(-rot) - (sh.dy * activeTile) * Math.sin(-rot), oy = (sh.dx * activeTile) * Math.sin(-rot) + (sh.dy * activeTile) * Math.cos(-rot);
+    // The shadow falls away from the nearest lamp (else down-right), in the world even when the prop is turned.
+    const [wx, wy] = shadowOffset(activeLights, p.cx, p.cy, Math.hypot(sh.dx, sh.dy) * activeTile);
+    const ox = wx * Math.cos(-rot) - wy * Math.sin(-rot), oy = wx * Math.sin(-rot) + wy * Math.cos(-rot);
     ctx.globalAlpha = sh.alpha; ctx.drawImage(sc, x - pad * k + ox, y - pad * k + oy, sc.width * k, sc.height * k); ctx.globalAlpha = 1;
-    ctx.drawImage(litCopy(img, activeLook.props.byArt?.[p.art]?.lift ?? activeLook.props.lift), x, y, w, h);
+    // Kit art from the round-3 lanes is made on the value ladder already; older art is lifted onto it.
+    const lift = activeLook.props.byArt?.[p.art]?.lift ?? (LOOK_ART.prop[p.art] ? activeLook.props.kitLift ?? '' : activeLook.props.lift);
+    ctx.drawImage(litCopy(img, lift), x, y, w, h);
     ctx.restore();
     return;
   }
@@ -295,9 +298,11 @@ export function drawBody(ctx, x, y, angle, img, { size = 44, t = 0, moving = fal
     const pl = activeLook.people;
     size *= pl.scale ?? 1;
     img = litCopy(img, pl.lift);
-    const g = ctx.createRadialGradient(size * 0.08, size * 0.12, 0, size * 0.08, size * 0.12, size * 0.42);
-    g.addColorStop(0, `rgba(0,0,0,${pl.shadowAlpha ?? 0.5})`); g.addColorStop(0.6, `rgba(0,0,0,${(pl.shadowAlpha ?? 0.5) * 0.55})`); g.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(size * 0.08, size * 0.12, size * 0.42, size * 0.38, 0, 0, TAU); ctx.fill();
+    // The soft shadow moves with the body and falls away from the nearest lamp.
+    const [sx, sy] = shadowOffset(activeLights, x, y, size * 0.15);
+    const g = ctx.createRadialGradient(sx, sy, 0, sx, sy, size * 0.44);
+    g.addColorStop(0, `rgba(0,0,0,${pl.shadowAlpha ?? 0.5})`); g.addColorStop(0.55, `rgba(0,0,0,${(pl.shadowAlpha ?? 0.5) * 0.5})`); g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(sx, sy, size * 0.44, 0, TAU); ctx.fill();
   } else { ctx.fillStyle = '#0007'; ctx.beginPath(); ctx.ellipse(3, 5, size * 0.36, size * 0.3, 0, 0, TAU); ctx.fill(); }
   ctx.rotate(angle + Math.PI / 2 + sway);
   ctx.scale(bob, bob);
