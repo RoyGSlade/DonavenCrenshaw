@@ -88,7 +88,11 @@ export function shipSummary(save) {
 // crewLive(frame): live fight frames for the crew's turret scope (P11, races lane).
 // rolled(rolls): every attempt the engine rolled in a step, in order (contract
 // section 6), so the page can show each on the dice.
-export function createQuestPlayer({ root, session, status = () => {}, onEnd = () => {}, onExit = () => {}, onChange = () => {}, exitLabel = 'Back to the job board', announceEvents = true, crew = () => null, voice = null, liveRace = null, crewLive = () => {}, rolled = () => {} }) {
+// presenter (round 3, optional): { dialogue(v, pick), card(kind) }. With it, dialogue
+// beats go to presenter.dialogue (the hangar's dialogue box: v is the engine's view,
+// pick(index) takes a choice) and the root shows only travel, fights, puzzles, races,
+// events and the result; presenter.card('part' | 'end' | null) says what the root holds.
+export function createQuestPlayer({ root, session, status = () => {}, onEnd = () => {}, onExit = () => {}, onChange = () => {}, exitLabel = 'Back to the job board', announceEvents = true, crew = () => null, voice = null, liveRace = null, crewLive = () => {}, rolled = () => {}, presenter = null }) {
   let current = null; // { quest, run }
   let voiced = '';
   let lastEvents = [];
@@ -188,11 +192,18 @@ export function createQuestPlayer({ root, session, status = () => {}, onEnd = ()
       crew() ? el('p', { class: 'qs-where qs-crew', text: `Crew aboard: ${crew().name}, on the turret, repairs, scopes and checks.` }) : null,
       el('p', { class: 'qs-where qs-ship', dataset: { shipHull: String(v.hullMax), shipGuns: String(ship.guns), shipRace: String(ship.race) }, text: `Your ship: hull ${v.hullMax} · guns ${ship.guns} · race +${ship.race}` }),
     );
+    if (presenter && !v.ended && !v.part) {
+      root.replaceChildren();
+      presenter.card(null);
+      presenter.dialogue(v, (index) => doAct({ type: 'choose', index }));
+      return;
+    }
     let body;
     if (v.ended) body = renderEnd(v);
     else if (v.part) body = renderPart(v);
     else body = renderDialogue(v);
     root.replaceChildren(head, body);
+    presenter?.card(v.ended ? 'end' : 'part');
   }
 
   function renderDialogue(v) {

@@ -3,22 +3,23 @@
 // carried, equip here), Jobs (what you are doing, step by step; who is hiring;
 // what you have done) and Map (a plan of where you are). Draw only; every
 // write goes through the store. All words through textContent.
-import { STATS, ITEMS, GIVERS, REP_MAX, MAX_REP_REWARDS, UNLOCK_NAMES, CURRENCY } from '../data.js';
-import { unspentPoints, spentPoints } from '../character.js';
+import { STATS, ITEMS, GIVERS, REP_MAX, MAX_REP_REWARDS, UNLOCK_NAMES, CURRENCY, TREES, SKILLS } from '../data.js';
+import { unspentPoints, spentPoints, canLearn } from '../character.js';
+import { HANGAR_DATA } from '../hangarData.js';
 import { money, itemName, repBand } from '../economy.js';
 import { statCard, HOW_CHECKS_WORK } from '../story/stats.js';
 import { createSkillTree } from '../ui/skillTree.js';
-import { iconFor, castPortrait } from '../ui/assets.js';
-import { respecQuote, RESPEC } from '../hangarSkills.js';
+import { iconFor, castPortrait, itemArt } from '../ui/assets.js';
+import { RESPEC } from '../hangarSkills.js';
 import { GEAR, SLOTS, gearOf, equip, unequip, loadout } from '../shops/shop.js';
 import { QUESTS } from '../quests/data/quests/index.js';
 import { QUEST_GIVERS } from '../quests/data/givers.js';
 import { SECTORS } from '../quests/data/sectors.js';
-import { availability } from '../quests/engine.js';
+import { giverOffers, whereText } from '../quests/offers.js';
 import { BADGES_DATA } from '../quests/data/badges.js';
 import { currentTrack } from './steps.js';
 import { BASICS_DATA } from './data.js';
-import { icon, stepMark } from './icons.js';
+import { icon, stepMark, ITEM_ICONS } from './icons.js';
 import { lookFor } from './marks.js';
 
 export function el(tag, props = {}, ...kids) {
@@ -40,11 +41,10 @@ const initials = (name) => String(name || '?').split(' ').filter(Boolean).slice(
 const NAP = BASICS_DATA.nap;
 const fillText = (text, vars) => String(text).replace(/\{(\w+)\}/g, (_, k) => (vars[k] ?? ''));
 
-/** "Want your points back? Take a nap at your bunk: 30 credits." (or free in the tutorial) */
+/** "Want points back? Nap at your bunk and pick which: 10 credits a point." (free in the tutorial) */
 export function napLine(save, tutorial) {
-  const quote = respecQuote(save.character, { tutorial });
-  const cost = quote.cost.money ? money(quote.cost.money) : NAP.padFree;
-  return fillText(NAP.padLine, { cost: quote.points ? cost : `${money(RESPEC.feePerPoint)} a point` });
+  const cost = tutorial && RESPEC.freeInTutorial ? NAP.padFree : `${money(RESPEC.feePerPoint)} a point`;
+  return fillText(NAP.padLine, { cost });
 }
 
 // --- Captain: who you are, what your stats do, and the whole skill tree --------------
@@ -59,6 +59,19 @@ export function createCaptainPage({ root, store, toast, tutorialOn, reducedMotio
     fit: true,
     onLearned: (id) => bus?.emit('hangar:learned', { skill: id }),
   });
+
+  // Phones: every skill by name under the tree (the tree there shows nodes and ranks only, so
+  // nothing is clipped or overlaps at 390); tap one to see it in the skill card.
+  function skillList(c) {
+    return el('div', { class: 'dp-skill-list' }, TREES.map((t) => el('section', { class: 'dp-skill-tree', style: `--tree:${HANGAR_DATA.skillTree.colours[t.id] || '#81e6df'}` },
+      el('h4', { text: t.name }),
+      el('div', { class: 'dp-skill-chips' }, SKILLS.filter((sk) => sk.trees[0] === t.id).map((sk) => {
+        const rank = c.skills?.[sk.id] || 0;
+        const can = canLearn(c, sk.id).ok;
+        return el('button', { type: 'button', class: `dp-skill-chip${rank ? ' is-learned' : ''}${can ? ' is-ready' : ''}${tree.selected === sk.id ? ' is-selected' : ''}`, 'data-skill-chip': sk.id,
+          on: { click: () => { tree.select(sk.id); render(); } } }, el('span', { text: sk.name }), el('b', { text: `${rank}/${sk.max}` }));
+      })))));
+  }
 
   function render(save = store.get()) {
     const c = save.character;
@@ -89,7 +102,7 @@ export function createCaptainPage({ root, store, toast, tutorialOn, reducedMotio
     tree.render(save);
     fill(root,
       side,
-      el('div', { class: 'dp-cap-mid' }, head, treeHost),
+      el('div', { class: 'dp-cap-mid' }, head, treeHost, skillList(c)),
       el('div', { class: 'dp-cap-right' },
         detail,
         el('div', { class: 'dp-points-row' },
@@ -110,9 +123,9 @@ export function createPackPage({ root, store, toast }) {
     if (line) toast(line);
   }
   function itemCell(id, count, extra = null) {
-    const art = iconFor(id);
+    const art = itemArt(id);
     return el('li', { class: 'dp-item', 'data-item': id },
-      art ? el('img', { src: art, alt: '' }) : el('i', { class: 'dp-item-blank', text: initials(itemName(id)) }),
+      art ? el('img', { src: art, alt: '' }) : el('i', { class: 'dp-item-blank' }, icon(ITEM_ICONS[id] || 'pack', 'dp-item-glyph')),
       el('span', {}, el('strong', { text: itemName(id) }), extra ? el('small', { text: extra }) : null),
       el('b', { text: count > 1 ? `×${count}` : '' }));
   }
@@ -160,7 +173,8 @@ export function stepList(track, { compact = false } = {}) {
     el('span', { class: 'dp-sr', text: s.state === 'done' ? ' (done)' : s.state === 'now' ? ' (now)' : s.state === 'skipped' ? ' (skipped)' : '' }))));
 }
 
-export function createJobsPage({ root, store }) {
+// onContinue(): pick the job in progress back up (it plays in the world, round 3).
+export function createJobsPage({ root, store, onContinue = () => {} }) {
   function render(save = store.get()) {
     const track = currentTrack(save);
     const now = track
@@ -168,7 +182,7 @@ export function createJobsPage({ root, store }) {
         el('p', { class: 'ui-eyebrow', text: track.kind === 'tutorial' ? BASICS_DATA.tracker.tutorialEyebrow : `${BASICS_DATA.tracker.jobEyebrow} · ${(QUEST_GIVERS[track.giver]?.short || '').toUpperCase()}` }),
         el('h2', { text: track.title }),
         stepList(track),
-        track.kind === 'job' ? el('p', { class: 'ui-note', text: BASICS_DATA.tracker.resume }) : null)
+        track.kind === 'job' ? el('button', { type: 'button', class: 'ui-btn primary', id: 'dp-jobs-continue', text: BASICS_DATA.tracker.resume, on: { click: () => onContinue() } }) : null)
       : el('section', { class: 'dp-now is-empty' },
         el('p', { class: 'ui-eyebrow', text: 'NOTHING ON' }),
         el('h2', { text: 'No job running.' }),
@@ -189,17 +203,17 @@ export function createJobsPage({ root, store }) {
             prize ? el('small', { text: `${save.account?.maxRep?.[g.id] ? 'Earned' : `At ${REP_MAX}`}: +${prize.permanent} permanent skill points, ${prize.unlocks.map((u) => UNLOCK_NAMES[u] || u).join(', ')}` }) : null);
         }))),
       el('div', { class: 'dp-jobs-right' },
-        el('h3', { class: 'dp-h', text: 'ON THE BOARD' }),
-        el('ul', { class: 'dp-offers' }, Object.entries(QUEST_GIVERS).flatMap(([gid, giver]) => giver.quests.map((qid) => {
-          const q = QUESTS[qid];
-          if (!q) return null;
-          const can = save.character ? availability(q, save) : { ok: false, reasons: ['Sign on a captain first.'] };
-          const last = save.quests?.done?.[qid];
-          return el('li', { class: `dp-offer${can.ok ? '' : ' is-closed'}`, dataset: { quest: qid } },
-            el('strong', { text: q.title }),
-            el('small', { text: `${giver.short} · ${SECTORS[giver.sector]?.name || ''}${last ? ` · last time ${last.result === 'success' ? 'done' : 'failed'}` : ''}` }),
-            el('span', { text: can.ok ? q.summary : can.reasons[0] }));
-        }).filter(Boolean))),
+        // Jobs you haven't taken are in the world: this says where to go, it does not start them.
+        el('h3', { class: 'dp-h', text: 'WHERE THE WORK IS' }),
+        el('ul', { class: 'dp-offers' }, Object.keys(QUEST_GIVERS).map((gid) => {
+          const list = giverOffers(gid, save);
+          return el('li', { class: 'dp-offer-giver', dataset: { giver: gid } },
+            el('strong', { text: QUEST_GIVERS[gid].name }),
+            el('small', { class: 'dp-offer-where', text: `Find them: ${whereText(gid)}` }),
+            el('ul', { class: 'dp-offer-jobs' }, list.map((o) => el('li', { class: `dp-offer${o.ok ? '' : ' is-closed'}`, dataset: { offer: o.id } },
+              el('span', { text: o.quest.title }),
+              el('small', { text: o.ok ? `${o.pay || 'parts and favours'}${o.deadly ? ' · Deadly' : ''}${o.last ? ` · last time ${o.last.result === 'success' ? 'done' : 'failed'}` : ''}` : o.reasons[0] })))));
+        })),
         el('h3', { class: 'dp-h', text: 'DONE' }),
         done.length ? el('ul', { class: 'vy-list', 'data-jobs': '' }, done.map(([id, d]) => el('li', { 'data-job': id }, el('span', { text: `${QUESTS[id].title}: ${d.result === 'success' ? 'done' : 'failed'} (${d.outcome})` }), el('b', { text: `${d.times}×` }))))
           : el('p', { class: 'ui-note', text: 'No jobs finished yet.' }),

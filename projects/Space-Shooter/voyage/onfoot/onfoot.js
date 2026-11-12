@@ -15,6 +15,8 @@
 //     allow(target)         false blocks an interaction (the director gates tutorial steps)
 //     sound(id)             real sound effects (ids: events.js SOUNDS); default: small synth blips
 //     stationInfo(id)       { name, locked } for a hangar station id (the interact marks and prompt)
+//     offerTalk(who, map)   a promise when a quest giver talks jobs here (offers in the world), else null
+//     offers({ map, npc?, station? }) open job offers here (the "job here" mark)
 //     repair(job)           a crew repair point was used: { id: 'guns'|'engine'|'hull', label, timeScale } (timeScale
 //                           = 1 minus Mechanic's repair.time); without it a stand-in line plays
 // Skill levels come only from data.js through character.js (ROUND2-CONTRACT section 9): no table here.
@@ -90,6 +92,9 @@ export function createOnFoot({ root, store = null, bus = null, hooks = {}, mapId
 
   async function talk(who, context = {}) {
     sound('talk');
+    // r3 basics: a quest giver with jobs on offer talks jobs (offers in the world); no idle line on top.
+    const offer = hooks.offerTalk?.(who, world.map);
+    if (offer && typeof offer.then === 'function') { await offer; return; }
     emit(metEvent(who), {});
     if (hooks.talk) await hooks.talk(who, context);
     else if (!bus) await talkBox.show(STAND_IN[who] || [{ who, text: '…' }]);
@@ -239,6 +244,8 @@ export function createOnFoot({ root, store = null, bus = null, hooks = {}, mapId
       gate,
       // r3 basics: a station's name and whether it is open, for the marks and the prompt.
       stationInfo: (id) => hooks.stationInfo?.(id) || null,
+      // r3 basics: open job offers here (a giver in person, a board's postings), for the "job here" mark.
+      offers: (here) => hooks.offers?.(here) || 0,
       entered: (map) => hooks.entered?.(map),
       // Away from home, the ship's ramp opens onto the place it is docked at.
       doorTo: (door, map) => (map.id === 'ship' && door.id === 'ramp' && docked !== 'home' && PLACES[docked]?.map ? { to: PLACES[docked].map, arrive: 'from-dock' } : null),

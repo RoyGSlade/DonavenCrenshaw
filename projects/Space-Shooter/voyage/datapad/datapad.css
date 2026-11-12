@@ -242,10 +242,12 @@ body .hg-layer .hg-spot:focus-visible{opacity:1!important;pointer-events:auto}
   .dp-cap-right{position:static;width:auto;max-height:none}
   .dp-cap-mid{margin:12px 0}
   .dp-pad .dp-cap-tree .ui-tree-wrap{position:static;height:auto;width:100%;display:block}
-  /* Phones: the tree keeps a readable size and pans sideways (it opens centred on you). */
-  .dp-pad .dp-cap-tree .ui-tree-wrap{overflow-x:auto;overflow-y:hidden;scrollbar-width:thin}
-  .dp-pad .dp-cap-tree .ui-tree{width:470px!important;max-width:none}
-  .dp-pad .ui-node-name{display:block}
+  /* Phones: the whole tree fits the width (nodes and ranks); the names are in the list below it. */
+  .dp-pad .dp-cap-tree .ui-tree-wrap{overflow:visible}
+  .dp-pad .dp-cap-tree .ui-tree{width:100%!important;max-width:none}
+  .dp-pad .ui-node-name,.dp-pad .ui-branch-label span{display:none}
+  .dp-pad .ui-node{min-width:30px;width:9.5%}
+  .dp-skill-list{display:grid!important}
   .dp-cap-who{margin-bottom:0}
   .dp-pack-right,.dp-jobs-right,.dp-map-right{margin-top:16px}
   .dp-map-canvas{height:300px}
@@ -331,3 +333,45 @@ img.dp-bag-art{width:74px;height:74px;object-fit:contain}
   body:has(#hg-dialogue:not([hidden])) .dp-tracker.has-art{top:56px}
   body:has(#hg-dialogue:not([hidden])) .dp-tracker.has-art::before{display:none}
 }
+.dp-tracker-go{width:calc(100% - 12px);margin:6px 6px 4px;min-height:36px}
+@media (max-width:760px){.dp-tracker-go{min-height:40px}}
+.dp-jobcard{position:fixed;z-index:9;left:50%;top:50%;transform:translate(-50%,-50%);width:min(620px,calc(100vw - 24px));max-height:calc(100dvh - 120px);display:flex;flex-direction:column;padding:0}
+.dp-jobcard-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 6px}
+.dp-jobcard-head .ui-eyebrow{margin:0;color:#ffb23a}
+.dp-jobcard .vy-pane{flex:1;min-height:0;overflow:auto;border:0;background:none;padding:2px}
+.ui-dlg-choice.is-later{opacity:.75;font-size:11px;min-height:34px}
+/* The job board's postings: notes pinned to the board. */
+.vy-postings{list-style:none;margin:10px 0 0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.vy-posting{position:relative;display:grid;gap:4px;padding:16px 12px 10px;border:1px solid #4a5a3a;border-radius:4px;background:linear-gradient(#1b2418,#121a12);box-shadow:0 6px 14px #0008;transform:rotate(-.4deg)}
+.vy-posting:nth-child(2n){transform:rotate(.5deg)}
+.vy-posting.is-closed{opacity:.6}
+.vy-posting-pin{position:absolute;left:50%;top:-6px;width:12px;height:12px;margin-left:-6px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#ffe0a0,#c7792f);box-shadow:0 2px 3px #000a}
+.vy-posting-who{display:flex;align-items:center;gap:8px}
+.vy-posting-face{width:34px;height:34px;border-radius:50%;object-fit:cover;border:1px solid #9fe87066}
+.vy-posting-who b{display:block;font-size:12px}
+.vy-posting-who small{display:block;font:10px Consolas,monospace;color:#9fe870}
+.vy-posting strong{font-size:15px}
+.vy-posting-text{color:#b9c7b0;font-size:12px;line-height:1.45}
+.vy-posting-pay{font:11px Consolas,monospace;color:#ffb23a}
+.vy-posting button{margin-top:4px}
+.dp-offer-giver{display:grid;gap:4px;padding:10px 12px;border:1px solid var(--dp-line);border-left:3px solid #9fe870;border-radius:8px;background:#0a1824cc}
+.dp-offer-giver strong{font-size:14px}
+.dp-offer-where{font:11px Consolas,monospace;color:#9fe870}
+.dp-offer-jobs{list-style:none;margin:4px 0 0;padding:0;display:grid;gap:3px}
+.dp-offer-jobs .dp-offer{display:flex;justify-content:space-between;gap:10px;padding:0;border:0;background:none;font-size:12.5px}
+.dp-offer-jobs .dp-offer small{color:var(--dp-muted);font:11px Consolas,monospace;text-align:right}
+.dp-offer-jobs .dp-offer.is-closed small{color:var(--dp-amber)}
+#dp-jobs-continue{margin-top:10px;width:100%}
+
+/* The phone skill list (hidden on computers: the tree names everything there). */
+.dp-skill-list{display:none;gap:10px;margin:8px 0 4px}
+.dp-skill-tree h4{margin:0 0 6px;font:800 11px Consolas,monospace;letter-spacing:.14em;color:var(--tree);text-transform:uppercase}
+.dp-skill-chips{display:flex;flex-wrap:wrap;gap:6px}
+.dp-skill-chip{display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 10px;border:1px solid var(--dp-line);border-radius:20px;background:#0a1824;color:var(--dp-muted);font:700 13px Inter,sans-serif;cursor:pointer}
+.dp-skill-chip b{font:800 11px Consolas,monospace;color:var(--dp-muted)}
+.dp-skill-chip.is-learned{color:var(--dp-text);border-color:var(--tree)}
+.dp-skill-chip.is-learned b{color:var(--tree)}
+.dp-skill-chip.is-ready{box-shadow:0 0 10px color-mix(in srgb,var(--tree) 40%,#0000)}
+.dp-skill-chip.is-selected{outline:2px solid var(--dp-amber);outline-offset:2px}
+.dp-item img{object-fit:contain}
+.dp-item-glyph{width:24px;height:24px;color:var(--dp-cyan)}

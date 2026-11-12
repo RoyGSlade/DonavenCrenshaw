@@ -52,7 +52,7 @@ test('job tracker follows a real run: the furthest step reached is now, the ones
   assert.equal(track.kind, 'job');
   assert.equal(track.title, 'Cold Run');
   assert.equal(track.steps[0].state, 'now');
-  assert.deepEqual(track.target, { station: 'board' });
+  assert.equal(track.target, null, 'a job you have taken plays wherever you are (no floor marker)');
   // Walk the dialogue on until the run reaches the trip.
   let run = started.run;
   for (let i = 0; i < 8 && !run.visits.trip; i++) {
@@ -82,15 +82,44 @@ test('the objective marker finds its way through doors', () => {
   assert.equal(doorToward('cantina', mapsHolding({ npc: 'edna' }, MAP_DEFS), MAP_DEFS), 'staff');
 });
 
-test('the nap: costs the existing respec rule, free in the tutorial, says why it can\'t', () => {
-  const c = { ...createCharacter({ name: 'N', look: { portrait: 'p1', color: '#fff' } }, () => 0.5, () => 1), skills: { pilot: 2, gunner: 1 } };
+test('the nap: you pick which ranks to take back; the tree holds; the respec rule prices it', async () => {
+  const { canPick, canUnpick, applyPlan, planPoints } = await import(`${V}/datapad/nap.js`);
+  const c = { ...createCharacter({ name: 'N', look: { portrait: 'p1', color: '#fff' } }, () => 0.5, () => 1), skills: { pilot: 2, navigator: 1, gunner: 1 } };
   const fee = HANGAR_DATA.respec.feePerPoint;
-  const q = napQuote({ ...emptySave(), character: c, money: 500 }, false);
+  const save = (money) => ({ ...emptySave(), character: c, money });
+  assert.equal(napQuote(save(500), false, {}).ok, false, 'nothing picked: no nap');
+  assert.equal(napQuote(save(500), false, {}).reason, BASICS_DATA.nap.pickFirst);
+  const q = napQuote(save(500), false, { gunner: 1, pilot: 1 });
   assert.equal(q.ok, true);
-  assert.equal(q.cost, 3 * fee);
-  assert.equal(napQuote({ ...emptySave(), character: c, money: 0 }, true).cost, 0);
-  assert.equal(napQuote({ ...emptySave(), character: c, money: 0 }, false).ok, false);
-  assert.equal(napQuote({ ...emptySave(), character: { ...c, skills: {} }, money: 500 }, false).reason, BASICS_DATA.nap.nothing);
+  assert.equal(q.cost, 2 * fee, 'priced per point picked');
+  assert.equal(napQuote(save(0), true, { gunner: 1 }).cost, 0, 'free in the tutorial');
+  assert.equal(napQuote(save(0), false, { gunner: 1 }).ok, false, 'not enough credits says so');
+  // The tree holds: Navigator stands on Helm points, so Pilot can't all go while Navigator stays.
+  const all = { pilot: 2 };
+  assert.equal(canPick(c, { pilot: 1 }, 'pilot').ok, false);
+  assert.match(canPick(c, { pilot: 1 }, 'pilot').reason, /Navigator/);
+  assert.equal(canPick(c, { pilot: 1, navigator: 1 }, 'pilot').ok, true, 'with Navigator picked too, Pilot can go');
+  assert.equal(canUnpick(c, { pilot: 2, navigator: 1 }, 'navigator').ok, false, 'Navigator can\'t be kept on no Helm points');
+  assert.deepEqual(applyPlan(c, { gunner: 1, pilot: 1 }).skills, { pilot: 1, navigator: 1 });
+  assert.equal(planPoints({ gunner: 1, pilot: 1 }), 2);
+  assert.equal(napQuote({ ...emptySave(), character: { ...c, skills: {} }, money: 500 }, false, {}).reason, BASICS_DATA.nap.nothing);
+  void all;
+});
+
+test('jobs you have not taken are in the world: givers in person, the hangar board for off-station givers', async () => {
+  const { offersAt, payText, whereText, giverOffers } = await import(`${V}/quests/offers.js`);
+  const c = createCharacter({ name: 'J', look: { portrait: 'p1', color: '#fff' } }, () => 0.5, () => 1);
+  const save = { ...emptySave(), character: c };
+  assert.equal(offersAt({ map: 'hask-office', npc: 'hask' }, save).length, 5, 'Hask offers his five jobs in his office');
+  assert.equal(offersAt({ map: 'hangar', npc: 'hask' }, save).length, 0, 'not somewhere he doesn\'t work');
+  assert.equal(offersAt({ map: 'hangar', board: true }, save).length, 15, 'the hangar board posts all three off-station givers');
+  assert.equal(payText(QUESTS['cold-run']), '70-95 credits');
+  assert.match(whereText('vey'), /Beacon Prime/);
+  // Every job can be taken from somewhere (in person and on the board).
+  for (const id of Object.keys(QUESTS)) assert.ok(offersAt({ map: 'hangar', board: true }, save).some((o) => o.id === id), `${id} is posted`);
+  // One job at a time.
+  const busy = { ...save, quests: { active: { 'cold-run': { quest: 'cold-run' } } } };
+  assert.ok(giverOffers('vey', busy).every((o) => !o.ok && /Finish the job/.test(o.reasons[0])));
 });
 
 test('the skill tree lays out with room: no two nodes on top of each other, branch names past the ends', () => {

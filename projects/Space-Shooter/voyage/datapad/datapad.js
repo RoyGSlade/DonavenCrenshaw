@@ -32,7 +32,7 @@ function tabArt(p) {
  * onChange(open): the page holds or frees the floor. openLicence(): no captain yet.
  * stationInfo(id): { name, locked } for the map's legend.
  */
-export function createDatapad({ root = document.body, store, bus = null, toast = () => {}, world = () => null, tutorialOn = () => false, reducedMotion = () => false, canOpen = () => true, onChange = () => {}, openLicence = () => {}, stationInfo = () => null, touch = false }) {
+export function createDatapad({ root = document.body, store, bus = null, toast = () => {}, world = () => null, tutorialOn = () => false, reducedMotion = () => false, canOpen = () => true, onChange = () => {}, openLicence = () => {}, stationInfo = () => null, touch = false, onContinueJob = () => {} }) {
   // --- The bag in the HUD corner ---
   const bagArt = hudArt('bag-closed');
     const badge = el('span', { class: 'dp-bag-badge', hidden: true });
@@ -78,7 +78,7 @@ export function createDatapad({ root = document.body, store, bus = null, toast =
   const pages = {
     captain: createCaptainPage({ root: screens.captain, store, toast, tutorialOn, reducedMotion, bus, openLicence: () => { close(); openLicence(); } }),
     pack: createPackPage({ root: screens.pack, store, toast }),
-    jobs: createJobsPage({ root: screens.jobs, store }),
+    jobs: createJobsPage({ root: screens.jobs, store, onContinue: () => { close(); onContinueJob(); } }),
     map: createMapPage({ root: screens.map, world, stationInfo }),
   };
 

@@ -94,7 +94,9 @@ test('crew in a live fight: free-aim turret, repair and abilities through the cr
   await P.page.locator('.cw-seats', { hasText: 'Ossa Vey' }).waitFor({ timeout: 15000 });
 
   // The pilot's job is at a ship fight: fly it live.
-  await openStation(P.page, 'board');
+  // Round 3: the saved job waits on the tracker; Continue picks it up in the job card.
+  if (await P.page.locator('#hg-sheet').isVisible()) await P.page.locator('#hg-sheet-close').click();
+  await P.page.locator('#dp-continue').click();
   await P.page.locator('#pane-jobs .qs-fight').waitFor();
   await P.page.getByRole('button', { name: /Fly it live/ }).click();
   await P.page.locator('.rc-live canvas.qs-live-canvas').waitFor();

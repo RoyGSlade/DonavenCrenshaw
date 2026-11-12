@@ -29,6 +29,8 @@ import { hudArt } from '../ui/assets.js';
 
 const VERBS = Object.fromEntries(Object.entries(BASICS_DATA.marks.kinds).map(([k, v]) => [k, v.verb]));
 const NAME_NEAR = BASICS_DATA.marks.nameNear;
+const NAME_NEAR_TOUCH = BASICS_DATA.marks.nameNearTouch ?? 3;
+const OFFER_ACCENT = BASICS_DATA.marks.offer ?? '#9fe870';
 const short = (label) => String(label || '').split(':')[0].trim();
 // A door label that already says where you go ("Back to the hangar", "Board your ship") needs no "Go to".
 const DOOR_SAYS_IT = new RegExp(`^(${(BASICS_DATA.marks.doorVerbs || []).join('|')})\\b`, 'i');
@@ -155,7 +157,7 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     // Npc interact points follow the npc.
     const extra = npcs.filter(n => !hidden.has(n.id)).map(n => ({ kind: 'npc', id: n.id, label: castLook(n.id).name, x: n.x, y: n.y, reach: map.tile * 1.9 })); // reach: across a desk or a counter
     const base = { ...map, interacts: map.interacts.filter(i => i.kind !== 'npc') };
-    target = busy ? null : pickTarget(walker, base, extra);
+    target = busy || paused ? null : pickTarget(walker, base, extra); // nothing to use while the floor is held
     showPrompt(target);
     if (busy || paused) return;
     // Doors: walk into one (after a moment in a new room) or press Use.
@@ -271,6 +273,7 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
 
   function markItems(cam) {
     const items = [];
+    const nameNear = input.touch ? NAME_NEAR_TOUCH : NAME_NEAR;
     const aim = objectiveAim();
     const tile = map.tile;
     const at = (x, y) => ({ sx: (x - cam.x) * cam.zoom, sy: (y - cam.y) * cam.zoom });
@@ -287,9 +290,12 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
       const objectiveHere = Boolean(aim && ((aim.door && door && aim.door === door.id) || (aim.station && station === aim.station && !aim.npc)));
       const dist = Math.hypot(walker.x - it.x, walker.y - it.y) / tile;
       const label = info?.name || (door ? door.label : short(it.label));
+      const offers = station === 'board' ? hooks.offers?.({ map: map.id, station }) || 0 : 0;
+      // Phones name only what's close, the objective and job offers; desktops name stations and doors too.
+      const named = objectiveHere || offers > 0 || dist < nameNear || (!input.touch && Boolean(station || door));
       items.push({
-        key: `${it.kind}:${it.id}:${it.prop ?? ''}`, kind: it.kind, station, icon: locked ? 'locked' : look.icon, accent: look.accent,
-        label, showLabel: Boolean(station || door || objectiveHere || dist < NAME_NEAR), locked, objective: objectiveHere,
+        key: `${it.kind}:${it.id}:${it.prop ?? ''}`, kind: it.kind, station, icon: locked ? 'locked' : offers ? 'jobs' : look.icon, accent: offers ? OFFER_ACCENT : look.accent,
+        label: offers ? `${label} · ${offers} job${offers === 1 ? '' : 's'}` : label, showLabel: named, locked, objective: objectiveHere, offers,
         inReach: target === it, box, ...at(box.x + box.w / 2, Math.min(box.y, it.y - tile * 0.4) - 6),
       });
     }
@@ -299,15 +305,20 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
       const name = castLook(n.id).name;
       const dist = Math.hypot(walker.x - n.x, walker.y - n.y) / tile;
       const objectiveHere = Boolean(aim?.npc === n.id);
+      const offers = hooks.offers?.({ map: map.id, npc: n.id }) || 0;
       items.push({
-        key: `npc:${n.id}`, kind: 'npc', station: n.station || null, icon: look.icon, accent: look.accent, label: name,
-        showLabel: objectiveHere || dist < NAME_NEAR, locked: false, objective: objectiveHere,
+        key: `npc:${n.id}`, kind: 'npc', station: n.station || null, icon: offers ? 'jobs' : look.icon, accent: offers ? OFFER_ACCENT : look.accent,
+        label: offers ? `${name} · ${offers} job${offers === 1 ? '' : 's'}` : name,
+        showLabel: objectiveHere || offers > 0 || dist < nameNear, locked: false, objective: objectiveHere, offers,
         inReach: target?.kind === 'npc' && target.id === n.id, ring: { x: n.x, y: n.y, r: 21 * castLook(n.id).scale }, ...at(n.x, n.y - 40 * castLook(n.id).scale),
       });
     }
     // Chips never sit on a doorway or a strip the map keeps clear (a zone with "keepClear": true, e.g. the bay mouth).
     const rect = (b, key) => { const p0 = at(b.x, b.y), p1 = at(b.x + b.w, b.y + b.h); return { key, left: p0.sx, top: p0.sy, right: p1.sx, bottom: p1.sy }; };
-    const keepClear = [...map.doors.map((d) => rect(d, `door:${d.id}:`)), ...map.zones.filter((z) => z.keepClear).map((z) => rect(z, null))];
+    // People too: a chip never covers anyone's body (its own person's chip sits above their head anyway).
+    const bodies = npcs.filter((n) => !hidden.has(n.id)).map((n) => { const r = 20 * castLook(n.id).scale; return rect({ x: n.x - r, y: n.y - r * 1.1, w: r * 2, h: r * 2.2 }, `npc:${n.id}`); });
+    const me = rect({ x: walker.x - 18, y: walker.y - 20, w: 36, h: 40 }, null);
+    const keepClear = [...map.doors.map((d) => rect(d, `door:${d.id}:`)), ...map.zones.filter((z) => z.keepClear).map((z) => rect(z, null)), ...bodies, me];
     return { items, keepClear, aim: aim ? { ...aim, ...at(aim.x, aim.y) } : null };
   }
 
@@ -416,7 +427,7 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     if (marked) {
       // The prompt in reach is a box the chips step around too.
       const avoid = prompt.hidden ? safe.avoid : [...(safe.avoid || []), prompt.getBoundingClientRect()];
-      marks.show(); marks.update(marked.items, view, { ...safe, avoid, keepClear: marked.keepClear }); marks.pointTo(marked.aim, view, safe);
+      marks.show(); marks.update(marked.items, view, { ...safe, avoid, keepClear: marked.keepClear, hideDoorsUnder: safe.hideDoorsUnder || [] }); marks.pointTo(marked.aim, view, safe);
     } else marks.hide();
     if (fight?.player.hit > 0) { ctx.fillStyle = `rgba(255,80,60,${fight.player.hit})`; ctx.fillRect(0, 0, canvas.width, canvas.height); }
     // Prompt follows its target on screen.
@@ -590,7 +601,7 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     /** Teleport (tests, director cuts). */
     place(x, y, angle) { walker.x = x; walker.y = y; if (angle != null) walker.angle = angle; walker.vx = walker.vy = 0; },
     /** The HUD's safe area (px kept clear at the top and bottom): marks and the prompt stay inside it. */
-    setSafe(next) { safe = { ...safe, top: Math.max(0, next?.top ?? safe.top), bottom: Math.max(0, next?.bottom ?? safe.bottom), avoid: next?.avoid ?? safe.avoid ?? [] }; },
+    setSafe(next) { safe = { ...safe, top: Math.max(0, next?.top ?? safe.top), bottom: Math.max(0, next?.bottom ?? safe.bottom), avoid: next?.avoid ?? safe.avoid ?? [], hideDoorsUnder: next?.hideDoorsUnder ?? safe.hideDoorsUnder ?? [] }; },
     /** The objective's aim this frame (tests): { x, y, label, through?, door?, station?, npc? } or null. */
     objectiveAim: () => objectiveAim(),
     get marks() { return marks; },

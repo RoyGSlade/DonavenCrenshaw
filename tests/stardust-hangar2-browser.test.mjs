@@ -110,6 +110,11 @@ test('round-2 hangar: dice licence, stations in place, skill tree and respec, di
   await page.emulateMedia({ reducedMotion: 'reduce' });
   const moneyBefore = (await readSave(page)).money;
   await openStation(page, 'quarters');
+  // Round 3 follow-up: you pick which ranks to take back; nothing picked, no nap.
+  assert.equal(await page.locator('#hg-nap').isDisabled(), true, 'nothing picked: no nap');
+  await page.locator('[data-take="pilot"]').click();
+  await page.locator('[data-take="pilot"]').click();
+  assert.match(await page.locator('[data-nap-quote]').innerText(), /2 points to take back: 20 credits/);
   await page.locator('#hg-nap').click();
   await page.waitForFunction(() => !document.querySelector('.dp-nap'), null, { timeout: 8000 });
   const respecced = await readSave(page);
@@ -171,7 +176,8 @@ test('round-2 hangar: dice licence, stations in place, skill tree and respec, di
   // The nap is free while the tutorial runs.
   await page.evaluate(() => window.__stardust.store.learn('mechanic'));
   await openStation(page, 'quarters');
-  assert.match(await page.locator('[data-nap-quote]').innerText(), /Free while Chibby/);
+  await page.locator('[data-take="mechanic"]').click();
+  assert.match(await page.locator('[data-nap-quote]').innerText(), /free while Chibby/);
 
   // 4. The dialogue box answers story:say, and the attempt roller shows a decided roll.
   await emit(page, 'story:say', { seq: 41, id: 'chibby.ship.1', speaker: 'chibby', name: 'Chibby', text: 'She\'s yours, Captain. Mind the paint.', audio: null, durationMs: 9000 });

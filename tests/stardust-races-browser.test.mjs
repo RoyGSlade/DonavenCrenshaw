@@ -142,7 +142,8 @@ test('quest race: the race leg flies live with the upgraded ship, the time comes
   t.after(() => P.context.close().catch(() => {}));
   const { page } = P;
 
-  await openStation(page, 'board');
+  // Round 3: a saved job waits on the tracker; Continue picks it up in the job card.
+  await page.locator('#dp-continue').click();
   await page.locator('#pane-jobs .qs-race').waitFor();
   const before = withoutNewGame(await storageSnapshot(page));
   assert.equal(before[OLD_BEST.key], OLD_BEST.value);

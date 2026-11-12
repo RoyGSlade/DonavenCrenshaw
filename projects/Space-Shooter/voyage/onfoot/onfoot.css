@@ -116,3 +116,6 @@
 .of-overlay-quit{justify-self:center}
 .of-hack-canvas{display:block;width:100%;height:230px;border:1px solid #2a4152;border-radius:4px;background:#070d17}
 .of-perks{color:#9fe870!important}
+/* r3 basics: "job here": a giver or a board with offers you can take (mint, never gold). */
+.of-mark.is-offer{border-color:#9fe870;box-shadow:0 0 0 2px #9fe87033,0 4px 14px #000a,0 0 14px #9fe87044}
+.of-mark.is-offer .of-mark-icon{background:#9fe87033;color:#9fe870}

@@ -26,6 +26,11 @@ export const ICONS = Object.freeze({
   pause: 'M8 5v14M16 5v14',
   bag: 'M5 9h14l-1 11H6zM9 9V6a3 3 0 0 1 6 0v3M9 13h6',
   tick: 'M5 12l4 4 10-10',
+  goggles: 'M3 10h18v5a2 2 0 0 1-2 2h-4l-3-3-3 3H5a2 2 0 0 1-2-2zM7 13.5h.01M17 13.5h.01',
+  boots: 'M7 3h5v9l7 4v4H5v-4l2-1zM5 17h14',
+  medkit: 'M4 7h16v13H4zM9 7V4h6v3M12 10v7M8.5 13.5h7',
+  transponder: 'M8 9h8v11H8zM12 9V5M9 3l3 2 3-2M10.5 13h3M10.5 16h3',
+  codes: 'M5 4h14v16H5zM8 8h3M8 12h8M8 16h5M14 7l2 2-2 2',
 });
 
 const SVG = 'http://www.w3.org/2000/svg';
@@ -95,3 +100,6 @@ export function stepMark(state, cls = 'dp-step-art') {
   img.src = art; img.alt = ''; img.className = cls;
   return img;
 }
+
+// Line icons for items with no picture yet (Pack page), by item id.
+export const ITEM_ICONS = Object.freeze({ 'scan-goggles': 'goggles', 'mag-boots': 'boots', medkit: 'medkit', 'ghost-transponder': 'transponder', 'syndicate-codes': 'codes' });

@@ -187,12 +187,40 @@ function score(code, guess) {
   return { exact, near: shared - exact };
 }
 
-/** Plays the job running in the Jobs pane to its end screen, reading only the page. */
+/** The label to pick from a list of choices: never hand the cargo over; take sure things over rolls. */
+function pickLabel(labels) {
+  const sure = labels.findIndex((l) => /Vent two scrap/.test(l));
+  const pick = sure >= 0 ? sure : labels.findIndex((l) => !/Take it\.|hand the core|Pay the/i.test(l));
+  return Math.max(0, pick);
+}
+
+/**
+ * Plays the job you are on to its result, reading only the page. Round 3: a job's talk plays in
+ * the dialogue box (#hg-dialogue, its "Later" left alone) and its travel, fights, puzzles, races,
+ * events and result in the job card (#pane-jobs inside #dp-jobcard).
+ */
 export async function playJob(page) {
   const pane = page.locator('#pane-jobs');
+  const card = page.locator('#dp-jobcard');
+  const talk = page.locator('#hg-dialogue:not([hidden]) .ui-dlg-choice:not([disabled]):not(.is-later)');
   const seen = new Set();
   let candidates = null;
-  for (let step = 0; step < 240; step++) {
+  let idle = 0;
+  for (let step = 0; step < 400; step++) {
+    if (await talk.count()) {
+      seen.add('talk');
+      idle = 0;
+      const labels = await talk.allInnerTexts();
+      await talk.nth(pickLabel(labels)).click();
+      continue;
+    }
+    if (!(await card.isVisible())) {
+      // A beat is on its way (it waits for the dice to land): give it a moment.
+      if (++idle > 60) throw new Error('The job stopped: no talk and no card');
+      await page.waitForTimeout(150);
+      continue;
+    }
+    idle = 0;
     const text = await pane.innerText();
     if (/JOB DONE|JOB FAILED/.test(text)) return { text, seen: [...seen] };
     if (await pane.locator('.qs-cipher').count()) {
@@ -220,11 +248,7 @@ export async function playJob(page) {
     if (await enabled.count()) {
       if (await pane.locator('.qs-map').count()) seen.add('travel');
       if (await pane.locator('.qs-event').count()) seen.add('event');
-      const labels = await enabled.allInnerTexts();
-      // Never hand the cargo over; take sure things over rolls.
-      const sure = labels.findIndex((l) => /Vent two scrap/.test(l));
-      const pick = sure >= 0 ? sure : labels.findIndex((l) => !/Take it\.|hand the core|Pay the/i.test(l));
-      await enabled.nth(Math.max(0, pick)).click();
+      await enabled.nth(pickLabel(await enabled.allInnerTexts())).click();
       continue;
     }
     const primary = pane.locator('button.primary');
@@ -233,5 +257,21 @@ export async function playJob(page) {
     if (await any.count()) { await any.first().click(); continue; }
     throw new Error(`Stuck at: ${text.slice(0, 300)}`);
   }
-  throw new Error('The job did not end in 240 steps');
+  throw new Error('The job did not end in 400 steps');
+}
+
+/** Round 3: take a job from the hangar's job board postings (walks nowhere: opens the board station). */
+export async function takePosting(page, questId) {
+  const sheet = page.locator('#hg-sheet');
+  if (!(await sheet.isVisible()) || (await sheet.getAttribute('data-open-station')) !== 'board') {
+    if (await sheet.isVisible()) await page.locator('#hg-sheet-close').click();
+    await page.locator('[data-station="board"]').dispatchEvent('click');
+  }
+  await page.locator(`.vy-posting[data-quest="${questId}"] button`).click();
+}
+
+/** Round 3: close a finished job's result card (its Done button). */
+export async function doneJob(page) {
+  await page.locator('#pane-jobs button.primary', { hasText: 'Done' }).click();
+  await page.locator('#dp-jobcard').waitFor({ state: 'hidden' });
 }

@@ -30,7 +30,8 @@ export function createHangarPlace({ scene, layer, sheet, panes, renderStation, s
   const STATION_LABEL = { kennel: 'Ralph', scrap: 'Pile', locker: 'Locker', range: 'Range', backroom: 'Back room' };
   const VIEWS = {
     pad: [{ id: 'ship', label: 'Ship', pane: 'ship' }],
-    board: [{ id: 'jobs', label: 'Jobs', pane: 'jobs' }],
+    // Round 3: the board holds postings you pick from; a job you take runs in the world.
+    board: [{ id: 'postings', label: 'Postings', pane: 'station' }],
     // Round 3: stats, skills and the pack moved to the datapad; the bunk keeps the nap (respec).
     quarters: [{ id: 'nap', label: 'Bunk', pane: 'station' }],
     hatch: [{ id: 'launch', label: 'Launch', pane: 'station' }, { id: 'crew', label: 'Crew', pane: 'crew' }],

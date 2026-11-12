@@ -54,6 +54,10 @@ import { createTracker } from './datapad/tracker.js';
 import { createControlsCard, createPause } from './datapad/controls.js';
 import { isTouchDevice } from './onfoot/input.js';
 import { stationById } from './hangarStations.js';
+import { createJobTalk } from './datapad/jobTalk.js';
+import { createJobCard } from './datapad/jobCard.js';
+import { offersAt, openCount } from './quests/offers.js';
+import { OFFERS_DATA } from './quests/data/offers.js';
 
 const flag = newGameFlag({ config: runtimeConfig, search: location.search });
 // The tutorial step each on-foot lesson belongs to (contract section 4).
@@ -135,7 +139,7 @@ function boot() {
   const settings = createSettings({ root: $('hg-settings'), button: $('hg-settings-btn'), audio, toast });
   const touch = isTouchDevice();
   document.body.classList.toggle('is-touch', touch);
-  createDialogueBox({ root: $('hg-dialogue'), bus, audio, reducedMotion: still });
+  const dialogueBox = createDialogueBox({ root: $('hg-dialogue'), bus, audio, reducedMotion: still });
   // Every attempt in play is its own 2d6 roll; the corner dice show it (the rules already decided the numbers).
   createAttemptRoller({ root: $('hg-attempt'), bus, reducedMotion: still });
   // The director's sound and juice hooks: a soft chime (no file; muted with the rest).
@@ -158,6 +162,7 @@ function boot() {
   };
   let flying = false;
   let pad = null; // the datapad (round 3), made once the floor exists
+  let tracker = null; // the quest tracker (round 3)
 
   // Where a station stands on screen, from the hangar map's rings (props, doors, zones, npcs tagged with it).
   const stationScreen = (id) => {
@@ -208,7 +213,11 @@ function boot() {
     const a = getEquippedAppearance();
     return a ? SHIP_STYLES.find((s) => s.id === a.family)?.name || 'Custom ship' : 'Standard Courier';
   };
-  const panes = { ship: $('pane-ship'), jobs: $('pane-jobs'), captain: $('pane-captain'), ledger: $('pane-ledger'), crew: $('pane-crew'), station: $('pane-station'), mount: $('pane-mount') };
+  const panes = { ship: $('pane-ship'), jobs: $('pane-jobs'), crew: $('pane-crew'), station: $('pane-station'), mount: $('pane-mount') };
+  const { jobs: _jobPane, ...stationPanes } = panes;
+  // Jobs open once the tutorial is done (story's 'jobs' unlock).
+  const jobsOpen = () => !tutorialOn(store.get()) && isUnlocked(store.get(), 'jobs');
+  const OFFERS_WORDS = OFFERS_DATA.words;
 
   // The crew seat (P11): a friend aboard as crew, through a crew room on the relay. It lives at the hatch.
   const crewLink = (code) => {
@@ -299,6 +308,8 @@ function boot() {
       mine: () => lesson({ kind: 'mine', id: 'scrap-seam', label: 'The seam Ralph dug up' }, () => onfoot.mine({ title: 'The seam Ralph dug up' })),
       range: () => lesson({ kind: 'range', id: 'range', label: 'Mel\'s range' }, () => onfoot.practice()),
       puzzle: () => lesson({ kind: 'puzzle', id: 'lockbox', label: 'Edna\'s lockbox' }, () => { onfoot.world.go('edna-den', 'from-hangar'); return onfoot.puzzle('lockbox'); }),
+      // The board's postings; taking one closes the board and the job starts in the world.
+      postings: (pane) => jobs.renderPostings(pane, (quest) => { place.closeStation({ restoreFocus: false }); jobs.take(quest); }),
     },
   });
   // A lesson from a station button: close the panel, then play it if the tutorial allows it now.
@@ -312,15 +323,37 @@ function boot() {
     hangar.render();
   }).catch((error) => console.warn('Stardust: the equipped ship could not load', error));
 
+  // --- Jobs in the world (round 3): offers spoken where givers work, beats in the dialogue box ---
+  const jobTalk = createJobTalk({
+    bus, store,
+    take: (quest) => jobs.take(quest),
+    onBusy: (on) => { if (on) overlays.add('jobtalk'); else overlays.delete('jobtalk'); holdFloor(); tracker?.render(); },
+    name: () => store.get().character?.name || '',
+  });
+  const jobCard = createJobCard({
+    root: $('dp-jobcard'), later: $('dp-jobcard-later'), eyebrow: $('dp-jobcard-eyebrow'),
+    title: () => jobs.title,
+    onChange: (open) => { if (open) { overlays.add('jobcard'); dialogueBox.hide(); } else overlays.delete('jobcard'); holdFloor(); tracker?.render(); },
+    onLater: () => toast(OFFERS_WORDS.paused),
+  });
+  let lastRoll = 0;
+  const presenter = {
+    // A beat waits for the dice of the step before it to land, then plays in the dialogue box.
+    dialogue: (v, pick) => {
+      const wait = Math.max(0, lastRoll + 1400 - Date.now());
+      setTimeout(() => jobTalk.beat(v).then((i) => { if (i >= 0) pick(i); else if (i === -1) toast(OFFERS_WORDS.paused); }), wait);
+    },
+    card: (kind) => jobCard.show(kind),
+  };
   const jobs = createJobs({
-    pane: panes.jobs, store, toast, dev: flag.dev,
+    pane: panes.jobs, store, toast, dev: flag.dev, presenter,
     say: (events) => hangar.say(events),
     onCaptain: openLicence,
     crew: crew.hooks,
     // A spoken node plays its voice file (the quest player shows the filled text itself).
     voice: ({ line }) => { const url = voiceUrl(line); if (url) audio.playLine(url); },
     // Every attempt the engine rolled shows on the corner dice.
-    rolled: (rolls) => { for (const r of rolls) bus.emit('roll:attempt', { ...r, who: r.who || store.get().character?.name || null }); },
+    rolled: (rolls) => { lastRoll = Date.now(); for (const r of rolls) bus.emit('roll:attempt', { ...r, who: r.who || store.get().character?.name || null }); },
   });
   crew.attach(jobs);
 
@@ -328,7 +361,7 @@ function boot() {
     scene: floorScene, store, bus,
     layer: $('hg-spots'),
     sheet: { root: $('hg-sheet'), title: $('hg-sheet-title'), who: $('hg-sheet-who'), close: $('hg-sheet-close'), tabs: $('hg-sheet-tabs') },
-    panes,
+    panes: stationPanes, // the job card's pane is not a station view
     renderStation: (station, state, pane, view) => hangar.renderStation(station, state, pane, view),
     reducedMotion: still,
     onOpen: (station, pane) => { if (pane === 'crew') crew.refresh(); },
@@ -368,6 +401,14 @@ function boot() {
       entered: (map) => { setBed(map.ambient); place?.closeStation({ restoreFocus: false }); place?.place(); setPlaceName(placeNameFor(map)); },
       flying: (on) => { flying = on; holdFloor(); place?.place(); if (on) setPlaceName('The Drift'); else if (onfoot?.world?.map) setPlaceName(placeNameFor(onfoot.world.map)); },
       stationInfo,
+      // Jobs you haven't taken: a giver offers theirs in person (after the tutorial).
+      offerTalk: (who, map) => (jobsOpen() && offersAt({ map: map.id, npc: who }, store.get()).length ? jobTalk.offerAt({ map: map.id, npc: who }) : null),
+      // The "job here" mark: open offers at a giver or a board.
+      offers: ({ map, npc, station }) => {
+        if (!jobsOpen()) return 0;
+        if (station === 'board') return openCount({ map, board: true }, store.get());
+        return npc ? openCount({ map, npc }, store.get()) : 0;
+      },
     },
   });
   setCaptainLook(store.get().character?.look?.portrait);
@@ -389,12 +430,15 @@ function boot() {
     canOpen: () => !screenBusy(),
     onChange: (open) => { if (open) overlays.add('pad'); else overlays.delete('pad'); holdFloor(); },
     openLicence,
+    onContinueJob: () => jobs.resume(),
   });
-  const tracker = createTracker({
+  tracker = createTracker({
     root: $('hg-objective'), store, bus, touch,
     world: () => onfoot?.world || null,
     stationInfo,
     boardOpen: () => place.current === 'board',
+    jobBusy: () => jobTalk.busy || jobCard.open,
+    onContinue: () => jobs.resume(),
   });
   const controls = createControlsCard({ root: document.body, touch });
   const pause = createPause({
@@ -456,13 +500,15 @@ function boot() {
 
   // Station nameplates ride the floor as you walk (hidden off screen and in other rooms).
   const trackerBox = $('hg-objective');
-  const dialogueBox = $('hg-dialogue');
+  const dialogueEl = $('hg-dialogue');
   const followPlates = () => {
     place.place();
     // Marks keep out from under the tracker (round 3).
     const avoid = [];
-    if (!document.body.classList.contains('dp-open')) for (const box of [trackerBox, dialogueBox, document.querySelector('.dp-controls')].filter(Boolean)) if (!box.hidden && getComputedStyle(box).opacity !== '0') avoid.push(box.getBoundingClientRect());
-    onfoot.world.setSafe({ avoid });
+    const shown = (box) => box && !box.hidden && getComputedStyle(box).opacity !== '0';
+    if (!document.body.classList.contains('dp-open')) for (const box of [trackerBox, dialogueEl, document.querySelector('.dp-controls')]) if (shown(box)) avoid.push(box.getBoundingClientRect());
+    // While a dialogue box is up, door chips it would cover hide instead of wandering off their doors.
+    onfoot.world.setSafe({ avoid, hideDoorsUnder: shown(dialogueEl) ? [dialogueEl.getBoundingClientRect()] : [] });
     // In an on-foot fight the dialogue box lets clicks through to the aim (its buttons still work).
     document.body.classList.toggle('hg-fight', onfoot.world.mode === 'fight');
     requestAnimationFrame(followPlates);
@@ -470,7 +516,7 @@ function boot() {
   requestAnimationFrame(followPlates);
 
   // Quest keys (1-9 for choices, F/E/H/B in fights, Enter, Backspace) while the job board is open.
-  addEventListener('keydown', (e) => { if (!panes.jobs.hidden && !$('hg-sheet').hidden) jobs.keydown(e); });
+  addEventListener('keydown', (e) => { if (jobCard.open && !pad.isOpen) jobs.keydown(e); });
   // Crew station keys while the crew view is open.
   addEventListener('keydown', (e) => { if (!panes.crew.hidden && !$('hg-sheet').hidden) crew.keydown(e); });
   addEventListener('keyup', (e) => { if (!panes.crew.hidden && !$('hg-sheet').hidden) crew.keyup(e); });
@@ -481,15 +527,14 @@ function boot() {
   // --- Where to start ---
   const step = currentStep(store.get())?.id || null;
   if (link.quest) {
-    place.openStation('board', { via: 'refresh' });
     jobs.openLinked(link.quest, { node: link.node, seed: link.seed });
   } else if (link.explore) {
     onfoot.flyTo(link.explore);
   } else if (!store.get().character && (step === 'create' || storyOf(store.get()).finished)) openLicence();
   else if (crew.pending) place.openStation('hatch', { via: 'refresh', view: 'crew' });
-  else if (jobs.playing) place.openStation('board', { via: 'refresh' });
+  // A job in progress waits on the tracker and the datapad (Continue); nothing pops up.
 
   // For tests and poking around in the console (no secrets: the save is the player's own).
   setTimeout(maybeControls, 600);
-  window.__stardust = { store, story, onfoot, place, jobs, licence, bus, pad, tracker, controls, pause };
+  window.__stardust = { store, story, onfoot, place, jobs, licence, bus, pad, tracker, controls, pause, jobTalk, jobCard };
 }

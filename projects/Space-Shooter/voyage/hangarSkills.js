@@ -17,7 +17,7 @@ const SKILL = new Map(SKILLS.map((s) => [s.id, s]));
 const TREE_NAME = Object.fromEntries(TREES.map((t) => [t.id, t.name]));
 
 /** Does every learned skill still meet its tree requirement? (own ranks never count toward unlocking it) */
-function needsHold(c) {
+export function needsHold(c) {
   for (const [id, rank] of Object.entries(c.skills || {})) {
     if (!rank) continue;
     const skill = SKILL.get(id);

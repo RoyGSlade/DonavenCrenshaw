@@ -10,7 +10,9 @@
 // tracker: maxLines (current step plus what comes next), collapsed text.
 // marks: the interact system. kinds: the icon and accent per interact kind;
 //   stations: the icon and accent per hangar station id (wins over the kind);
-//   nameNear (tiles): people show their name inside this range; facing: px a
+//   nameNear (tiles): people show their name inside this range (nameNearTouch on
+//   phones, where stations and doors also show just the icon until close);
+//   offer: the "job here" colour (mint; gold stays the current objective); facing: px a
 //   thing you face counts as nearer when two are in reach; doorVerbs: door
 //   labels starting with these read as they are (no "Go to" in front);
 //   ring: ground ring pulse seconds and alpha; reachRing: alpha in reach.
@@ -46,12 +48,14 @@ export const BASICS_DATA = {
     "maxLines": 4,
     "tutorialEyebrow": "GETTING STARTED",
     "jobEyebrow": "JOB",
-    "resume": "Pick it up at the job board.",
+    "resume": "Continue the job",
     "hide": "Hide",
     "show": "Show"
   },
   "marks": {
     "nameNear": 4.5,
+    "nameNearTouch": 3,
+    "offer": "#9fe870",
     "facing": 40,
     "doorVerbs": ["Back", "Board", "Down", "Up", "Out", "Into", "Through", "Go"],
     "ring": { "pulse": 2.6, "alpha": 0.32, "reachAlpha": 0.9 },
@@ -75,7 +79,7 @@ export const BASICS_DATA = {
       "locker": { "icon": "shop", "accent": "#ff7b6b" },
       "range": { "icon": "range", "accent": "#ff7b6b" },
       "backroom": { "icon": "shop", "accent": "#c98bff" },
-      "board": { "icon": "jobs", "accent": "#f4d35e" },
+      "board": { "icon": "jobs", "accent": "#9fe870" },
       "quarters": { "icon": "bunk", "accent": "#9fe870" },
       "hatch": { "icon": "fly", "accent": "#81e6df" }
     }
@@ -86,13 +90,22 @@ export const BASICS_DATA = {
     "title": "Your bunk",
     "body": "A lumpy mattress, a porthole full of stars and a pillow that smells of engine grease. Sleep on it and wake up with a different plan.",
     "button": "Take a nap and rethink",
+    "buttonPicked": "Nap and take back {points} point{s}",
     "free": "Free while Chibby is still showing you around.",
-    "costLine": "Costs {cost} credits ({fee} a point for {points} points). Every skill point comes back to spend.",
+    "costLine": "{points} point{s} to take back: {cost} credits ({fee} a point).",
+    "freeLine": "{points} point{s} to take back: free while Chibby is still showing you around.",
     "nothing": "Nothing to rethink: you haven't spent a skill point yet.",
+    "pickFirst": "Pick the ranks you want back, then sleep on it.",
+    "planBroken": "That would leave a skill without the points it needs.",
+    "blocked": "{skill} needs those points. Take back {skill} first.",
+    "blockedBack": "{skill} needs points you are taking back. Keep the ranks it stands on first.",
+    "pickTitle": "WHAT TO TAKE BACK",
+    "pickOne": "Take back a rank of {skill}",
+    "keepOne": "Keep a rank of {skill}",
     "broke": "A nap costs {cost} credits and you have {money}. Take a job first.",
     "dream": "You sleep like a dropped spanner.",
-    "woke": "You wake up with every skill point back to spend.",
-    "padLine": "Want your points back? Take a nap at your bunk: {cost}.",
+    "woke": "You wake up with {points} skill point{s} back to spend.",
+    "padLine": "Want points back? Take a nap at your bunk and pick which ones: {cost}.",
     "padFree": "free during the tutorial",
     "openPad": "Open your datapad"
   },

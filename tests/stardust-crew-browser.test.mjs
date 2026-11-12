@@ -121,11 +121,21 @@ async function crewTurn(crew, did) {
   if (await check.count() && !did.has('check')) { await check.first().click(); did.add('check'); await crew.waitForTimeout(250); }
 }
 
-// The pilot plays the job in the Jobs tab, giving the crew a turn before each move.
+// The pilot plays the job (round 3: its talk in the dialogue box, the rest in the job card),
+// giving the crew a turn before each move.
 async function playJob(pilot, crew, did, { stopWhen = () => false } = {}) {
   const pane = pilot.locator('#pane-jobs');
-  for (let step = 0; step < 220; step++) {
+  const talk = pilot.locator('#hg-dialogue:not([hidden]) .ui-dlg-choice:not([disabled]):not(.is-later)');
+  for (let step = 0; step < 320; step++) {
     await crewTurn(crew, did);
+    if (await talk.count()) {
+      const labels = await talk.allInnerTexts();
+      const pick = labels.findIndex((l) => !/Take it\.|hand the core|Pay the/i.test(l));
+      await talk.nth(Math.max(0, pick)).click();
+      await pilot.waitForTimeout(150);
+      continue;
+    }
+    if (!(await pilot.locator('#dp-jobcard').isVisible())) { await pilot.waitForTimeout(200); continue; }
     const text = await pane.innerText();
     if (/JOB DONE|JOB FAILED/.test(text)) return text;
     if (await stopWhen()) return null;
@@ -145,7 +155,7 @@ async function playJob(pilot, crew, did, { stopWhen = () => false } = {}) {
     if (await primary.count()) { await primary.first().click(); await pilot.waitForTimeout(150); continue; }
     await pilot.waitForTimeout(200);
   }
-  throw new Error('The job did not end in 220 steps');
+  throw new Error('The job did not end in 320 steps');
 }
 
 test('crew: invite, join, turret, repair, scan, checks, rewards to both saves; the pilot leaving keeps both saves', {
@@ -192,13 +202,13 @@ test('crew: invite, join, turret, repair, scan, checks, rewards to both saves; t
   for (let job = 0; job < 8 && !(paid && did.has('turret') && [...did].some((d) => d.startsWith('repair'))); job++) {
     await openStation(P.page, 'board');
     await P.page.locator('[data-quest="cold-run"] button').click();
-    await P.page.locator('#pane-jobs .qs-crew', { hasText: 'Ossa Vey' }).waitFor();
+    await P.page.locator('#hg-dialogue .ui-dlg-choice').first().waitFor();
     if (job === 0) { await C.page.locator('.cw-station h2', { hasText: 'Cold Run' }).waitFor(); await snap(C.page, 'crew-03-crew-on-the-job.png'); }
     const text = await playJob(P.page, C.page, did);
     results.push(/JOB DONE/.test(text) ? 'done' : 'failed');
     const crewNow = await readSave(C.page);
     paid = crewNow.money > crewStart.money;
-    await P.page.locator('#pane-jobs button.primary', { hasText: 'Back to the job board' }).click();
+    await P.page.locator('#pane-jobs button.primary', { hasText: 'Done' }).click();
   }
   t.diagnostic(`jobs: ${results.join(', ')}; crew did: ${[...did].join(', ')}`);
   assert.ok(did.has('turret'), 'the crew fired the turret');
@@ -218,7 +228,7 @@ test('crew: invite, join, turret, repair, scan, checks, rewards to both saves; t
   // S58: the pilot leaves mid-job. The crew is told and keeps their pay; the job stays in the pilot's save.
   await openStation(P.page, 'board');
   await P.page.locator('[data-quest="cold-run"] button').click();
-  await P.page.locator('#pane-jobs .qs-quest-head').waitFor();
+  await P.page.locator('#hg-dialogue .ui-dlg-choice').first().waitFor();
   await C.page.locator('.cw-station h2', { hasText: 'Cold Run' }).waitFor();
   const crewBefore = await readSave(C.page);
   await P.page.close();
@@ -228,8 +238,8 @@ test('crew: invite, join, turret, repair, scan, checks, rewards to both saves; t
   await snap(C.page, 'crew-05-captain-left.png');
   const back = await P.context.newPage();
   await back.goto(`${server.origin}${HANGAR}`);
-  await back.locator('#pane-jobs .qs-quest-head').waitFor();
-  assert.equal(await back.locator('#hg-sheet').getAttribute('data-open-station'), 'board', 'the pilot\'s job resumes from the pilot\'s save');
+  await back.locator('#dp-continue').waitFor();
+  assert.ok((await readSave(back)).quests.active['cold-run'], 'the pilot\'s job resumes from the pilot\'s save (Continue on the tracker)');
 
   // A link join, and the station at phone size with no sideways scroll.
   await openStation(back, 'hatch', 'crew');

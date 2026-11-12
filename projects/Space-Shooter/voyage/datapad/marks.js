@@ -68,12 +68,14 @@ export function createMarks({ root, reducedMotion = () => false, data = MARKS })
       live.add(it.key);
       const c = chipFor(it);
       const off = it.sx < -40 || it.sx > view.w + 40 || it.sy < -40 || it.sy > view.h + 40;
-      const hide = off || it.inReach;
+      // A door chip a box would cover (the dialogue box) just steps away until the box goes.
+      const covered = it.kind === 'door' && (safe.hideDoorsUnder || []).some((r) => it.sx > r.left && it.sx < r.right && it.sy > r.top - 10 && it.sy < r.bottom + 30);
+      const hide = off || it.inReach || covered;
       if (c.el.hidden !== hide) c.el.hidden = hide;
       if (hide) continue;
       const text = it.showLabel ? it.label : '';
       if (c.text !== text) { c.label.textContent = text; c.text = text; }
-      const cls = `of-mark${it.locked ? ' is-locked' : ''}${it.objective ? ' is-objective' : ''}${text ? '' : ' is-icon'}`;
+      const cls = `of-mark${it.locked ? ' is-locked' : ''}${it.objective ? ' is-objective' : ''}${it.offers ? ' is-offer' : ''}${text ? '' : ' is-icon'}`;
       if (c.cls !== cls) { c.el.className = cls; c.cls = cls; c.el.style.setProperty('--accent', it.accent); }
       // Pushed below the header, kept whole inside the screen and out from under the HUD's boxes; never hidden.
       if (c.width == null || c.measured !== text) { c.width = c.el.offsetWidth || 30; c.height = c.el.offsetHeight || 26; c.measured = text; }
@@ -86,7 +88,8 @@ export function createMarks({ root, reducedMotion = () => false, data = MARKS })
         if (x + half - 8 > r.left && x - half + 8 < r.right && y > r.top && y - c.height < r.bottom) y = Math.max(safe.top + c.height + 6, r.top - 2);
       }
       for (const r of safe.avoid || []) {
-        if (x + half > r.left && x - half < r.right && y > r.top && y - c.height < r.bottom) {
+        // A few pixels of overlap are fine: the chip stays on its thing (8 px slack).
+        if (x + half - 8 > r.left && x - half + 8 < r.right && y - 8 > r.top && y - c.height + 8 < r.bottom) {
           // Below the box if there is room, else beside it.
           if (r.bottom + c.height + 6 < view.h - safe.bottom) y = r.bottom + c.height + 6;
           else x = r.right + half;

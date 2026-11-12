@@ -135,3 +135,23 @@ export const HUD_ART = Object.freeze({
 export function hudArt(id) {
   return HUD_ART[id] ? at(`hud/${HUD_ART[id]}`) : null;
 }
+
+// Item pictures the UI kit has no icon for (round 3 follow-up): the objects lane's pieces
+// where one fits (ui/hud/items/). Items still without a picture draw a line icon
+// (datapad/icons.js ITEM_ICONS): scan-goggles, mag-boots, medkit, ghost-transponder, syndicate-codes.
+export const ITEM_ART = Object.freeze({
+  'flak-vest': 'mel-armour-stand.png',
+  'plated-coat': 'mel-armour-stand.png',
+  hardsuit: 'mel-armour-stand.png',
+  'scatter-pistol': 'mel-weapon-rack.png',
+  'bolt-carbine': 'mel-weapon-rack.png',
+  longshot: 'mel-weapon-rack.png',
+  'breach-kit': 'tool-roll.png',
+  'shield-cell': 'battery-pack.png',
+  'hull-patch': 'small-crate.png',
+});
+
+/** A picture for an item: the UI kit's icon, else an objects-lane piece, else null. */
+export function itemArt(id) {
+  return iconFor(id) || (ITEM_ART[id] ? at(`hud/items/${ITEM_ART[id]}`) : null);
+}

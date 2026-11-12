@@ -13,7 +13,7 @@ import assert from 'node:assert/strict';
 import { mkdirSync } from 'node:fs';
 import { loadPlaywright, startServer, blockHub, DESKTOP, PHONE } from '../scripts/stardust-test-kit.mjs';
 import { openStation } from '../scripts/stardust-hangar-kit.mjs';
-import { sleep, world, onMap, walkTo, walkToInteract, walkThroughDoor, playMining, playRange, playLockbox, flyHop, playJob } from '../scripts/stardust-play-kit.mjs';
+import { sleep, world, onMap, walkTo, walkToInteract, walkThroughDoor, playMining, playRange, playLockbox, flyHop, playJob, takePosting, doneJob } from '../scripts/stardust-play-kit.mjs';
 
 const HANGAR = '/projects/Space-Shooter/voyage/';
 const PROOF = process.env.PROOF_DIR || null;
@@ -180,17 +180,16 @@ test('round 2 end to end: new captain -> intro -> dice -> full tutorial -> first
   await walkToInteract(page, 'station', 'board');
   await page.keyboard.press('KeyE');
   await page.locator('#hg-sheet[data-open-station="board"]').waitFor();
-  await page.locator('.vy-giver').first().waitFor();
+  await page.locator('.vy-posting').first().waitFor();
   await shot('e2e-09-job-board')();
   const before = await readSave(page);
   let result = null;
   for (let i = 0; i < 4; i++) {
-    await page.locator('[data-quest="cold-run"] button').click();
-    await page.locator('#pane-jobs .qs-quest-head').waitFor();
+    await takePosting(page, 'cold-run');
     result = await playJob(page);
     t.diagnostic(`job ${i + 1}: ${result.seen.join(', ')} -> ${/JOB DONE/.test(result.text) ? 'done' : 'failed'}`);
     if (/JOB DONE/.test(result.text)) break;
-    await page.locator('#pane-jobs button.primary', { hasText: 'Back to the job board' }).click();
+    await doneJob(page);
   }
   assert.match(result.text, /JOB DONE/, 'a job paid');
   await shot('e2e-10-job-reward')();

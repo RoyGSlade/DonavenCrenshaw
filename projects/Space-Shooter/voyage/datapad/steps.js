@@ -91,7 +91,8 @@ export function jobTrack(save, quests = QUESTS) {
   for (const [id, run] of Object.entries(active)) {
     const quest = quests[id];
     if (!quest || run?.ended) continue;
-    return { kind: 'job', id, title: quest.title, giver: quest.giver, steps: stepStates(quest, run), target: { station: 'board' } };
+    // No floor marker: a job you have taken plays wherever you are (round 3), from the tracker's Continue.
+    return { kind: 'job', id, title: quest.title, giver: quest.giver, steps: stepStates(quest, run), target: null };
   }
   return null;
 }
