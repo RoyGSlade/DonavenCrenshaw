@@ -255,7 +255,8 @@ export function drawContained(ctx, img, p, pad = 0, piece = null) {
   const rot = p.rot || 0;
   const un = unturnedBox(p.w, p.h, rot);
   const box = piece || { x: p.cx - un.w / 2, y: p.cy - un.h / 2, w: un.w, h: un.h };
-  const k = Math.min((box.w - pad * 2) / img.width, (box.h - pad * 2) / img.height);
+  const fit = activeLook?.props.byArt?.[p.art]?.scale ?? 1; // a look may draw a piece smaller inside its box
+  const k = Math.min((box.w - pad * 2) / img.width, (box.h - pad * 2) / img.height) * fit;
   const w = img.width * k, h = img.height * k;
   const x = box.x + (box.w - w) / 2, y = box.y + (box.h - h) / 2;
   const mx = box.x + box.w / 2, my = box.y + box.h / 2; // this piece's own centre, before the turn
@@ -264,11 +265,13 @@ export function drawContained(ctx, img, p, pad = 0, piece = null) {
   if (activeLook) {
     // Look maps: a soft shadow in the art's own shape, down and right, and the art lifted onto the value ladder.
     const sh = activeLook.props.shadow, k = w / img.width;
-    const { canvas: sc, pad } = silhouette(img, (sh.blur * activeTile) / k);
+    // Bigger things cast longer, softer shadows; the ship and other big pieces keep the room's down-right light.
+    const size = Math.min(w, h) / activeTile, big = size >= 1.8;
+    const { canvas: sc, pad } = silhouette(img, ((sh.blur + (sh.blurPerTile ?? 0) * size) * activeTile) / k);
     // The shadow falls away from the nearest lamp (else down-right), in the world even when the prop is turned.
-    const [wx, wy] = shadowOffset(activeLights, p.cx, p.cy, Math.hypot(sh.dx, sh.dy) * activeTile);
+    const [wx, wy] = shadowOffset(activeLights, p.cx, p.cy, (Math.hypot(sh.dx, sh.dy) + (sh.offsetPerTile ?? 0) * size) * activeTile, undefined, big);
     const ox = wx * Math.cos(-rot) - wy * Math.sin(-rot), oy = wx * Math.sin(-rot) + wy * Math.cos(-rot);
-    ctx.globalAlpha = sh.alpha; ctx.drawImage(sc, x - pad * k + ox, y - pad * k + oy, sc.width * k, sc.height * k); ctx.globalAlpha = 1;
+    ctx.globalAlpha = big ? sh.bigAlpha ?? sh.alpha : sh.alpha; ctx.drawImage(sc, x - pad * k + ox, y - pad * k + oy, sc.width * k, sc.height * k); ctx.globalAlpha = 1;
     // Kit art from the round-3 lanes is made on the value ladder already; older art is lifted onto it.
     const lift = activeLook.props.byArt?.[p.art]?.lift ?? (LOOK_ART.prop[p.art] ? activeLook.props.kitLift ?? '' : activeLook.props.lift);
     ctx.drawImage(litCopy(img, lift), x, y, w, h);

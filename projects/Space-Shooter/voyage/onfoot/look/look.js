@@ -8,11 +8,12 @@
 //   "look": { "set": "hangar", "accents": { "board": "#6fe3ff" }, "decals": [...], "lights": [...],
 //             "emitters": [...], "mounts": [...], "clutter": [...], "doorColors": { "workshop": "pad" } }
 import LOOKS from './looks.json' with { type: 'json' };
-import { gridOf, paintOutside, paintFloor, paintDecals, paintWallShadows, paintWalls, paintDoors, paintMounts, paintClutter, paintLightmap, paintFixtures, lightsPx } from './paint.js';
+import { gridOf, paintOutside, paintFloor, paintDecals, paintWallShadows, paintWalls, paintDoors, paintMounts, paintClutter, paintLightmap, paintFixtures, paintPools, lightsPx } from './paint.js';
 export { lightsPx, shadowOffset } from './paint.js';
 
 // Lights on (the game) unless a dev check turns them off for a before/after picture: globalThis.__stardustLookLights = false.
 const lightsOn = () => globalThis.__stardustLookLights !== false;
+const hexA = (h, a) => { const n = parseInt(h.slice(1), 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`; };
 const stillPlease = () => Boolean(globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
 
 const merge = (a, b) => {
@@ -59,6 +60,7 @@ export function buildLookLayer(map, scale, { drawProps, isLocked = () => false }
   paintDecals(ctx, map, g);
   if (lightsOn()) paintLightmap(ctx, map, g, lights);
   paintWallShadows(ctx, map, g);
+  paintPools(ctx, map, g, lights);
   paintWalls(ctx, map, g);
   paintDoors(ctx, map, g, isLocked);
   paintMounts(ctx, map, g);
@@ -67,6 +69,7 @@ export function buildLookLayer(map, scale, { drawProps, isLocked = () => false }
   if (lightsOn()) paintLightmap(ctx, map, g, lights, { floorOnly: true });
   paintFixtures(ctx, map, g, lights);
   const flickers = lights.filter(l => l.flicker);
+  const overheads = lights.filter(l => l.kind === 'lamp');
 
   let vig = null, vigKey = '';
   return {
@@ -81,7 +84,30 @@ export function buildLookLayer(map, scale, { drawProps, isLocked = () => false }
       if (x1 > x0 && y1 > y0) c.drawImage(canvas, x0, y0, x1 - x0, y1 - y0, ((x0 - sx) / s) * k, ((y0 - sy) / s) * k, ((x1 - x0) / s) * k, ((y1 - y0) / s) * k);
     },
     /** After the bodies: a gentle flicker on the odd faulty lamp (never under reduced motion), then the look's own vignette. */
-    overlay(c, cam, view, t = 0) {
+    overlay(c, cam, view, t = 0, carrier = null) {
+      const k0 = cam.zoom * view.dpr;
+      // The captain carries a small soft light, so the floor under them never sinks into the dark between lamps.
+      const pl = look.carryLight;
+      if (pl && carrier && lightsOn()) {
+        const x = (carrier.x - cam.x) * k0, y = (carrier.y - cam.y) * k0, r = pl.r * T * k0;
+        c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.globalCompositeOperation = 'lighter';
+        const gr = c.createRadialGradient(x, y, 0, x, y, r);
+        gr.addColorStop(0, `rgba(255,236,210,${pl.strength})`); gr.addColorStop(0.5, `rgba(255,236,210,${pl.strength * 0.4})`); gr.addColorStop(1, 'rgba(255,236,210,0)');
+        c.fillStyle = gr; c.fillRect(x - r, y - r, r * 2, r * 2); c.restore();
+      }
+      // Overhead work lamps, above the people: a dark ring with a hot core and a small halo (no body detail).
+      if (overheads.length) {
+        c.save(); c.setTransform(1, 0, 0, 1, 0, 0);
+        for (const l of overheads) {
+          const x = (l.fx - cam.x) * k0, y = (l.fy - cam.y) * k0, s2 = (l.size?.[0] || 0.7) * T * k0;
+          if (x < -s2 || y < -s2 || x > c.canvas.width + s2 || y > c.canvas.height + s2) continue;
+          if (lightsOn()) { c.globalCompositeOperation = 'lighter'; const g2 = c.createRadialGradient(x, y, 0, x, y, s2 * 1.6); g2.addColorStop(0, hexA(l.color, 0.35)); g2.addColorStop(1, hexA(l.color, 0)); c.fillStyle = g2; c.fillRect(x - s2 * 1.6, y - s2 * 1.6, s2 * 3.2, s2 * 3.2); }
+          c.globalCompositeOperation = 'source-over';
+          c.strokeStyle = 'rgba(14,16,19,0.92)'; c.lineWidth = s2 * 0.16; c.beginPath(); c.arc(x, y, s2 * 0.36, 0, Math.PI * 2); c.stroke();
+          c.fillStyle = lightsOn() ? '#fff4dc' : '#8a8f96'; c.beginPath(); c.arc(x, y, s2 * 0.2, 0, Math.PI * 2); c.fill();
+        }
+        c.restore();
+      }
       if (flickers.length && lightsOn() && !stillPlease()) {
         const k = cam.zoom * view.dpr;
         c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.globalCompositeOperation = 'lighter';

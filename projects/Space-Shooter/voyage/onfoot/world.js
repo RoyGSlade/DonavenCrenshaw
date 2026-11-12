@@ -299,7 +299,7 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     if (fight) drawFightFx();
     for (const d of dust) { ctx.fillStyle = `rgba(160,170,180,${d.life * 0.5})`; ctx.beginPath(); ctx.arc(d.x, d.y, 4 + (0.5 - d.life) * 14, 0, Math.PI * 2); ctx.fill(); }
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    if (layer.overlay) layer.overlay(ctx, cam, view, t); // r3-look hook: a look map's own light overlay and vignette
+    if (layer.overlay) layer.overlay(ctx, cam, view, t, mode === 'walk' ? walker : fight?.player); // r3-look hook: a look map's own lights, the captain's light and vignette
     else if (vignette) ctx.drawImage(vignette, 0, 0, canvas.width, canvas.height);
     drawObjectiveEdge(cam);
     if (fight?.player.hit > 0) { ctx.fillStyle = `rgba(255,80,60,${fight.player.hit})`; ctx.fillRect(0, 0, canvas.width, canvas.height); }
