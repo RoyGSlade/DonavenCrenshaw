@@ -10,6 +10,48 @@ export default {
   "giver": "vey",
   "location": "beacon",
   "summary": "The lanes need railguns. Steal one, file for one, or build one with Garrity.",
+  "steps": [
+    {
+      "id": "brief",
+      "text": "Hear Vey out: steal one, file for one or build one",
+      "where": "beacon",
+      "nodes": [
+        "intro"
+      ]
+    },
+    {
+      "id": "pick",
+      "text": "Pick your way: the vault, the forms or Garrity's yard",
+      "where": "beacon",
+      "nodes": [
+        "steal-plan",
+        "office",
+        "build-travel",
+        "garrity"
+      ]
+    },
+    {
+      "id": "do",
+      "text": "Pull it off",
+      "nodes": [
+        "guards",
+        "vault",
+        "vault-open",
+        "alarm",
+        "bribe",
+        "wrong-form",
+        "stamped",
+        "armoury-race",
+        "no-drill",
+        "mine",
+        "dig",
+        "collapse",
+        "ore",
+        "part-fight",
+        "assemble"
+      ]
+    }
+  ],
   "rolls": {
     "warehouse": {
       "pick": [

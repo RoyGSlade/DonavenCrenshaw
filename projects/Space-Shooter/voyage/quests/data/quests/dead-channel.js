@@ -10,6 +10,45 @@ export default {
   "giver": "hask",
   "location": "alpha",
   "summary": "An old Warden relay buoy is reading out a licence number. Yours. Hask wants it quiet.",
+  "steps": [
+    {
+      "id": "brief",
+      "text": "Hear Hask out about the buoy",
+      "where": "alpha",
+      "nodes": [
+        "intro",
+        "hask-knows"
+      ]
+    },
+    {
+      "id": "fly",
+      "text": "Fly out to the buoy",
+      "where": "beacon",
+      "nodes": [
+        "trip"
+      ]
+    },
+    {
+      "id": "sentries",
+      "text": "Get past the Warden sentries",
+      "where": "beacon",
+      "nodes": [
+        "buoy",
+        "guards",
+        "crawl",
+        "inside"
+      ]
+    },
+    {
+      "id": "quiet",
+      "text": "Shut the relay up",
+      "where": "beacon",
+      "nodes": [
+        "panel",
+        "voice"
+      ]
+    }
+  ],
   "pitch": {
     "line": "hask.job.dead-channel",
     "emotion": "worried",

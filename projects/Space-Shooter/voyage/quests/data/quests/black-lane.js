@@ -10,6 +10,45 @@ export default {
   "giver": "hask",
   "location": "alpha",
   "summary": "Clear the raider blockade off the Nether Crossing lane. Deadly.",
+  "steps": [
+    {
+      "id": "brief",
+      "text": "Take Hask's blockade job",
+      "where": "alpha",
+      "nodes": [
+        "intro"
+      ]
+    },
+    {
+      "id": "out",
+      "text": "Fly out to the Black Lane",
+      "where": "nether",
+      "nodes": [
+        "trip"
+      ]
+    },
+    {
+      "id": "picket",
+      "text": "Break the raider picket",
+      "where": "nether",
+      "nodes": [
+        "wave-hail",
+        "wave"
+      ]
+    },
+    {
+      "id": "kestrel",
+      "text": "Deal with the Red Kestrel",
+      "where": "nether",
+      "nodes": [
+        "lieutenant",
+        "eye",
+        "codes",
+        "duel",
+        "chase"
+      ]
+    }
+  ],
   "repeatable": true,
   "rolls": {
     "point": {

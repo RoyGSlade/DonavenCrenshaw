@@ -2,8 +2,33 @@
 .of-stage{position:relative;width:100%;height:100%;min-height:320px;overflow:hidden;background:#05080d;touch-action:none;user-select:none;-webkit-user-select:none}
 .of-world,.of-hop{position:absolute;inset:0}
 .of-canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
-.of-prompt{position:absolute;left:0;top:0;pointer-events:none;animation:of-pop .16s ease-out;padding:6px 10px;border:1px solid #81e6df88;border-radius:4px;background:#070d17e6;color:#eaf4f5;font:600 12px Inter,"Segoe UI",sans-serif;letter-spacing:.03em;white-space:nowrap;box-shadow:0 4px 16px #0008}
-.of-prompt[data-kind=door]{border-color:#b9a4ff88}
+/* r3 basics: the one interact system. The prompt in reach: a key cap, an icon and the verb. */
+.of-prompt{--accent:#81e6df;position:absolute;left:0;top:0;z-index:6;display:flex;align-items:center;gap:10px;min-height:48px;margin:0;padding:7px 16px 7px 8px;border:1px solid color-mix(in srgb,var(--accent) 55%,#0000);border-top:2px solid var(--accent);border-radius:10px;background:linear-gradient(#0f1d2cf4,#08121df4);color:#f4fbfc;font:700 18px/1.15 Inter,"Segoe UI",sans-serif;letter-spacing:.005em;white-space:nowrap;box-shadow:0 10px 26px #000b,0 0 0 1px #0006,0 0 22px color-mix(in srgb,var(--accent) 22%,#0000);cursor:pointer;animation:of-pop .16s ease-out;max-width:calc(100% - 16px)}
+.of-prompt:hover:not(:disabled){background:linear-gradient(#142638f8,#0a1724f8);border-color:var(--accent)}
+.of-prompt::after{content:'';position:absolute;left:50%;bottom:-7px;width:12px;height:12px;transform:translateX(-50%) rotate(45deg);background:#08121d;border-right:1px solid color-mix(in srgb,var(--accent) 55%,#0000);border-bottom:1px solid color-mix(in srgb,var(--accent) 55%,#0000)}
+.of-prompt-text{overflow:hidden;text-overflow:ellipsis}
+.of-prompt-icon{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:color-mix(in srgb,var(--accent) 18%,#0000);color:var(--accent);flex:none}
+.of-prompt-glyph{width:20px;height:20px}
+.of-key{display:inline-grid;place-items:center;min-width:34px;height:34px;padding:0 8px;border-radius:7px;background:var(--dp-key-art,linear-gradient(#e9f2f4,#b9c8cf)) center/100% 100%;color:#0b1520;font:800 16px/1 Inter,"Segoe UI",sans-serif;box-shadow:inset 0 -4px 0 #7f939d,0 2px 0 #02060a,0 0 0 1px #02060a;flex:none}
+/* Marks over everything usable: an icon chip, with the name for stations, doors and anyone close. */
+.of-marks{position:absolute;inset:0;pointer-events:none;z-index:3;overflow:hidden}
+.of-mark{--accent:#ffad72;position:absolute;left:0;top:0;display:flex;align-items:center;gap:6px;padding:3px 9px 3px 3px;transform-origin:50% 100%;translate:-50% -100%;border:1px solid color-mix(in srgb,var(--accent) 45%,#0000);border-radius:14px;background:#08121ddd;color:#eaf4f5;font:700 12px/1 Inter,"Segoe UI",sans-serif;white-space:nowrap;box-shadow:0 4px 12px #0009}
+.of-mark.is-icon{padding:3px;gap:0}
+.of-mark-icon{width:20px;height:20px;padding:3px;border-radius:50%;background:color-mix(in srgb,var(--accent) 22%,#0000);color:var(--accent);flex:none}
+.of-mark.is-locked{border-color:#56687788;color:#9db3c2}
+.of-mark.is-locked .of-mark-icon{color:#9db3c2;background:#56687733}
+.of-mark.is-objective{--accent:#f4d35e;border-color:#f4d35e;box-shadow:0 0 0 2px #f4d35e33,0 4px 16px #000a,0 0 18px #f4d35e55}
+.of-mark.is-objective::before{content:'NEXT';margin-left:4px;font:800 9px Consolas,monospace;letter-spacing:.12em;color:#f4d35e}
+.of-mark.is-objective.is-icon::before{content:none}
+/* The objective off screen or through a door: an arrow at the edge with where it leads. */
+.of-edge{position:absolute;left:0;top:0;z-index:5;display:flex;align-items:center;gap:6px;translate:-15px -50%;pointer-events:none;font:700 12px Inter,"Segoe UI",sans-serif;color:#1d1503}
+.of-edge i{position:relative;display:block;width:30px;height:30px;border-radius:50%;background:#f4d35e;box-shadow:0 0 0 3px #f4d35e44,0 4px 14px #000a;flex:none}
+.of-edge i::after{content:'';position:absolute;margin:9px 0 0 11px;border:6px solid transparent;border-left:9px solid #1d1503;border-right:0}
+.of-edge span{padding:4px 9px;border-radius:12px;background:#f4d35e;white-space:nowrap;box-shadow:0 4px 14px #000a}
+.of-edge span:empty{display:none}
+.of-edge[data-side=right]{flex-direction:row-reverse;translate:calc(-100% + 15px) -50%}
+.of-edge[data-side=top],.of-edge[data-side=bottom]{flex-direction:column;translate:-50% -15px}
+.of-edge[data-side=bottom]{flex-direction:column-reverse;translate:-50% calc(-100% + 15px)}
 .of-place{position:absolute;left:50%;top:14px;transform:translateX(-50%);font:700 11px Consolas,monospace;letter-spacing:.16em;color:#b5c8d5;text-transform:uppercase;opacity:0;pointer-events:none}
 .of-place.show{animation:of-place 2.6s ease-out}
 @keyframes of-pop{from{opacity:0}to{opacity:1}}
@@ -66,18 +91,14 @@
 .of-knob{position:absolute;left:36px;top:36px;width:44px;height:44px;border-radius:50%;background:#81e6dfaa;box-shadow:0 0 12px #81e6df66;pointer-events:none}
 .of-stick-right .of-knob{background:#ffad72aa;box-shadow:0 0 12px #ffad7266}
 .of-tbtn{position:absolute;min-width:76px;min-height:56px;border-radius:28px;background:#0d1826cc;border-color:#81e6df88;font-size:13px;touch-action:none}
-.of-tbtn-use{right:22px;bottom:40px}
+.of-tbtn-use{right:96px;bottom:30px;min-width:96px;min-height:64px;border-radius:32px;border:2px solid #81e6df;background:#0d1826e6;color:#eaf4f5;font:800 17px Inter,"Segoe UI",sans-serif;letter-spacing:.02em;box-shadow:0 6px 18px #000a,0 0 18px #81e6df44}
+.of-tbtn-use[data-label=Locked]{border-color:#7d8f9d;box-shadow:0 6px 18px #000a;color:#9db3c2}
 .of-tbtn-dash{right:150px;bottom:30px}
 .of-tbtn.is-down{background:#81e6df;color:#082126}
 .is-fight .of-prompt{display:none}
 @media (max-width:620px){.of-hud-help{bottom:auto;top:72px}.of-hop .of-hud-help{top:34px}.of-hop-toast{bottom:auto;top:64px}}
 @media (max-width:520px){.of-stick{width:104px;height:104px}.of-knob{left:30px;top:30px}.of-tbtn-dash{right:132px}.of-talk-text{font-size:14px}}
-@media (prefers-reduced-motion:reduce){.of-place.show{animation:none;opacity:1}.of-tile.is-hint{border-color:#f4d35e;box-shadow:0 0 0 2px #f4d35e66 inset;animation:of-hint 1.2s ease-in-out infinite}
-@keyframes of-hint{50%{box-shadow:0 0 0 4px #f4d35e33 inset}}
-.of-puzzle.is-solved{border-top-color:#9fe870;animation:of-solved .5s ease-out}
-@keyframes of-solved{0%{box-shadow:0 0 0 0 #9fe87088}100%{box-shadow:0 0 0 24px #9fe87000}}
-.of-objective{position:absolute;left:12px;top:40px;max-width:min(320px,calc(100% - 24px));margin:0;padding:6px 10px;border-left:3px solid #f4d35e;background:#0d1826d9;color:#eaf4f5;font:600 12px/1.4 Inter,"Segoe UI",sans-serif;pointer-events:none;z-index:4}
-.of-tile.spin{animation:none}.of-fade{transition:none}}
+@media (prefers-reduced-motion:reduce){.of-place.show{animation:none;opacity:1}.of-tile.is-hint,.of-puzzle.is-solved,.of-tile.spin,.of-prompt{animation:none}.of-fade{transition:none}}
 /* The preview page. */
 .of-page{position:fixed;inset:0;display:grid;grid-template-rows:auto 1fr;background:#05080d}
 .of-page .vy-top{position:relative}
@@ -95,3 +116,12 @@
 .of-overlay-quit{justify-self:center}
 .of-hack-canvas{display:block;width:100%;height:230px;border:1px solid #2a4152;border-radius:4px;background:#070d17}
 .of-perks{color:#9fe870!important}
+/* r3 basics: "job here": a giver or a board with offers you can take (mint, never gold). */
+.of-mark.is-offer{border-color:#9fe870;box-shadow:0 0 0 2px #9fe87033,0 4px 14px #000a,0 0 14px #9fe87044}
+.of-mark.is-offer .of-mark-icon{background:#9fe87033;color:#9fe870}
+/* r3: names pop in range (Donaven: 2 tiles), with a short fade; out of range the chip is the quiet icon alone. */
+.of-mark > span{display:inline-block;max-width:0;overflow:hidden;opacity:0;white-space:nowrap;transition:max-width .22s ease,opacity .18s ease}
+.of-mark.is-named > span{max-width:260px;opacity:1}
+.of-mark.is-icon{padding:3px;gap:0;opacity:.82}
+@media (prefers-reduced-motion:reduce){.of-mark > span{transition:opacity .12s linear}}
+.of-prompt.is-below::after{bottom:auto;top:-7px;transform:translateX(-50%) rotate(225deg)}

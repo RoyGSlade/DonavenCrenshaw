@@ -32,8 +32,8 @@ test('studio play links open the exact spot on a throwaway save', { skip: !proce
 
   // 1. A quest at a dialogue node.
   await page.goto(`${server.origin}${HANGAR}?newgame=1&studio=1&quest=cold-run&node=intro-advance&seed=7`);
-  await page.locator('#hg-sheet[data-open-station="board"]').waitFor();
-  await page.locator('#pane-jobs .qs-dialogue').waitFor();
+  // Round 3: a job's talk plays in the dialogue box, wherever you are.
+  await page.locator('#hg-dialogue .ui-dlg-choice').first().waitFor();
   const run = await page.evaluate(() => window.__stardust.store.get().quests.active['cold-run']);
   assert.equal(run.node, 'intro-advance', 'the job opens at the linked node');
   assert.equal(run.seed, 7);

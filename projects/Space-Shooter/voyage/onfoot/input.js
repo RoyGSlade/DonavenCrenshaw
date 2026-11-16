@@ -119,8 +119,14 @@ export function createInput(root, { mode = 'walk', canvas = null, touch = isTouc
     held: (code) => keys.has(code),
     /** True once per press of an action button. */
     take(action) { const had = pressed.has(action); pressed.delete(action); return had; },
-    /** Shows or hides the touch interact button with a label. */
-    prompt(label) { if (!interactBtn) return; interactBtn.hidden = !label; if (label) interactBtn.textContent = label; },
+    /** Shows or hides the touch interact button with a label (and an icon element maker, r3 basics). */
+    prompt(label, iconId = null) {
+      if (!interactBtn) return;
+      interactBtn.hidden = !label;
+      if (!label) return;
+      if (interactBtn.dataset.label !== label) { interactBtn.dataset.label = label; interactBtn.textContent = label; }
+      if (iconId) interactBtn.dataset.icon = iconId;
+    },
     set enabled(v) { enabled = v; if (!v) { keys.clear(); pressed.clear(); mouse.down = false; } },
     destroy() {
       removeEventListener('keydown', onKeyDown); removeEventListener('keyup', onKeyUp); removeEventListener('blur', onBlur);

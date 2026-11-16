@@ -34,3 +34,17 @@ export async function openStation(page, id, view = null) {
   await page.locator(`#hg-sheet[data-open-station="${id}"]`).waitFor();
   if (view) await page.locator(`#hg-sheet-tabs [data-view="${view}"]`).click();
 }
+
+/** Round 3: open the datapad on a page ('captain', 'pack', 'jobs', 'map'), closing any station first. */
+export async function openPad(page, pageId = 'captain') {
+  const sheet = page.locator('#hg-sheet');
+  if (await sheet.isVisible()) await page.locator('#hg-sheet-close').click();
+  await page.evaluate((id) => window.__stardust.pad.open(id), pageId);
+  await page.locator(`.dp-pad[data-page="${pageId}"]`).waitFor();
+}
+
+/** Round 3: close the datapad if it is open. */
+export async function closePad(page) {
+  await page.evaluate(() => window.__stardust.pad.close());
+  await page.locator('.dp-scrim').waitFor({ state: 'hidden' });
+}

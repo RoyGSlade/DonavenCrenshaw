@@ -10,6 +10,46 @@ export default {
   "giver": "vey",
   "location": "beacon",
   "summary": "The Guild purges its old Warden records tonight. One of them is your licence file.",
+  "steps": [
+    {
+      "id": "brief",
+      "text": "Hear Vey out about your file",
+      "where": "beacon",
+      "nodes": [
+        "intro"
+      ]
+    },
+    {
+      "id": "fly",
+      "text": "Fly to the Records Hall",
+      "where": "alpha",
+      "nodes": [
+        "trip"
+      ]
+    },
+    {
+      "id": "find",
+      "text": "Find your file before the purge",
+      "where": "alpha",
+      "nodes": [
+        "hall",
+        "sad",
+        "wrong",
+        "stacks",
+        "index",
+        "stamped",
+        "race"
+      ]
+    },
+    {
+      "id": "decide",
+      "text": "Decide what to do with it",
+      "where": "alpha",
+      "nodes": [
+        "found-file"
+      ]
+    }
+  ],
   "pitch": {
     "line": "vey.job.warden-file",
     "emotion": "sly",

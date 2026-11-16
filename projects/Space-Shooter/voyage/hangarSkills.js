@@ -17,7 +17,7 @@ const SKILL = new Map(SKILLS.map((s) => [s.id, s]));
 const TREE_NAME = Object.fromEntries(TREES.map((t) => [t.id, t.name]));
 
 /** Does every learned skill still meet its tree requirement? (own ranks never count toward unlocking it) */
-function needsHold(c) {
+export function needsHold(c) {
   for (const [id, rank] of Object.entries(c.skills || {})) {
     if (!rank) continue;
     const skill = SKILL.get(id);
@@ -148,7 +148,10 @@ function midAngle(a, b) {
  * { nodes: [{ id, x, y, ring, angle, trees }], edges: [{ from, to, trees }], branches: [{ tree, angle, x, y }] }
  * `from` may be 'root'. Pure and stable: the same data always lays out the same.
  */
-export function treeLayout(trees = TREES, skills = SKILLS, { r0 = SKILL_TREE_SHAPE.r0, dr = SKILL_TREE_SHAPE.dr, spacing = SKILL_TREE_SHAPE.spacing } = {}) {
+// Round 3: a crowded ring (more than `crowd` siblings) staggers them in and out by `stagger` of
+// a ring and packs them tighter, so a big tree branch never wraps round into its neighbours;
+// branch names sit just past the deepest ring (labelGap).
+export function treeLayout(trees = TREES, skills = SKILLS, { r0 = SKILL_TREE_SHAPE.r0, dr = SKILL_TREE_SHAPE.dr, spacing = SKILL_TREE_SHAPE.spacing, crowd = SKILL_TREE_SHAPE.crowd ?? 99, stagger = SKILL_TREE_SHAPE.stagger ?? 0, labelGap = SKILL_TREE_SHAPE.labelGap ?? 0.25 } = {}) {
   const angles = Object.fromEntries(trees.map((t, i) => [t.id, TREE_ANGLES[t.id] ?? (-90 + (360 / trees.length) * i)]));
   const radius = (r) => r0 + (r - 1) * dr;
   // Group single-tree skills by tree and ring so siblings fan out around the branch.
@@ -159,13 +162,18 @@ export function treeLayout(trees = TREES, skills = SKILLS, { r0 = SKILL_TREE_SHA
     groups.get(key).push(s);
   }
   const nodes = [];
+  // A tree whose ring is crowded pushes its deeper rings out too, so they clear the staggered ones.
+  const pushed = new Map();
+  for (const [key, list] of groups) if (list.length > crowd && !key.startsWith('shared:')) { const [tree, r] = key.split(':'); pushed.set(tree, Math.min(pushed.get(tree) ?? 99, Number(r))); }
   for (const list of groups.values()) {
+    const crowded = list.length > crowd;
     list.forEach((s, i) => {
       const base = s.trees.length === 1 ? angles[s.trees[0]] : midAngle(angles[s.trees[0]], angles[s.trees[1]]);
       const r = ring(s);
-      const R = radius(r);
+      const deeper = s.trees.length === 1 && pushed.has(s.trees[0]) && r > pushed.get(s.trees[0]);
+      const R = radius(r) + (crowded && i % 2 ? dr * stagger : 0) + (deeper ? dr * stagger : 0);
       // Spread siblings by arc length so nodes keep the same gap on every ring.
-      const offset = ((i - (list.length - 1) / 2) * spacing) / R;
+      const offset = ((i - (list.length - 1) / 2) * spacing * (crowded ? 1 - stagger * 0.8 : 1)) / radius(r);
       const a = rad(base) + offset;
       nodes.push({ id: s.id, ring: r, angle: (a * 180) / Math.PI, x: Math.cos(a) * R, y: Math.sin(a) * R, trees: [...s.trees] });
     });
@@ -193,7 +201,9 @@ export function treeLayout(trees = TREES, skills = SKILLS, { r0 = SKILL_TREE_SHA
       edges.push({ from, to: n.id, trees: [tree] });
     }
   }
-  const branches = trees.map((t) => ({ tree: t.id, angle: angles[t.id], x: Math.cos(rad(angles[t.id])) * (radius(4) + 0.25), y: Math.sin(rad(angles[t.id])) * (radius(4) + 0.25) }));
+  const deepest = Math.max(1, ...nodes.map((n) => n.ring));
+  const reach = (id) => Math.max(radius(1), ...nodes.filter((n) => n.trees.length === 1 && n.trees[0] === id).map((n) => Math.hypot(n.x, n.y))) + labelGap;
+  const branches = trees.map((t) => ({ tree: t.id, angle: angles[t.id], x: Math.cos(rad(angles[t.id])) * Math.min(reach(t.id), radius(deepest) + labelGap), y: Math.sin(rad(angles[t.id])) * Math.min(reach(t.id), radius(deepest) + labelGap) }));
   return { nodes, edges, branches, byId };
 }
 

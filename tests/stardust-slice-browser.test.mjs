@@ -10,7 +10,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { loadPlaywright, startServer, blockHub, bootStardust, DESKTOP, PHONE } from '../scripts/stardust-test-kit.mjs';
-import { signOnCaptain, openStation } from '../scripts/stardust-hangar-kit.mjs';
+import { signOnCaptain, openStation, openPad, closePad } from '../scripts/stardust-hangar-kit.mjs';
+import { playJob, takePosting, doneJob } from '../scripts/stardust-play-kit.mjs';
 
 const HANGAR = '/projects/Space-Shooter/voyage/';
 const SAVE_KEY = 'stardust.voyage.v1';
@@ -28,68 +29,6 @@ const seedRandom = (seed) => {
 };
 
 const readSave = (page) => page.evaluate((key) => JSON.parse(localStorage.getItem(key)), SAVE_KEY);
-
-// All codes of `length` distinct symbols out of `symbols`, and the lock's scoring.
-function codes(length, symbols) {
-  const out = [];
-  const walk = (prefix) => {
-    if (prefix.length === length) { out.push(prefix); return; }
-    for (let s = 0; s < symbols; s++) if (!prefix.includes(s)) walk([...prefix, s]);
-  };
-  walk([]);
-  return out;
-}
-function score(code, guess) {
-  let exact = 0, shared = 0;
-  guess.forEach((s, i) => { if (code[i] === s) exact++; if (code.includes(s)) shared++; });
-  return { exact, near: shared - exact };
-}
-
-/** Plays the job running in the Jobs tab to its end screen, reading only the page. */
-async function playJob(page) {
-  const pane = page.locator('#pane-jobs');
-  const seen = new Set();
-  let candidates = null;
-  for (let step = 0; step < 200; step++) {
-    const text = await pane.innerText();
-    if (/JOB DONE|JOB FAILED/.test(text)) return { text, seen: [...seen] };
-    if (await pane.locator('.qs-cipher').count()) {
-      seen.add('cipher');
-      const symbols = await pane.locator('.qs-pad button').count();
-      const length = await pane.locator('.qs-slot').count();
-      candidates ??= codes(length, symbols);
-      const glyph = (await pane.locator('.qs-pad button').allInnerTexts()).map((t) => t.split(' ')[0]);
-      for (const line of await pane.locator('.qs-guesses li').allInnerTexts()) {
-        const [codePart, feedback] = line.split(/\s{2,}/);
-        const guess = codePart.trim().split(' ').map((g) => glyph.indexOf(g));
-        const [, exact, near] = feedback.match(/(\d) in place, (\d) elsewhere/).map(Number);
-        candidates = candidates.filter((c) => { const s = score(c, guess); return s.exact === exact && s.near === near; });
-      }
-      const slots = await pane.locator('.qs-slot').evaluateAll((els) => els.map((e) => (e.classList.contains('is-known') ? e.textContent : null)));
-      slots.forEach((g, i) => { if (g) candidates = candidates.filter((c) => c[i] === glyph.indexOf(g)); });
-      for (const s of candidates[0]) await page.keyboard.press(String(s + 1));
-      await page.keyboard.press('Enter');
-      continue;
-    }
-    if (await pane.locator('.qs-fight').count()) { seen.add('fight'); await page.keyboard.press('f'); continue; }
-    if (await pane.locator('.qs-race').count()) { seen.add('race'); await pane.locator('.qs-race .qs-moves button').first().click(); continue; }
-    const enabled = pane.locator('.qs-choices button:not([disabled])');
-    if (await enabled.count()) {
-      if (await pane.locator('.qs-map').count()) seen.add('travel');
-      if (await pane.locator('.qs-event').count()) seen.add('event');
-      const labels = await enabled.allInnerTexts();
-      // Never hand the cargo over; take sure things (a stat line, a decoy) over rolls.
-      const sure = labels.findIndex((l) => /Name the debt|Vent two scrap/.test(l));
-      const pick = sure >= 0 ? sure : labels.findIndex((l) => !/Take it\.|hand the core|Pay the/i.test(l));
-      await enabled.nth(Math.max(0, pick)).click();
-      continue;
-    }
-    const primary = pane.locator('button.primary');
-    if (await primary.count()) { await primary.first().click(); continue; }
-    throw new Error(`Stuck at: ${text.slice(0, 300)}`);
-  }
-  throw new Error('The job did not end in 200 steps');
-}
 
 test('slice loop: preview card -> captain -> job -> reward -> upgrade -> a stronger next job; phone board', {
   skip: !process.env.STARDUST_BROWSER_TEST, timeout: 240000,
@@ -126,21 +65,21 @@ test('slice loop: preview card -> captain -> job -> reward -> upgrade -> a stron
 
   // The board: three givers with portraits and their jobs.
   await openStation(page, 'board');
-  assert.equal(await page.locator('.vy-giver').count(), 3);
-  assert.equal(await page.locator('.vy-giver img.vy-portrait').evaluateAll((imgs) => imgs.filter((i) => i.complete && i.naturalWidth > 0).length), 3, 'portraits load');
+  // Round 3: the board carries postings from the three givers (they work on other stations).
+  assert.equal(await page.locator('.vy-posting').count(), 15);
+  assert.ok(await page.locator('.vy-posting img.vy-posting-face').evaluateAll((imgs) => imgs.filter((i) => i.complete && i.naturalWidth > 0).length) >= 3, 'portraits load');
   const hullBefore = Number(await page.locator('.vy-jobship').getAttribute('data-ship-hull'));
 
   // Take Cold Run until a job pays enough for hull tier 1 (usually the first).
   let paid = false;
   const runs = [];
   for (let i = 0; i < 6 && !paid; i++) {
-    await page.locator('[data-quest="cold-run"] button').click();
-    await page.locator('#pane-jobs .qs-quest-head').waitFor();
-    assert.equal(Number(await page.locator('#pane-jobs .qs-ship').getAttribute('data-ship-hull')), hullBefore, 'the job flies the ship as it is');
+    await takePosting(page, 'cold-run');
+    assert.equal((await readSave(page)).quests.active['cold-run'].hullMax, hullBefore, 'the job flies the ship as it is');
     const result = await playJob(page);
     runs.push(result);
     t.diagnostic(`run ${i + 1}: ${result.seen.join(', ')} -> ${/JOB DONE/.test(result.text) ? 'done' : 'failed'}`);
-    await page.locator('#pane-jobs button.primary', { hasText: 'Back to the job board' }).click();
+    await doneJob(page);
     paid = await page.locator('[data-upgrade="hull"]').isEnabled();
   }
   const afterJobs = await readSave(page);
@@ -148,11 +87,13 @@ test('slice loop: preview card -> captain -> job -> reward -> upgrade -> a stron
   assert.ok(runs.some((r) => /JOB DONE/.test(r.text)), 'at least one job paid');
   assert.ok(runs.some((r) => r.seen.includes('travel')), 'jobs travel on the sector map');
 
-  // The Ledger shows the reward: credits, Hask's rep and the job record.
-  await openStation(page, 'quarters', 'ledger');
-  assert.equal(await page.locator('[data-money]').innerText(), `${afterJobs.money.toLocaleString('en-US')} cr`);
-  assert.match(await page.locator('#pane-ledger [data-rep="hask"]').innerText(), new RegExp(`^${afterJobs.rep.hask} / 100`));
-  assert.match(await page.locator('[data-job="cold-run"]').innerText(), /Cold Run/);
+  // Round 3: the datapad shows the reward: credits on the Pack page, Hask's rep and the job record on Jobs.
+  await openPad(page, 'pack');
+  assert.equal(await page.locator('#pane-ledger [data-money]').innerText(), `${afterJobs.money.toLocaleString('en-US')} cr`);
+  await openPad(page, 'jobs');
+  assert.match(await page.locator('#dp-page-jobs [data-rep="hask"]').innerText(), new RegExp(`^${afterJobs.rep.hask} / 100`));
+  assert.match(await page.locator('#dp-page-jobs [data-job="cold-run"]').innerText(), /Cold Run/);
+  await closePad(page);
 
   // Spend it: hull tier 1.
   await openStation(page, 'pad');
@@ -164,14 +105,12 @@ test('slice loop: preview card -> captain -> job -> reward -> upgrade -> a stron
   // The next job flies the stronger ship.
   await openStation(page, 'board');
   assert.equal(Number(await page.locator('.vy-jobship').getAttribute('data-ship-hull')), hullBefore + 20);
-  await page.locator('[data-quest="cold-run"] button').click();
-  await page.locator('#pane-jobs .qs-quest-head').waitFor();
-  assert.match(await page.locator('#pane-jobs .qs-bar').first().innerText(), new RegExp(`Hull ${hullBefore + 20}/${hullBefore + 20}`));
+  await takePosting(page, 'cold-run');
+  assert.equal((await readSave(page)).quests.active['cold-run'].hullMax, hullBefore + 20, 'the next job flies the upgraded hull');
 
-  // A job in progress survives a reload and picks up where it was.
+  // A job in progress survives a reload: the tracker offers to continue it, and it picks up where it was.
   await page.reload();
-  await page.locator('#pane-jobs .qs-quest-head').waitFor();
-  assert.equal(await page.locator('#hg-sheet').getAttribute('data-open-station'), 'board', 'the job board opens with the job');
+  await page.locator('#dp-continue').click();
   const resumed = await playJob(page);
   assert.match(resumed.text, /JOB DONE|JOB FAILED/);
   assert.deepEqual(errors, []);
@@ -186,10 +125,10 @@ test('slice loop: preview card -> captain -> job -> reward -> upgrade -> a stron
   p2.on('pageerror', (e) => phoneErrors.push(e.message));
   await p2.goto(`${server.origin}${HANGAR}?newgame=1`);
   await openStation(p2, 'board');
-  await p2.locator('.vy-giver').first().waitFor();
+  await p2.locator('.vy-posting').first().waitFor();
   assert.equal(await p2.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, 'no sideways scroll at 390 px');
   await p2.locator('[data-quest="cold-run"] button').click();
-  await p2.locator('#pane-jobs .qs-dialogue').waitFor();
+  await p2.locator('#hg-dialogue .ui-dlg-choice').first().waitFor(); // the job's talk plays in the dialogue box
   assert.equal(await p2.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, 'a running job fits too');
   assert.deepEqual(phoneErrors, []);
 });

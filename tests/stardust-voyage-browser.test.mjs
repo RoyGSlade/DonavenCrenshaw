@@ -28,8 +28,11 @@ test('new hangar: closed by default; captain, credits, upgrade and skill survive
 
   await page.goto(`${base}?newgame=1&dev=1`);
   await signOnCaptain(page, 'Vela Quint');
+  // Round 3: the pad opened on the new captain; close it for the test tools, reopen on Captain (K).
+  await page.keyboard.press('Escape');
   await page.locator('#vy-dev-open').click();
   for (let i = 0; i < 3; i++) await page.locator('#vy-dev-job').click();
+  await page.keyboard.press('KeyK');
   await page.locator('[data-skill="pilot"]').click();
   await page.locator('[data-learn="pilot"]').click();
   await openStation(page, 'pad');

@@ -9,6 +9,48 @@ export default {
   "giver": "garrity",
   "location": "dustfall",
   "summary": "A derelict hulk in the debris field. Strip it or tow it before the scavengers do.",
+  "steps": [
+    {
+      "id": "brief",
+      "text": "Hear Garrity out about the hulk",
+      "where": "dustfall",
+      "nodes": [
+        "intro",
+        "cut"
+      ]
+    },
+    {
+      "id": "out",
+      "text": "Fly into the debris field",
+      "where": "dustfall",
+      "nodes": [
+        "out"
+      ]
+    },
+    {
+      "id": "strip",
+      "text": "Strip the hulk",
+      "where": "dustfall",
+      "nodes": [
+        "hulk",
+        "engine-room",
+        "panel",
+        "stripped",
+        "botched",
+        "towed"
+      ]
+    },
+    {
+      "id": "gang",
+      "text": "See off the scavengers",
+      "where": "dustfall",
+      "nodes": [
+        "gang",
+        "fight",
+        "haul"
+      ]
+    }
+  ],
   "repeatable": true,
   "rolls": {
     "hulk": {

@@ -18,9 +18,10 @@
   <link rel="stylesheet" href="./onfoot/onfoot.css">
   <link rel="stylesheet" href="./story/story.css">
   <link rel="stylesheet" href="./shops/shop.css">
+  <link rel="stylesheet" href="./datapad/datapad.css">
 </head>
 <body>
-  <main id="hg-floor" class="of-stage hg-floor" aria-label="The hangar floor. Walk with WASD or the arrow keys, E to use; on a phone, the stick and the button."></main>
+  <main id="hg-floor" class="of-stage hg-floor" aria-label="The floor. Walk with WASD or the arrow keys, E to use what is marked, Tab for your bag and datapad, Esc to pause; on a phone, the stick, the Use button and the bag."></main>
   <header class="vy-top hg-top">
     <a href="../?activity=classic" id="vy-back">← CLASSIC</a>
     <h1 class="vy-wordmark">STARDUST <b>/</b> THE HANGAR</h1>
@@ -39,7 +40,7 @@
 
   <div id="vy-hangar" class="vy-hangar hg-place" hidden>
     <h2 class="hg-sr">The hangar. Walk up to a station, or pick one here to open it.</h2>
-    <p id="hg-objective" class="hg-objective ui-nameplate" role="status" hidden><b>NEXT</b><span></span></p>
+    <div id="hg-objective" class="dp-tracker" role="status" hidden></div>
     <nav id="hg-spots" class="hg-layer" aria-label="Hangar stations"></nav>
     <section id="hg-sheet" class="hg-sheet ui-panel" role="region" aria-labelledby="hg-sheet-title" hidden>
       <header class="hg-sheet-head">
@@ -49,13 +50,14 @@
       <nav id="hg-sheet-tabs" class="hg-subtabs" aria-label="Station views" hidden></nav>
       <div class="hg-sheet-body">
         <section id="pane-ship" class="vy-pane" hidden></section>
-        <section id="pane-jobs" class="vy-pane vy-jobs-pane" hidden></section>
-        <section id="pane-captain" class="vy-pane" hidden></section>
-        <section id="pane-ledger" class="vy-pane" hidden></section>
         <section id="pane-crew" class="vy-pane" hidden></section>
         <section id="pane-station" class="vy-pane" hidden></section>
         <section id="pane-mount" class="vy-pane" hidden></section>
       </div>
+    </section>
+    <section id="dp-jobcard" class="dp-jobcard ui-panel" hidden aria-label="The job you are on">
+      <header class="dp-jobcard-head"><p class="ui-eyebrow" id="dp-jobcard-eyebrow">JOB</p><button type="button" id="dp-jobcard-later" class="ui-btn">Later</button></header>
+      <section id="pane-jobs" class="vy-pane vy-jobs-pane"></section>
     </section>
     <section id="vy-dev" class="vy-dev" hidden aria-label="Test tools"></section>
   </div>

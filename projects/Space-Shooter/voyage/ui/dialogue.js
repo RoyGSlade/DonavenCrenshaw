@@ -41,7 +41,9 @@ export function createDialogueBox({ root, bus, audio, reducedMotion = () => fals
   const offs = [];
 
   function setPortrait(speaker, emotion) {
-    const url = castPortrait(speaker, emotion);
+    // A stage direction (the narrator) has no face: the box drops the frame for it (round 3, jobs).
+    root.classList.toggle('is-narration', speaker === 'narrator');
+    const url = speaker === 'narrator' ? null : castPortrait(speaker, emotion);
     portrait.replaceChildren();
     portrait.dataset.speaker = speaker || '';
     if (url) {
@@ -107,7 +109,10 @@ export function createDialogueBox({ root, bus, audio, reducedMotion = () => fals
     return seq;
   }
 
-  function showChoices({ options = [] }) {
+  function showChoices(d) {
+    // null: the talk is over (story's director and the job talk both send it); clear the buttons.
+    if (!d) { choices.replaceChildren(); choices.hidden = true; next.hidden = false; return; }
+    const { options = [] } = d;
     root.hidden = false;
     next.hidden = true;
     choices.hidden = false;
@@ -117,6 +122,7 @@ export function createDialogueBox({ root, bus, audio, reducedMotion = () => fals
       b.className = 'ui-btn ui-dlg-choice';
       b.textContent = o.label;
       if (o.kind) b.dataset.kind = o.kind;
+      if (o.kind === 'later') b.classList.add('is-later');
       // An attempt shows its odds: a fresh 2d6 plus the stat, against the target.
       if (o.kind === 'attempt' && Number.isFinite(o.chance)) {
         const odds = document.createElement('small');

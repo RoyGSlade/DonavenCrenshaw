@@ -10,6 +10,47 @@ export default {
   "giver": "hask",
   "location": "alpha",
   "summary": "A Guild wedding cake for Beacon Prime. On time, in one piece, tiers all upright.",
+  "steps": [
+    {
+      "id": "brief",
+      "text": "Hear Hask out about the cake",
+      "where": "alpha",
+      "nodes": [
+        "intro",
+        "slice"
+      ]
+    },
+    {
+      "id": "load",
+      "text": "Load the cake into the hold",
+      "where": "alpha",
+      "nodes": [
+        "kitchen",
+        "strapped",
+        "wobbly"
+      ]
+    },
+    {
+      "id": "fly",
+      "text": "Fly the cake to Beacon Prime",
+      "where": "beacon",
+      "nodes": [
+        "trip",
+        "rival",
+        "race"
+      ]
+    },
+    {
+      "id": "deliver",
+      "text": "Deliver it in one piece",
+      "where": "beacon",
+      "nodes": [
+        "landed",
+        "cake-check",
+        "late"
+      ]
+    }
+  ],
   "pitch": {
     "line": "hask.job.three-tiers",
     "emotion": "dry",

@@ -9,6 +9,48 @@ export default {
   "giver": "garrity",
   "location": "dustfall",
   "summary": "Build a racer out of junk and win Garrity the Derby trophy. He has never won it.",
+  "steps": [
+    {
+      "id": "brief",
+      "text": "Hear Garrity out about the Derby",
+      "where": "dustfall",
+      "nodes": [
+        "intro"
+      ]
+    },
+    {
+      "id": "build",
+      "text": "Build a racer out of junk",
+      "where": "dustfall",
+      "nodes": [
+        "yard",
+        "salvage",
+        "salvaged",
+        "junk",
+        "frame",
+        "bolts",
+        "wobbly"
+      ]
+    },
+    {
+      "id": "grid",
+      "text": "Line up on the grid",
+      "where": "dustfall",
+      "nodes": [
+        "grid"
+      ]
+    },
+    {
+      "id": "race",
+      "text": "Win the Derby",
+      "where": "dustfall",
+      "nodes": [
+        "race",
+        "won",
+        "lost"
+      ]
+    }
+  ],
   "pitch": {
     "line": "garrity.job.dustfall-derby",
     "emotion": "excited",

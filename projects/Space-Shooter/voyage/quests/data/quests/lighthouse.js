@@ -9,6 +9,48 @@ export default {
   "giver": "garrity",
   "location": "dustfall",
   "summary": "The old lighthouse in the debris field has gone dark. Haulers keep hitting rocks.",
+  "steps": [
+    {
+      "id": "brief",
+      "text": "Hear Garrity out about the lighthouse",
+      "where": "dustfall",
+      "nodes": [
+        "intro"
+      ]
+    },
+    {
+      "id": "out",
+      "text": "Fly into the dark field",
+      "where": "dustfall",
+      "nodes": [
+        "out"
+      ]
+    },
+    {
+      "id": "lamp",
+      "text": "Get the lamp lit",
+      "where": "dustfall",
+      "nodes": [
+        "wren",
+        "wren-warm",
+        "look",
+        "rewire",
+        "lit-bright",
+        "lit",
+        "dim"
+      ]
+    },
+    {
+      "id": "drones",
+      "text": "Deal with the drones",
+      "where": "dustfall",
+      "nodes": [
+        "drones",
+        "drone-fight",
+        "shine"
+      ]
+    }
+  ],
   "pitch": {
     "line": "garrity.job.lighthouse",
     "emotion": "worried",

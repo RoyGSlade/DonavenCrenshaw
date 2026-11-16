@@ -9,6 +9,42 @@ export default {
   "giver": "garrity",
   "location": "dustfall",
   "summary": "A tumbling rock with a seam of blue ore. Dig it before the claim-jumpers do.",
+  "steps": [
+    {
+      "id": "brief",
+      "text": "Hear Garrity out about the seam",
+      "where": "dustfall",
+      "nodes": [
+        "intro",
+        "stew-ok",
+        "stew-bad",
+        "kit"
+      ]
+    },
+    {
+      "id": "dig",
+      "text": "Land on the rock and dig",
+      "where": "dustfall",
+      "nodes": [
+        "land",
+        "crawl-fight",
+        "crawl-down",
+        "dug",
+        "deep",
+        "cave-in"
+      ]
+    },
+    {
+      "id": "jumpers",
+      "text": "Hold off the claim-jumpers",
+      "where": "dustfall",
+      "nodes": [
+        "jumpers",
+        "jump-fight",
+        "haul"
+      ]
+    }
+  ],
   "pitch": {
     "line": "garrity.job.deep-seam",
     "emotion": "excited",

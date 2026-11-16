@@ -1,7 +1,7 @@
 // Round 2 hangar in a real browser: the captain's licence with the physics die
 // (the shown number is the saved stat), the hangar as a place (stations open
 // in place, by click and through hangarApi, and tell the story bus), the skill
-// tree (learn with its burst, take back, respec all), the dialogue box and the
+// tree on the datapad (learn with its burst; round 3: respec is a nap at the bunk), the dialogue box and the
 // attempt roller on the story bus, sound settings, mounts from other lanes,
 // and a phone at DPR 3 drawing at the render scale.
 // Opt-in like the other browser checks; run it alone, capped:
@@ -83,12 +83,16 @@ test('round-2 hangar: dice licence, stations in place, skill tree and respec, di
   assert.equal(await page.evaluate(() => localStorage.getItem('stardust.newgame.pendingRolls')), null);
   assert.equal((await events(page)).filter(([e]) => e === 'captain:created').length, 1, 'the director hears captain:created once');
 
-  // 2. The bunk opened in place. The skill tree: learn with a burst, take back, respec all.
-  assert.equal(await page.locator('#hg-sheet').getAttribute('data-open-station'), 'quarters');
+  // 2. Round 3: the datapad opened on its Captain page. The skill tree: learn with a burst;
+  // points come back only with a nap at the bunk (it costs the respec rule's credits).
+  await page.locator('.dp-pad[data-page="captain"]').waitFor();
   assert.equal(await page.locator('.ui-node').count(), await page.evaluate(async () => (await import('/projects/Space-Shooter/voyage/data.js')).SKILLS.length));
   await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.keyboard.press('Escape');
   await page.locator('#vy-dev-open').click();
   await page.locator('#vy-dev-job').click();
+  await page.keyboard.press('KeyK');
+  await page.locator('.dp-pad[data-page="captain"]').waitFor();
   await page.locator('[data-skill="pilot"]').click();
   await page.locator('[data-detail="pilot"]').waitFor();
   assert.match(await page.locator('[data-detail="pilot"]').innerText(), /1 skill point a rank/);
@@ -98,18 +102,26 @@ test('round-2 hangar: dice licence, stations in place, skill tree and respec, di
   await page.waitForTimeout(250);
   await snap(page, 'hangar2-03-skill-tree-learn-1440.png');
   await page.locator('[data-learn="pilot"]').click();
-  let c = (await readSave(page)).character;
+  const c = (await readSave(page)).character;
   assert.equal(c.skills['pilot'], 2);
-  await page.locator('[data-unlearn="pilot"]').click();
-  c = (await readSave(page)).character;
-  assert.equal(c.skills['pilot'], 1, 'one rank back');
+  assert.equal(await page.locator('[data-unlearn]').count(), 0, 'no taking back on the pad');
+  assert.match(await page.locator('[data-nap-note]').innerText(), /nap at your bunk/);
+  await page.keyboard.press('Escape');
+  await page.emulateMedia({ reducedMotion: 'reduce' });
   const moneyBefore = (await readSave(page)).money;
-  await page.locator('#ui-respec-all').click();
-  await page.locator('#ui-respec-all', { hasText: 'Yes' }).click();
+  await openStation(page, 'quarters');
+  // Round 3 follow-up: you pick which ranks to take back; nothing picked, no nap.
+  assert.equal(await page.locator('#hg-nap').isDisabled(), true, 'nothing picked: no nap');
+  await page.locator('[data-take="pilot"]').click();
+  await page.locator('[data-take="pilot"]').click();
+  assert.match(await page.locator('[data-nap-quote]').innerText(), /2 points to take back: 20 credits/);
+  await page.locator('#hg-nap').click();
+  await page.waitForFunction(() => !document.querySelector('.dp-nap'), null, { timeout: 8000 });
   const respecced = await readSave(page);
   assert.deepEqual(respecced.character.skills, {});
-  assert.equal(respecced.money, moneyBefore - 10, 'outside the tutorial a respec costs 10 credits a point');
+  assert.equal(respecced.money, moneyBefore - 20, 'outside the tutorial a nap costs 10 credits a point');
   assert.ok((await events(page)).some(([e]) => e === 'hangar:respec'));
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
 
   // 3. Stations in place: click the pad, Escape back to the hangar; the director hears it.
   await page.locator('#hg-sheet-close').click();
@@ -126,7 +138,8 @@ test('round-2 hangar: dice licence, stations in place, skill tree and respec, di
   await page.keyboard.press('Escape');
   assert.equal(await page.locator('#hg-sheet').isVisible(), false);
   // Focus goes back to the station's plate when it is on screen (the floor scrolls with the captain).
-  if (await page.locator('[data-station="pad"]').isVisible()) assert.equal(await page.evaluate(() => document.activeElement?.dataset?.station), 'pad', 'focus goes back to the station');
+  // (Round 3: the plates are the floor's mark chips now; the buttons stay for keyboards and screen readers, unseen until focused.)
+  if (await page.locator('[data-station="pad"]').evaluate((b) => getComputedStyle(b).opacity !== '0')) assert.equal(await page.evaluate(() => document.activeElement?.dataset?.station), 'pad', 'focus goes back to the station');
   // Walking up: the onfoot lane's way in.
   await page.evaluate(async () => (await import('/projects/Space-Shooter/voyage/hangarApi.js')).hangarApi.openStation('locker', { via: 'walk' }));
   await page.locator('#hg-sheet[data-open-station="locker"]').waitFor();
@@ -161,11 +174,11 @@ test('round-2 hangar: dice licence, stations in place, skill tree and respec, di
   await emit(page, 'story:objective', { step: 'walk', text: 'Walk to Chibby at the pad.', station: 'pad', target: null });
   assert.equal(await page.locator('#hg-objective').innerText().then((x) => /Walk to Chibby/.test(x)), true);
   assert.equal(await page.locator('[data-station="pad"]').evaluate((b) => b.classList.contains('is-objective')), true);
-  // Respec is free while the tutorial runs.
+  // The nap is free while the tutorial runs.
+  await page.evaluate(() => window.__stardust.store.learn('mechanic'));
   await openStation(page, 'quarters');
-  await page.locator('[data-skill="mechanic"]').click();
-  await page.locator('[data-unlearn="mechanic"]').waitFor();
-  assert.match(await page.locator('[data-unlearn="mechanic"]').innerText(), /free/);
+  await page.locator('[data-take="mechanic"]').click();
+  assert.match(await page.locator('[data-nap-quote]').innerText(), /free while Chibby/);
 
   // 4. The dialogue box answers story:say, and the attempt roller shows a decided roll.
   await emit(page, 'story:say', { seq: 41, id: 'chibby.ship.1', speaker: 'chibby', name: 'Chibby', text: 'She\'s yours, Captain. Mind the paint.', audio: null, durationMs: 9000 });
@@ -203,8 +216,8 @@ test('round-2 hangar: dice licence, stations in place, skill tree and respec, di
   await p2.locator('#hg-sign').click();
   await p2.locator('#pane-captain h2', { hasText: 'Ossa Vey' }).waitFor();
   assert.equal(await p2.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, 'no sideways scroll at 390');
-  await snap(p2, 'hangar2-08-bunk-390.png');
-  await p2.locator('#hg-sheet-close').click();
+  await snap(p2, 'hangar2-08-pad-captain-390.png');
+  await p2.locator('.dp-close').click();
   assert.equal(await p2.evaluate(() => document.querySelector('#hg-floor .of-canvas').width / innerWidth), 2);
   await snap(p2, 'hangar2-09-hangar-390.png');
   await openStation(p2, 'pad');
