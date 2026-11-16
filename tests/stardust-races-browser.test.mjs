@@ -240,7 +240,7 @@ test('practice circuit on a phone: the frame, touch controls, render scale; leav
   assert.deepEqual(P.errors, []);
 });
 
-test('arena: the flight deck opens today\'s Dogfight page as it is', {
+test('arena: the flight deck opens the new game\'s Dogfight (launch arenas)', {
   skip: !process.env.STARDUST_BROWSER_TEST, timeout: 120000,
 }, async (t) => {
   const { chromium } = await loadPlaywright();
