@@ -23,7 +23,12 @@ export const SPEAKERS_DATA = {
     "keeper": { "name": "Beacon keeper Wren", "design": "Female, about 30, a bright quick voice with a stammer when nervous, a lonely lighthouse engineer who talks to her machines." },
     "warden": { "name": "The Warden voice", "design": "Genderless, ageless, a calm low machine voice with a soft metallic ring, patient as stone, very slow; not unkind." },
     "derby": { "name": "Derby announcer", "design": "Male, about 40, a fast booming sports announcer, all exclamation marks, loving every crash." },
-    "thief": { "name": "Sable the thief", "design": "Female, about 25, a quick bright voice, cheeky and fast, a pickpocket who is always half a laugh from running." }
+    "thief": { "name": "Sable the thief", "design": "Female, about 25, a quick bright voice, cheeky and fast, a pickpocket who is always half a laugh from running." },
+    "tull": { "name": "Captain Tull", "design": "Male, about 50, a big warm baritone with a salesman's easy cheer, cheerfully irresponsible, always selling you something; the humour goes flat and dry when the truth gets close." },
+    "nessa": { "name": "Nessa Calloway", "design": "Female, about 35, a low tired alto with dry sarcasm, a pilot who has seen every bad idea twice; loyal under the eye-roll, and the jokes drop away when she is scared." },
+    "pip": { "name": "Pip Rourke", "design": "Male, about 28, a quick anxious tenor that tumbles over its own words, a brilliant engineer who talks fastest when he is frightened and goes quiet and earnest when he is proud." },
+    "reck": { "name": "Tobin Reck", "design": "Male, about 30, an easy cheerful mid tenor, a gunner with a grin you can hear and no idea how this ends; kind, a little goofy, and calm at the last." },
+    "reaver": { "name": "Cinder Reaver", "design": "Male, about 35, a rough soot-dry baritone muffled by a mask, a boarding-party boss who is bored and amused and speaks like a man ordering lunch; menace that never raises its voice." }
   }
 };
 

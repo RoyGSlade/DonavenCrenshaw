@@ -19,6 +19,8 @@ export const SPRITE_FILES = Object.freeze({
   'moon-boulder-s': 'moon-boulder-s.png', 'moon-boulder-m': 'moon-boulder-m.png', 'moon-boulder-l': 'moon-boulder-l.png',
   'moon-rock-cluster-a': 'moon-rock-cluster-a.png', 'moon-rock-cluster-b': 'moon-rock-cluster-b.png',
   'moon-rubble-a': 'moon-rubble-a.png', 'moon-rubble-b': 'moon-rubble-b.png', 'moon-crater-rim': 'moon-crater-rim.png',
+  // The Cinder Reavers (launch art lane, batch 1: the look-art cuts), as on-foot enemies in the Tin Duchess.
+  'marauder-grunt-a': 'look/prop-marauder-grunt-a.webp', 'marauder-boss': 'look/prop-marauder-boss.webp',
   'asteroid': 'asteroid.png', 'relay-station': 'relay-station.png', 'relay-gate': 'relay-gate.png', 'warden': 'warden.png',
 });
 

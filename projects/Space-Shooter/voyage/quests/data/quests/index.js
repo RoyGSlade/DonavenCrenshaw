@@ -18,11 +18,14 @@ import deepSeam from './deep-seam.js';
 import lighthouse from './lighthouse.js';
 import dustfallDerby from './dustfall-derby.js';
 import blackBox from './black-box.js';
+import { SLICE_LIST } from '../slice/index.js';
 
 export const QUEST_LIST = Object.freeze([
   coldRun, blackLane, threeTiers, slowParade, deadChannel,
   railgunPaperTrail, listeningGate, missingPage, teapot, wardenFile,
   deadWeight, deepSeam, lighthouse, dustfallDerby, blackBox,
 ]);
-export const QUESTS = Object.freeze(Object.fromEntries(QUEST_LIST.map(quest => [quest.id, quest])));
+// QUESTS answers any quest id the player can be on: the fifteen board quests plus the opening slice's six scenes
+// (which no giver lists; QUEST_LIST stays the fifteen).
+export const QUESTS = Object.freeze(Object.fromEntries([...QUEST_LIST, ...SLICE_LIST].map(quest => [quest.id, quest])));
 export const SLICE_QUEST = 'cold-run';

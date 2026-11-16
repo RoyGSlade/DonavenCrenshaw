@@ -3,6 +3,17 @@
  "id": "tin-duchess",
  "name": "The Tin Duchess",
  "rooms": ["duchess-corridor", "duchess-mess", "duchess-holodeck", "duchess-quarters", "duchess-bridge", "duchess-airlock", "duchess-engine", "duchess-cargo", "duchess-pad"],
+ "roomNames": {
+  "duchess-corridor": "the corridor",
+  "duchess-mess": "the mess hall",
+  "duchess-holodeck": "the holodeck gym",
+  "duchess-quarters": "the crew deck",
+  "duchess-bridge": "the bridge",
+  "duchess-airlock": "the airlock",
+  "duchess-engine": "the engine room",
+  "duchess-cargo": "the cargo hold",
+  "duchess-pad": "the landing pad"
+ },
  "flags": {
   "goo-cleared": "Scene 1 ends with a clean floor (end-clean or end-source-fixed): the holodeck goo is gone.",
   "goo-source-fixed": "Scene 1, the foam valve is fixed or the program reset (end-source-fixed): the valve stops leaking.",
@@ -19,9 +30,11 @@
   "duchess-busted": "Scene 6, day 5: the ship is the busted wreck you are handed (dead reactor, broken console, leaks, blown hull plate, open conduit).",
   "reactor-fixed": "Repair job: the reactor runs again and the engine console comes back on.",
   "power-fixed": "Repair job: the conduit panel is closed up.",
+  "coolant-leaking": "Scene 5 (days 2 to 4), set when the week's jobs begin: the engine room's coolant line sprays until coolant-fixed.",
   "coolant-fixed": "Repair job: the leaking pipe is sealed.",
   "hull-patched": "Repair job: the blown hull plate is welded.",
-  "duchess-repaired": "The busted hull outside on the pad is repaired."
+  "duchess-repaired": "The busted hull outside on the pad is repaired.",
+  "day-five-over": "Scene 6 has ended, whichever way: the pad's door to Chibby's hangar opens (the repair yard)."
  },
  "beats": [
   { "id": "s1-brief", "scene": 1, "text": "Tull briefs you by the crew board and the coffee urn", "map": "duchess-mess", "npc": "tull" },

@@ -166,7 +166,7 @@ function resolveEnemy(spec, ctx) {
 
 function partParams(quest, node, ctx) {
   switch (node.type) {
-    case 'fight': return { enemy: resolveEnemy(node.enemy, ctx), title: node.title, dc: node.dc };
+    case 'fight': return { enemy: resolveEnemy(node.enemy, ctx), title: node.title, dc: node.dc, arena: node.arena };
     case 'travel': return { to: node.to, risk: node.risk };
     case 'event': return { deck: node.deck, chance: node.chance };
     case 'race': return { track: lookupRef(node.track, ctx), rival: node.rival ? resolveEnemyLike(node.rival, ctx) : undefined };

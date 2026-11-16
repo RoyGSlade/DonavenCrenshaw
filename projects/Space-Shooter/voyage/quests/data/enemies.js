@@ -70,6 +70,17 @@ export const ENEMIES = Object.freeze({
     damage: [4, 8],
     parley: false,
   },
+  // The Cinder Reavers (opening slice, scene 3): boarding marauders fought on foot inside the Tin Duchess. A fight node
+  // lists its own enemies and where they stand (`arena`); this template is the name and the roll fallback's numbers.
+  marauders: {
+    name: { pick: ['Cinder Reavers'] },
+    faction: 'cinder-reavers',
+    hp: { range: [40, 60] },
+    movement: 'hold',
+    abilities: [],
+    damage: [4, 8],
+    parley: false,
+  },
   crawlers: {
     name: { pick: ['Rock crawlers', 'A swarm of tunnel bugs'] },
     hp: { range: [16, 30] },

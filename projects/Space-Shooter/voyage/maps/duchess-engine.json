@@ -21,7 +21,7 @@
     "reactor": {"states":["running","broken","fixed"],"state":"running","by":[{"state":"broken","flag":"duchess-busted"},{"state":"fixed","flags":["duchess-busted","reactor-fixed"]}]},
     "engine-console": {"states":["on","broken","fixed"],"state":"on","by":[{"state":"broken","flag":"duchess-busted"},{"state":"fixed","flags":["duchess-busted","power-fixed"]},{"state":"fixed","flags":["duchess-busted","reactor-fixed"]}]},
     "conduit": {"states":["closed","open"],"state":"closed","by":[{"state":"open","flag":"duchess-busted","notFlag":"power-fixed"}]},
-    "coolant": {"states":["intact","leaking"],"state":"intact","by":[{"state":"leaking","flag":"duchess-busted","notFlag":"coolant-fixed"}]},
+    "coolant": {"states":["intact","leaking"],"state":"intact","by":[{"state":"leaking","flag":"coolant-leaking","notFlag":"coolant-fixed"},{"state":"leaking","flag":"duchess-busted","notFlag":"coolant-fixed"}]},
     "hull-patch": {"states":["patched","blown"],"state":"patched","by":[{"state":"blown","flag":"duchess-busted","notFlag":"hull-patched"}]},
     "pip": {"states":["here","gone"],"state":"here","by":[{"state":"gone","flag":"pip-quit"}]}
   },

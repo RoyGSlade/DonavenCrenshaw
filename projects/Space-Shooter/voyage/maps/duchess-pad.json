@@ -23,7 +23,9 @@
     "##########..############"
   ],
   "tags": {
-    "duchess-hull": {"states":["busted","repaired"],"state":"busted","by":[{"state":"repaired","flag":"duchess-repaired"}]}
+    "duchess-hull": {"states":["whole","busted","repaired"],"state":"whole","by":[{"state":"busted","flag":"duchess-busted"},{"state":"repaired","flag":"duchess-repaired"}]},
+    "tull-pad": {"states":["away","here"],"state":"away","by":[{"state":"here","flag":"duchess-busted"}]},
+    "berth-door": {"states":["shut","open"],"state":"shut","by":[{"state":"open","flag":"day-five-over"}]}
   },
   "look": {
     "set": "freighter",
@@ -65,7 +67,7 @@
     ]
   },
   "props": [
-    {"art":"freighter-hull-busted","at":[7,2],"size":[10,7],"block":true,"tag":"duchess-hull","name":"duchess-hull","states":{"repaired":{"art":"freighter-hull-repaired"}},"interact":{"kind":"console","id":"duchess-hull","label":"The Tin Duchess: walk round her"}},
+    {"art":"freighter-hull-busted","at":[7,2],"size":[10,7],"block":true,"tag":"duchess-hull","name":"duchess-hull","states":{"whole":{"art":"freighter-hull-repaired"},"repaired":{"art":"freighter-hull-repaired"}},"interact":{"kind":"console","id":"duchess-hull","label":"The Tin Duchess: walk round her"}},
     {"art":"pad-beacon","at":[6,1],"size":[1,1],"block":false},
     {"art":"pad-beacon","at":[17,1],"size":[1,1],"block":false},
     {"art":"pad-beacon","at":[6,10],"size":[1,1],"block":false},
@@ -80,11 +82,11 @@
     {"art":"chibby-parts-rack","at":[1,11],"size":[2,1],"block":true}
   ],
   "npcs": [
-    {"id":"tull","at":[14,10],"face":"left","wander":0.3}
+    {"id":"tull","at":[14,10],"face":"left","wander":0.3,"tag":"tull-pad","states":{"away":{"hidden":true}}}
   ],
   "doors": [
     {"id":"ramp","at":[11,9],"size":[2,1],"to":"duchess-cargo","arrive":"from-pad","label":"Up the ramp into the Duchess","look":"ramp"},
-    {"id":"hangar","at":[10,14],"size":[2,1],"to":"hangar","arrive":"from-cantina","label":"Back to the hangar"}
+    {"id":"hangar","at":[10,14],"size":[2,1],"to":"hangar","arrive":"from-pad","label":"Chibby's hangar","tag":"berth-door","states":{"shut":{"sealed":"Not yet. The Duchess has to be yours first."}}}
   ],
   "spawns": {
     "default": [11.5,12,"up"],
