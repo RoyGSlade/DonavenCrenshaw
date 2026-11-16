@@ -217,12 +217,16 @@ export function mountFlightDeck(root, { store, toast = () => {}, build = () => n
               if (!opened) toast(captain ? 'The circuit is busy. Try again in a moment.' : 'Sign on a captain first.');
             }, text: captain ? 'Fly the circuit' : 'Sign on a captain first' }));
         }),
-        el('article', { class: 'rc-tile is-arena', dataset: { arena: '' } },
-          el('p', { class: 'rc-eyebrow', text: ARENA.eyebrow }),
-          el('h3', { text: ARENA.title }),
-          el('p', { class: 'rc-note', text: ARENA.blurb }),
-          el('ul', { class: 'rc-modes' }, ...ARENA.modes.map((m) => el('li', { text: m }))),
-          el('button', { type: 'button', class: 'primary', id: 'rc-arena', onclick: () => openArena(), text: ARENA.launch })),
+        ...LAUNCH_ARENAS.map((a) => el('article', { class: 'rc-tile is-arena', dataset: { arena: a.id } },
+          el('p', { class: 'rc-eyebrow', text: 'DOGFIGHT · ONE FIGHTER' }),
+          el('h3', { text: a.title }),
+          el('p', { class: 'rc-note', text: a.blurb }),
+          el('p', { class: 'rc-best', text: `Pays up to ${ACTIVITY_PAY[a.job].max} cr. AI or friends.` }),
+          el('button', { type: 'button', class: 'primary', id: `rc-arena-${a.id}`, onclick: () => openLaunchArena(a.id), text: 'Climb in' }))),
+        el('article', { class: 'rc-tile is-arena is-soon', dataset: { arena: 'more' } },
+          el('p', { class: 'rc-eyebrow', text: COMING_SOON_ARENAS.note.toUpperCase() }),
+          el('h3', { text: COMING_SOON_ARENAS.title }),
+          el('p', { class: 'rc-note', text: COMING_SOON_ARENAS.blurb })),
       ),
     );
   }

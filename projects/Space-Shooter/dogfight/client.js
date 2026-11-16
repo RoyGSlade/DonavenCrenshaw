@@ -36,13 +36,13 @@ if (new URLSearchParams(location.search).get("launch") === "1") {
   const lib = await import("./launch.js");
   LAUNCH = lib.launchFromSearch(location.search, { config: runtimeConfig });
   if (LAUNCH.on) {
-    const [view, bot, activity, { createRunRecorder }, { serverMode }, { createVoyageStore }] = await Promise.all([
+    const [view, bot, activity, { createRunRecorder }, { createVoyageStore }] = await Promise.all([
       import("./launchView.js"), import("./bot.js"), import("../voyage/races/activity.js"),
-      import("../systems/hubRuns.js"), import("../voyage/session.js"), import("../voyage/store.js"),
+      import("../systems/hubRuns.js"), import("../voyage/store.js"),
     ]);
     const recorder = createRunRecorder();
     const connected = recorder.connect().catch(() => null);
-    const serverOn = () => serverMode({ config: runtimeConfig, search: location.search });
+    const serverOn = () => lib.launchServerMode({ config: runtimeConfig, search: location.search });
     launchKit = {
       lib, view, bot, activity,
       art: view.createLaunchArt(),

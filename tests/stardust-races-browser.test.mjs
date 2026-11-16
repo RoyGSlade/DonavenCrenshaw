@@ -7,7 +7,7 @@
 //      same apart from the new game's own save.
 //   2. The practice circuit on a phone: the frame, the touch controls, the
 //      render scale cap; leaving it keeps nothing.
-//   3. The arena launch: the flight deck opens today's Dogfight page as it is.
+//   3. The arena launch: the flight deck opens the new game's Dogfight (?launch=1).
 // Opt-in like the other browser checks; run it on its own, capped:
 //   STARDUST_BROWSER_TEST=1 ~/kauto-3d/bin/capped 6G timeout 1500 node --test tests/stardust-races-browser.test.mjs
 // RACES_PROOF_DIR=/some/dir saves screenshots.
@@ -251,11 +251,11 @@ test('arena: the flight deck opens today\'s Dogfight page as it is', {
   const P = await open(browser, server, { save: makeSave(), url: '/projects/Space-Shooter/voyage/races/?newgame=1' });
   t.after(() => P.context.close().catch(() => {}));
   const { page } = P;
-  await page.locator('#rc-arena').waitFor();
-  assert.match(await page.locator('.rc-tile.is-arena').innerText(), /2-3 PILOTS/);
+  await page.locator('#rc-arena-shatterbelt').waitFor();
+  assert.match(await page.locator('.rc-tile.is-arena').first().innerText(), /ONE FIGHTER/);
   await snap(page, 'races-07-deck.png');
-  await page.locator('#rc-arena').click();
-  await page.waitForURL(/\/projects\/Space-Shooter\/dogfight\/$/);
+  await page.locator('#rc-arena-shatterbelt').click();
+  await page.waitForURL(/\/projects\/Space-Shooter\/dogfight\/\?launch=1&arena=shatterbelt$/);
   await page.locator('#back').waitFor();
   assert.deepEqual(P.errors, []);
 });

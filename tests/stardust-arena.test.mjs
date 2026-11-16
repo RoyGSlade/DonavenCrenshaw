@@ -365,6 +365,15 @@ test('round outcome for pay: win, loss with a lost ship, draw on time, interrupt
   assert.equal(roundOutcome({ winner: null, reason: 'hull', ships: [{ hp: 0, maxHp: 100 }, { hp: 0, maxHp: 100 }], seat: 0 }).died, true);
 });
 
+test('the dogfight page reads the server-mode switch exactly as the new game does', async () => {
+  const { launchServerMode } = await import(`${G}/dogfight/launch.js`);
+  const { serverMode } = await import(`${G}/voyage/session.js`);
+  for (const [config, search, stored] of [[{}, '', null], [{ voyageServer: true }, '', null], [{}, '?vserver=1', null], [{}, '?vserver=0', '1'], [{}, '', '1'], [{}, '?x=1', '0']]) {
+    const mk = () => { const m = new Map(stored == null ? [] : [['stardust.voyage.server', stored]]); return { getItem: (k) => m.get(k) ?? null, setItem: (k, v) => m.set(k, v), removeItem: (k) => m.delete(k) }; };
+    assert.equal(launchServerMode({ config, search, storage: mk() }), serverMode({ config, search, storage: mk() }), `${JSON.stringify([config, search, stored])}`);
+  }
+});
+
 test('the launch maps load: both arenas build their cover and the backdrop names match', () => {
   for (const id of LAUNCH_ARENA_IDS) {
     const arena = createArena(id);

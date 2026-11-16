@@ -76,3 +76,19 @@ export function roundOutcome({ winner, reason, ships, seat }) {
 
 /** The map picker's launch argument: just the launch arenas, then a "coming soon" tile. */
 export const launchPicker = (initial) => ({ arenas: [...LAUNCH_ARENA_IDS], initial: LAUNCH_ARENA_IDS.includes(initial) ? initial : LAUNCH_ARENA_IDS[0], comingSoon: { title: COMING_SOON_ARENAS.title, note: COMING_SOON_ARENAS.note } });
+
+/**
+ * Is the home server's economy on for this page? The same switch as the new game's session gate
+ * serverMode (runtimeConfig.voyageServer, or ?vserver=1 remembered for the tab), read here
+ * so Dogfight code never imports the new game's session gate (a guard test holds that line).
+ */
+export function launchServerMode({ config = {}, search = "", storage = globalThis.sessionStorage } = {}) {
+  if (config.voyageServer === true) return true;
+  let asked = null;
+  try { asked = new URLSearchParams(search).get("vserver"); } catch { asked = null; }
+  try {
+    if (asked === "0") { storage?.removeItem("stardust.voyage.server"); return false; }
+    if (asked === "1") { storage?.setItem("stardust.voyage.server", "1"); return true; }
+    return storage?.getItem("stardust.voyage.server") === "1";
+  } catch { return asked === "1"; }
+}
