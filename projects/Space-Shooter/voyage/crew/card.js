@@ -53,7 +53,9 @@ export function cleanCrewCard(card) {
     const r = skill ? int(rank, 1, skill.max) : null;
     if (r != null) skills[id] = r;
   }
-  return { name, stats, skills, levels: cleanLevels(card.levels) };
+  // username: a signed-in friend's account name, so the hub can pay their share (server mode).
+  const username = typeof card.username === 'string' && /^[A-Za-z0-9_-]{3,20}$/.test(card.username) ? card.username : null;
+  return { name, stats, skills, levels: cleanLevels(card.levels), ...(username ? { username } : {}) };
 }
 
 /** The crew's share of a step's grant events, or null when there is nothing to share. */

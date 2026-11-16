@@ -41,7 +41,10 @@ export function decideSession({ health, clock, signedIn = true } = {}) {
   if (!answered(health) || health.data?.ok === false) return down(health?.status ? 'health' : 'unreachable');
   if (!answered(clock) || !Number.isFinite(clock.data?.now)) return down('clock');
   if (clock.data.enabled === false) return down('off');
-  const c = { now: clock.data.now, day: clock.data.day, month: clock.data.month, dayOfMonth: clock.data.dayOfMonth, msToNextDay: clock.data.msToNextDay };
+  const crewTiers = clock.data.crew?.ai && clock.data.crew?.wages
+    ? Object.fromEntries([1, 2, 3].map((t) => [t, { ...(clock.data.crew.ai[t] || {}), wage: clock.data.crew.wages[t] }]))
+    : null;
+  const c = { now: clock.data.now, day: clock.data.day, month: clock.data.month, dayOfMonth: clock.data.dayOfMonth, msToNextDay: clock.data.msToNextDay, crewTiers };
   if (!signedIn) return { mode: 'guest', reason: 'guest', words: 'Guest demo: nothing you earn is kept. Sign in to keep your progress.', clock: c };
   return { mode: 'play', reason: 'ok', words: '', clock: c };
 }

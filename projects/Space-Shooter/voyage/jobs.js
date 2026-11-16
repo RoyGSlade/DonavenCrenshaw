@@ -42,13 +42,17 @@ export function createJobs({ pane, store, say, toast, dev = false, onCaptain = (
     crew: () => crew.aboard(),
     session: {
       get: () => store.get(),
-      commit: (save, events) => { store.update(() => save); say(events); crew.step(events); },
+      commit: (save, events, info = {}) => {
+        store.update(() => save); say(events); crew.step(events);
+        // Server mode: a step that paid is a checkpoint, so a pilot who quits still pays everyone up to it (outcome 3).
+        if (player.quest?.id && (events || []).some((e) => e.type === 'money' || e.type === 'item')) economy.jobCheckpoint(player.quest.id, info.run?.node || null, crew.hubSeats?.());
+      },
     },
     status: toast,
     announceEvents: false,
     onEnd: (ended) => {
       // Server mode (voyage/account.js): the job's net change goes to the hub, which pays what it allows.
-      if (player.quest?.id) economy.jobEnded(player.quest.id, ended);
+      if (player.quest?.id) economy.jobEnded(player.quest.id, ended, crew.hubSeats?.());
       if (!ended.death) return;
       if (economy.on) economy.died();
       const lost = store.die();
@@ -72,7 +76,7 @@ export function createJobs({ pane, store, say, toast, dev = false, onCaptain = (
     const typed = Number.parseInt(seedBox?.value || '', 10);
     const seed = typed > 0 ? typed : 1 + Math.floor(Math.random() * 1e9);
     toast(OFFERS_DATA.words.taken.replace('{title}', quest.title));
-    economy.jobStarted(quest.id);
+    economy.jobStarted(quest.id, crew.hubSeats?.());
     player.start(quest, seed);
     return true;
   }
@@ -160,7 +164,7 @@ export function createJobs({ pane, store, say, toast, dev = false, onCaptain = (
   function resumeJob() {
     if (!player.active && !player.resume()) return false;
     // A job picked up again after a reload gets a fresh ticket: it pays what is earned from here.
-    if (player.quest?.id && !economy.hasJob(player.quest.id)) economy.jobStarted(player.quest.id);
+    if (player.quest?.id && !economy.hasJob(player.quest.id)) economy.jobStarted(player.quest.id, crew.hubSeats?.());
     player.render();
     return true;
   }
@@ -176,7 +180,7 @@ export function createJobs({ pane, store, say, toast, dev = false, onCaptain = (
     /** The job in progress' title ('' when none). */
     get title() { return player.quest?.title || ''; },
     /** A crew action from player two; an error string for them, or null. */
-    crewAct: (action) => player.crewAct(action),
+    crewAct: (action, card) => player.crewAct(action, card),
     /** The job in progress, for the crew's screen: { quest, run, live }. */
     crewView: () => ({ quest: player.quest, run: player.run, live: player.live }),
   };

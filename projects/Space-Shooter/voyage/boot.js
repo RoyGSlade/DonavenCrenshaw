@@ -272,6 +272,8 @@ function boot(session = { mode: 'local' }) {
     reducedMotion: still,
     joinCode: linkedCrew || null,
   });
+  // Server mode: the hub's AI crew tiers and wages (rules.json "voyage") replace the page's defaults.
+  if (session.clock?.crewTiers) crew.hooks.setTiers(session.clock.crewTiers);
 
   // --- The captain's licence: a new captain, a death, an old captain meeting Strength ---
   const licence = createLicence({
@@ -573,5 +575,5 @@ function boot(session = { mode: 'local' }) {
 
   // For tests and poking around in the console (no secrets: the save is the player's own).
   setTimeout(maybeControls, 600);
-  window.__stardust = { store, story, onfoot, place, jobs, licence, bus, pad, tracker, controls, pause, jobTalk, jobCard };
+  window.__stardust = { store, story, onfoot, place, jobs, licence, bus, pad, tracker, controls, pause, jobTalk, jobCard, crew };
 }

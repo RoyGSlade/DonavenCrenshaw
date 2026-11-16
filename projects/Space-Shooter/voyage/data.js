@@ -68,6 +68,15 @@ export const ROLL_SKILLS = Object.freeze([
 ]);
 export const ROLL_SKILL_IDS = Object.freeze(ROLL_SKILLS.map((s) => s.id));
 
+// AI crew by tier (design doc Section 9, Donaven Nov 16: low skill, mistakes,
+// paid per job). The page's defaults; with the home server on, the hub's
+// games/stardust/rules.json "voyage" ai and wages win (sent with /v1/clock).
+export const AI_CREW = Object.freeze({
+  1: Object.freeze({ level: 1, mistake: 0.30, wage: 0.10 }),
+  2: Object.freeze({ level: 2, mistake: 0.20, wage: 0.15 }),
+  3: Object.freeze({ level: 3, mistake: 0.10, wage: 0.25 }),
+});
+
 // Which skill a check uses when it does not name one (`skill` on the check
 // wins): its tag first, then its stat. null = no skill: the bare d20 (A3:
 // Strength and Health have no home among the eight; the quest lane names a

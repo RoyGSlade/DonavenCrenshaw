@@ -47,7 +47,12 @@ test('relay: a crew room seats four and refuses a fifth; the roster lists every 
   const server = await createDogfightServer({ port: 0 });
   t.after(() => server.close());
   const host = await client(server);
-  assert.ok((await host.take('hello')).crew >= 2, 'the relay says it has 4-seat crew rooms');
+  const hello = await host.take('hello');
+  // Built: the hello keeps crew: 1 so pages from before outcome 3 still connect,
+  // and lists the protocols it speaks (the plan's "crew >= 2" would have locked them out).
+  assert.equal(hello.crew, 1);
+  assert.ok(hello.crewProtocols.includes(2), 'the relay says it has 4-seat crew rooms');
+  assert.equal(hello.crewSeats, 4);
   host.send({ type: 'create', mode: protocol.CREW_MODE, protocol: 3, seats: 4 });
   const room = await host.take('room');
   assert.equal(room.capacity, 4);

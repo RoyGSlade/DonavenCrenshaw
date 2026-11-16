@@ -173,7 +173,19 @@ export function createStation({ root, send, me, reducedMotion = () => false }) {
       el('h2', { text: s.job ? s.job.title : 'Docked in the hangar' }),
       s.job ? el('p', { class: 'vy-note', text: s.job.where }) : null,
       s.hullMax ? bar('Hull', s.hull, s.hullMax) : null,
+      roster(s),
     ];
+  }
+
+  // Who is aboard (outcome 3: up to four seats; AI crew marked with their tier).
+  function roster(s) {
+    if (!Array.isArray(s.seats) || s.seats.length < 2) return null;
+    const mine = me()?.name;
+    return el('ul', { class: 'cw-roster', 'aria-label': 'Who is aboard' }, ...s.seats.slice(0, 4).map((x) => el('li', {
+      dataset: { kind: String(x.kind || 'open'), presence: String(x.presence || 'open') },
+      class: x.kind !== 'open' && x.name === mine && x.kind === 'human' ? 'is-me' : null,
+    }, el('span', { text: x.kind === 'host' ? 'Pilot' : x.kind === 'ai' ? `AI · tier ${x.tier}` : x.kind === 'human' ? 'Crew' : 'Open' }),
+    el('b', { text: x.kind === 'open' ? '—' : String(x.name || '…') }))));
   }
 
   function talk(s) {

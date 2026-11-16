@@ -119,9 +119,9 @@ export function createQuestPlayer({ root, session, status = () => {}, onEnd = ()
   }
 
   // One engine step; returns the engine's error, or null.
-  function apply(action) {
+  function apply(action, actor = null) {
     if (!current) return 'No job running.';
-    const result = act(current.quest, current.run, session.get(), action, { now: Date.now(), crew: crew() });
+    const result = act(current.quest, current.run, session.get(), action, { now: Date.now(), crew: actor || crew() });
     if (result.error) return result.error;
     current.run = result.run;
     if (result.rolls?.length) { try { rolled(result.rolls); } catch (error) { console.warn('Stardust: showing a roll failed', error); } }
@@ -139,12 +139,12 @@ export function createQuestPlayer({ root, session, status = () => {}, onEnd = ()
     if (error && current) status(error);
   }
 
-  /** A crew action from player two (P11). Returns an error for the crew, or null. */
-  function crewAct(action) {
+  /** A crew action (P11), taken with the acting seat's own card (outcome 3: up to three crew). Returns an error for the crew, or null. */
+  function crewAct(action, card = null) {
     if (!current) return 'The captain has not taken a job yet.';
     if (live) return live.crewAct(action);
-    if (!crew()) return 'No crew aboard.';
-    return apply({ ...action, type: 'crew' });
+    if (!card && !crew()) return 'No crew aboard.';
+    return apply({ ...action, type: 'crew' }, card);
   }
 
   function exit() {

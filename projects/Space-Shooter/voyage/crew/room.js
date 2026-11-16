@@ -3,7 +3,7 @@
 // does (../../dogfight/transport.js). Browser only; the rules are in
 // protocol.js, card.js, state.js and the quest engine.
 import { connectRelay, defaultRelay } from '../../dogfight/transport.js';
-import { CREW_MODE, CREW_PROTOCOL } from './protocol.js';
+import { CREW_MODE, CREW_SEATS } from './protocol.js';
 
 const LOOPBACK = ['localhost', '127.0.0.1', '[::1]'];
 const LOBBY_PROTOCOL = 3; // the relay's seat-holding rooms (rejoin by token)
@@ -20,15 +20,17 @@ export function crewRelay(location = globalThis.location) {
 }
 
 /**
- * role: 'host' opens a room; 'guest' joins `code` (or takes its seat back with `token`).
+ * role: 'host' opens a room (seats: 1..4 on a relay that speaks crew protocol 2;
+ * an older relay gets today's 2-seat room); 'guest' joins `code` (or takes its
+ * seat back with `token`).
  * on(event), with event one of:
- *   { type: 'room', code, role, seatToken, rejoined }   in the room
- *   { type: 'roster', seats: [{ presence }] }           'here' | 'away' | 'open' per seat
- *   { type: 'data', data }                              a crew message from the other seat
+ *   { type: 'room', code, role, seat, capacity, seatToken, rejoined }   in the room
+ *   { type: 'roster', seats: [{ presence }] }           'here' | 'away' | 'open' per seat (up to 4)
+ *   { type: 'data', data, from }                        a crew message (from: the seat, at the host)
  *   { type: 'error', message, fatal }                   the relay said no (fatal: before getting in)
  *   { type: 'closed', reason, dropped }                 the room is gone (dropped: the connection broke)
  */
-export function openCrewLink({ role, code = null, token = null, address = crewRelay(), on }) {
+export function openCrewLink({ role, code = null, token = null, seats = CREW_SEATS, address = crewRelay(), on }) {
   let link = null;
   let closed = false;
   let inside = false;
@@ -40,26 +42,28 @@ export function openCrewLink({ role, code = null, token = null, address = crewRe
   function receive(m) {
     if (closed) return;
     if (m.type === 'hello') {
-      if (m.crew !== CREW_PROTOCOL) {
+      // crew: 1 is every crew relay; crewProtocols (outcome 3) says it seats four.
+      if (m.crew !== 1) {
         end({ type: 'error', message: 'The relay has not been updated for crew rooms yet.', fatal: true });
         link.close();
         return;
       }
-      if (role === 'host') link.send({ type: 'create', mode: CREW_MODE, protocol: LOBBY_PROTOCOL });
+      const four = Array.isArray(m.crewProtocols) && m.crewProtocols.includes(2);
+      if (role === 'host') link.send({ type: 'create', mode: CREW_MODE, protocol: LOBBY_PROTOCOL, ...(four ? { seats } : {}) });
       else if (token) link.send({ type: 'rejoin', code, token, protocol: LOBBY_PROTOCOL });
       else link.send({ type: 'join', code, mode: CREW_MODE, protocol: LOBBY_PROTOCOL });
       return;
     }
     if (m.type === 'room' && m.mode === CREW_MODE && CODE.test(m.code)) {
       inside = true;
-      on({ type: 'room', code: m.code, role: m.role === 'host' ? 'host' : 'guest', seatToken: typeof m.seatToken === 'string' ? m.seatToken : token, rejoined: Boolean(m.rejoined) });
+      on({ type: 'room', code: m.code, role: m.role === 'host' ? 'host' : 'guest', seat: Number.isInteger(m.seat) ? m.seat : Number.isInteger(m.playerId) ? m.playerId : null, capacity: Number.isInteger(m.capacity) ? m.capacity : 2, seatToken: typeof m.seatToken === 'string' ? m.seatToken : token, rejoined: Boolean(m.rejoined) });
       return;
     }
     if (m.type === 'crew-roster' && Array.isArray(m.seats)) {
-      on({ type: 'roster', seats: m.seats.slice(0, 2).map((s) => ({ presence: ['here', 'away', 'open'].includes(s?.presence) ? s.presence : 'open' })) });
+      on({ type: 'roster', seats: m.seats.slice(0, CREW_SEATS).map((s) => ({ presence: ['here', 'away', 'open'].includes(s?.presence) ? s.presence : 'open' })) });
       return;
     }
-    if (m.type === 'crew' && m.data && typeof m.data === 'object') { on({ type: 'data', data: m.data }); return; }
+    if (m.type === 'crew' && m.data && typeof m.data === 'object') { on({ type: 'data', data: m.data, from: Number.isInteger(m.from) ? m.from : 1 }); return; }
     if (m.type === 'error') {
       const message = typeof m.message === 'string' ? m.message.slice(0, 200) : 'The relay said no.';
       if (inside) on({ type: 'error', message, fatal: false });
@@ -80,7 +84,8 @@ export function openCrewLink({ role, code = null, token = null, address = crewRe
   }
   return {
     get inside() { return inside && !closed; },
-    send(data) { return Boolean(link && !closed && link.send({ type: 'crew', data })); },
+    /** to: one crew seat (host only); left out, every crew seat (or, from a crew seat, the host). */
+    send(data, to) { return Boolean(link && !closed && link.send({ type: 'crew', data, ...(Number.isInteger(to) ? { to } : {}) })); },
     leave() {
       if (link && !closed) link.send({ type: 'leave' });
       closed = true;

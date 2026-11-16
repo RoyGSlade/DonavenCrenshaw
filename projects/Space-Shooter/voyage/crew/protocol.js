@@ -1,6 +1,13 @@
-// Crew rooms on the Stardust relay: the new game's pilot plus one crew aboard
-// the same ship (S52, S15). The relay and both pages share these rules. No
-// imports, so the relay image needs only this one extra file.
+// Crew rooms on the Stardust relay: the new game's pilot plus up to three crew
+// aboard the same ship (S52, S15; launch outcome 3: 1 to 4 players). The relay
+// and every page share these rules. No imports, so the relay image needs only
+// this one extra file.
+//
+// Protocol 2 (4 seats): the host creates with { seats: 1..4 }; seats fill from 1
+// up; the host sends to one seat ({ to }) or to all; a seat's message reaches the
+// host with { from: seat }. Protocol 1 (today's 2-seat rooms) is unchanged: a
+// create without `seats` gets a 2-seat room, and the relay's hello still says
+// `crew: 1`, so pages from before outcome 3 keep working.
 //
 // The host's browser runs the job (it is the host's save), as Dogfight's host
 // runs the fight. The relay only forwards small plain-data messages between
@@ -9,9 +16,18 @@
 //   crew -> host: { kind: 'card' | 'act', ... }               who the crew is, what they did
 // Pages render every string with textContent; the relay only checks shape and size.
 export const CREW_MODE = 'crew';
-export const CREW_SEATS = 2;
-// Sent in the relay's hello as `crew: 1` so a page knows crew rooms exist.
-export const CREW_PROTOCOL = 1;
+export const CREW_SEATS = 4;
+// A protocol-1 room (a create without `seats`) has two.
+export const LEGACY_SEATS = 2;
+// The newest crew protocol; the relay's hello lists every one it speaks in
+// `crewProtocols` and keeps `crew: 1` for pages from before outcome 3.
+export const CREW_PROTOCOL = 2;
+export const CREW_PROTOCOLS = Object.freeze([1, 2]);
+
+/** A seat number 0..CREW_SEATS-1, or null. */
+export function cleanSeat(n) {
+  return Number.isInteger(n) && n >= 0 && n < CREW_SEATS ? n : null;
+}
 
 export const CREW_KINDS = Object.freeze({
   host: Object.freeze(['state', 'reward', 'note']),

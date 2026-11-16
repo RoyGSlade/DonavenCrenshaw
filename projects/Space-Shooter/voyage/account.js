@@ -76,20 +76,33 @@ export function createEconomy() {
       if (out.ok && out.data?.ok !== false) store.update((s) => applyAccount(s, out.data));
       return out.ok ? out.data : null;
     },
-    jobStarted(questId) {
+    jobStarted(questId, seats = null) {
       if (!api) return;
-      jobs.set(questId, { before: store.get(), rolls: [], ticket: call('/jobs', { questId, sessionId: null, seats: [{ kind: 'host' }] }) });
+      jobs.set(questId, { before: store.get(), rolls: [], checkpoints: 0, ticket: call('/jobs', { questId, sessionId: null, seats: seats || [{ kind: 'host' }] }) });
     },
+    /** A step that paid: the job's net change so far and who is aboard, so a host who quits still pays everyone up to here. */
+    async jobCheckpoint(questId, node, seats = null) {
+      const j = jobs.get(questId);
+      if (!api || !j) return null;
+      j.checkpoints++;
+      const ticket = await j.ticket;
+      if (!ticket.ok || !ticket.data?.id) return null;
+      const net = netChange(j.before, store.get());
+      const out = await call(`/jobs/${ticket.data.id}/checkpoint`, { node: typeof node === 'string' ? node.slice(0, 48) : null, credits: net.credits, items: net.items, xp: xpFromRolls(j.rolls), ...(seats ? { seats } : {}) });
+      return out.data;
+    },
+    checkpointCount(questId) { return jobs.get(questId)?.checkpoints || 0; },
     hasJob(questId) { return jobs.has(questId); },
     jobRolled(questId, rolls = []) { const j = jobs.get(questId); if (j) j.rolls.push(...rolls); },
-    async jobEnded(questId, ended) {
+    async jobEnded(questId, ended, seats = null) {
       const j = jobs.get(questId);
       if (!api || !j) return null;
       jobs.delete(questId);
       const ticket = await j.ticket;
       if (!ticket.ok || !ticket.data?.id) { await self.pull(); return null; }
       const net = netChange(j.before, store.get());
-      const out = await call(`/jobs/${ticket.data.id}/settle`, { outcome: ended?.result || 'ended', credits: net.credits, items: net.items, xp: xpFromRolls(j.rolls) });
+      const out = await call(`/jobs/${ticket.data.id}/settle`, { outcome: ended?.result || 'ended', credits: net.credits, items: net.items, xp: xpFromRolls(j.rolls), ...(seats ? { seats } : {}) });
+      if (out.data?.crew?.length) toast(`The Guild bank split the job: ${out.data.paid?.credits ?? 0} cr to you${out.data.wages ? `, ${out.data.wages} cr AI wages` : ''}, ${out.data.crew.filter((c) => c.paid).length} crew paid.`);
       if (out.data?.flags?.includes('hour-cap')) toast(WORDS.hour_cap);
       else say(out);
       await self.pull();
