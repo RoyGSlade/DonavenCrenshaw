@@ -88,8 +88,8 @@ export function buildLookLayer(map, scale, { drawProps, isLocked = () => false }
     },
     /**
      * Doors with art (look.doorArt, e.g. "ship-door": ship-door-closed/-open/-locked): drawn each frame over the
-     * baked passage, lit like the room. shown(door) -> 'locked' | 'open' | 'closed'; an opening door crossfades
-     * (about 0.15 s; at once under reduced motion).
+     * baked passage, lit like the room. shown(door) -> 'locked' | 'open' | 'closed'; an opening door slides its
+     * leaves apart over the open picture (about 0.15 s; at once under reduced motion).
      */
     drawDoors(c, cam, view, shown, t = 0) {
       if (!doorSprites.length) return;
@@ -104,8 +104,20 @@ export function buildLookLayer(map, scale, { drawProps, isLocked = () => false }
         const o0 = doorOpen.get(d.id) ?? (want === 'open' ? 1 : 0);
         const o = want === 'open' ? Math.min(1, o0 + step) : Math.max(0, o0 - step);
         doorOpen.set(d.id, o);
-        c.globalAlpha = 1; c.drawImage(ds.closed, x, y, w, h);
-        if (o > 0) { c.globalAlpha = o; c.drawImage(ds.open, x, y, w, h); }
+        if (o <= 0) { c.drawImage(ds.closed, x, y, w, h); continue; }
+        // Opening: the closed leaves slide apart into the jambs (along the wall) over the baked passage, which shows
+        // the next room's light. Fully open, the open picture's frame stays faint so the doorway keeps its shape.
+        if (o >= 1) { c.globalAlpha = 0.35; c.drawImage(ds.open, x, y, w, h); c.globalAlpha = 1; }
+        c.save(); c.beginPath(); c.rect(x, y, w, h); c.clip();
+        const turn = ds.turn, sw = ds.closed.width, sh = ds.closed.height, slide = 0.42 * o;
+        if (!turn) {
+          c.drawImage(ds.closed, 0, 0, sw / 2, sh, x - w * slide, y, w / 2, h);
+          c.drawImage(ds.closed, sw / 2, 0, sw / 2, sh, x + w / 2 + w * slide, y, w / 2, h);
+        } else {
+          c.drawImage(ds.closed, 0, 0, sw, sh / 2, x, y - h * slide, w, h / 2);
+          c.drawImage(ds.closed, 0, sh / 2, sw, sh / 2, x, y + h / 2 + h * slide, w, h / 2);
+        }
+        c.restore();
       }
       c.restore();
     },
@@ -207,7 +219,7 @@ function bakeDoorSprites(map, look, g, s) {
       }
       return c;
     });
-    out.push({ door: d, closed: sprites[0], open: sprites[1], locked: sprites[2] });
+    out.push({ door: d, closed: sprites[0], open: sprites[1], locked: sprites[2], turn });
   }
   return out;
 }
