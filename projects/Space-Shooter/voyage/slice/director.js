@@ -12,7 +12,7 @@ import { placeName } from './places.js';
 
 /** Should this page open the Duchess? A fresh save with the new game on (not a Studio link, not ?start=hangar), or a save that began it. */
 export function wantsSlice({ save, params, throwaway = false, newGame = true }) {
-  if (!newGame || throwaway || params?.get?.('start') === 'hangar') return false;
+  if (!newGame || throwaway || params?.get?.('start') === 'hangar' || params?.get?.('crew')) return false; // a crew invite link is the hangar's crew seat, not the opening
   return sliceStarted(save) || !save?.character;
 }
 

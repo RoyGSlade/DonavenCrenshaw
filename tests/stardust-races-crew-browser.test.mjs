@@ -18,7 +18,7 @@ const { startQuest } = await import(`${G}/voyage/quests/engine.js`);
 const { QUESTS } = await import(`${G}/voyage/quests/data/quests/index.js`);
 const { encodeSave, LOCAL_KEY } = await import(`${G}/voyage/save.js`);
 
-const HANGAR = '/projects/Space-Shooter/voyage/?newgame=1';
+const HANGAR = '/projects/Space-Shooter/voyage/?newgame=1&start=hangar';
 const proofDir = process.env.RACES_PROOF_DIR || null;
 const snap = async (page, name) => { if (proofDir) await page.screenshot({ path: path.join(proofDir, name) }); };
 
