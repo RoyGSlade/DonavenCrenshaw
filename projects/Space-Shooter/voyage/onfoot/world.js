@@ -26,6 +26,9 @@ import { icon, keyCap, promptIcon } from '../datapad/icons.js';
 import { mapsHolding, doorToward } from '../datapad/route.js';
 import { BASICS_DATA } from '../datapad/data.js';
 import { hudArt } from '../ui/assets.js';
+// launch maps: things that switch in play (doors, the goo, the reactor) are map data (rules/states.js).
+import { hasStates, resolveStates, applyStates, stateSignature } from './rules/states.js';
+import { compileMap } from './rules/mapdata.js';
 
 const VERBS = Object.fromEntries(Object.entries(BASICS_DATA.marks.kinds).map(([k, v]) => [k, v.verb]));
 // Donaven: "what if the label only pops up when you are in range say 2 tiles or less from the interactable".
@@ -72,11 +75,42 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
   const hidden = new Set();
   const following = new Set();
   const opened = new Set(unlocked);
+  // launch maps: switchable things. baseMap is the map as made; map is it in its current states.
+  let baseMap = null, stateSig = '', stateClock = 0;
+  const stateOverrides = new Map(); // map id -> { tag: state } forced by a script (world.setState)
+  const flagsNow = () => hooks.flags?.() || {};
+  const overridesFor = id => stateOverrides.get(id) || {};
+  function withStates(m) {
+    if (!hasStates(m.def)) { stateSig = ''; return m; }
+    const states = resolveStates(m.def, flagsNow(), overridesFor(m.id));
+    stateSig = stateSignature(states);
+    return compileMap(applyStates(m.def, states));
+  }
+  /** Re-resolve the current map's states; when anything switched, rebuild the walk map and the baked layer. */
+  function refreshStates(force = false) {
+    if (!baseMap || !hasStates(baseMap.def)) return false;
+    const sig = stateSignature(resolveStates(baseMap.def, flagsNow(), overridesFor(baseMap.id)));
+    if (!force && sig === stateSig) return false;
+    map = withStates(baseMap);
+    const keep = new Map(npcs.map(n => [n.id, n]));
+    npcs = map.npcs.map(n => keep.get(n.id) || { ...n, home: { ...n.home }, vx: 0, vy: 0, moving: false });
+    for (const n of keep.values()) if (n.follow && !npcs.includes(n)) npcs.push(n);
+    layerDirty = true;
+    emit('map:state', { map: map.id, states: { ...(map.def.stateOf || {}) } });
+    return true;
+  }
+  const doorBodies = () => [walker, ...npcs.filter(n => !hidden.has(n.id))];
+  const doorShown = d => {
+    if (doorLocked(d)) return 'locked';
+    const cx = d.x + d.w / 2, cy = d.y + d.h / 2, r = map.tile * 1.6;
+    return doorBodies().some(b => b && Math.hypot(b.x - cx, b.y - cy) <= r) ? 'open' : 'closed';
+  };
 
   const offArt = onArtLoaded(() => { layerDirty = true; });
 
   function setMap(id, spawnName = 'default') {
-    map = enterMap(id); // a generic place (the cantina) is dressed fresh on every visit
+    baseMap = enterMap(id); // a generic place (the cantina) is dressed fresh on every visit
+    map = withStates(baseMap); // launch maps: in the states the save's flags (and scripts) say
     preload(map);
     const s = map.spawns[spawnName] || map.spawns.default;
     const keep = walker;
@@ -125,6 +159,7 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
   const doorGate = d => {
     const def = findDoorDef(d) || {};
     if (def.locked && !opened.has(def.locked)) return { reason: 'Locked.', key: def.locked };
+    if (def.sealed) return { reason: typeof def.sealed === 'string' ? def.sealed : 'Sealed.' }; // launch maps: a state can seal a door
     const g = hooks.gate?.(def, map) || null;
     if (g?.hack && opened.has(`hack:${map.id}:${d.id}`)) return null;
     return g;
@@ -395,7 +430,7 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     ctx.fillStyle = '#05080d';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ensureLayer(cam.zoom);
-    if (layer.blit) layer.blit(ctx, cam, view); // r3-look hook: a look map draws its outside and padded layer itself (onfoot/look)
+    if (layer.blit) { layer.blit(ctx, cam, view); layer.drawDoors?.(ctx, cam, view, doorShown, t); } // r3-look hook: a look map draws its outside and padded layer itself (onfoot/look); launch maps: doors open as you walk up
     else {
     // The static layer, cropped to the view.
     const s = layer.scale;
@@ -529,6 +564,8 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     last = now;
     if (document.hidden) return;
     t += dt;
+    stateClock += dt;
+    if (stateClock > 0.2) { stateClock = 0; refreshStates(); } // launch maps: a flag the story just set switches things
     const zoom = viewZoom(view.w, view.h, map.kind) * (mode === 'walk' ? 1 : 0.9);
     let cam;
     for (const d of dust) d.life -= dt;
@@ -599,6 +636,15 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     setNpcVisible(id, on) { if (on) hidden.delete(id); else hidden.add(id); },
     follow(id, on) { if (on) following.add(id); else following.delete(id); },
     redraw() { layerDirty = true; },
+    /** launch maps: force a tag's state on this map (a scene, the director, a test); null goes back to the flags. */
+    setState(tag, state, mapId = map.id) {
+      const o = { ...overridesFor(mapId) };
+      if (state == null) delete o[tag]; else o[tag] = state;
+      stateOverrides.set(mapId, o);
+      if (mapId === map.id) refreshStates(true);
+    },
+    /** launch maps: a tag's state on this map now (or every tag's: no argument). */
+    stateOf(tag) { const st = map.def.stateOf || {}; return tag ? st[tag] ?? null : { ...st }; },
     pause() { paused = true; input.enabled = false; },
     resume() { paused = false; input.enabled = true; },
     /** For tests and the director: use whatever is in reach. */

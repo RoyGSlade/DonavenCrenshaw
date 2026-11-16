@@ -1,0 +1,78 @@
+{
+  "id": "duchess-airlock",
+  "name": "Tin Duchess: airlock",
+  "kind": "interior",
+  "tile": 48,
+  "floor": "deck",
+  "ambient": "ship-hum",
+  "grid": [
+    "######.#######",
+    "#............#",
+    "#............#",
+    "#............#",
+    "#............#",
+    "#............#",
+    "#............#",
+    "#....////....#",
+    "#............#",
+    "##############"
+  ],
+  "tags": {
+    "airlock-outer": {"states":["closed","open","breached"],"state":"closed","by":[{"state":"breached","flag":"reavers-boarded"}]},
+    "boarding-clamp": {"states":["none","sealed","torn"],"state":"none","by":[{"state":"sealed","flag":"reavers-docked"},{"state":"torn","flag":"reavers-boarded"}]}
+  },
+  "look": {
+    "set": "freighter",
+    "accents": {"airlock":"#ffc93a","warm":"#ffb867","alarm":"#ff4d4d"},
+    "doorColors": {"corridor":"airlock"},
+    "decals": [
+      {"kind":"hazard","at":[4.8,7.65],"size":[2.4,0.3]},
+      {"art":"breach-scorch-a","at":[4.3,6.0],"size":[2,2],"when":{"airlock-outer":"breached"}},
+      {"art":"breach-scorch-b","at":[6.4,5.5],"size":[2,2],"rot":0.5,"when":{"airlock-outer":"breached"}},
+      {"kind":"text","at":[6,3.0],"text":"AIRLOCK 1","size":0.34,"color":"airlock","alpha":0.5},
+      {"art":"scuff-2","at":[3,4],"size":[2.4,1.2]},
+      {"art":"drain-channel","at":[9,3],"size":[2,1]},
+      {"art":"scorch-2","at":[8.5,7.2],"size":[1.4,1.4],"alpha":0.5,"when":{"airlock-outer":"breached"}}
+    ],
+    "lights": [
+      {"kind":"strip","art":"light-strip-cyan-h","at":[5.4,9.08],"size":[1.2,0.3],"pool":[6,7.6],"r":2.4,"color":"cool","strength":0.24,"when":{"airlock-outer":["closed","open"]}},
+      {"kind":"lamp","at":[6.0,4.0],"r":3.6,"color":"airlock","strength":0.3},
+      {"kind":"lamp","at":[10.5,6.0],"r":2.8,"color":"warm","strength":0.24},
+      {"kind":"screen","at":[3.3,8.6],"size":[0.6,0.12],"pool":[3.6,7.6],"r":2.0,"color":"airlock","strength":0.26},
+      {"kind":"screen","at":[8.3,8.6],"size":[0.6,0.12],"pool":[8.4,7.6],"r":2.2,"color":"alarm","strength":0.3,"flicker":true,"when":{"airlock-outer":"breached"}},
+      {"kind":"prop","at":[5,8],"size":[2,1],"pool":[6,7.5],"r":2.6,"color":"#ff8a3a","strength":0.26,"flicker":true,"when":{"airlock-outer":"breached"}},
+      {"kind":"beacon","at":[10.1,0.3],"size":[0.3,0.3],"pool":[10.2,1.6],"r":2.2,"color":"alarm","strength":0.3,"flicker":true,"when":{"boarding-clamp":["sealed","torn"]}}
+    ],
+    "mounts": [
+      {"art":"boarding-clamp-sealed","at":[5,9.1],"size":[2,2],"tag":"boarding-clamp","states":{"none":{"hidden":true},"torn":{"art":"boarding-clamp-torn"}},"face":true},
+      {"art":"wall-sign-hazard","at":[1.3,9.25],"size":[2,0.5],"face":true},
+      {"art":"wall-sign-hazard","at":[9.6,9.25],"size":[2,0.5],"face":true},
+      {"art":"fire-extinguisher","at":[12.25,4],"size":[0.5,0.5]},
+      {"art":"hose-reel","at":[1.2,6.1],"size":[1,0.75]},
+      {"art":"fuse-box","at":[2.6,0.25],"size":[1,0.5],"face":true}
+    ],
+    "clutter": [
+      {"art":"cable-coil","at":[10.2,2.0],"size":[0.7,0.7]},
+      {"art":"traffic-cone","at":[3.6,6.3],"size":[0.5,0.5]},
+      {"art":"jerrycan","at":[11.3,4.4],"size":[0.55,0.55]}
+    ]
+  },
+  "props": [
+    {"art":"airlock-door-closed","at":[5,8],"size":[2,1],"block":true,"tag":"airlock-outer","name":"airlock-outer","states":{"open":{"art":"airlock-door-open"},"breached":{"art":"airlock-door-breached"}},"interact":{"kind":"console","id":"airlock-outer","label":"The outer airlock door"}},
+    {"art":"locker","at":[1,1],"size":[1,1],"block":true},
+    {"art":"locker","at":[1,2],"size":[1,1],"block":true},
+    {"art":"locker","at":[1,3],"size":[1,1],"block":true},
+    {"art":"mel-ammo-crate","at":[12,1],"size":[1,1],"block":"low"},
+    {"art":"cargo-crate","at":[12,7],"size":[1,1],"block":"low"},
+    {"art":"crate-closed","at":[12,8],"size":[1,1],"block":"low"},
+    {"art":"fuel-barrel","at":[1,8],"size":[1,1],"block":"low"}
+  ],
+  "npcs": [],
+  "doors": [
+    {"id":"corridor","at":[6,0],"size":[1,1],"to":"duchess-corridor","arrive":"from-airlock","label":"Out to the corridor"}
+  ],
+  "spawns": {
+    "default": [6,1,"down"],
+    "from-corridor": [6,1,"down"]
+  }
+}

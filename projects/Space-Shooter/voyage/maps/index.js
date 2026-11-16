@@ -11,6 +11,16 @@ import haskOffice from './hask-office.json' with { type: 'json' };
 import veyLounge from './vey-lounge.json' with { type: 'json' };
 import garrityOffice from './garrity-office.json' with { type: 'json' };
 import moonOutpost from './moon-outpost.json' with { type: 'json' };
+// The Tin Duchess, the opening slice's freighter (launch map lane; tin-duchess.json lists its rooms and scene beats).
+import duchessCorridor from './duchess-corridor.json' with { type: 'json' };
+import duchessMess from './duchess-mess.json' with { type: 'json' };
+import duchessHolodeck from './duchess-holodeck.json' with { type: 'json' };
+import duchessQuarters from './duchess-quarters.json' with { type: 'json' };
+import duchessBridge from './duchess-bridge.json' with { type: 'json' };
+import duchessAirlock from './duchess-airlock.json' with { type: 'json' };
+import duchessEngine from './duchess-engine.json' with { type: 'json' };
+import duchessCargo from './duchess-cargo.json' with { type: 'json' };
+import duchessPad from './duchess-pad.json' with { type: 'json' };
 import sector from './sector.json' with { type: 'json' };
 import puzzles from './puzzles.json' with { type: 'json' };
 import { compileMap } from '../onfoot/rules/mapdata.js';
@@ -18,7 +28,8 @@ import { dressRoom } from '../procgen/dress.js';
 import { validateMap } from '../procgen/index.js';
 
 export const MAP_DEFS = Object.freeze(Object.fromEntries(
-  [hangar, ship, workshop, melBay, ednaDen, cantina, haskOffice, veyLounge, garrityOffice, moonOutpost].map(m => [m.id, m]),
+  [hangar, ship, workshop, melBay, ednaDen, cantina, haskOffice, veyLounge, garrityOffice, moonOutpost,
+   duchessCorridor, duchessMess, duchessHolodeck, duchessQuarters, duchessBridge, duchessAirlock, duchessEngine, duchessCargo, duchessPad].map(m => [m.id, m]),
 ));
 export const SECTOR_MAP = sector;
 export const PUZZLES = puzzles;

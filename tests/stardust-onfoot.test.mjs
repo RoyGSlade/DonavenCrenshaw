@@ -418,7 +418,9 @@ test('rotated props: the art is fitted into the UNturned box, then turned (no sq
 });
 
 test('every story map is valid for procgen (validateMap on whole tiles); the generic cantina falls back to a valid hand-made room', () => {
-  const story = ['hangar', 'ship', 'workshop', 'mel-bay', 'edna-den', 'hask-office', 'vey-lounge', 'garrity-office', 'moon-outpost', 'cantina'];
+  const story = ['hangar', 'ship', 'workshop', 'mel-bay', 'edna-den', 'hask-office', 'vey-lounge', 'garrity-office', 'moon-outpost', 'cantina',
+    // The Tin Duchess (launch map lane); every state of these rooms is checked in stardust-duchess.test.mjs.
+    'duchess-corridor', 'duchess-mess', 'duchess-holodeck', 'duchess-quarters', 'duchess-bridge', 'duchess-airlock', 'duchess-engine', 'duchess-cargo', 'duchess-pad'];
   for (const id of story) {
     const v = validateMap(MAP_DEFS[id]);
     assert.deepEqual(v.problems, [], `${id} breaks procgen's hard rules`);

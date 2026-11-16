@@ -43,7 +43,8 @@ function lookCamera(map, lc, x, y, w, h, zoom) {
   const T = map.tile, m = (lc.margin ?? 0.5) * T, top = lc.top ?? 0;
   const ratio = zoom / viewZoom(w, h, map.kind);
   const fit = Math.min(w / (map.w + m * 2), (h - top) / (map.h + m * 2));
-  const z = (fit * T >= (lc.minTilePx ?? 40) ? fit : (lc.tilePx ?? 46) / T) * Math.min(1, ratio);
+  // maxTilePx (optional): a small room is not blown up past the art's own size; it sits centred in its hull.
+  const z = Math.min(fit * T >= (lc.minTilePx ?? 40) ? fit : (lc.tilePx ?? 46) / T, (lc.maxTilePx ?? Infinity) / T) * Math.min(1, ratio);
   const vw = w / z, vh = h / z, topW = top / z;
   const span = (lo, hi, v, p) => (hi - lo <= v ? (lo + hi - v) / 2 : Math.max(lo, Math.min(hi - v, p - v / 2)));
   return { x: span(-m, map.w + m, vw, x), y: span(-m - topW, map.h + m, vh, y), zoom: z, vw, vh };

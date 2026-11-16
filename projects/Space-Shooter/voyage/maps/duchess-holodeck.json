@@ -1,0 +1,103 @@
+{
+  "id": "duchess-holodeck",
+  "name": "Tin Duchess: holodeck gym",
+  "kind": "interior",
+  "tile": 48,
+  "floor": "deck",
+  "ambient": "ship-hum",
+  "grid": [
+    "########.#########",
+    "#................#",
+    "#................#",
+    "#................#",
+    "#................#",
+    "#................#",
+    "#................#",
+    "#................#",
+    "#................#",
+    "#................#",
+    "#................#",
+    "#................#",
+    "##################"
+  ],
+  "tags": {
+    "holo-goo": {"states":["dirty","clean"],"state":"dirty","by":[{"state":"clean","flag":"goo-cleared"}]},
+    "holo-valve": {"states":["leaking","fixed"],"state":"leaking","by":[{"state":"fixed","flag":"goo-source-fixed"}]},
+    "holo-projector": {"states":["on","fried"],"state":"on","by":[{"state":"fried","flag":"holo-projector-fried"}]}
+  },
+  "look": {
+    "set": "freighter",
+    "accents": {"holo":"#2fe0c0","warm":"#ffb867","goo":"#cfe8d8"},
+    "doorColors": {"corridor":"holo"},
+    "decals": [
+      {"art":"holo-floor-grid","at":[5,4],"size":[4,4],"alpha":0.95},
+      {"art":"holo-floor-grid","at":[9,4],"size":[4,4],"alpha":0.95},
+      {"art":"scorch-1","at":[8,5],"size":[1.6,1.6],"alpha":0.7,"when":{"holo-projector":"fried"}},
+      {"art":"scorch-2","at":[10.5,4.4],"size":[1.4,1.4],"alpha":0.6,"when":{"holo-projector":"fried"}},
+      {"art":"drain-round","at":[12,10],"size":[1,1]},
+      {"art":"vent-2","at":[2,11],"size":[1,1]},
+      {"kind":"text","at":[9,2.6],"text":"JUNGLE WELLNESS 4","size":0.28,"color":"holo","alpha":0.45}
+    ],
+    "lights": [
+      {"kind":"prop","at":[4,3],"size":[1,1],"pool":[5.1,4.1],"r":2.4,"color":"holo","strength":0.26,"when":{"holo-projector":"on"}},
+      {"kind":"prop","at":[13,3],"size":[1,1],"pool":[12.9,4.1],"r":2.4,"color":"holo","strength":0.26,"when":{"holo-projector":"on"}},
+      {"kind":"prop","at":[4,8],"size":[1,1],"pool":[5.1,7.9],"r":2.4,"color":"holo","strength":0.26,"when":{"holo-projector":"on"}},
+      {"kind":"prop","at":[13,8],"size":[1,1],"pool":[12.9,7.9],"r":2.4,"color":"holo","strength":0.26,"when":{"holo-projector":"on"}},
+      {"kind":"field","at":[5,4],"size":[8,4],"pool":[9,6],"r":4.4,"color":"holo","strength":0.2,"when":{"holo-projector":"on"}},
+      {"kind":"prop","at":[1,1],"size":[1.5,1],"pool":[2.0,2.3],"r":2.2,"color":"holo","strength":0.3},
+      {"kind":"lamp","at":[14.6,2.6],"r":3.0,"color":"warm","strength":0.32},
+      {"kind":"lamp","at":[4.5,10.2],"r":3.0,"color":"warm","strength":0.26,"flicker":true},
+      {"kind":"strip","art":"light-strip-cyan-v","at":[16.62,4.6],"size":[0.3,1.2],"pool":[15.5,5.6],"r":2.2,"color":"cool","strength":0.22},
+      {"kind":"prop","at":[6,11.25],"size":[3,0.75],"pool":[7.5,10.4],"r":2.0,"color":"cool","strength":0.2}
+    ],
+    "mounts": [
+      {"art":"wall-sign-hazard","at":[11.4,12.25],"size":[2,0.5],"face":true},
+      {"art":"fuse-box","at":[16.25,7.2],"size":[0.5,1],"face":true,"rot":1.5708},
+      {"art":"wall-vent","at":[3.0,0.25],"size":[1,0.5]}
+    ],
+    "clutter": [
+      {"art":"plant-palm","at":[1.1,6.6],"size":[0.95,0.95]},
+      {"art":"plant-fern","at":[3.0,1.15],"size":[0.85,0.85]},
+      {"art":"plant-palm","at":[15.0,10.0],"size":[0.95,0.95]},
+      {"art":"planter-box","at":[10,11],"size":[2,1]},
+      {"art":"plant-fern","at":[13.9,6.1],"size":[0.85,0.85]},
+      {"art":"plant-succulent","at":[1.2,10.3],"size":[0.8,0.8]},
+      {"kind":"rag","at":[13.4,2.6],"size":0.4}
+    ]
+  },
+  "props": [
+    {"art":"holo-pylon","at":[4,3],"size":[1,1],"block":true},
+    {"art":"holo-pylon","at":[13,3],"size":[1,1],"block":true},
+    {"art":"holo-pylon","at":[4,8],"size":[1,1],"block":true},
+    {"art":"holo-pylon","at":[13,8],"size":[1,1],"block":true},
+    {"art":"goo-puddle-big","at":[7,5],"size":[3,2],"block":false,"layer":"floor","flat":true,"z":1,"tag":"holo-goo","states":{"clean":{"hidden":true}},"name":"holo-goo"},
+    {"art":"goo-splat-a","at":[10,6],"size":[2,2],"block":false,"layer":"floor","flat":true,"z":1,"tag":"holo-goo","states":{"clean":{"hidden":true}}},
+    {"art":"goo-splat-b","at":[5,4],"size":[2,2],"block":false,"layer":"floor","flat":true,"z":1,"tag":"holo-goo","states":{"clean":{"hidden":true}},"rot":1.2},
+    {"art":"goo-splat-c","at":[2,8],"size":[2,2],"block":false,"layer":"floor","flat":true,"z":1,"tag":"holo-goo","states":{"clean":{"hidden":true}}},
+    {"art":"goo-splat-d","at":[12,1],"size":[2,2],"block":false,"layer":"floor","flat":true,"z":1,"tag":"holo-goo","states":{"clean":{"hidden":true}},"rot":2.2},
+    {"art":"goo-splat-a","at":[14,9],"size":[2,2],"block":false,"layer":"floor","flat":true,"z":1,"tag":"holo-goo","states":{"clean":{"hidden":true}},"rot":3.6},
+    {"art":"goo-splat-c","at":[6,9],"size":[2,2],"block":false,"layer":"floor","flat":true,"z":1,"tag":"holo-goo","states":{"clean":{"hidden":true}},"rot":0.6},
+    {"art":"goo-puddle-big","at":[1,4],"size":[3,2],"block":false,"layer":"floor","flat":true,"z":1,"tag":"holo-goo","states":{"clean":{"hidden":true}},"rot":3.14},
+    {"art":"holo-terminal","at":[1,1],"size":[1.5,1],"block":"low","tag":"holo-projector","name":"holo-console","interact":{"kind":"console","id":"holo-console","label":"Gym console: Jungle Wellness 4"}},
+    {"art":"janitor-cart","at":[14,1],"size":[1,2],"block":"low","interact":{"kind":"console","id":"supply-closet","label":"Supply closet: mop, squeegee, absorber"}},
+    {"art":"mop-bucket-full","at":[15,1],"size":[0.8,0.8],"block":"low"},
+    {"art":"mop-bucket-empty","at":[15,2],"size":[0.8,0.8],"block":"low"},
+    {"art":"power-conduit-panel-open","at":[16,5],"size":[1,1],"block":true,"name":"holo-panel"},
+    {"art":"pipe-run-leaking","at":[6,11.25],"size":[3,0.75],"block":true,"tag":"holo-valve","name":"holo-valve","states":{"fixed":{"art":"pipe-run-intact","at":[6,11.5],"size":[3,0.5]}},"interact":{"kind":"repair","id":"valve","label":"The stuck foam valve"}}
+  ],
+  "npcs": [
+    {"id":"nessa","at":[9,1],"face":"down","wander":0.2},
+    {"id":"pip","at":[15,5],"face":"right","wander":0}
+  ],
+  "doors": [
+    {"id":"corridor","at":[8,0],"size":[1,1],"to":"duchess-corridor","arrive":"from-holodeck","label":"Out to the corridor"}
+  ],
+  "spawns": {
+    "default": [8,1,"down"],
+    "from-corridor": [8,1,"down"]
+  },
+  "zones": [
+    {"id":"supply-closet","at":[13,1],"size":[3,2]},
+    {"id":"gym-floor","at":[5,4],"size":[8,4]}
+  ]
+}

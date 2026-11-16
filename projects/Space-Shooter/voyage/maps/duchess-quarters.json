@@ -1,0 +1,82 @@
+{
+  "id": "duchess-quarters",
+  "name": "Tin Duchess: crew deck",
+  "kind": "interior",
+  "tile": 48,
+  "floor": "deck",
+  "ambient": "ship-hum",
+  "grid": [
+    "##################",
+    "#................#",
+    "#................#",
+    "#................#",
+    "#................#",
+    "#................#",
+    "#................#",
+    "#................#",
+    "#................#",
+    "#................#",
+    "#................#",
+    "#########.########"
+  ],
+  "look": {
+    "set": "freighter",
+    "accents": {"quarters":"#8fb2ff","warm":"#ffb867"},
+    "doorColors": {"corridor":"quarters"},
+    "decals": [
+      {"kind":"lane","path":[[9.5,10.5],[9.5,4.5],[12.5,4.5]],"width":1.4,"every":4,"color":"quarters"},
+      {"art":"scuff-4","at":[5.5,6.2],"size":[2.4,1.2]},
+      {"art":"oil-1","at":[6,2],"size":[1.2,1.2],"alpha":0.35},
+      {"art":"vent-1","at":[8,1],"size":[1,1]}
+    ],
+    "lights": [
+      {"kind":"prop","at":[12,2],"size":[2,1],"pool":[13,3.2],"r":2.8,"color":"warm","strength":0.36},
+      {"kind":"lamp","at":[6.5,5.5],"r":3.6,"color":"quarters","strength":0.26},
+      {"kind":"lamp","at":[13,8.5],"r":3.0,"color":"warm","strength":0.24},
+      {"kind":"screen","at":[2.0,1.15],"size":[0.5,0.12],"pool":[3,1.8],"r":1.6,"color":"quarters","strength":0.18},
+      {"kind":"screen","at":[2.0,4.15],"size":[0.5,0.12],"pool":[3,4.8],"r":1.6,"color":"quarters","strength":0.16},
+      {"kind":"screen","at":[2.0,7.15],"size":[0.5,0.12],"pool":[3,7.8],"r":1.6,"color":"quarters","strength":0.16},
+      {"kind":"screen","at":[3.3,10.25],"size":[0.4,0.12],"pool":[3,9.7],"r":1.8,"color":"quarters","strength":0.28}
+    ],
+    "mounts": [
+      {"art":"wall-screen","at":[12,0.14],"size":[2,0.75],"face":true},
+      {"art":"wall-sign-exit","at":[9.0,11.25],"size":[1,0.5],"face":true},
+      {"art":"tool-pegboard","at":[5.4,0.14],"size":[2,0.75],"face":true}
+    ],
+    "clutter": [
+      {"kind":"cup","at":[12.4,2.4],"size":0.28},
+      {"art":"plant-fern","at":[15.1,2.2],"size":[0.8,0.8]},
+      {"kind":"rag","at":[3.5,8.6],"size":0.4},
+      {"art":"ralph-ball","at":[7,9],"size":[0.4,0.4]},
+      {"art":"small-crates","at":[14.2,10.2],"size":[1,0.75]}
+    ]
+  },
+  "props": [
+    {"art":"bunk-bed","at":[1,1],"size":[2,1],"block":true},
+    {"art":"crate-closed","at":[3,1],"size":[1,1],"block":"low"},
+    {"art":"bunk-bed","at":[1,4],"size":[2,1],"block":true},
+    {"art":"crate-closed","at":[3,4],"size":[1,1],"block":"low"},
+    {"art":"bunk-bed","at":[1,7],"size":[2,1],"block":true},
+    {"art":"crate-closed","at":[3,7],"size":[1,1],"block":"low"},
+    {"art":"bunk-bed","at":[1,10],"size":[2,1],"block":true,"name":"your-bunk","station":"quarters","interact":{"kind":"station","id":"quarters","label":"Your bunk: nap and skills"}},
+    {"art":"bunk-nightstand","at":[3,10],"size":[1,1],"block":"low"},
+    {"art":"captain-desk","at":[12,2],"size":[2,1],"block":"low","name":"captain-desk","interact":{"kind":"console","id":"captain-desk","label":"Tull's desk"}},
+    {"art":"office-chair","at":[12.5,1],"size":[1,1],"block":"low"},
+    {"art":"locker","at":[16,1],"size":[1,1],"block":true},
+    {"art":"locker","at":[16,2],"size":[1,1],"block":true},
+    {"art":"filing-cabinet","at":[15,1],"size":[1,1],"block":"low"},
+    {"art":"locker","at":[16,8],"size":[1,1],"block":true},
+    {"art":"locker","at":[16,9],"size":[1,1],"block":true},
+    {"art":"cargo-crate","at":[16,10],"size":[1,1],"block":"low"}
+  ],
+  "npcs": [
+    {"id":"tull","at":[13,3],"face":"down","wander":0.3}
+  ],
+  "doors": [
+    {"id":"corridor","at":[9,11],"size":[1,1],"to":"duchess-corridor","arrive":"from-quarters","label":"Out to the corridor"}
+  ],
+  "spawns": {
+    "default": [9,10,"up"],
+    "from-corridor": [9,10,"up"]
+  }
+}

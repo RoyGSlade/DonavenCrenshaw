@@ -222,7 +222,7 @@ export function paintDecals(ctx, map, g) {
   for (let r = 0; r < map.rows; r++) for (let c = 0; c < map.cols; c++) if (g.cell(r, c) === 'hazard') hazardBand(ctx, c * T + 1, r * T + T * 0.3, T - 2, T * 0.4, look, 0.62);
   for (const d of look.decals || []) {
     const color = d.color ? (look.accents?.[d.color] || d.color) : look.paint.lane;
-    const art = d.art && lookImage('decal', d.art);
+    const art = d.art && (lookImage('decal', d.art) || lookImage('prop', d.art)); // launch maps: a flat kit piece (the holodeck grid) can be floor paint
     if (art && d.at) {
       const [x, y] = d.at, [w, h] = d.size || [1, 1];
       ctx.save(); ctx.globalAlpha = d.alpha ?? 1;
@@ -476,6 +476,18 @@ export function paintMounts(ctx, map, g) {
       } else if (m.kind === 'reel') {
         ctx.fillStyle = '#c0453a'; ctx.beginPath(); ctx.arc(x + w / 2, y + h / 2, Math.min(w, h) * 0.48, 0, TAU); ctx.fill();
         ctx.strokeStyle = '#2a2d31'; ctx.lineWidth = Math.min(w, h) * 0.16; ctx.beginPath(); ctx.arc(x + w / 2, y + h / 2, Math.min(w, h) * 0.28, 0, TAU); ctx.stroke();
+      } else if (m.kind === 'roster') {
+        // launch maps: a crew board (the Duchess's seven gunners): name plates in a frame, the struck ones crossed in red.
+        // A code stand-in until the art lane paints one (ART-NEEDS.md).
+        ctx.fillStyle = '#3a4048'; rr(ctx, x, y, w, h, T * 0.05); ctx.fill();
+        ctx.fillStyle = 'rgba(255,255,255,0.14)'; ctx.fillRect(x + 1, y + 1, w - 2, 1.5);
+        const n = m.names || 7, struck = m.struck ?? n, pw = (w - T * 0.2) / n;
+        for (let i = 0; i < n; i++) {
+          const px = x + T * 0.1 + i * pw, py = y + h * 0.2, ph = h * 0.6;
+          ctx.fillStyle = '#d9d2c0'; ctx.fillRect(px + pw * 0.12, py, pw * 0.76, ph);
+          ctx.fillStyle = 'rgba(40,40,46,0.55)'; for (let k = 0; k < 3; k++) ctx.fillRect(px + pw * 0.2, py + ph * (0.22 + k * 0.24), pw * (0.6 - (k % 2) * 0.2), 1.2);
+          if (i < struck) { ctx.strokeStyle = '#e8473a'; ctx.lineWidth = Math.max(1.4, T * 0.04); ctx.beginPath(); ctx.moveTo(px + pw * 0.08, py + ph * 0.1); ctx.lineTo(px + pw * 0.92, py + ph * 0.9); ctx.moveTo(px + pw * 0.92, py + ph * 0.1); ctx.lineTo(px + pw * 0.08, py + ph * 0.9); ctx.stroke(); }
+        }
       } else if (m.kind === 'board') {
         ctx.fillStyle = '#3d4650'; ctx.fillRect(x, y, w, h);
         const r = rng(`board-${x}-${y}`);
