@@ -183,9 +183,9 @@ test('round-2 hangar: dice licence, stations in place, skill tree and respec, di
   // 4. The dialogue box answers story:say, and the attempt roller shows a decided roll.
   await emit(page, 'story:say', { seq: 41, id: 'chibby.ship.1', speaker: 'chibby', name: 'Chibby', text: 'She\'s yours, Captain. Mind the paint.', audio: null, durationMs: 9000 });
   await page.locator('#hg-dialogue .ui-dlg-text', { hasText: 'Mind the paint' }).waitFor();
-  await emit(page, 'roll:attempt', { kind: 'attempt', dice: [4, 3], roll: 7, statMod: 2, extra: 0, bonus: 2, total: 9, dc: 7, pass: true, natural: false, stat: 'cha', label: 'Talk Edna down' });
+  await emit(page, 'roll:attempt', { kind: 'attempt', sides: 20, dice: [12], roll: 12, skill: 'social', level: 2, statMod: 0, extra: 0, bonus: 2, total: 14, dc: 12, pass: true, natural: false, advantage: false, stat: 'cha', label: 'Talk Edna down' });
   await page.locator('#hg-attempt.is-done').waitFor({ timeout: 6000 });
-  assert.match(await page.locator('#hg-attempt').innerText(), /4 \+ 3 \+ 2 = 9, needs 7[\s\S]*Made it/);
+  assert.match(await page.locator('#hg-attempt').innerText(), /12 \+ Social 2 = 14, needs 12[\s\S]*Made it/);
   await snap(page, 'hangar2-06-dialogue-attempt-1440.png');
   await page.locator('#hg-dialogue .ui-dlg-next').click();
   assert.ok((await events(page)).some(([e, d]) => e === 'story:said' && d.seq === 41), 'the box answers story:said');

@@ -9,8 +9,8 @@ export const EVENTS = Object.freeze({
     text: 'A weak beacon pulses off the lane: a pilot asking for a tow. Stationmaster Hask likes to hear about tows.',
     choices: [
       {
-        label: 'Answer it (Wisdom check to spot a trap)',
-        check: { stat: 'wis', tag: 'scan', dc: 7 },
+        label: 'Answer it (Navigation check to spot a trap)',
+        check: { skill: 'navigation', stat: 'wis', tag: 'scan', dc: 10 },
         pass: { text: 'Real pilot, real trouble. You tow them to the relay and the Guild hears about it.', reward: { money: 20, rep: { hask: 3 } } },
         fail: {
           text: 'The beacon cuts out. Raiders drop out of the dark around you.',
@@ -29,8 +29,8 @@ export const EVENTS = Object.freeze({
     text: 'Three amber running lights swing in behind you.',
     choices: [
       {
-        label: 'Outrun them (Dexterity check)',
-        check: { stat: 'dex', tag: 'nav', dc: 8 },
+        label: 'Outrun them (Piloting check)',
+        check: { skill: 'piloting', stat: 'dex', tag: 'nav', dc: 12 },
         pass: { text: 'You thread a debris lane they will not follow.' },
         fail: {
           text: 'They are faster than they look.',
@@ -60,8 +60,8 @@ export const EVENTS = Object.freeze({
     text: 'The jump gate stutters mid-cycle. For a moment you can see two exits.',
     choices: [
       {
-        label: 'Ride the flicker (Wisdom check)',
-        check: { stat: 'wis', tag: 'nav', dc: 7 },
+        label: 'Ride the flicker (Piloting check)',
+        check: { skill: 'piloting', stat: 'wis', tag: 'nav', dc: 10 },
         pass: { text: 'You come out early, beside a drifting fuel cell nobody has claimed.', reward: { items: { 'fuel-cell': 1 } } },
         fail: { text: 'The gate spits you out sideways. The hull groans.', hull: -10 },
       },
@@ -73,8 +73,8 @@ export const EVENTS = Object.freeze({
     text: 'An unmarked pod tumbles past, its lock still blinking.',
     choices: [
       {
-        label: 'Crack it open (Dexterity check)',
-        check: { stat: 'dex', tag: 'hack', dc: 6 },
+        label: 'Crack it open (Hacking check)',
+        check: { skill: 'hacking', stat: 'dex', tag: 'hack', dc: 8 },
         pass: { text: 'Scrap and a few loose credits.', reward: { money: 15, items: { scrap: 2 } } },
         fail: { text: 'Booby-trapped. It pops against your hull.', hull: -6 },
       },
@@ -87,8 +87,8 @@ export const EVENTS = Object.freeze({
     choices: [
       { label: 'Show your permit', requires: { items: { permit: 1 } }, outcome: { text: 'The inspector stamps you through with a nod.' } },
       {
-        label: 'Talk your way through (Charisma check)',
-        check: { stat: 'cha', tag: 'talk', dc: 7 },
+        label: 'Talk your way through (Social check)',
+        check: { skill: 'social', stat: 'cha', tag: 'talk', dc: 10 },
         pass: { text: 'You trade lane gossip until they forget why they stopped you.' },
         fail: { text: 'They find a missing form. Fine paid.', reward: { money: -20 } },
       },
@@ -100,8 +100,8 @@ export const EVENTS = Object.freeze({
     text: 'The comms fill with a slow chord that is not quite music.',
     choices: [
       {
-        label: 'Listen (Wisdom check)',
-        check: { stat: 'wis', tag: 'scan', dc: 8 },
+        label: 'Listen (Navigation check)',
+        check: { skill: 'navigation', stat: 'wis', tag: 'scan', dc: 12 },
         pass: { text: 'You hear words in it. Somewhere ahead, the Choir hears you hearing them.', reward: { flags: { 'heard-the-song': 1 } } },
         fail: { text: 'You drift while you listen and scrape a rock.', hull: -8 },
       },
@@ -113,8 +113,8 @@ export const EVENTS = Object.freeze({
     text: 'A Driftborn tug says this lane is their claim and you owe them a cut.',
     choices: [
       {
-        label: 'Make a deal (Charisma check)',
-        check: { stat: 'cha', tag: 'trade', dc: 6 },
+        label: 'Make a deal (Social check)',
+        check: { skill: 'social', stat: 'cha', tag: 'trade', dc: 8 },
         pass: { text: 'You leave with their respect and two crates of ore.', reward: { items: { ore: 2 } } },
         fail: {
           text: 'The deal goes sour and their tug powers up.',

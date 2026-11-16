@@ -276,7 +276,7 @@
 .ui-stat-odds{color:#9fb3c2}
 .ui-how{margin:8px 0;font-size:13px}
 .ui-how summary{cursor:pointer;color:var(--ui-cyan,#81e6df)}
-/* The attempt roll: two dice; gold on a natural double six */
+/* The attempt roll: one d20, two with advantage (the dropped one dims); gold on a natural 20 */
 .ui-attempt-dice{display:flex;gap:4px}
 .ui-attempt-dice canvas[hidden]{display:none}
 .ui-attempt[data-natural=true].is-done{border-color:#f4d35e;box-shadow:0 0 0 2px #f4d35e66,0 0 26px #f4d35e55}
@@ -284,6 +284,9 @@
 @media (max-width:700px){.ui-looks{gap:5px}.ui-look small{display:none}}
 .ui-attempt{grid-template-columns:auto minmax(0,1fr);width:min(380px,94vw)}
 .ui-attempt-dice .ui-attempt-die{width:76px;height:76px}
+.ui-attempt{padding:5px 4px 3px}
+.ui-attempt[data-advantage=true] .ui-attempt-dice .ui-attempt-die{width:64px;height:64px}
+@media (max-width:420px){.ui-attempt-dice .ui-attempt-die{width:64px;height:64px}.ui-attempt[data-advantage=true] .ui-attempt-dice .ui-attempt-die{width:52px;height:52px}}
 .hg-floor .of-hud{top:56px}
 .hg-fight .ui-dialogue{pointer-events:none;opacity:.88}
 .hg-fight .ui-dialogue button{pointer-events:auto}

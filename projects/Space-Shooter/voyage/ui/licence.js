@@ -30,11 +30,11 @@ function writePending(rolls, storage = globalThis.localStorage) {
   try { if (rolls) storage?.setItem(PENDING_KEY, JSON.stringify(rolls)); else storage?.removeItem(PENDING_KEY); } catch { /* this page only */ }
 }
 
-/** What a rolled value means, in a line: its bonus on every attempt, the odds it gives, and its passives. */
+/** What a rolled value means, in a line: its passives (and, only when stats add to rolls, its bonus and odds). */
 export function rollWords(statId, value) {
   const card = statCard(statId, value);
   if (!card) return '';
-  return `${card.bonus} on every attempt. ${card.odds} ${card.now}`;
+  return [card.bonus ? `${card.bonus} on every attempt.` : '', card.odds, card.now].filter(Boolean).join(' ');
 }
 
 function el(tag, props = {}, ...kids) {

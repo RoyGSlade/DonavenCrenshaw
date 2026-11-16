@@ -99,12 +99,12 @@ export function mountShop({ root, shop: shopId, store, speak = null, bus = null,
       el('h4', { text: 'RISKY DEALS' }),
       el('ul', { class: 'sh-list' }, ...v.deals.map((d) => el('li', { class: 'sh-item sh-deal', dataset: { deal: d.id } },
         el('div', { class: 'sh-what' }, el('strong', { text: d.name }), el('p', { text: d.blurb }),
-          el('small', { class: 'sh-tag', text: `A roll: ${d.statName}, 2d6 ${d.mod < 0 ? '-' : '+'} ${Math.abs(d.mod)} vs ${d.dc} (${Math.round(d.chance * 100)}%)` })),
+          el('small', { class: 'sh-tag', text: `A roll: ${d.roll} vs ${d.dc} (${Math.round(d.chance * 100)}%)` })),
         el('div', { class: 'sh-buy' }, el('span', { class: 'sh-price', text: costText(d.cost) }),
           button(d.ok ? 'Take the deal' : d.reasons[0], () => {
             const out = tryDeal(store.get(), shopId, d.id, { rng });
             commit(out, () => {
-              note = `${rollText(out.roll)}: ${out.pass ? (out.roll.natural ? 'double six, it pays off!' : 'it pays off.') : 'no luck.'} ${out.text}`;
+              note = `${rollText(out.roll)}: ${out.pass ? (out.roll.natural ? 'natural 20, it pays off!' : 'it pays off.') : 'no luck.'} ${out.text}`;
               emit('roll:attempt', { ...out.roll, who: store.get().character?.name || null, label: d.name });
               emit('shop:deal', { shop: shopId, deal: d.id, pass: out.pass });
             });

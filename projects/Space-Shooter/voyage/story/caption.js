@@ -4,6 +4,7 @@
 // sy-* classes) or replace it by listening to the same bus events
 // (ROUND2-CONTRACT.md sections 2-4). All text goes in with textContent.
 import { CAST, castPortrait } from './cast.js';
+import { attemptWords } from '../ui/attemptRoll.js';
 
 function el(tag, cls, text) {
   const node = document.createElement(tag);
@@ -114,7 +115,7 @@ export function createCaption({ root = document.body, bus, onSkip = null, skippa
         b.disabled = o.locked;
         if (o.stat) b.dataset.stat = o.stat;
         if (o.kind) b.dataset.kind = o.kind;
-        if (o.kind === 'attempt' && Number.isFinite(o.chance)) b.append(el('small', 'sy-odds', ` Roll 2d6 + ${o.stat ? 'your stat' : 'bonus'} vs ${o.dc}: ${Math.round(o.chance * 100)}%`));
+        if (o.kind === 'attempt' && Number.isFinite(o.chance)) b.append(el('small', 'sy-odds', ` Roll ${o.roll || 'd20'} vs ${o.dc}: ${Math.round(o.chance * 100)}%`));
         if (o.locked) b.append(el('small', 'sy-why', ` ${o.reason}`));
         b.addEventListener('click', () => bus.emit('story:choose', { index: o.index }));
         choices.append(b);
@@ -124,9 +125,10 @@ export function createCaption({ root = document.body, bus, onSkip = null, skippa
     bus.on('roll:attempt', (r) => {
       const t = el('p', 'sy-toast sy-roll');
       t.dataset.pass = String(Boolean(r.pass));
-      const nat = r.natural ? ' Double six!' : '';
+      const w = attemptWords(r);
+      const nat = r.natural ? ' Natural 20!' : '';
       if (r.natural) t.classList.add('sy-natural');
-      t.append(el('b', '', r.pass ? 'PASS' : 'MISS'), document.createTextNode(` ${r.dice.join(' + ')} ${r.bonus < 0 ? '-' : '+'} ${Math.abs(r.bonus)} = ${r.total} vs ${r.dc}.${nat}`));
+      t.append(el('b', '', r.pass ? 'PASS' : 'MISS'), document.createTextNode(` d20 ${w.sum} vs ${r.dc}.${nat}`));
       toasts.append(t);
       setTimeout(() => t.classList.add('sy-gone'), 3600);
       setTimeout(() => t.remove(), 4100);

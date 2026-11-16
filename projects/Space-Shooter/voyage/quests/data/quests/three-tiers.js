@@ -105,11 +105,12 @@ export default {
           "to": "kitchen"
         },
         {
-          "label": "\"Do I get a slice?\" (Charisma)",
+          "label": "\"Do I get a slice?\" (Social)",
           "check": {
+            "skill": "social",
             "stat": "cha",
             "tag": "talk",
-            "dc": 7,
+            "dc": 10,
             "pass": "slice",
             "fail": "kitchen"
           }
@@ -145,11 +146,12 @@ export default {
       "audioText": "Gently! Gently! It is my finest cake, with sugar stars! If one star falls, I fall. Into the sea. There is no sea. I will find one!",
       "choices": [
         {
-          "label": "Strap it down properly (Constitution)",
+          "label": "Strap it down properly (Repair)",
           "check": {
+            "skill": "repair",
             "stat": "con",
             "tag": "repair",
-            "dc": 7,
+            "dc": 10,
             "pass": "strapped",
             "fail": "wobbly"
           }
@@ -259,11 +261,12 @@ export default {
       "text": "You landed first. In the hold, the top tier is leaning like a tired dancer, and three sugar stars are making a break for it.",
       "choices": [
         {
-          "label": "Fix the frosting with a steady hand (Dexterity)",
+          "label": "Fix the frosting with a steady hand (Crafting)",
           "check": {
+            "skill": "crafting",
             "stat": "dex",
             "tag": "dodge",
-            "dc": 7,
+            "dc": 10,
             "pass": "end-perfect",
             "fail": "end-squashed"
           }
@@ -284,11 +287,12 @@ export default {
       "text": "Late! LATE! The guests are eating crackers! ...But the cake. The cake is beautiful. I forgive you. Nobody else will.",
       "choices": [
         {
-          "label": "Charm the wedding party (Charisma)",
+          "label": "Charm the wedding party (Social)",
           "check": {
+            "skill": "social",
             "stat": "cha",
             "tag": "talk",
-            "dc": 8,
+            "dc": 12,
             "pass": "end-saved",
             "fail": "end-late"
           }

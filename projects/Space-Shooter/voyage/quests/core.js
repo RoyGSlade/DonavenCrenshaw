@@ -1,8 +1,23 @@
 // The one place quests reach core's code (INTERFACES.md). Quests import the
 // rules below from here and nowhere else, so a rename in core is one edit.
 export { grant, spend, canAfford, meets, missing } from '../economy.js';
-export { skillBonus, rollText, checkChance } from '../character.js';
-import { check as rollCheck } from '../character.js';
+export { skillBonus, rollText, checkChance, checkBonusText } from '../character.js';
+import { check as rollCheck, checkSkill, rollSkillById, NO_SKILL } from '../character.js';
+export { checkSkill as checkSkillOf };
+/** What is wrong with a check spec for the d20 (empty when fine): a dc off the d20 scale, an unknown skill. */
+export function checkIssues(spec = {}) {
+  const out = [];
+  if (!Number.isInteger(spec?.dc) || spec.dc < 2 || spec.dc > 30) out.push(`has dc ${spec?.dc}; d20 targets run 2..30 (easy ${CHECK.levels.easy}, normal ${CHECK.levels.normal}, hard ${CHECK.levels.hard})`);
+  if (spec?.skill != null && spec.skill !== NO_SKILL && !rollSkillById(spec.skill)) out.push(`names unknown skill ${spec.skill}`);
+  return out;
+}
+
+/** The name a check goes by on screen: its skill ("Social"); with none, "Roll" (or its stat when stats add to rolls). */
+export function checkName(spec = {}) {
+  const skill = rollSkillById(checkSkill(spec));
+  if (skill) return skill.name;
+  return (CHECK.addStat && STAT_NAMES[spec?.stat]) || 'Roll';
+}
 
 // Every attempt rolled inside one engine call is recorded, so the page can show
 // a die for each (ROUND2-CONTRACT.md section 6, `rolls` on the engine's result).
@@ -22,7 +37,7 @@ export function collectRolls(fn) {
 }
 export { voyageShipStats, combatStats, raceStats, writesBoard } from '../upgrades.js';
 export { emptySave } from '../save.js';
-import { GIVERS as G, ITEMS as I, STATS, REP_MAX } from '../data.js';
+import { GIVERS as G, ITEMS as I, STATS, REP_MAX, CHECK } from '../data.js';
 export const GIVERS = Object.freeze(Object.fromEntries(G.map((g) => [g.id, g])));
 export const ITEMS = Object.freeze(Object.fromEntries(I.map((i) => [i.id, i])));
 export const STAT_NAMES = Object.freeze(Object.fromEntries(STATS.map((s) => [s.id, s.name])));

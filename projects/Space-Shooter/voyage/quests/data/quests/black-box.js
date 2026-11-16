@@ -106,11 +106,12 @@ export default {
           "to": "acolyte"
         },
         {
-          "label": "Slip past them to the airlock (Dexterity)",
+          "label": "Slip past them to the airlock (Stealth)",
           "check": {
+            "skill": "stealth",
             "stat": "dex",
             "tag": "dodge",
-            "dc": 8,
+            "dc": 12,
             "pass": "airlock",
             "fail": "acolyte"
           }
@@ -191,7 +192,7 @@ export default {
       "mode": "foot",
       "title": "Nightjar sentries",
       "enemy": "$sentries",
-      "dc": 8,
+      "dc": 12,
       "outcomes": {
         "win": "console",
         "lose": "down",
@@ -213,11 +214,12 @@ export default {
           }
         },
         {
-          "label": "Crawl for the airlock (Health)",
+          "label": "Crawl for the airlock",
           "check": {
+            "skill": "none",
             "stat": "con",
             "tag": "endure",
-            "dc": 8,
+            "dc": 12,
             "pass": "end-ran",
             "fail": "end-lost"
           }

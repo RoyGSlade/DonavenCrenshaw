@@ -86,11 +86,12 @@ export default {
       "audioText": "There's a rock tumbling past Dustfall with a seam of blue ore you could see from orbit. Lefty can smell it. Go dig, kid. But first, my lucky stew. Everyone eats the stew.",
       "choices": [
         {
-          "label": "Eat the stew (Health)",
+          "label": "Eat the stew",
           "check": {
+            "skill": "none",
             "stat": "con",
             "tag": "food",
-            "dc": 7,
+            "dc": 10,
             "pass": "stew-ok",
             "fail": "stew-bad"
           }
@@ -153,11 +154,12 @@ export default {
           }
         },
         {
-          "label": "Dig with your hands, like a hero (Strength)",
+          "label": "Dig with your hands, like a hero",
           "check": {
+            "skill": "none",
             "stat": "str",
             "tag": "dig",
-            "dc": 8,
+            "dc": 12,
             "pass": "land",
             "fail": "end-blisters"
           }
@@ -174,11 +176,12 @@ export default {
           "to": "crawl-fight"
         },
         {
-          "label": "Dig fast and ignore the noises (Strength)",
+          "label": "Dig fast and ignore the noises",
           "check": {
+            "skill": "none",
             "stat": "str",
             "tag": "dig",
-            "dc": 7,
+            "dc": 10,
             "pass": "dug",
             "fail": "crawl-fight"
           }
@@ -199,7 +202,7 @@ export default {
       "mode": "foot",
       "title": "Rock crawlers",
       "enemy": "$crawlers",
-      "dc": 7,
+      "dc": 10,
       "outcomes": {
         "win": "dug",
         "lose": "crawl-down",
@@ -221,11 +224,12 @@ export default {
           }
         },
         {
-          "label": "Kick them off by hand (Strength)",
+          "label": "Kick them off by hand",
           "check": {
+            "skill": "none",
             "stat": "str",
             "tag": "brawl",
-            "dc": 8,
+            "dc": 12,
             "pass": "dug",
             "fail": "end-fled"
           }
@@ -247,21 +251,23 @@ export default {
       },
       "choices": [
         {
-          "label": "Dig deeper for the heart of the seam (Strength)",
+          "label": "Dig deeper for the heart of the seam",
           "check": {
+            "skill": "none",
             "stat": "str",
             "tag": "dig",
-            "dc": 8,
+            "dc": 12,
             "pass": "deep",
             "fail": "cave-in"
           }
         },
         {
-          "label": "Read the rock and dig where it is weakest (Wisdom)",
+          "label": "Read the rock and dig where it is weakest (Navigation)",
           "check": {
+            "skill": "navigation",
             "stat": "wis",
             "tag": "notice",
-            "dc": 8,
+            "dc": 12,
             "pass": "deep",
             "fail": "cave-in"
           }
@@ -297,11 +303,12 @@ export default {
       "text": "The tunnel sighs, and lies down on you.",
       "choices": [
         {
-          "label": "Dig yourself out (Strength)",
+          "label": "Dig yourself out",
           "check": {
+            "skill": "none",
             "stat": "str",
             "tag": "dig",
-            "dc": 7,
+            "dc": 10,
             "pass": "jumpers",
             "fail": "end-buried"
           }
@@ -340,21 +347,23 @@ export default {
           "to": "jump-fight"
         },
         {
-          "label": "Share the ore (Charisma)",
+          "label": "Share the ore (Social)",
           "check": {
+            "skill": "social",
             "stat": "cha",
             "tag": "trade",
-            "dc": 7,
+            "dc": 10,
             "pass": "end-shared",
             "fail": "jump-fight"
           }
         },
         {
-          "label": "Outfly them home (Dexterity)",
+          "label": "Outfly them home (Piloting)",
           "check": {
+            "skill": "piloting",
             "stat": "dex",
             "tag": "nav",
-            "dc": 8,
+            "dc": 12,
             "pass": "haul",
             "fail": "jump-fight"
           }

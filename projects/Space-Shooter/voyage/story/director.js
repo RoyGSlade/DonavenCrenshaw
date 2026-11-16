@@ -7,7 +7,7 @@
 // No DOM. Lines go out through say.js ('story:say'); whatever draws them is up
 // to the page (caption.js is the default).
 import { grant, missing } from '../economy.js';
-import { check, checkChance, skillById } from '../character.js';
+import { check, checkChance, checkBonusText, skillById } from '../character.js';
 import { storyBus } from './bus.js';
 import { createSay } from './say.js';
 import { STEPS, STEP_BY_ID, ALL_UNLOCKS, TALKS, PICKS, SKIP_IF, NUDGE_MS, unlockName } from './tutorial.js';
@@ -140,8 +140,8 @@ export function createDirector({
   }
 
   // A talk the director runs: the prompt, then the options. A plain option just
-  // answers; a stat attempt is a fresh 2d6 roll plus the stat bonus (anyone may
-  // try; the odds are shown); a skill-gated option is locked, with its reason,
+  // answers; an attempt is a fresh d20 plus the level of the skill it uses
+  // (anyone may try; the odds are shown); a skill-gated option is locked, with its reason,
   // until the captain has the skill. choose(i) plays the reply (the pass or
   // fail line for an attempt, and 'roll:attempt' for the die), then
   // 'tutorial:talked' completes the step. In the tutorial both outcomes move on.
@@ -152,9 +152,10 @@ export function createDirector({
     if (!running || read().step !== step.id) return;
     const save = store.get();
     const options = talk.options.map((o, index) => {
-      if (o.stat) {
-        const p = checkChance(save.character, { stat: o.stat, dc: o.dc });
-        return { index, kind: 'attempt', label: `${optionTag(o.stat)} ${o.label}`, stat: o.stat, dc: o.dc, chance: p, locked: false, reason: '' };
+      if (o.stat || o.skill) {
+        const spec = { stat: o.stat, skill: o.skill, tag: o.tag, dc: o.dc, advantage: o.advantage };
+        const p = checkChance(save.character, spec);
+        return { index, kind: 'attempt', label: [optionTag(o.stat, o.skill), o.label].filter(Boolean).join(' '), stat: o.stat || null, skill: o.skill || null, dc: o.dc, chance: p, roll: checkBonusText(save.character, spec), locked: false, reason: '' };
       }
       if (o.requires) {
         const reasons = missing(save, o.requires);
@@ -178,8 +179,8 @@ export function createDirector({
     const o = TALKS[t.talk].options[index];
     let reply = o.reply;
     let attempt = null;
-    if (o.stat) {
-      attempt = { ...check(store.get().character, { stat: o.stat, dc: o.dc }, rng), who: store.get().character?.name || null, label: o.label };
+    if (o.stat || o.skill) {
+      attempt = { ...check(store.get().character, { stat: o.stat, skill: o.skill, tag: o.tag, dc: o.dc, advantage: o.advantage }, rng), who: store.get().character?.name || null, label: o.label };
       bus.emit('roll:attempt', attempt);
       reply = attempt.pass ? o.pass : o.fail;
     }

@@ -2,6 +2,7 @@
 // account's `voyage` save slot when signed in (voyage/sync.js). Shape in
 // lhc-lanes/stardust/INTERFACES.md section 5.
 import { cleanCharacter, ID } from './character.js';
+import { upgradeRun } from './quests/runUpgrade.js';
 import { UPGRADE_IDS, TOP_TIER, MONEY_MAX, REP_MAX, ITEMS, ITEM_STACK_MAX, UNLOCK_KINDS } from './data.js';
 
 export const SAVE_VERSION = 1;
@@ -94,7 +95,7 @@ export function cleanQuests(input) {
     const active = {};
     for (const [id, run] of Object.entries(plainObject(input.active) ? input.active : {})) {
       if (Object.keys(active).length >= ACTIVE_MAX) break;
-      if (ID.test(id) && plainObject(run) && run.quest === id) active[id] = structuredClone(run);
+      if (ID.test(id) && plainObject(run) && run.quest === id) active[id] = upgradeRun(structuredClone(run));
     }
     const done = {};
     for (const [id, d] of Object.entries(plainObject(input.done) ? input.done : {})) {

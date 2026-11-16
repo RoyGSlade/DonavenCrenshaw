@@ -298,7 +298,12 @@ export function createHangar({ panes, store, ship, crew, toast, dev = false, onT
         el('button', { type: 'button', id: 'vy-dev-check', text: 'Test a check', on: { click: () => {
           const c = store.get().character;
           if (!c) { toast('Make a captain first.'); return; }
-          bus?.emit('roll:attempt', { ...check(c, { stat: 'dex', tag: 'test', dc: 8 }, Math.random), who: c.name, label: 'Test: thread the needle' });
+          bus?.emit('roll:attempt', { ...check(c, { stat: 'dex', tag: 'test', dc: 12 }, Math.random), who: c.name, label: 'Test: thread the needle' });
+        } } }),
+        el('button', { type: 'button', id: 'vy-dev-advantage', text: 'Test advantage', on: { click: () => {
+          const c = store.get().character;
+          if (!c) { toast('Make a captain first.'); return; }
+          bus?.emit('roll:attempt', { ...check(c, { skill: 'piloting', tag: 'test', dc: 14, advantage: true }, Math.random), who: c.name, label: 'Test: with advantage' });
         } } }),
         el('button', { type: 'button', id: 'vy-dev-reset', text: 'Fresh save', on: { click: () => { if (confirm('Start a fresh save on this device? Your account copy is replaced on the next sync.')) store.reset(); } } }),
       ]),

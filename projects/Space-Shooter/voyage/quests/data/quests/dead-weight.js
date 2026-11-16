@@ -137,11 +137,12 @@ export default {
           }
         },
         {
-          "label": "Tow it whole (Strength)",
+          "label": "Tow it whole (Piloting)",
           "check": {
+            "skill": "piloting",
             "stat": "str",
             "tag": "lift",
-            "dc": 7,
+            "dc": 10,
             "pass": "towed",
             "fail": "end-snapped"
           }
@@ -241,11 +242,12 @@ export default {
           "to": "fight"
         },
         {
-          "label": "Offer them a share (Charisma)",
+          "label": "Offer them a share (Social)",
           "check": {
+            "skill": "social",
             "stat": "cha",
             "tag": "trade",
-            "dc": 7,
+            "dc": 10,
             "pass": "end-shared",
             "fail": "fight"
           }

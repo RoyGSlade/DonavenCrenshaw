@@ -114,11 +114,12 @@ export default {
           "to": "look"
         },
         {
-          "label": "\"Is it always this lonely out here?\" (Charisma)",
+          "label": "\"Is it always this lonely out here?\" (Social)",
           "check": {
+            "skill": "social",
             "stat": "cha",
             "tag": "talk",
-            "dc": 6,
+            "dc": 8,
             "pass": "wren-warm",
             "fail": "look"
           }
@@ -161,11 +162,12 @@ export default {
           }
         },
         {
-          "label": "Bodge it with scrap and elbow grease (4 scrap) (Strength)",
+          "label": "Bodge it with scrap and elbow grease (4 scrap) (Repair)",
           "check": {
+            "skill": "repair",
             "stat": "str",
             "tag": "repair",
-            "dc": 7,
+            "dc": 10,
             "pass": "dim",
             "fail": "end-boom"
           },
@@ -260,11 +262,12 @@ export default {
           "to": "drone-fight"
         },
         {
-          "label": "Let them look (Wisdom)",
+          "label": "Let them look (Navigation)",
           "check": {
+            "skill": "navigation",
             "stat": "wis",
             "tag": "notice",
-            "dc": 7,
+            "dc": 10,
             "pass": "end-watched",
             "fail": "drone-fight"
           }

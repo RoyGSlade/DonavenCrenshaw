@@ -140,7 +140,7 @@ function boot() {
   const touch = isTouchDevice();
   document.body.classList.toggle('is-touch', touch);
   const dialogueBox = createDialogueBox({ root: $('hg-dialogue'), bus, audio, reducedMotion: still });
-  // Every attempt in play is its own 2d6 roll; the corner dice show it (the rules already decided the numbers).
+  // Every attempt in play is its own d20 roll; the corner d20 shows it (the rules already decided the number).
   createAttemptRoller({ root: $('hg-attempt'), bus, reducedMotion: still });
   // The director's sound and juice hooks: a soft chime (no file; muted with the rest).
   bus.on('story:cue', (d) => audio.cue?.(d?.cue));

@@ -112,21 +112,23 @@ export default {
       "text": "The {yacht} glitters at the Beacon's rich dock: gold trim, four guards, a string quartet. The duchess is hosting tea. The canapes look suspicious.",
       "choices": [
         {
-          "label": "Crash the party as a guest (Charisma)",
+          "label": "Crash the party as a guest (Social)",
           "check": {
+            "skill": "social",
             "stat": "cha",
             "tag": "talk",
-            "dc": 8,
+            "dc": 12,
             "pass": "party",
             "fail": "guards"
           }
         },
         {
-          "label": "Come in through the laundry chute (Dexterity)",
+          "label": "Come in through the laundry chute (Stealth)",
           "check": {
+            "skill": "stealth",
             "stat": "dex",
             "tag": "dodge",
-            "dc": 7,
+            "dc": 10,
             "pass": "galley",
             "fail": "guards"
           }
@@ -156,7 +158,7 @@ export default {
       "mode": "foot",
       "title": "Yacht guards",
       "enemy": "$guards",
-      "dc": 8,
+      "dc": 12,
       "outcomes": {
         "win": "galley",
         "lose": "out-of-ammo",
@@ -169,11 +171,12 @@ export default {
       "text": "Your last shot pings off a golden swan. The biggest guard rolls up his very nice sleeves.",
       "choices": [
         {
-          "label": "Swing for him (Strength)",
+          "label": "Swing for him",
           "check": {
+            "skill": "none",
             "stat": "str",
             "tag": "brawl",
-            "dc": 8,
+            "dc": 12,
             "pass": "galley",
             "fail": "end-thrown"
           }
@@ -193,11 +196,12 @@ export default {
       "text": "Oh. A courier. How rustic. Do try a prawn. They're a week old, it's a delicacy. And then cards. We play for teapots.",
       "choices": [
         {
-          "label": "Eat the prawn, to fit in (Health)",
+          "label": "Eat the prawn, to fit in",
           "check": {
+            "skill": "none",
             "stat": "con",
             "tag": "food",
-            "dc": 8,
+            "dc": 12,
             "pass": "cards",
             "fail": "end-prawn"
           }
@@ -214,21 +218,23 @@ export default {
       "text": "The duchess deals. She cheats, beautifully. The teapot sits in the middle of the table as the stake.",
       "choices": [
         {
-          "label": "Play her straight (Wisdom)",
+          "label": "Play her straight (Social)",
           "check": {
+            "skill": "social",
             "stat": "wis",
             "tag": "gamble",
-            "dc": 8,
+            "dc": 12,
             "pass": "won",
             "fail": "end-lost-hand"
           }
         },
         {
-          "label": "Swap the pot while she shuffles (Dexterity)",
+          "label": "Swap the pot while she shuffles (Stealth)",
           "check": {
+            "skill": "stealth",
             "stat": "dex",
             "tag": "dodge",
-            "dc": 8,
+            "dc": 12,
             "pass": "swapped",
             "fail": "guards"
           }
@@ -290,11 +296,12 @@ export default {
       "text": "The swan honks. Loudly. It is an alarm, and it has been waiting its whole life for this.",
       "choices": [
         {
-          "label": "Run for it (Dexterity)",
+          "label": "Run for it (Stealth)",
           "check": {
+            "skill": "stealth",
             "stat": "dex",
             "tag": "dodge",
-            "dc": 7,
+            "dc": 10,
             "pass": "end-empty",
             "fail": "end-thrown"
           }

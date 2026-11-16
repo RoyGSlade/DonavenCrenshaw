@@ -115,11 +115,12 @@ export default {
       "text": "Courier. We wondered when. The gate has been humming your name all week.",
       "choices": [
         {
-          "label": "\"Let me through. I'm expected, apparently.\" (Wisdom)",
+          "label": "\"Let me through. I'm expected, apparently.\" (Social)",
           "check": {
+            "skill": "social",
             "stat": "wis",
             "tag": "talk",
-            "dc": 7,
+            "dc": 10,
             "pass": "gate",
             "fail": "choir-fight"
           }
@@ -140,11 +141,12 @@ export default {
       "text": "The Choir watches you dock in perfect silence. Nobody blocks the gate. Nobody needs to: every lantern is pointed at your ship.",
       "choices": [
         {
-          "label": "Walk to the gate like you own it (Charisma)",
+          "label": "Walk to the gate like you own it (Social)",
           "check": {
+            "skill": "social",
             "stat": "cha",
             "tag": "talk",
-            "dc": 8,
+            "dc": 12,
             "pass": "gate",
             "fail": "choir-fight"
           }

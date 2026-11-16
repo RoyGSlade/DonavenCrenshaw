@@ -93,11 +93,12 @@ export default {
           "to": "market"
         },
         {
-          "label": "\"What's on it?\" (Wisdom)",
+          "label": "\"What's on it?\" (Navigation)",
           "check": {
+            "skill": "navigation",
             "stat": "wis",
             "tag": "notice",
-            "dc": 8,
+            "dc": 12,
             "pass": "peek",
             "fail": "market"
           }
@@ -128,21 +129,23 @@ export default {
       "text": "Beacon Prime's market is a thousand stalls and one long argument. Somebody here sold a pickpocket a getaway ticket. There is also a dice table in the cantina with a lot of loud dockhands round it.",
       "choices": [
         {
-          "label": "Ask around the stalls (Charisma)",
+          "label": "Ask around the stalls (Social)",
           "check": {
+            "skill": "social",
             "stat": "cha",
             "tag": "talk",
-            "dc": 7,
+            "dc": 10,
             "pass": "found",
             "fail": "cold-trail"
           }
         },
         {
-          "label": "Watch for who is watching you (Wisdom)",
+          "label": "Watch for who is watching you (Navigation)",
           "check": {
+            "skill": "navigation",
             "stat": "wis",
             "tag": "notice",
-            "dc": 7,
+            "dc": 10,
             "pass": "found",
             "fail": "cold-trail"
           }
@@ -181,21 +184,23 @@ export default {
       "text": "Bone dice, a tin cup and six dockhands who all claim to be the best at this. The pot is small. The gossip is the real prize.",
       "choices": [
         {
-          "label": "Roll and bluff (Charisma)",
+          "label": "Roll and bluff (Social)",
           "check": {
+            "skill": "social",
             "stat": "cha",
             "tag": "gamble",
-            "dc": 8,
+            "dc": 12,
             "pass": "dice-won",
             "fail": "dice-lost"
           }
         },
         {
-          "label": "Count the dice and play the odds (Wisdom)",
+          "label": "Count the dice and play the odds (Social)",
           "check": {
+            "skill": "social",
             "stat": "wis",
             "tag": "gamble",
-            "dc": 8,
+            "dc": 12,
             "pass": "dice-won",
             "fail": "dice-lost"
           }
@@ -276,11 +281,12 @@ export default {
           }
         },
         {
-          "label": "Offer her a job instead (Charisma)",
+          "label": "Offer her a job instead (Social)",
           "check": {
+            "skill": "social",
             "stat": "cha",
             "tag": "talk",
-            "dc": 9,
+            "dc": 14,
             "pass": "end-recruited",
             "fail": "scuffle"
           }
@@ -301,7 +307,7 @@ export default {
       "mode": "foot",
       "title": "Sable's friends",
       "enemy": "$crew",
-      "dc": 7,
+      "dc": 10,
       "outcomes": {
         "win": "page",
         "lose": "empty-gun",
@@ -314,11 +320,12 @@ export default {
       "text": "Your sidearm clicks empty. The bigger friend grins and cracks his knuckles. So do you.",
       "choices": [
         {
-          "label": "Punch him (Strength)",
+          "label": "Punch him",
           "check": {
+            "skill": "none",
             "stat": "str",
             "tag": "brawl",
-            "dc": 8,
+            "dc": 12,
             "pass": "page",
             "fail": "end-robbed"
           }

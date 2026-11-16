@@ -115,11 +115,12 @@ export default {
       "text": "Visitors! Oh my. Nobody visits. Do you have a form? Everybody needs a form. I do love a form.",
       "choices": [
         {
-          "label": "Fill in a records request properly (Wisdom)",
+          "label": "Fill in a records request properly (Social)",
           "check": {
+            "skill": "social",
             "stat": "wis",
             "tag": "puzzle",
-            "dc": 7,
+            "dc": 10,
             "pass": "stamped",
             "fail": "wrong"
           }
@@ -178,11 +179,12 @@ export default {
       "text": "Oh, that's a 7-F. You want a 7-G. Or a 12. It's so hard to tell in this light.",
       "choices": [
         {
-          "label": "Ask him to help you fill it in (Charisma)",
+          "label": "Ask him to help you fill it in (Social)",
           "check": {
+            "skill": "social",
             "stat": "cha",
             "tag": "talk",
-            "dc": 7,
+            "dc": 10,
             "pass": "stamped",
             "fail": "end-rejected"
           }

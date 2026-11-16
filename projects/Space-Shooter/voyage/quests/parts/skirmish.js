@@ -28,7 +28,9 @@ export const SYSTEMS = Object.freeze({
   engine: { name: 'Engine', effect: 'evading and breaking off are harder' },
 });
 export const SYSTEM_BREAK_CHANCE = 0.35;
-const ENGINE_PENALTY = 2;
+// Targets are on the d20 scale (data.js CHECK): a base, two per point of the enemy's evasion.
+const ENGINE_PENALTY = 4;
+const DC = Object.freeze({ fire: 8, evade: 8, flee: 10, charge: 2, perEvade: 2, parley: 12 });
 const broken = (state, id) => Boolean(state.systems?.[id]);
 
 const MOVES = Object.freeze({
@@ -113,7 +115,7 @@ export function actSkirmish(state, action, ctx) {
       state.enemy.cloaked = false;
       say(`You fire at a shimmer. ${state.enemy.name} decloaks behind it.`);
     } else {
-      const r = check(c, { stat: 'dex', tag: 'fight', dc: 6 + evasion(state) }, ctx.rng.next);
+      const r = check(c, { stat: 'dex', tag: 'fight', dc: DC.fire + DC.perEvade * evasion(state) }, ctx.rng.next);
       if (r.pass) {
         let dmg = state.ship.damage + ctx.rng.d6();
         if (broken(state, 'guns')) dmg = Math.ceil(dmg / 2);
@@ -122,7 +124,7 @@ export function actSkirmish(state, action, ctx) {
       } else say(`Miss. Roll ${rollText(r)}.`);
     }
   } else if (move === 'evade') {
-    const dc = 6 + (broken(state, 'engine') ? ENGINE_PENALTY : 0);
+    const dc = DC.evade + (broken(state, 'engine') ? ENGINE_PENALTY : 0);
     const r = check(c, { stat: 'dex', tag: 'dodge', dc }, ctx.rng.next);
     evading = r.pass;
     say(r.pass ? `You slip out of the line of fire. Roll ${rollText(r)}.` : `You jink, too slow. Roll ${rollText(r)}.`);
@@ -133,7 +135,7 @@ export function actSkirmish(state, action, ctx) {
   } else if (move === 'hail') {
     if (!state.enemy.parley) say('No answer on any channel.');
     else {
-      const r = check(c, { stat: 'cha', tag: 'talk', dc: state.enemy.parleyDc || 8 }, ctx.rng.next);
+      const r = check(c, { stat: 'cha', tag: 'talk', dc: state.enemy.parleyDc || DC.parley }, ctx.rng.next);
       if (r.pass) {
         say(`They answer. Roll ${rollText(r)}. Weapons go cold.`);
         state.done = true; state.outcome = 'parley';
@@ -142,7 +144,7 @@ export function actSkirmish(state, action, ctx) {
       say(`They laugh you off the channel. Roll ${rollText(r)}.`);
     }
   } else if (move === 'flee') {
-    const dc = 7 + (state.enemy.movement === 'charge' ? 1 : 0) + (broken(state, 'engine') ? ENGINE_PENALTY : 0);
+    const dc = DC.flee + (state.enemy.movement === 'charge' ? DC.charge : 0) + (broken(state, 'engine') ? ENGINE_PENALTY : 0);
     const r = check(c, { stat: 'dex', tag: 'nav', dc }, ctx.rng.next);
     if (r.pass) {
       say(`You burn clear. Roll ${rollText(r)}.`);

@@ -2,8 +2,8 @@
 // Stardust Studio (Focus) can read and write it (lhc-lanes/stardust/STUDIO-SCHEMA.md,
 // ROUND2-CONTRACT.md). No code, comments or trailing commas inside the JSON.
 // A step's lines are line ids, or { "pick": name } (a line chosen in code: story/tutorial.js PICKS).
-// A talk option is one of: plain ({ label, reply }), a stat attempt ({ stat, dc, label, pass, fail }: a fresh
-// 2d6 roll, both outcomes move on in the tutorial) or skill-gated ({ requires: { skills: { id: level } }, label, reply }).
+// A talk option is one of: plain ({ label, reply }), an attempt ({ stat or skill, dc, label, pass, fail }: a fresh
+// d20 + skill level, dc on the d20 scale; both outcomes move on in the tutorial) or skill-gated ({ requires: { skills: { id: level } }, label, reply }).
 // skipIf names a condition in story/tutorial.js SKIP_IF. nudge: lines played once each, in order, when the
 // player has done nothing on that step for nudgeMs.
 export const TUTORIAL_DATA = {
@@ -482,36 +482,41 @@ export const TUTORIAL_DATA = {
           "reply": "edna.talk.plain"
         },
         {
+          "skill": "social",
           "stat": "cha",
-          "dc": 7,
+          "dc": 10,
           "label": "\"Because you clearly have the best taste on this station.\"",
           "pass": "edna.talk.cha",
           "fail": "edna.talk.cha-fail"
         },
         {
+          "skill": "none",
           "stat": "str",
-          "dc": 7,
+          "dc": 10,
           "label": "Carry her crates in without being asked.",
           "pass": "edna.talk.str",
           "fail": "edna.talk.str-fail"
         },
         {
+          "skill": "none",
           "stat": "con",
-          "dc": 7,
+          "dc": 10,
           "label": "Drink the whole cup of her tea. All of it.",
           "pass": "edna.talk.con",
           "fail": "edna.talk.con-fail"
         },
         {
+          "skill": "none",
           "stat": "dex",
-          "dc": 7,
+          "dc": 10,
           "label": "Catch the teacup she \"accidentally\" knocks off the table.",
           "pass": "edna.talk.dex",
           "fail": "edna.talk.dex-fail"
         },
         {
+          "skill": "social",
           "stat": "wis",
-          "dc": 7,
+          "dc": 10,
           "label": "\"You don't trust anyone. That's why you're still in business.\"",
           "pass": "edna.talk.wis",
           "fail": "edna.talk.wis-fail"

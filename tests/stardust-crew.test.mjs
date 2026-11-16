@@ -20,7 +20,7 @@ import { cleanSave, emptySave } from '../projects/Space-Shooter/voyage/save.js';
 
 const pause = (ms) => new Promise((r) => setTimeout(r, ms));
 const withCaptain = (stats) => cleanSave({ ...emptySave(), character: testCharacter(stats) });
-const CREW = Object.freeze({ name: 'Nova', stats: { cha: 6, con: 6, dex: 6, wis: 6 }, skills: {} });
+const CREW = Object.freeze({ name: 'Nova', stats: { cha: 6, con: 6, dex: 6, wis: 6 }, skills: {}, levels: { social: 4 } });
 
 // ---- protocol --------------------------------------------------------------
 
@@ -134,9 +134,10 @@ test('relay: a crew room carries crew messages both ways and keeps Dogfight room
 test('crew card: name, stats and known skills only; anything else is refused', () => {
   const c = { ...testCharacter({ str: 3, cha: 2, con: 5, dex: 4, wis: 6 }, 'Nova'), skills: { mechanic: 2, nope: 3 } };
   const card = crewCard(c);
-  assert.deepEqual(card, { name: 'Nova', stats: { str: 3, cha: 2, con: 5, dex: 4, wis: 6 }, skills: { mechanic: 2 } });
+  const ones = Object.fromEntries(['shooting', 'piloting', 'stealth', 'hacking', 'repair', 'crafting', 'social', 'navigation'].map((id) => [id, 1]));
+  assert.deepEqual(card, { name: 'Nova', stats: { str: 3, cha: 2, con: 5, dex: 4, wis: 6 }, skills: { mechanic: 2 }, levels: ones }, 'd20: the card carries the eight skill levels');
   assert.deepEqual(cleanCrewCard({ ...card, skills: { mechanic: 2, nope: 3 } }).skills, { mechanic: 2 }, 'unknown skills are dropped');
-  assert.deepEqual(cleanCrewCard(card), { name: 'Nova', stats: { str: 3, cha: 2, con: 5, dex: 4, wis: 6 }, skills: { mechanic: 2 } });
+  assert.deepEqual(cleanCrewCard(card), { name: 'Nova', stats: { str: 3, cha: 2, con: 5, dex: 4, wis: 6 }, skills: { mechanic: 2 }, levels: ones });
   const { str, ...older } = card.stats;
   assert.equal(cleanCrewCard({ ...card, stats: older }).stats.str, 3, 'a crewmate on an older page counts Strength as average');
   assert.equal(crewCard(null), null, 'no captain, no card');
@@ -166,7 +167,7 @@ const TEST_QUEST = Object.freeze({
     talk: {
       type: 'dialogue', speaker: 'Hask', text: 'Talk your way in, or just go?',
       choices: [
-        { label: 'Talk them round', check: { stat: 'cha', dc: 8, pass: 'fight', fail: 'fight' } },
+        { label: 'Talk them round', check: { stat: 'cha', dc: 12, pass: 'fight', fail: 'fight' } },
         { label: 'Just go', to: 'fight' },
       ],
     },
@@ -181,15 +182,15 @@ test('docked (S55): the crew takes a dialogue check with their own stats; other 
   const { run } = startQuest(TEST_QUEST, save, { seed: 7 });
   const state = crewState({ quest: TEST_QUEST, run, save });
   assert.equal(state.step, 'talk');
-  assert.deepEqual(state.checks.map((c) => [c.index, c.statName, c.dc]), [[0, 'Charisma', 8]]);
+  assert.deepEqual(state.checks.map((c) => [c.index, c.statName, c.dc]), [[0, 'Social', 12]]);
   assert.equal(act(TEST_QUEST, run, save, { type: 'crew', job: 'check', index: 1 }, { crew: CREW }).error, 'The captain makes that call.');
   assert.equal(act(TEST_QUEST, run, save, { type: 'crew', job: 'check', index: 0 }).error, 'No crew aboard.', 'no crew, no crew jobs');
   const out = act(TEST_QUEST, run, save, { type: 'crew', job: 'check', index: 0 }, { crew: CREW });
   assert.equal(out.error, undefined);
-  assert.equal(out.run.lastCheck.bonus, 3, 'the roll used the crew\'s Charisma 6 (+3), not the captain\'s 1 (-2)');
+  assert.equal(out.run.lastCheck.bonus, 4, 'the roll used the crew\'s Social level 4, not the captain\'s level 1');
   assert.equal(out.rolls.length, 1, 'the attempt is reported for the die');
   assert.equal(out.rolls[0].who, 'Nova');
-  assert.match(out.run.log.join('\n'), /Nova takes it\. Charisma: /);
+  assert.match(out.run.log.join('\n'), /Nova takes it\. Social: d20 /);
   assert.equal(out.run.node, 'fight');
 });
 
