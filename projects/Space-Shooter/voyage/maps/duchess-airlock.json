@@ -6,16 +6,14 @@
   "floor": "deck",
   "ambient": "ship-hum",
   "grid": [
-    "######.#######",
-    "#............#",
-    "#............#",
-    "#............#",
-    "#............#",
-    "#............#",
-    "#............#",
-    "#....////....#",
-    "#............#",
-    "##############"
+    "#####.######",
+    "#..........#",
+    "#..........#",
+    "#..........#",
+    "#..........#",
+    "#...////...#",
+    "#..........#",
+    "############"
   ],
   "tags": {
     "airlock-outer": {"states":["closed","open","breached"],"state":"closed","by":[{"state":"breached","flag":"reavers-boarded"}]},
@@ -26,53 +24,60 @@
     "accents": {"airlock":"#ffc93a","warm":"#ffb867","alarm":"#ff4d4d"},
     "doorColors": {"corridor":"airlock"},
     "decals": [
-      {"kind":"hazard","at":[4.8,7.65],"size":[2.4,0.3]},
-      {"art":"breach-scorch-a","at":[4.3,6.0],"size":[2,2],"when":{"airlock-outer":"breached"}},
-      {"art":"breach-scorch-b","at":[6.4,5.5],"size":[2,2],"rot":0.5,"when":{"airlock-outer":"breached"}},
-      {"kind":"text","at":[6,3.0],"text":"AIRLOCK 1","size":0.34,"color":"airlock","alpha":0.5},
-      {"art":"scuff-2","at":[3,4],"size":[2.4,1.2]},
-      {"art":"drain-channel","at":[9,3],"size":[2,1]},
-      {"art":"scorch-2","at":[8.5,7.2],"size":[1.4,1.4],"alpha":0.5,"when":{"airlock-outer":"breached"}}
+      {"kind":"hazard","at":[4,5.62],"size":[4,0.28]},
+      {"kind":"text","at":[5.5,2.5],"text":"AIRLOCK 1","size":0.34,"color":"airlock","alpha":0.5},
+      {"art":"breach-scorch-a","at":[3.6,3.7],"size":[2.2,2.2],"when":{"airlock-outer":"breached"}},
+      {"art":"breach-scorch-b","at":[6.2,3.4],"size":[2.2,2.2],"rot":0.5,"when":{"airlock-outer":"breached"}},
+      {"art":"scorch-2","at":[7.6,5.2],"size":[1.4,1.4],"alpha":0.6,"when":{"airlock-outer":"breached"}},
+      {"art":"scuff-2","at":[2.4,4.2],"size":[2.4,1.2]},
+      {"art":"drain-channel","at":[7,2],"size":[2,1]},
+      {"art":"vent-1","at":[3,1],"size":[1,1]},
+      {"kind":"stain","at":[8.6,3.8],"r":0.5}
     ],
     "lights": [
-      {"kind":"strip","art":"light-strip-cyan-h","at":[5.4,9.08],"size":[1.2,0.3],"pool":[6,7.6],"r":2.4,"color":"cool","strength":0.24,"when":{"airlock-outer":["closed","open"]}},
-      {"kind":"lamp","at":[6.0,4.0],"r":3.6,"color":"airlock","strength":0.3},
-      {"kind":"lamp","at":[10.5,6.0],"r":2.8,"color":"warm","strength":0.24},
-      {"kind":"screen","at":[3.3,8.6],"size":[0.6,0.12],"pool":[3.6,7.6],"r":2.0,"color":"airlock","strength":0.26},
-      {"kind":"screen","at":[8.3,8.6],"size":[0.6,0.12],"pool":[8.4,7.6],"r":2.2,"color":"alarm","strength":0.3,"flicker":true,"when":{"airlock-outer":"breached"}},
-      {"kind":"prop","at":[5,8],"size":[2,1],"pool":[6,7.5],"r":2.6,"color":"#ff8a3a","strength":0.26,"flicker":true,"when":{"airlock-outer":"breached"}},
-      {"kind":"beacon","at":[10.1,0.3],"size":[0.3,0.3],"pool":[10.2,1.6],"r":2.2,"color":"alarm","strength":0.3,"flicker":true,"when":{"boarding-clamp":["sealed","torn"]}}
+      {"kind":"prop","at":[5,6],"size":[2,1],"pool":[6,5.6],"r":2.4,"color":"cool","strength":0.24,"when":{"airlock-outer":["closed","open"]}},
+      {"kind":"screen","at":[5.35,6.12],"size":[1.3,0.1],"pool":[6,5.6],"r":1.6,"color":"cool","strength":0.14,"when":{"airlock-outer":["closed","open"]}},
+      {"kind":"prop","at":[5,6],"size":[2,1],"pool":[6,5.4],"r":2.6,"color":"#ff8a3a","strength":0.26,"flicker":true,"when":{"airlock-outer":"breached"}},
+      {"kind":"screen","at":[5.6,6.35],"size":[0.8,0.2],"pool":[6,5.6],"r":1.6,"color":"#ff8a3a","strength":0.2,"when":{"airlock-outer":"breached"}},
+      {"kind":"lamp","at":[5.5,3.0],"r":3.4,"color":"airlock","strength":0.28},
+      {"kind":"strip","art":"light-strip-warm-v","at":[0.62,4.2],"size":[0.3,1.2],"pool":[1.8,4.8],"r":2.4,"color":"warm","strength":0.22},
+      {"kind":"screen","at":[10.4,2.3],"size":[0.4,0.12],"pool":[9.6,2.8],"r":1.8,"color":"airlock","strength":0.22},
+      {"kind":"beacon","at":[8.1,0.3],"size":[0.3,0.3],"pool":[8.2,1.6],"r":2.2,"color":"alarm","strength":0.3,"flicker":true,"when":{"boarding-clamp":["sealed","torn"]}},
+      {"kind":"strip","art":"light-strip-cyan-v","at":[11.08,3.4],"size":[0.3,1.2],"pool":[9.8,4.0],"r":2.2,"color":"cool","strength":0.18}
     ],
     "mounts": [
-      {"art":"boarding-clamp-sealed","at":[5,9.1],"size":[2,2],"tag":"boarding-clamp","states":{"none":{"hidden":true},"torn":{"art":"boarding-clamp-torn"}},"face":true},
-      {"art":"wall-sign-hazard","at":[1.3,9.25],"size":[2,0.5],"face":true},
-      {"art":"wall-sign-hazard","at":[9.6,9.25],"size":[2,0.5],"face":true},
-      {"art":"fire-extinguisher","at":[12.25,4],"size":[0.5,0.5]},
-      {"art":"hose-reel","at":[1.2,6.1],"size":[1,0.75]},
+      {"art":"boarding-clamp-sealed","at":[5,7.05],"size":[2,2],"tag":"boarding-clamp","states":{"none":{"hidden":true},"torn":{"art":"boarding-clamp-torn"}},"face":true},
+      {"art":"wall-sign-hazard","at":[2.4,7.25],"size":[2,0.5],"face":true},
+      {"art":"wall-sign-hazard","at":[7.6,7.25],"size":[2,0.5],"face":true},
+      {"art":"fire-extinguisher","at":[11.25,2.2],"size":[0.5,0.5]},
+      {"art":"hose-reel","at":[1.2,4.6],"size":[1,0.75]},
       {"art":"fuse-box","at":[2.6,0.25],"size":[1,0.5],"face":true}
     ],
     "clutter": [
-      {"art":"cable-coil","at":[10.2,2.0],"size":[0.7,0.7]},
-      {"art":"traffic-cone","at":[3.6,6.3],"size":[0.5,0.5]},
-      {"art":"jerrycan","at":[11.3,4.4],"size":[0.55,0.55]}
+      {"art":"cable-coil","at":[8.4,1.3],"size":[0.65,0.65]},
+      {"art":"traffic-cone","at":[3.3,5.3],"size":[0.5,0.5]},
+      {"art":"jerrycan","at":[9.3,4.3],"size":[0.5,0.5]},
+      {"kind":"rag","at":[2.6,6.4],"size":0.4}
     ]
   },
   "props": [
-    {"art":"airlock-door-closed","at":[5,8],"size":[2,1],"block":true,"tag":"airlock-outer","name":"airlock-outer","states":{"open":{"art":"airlock-door-open"},"breached":{"art":"airlock-door-breached"}},"interact":{"kind":"console","id":"airlock-outer","label":"The outer airlock door"}},
+    {"art":"airlock-door-closed","at":[5,6],"size":[2,1],"block":true,"tag":"airlock-outer","name":"airlock-outer","states":{"open":{"art":"airlock-door-open"},"breached":{"art":"airlock-door-breached"}},"interact":{"kind":"console","id":"airlock-outer","label":"The outer airlock door"}},
     {"art":"locker","at":[1,1],"size":[1,1],"block":true},
     {"art":"locker","at":[1,2],"size":[1,1],"block":true},
     {"art":"locker","at":[1,3],"size":[1,1],"block":true},
-    {"art":"mel-ammo-crate","at":[12,1],"size":[1,1],"block":"low"},
-    {"art":"cargo-crate","at":[12,7],"size":[1,1],"block":"low"},
-    {"art":"crate-closed","at":[12,8],"size":[1,1],"block":"low"},
-    {"art":"fuel-barrel","at":[1,8],"size":[1,1],"block":"low"}
+    {"art":"crate-closed","at":[1,6],"size":[1,1],"block":"low"},
+    {"art":"locker","at":[10,1],"size":[1,1],"block":true},
+    {"art":"mel-ammo-crate","at":[10,2],"size":[1,1],"block":"low"},
+    {"art":"fuel-barrel","at":[10,5],"size":[1,1],"block":"low"},
+    {"art":"fuel-barrel","at":[10,6],"size":[1,1],"block":"low"},
+    {"art":"fuel-barrel","at":[9,6],"size":[1,1],"block":"low"}
   ],
   "npcs": [],
   "doors": [
-    {"id":"corridor","at":[6,0],"size":[1,1],"to":"duchess-corridor","arrive":"from-airlock","label":"Out to the corridor"}
+    {"id":"corridor","at":[5,0],"size":[1,1],"to":"duchess-corridor","arrive":"from-airlock","label":"Out to the corridor"}
   ],
   "spawns": {
-    "default": [6,1,"down"],
-    "from-corridor": [6,1,"down"]
+    "default": [5,1,"down"],
+    "from-corridor": [5,1,"down"]
   }
 }
