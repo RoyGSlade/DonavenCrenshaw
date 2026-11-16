@@ -86,6 +86,8 @@
       {"kind":"prop","at":[24,11],"size":[1,1],"pool":[23.4,11.9],"r":2.8,"color":"#ff9a4a","strength":0.38,"flicker":true},
       {"kind":"prop","at":[25.2,10.4],"size":[0.6,1.2],"pool":[24.2,11],"r":2,"color":"backroom","strength":0.24},
       {"kind":"prop","at":[8.6,15.25],"size":[1,0.5],"pool":[9.1,14.4],"r":1.8,"color":"#7cf29a","strength":0.18},
+      {"kind":"prop","at":[6.6,10.3],"size":[2,1],"pool":[7.6,10.9],"r":2.0,"color":"#ff5a4d","strength":0.26},
+      {"kind":"prop","at":[8.8,12.2],"size":[1,1],"pool":[9.3,12.7],"r":2.0,"color":"#2fe0c0","strength":0.26},
       {"kind":"strip","art":"light-strip-warm-v","at":[0.08,9.5],"size":[0.3,1.2],"pool":[1.7,10.1],"r":2.6,"color":"warm","strength":0.28},
       {"kind":"strip","art":"light-strip-cyan-h","at":[20.4,15.08],"size":[1.2,0.3],"pool":[21,13.9],"r":2.8,"color":"cool","strength":0.3}
     ],
@@ -121,6 +123,9 @@
     {"art":"player-ship","at":[4,2],"size":[8,4],"block":true,"station":"pad","interact":{"kind":"station","id":"pad","label":"Your ship: upgrades and Chibby's parts"}},
     {"art":"launch-console","at":[1,2],"size":[1,2],"block":true,"station":"hatch","interact":{"kind":"station","id":"hatch","label":"Launch hatch: fly out, races and crew"}},
     {"art":"launch-hatch","at":[1,4],"size":[2,2],"block":false,"layer":"floor","under":true},
+    {"art":"goo-splat","at":[11.4,10.2],"size":[2,2],"block":false,"layer":"floor","under":true},
+    {"art":"engine-console","at":[6.6,10.3],"size":[2,1],"block":true},
+    {"art":"holo-pylon","at":[8.8,12.2],"size":[1,1],"block":true},
     {"art":"job-board","at":[14,1],"size":[3,1],"block":true,"station":"board","interact":{"kind":"station","id":"board","label":"Job board"}},
     {"art":"bunk-bed","at":[21,1],"size":[2,1],"block":true},
     {"art":"bunk-nightstand","at":[23,1],"size":[1,1],"block":true,"station":"quarters","interact":{"kind":"station","id":"quarters","label":"Your bunk: skills and stats"}},
