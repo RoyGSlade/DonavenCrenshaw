@@ -290,3 +290,30 @@ test('slice: a scene whose rolls fail never dead-ends and a failed record still 
   assert.equal(nextScene(save), null);
   void money;
 });
+
+test('slice: a room shows its state while the beat that explains it plays (flags paid on entering the node)', () => {
+  // Scene 5 begins with the coolant line already spraying; day five begins with the ship busted and Tull on the pad.
+  const s5 = startQuest(Q['gunners-week'], janitor(), { seed: 1, now: 1 });
+  assert.equal(stateOf(s5.save, 'duchess-engine').coolant, 'leaking');
+  const s6 = startQuest(Q['day-five'], janitor(), { seed: 1, now: 1 });
+  assert.equal(stateOf(s6.save, 'duchess-pad')['duchess-hull'], 'busted');
+  assert.equal(stateOf(s6.save, 'duchess-pad')['tull-pad'], 'here');
+  assert.equal(stateOf(s6.save, 'duchess-pad')['berth-door'], 'shut', 'the way to the hangar stays shut until day five is over');
+  // Scene 2: the clamp shows when the player is cut to the airlock, the boarding when the door gives, Reck down as he falls.
+  const walk = (id, picks, until) => {
+    let { run, save } = startQuest(Q[id], janitor(), { seed: 3, now: 1 });
+    const queue = [...picks];
+    for (let guard = 0; guard < 30 && run.node !== until; guard++) {
+      const open = view(Q[id], run, save).choices.filter((x) => !x.locked);
+      const pick = open.length === 1 ? open[0] : open.find((x) => x.label.includes(queue[0]));
+      if (open.length > 1) queue.shift();
+      const n = act(Q[id], run, save, { type: 'choose', index: pick.index }, { now: 1 });
+      run = n.run; save = n.save;
+    }
+    return { run, save };
+  };
+  const atBreach = walk('visitors', ["Check the cutter's readout.", 'Keep your eyes on the cutter.'], 'breach');
+  assert.equal(atBreach.run.node, 'breach');
+  assert.equal(stateOf(atBreach.save, 'duchess-airlock')['boarding-clamp'], 'sealed');
+  assert.equal(stateOf(atBreach.save, 'duchess-airlock')['airlock-outer'], 'closed');
+});

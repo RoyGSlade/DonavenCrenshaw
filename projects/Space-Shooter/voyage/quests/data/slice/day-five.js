@@ -67,6 +67,11 @@ export default {
       "emotion": "playful",
       "direction": "Big cheerful grin, hands wide, like he is announcing a birthday nobody asked for.",
       "text": "Congratulations, Captain. I piloted her today. Badly. I docked like the pad owed me money, and now I am retired.",
+      "onEnter": {
+        "flags": {
+          "duchess-busted": 1
+        }
+      },
       "choices": [
         {
           "label": "Go on",
