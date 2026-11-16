@@ -372,7 +372,7 @@ export function paintDoors(ctx, map, g, isLocked, objectiveDoor = null) {
   const { T, look } = g, D = look.doors;
   for (const d of map.doors) {
     const locked = isLocked(d);
-    const color = locked ? D.locked : (look.doorColors?.[d.id] ? (look.accents?.[look.doorColors[d.id]] || look.doorColors[d.id]) : D.open);
+    const color = locked ? D.locked : (look.doorColors?.[d.id] ? (look.accents?.[look.doorColors[d.id]] || look.light?.[look.doorColors[d.id]] || look.doorColors[d.id]) : D.open);
     const side = d.y <= 0 ? 'n' : d.y + d.h >= map.h ? 's' : d.x <= 0 ? 'w' : d.x + d.w >= map.w ? 'e' : null;
     ctx.save();
     if (!side) { paintRamp(ctx, d, look, T); ctx.restore(); continue; }

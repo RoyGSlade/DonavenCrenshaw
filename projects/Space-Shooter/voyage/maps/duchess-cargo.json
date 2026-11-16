@@ -40,7 +40,11 @@
       {"kind":"strip","art":"light-strip-cyan-h","at":[11.2,12.08],"size":[1.2,0.3],"pool":[11.8,11],"r":2.4,"color":"cargo","strength":0.26},
       {"kind":"prop","at":[2,3],"size":[2,1],"pool":[3,2.6],"r":1.6,"color":"cargo","strength":0.14},
       {"kind":"prop","at":[12,7],"size":[2,1],"pool":[13,8.4],"r":1.6,"color":"cargo","strength":0.14},
-      {"kind":"lamp","at":[10,9.5],"r":3.0,"color":"cool","strength":0.22}
+      {"kind":"lamp","at":[10,9.5],"r":3.0,"color":"cool","strength":0.2},
+      {"kind":"lamp","at":[4.5,9.4],"r":3.0,"color":"warm","strength":0.22},
+      {"kind":"lamp","at":[15.5,9.4],"r":3.0,"color":"warm","strength":0.22},
+      {"kind":"strip","art":"light-strip-warm-v","at":[0.62,5.4],"size":[0.3,1.2],"pool":[1.9,6.0],"r":2.6,"color":"warm","strength":0.2},
+      {"kind":"strip","art":"light-strip-cyan-v","at":[19.08,5.4],"size":[0.3,1.2],"pool":[17.8,6.0],"r":2.6,"color":"cargo","strength":0.18}
     ],
     "mounts": [
       {"art":"wall-sign-hazard","at":[4,12.25],"size":[2,0.5],"face":true},
@@ -62,12 +66,13 @@
     {"art":"cargo-container-closed","at":[6,3],"size":[2,1],"block":true,"cover":true},
     {"art":"cargo-container-closed","at":[12,3],"size":[2,1],"block":true,"cover":true},
     {"art":"cargo-container-open","at":[12,4],"size":[2,1],"block":true,"cover":true},
-    {"art":"cargo-container-closed","at":[16,3],"size":[2,1],"block":true,"cover":true},
+    {"art":"cargo-container-closed","at":[17,2],"size":[1,2],"block":true,"cover":true,"rot":1.5708},
     {"art":"cargo-container-closed","at":[2,7],"size":[2,1],"block":true,"cover":true},
     {"art":"cargo-container-closed","at":[6,7],"size":[2,1],"block":true,"cover":true},
     {"art":"cargo-container-closed","at":[6,8],"size":[2,1],"block":true,"cover":true},
     {"art":"cargo-container-closed","at":[12,7],"size":[2,1],"block":true,"cover":true},
-    {"art":"cargo-container-closed","at":[16,7],"size":[2,1],"block":true,"cover":true},
+    {"art":"cargo-container-closed","at":[16,7],"size":[1,2],"block":true,"cover":true,"rot":-1.5708},
+    {"art":"crate-closed","at":[3,8],"size":[1,1],"block":"low"},
     {"art":"edna-crate-stack","at":[16,10],"size":[2,2],"block":true},
     {"art":"supply-pod","at":[1,10],"size":[2,2],"block":true},
     {"art":"cargo-crate","at":[4,11],"size":[1,1],"block":"low"},

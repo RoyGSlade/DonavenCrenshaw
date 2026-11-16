@@ -159,3 +159,14 @@ test('the Duchess: the fight rooms have cover, and the usable things are lit', (
     }
   }
 });
+
+test('the Duchess: every colour a room names resolves to a real colour (an accent, a light name or a hex)', () => {
+  for (const id of SHIP.rooms) {
+    const look = lookFor({ def: MAP_DEFS[id] });
+    const ok = c => typeof c === 'string' && (/^#[0-9a-f]{6}$/i.test(look.accents?.[c] || look.light?.[c] || c));
+    for (const [door, c] of Object.entries(look.doorColors || {})) assert.ok(ok(c), `${id}: door ${door} colour ${c}`);
+    const all = [...(look.lights || []), ...(look.decals || []), ...(look.mounts || []), ...(look.clutter || [])];
+    for (const e of all) for (const k of ['color', 'tint']) if (e[k] != null) assert.ok(ok(e[k]), `${id}: ${e.kind || e.art} ${k} ${e[k]}`);
+    for (const e of Object.values(MAP_DEFS[id].tags || {})) assert.ok(Array.isArray(e.states));
+  }
+});

@@ -198,12 +198,12 @@ function bakeDoorSprites(map, look, g, s) {
         x.save(); x.translate(cx, cy); if (turn) x.rotate(Math.PI / 2); x.drawImage(img, -T / 2, -T / 2, T, T); x.restore();
       }
       if (lightsOn() && g.lightmap) {
+        // Light it like the room, then cut back to the art's own shape (one mask for all its tiles: a two-tile door
+        // masked tile by tile would erase itself).
+        const mask = document.createElement('canvas'); mask.width = c.width; mask.height = c.height;
+        mask.getContext('2d').drawImage(c, 0, 0);
         x.globalCompositeOperation = 'multiply'; x.drawImage(g.lightmap, 0, 0, map.w, map.h);
-        x.globalCompositeOperation = 'destination-in';
-        for (let i = 0; i < n; i++) {
-          const cx = d.x + (turn ? d.w / 2 : (i + 0.5) * T), cy = d.y + (turn ? (i + 0.5) * T : d.h / 2);
-          x.save(); x.translate(cx, cy); if (turn) x.rotate(Math.PI / 2); x.drawImage(img, -T / 2, -T / 2, T, T); x.restore();
-        }
+        x.globalCompositeOperation = 'destination-in'; x.setTransform(1, 0, 0, 1, 0, 0); x.drawImage(mask, 0, 0);
       }
       return c;
     });
