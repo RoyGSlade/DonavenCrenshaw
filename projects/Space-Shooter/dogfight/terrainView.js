@@ -9,20 +9,30 @@ function poly(c, points) {
 }
 
 /** Same renderer powers the live arena and map-picker thumbnails. World units only. */
-export function drawTerrain(c, arena, state, { rockImage, reducedMotion = false, thumbnail = false } = {}) {
+// `backdrop` (the new game's dogfight only): a loaded image drawn under the cover
+// in place of the flat wash, grid and stars. Absent, nothing changes.
+export function drawTerrain(c, arena, state, { rockImage, reducedMotion = false, thumbnail = false, backdrop = null } = {}) {
   const map = MAPS[arena.mapId], elapsed = state ? 180 - state.remaining : 0;
   const motion = reducedMotion ? 0 : elapsed;
   c.save();
   c.beginPath(); c.rect(0, 0, 40, 24); c.clip();
-  const wash = c.createRadialGradient(20, 12, 1, 20, 12, 24);
-  wash.addColorStop(0, map.background); wash.addColorStop(1, "#070f1b");
-  c.fillStyle = wash; c.fillRect(0, 0, 40, 24);
-  c.strokeStyle = `${map.color}0d`; c.lineWidth = 0.025;
-  for (let x = 0; x <= 40; x += 2) { c.beginPath(); c.moveTo(x, 0); c.lineTo(x, 24); c.stroke(); }
-  for (let y = 0; y <= 24; y += 2) { c.beginPath(); c.moveTo(0, y); c.lineTo(40, y); c.stroke(); }
-  for (let i = 0; i < 130; i++) {
-    c.fillStyle = i % 4 ? "#cadfff44" : "#ffffff88";
-    circle(c, (i * 17.31 + 2) % 40, (i * 7.23 + 1) % 24, i % 4 ? 0.018 : 0.035); c.fill();
+  if (backdrop && backdrop.complete && backdrop.naturalWidth) {
+    // "Cover": fill the 40x24 field, cropping the picture's edges evenly.
+    const k = Math.max(40 / backdrop.naturalWidth, 24 / backdrop.naturalHeight);
+    const w = backdrop.naturalWidth * k, h = backdrop.naturalHeight * k;
+    c.fillStyle = "#04080d"; c.fillRect(0, 0, 40, 24);
+    c.drawImage(backdrop, (40 - w) / 2, (24 - h) / 2, w, h);
+  } else {
+    const wash = c.createRadialGradient(20, 12, 1, 20, 12, 24);
+    wash.addColorStop(0, map.background); wash.addColorStop(1, "#070f1b");
+    c.fillStyle = wash; c.fillRect(0, 0, 40, 24);
+    c.strokeStyle = `${map.color}0d`; c.lineWidth = 0.025;
+    for (let x = 0; x <= 40; x += 2) { c.beginPath(); c.moveTo(x, 0); c.lineTo(x, 24); c.stroke(); }
+    for (let y = 0; y <= 24; y += 2) { c.beginPath(); c.moveTo(0, y); c.lineTo(40, y); c.stroke(); }
+    for (let i = 0; i < 130; i++) {
+      c.fillStyle = i % 4 ? "#cadfff44" : "#ffffff88";
+      circle(c, (i * 17.31 + 2) % 40, (i * 7.23 + 1) % 24, i % 4 ? 0.018 : 0.035); c.fill();
+    }
   }
   for (const f of arena.fields) {
     if (f.type === "gravity") {

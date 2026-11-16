@@ -19,8 +19,8 @@ import { retryQuestRaceAttempt } from '../engine/modes/questRace.js';
 import { weeklyById } from '../tracks/weekly.js';
 import { equippedBuild } from '../systems/shipBuild.js';
 import { setQuestRaceMode } from '../systems/questRace.js';
-import { readTicket, resolveTicket, resultMessage, returnHref, fillCopy, pickLine, gapText, pct } from '../voyage/races/questRace.js';
-import { RACE_COPY } from '../voyage/races/data.js';
+import { readTicket, resolveTicket, resultMessage, wreckMessage, returnHref, fillCopy, pickLine, gapText, pct } from '../voyage/races/questRace.js';
+import { RACE_COPY, SHIP_LOSS } from '../voyage/races/data.js';
 import { decodeSave, LOCAL_KEY } from '../voyage/save.js';
 
 // Sentences can start with the rival's name ('a Syndicate runner').
@@ -94,14 +94,15 @@ export function initQuestRaceUi(query, { parentWindow = globalThis.parent } = {}
 
   function intro() {
     show('intro', [
-      el('p', { class: 'qr-eyebrow', text: circuit ? RACE_COPY.circuitEyebrow : `${RACE_COPY.questEyebrow} · ${flight.label}` }),
+      el('p', { class: 'qr-eyebrow', text: flight.paid ? RACE_COPY.paidEyebrow : circuit ? RACE_COPY.circuitEyebrow : `${RACE_COPY.questEyebrow} · ${flight.label}` }),
       el('h2', { text: flight.title }),
       el('p', { class: 'qr-text qr-rival', text: `${cap(flight.rival.name)} runs it in ${formatMs(flight.targetMs)}. Beat that.` }),
       circuit && flight.best ? el('p', { class: 'qr-note', text: `Your practice best: ${formatMs(flight.best)}.` }) : null,
       el('p', { class: 'qr-label', text: 'YOUR SHIP, UPGRADES IN' }),
       shipLine(),
       el('p', { class: 'qr-note', text: 'Grab every shard, then cross the line. Arrows or WASD to fly, Space to launch, Shift to boost. On a phone: the touch pad.' }),
-      el('p', { class: 'qr-note qr-offbooks', text: fillCopy(RACE_COPY.noBoards, vars) }),
+      flight.paid ? el('p', { class: 'qr-note qr-pays', text: `Finish pays ${flight.pay.finish} cr, beat ${flight.rival.name} for ${flight.pay.win} more. A wreck costs the ship's upgrades and ${SHIP_LOSS.fee} cr for the repair and the tow. Your captain is safe: you fly it by remote.` }) : null,
+      el('p', { class: 'qr-note qr-offbooks', text: fillCopy(flight.paid ? RACE_COPY.paidNoBoards : RACE_COPY.noBoards, vars) }),
       el('div', { class: 'qr-moves' },
         el('button', { type: 'button', class: 'primary', id: 'qr-launch', onclick: launch, text: RACE_COPY.lineUp }),
         el('button', { type: 'button', id: 'qr-forfeit', onclick: () => giveBack(circuit ? 0 : flight.targetMs * 2, false), text: circuit ? RACE_COPY.leave : RACE_COPY.forfeit })),
@@ -133,7 +134,7 @@ export function initQuestRaceUi(query, { parentWindow = globalThis.parent } = {}
       el('p', { class: 'qr-vs', text: `${cap(flight.rival.name)}: ${formatMs(flight.targetMs)} · ${won ? '-' : '+'}${gapText(gap)}` }),
       el('p', { class: 'qr-text', text: line }),
       best ? el('p', { class: 'qr-note is-win', text: fillCopy(RACE_COPY.practiceBest, vars) }) : null,
-      el('p', { class: 'qr-note qr-offbooks', text: 'Not on any board. No ghost, no best, no weekly entry.' }),
+      el('p', { class: 'qr-note qr-offbooks', text: flight.paid ? 'The Guild bank pays this when you head back. Not on any board.' : 'Not on any board. No ghost, no best, no weekly entry.' }),
       el('div', { class: 'qr-moves' },
         el('button', { type: 'button', class: 'primary', id: 'qr-take', onclick: () => giveBack(ms, true), text: circuit ? 'Back to the hangar with this lap' : RACE_COPY.takeBack }),
         el('button', { type: 'button', id: 'qr-again', onclick: () => { hide(); retryRun(); }, text: RACE_COPY.again })),
@@ -141,10 +142,13 @@ export function initQuestRaceUi(query, { parentWindow = globalThis.parent } = {}
   }
 
   function wreck(detail) {
+    // A paid race tells the hangar the moment the ship is lost; the loss is charged once per ticket.
+    if (flight.paid && embedded) parentWindow.postMessage(wreckMessage(query.token || ''), location.origin);
     show('wreck', [
       el('p', { class: 'qr-eyebrow is-lose', text: RACE_COPY.wreck }),
       el('h2', { text: detail.cause === 'mine' ? 'Mine. Big one.' : detail.cause === 'fuel' ? 'Out of fuel.' : 'Hull gave out.' }),
       el('p', { class: 'qr-text', text: `${formatMs(detail.ms)} in, ${detail.shards} of ${detail.total} shards. ${cap(flight.rival.name)} didn't even slow down.` }),
+      flight.paid ? el('p', { class: 'qr-note qr-pays', text: `Ship lost: its upgrades are gone and the repair and the tow cost ${SHIP_LOSS.fee} cr. Trying again is free.` }) : null,
       el('div', { class: 'qr-moves' },
         el('button', { type: 'button', class: 'primary', id: 'qr-retry', onclick: () => { hide(); retryQuestRaceAttempt(); }, text: RACE_COPY.retry }),
         el('button', { type: 'button', id: 'qr-limp', onclick: () => giveBack(circuit ? 0 : Math.max(detail.ms, flight.targetMs * 2), false), text: circuit ? RACE_COPY.leave : RACE_COPY.limpBack })),

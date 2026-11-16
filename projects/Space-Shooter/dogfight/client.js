@@ -27,6 +27,30 @@ import {
 } from "../systems/mobileControls.js";
 import { runtimeConfig } from "../runtime-config.js";
 import { validateBackendUrl } from "../systems/backend.js";
+// The new game's dogfight (arena lane): `?launch=1` with the new game on. Off, none of
+// this loads or runs and the page is today's Dogfight. On: one fighter, the two launch
+// arenas with their backdrops, solo play against AI, and pay through the Guild bank.
+let LAUNCH = { on: false, arena: null };
+let launchKit = null; // the launch modules, art and pay pipeline once loaded
+if (new URLSearchParams(location.search).get("launch") === "1") {
+  const lib = await import("./launch.js");
+  LAUNCH = lib.launchFromSearch(location.search, { config: runtimeConfig });
+  if (LAUNCH.on) {
+    const [view, bot, activity, { createRunRecorder }, { serverMode }, { createVoyageStore }] = await Promise.all([
+      import("./launchView.js"), import("./bot.js"), import("../voyage/races/activity.js"),
+      import("../systems/hubRuns.js"), import("../voyage/session.js"), import("../voyage/store.js"),
+    ]);
+    const recorder = createRunRecorder();
+    const connected = recorder.connect().catch(() => null);
+    const serverOn = () => serverMode({ config: runtimeConfig, search: location.search });
+    launchKit = {
+      lib, view, bot, activity,
+      art: view.createLaunchArt(),
+      pay: activity.createActivityPay({ api: (p, o) => recorder.api(p, o), gamePath: (p) => recorder.gamePath(p), serverOn, signedIn: () => Boolean(recorder.player), ready: () => connected, store: createVoyageStore() }),
+      ui: null,
+    };
+  }
+}
 
 // Accounts. A signed-in pilot hands the relay a short-lived ticket from the hub;
 // when both duel pilots do, the relay reports the winner to the hub. FFA is casual.
@@ -93,7 +117,9 @@ const $ = (id) => document.getElementById(id),
   canvas = $("arena"),
   ctx = canvas.getContext("2d");
 const shipBuilder = createShipBuilder($("ship-builder"));
-const mapPicker = createMapPicker($("map-picker"));
+const mapPicker = createMapPicker($("map-picker"), LAUNCH.on ? launchKit.lib.launchPicker(LAUNCH.arena) : null);
+// What this pilot flies: the launch fighter in the new game, the chosen class otherwise.
+const myLoadout = () => (LAUNCH.on ? launchKit.lib.launchLoadout(playerId ?? 0) : shipBuilder.getLoadout());
 const arenaPreviews = Object.fromEntries(Object.keys(MAPS).map(id => [id, createArena(id)]));
 const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
 const rockImage = new Image();
@@ -107,6 +133,12 @@ let connection = null,
   round = 0,
   match = null,
   roundEnded = false;
+// Solo against AI (the new game's dogfight): this tab is the host, the AI flies the
+// other seats, and there is no relay or room. { mode, bots } while a solo session is on.
+let solo = null,
+  payRound = null,
+  paidRound = -1,
+  lastPay = null;
 // Relay version 3 adds the after-match lobby and guest rejoin. Against an
 // older relay (or in a room with an older page) the page keeps the
 // rematch-only flow: no lobby messages arrive and no seat token is issued.
@@ -302,6 +334,8 @@ function showLobby(message) {
   renderSeats();
 }
 function resetRoom(message) {
+  solo = null;
+  payRound = null;
   role = null;
   playerId = null;
   remoteInputs.clear();
@@ -448,6 +482,7 @@ function finishView(winner, reason) {
   if (mode === "duel" && !interrupted && reason !== "forfeit" && winner !== null && counted && opponentCounted)
     detail += " This duel is eligible for account stats.";
   showRoundOver(title, detail);
+  payForRound(winner, reason);
 }
 // The round-over panel. In a lobby room it becomes the after-match lobby.
 function showRoundOver(title, detail) {
@@ -459,8 +494,8 @@ function showRoundOver(title, detail) {
   $("result-title").textContent = title;
   $("result-detail").textContent = detail;
   $("rematch").disabled = false;
-  $("rematch").textContent = "Ready for rematch";
-  $("rematch-status").textContent = "All pilots must ready up for a rematch.";
+  $("rematch").textContent = solo ? "Fly again" : "Ready for rematch";
+  $("rematch-status").textContent = solo ? "" : "All pilots must ready up for a rematch.";
   showAfterLobby();
 }
 function lobbyMode() {
@@ -488,7 +523,7 @@ function queueLoadout() {
   loadoutTimer = setTimeout(() => {
     loadoutTimer = 0;
     if (!lobbyMode() || !roundEnded || lobbyState.phase !== "finished") return;
-    connection?.send({ type: "loadout", round, loadout: shipBuilder.getLoadout() });
+    connection?.send({ type: "loadout", round, loadout: myLoadout() });
   }, 250);
 }
 const seatName = (id) => PILOT_NAMES[id] || `Pilot ${id + 1}`;
@@ -726,6 +761,112 @@ function abortHost(reason) {
   connection?.send({ type: "abort", reason });
   finishView(null, reason);
 }
+// ---- Solo against AI (the new game's dogfight) ---------------------------------------
+// This tab hosts a local match; the AI flies every other seat. No relay, no room code.
+function startSolo(soloMode) {
+  if (!LAUNCH.on || connecting || (role && !solo)) return;
+  const seats = modeSeats(soloMode);
+  if (!seats) return;
+  const first = !solo;
+  mode = soloMode;
+  role = "host";
+  playerId = 0;
+  roomCode = "";
+  solo = { mode, bots: launchKit.bot.createBots(Array.from({ length: seats - 1 }, (_, i) => i + 1)) };
+  $("match-mode").value = mode;
+  $("mode-label").textContent = `/ ${MATCH_MODES[mode].label} vs AI`;
+  canvas.setAttribute("aria-label", mode === "ffa3" ? "Dogfight arena: you against two AI pilots" : "Dogfight arena: you against one AI pilot");
+  $("role-label").textContent = `${PILOT_NAMES[0].toUpperCase()} / SOLO vs AI`;
+  if (first) round = 0;
+  startRound({
+    type: "start", round: ++round, seed: Math.floor(Math.random() * 2 ** 31), mode,
+    loadouts: Array.from({ length: seats }, (_, i) => launchKit.lib.launchLoadout(i)),
+    mapId: mapPicker.getMapId(),
+  });
+}
+// Pay for the round that just ended (the relay's result or the solo host's own).
+async function payForRound(winner, reason) {
+  if (!LAUNCH.on || !payRound || paidRound === round || playerId == null) return;
+  paidRound = round;
+  const ships = (role === "guest" ? latest : match && snapshot(match))?.ships || [];
+  const result = launchKit.lib.roundOutcome({ winner, reason, ships: ships.map((sh) => ({ hp: sh.hp, maxHp: sh.maxHp })), seat: playerId });
+  const payout = launchKit.activity.dogfightPayout(launchKit.lib.launchJob(match.mapId), { ...result, mode, vsAi: !!solo });
+  const thisRound = round;
+  const paid = await launchKit.pay.finish(payRound, payout, { outcome: result.outcome });
+  lastPay = { round: thisRound, outcome: result.outcome, mode, vsAi: !!solo, credits: payout.credits, fee: payout.fee, died: payout.died, source: paid.source, paid: paid.paid, words: paid.words };
+  if (round === thisRound) launchKit.ui?.payLine(launchKit.activity.payLine(paid, payout));
+}
+
+// A round begins: the relay's `start` message, or the solo host's own (same shape).
+function startRound(message) {
+  if (
+    !role ||
+    !Number.isSafeInteger(message.round) ||
+    message.round < 1 ||
+    !Number.isInteger(message.seed) ||
+    message.seed < 0 ||
+    message.seed > 4294967295
+  )
+    return;
+  if (!Array.isArray(message.loadouts) || message.loadouts.length !== modeSeats(mode) || (message.mode ?? "duel") !== mode ||
+      message.loadouts.some(loadout => !cleanLoadout(loadout))) {
+    leave();
+    status("This relay needs the ship customization update. Connect to an updated relay.", true);
+    return;
+  }
+  if (!isMapId(message.mapId)) {
+    leave();
+    status("This relay needs the arena update. Connect to an updated relay.", true);
+    return;
+  }
+  round = message.round;
+  match = createMatch(message.seed, round, message.loadouts, message.mapId, mode);
+  mapPicker.select(message.mapId);
+  roundEnded = false;
+  // The new game pays each round through a job ticket taken at the start.
+  if (LAUNCH.on) { payRound = launchKit.pay.start(launchKit.lib.launchJob(match.mapId)); paidRound = -1; launchKit.ui?.payLine(""); }
+  restoreBuilders();
+  setBusy(false);
+  clearTimeout(loadoutTimer);
+  awayAt.clear();
+  keptWaiting.clear();
+  lobbyNote = "";
+  joinedLate = false;
+  // A rejoining guest counts down with everyone else before play resumes.
+  resumeAt = message.rejoin === true ? performance.now() + RESUME_MS : 0;
+  saveSeat();
+  remoteInputs = new Map();
+  inputSeq = 0;
+  snapshots.clear();
+  resetPrediction();
+  latest = null;
+  lastTickSent = -1;
+  accumulator = 0;
+  lastFrame = performance.now();
+  lastSnapshot = 0;
+  clearControls();
+  $("ship-health2").hidden = mode !== "ffa3";
+  $("spectator-status").hidden = true;
+  $("lobby").hidden = true;
+  $("waiting").hidden = true;
+  $("result").hidden = true;
+  $("match-hud").hidden = false;
+  $("ship-hud").hidden = false;
+  $("trap-hud").hidden = false;
+  $("arena-brief").hidden = false;
+  $("arena-name").textContent = MAPS[match.mapId].name;
+  $("arena-name").style.color = MAPS[match.mapId].color;
+  $("flight-footer").hidden = false;
+  $("leave").hidden = false;
+  $("touch-controls").hidden = false;
+  $("countdown").hidden = false;
+  $("countdown").textContent = "3";
+  canvas.focus({ preventScroll: true });
+  if (role === "host") {
+    publish();
+    if (document.hidden) abortHost("host-hidden");
+  }
+}
 function receive(message) {
   if (message.type === "hello") {
     relayVersion = Number.isSafeInteger(message.version) ? message.version : 0;
@@ -832,71 +973,7 @@ function receive(message) {
     return;
   }
   if (message.type === "start") {
-    if (
-      !role ||
-      !Number.isSafeInteger(message.round) ||
-      message.round < 1 ||
-      !Number.isInteger(message.seed) ||
-      message.seed < 0 ||
-      message.seed > 4294967295
-    )
-      return;
-    if (!Array.isArray(message.loadouts) || message.loadouts.length !== modeSeats(mode) || (message.mode ?? "duel") !== mode ||
-        message.loadouts.some(loadout => !cleanLoadout(loadout))) {
-      leave();
-      status("This relay needs the ship customization update. Connect to an updated relay.", true);
-      return;
-    }
-    if (!isMapId(message.mapId)) {
-      leave();
-      status("This relay needs the arena update. Connect to an updated relay.", true);
-      return;
-    }
-    round = message.round;
-    match = createMatch(message.seed, round, message.loadouts, message.mapId, mode);
-    mapPicker.select(message.mapId);
-    roundEnded = false;
-    restoreBuilders();
-    setBusy(false);
-    clearTimeout(loadoutTimer);
-    awayAt.clear();
-    keptWaiting.clear();
-    lobbyNote = "";
-    joinedLate = false;
-    // A rejoining guest counts down with everyone else before play resumes.
-    resumeAt = message.rejoin === true ? performance.now() + RESUME_MS : 0;
-    saveSeat();
-    remoteInputs = new Map();
-    inputSeq = 0;
-    snapshots.clear();
-    resetPrediction();
-    latest = null;
-    lastTickSent = -1;
-    accumulator = 0;
-    lastFrame = performance.now();
-    lastSnapshot = 0;
-    clearControls();
-    $("ship-health2").hidden = mode !== "ffa3";
-    $("spectator-status").hidden = true;
-    $("lobby").hidden = true;
-    $("waiting").hidden = true;
-    $("result").hidden = true;
-    $("match-hud").hidden = false;
-    $("ship-hud").hidden = false;
-    $("trap-hud").hidden = false;
-    $("arena-brief").hidden = false;
-    $("arena-name").textContent = MAPS[match.mapId].name;
-    $("arena-name").style.color = MAPS[match.mapId].color;
-    $("flight-footer").hidden = false;
-    $("leave").hidden = false;
-    $("touch-controls").hidden = false;
-    $("countdown").hidden = false;
-    $("countdown").textContent = "3";
-    canvas.focus({ preventScroll: true });
-    if (role === "host") {
-      publish();
-      if (document.hidden) abortHost("host-hidden");
-    }
+    startRound(message);
     return;
   }
   if (message.type === "input" && role === "host" && message.round === round) {
@@ -1003,7 +1080,7 @@ async function requestRoom(type) {
     const request = {
       type,
       ...(type === "join" ? { code } : { mapId: mapPicker.getMapId(), mode: $("match-mode").value }),
-      loadout: shipBuilder.getLoadout(),
+      loadout: myLoadout(),
       // Older relays ignore this; version 3 turns on the lobby and rejoin.
       protocol: LOBBY_PROTOCOL,
     };
@@ -1023,6 +1100,7 @@ $("room-code").addEventListener("keydown", (e) => {
 $("leave").addEventListener("click", leave);
 $("result-leave").addEventListener("click", leave);
 $("rematch").addEventListener("click", () => {
+  if (solo && roundEnded) { startSolo(solo.mode); return; }
   if (!connection || !role || !roundEnded) return;
   if (document.hidden) {
     $("rematch-status").textContent = "Return to this tab before readying.";
@@ -1034,7 +1112,7 @@ $("rematch").addEventListener("click", () => {
     if (loadoutTimer) {
       clearTimeout(loadoutTimer);
       loadoutTimer = 0;
-      connection.send({ type: "loadout", round, loadout: shipBuilder.getLoadout() });
+      connection.send({ type: "loadout", round, loadout: myLoadout() });
     }
     lobbyNote = "";
     connection.send({ type: "ready", round, ready: true });
@@ -1082,6 +1160,7 @@ const inviteInbox = createInviteInbox({
   },
 });
 paintAccountLine();
+if (LAUNCH.on) launchKit.ui = launchKit.view.dressLobby({ onSolo: startSolo });
 // A shared link (dogfight/?room=CODE) fills in the code and asks first.
 const linkedCode = (new URLSearchParams(location.search).get("room") || "").trim().toUpperCase();
 if (CODE.test(linkedCode)) {
@@ -1246,17 +1325,36 @@ function render(now) {
   bg.addColorStop(1, "#050c15");
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, width, height);
+  // The new game's phone layout: the arena turns on its side (its long edge runs down
+  // the screen) so it uses the screen's height between the top bar and the controls.
+  // Controls are ship-relative, so only the drawing turns. Today's Dogfight never does.
+  const phone = LAUNCH.on && width <= 600 && height > width * 1.15;
+  if (LAUNCH.on) document.documentElement.toggleAttribute("data-launch-phone", phone);
   const compact = width > height && height <= 600;
   const arenaTop = compact ? 61 : 122;
   const playableHeight = Math.max(120, height - arenaTop - (compact ? 12 : 53)),
-    playableWidth = width - (compact ? 180 : 24),
-    unit = Math.min(playableWidth / RULES.width, playableHeight / RULES.height),
+    playableWidth = width - (compact ? 180 : 24);
+  let unit = Math.min(playableWidth / RULES.width, playableHeight / RULES.height),
     ox = (width - RULES.width * unit) / 2,
     oy = arenaTop + (playableHeight - RULES.height * unit) / 2;
+  let project = (x, y) => [ox + x * unit, oy + y * unit];
   ctx.save();
-  ctx.translate(ox, oy);
-  ctx.scale(unit, unit);
-  drawTerrain(ctx, arena, display, { rockImage, reducedMotion: reducedMotion.matches });
+  if (phone) {
+    const touch = $("touch-controls").hidden ? null : $("touch-controls").getBoundingClientRect();
+    const top = 50, bottom = (touch ? touch.top : height - 34) - 6;
+    const availW = width - 8, availH = Math.max(160, bottom - top);
+    unit = Math.min(availW / RULES.height, availH / RULES.width);
+    const cx = width / 2, cy = top + availH / 2;
+    project = (x, y) => [cx - (y - RULES.height / 2) * unit, cy + (x - RULES.width / 2) * unit];
+    ctx.translate(cx, cy);
+    ctx.rotate(Math.PI / 2);
+    ctx.scale(unit, unit);
+    ctx.translate(-RULES.width / 2, -RULES.height / 2);
+  } else {
+    ctx.translate(ox, oy);
+    ctx.scale(unit, unit);
+  }
+  drawTerrain(ctx, arena, display, { rockImage, reducedMotion: reducedMotion.matches, backdrop: LAUNCH.on ? launchKit.art.backdrop(arena.mapId) : null });
   if (display) {
     const phase = ventPhase(RULES.roundSeconds - display.remaining);
     $("arena-tip").textContent = arena.mapId === "stormworks"
@@ -1302,12 +1400,12 @@ function render(now) {
       }
       ctx.shadowColor = color;
       ctx.shadowBlur = ship.hit > 0 ? 20 : 5;
-      drawCustomShip(ctx, ship.loadout, ship.hit > 0);
+      if (!(LAUNCH.on && launchKit.view.drawFighter(ctx, launchKit.art, ship, mine, unit))) drawCustomShip(ctx, ship.loadout, ship.hit > 0);
       ctx.restore();
     }
     for (const ship of display.ships) drawTrapLock(ctx, ship, unit);
     updateTrapHud(display, playerId, roundEnded);
-    updateShipHud(display, playerId, { ox, oy, unit, width });
+    updateShipHud(display, playerId, { ox, oy, unit, width, project, compact: phone });
     const ownShip = display.ships[playerId];
     const eliminated = ownShip.hp <= 0 && !roundEnded && display.phase === "playing";
     $("spectator-status").hidden = !eliminated;
@@ -1332,7 +1430,9 @@ function render(now) {
       );
     }
     $("network-status").textContent =
-      reconnect
+      solo
+        ? "Solo · AI pilots"
+        : reconnect
         ? "Reconnecting…"
         : paused(now)
           ? "Paused · waiting for a pilot"
@@ -1360,6 +1460,7 @@ function frame(now) {
       while (accumulator >= RULES.step) {
         const inputs = match.ships.map(ship => {
           if (ship.id === playerId) return controls();
+          if (solo?.bots.has(ship.id)) return solo.bots.controls(match, ship.id);
           const remote = remoteInputs.get(ship.id);
           return remote && now - remote.at <= RULES.inputTimeout * 1000
             ? { ...remote.controls, trap: remote.controls.trap || remote.trapPressed } : NEUTRAL;
@@ -1373,6 +1474,8 @@ function frame(now) {
         lastSnapshot = now;
         publish();
       }
+      // No relay in a solo round: this tab decides when it is over.
+      if (solo && match.phase === "finished" && !roundEnded) finishView(match.winner, match.reason);
     }
   }
   render(now);
@@ -1385,6 +1488,7 @@ requestAnimationFrame(frame);
 export function getDiagnostics() {
   return {
     mapId: match?.mapId || null,
+    launch: LAUNCH.on ? { on: true, arena: LAUNCH.arena, solo: solo ? { mode: solo.mode } : null, pay: lastPay, backdrop: Boolean(launchKit.art.backdrop(match?.mapId || mapPicker.getMapId())?.naturalWidth), sprites: launchKit.art.ready(), maps: [...document.querySelectorAll(".map-choices input")].map((i) => i.value), classes: [...document.querySelectorAll('[name="ship-class"]')].filter((i) => i.offsetParent !== null).length } : null,
     terrain: (role === "guest" ? latest : match ? snapshot(match) : null)?.terrain || null,
     role,
     playerId,

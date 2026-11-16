@@ -11,8 +11,9 @@
 // time comes back by postMessage. The racing page runs in quest race mode:
 // no board, no ghost, no personal best, no weekly entry (systems/questRace.js).
 // All text goes in with textContent.
-import { QUEST_RACE, makeToken, questTicket, circuitTicket, writeTicket, readTicket, clearTicket, cleanResult, parseReturn, recordPractice, practiceBest, pct } from './questRace.js';
-import { ARENA, CIRCUITS } from './data.js';
+import { QUEST_RACE, makeToken, questTicket, circuitTicket, writeTicket, readTicket, clearTicket, cleanResult, isWreck, parseReturn, recordPractice, practiceBest, pct } from './questRace.js';
+import { ARENA, CIRCUITS, LAUNCH_TRACKS, LAUNCH_ARENAS, COMING_SOON_TRACKS, COMING_SOON_ARENAS, ACTIVITY_PAY, SHIP_LOSS } from './data.js';
+import { racePayout, createActivityPay, payLine, raceJob } from './activity.js';
 import { TRACKS } from '../quests/data/tracks.js';
 import { raceStats } from '../upgrades.js';
 
@@ -48,7 +49,7 @@ export const raceFrameUrl = (token, base = RACING_PAGE) => `${base}?${new URLSea
  * finished }) runs once, with the time, when the pilot takes one back; onClose()
  * whenever the frame goes away. Returns { close } (or null if one is open).
  */
-export function openRaceFrame(ticket, { onResult = () => {}, onClose = () => {}, label = 'Race' } = {}) {
+export function openRaceFrame(ticket, { onResult = () => {}, onClose = () => {}, onWreck = () => {}, label = 'Race' } = {}) {
   if (open) return null;
   ensureCss();
   const frame = el('iframe', { class: 'rc-frame', src: raceFrameUrl(ticket.token), title: `${label}: today's racing engine`, allow: 'fullscreen; gamepad', dataset: { token: ticket.token } });
@@ -57,10 +58,13 @@ export function openRaceFrame(ticket, { onResult = () => {}, onClose = () => {},
   document.body.append(shell);
   document.body.classList.add('rc-racing');
   let done = false;
+  let wrecked = false;
   function onMessage(e) {
     if (e.origin !== location.origin || e.source !== frame.contentWindow) return;
     const d = e.data;
     if (!d || d.type !== QUEST_RACE.message || d.token !== ticket.token) return;
+    // A paid race's wreck note: charge it once, keep the frame open for the free retry.
+    if (isWreck(d, ticket.token)) { if (!wrecked) { wrecked = true; onWreck(); } return; }
     const result = cleanResult(d, ticket.token);
     if (result && !done) { done = true; onResult(result); }
     close();
@@ -109,6 +113,44 @@ export function flyCircuit(trackId, { store, onResult = () => {}, onClose, rand 
 }
 
 /**
+ * A paid launch race: the same lap as the practice circuit, flown for pay.
+ * `pay` is createActivityPay's pipeline; onPaid({ payout, result, line }) runs when
+ * the Guild bank (or the local save) has settled it. A wreck is charged once, the
+ * moment it happens, with the ship's upgrades; finishing pays by the time.
+ */
+export function flyPaidRace(trackId, { store, pay, toast = () => {}, onPaid = () => {}, onClose, rand = Math.random } = {}) {
+  const jobId = raceJob(trackId);
+  const ticket = circuitTicket(trackId, { token: makeToken(rand), now: Date.now(), paid: true });
+  if (!jobId || !ticket || !store.get().character || !writeTicket(ticket)) return null;
+  const round = pay.start(jobId);
+  let settled = false;
+  const settle = async (payout, outcome) => {
+    if (settled) return;
+    settled = true;
+    const result = await pay.finish(round, payout, { outcome });
+    onPaid({ payout, result, line: payLine(result, payout) });
+  };
+  let wreck = null;
+  const opened = openRaceFrame(ticket, {
+    onClose: () => { if (wreck && !settled) settle(wreck, 'wrecked'); onClose?.(); },
+    label: `Paid race: ${circuitLabel(trackId)}`,
+    onWreck: () => { wreck = racePayout(jobId, { wrecked: true }); },
+    onResult: (r) => {
+      let best = false;
+      store.update((save) => { const out = recordPractice(save, trackId, r.timeMs, { finished: r.finished, now: Date.now() }); best = out.best; return out.save; });
+      const targetMs = Math.round(TRACKS[trackId].pilotMs * CIRCUITS.find((c) => c.id === trackId).rival.pace);
+      // A time after a wreck still pays for the finish; the loss was charged already.
+      const paid = racePayout(jobId, { timeMs: r.timeMs, finished: r.finished, targetMs });
+      const payout = wreck ? { ...paid, fee: wreck.fee, net: paid.credits - wreck.fee, died: true, parts: [...paid.parts, `ship lost: -${wreck.fee} cr fee`] } : paid;
+      settle(payout, r.finished ? 'finished' : 'ended');
+    },
+  });
+  if (!opened) { settled = true; return null; }
+  return opened;
+}
+const circuitLabel = (trackId) => TRACKS[trackId]?.title || trackId;
+
+/**
  * A race time that came back by link (a racing page opened on its own): the
  * result when it matches this tab's ticket, else null. The ticket is used up.
  */
@@ -128,6 +170,18 @@ export function takeReturnedRace(search = location.search) {
 /** Today's Dogfight arena (2-3 pilots, today's classes and records), as it is. */
 export function openArena({ assign = (href) => location.assign(href) } = {}) {
   assign(ARENA_PAGE);
+}
+
+/**
+ * The new game's dogfight: the same page with ?launch=1, which (with the new game
+ * on) shows only the fighter and the launch arenas, with their backdrops, AI to
+ * fly against, and pay. arenaId: 'shatterbelt' or 'stormworks'.
+ */
+export const launchArenaHref = (arenaId, base = ARENA_PAGE) => `${base}?${new URLSearchParams({ launch: '1', arena: String(arenaId) })}`;
+export function openLaunchArena(arenaId, { assign = (href) => location.assign(href) } = {}) {
+  if (!LAUNCH_ARENAS.some((a) => a.id === arenaId)) return false;
+  assign(launchArenaHref(arenaId));
+  return true;
 }
 
 /**

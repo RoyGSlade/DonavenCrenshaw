@@ -12,7 +12,9 @@
 // No DOM; storage and randomness are handed in, so node tests run it.
 import { TRACKS } from '../quests/data/tracks.js';
 import { raceStats } from '../upgrades.js';
-import { CIRCUITS } from './data.js';
+import { CIRCUITS, ACTIVITY_PAY } from './data.js';
+
+const payRule = (id) => (Object.hasOwn(ACTIVITY_PAY, id) ? ACTIVITY_PAY[id] : null);
 
 export const QUEST_RACE = Object.freeze({
   query: 'questrace',            // ?questrace=<token> on the racing page
@@ -50,10 +52,15 @@ export function questTicket(save, { token, title = '', now = 0 }) {
   return { v: 1, token, kind: 'quest', quest: leg.quest, node: leg.node, steps: leg.steps, title: String(title).slice(0, 80), at: now };
 }
 
-/** A ticket for a practice circuit, or null for an unknown one. */
-export function circuitTicket(trackId, { token, now = 0 }) {
+/**
+ * A ticket for a practice circuit, or null for an unknown one. `paid` marks a
+ * launch race (the same lap, flown for pay through the Guild bank): the racing
+ * page flies it exactly like a practice lap and the hangar pays the result.
+ * A practice ticket keeps its exact shape (no `paid` key).
+ */
+export function circuitTicket(trackId, { token, now = 0, paid = false }) {
   if (!CIRCUITS.some((c) => c.id === trackId) || !TRACKS[trackId] || !TOKEN.test(token)) return null;
-  return { v: 1, token, kind: 'circuit', track: trackId, title: '', at: now };
+  return { v: 1, token, kind: 'circuit', track: trackId, title: '', at: now, ...(paid ? { paid: true } : {}) };
 }
 
 /** A ticket read back from storage, checked; null when anything is off. */
@@ -61,7 +68,7 @@ export function cleanTicket(value, now = Date.now()) {
   if (!value || typeof value !== 'object' || value.v !== 1 || !TOKEN.test(value.token) || !KINDS.includes(value.kind)) return null;
   if (!Number.isFinite(value.at) || (now && now - value.at > QUEST_RACE.ticketMaxAgeMs)) return null;
   const title = typeof value.title === 'string' ? value.title.slice(0, 80) : '';
-  if (value.kind === 'circuit') return TRACKS[value.track] && CIRCUITS.some((c) => c.id === value.track) ? { v: 1, token: value.token, kind: 'circuit', track: value.track, title, at: value.at } : null;
+  if (value.kind === 'circuit') return TRACKS[value.track] && CIRCUITS.some((c) => c.id === value.track) ? { v: 1, token: value.token, kind: 'circuit', track: value.track, title, at: value.at, ...(value.paid === true ? { paid: true } : {}) } : null;
   if (typeof value.quest !== 'string' || typeof value.node !== 'string' || !Number.isInteger(value.steps)) return null;
   return { v: 1, token: value.token, kind: 'quest', quest: value.quest, node: value.node, steps: value.steps, title, at: value.at };
 }
@@ -108,7 +115,8 @@ export function resolveTicket(ticket, save, { build = null } = {}) {
     const track = TRACKS[ticket.track];
     if (!circuit || !track) return { error: 'That circuit is closed.' };
     return {
-      kind: 'circuit', token: ticket.token, track: circuit.id, weekly: track.weekly, title: track.title, label: 'Hangar practice',
+      kind: 'circuit', token: ticket.token, track: circuit.id, weekly: track.weekly, title: track.title, label: ticket.paid ? 'Paid race' : 'Hangar practice',
+      ...(ticket.paid ? { paid: true, pay: payRule(`race-${circuit.id}`) } : {}),
       targetMs: Math.round(track.pilotMs * circuit.rival.pace), rival: { name: circuit.rival.name, pace: circuit.rival.pace },
       stats, stock, best: practiceBest(save, circuit.id),
     };
@@ -134,6 +142,14 @@ export function cleanResult(data, token) {
 
 /** The message the racing page posts to the hangar's race frame. */
 export const resultMessage = (token, timeMs, finished) => ({ type: QUEST_RACE.message, token, timeMs: Math.round(timeMs), finished: Boolean(finished) });
+
+/**
+ * A paid race's "the ship was lost" note, sent by the racing page the moment the
+ * ship wrecks (no time, so it never reads as a result). The frame stays open for a
+ * free retry; the hangar charges the loss once per ticket.
+ */
+export const wreckMessage = (token) => ({ type: QUEST_RACE.message, token, wrecked: true });
+export const isWreck = (data, token) => Boolean(data) && typeof data === 'object' && data.wrecked === true && data.token === token && TOKEN.test(token);
 
 /** The return link for a racing page opened on its own (relative to the racing page). */
 export function returnHref(token, timeMs, finished, base = './voyage/') {
