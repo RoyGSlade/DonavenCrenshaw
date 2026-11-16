@@ -60,6 +60,8 @@ import { createJobTalk } from './datapad/jobTalk.js';
 import { createJobCard } from './datapad/jobCard.js';
 import { offersAt, openCount } from './quests/offers.js';
 import { OFFERS_DATA } from './quests/data/offers.js';
+// Launch slice: the opening on the Tin Duchess (slice/director.js).
+import { wantsSlice, startSlice, startRoom, createSliceDirector } from './slice/director.js';
 
 const flag = newGameFlag({ config: runtimeConfig, search: location.search });
 // The tutorial step each on-foot lesson belongs to (contract section 4).
@@ -133,6 +135,11 @@ function boot(session = { mode: 'local' }) {
   if (throwaway && !link.step && (link.quest || link.map || link.explore) && !storyOf(store.get()).finished) {
     store.update((s) => ({ ...s, story: { ...storyOf(s), step: null, finished: true, skipped: true } }));
   }
+
+  // Launch slice: a fresh save opened with ?newgame=1 starts as the janitor on the Tin Duchess (?start=hangar keeps the hangar start).
+  const slicing = wantsSlice({ save: store.get(), params, throwaway, newGame: flag.enabled });
+  if (slicing) startSlice(store);
+  let slice = null;
 
   const chip = $('vy-sync');
   let recorder;
@@ -383,7 +390,12 @@ function boot(session = { mode: 'local' }) {
       setTimeout(() => jobTalk.beat(v).then((i) => { if (i >= 0) pick(i); else if (i === -1) toast(OFFERS_WORDS.paused); }), wait);
     },
     card: (kind) => jobCard.show(kind),
+    // launch slice: a beat plays in its room, an on-foot fight runs on the Duchess's floor, a closed result card starts the next scene.
   };
+  const playBeat = presenter.dialogue;
+  presenter.dialogue = (v, pick) => (slice ? slice.beat(v, () => playBeat(v, pick)) : playBeat(v, pick));
+  presenter.foot = (part, done) => (slice ? slice.fight(part, done) : done(null));
+  presenter.exit = () => slice?.afterCard();
   const jobs = createJobs({
     pane: panes.jobs, store, toast, dev: flag.dev, presenter,
     say: (events) => hangar.say(events),
@@ -426,7 +438,7 @@ function boot(session = { mode: 'local' }) {
 
   // The walkable floor. Walking up to a station and pressing E opens it in place.
   onfoot = createOnFoot({
-    root: floor, store, bus, mapId: link.map || 'hangar', spawn: link.map ? link.spawn : 'default',
+    root: floor, store, bus, mapId: link.map || (slicing ? startRoom(store.get()) : 'hangar'), spawn: link.map ? link.spawn : 'default',
     reducedMotion: still,
     hooks: {
       openStation: (id) => new Promise((resolve) => {
@@ -437,7 +449,7 @@ function boot(session = { mode: 'local' }) {
       tutorial: () => tutorialOn(store.get()),
       // During the tutorial, a lesson waits for its turn (the director pays for each one once).
       allow: (target) => allowLesson(target),
-      entered: (map) => { setBed(map.ambient); place?.closeStation({ restoreFocus: false }); place?.place(); setPlaceName(placeNameFor(map)); },
+      entered: (map) => { slice?.entered(map); setBed(map.ambient); place?.closeStation({ restoreFocus: false }); place?.place(); setPlaceName(placeNameFor(map)); },
       flying: (on) => { flying = on; holdFloor(); place?.place(); if (on) setPlaceName('The Drift'); else if (onfoot?.world?.map) setPlaceName(placeNameFor(onfoot.world.map)); },
       stationInfo,
       // Jobs you haven't taken: a giver offers theirs in person (after the tutorial).
@@ -572,8 +584,17 @@ function boot(session = { mode: 'local' }) {
   } else if (!store.get().character && (step === 'create' || storyOf(store.get()).finished)) openLicence();
   else if (crew.pending) place.openStation('hatch', { via: 'refresh', view: 'crew' });
   // A job in progress waits on the tracker and the datapad (Continue); nothing pops up.
+  // Launch slice: the opening picks its scene up (a reload lands back in the beat) or starts the next one.
+  if (slicing) {
+    slice = createSliceDirector({ store, jobs, toast, world: () => onfoot?.world || null, fightIn: (setup) => onfoot.fight(setup) });
+    ready.then(() => {
+      // A signed-in account whose own save is an older hangar game replaces the fresh one: leave the Duchess for the hangar.
+      if (!store.get().flags?.['slice-started']) { onfoot.world.go('hangar', 'default'); return; }
+      slice.boot();
+    });
+  }
 
   // For tests and poking around in the console (no secrets: the save is the player's own).
   setTimeout(maybeControls, 600);
-  window.__stardust = { store, story, onfoot, place, jobs, licence, bus, pad, tracker, controls, pause, jobTalk, jobCard, crew };
+  window.__stardust = { store, story, onfoot, place, jobs, licence, bus, pad, tracker, controls, pause, jobTalk, jobCard, crew, slice };
 }

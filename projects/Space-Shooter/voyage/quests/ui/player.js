@@ -88,6 +88,9 @@ export function shipSummary(save) {
 // crewLive(frame): live fight frames for the crew's turret scope (P11, races lane).
 // rolled(rolls): every attempt the engine rolled in a step, in order (contract
 // section 6), so the page can show each on the dice.
+// presenter.foot(part, done) (launch slice, optional): play an on-foot fight where the page wants it (the Tin Duchess's own room)
+// instead of the panel's button; done({ outcome, hp }) reports it, done(null) falls back to the panel.
+// presenter.exit() runs once the result card is closed.
 // presenter (round 3, optional): { dialogue(v, pick), card(kind) }. With it, dialogue
 // beats go to presenter.dialogue (the hangar's dialogue box: v is the engine's view,
 // pick(index) takes a choice) and the root shows only travel, fights, puzzles, races,
@@ -99,6 +102,7 @@ export function createQuestPlayer({ root, session, status = () => {}, onEnd = ()
   let ui = { key: '', cipher: [], riddle: [] };
   let keyHandlers = [];
   let live = null;
+  let footManual = ''; // a fight node the player chose to play from the panel instead (the page's own fight was dropped)
 
   function start(quest, seed) {
     const started = startQuest(quest, session.get(), { seed, now: Date.now() });
@@ -198,6 +202,20 @@ export function createQuestPlayer({ root, session, status = () => {}, onEnd = ()
       presenter.dialogue(v, (index) => doAct({ type: 'choose', index }));
       return;
     }
+    // An on-foot fight the page runs itself (the slice's rooms): the shooter in that room, then the result goes to the engine.
+    if (presenter?.foot && v.part?.kind === 'foot' && !live && footManual !== v.node) {
+      root.replaceChildren();
+      presenter.card(null);
+      live = { close: () => {} };
+      const node = v.node;
+      presenter.foot(v.part, (result) => {
+        live = null;
+        if (result) doAct({ type: 'live', outcome: result.outcome, hp: result.hp });
+        else { footManual = node; render(); }
+      });
+      return;
+    }
+    if (presenter?.foot && v.part?.kind === 'foot' && live) { root.replaceChildren(); return; }
     let body;
     if (v.ended) body = renderEnd(v);
     else if (v.part) body = renderPart(v);
