@@ -62,7 +62,8 @@
       {"kind":"crate","at":[8.9,6.9],"size":0.5,"rot":0.4},
       {"art":"small-crates","at":[17.1,1.2],"size":[1,0.75]},
       {"art":"traffic-cone","at":[8.4,10.4],"size":[0.5,0.5]},
-      {"art":"cable-coil","at":[14.5,9.6],"size":[0.7,0.7]}
+      {"art":"cable-coil","at":[14.5,9.6],"size":[0.7,0.7]},
+      {"art":"cargo-crate-spilled","at":[13.6,9.2],"size":[1.5,1]}
     ]
   },
   "props": [
@@ -84,7 +85,8 @@
     {"art":"crate-closed","at":[14,11],"size":[1,1],"block":"low"},
     {"art":"cargo-crate","at":[1,1],"size":[1,1],"block":"low"},
     {"art":"crate-closed","at":[2,1],"size":[1,1],"block":"low"},
-    {"art":"fuel-barrel","at":[18,1],"size":[1,1],"block":"low"}
+    {"art":"fuel-barrel","at":[18,1],"size":[1,1],"block":"low"},
+    {"art":"cargo-pallet-net","at":[4,5],"size":[2,2],"block":true}
   ],
   "npcs": [],
   "doors": [
