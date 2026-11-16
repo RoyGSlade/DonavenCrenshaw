@@ -19,8 +19,8 @@
     "######.######.######.#####"
   ],
   "tags": {
-    "airlock-inner": {"states":["open","sealed"],"state":"open","by":[{"state":"sealed","flag":"airlock-sealed","notFlag":"reavers-repelled"}]},
-    "reavers": {"states":["aboard","repelled"],"state":"aboard","by":[{"state":"repelled","flag":"reavers-repelled"}]}
+    "airlock-inner": {"states":["open","sealed"],"state":"open","by":[{"state":"sealed","flag":"airlock-sealed"}]},
+    "reavers": {"states":["aboard","repelled"],"state":"aboard","by":[{"state":"repelled","flag":"reavers-repelled","notFlag":"airlock-sealed"}]}
   },
   "look": {
     "set": "freighter",
