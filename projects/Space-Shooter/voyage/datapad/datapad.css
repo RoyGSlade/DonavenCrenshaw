@@ -89,6 +89,10 @@ body .hg-layer .hg-spot:focus-visible{opacity:1!important;pointer-events:auto}
 .dp-stat small{display:block;color:var(--dp-muted);font-size:11px;line-height:1.35}
 .dp-stat .dp-odds{color:#b9cbd6;font-family:Consolas,monospace;font-size:10.5px;margin-top:2px}
 .dp-stat b{font:800 22px Consolas,monospace;color:var(--dp-text)}
+.dp-levels{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 6px}
+.dp-levels li{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:5px 9px;border:1px solid #2a4152;border-radius:4px;background:#0b1522}
+.dp-levels span{font-size:12px;color:var(--dp-muted)}
+.dp-levels b{font:800 14px Consolas,monospace;color:var(--dp-text)}
 .dp-cap-mid{display:flex;flex-direction:column;min-height:0;min-width:0}
 .dp-cap-points .ui-tree-head{margin:0 0 4px;justify-content:flex-start}
 .dp-cap-tree{flex:1;min-height:0;display:grid;place-items:center}
@@ -233,7 +237,7 @@ body .hg-layer .hg-spot:focus-visible{opacity:1!important;pointer-events:auto}
   .dp-cap-who{order:0}
   .dp-cap-mid{order:1}
   .dp-cap-right{order:2}
-  .dp-cap-side > .dp-h,.dp-stats,.dp-cap-side > .ui-how{order:3}
+  .dp-cap-side > .dp-h,.dp-stats,.dp-levels,.dp-cap-side > .ui-how{order:3}
   .dp-stat .dp-odds{display:none}
   .dp-page-captain > *,.dp-cap-side > *,.dp-cap-mid > *{flex:none}
   .dp-cap-tree{display:block;min-height:0}

@@ -97,3 +97,17 @@ input[type=text]{font:15px Inter,"Segoe UI",sans-serif;color:var(--text);backgro
 .vy-jobs-pane .qs-part h3,.vy-jobs-pane .qs-end h3{margin:0 0 10px;font:700 18px Inter,"Segoe UI",sans-serif;letter-spacing:-.01em;color:var(--text)}
 .vy-jobs-pane .qs-event h4{margin:0 0 6px;font-size:16px}
 .vy-jobs .vy-why{color:var(--orange)}
+
+/* The maintenance screen (voyage/session.js): the hub is down, so no run starts. */
+.vy-maint{position:relative;z-index:6;display:grid;place-items:center;min-height:calc(100vh - 120px);padding:24px 16px}
+.vy-maint-card{position:relative;width:min(520px,100%);padding:30px 30px 24px;display:grid;gap:10px;background:#0b1522;color:var(--ui-text,#eaf4f5)}
+.vy-maint-title{margin:0;font:800 30px/1.1 Inter,system-ui,sans-serif;letter-spacing:-.02em}
+.vy-maint-body{margin:0;color:#b5c8d5;font:15px/1.55 Inter,system-ui,sans-serif}
+.vy-maint-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px}
+.vy-maint-row .ui-btn{min-height:44px;padding:0 18px;display:inline-grid;place-items:center;font:700 14px Inter,system-ui,sans-serif;text-decoration:none}
+.vy-maint-status{margin:2px 0 0;min-height:1.3em;font:12px Consolas,monospace;letter-spacing:.06em;color:var(--orange,#ffad72)}
+.vy-maint-lamp{position:absolute;top:18px;right:20px;width:12px;height:12px;border-radius:50%;background:#ffad72;box-shadow:0 0 0 4px #ffad7222,0 0 18px #ffad72aa;animation:vy-maint-blink 2.4s ease-in-out infinite}
+@keyframes vy-maint-blink{50%{opacity:.35}}
+@media (prefers-reduced-motion:reduce){.vy-maint-lamp{animation:none}}
+@media (max-width:520px){.vy-maint{min-height:calc(100vh - 90px);align-items:start;padding-top:12vh}.vy-maint-card{padding:24px 20px 20px}.vy-maint-title{font-size:25px}.vy-maint-row .ui-btn{flex:1 1 100%}}
+.vy-guest{margin-left:8px;border:1px solid #6e4f3a;border-radius:20px;padding:6px 12px;color:var(--orange,#ffad72);font:10px Consolas,monospace;letter-spacing:.08em}

@@ -82,13 +82,15 @@ export function createDirector({
 
   /** Writes a story block (and pays a reward) in one save. Returns the grant events. */
   function write(story, reward = null) {
+    const paidBefore = new Set(store.get().story?.paid || []);
     let events = [];
     store.update((s) => {
       let save = s;
       if (reward) { const g = grant(save, reward); save = g.save; events = g.events; }
       return { ...save, story: cleanStory(story) };
     });
-    if (events.length) bus.emit('story:reward', { events });
+    // steps: the steps this write paid for (server mode claims them: voyage/account.js).
+    if (events.length) bus.emit('story:reward', { events, steps: (story.paid || []).filter((id) => !paidBefore.has(id)) });
     return events;
   }
 

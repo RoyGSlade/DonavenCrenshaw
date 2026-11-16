@@ -15,6 +15,7 @@ import { iconFor, HANGAR_ART } from './ui/assets.js';
 import { CAST_NAMES } from './hangarStations.js';
 import { launches } from './hangarApi.js';
 import { BADGES_DATA } from './quests/data/badges.js';
+import { economy } from './account.js';
 
 const NAP = BASICS_DATA.nap;
 
@@ -96,6 +97,7 @@ export function createHangar({ panes, store, ship, crew, toast, dev = false, onT
           text: top ? 'Top tier' : `Fit tier ${next.tier}`,
           on: { click: () => {
             const r = store.upgrade(u.id);
+            if (r.ok) economy.spend('upgrade', `${u.id}-${next.tier}`);
             toast(r.ok ? `${u.name} tier ${next.tier} fitted. Chibby wipes his hands on his overalls, proud as anything.` : r.reason);
             if (r.ok) bus?.emit('hangar:upgraded', { system: u.id, tier: next.tier });
           } },
