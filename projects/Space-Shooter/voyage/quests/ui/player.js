@@ -21,6 +21,7 @@ import { giverPortrait } from '../../art.js';
 import { BADGES_DATA } from '../data/badges.js';
 import { UNLOCK_NAMES } from '../../data.js';
 import { playFootFight } from '../../onfoot/footFight.js';
+import { placeName } from '../../slice/places.js';
 
 // ---- tiny DOM helper ------------------------------------------------------
 export function el(tag, props = {}, ...children) {
@@ -189,7 +190,9 @@ export function createQuestPlayer({ root, session, status = () => {}, onEnd = ()
       voiced = said;
       try { voice({ line: v.line, speaker: v.speaker, text: v.text }); } catch (error) { console.warn('Stardust: quest voice failed', error); }
     }
-    const head = el('div', { class: 'qs-quest-head' },
+    // The opening's scenes play in the Tin Duchess's rooms, not in a ship: the card names the room and drops the hull and ship lines.
+    const room = current.quest.nodes[v.node]?.room;
+    const head = room ? el('div', { class: 'qs-quest-head' }, el('h2', { class: 'qs-title', text: v.quest.title }), el('p', { class: 'qs-where', text: (placeName(room) || '').replace(/^./, (c) => c.toUpperCase()) })) : el('div', { class: 'qs-quest-head' },
       el('h2', { class: 'qs-title', text: v.quest.title }),
       el('p', { class: 'qs-where', text: `${v.locationName} · seed ${current.run.seed}` }),
       hullBar('Hull', v.hull, v.hullMax),
@@ -221,7 +224,7 @@ export function createQuestPlayer({ root, session, status = () => {}, onEnd = ()
     else if (v.part) body = renderPart(v);
     else body = renderDialogue(v);
     root.replaceChildren(head, body);
-    presenter?.card(v.ended ? 'end' : 'part');
+    presenter?.card(v.ended ? 'end' : 'part', v);
   }
 
   function renderDialogue(v) {

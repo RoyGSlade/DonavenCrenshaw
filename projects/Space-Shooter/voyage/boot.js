@@ -389,7 +389,7 @@ function boot(session = { mode: 'local' }) {
       const wait = Math.max(0, lastRoll + 1400 - Date.now());
       setTimeout(() => jobTalk.beat(v).then((i) => { if (i >= 0) pick(i); else if (i === -1) toast(OFFERS_WORDS.paused); }), wait);
     },
-    card: (kind) => jobCard.show(kind),
+    card: (kind, v) => (slice && kind === 'end' && v ? slice.endCard(v, () => jobCard.show(kind)) : jobCard.show(kind)),
     // launch slice: a beat plays in its room, an on-foot fight runs on the Duchess's floor, a closed result card starts the next scene.
   };
   const playBeat = presenter.dialogue;

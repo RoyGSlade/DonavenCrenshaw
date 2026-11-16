@@ -165,6 +165,7 @@ export default {
       "dc": 12,
       "arena": {
         "map": "duchess-corridor",
+        "spawn": "default",
         "enemies": [
           {
             "type": "marauder",
@@ -206,6 +207,7 @@ export default {
       "dc": 10,
       "arena": {
         "map": "duchess-cargo",
+        "spawn": "default",
         "enemies": [
           {
             "type": "marauder",
@@ -240,6 +242,7 @@ export default {
       "dc": 14,
       "arena": {
         "map": "duchess-corridor",
+        "spawn": "default",
         "enemies": [
           {
             "type": "marauder",
@@ -288,6 +291,7 @@ export default {
       "dc": 10,
       "arena": {
         "map": "duchess-corridor",
+        "spawn": "default",
         "enemies": [
           {
             "type": "marauder-boss",

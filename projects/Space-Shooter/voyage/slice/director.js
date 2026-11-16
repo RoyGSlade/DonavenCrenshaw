@@ -66,6 +66,13 @@ export function createSliceDirector({ store, jobs, toast = () => {}, world, figh
     toast(`Head to ${placeName(room) || room}.`);
   }
 
+  /** A result card: it shows in the room its ending names (a fade there first when the player is elsewhere). */
+  function endCard(v, show) {
+    const room = roomOf(QUESTS[v.quest?.id], v.node);
+    if (!room || here() === room) { show(); return; }
+    cutTo(room).then(() => setTimeout(show, 350));
+  }
+
   /** An on-foot fight node: the shooter runs in the room it names, then its result goes back to the engine. */
   function fight(part, done) {
     const setup = part?.live?.setup;
@@ -100,5 +107,5 @@ export function createSliceDirector({ store, jobs, toast = () => {}, world, figh
     if (jobs.playing) jobs.resume(); else advance();
   }
 
-  return { beat, fight, entered, advance, afterCard, boot, get pendingRoom() { return pending?.room || null; } };
+  return { beat, endCard, fight, entered, advance, afterCard, boot, get pendingRoom() { return pending?.room || null; } };
 }
