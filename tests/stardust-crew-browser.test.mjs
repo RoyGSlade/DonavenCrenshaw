@@ -125,14 +125,15 @@ async function crewTurn(crew, did) {
 
 // The pilot plays the job (round 3: its talk in the dialogue box, the rest in the job card),
 // giving the crew a turn before each move.
-async function playJob(pilot, crew, did, { stopWhen = () => false } = {}) {
+async function playJob(pilot, crew, did, { stopWhen = () => false, prefer = null } = {}) {
   const pane = pilot.locator('#pane-jobs');
   const talk = pilot.locator('#hg-dialogue:not([hidden]) .ui-dlg-choice:not([disabled]):not(.is-later)');
   for (let step = 0; step < 320; step++) {
     await crewTurn(crew, did);
     if (await talk.count()) {
       const labels = await talk.allInnerTexts();
-      const pick = labels.findIndex((l) => !/Take it\.|hand the core|Pay the/i.test(l));
+      const wanted = prefer ? labels.findIndex((l) => prefer.test(l)) : -1;
+      const pick = wanted >= 0 ? wanted : labels.findIndex((l) => !/Take it\.|hand the core|Pay the/i.test(l));
       await talk.nth(Math.max(0, pick)).click();
       await pilot.waitForTimeout(150);
       continue;
@@ -148,7 +149,8 @@ async function playJob(pilot, crew, did, { stopWhen = () => false } = {}) {
     const enabled = pane.locator('.qs-choices button:not([disabled])');
     if (await enabled.count()) {
       const labels = await enabled.allInnerTexts();
-      const pick = labels.findIndex((l) => !/Take it\.|hand the core|Pay the/i.test(l));
+      const wanted = prefer ? labels.findIndex((l) => prefer.test(l)) : -1;
+      const pick = wanted >= 0 ? wanted : labels.findIndex((l) => !/Take it\.|hand the core|Pay the/i.test(l));
       await enabled.nth(Math.max(0, pick)).click();
       await pilot.waitForTimeout(150);
       continue;
@@ -174,6 +176,8 @@ test('crew: invite, join, turret, repair, scan, checks, rewards to both saves; t
   const P = await open(browser, server, hub, 'nova', 20261111);
   t.after(() => P.context.close().catch(() => {}));
   await signOn(P.page, 'Vela Quint');
+  // Pilot 2 opens Cold Run's courier cut, so the pilot can always land one paid job (see the jobs loop).
+  await P.page.evaluate(() => { const st = window.__stardust.store; st.grant({ skillPoints: 2 }); st.learn('pilot'); st.learn('pilot'); });
   await openStation(P.page, 'hatch', 'crew');
   await P.page.locator('#cw-open').click();
   const code = await P.page.locator('.cw-code').getAttribute('data-code', { timeout: 10000 });
@@ -201,12 +205,15 @@ test('crew: invite, join, turret, repair, scan, checks, rewards to both saves; t
   const did = new Set();
   let paid = false;
   const results = [];
-  for (let job = 0; job < 8 && !(paid && did.has('turret') && [...did].some((d) => d.startsWith('repair'))); job++) {
+  for (let job = 0; job < 8 && !(paid && results.includes('done') && did.has('turret') && [...did].some((d) => d.startsWith('repair'))); job++) {
     await openStation(P.page, 'board');
     await P.page.locator('[data-quest="cold-run"] button').click();
     await P.page.locator('#hg-dialogue .ui-dlg-choice').first().waitFor();
     if (job === 0) { await C.page.locator('.cw-station h2', { hasText: 'Cold Run' }).waitFor(); await snap(C.page, 'crew-03-crew-on-the-job.png'); }
-    const text = await playJob(P.page, C.page, did);
+    // Every other job takes the courier cut (Pilot 2: no fight, docks quiet, pays) until one job is done,
+    // so a paid job never rides on luck: with "always the first choice" Cold Run pays about one run in
+    // five (measured: 38/200 on 2d6, 30/200 on the d20), so eight straight losses came up often.
+    const text = await playJob(P.page, C.page, did, { prefer: job % 2 && !results.includes('done') ? /courier cut/i : null });
     results.push(/JOB DONE/.test(text) ? 'done' : 'failed');
     const crewNow = await readSave(C.page);
     paid = crewNow.money > crewStart.money;
