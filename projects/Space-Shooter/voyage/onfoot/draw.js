@@ -349,7 +349,7 @@ function drawPersonPlaceholder(ctx, size, tint, dog) {
 }
 
 export function castSprite(id) { return castImage(id) || null; }
-export function castLook(id) { return CAST_LOOK[id] || { name: id, color: '#eaf4f5', scale: 1 }; }
+export function castLook(id) { return CAST_LOOK[id] || { name: String(id).charAt(0).toUpperCase() + String(id).slice(1), color: '#eaf4f5', scale: 1.86 }; } // unknown people: a re-tinted cast stand-in at cast size
 
 /** A vignette for the view, built once per size: dims the edges so the middle reads. */
 export function buildVignette(w, h, dpr, strength = 0.55) {

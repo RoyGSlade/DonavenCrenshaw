@@ -518,13 +518,11 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
 
   function drawNpc(n) {
     const look = castLook(n.id);
-    const img = castSprite(n.id) || (look.dog ? null : sprite('npc-stand-in'));
-    // r3 basics: the mark chip and the prompt name people now; the drawn label only marks a stand-in sprite.
-    drawBody(ctx, n.x, n.y, n.angle, img, { size: 46 * look.scale, t: t + n.x * 0.01, moving: n.moving, stride: (t * 3) % 4, tint: look.color, label: !castSprite(n.id) ? look.name : null, dog: look.dog });
-    if (img && !castSprite(n.id)) {
-      // Stand-in sprite: a coloured ring says who it is until the cast lane's sprite lands.
-      ctx.strokeStyle = look.color; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(n.x, n.y, 23 * look.scale, 0, Math.PI * 2); ctx.stroke();
-    }
+    // People without a sprite of their own are a re-tinted cast person (assets.js CAST_STAND_IN), never a ship.
+    const img = castSprite(n.id);
+    // r3 basics: the mark chip and the prompt name people now. launch maps: one label per person, so the canvas
+    // never draws a second name tag under the chip.
+    drawBody(ctx, n.x, n.y, n.angle, img, { size: 46 * look.scale, t: t + n.x * 0.01, moving: n.moving, stride: (t * 3) % 4, tint: look.color, label: null, dog: look.dog });
   }
 
   function drawEnemy(e) {

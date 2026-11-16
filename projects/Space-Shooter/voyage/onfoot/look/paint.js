@@ -476,6 +476,14 @@ export function paintMounts(ctx, map, g) {
       } else if (m.kind === 'reel') {
         ctx.fillStyle = '#c0453a'; ctx.beginPath(); ctx.arc(x + w / 2, y + h / 2, Math.min(w, h) * 0.48, 0, TAU); ctx.fill();
         ctx.strokeStyle = '#2a2d31'; ctx.lineWidth = Math.min(w, h) * 0.16; ctx.beginPath(); ctx.arc(x + w / 2, y + h / 2, Math.min(w, h) * 0.28, 0, TAU); ctx.stroke();
+      } else if (m.kind === 'hatch') {
+        // launch maps: a serving hatch through the wall: a lit opening onto the galley behind, a steel ledge on the room side.
+        ctx.fillStyle = '#2a2f36'; rr(ctx, x, y, w, h, T * 0.04); ctx.fill();
+        const g2 = ctx.createLinearGradient(0, y, 0, y + h); g2.addColorStop(0, hex(color, 0.35)); g2.addColorStop(1, hex(color, 0.75));
+        ctx.fillStyle = g2; ctx.fillRect(x + w * 0.08, y + h * 0.12, w * 0.84, h * 0.58);
+        ctx.fillStyle = 'rgba(0,0,0,0.35)'; for (let k = 1; k < 4; k++) ctx.fillRect(x + w * 0.08 + (w * 0.84 * k) / 4, y + h * 0.12, 1.2, h * 0.58);
+        ctx.fillStyle = '#8a929b'; ctx.fillRect(x + w * 0.04, y + h * 0.7, w * 0.92, h * 0.2);
+        ctx.fillStyle = 'rgba(255,255,255,0.3)'; ctx.fillRect(x + w * 0.04, y + h * 0.7, w * 0.92, 1.2);
       } else if (m.kind === 'roster') {
         // launch maps: a crew board (the Duchess's seven gunners): name plates in a frame, the struck ones crossed in red.
         // A code stand-in until the art lane paints one (ART-NEEDS.md).
@@ -553,6 +561,19 @@ export function paintClutter(ctx, map, g) {
         ctx.fillStyle = '#7b5236'; ctx.beginPath(); ctx.arc(0, 0, s * 0.42, 0, TAU); ctx.fill();
         const r = rng(`plant-${cx}-${cy}`);
         for (let i = 0; i < 9; i++) { const a = r() * TAU, l = s * (0.35 + r() * 0.35); ctx.fillStyle = i % 2 ? '#5fae4f' : '#7fcf62'; ctx.beginPath(); ctx.ellipse(Math.cos(a) * l * 0.5, Math.sin(a) * l * 0.5, l * 0.5, l * 0.2, a, 0, TAU); ctx.fill(); }
+      } else if (k.kind === 'steam') {
+        // launch maps: a faint warm-grey steam wisp over a hot drink machine (paint, not light: kept under 170).
+        ctx.lineCap = 'round';
+        for (let i = 0; i < 3; i++) {
+          ctx.strokeStyle = `rgba(214,206,196,${0.42 - i * 0.1})`; ctx.lineWidth = s * (0.16 - i * 0.03);
+          ctx.beginPath(); ctx.moveTo(-s * 0.1 + i * s * 0.12, s * 0.4);
+          ctx.bezierCurveTo(s * 0.35, s * 0.1, -s * 0.35, -s * 0.2, s * 0.05 + i * s * 0.1, -s * 0.5); ctx.stroke();
+        }
+      } else if (k.kind === 'tray') {
+        ctx.fillStyle = '#c0453a'; rr(ctx, -s * 0.5, -s * 0.32, s, s * 0.64, s * 0.08); ctx.fill();
+        ctx.fillStyle = '#e9e2d0'; ctx.beginPath(); ctx.arc(-s * 0.18, 0, s * 0.18, 0, TAU); ctx.fill();
+        ctx.fillStyle = '#b08a3e'; ctx.beginPath(); ctx.arc(-s * 0.18, 0, s * 0.1, 0, TAU); ctx.fill();
+        ctx.fillStyle = '#e9c45a'; ctx.fillRect(s * 0.08, -s * 0.16, s * 0.3, s * 0.32);
       } else if (k.kind === 'rag') {
         ctx.fillStyle = '#b7a17a'; ctx.beginPath(); ctx.moveTo(-s * 0.4, -s * 0.2); ctx.lineTo(s * 0.3, -s * 0.35); ctx.lineTo(s * 0.45, s * 0.2); ctx.lineTo(-s * 0.2, s * 0.35); ctx.closePath(); ctx.fill();
       }
