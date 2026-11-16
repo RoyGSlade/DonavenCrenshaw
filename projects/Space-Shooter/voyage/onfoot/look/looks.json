@@ -292,7 +292,7 @@
     "text": "#d8c27e"
    },
    "props": {
-    "lift": "brightness(1.32) saturate(1.12) contrast(1.04)",
+    "lift": "brightness(1.55) saturate(1.1) contrast(1.05)",
     "shadow": {
      "dx": 0.07,
      "dy": 0.1,
@@ -304,7 +304,7 @@
     }
    },
    "people": {
-    "scale": 1,
+    "scale": 0.85,
     "lift": "brightness(1.45) saturate(1.8) contrast(1.06)",
     "shadowAlpha": 0.5
    },

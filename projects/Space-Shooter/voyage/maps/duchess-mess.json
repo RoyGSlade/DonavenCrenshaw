@@ -30,10 +30,18 @@
       {"art":"vent-1","at":[2,6],"size":[1,1]}
     ],
     "lights": [
-      {"kind":"lamp","at":[7.5,5.0],"r":3.8,"color":"warm","strength":0.36},
-      {"kind":"lamp","at":[13.5,7.8],"r":3.0,"color":"warm","strength":0.3},
+      {"kind":"lamp","at":[4.5,4.6],"r":3.4,"color":"warm","strength":0.27},
+      {"kind":"lamp","at":[11.5,4.6],"r":3.4,"color":"warm","strength":0.27},
+      {"kind":"lamp","at":[13.5,7.6],"r":3.0,"color":"warm","strength":0.24},
       {"kind":"prop","at":[1,1],"size":[1,1],"pool":[1.6,2.4],"r":2.4,"color":"mess","strength":0.32},
-      {"kind":"screen","at":[9.3,0.3],"size":[2.4,0.14],"pool":[10.5,2.2],"r":2.6,"color":"board","strength":0.2},
+      {"kind":"screen","at":[1.25,1.62],"size":[0.5,0.16],"pool":[1.6,2.6],"r":1.6,"color":"mess","strength":0.2},
+      {"kind":"strip","art":"light-strip-warm-v","at":[0.62,6.2],"size":[0.3,1.2],"pool":[1.8,6.8],"r":2.8,"color":"warm","strength":0.28},
+      {"kind":"lamp","at":[7.4,8.3],"r":3.2,"color":"warm","strength":0.22},
+      {"kind":"strip","art":"light-strip-warm-h","at":[5.4,11.08],"size":[1.2,0.3],"pool":[6.0,9.6],"r":2.6,"color":"warm","strength":0.24},
+      {"kind":"strip","art":"light-strip-cyan-v","at":[17.08,7.2],"size":[0.3,1.2],"pool":[16.0,7.8],"r":2.4,"color":"cool","strength":0.2},
+      {"kind":"screen","at":[9.3,0.3],"size":[2.4,0.14],"pool":[10.5,2.4],"r":3.4,"color":"board","strength":0.22},
+      {"kind":"lamp","at":[15.0,3.0],"r":3.0,"color":"warm","strength":0.2},
+      {"kind":"strip","art":"light-strip-warm-h","at":[11.8,11.08],"size":[1.2,0.3],"pool":[12.4,9.6],"r":2.8,"color":"warm","strength":0.2},
       {"kind":"strip","art":"light-strip-warm-h","at":[3.6,0.62],"size":[1.2,0.3],"pool":[4.2,2.2],"r":2.4,"color":"warm","strength":0.24}
     ],
     "mounts": [
@@ -42,33 +50,32 @@
       {"art":"fire-extinguisher","at":[16.25,5],"size":[0.5,0.5]}
     ],
     "clutter": [
-      {"kind":"cup","at":[6.2,5.5],"size":0.3},
-      {"kind":"cup","at":[10.4,5.4],"size":0.3},
-      {"kind":"cup","at":[4.6,1.5],"size":0.28},
-      {"kind":"rag","at":[14.4,8.5],"size":0.4},
-      {"art":"plant-succulent","at":[15.6,10.1],"size":[0.8,0.8]},
-      {"art":"small-crates","at":[2.2,10.2],"size":[1,0.75]}
+      {"kind":"cup","at":[4.0,4.9],"size":0.3},
+      {"kind":"cup","at":[5.1,5.1],"size":0.28},
+      {"kind":"cup","at":[11.2,5.0],"size":0.3},
+      {"kind":"cup","at":[6.6,1.5],"size":0.28},
+      {"kind":"rag","at":[13.6,7.9],"size":0.4},
+      {"kind":"bowl","at":[12.0,4.8],"size":0.34},
+      {"art":"plant-succulent","at":[14.9,10.15],"size":[0.8,0.8]},
+      {"art":"small-crates","at":[2.2,10.2],"size":[1,0.75]},
+      {"art":"plant-fern","at":[12.2,1.1],"size":[0.8,0.8]}
     ]
   },
   "props": [
     {"art":"vending-machine","at":[1,1],"size":[1,1],"block":true,"name":"coffee-machine","interact":{"kind":"console","id":"coffee","label":"The coffee machine"}},
-    {"art":"galley-unit","at":[2,1],"size":[1,1],"block":true},
-    {"art":"galley-unit","at":[3,1],"size":[1,1],"block":true},
-    {"art":"bar-counter","at":[4,1],"size":[3,1],"block":"low"},
-    {"art":"crew-table","at":[5,5],"size":[3,1],"block":"low"},
-    {"art":"crew-table","at":[9,5],"size":[3,1],"block":"low"},
-    {"art":"bar-stool","at":[5,4],"size":[1,1],"block":"low"},
-    {"art":"bar-stool","at":[7,4],"size":[1,1],"block":"low"},
-    {"art":"bar-stool","at":[10,4],"size":[1,1],"block":"low"},
-    {"art":"bar-stool","at":[6,6],"size":[1,1],"block":"low"},
-    {"art":"bar-stool","at":[9,6],"size":[1,1],"block":"low"},
-    {"art":"bar-stool","at":[11,6],"size":[1,1],"block":"low"},
-    {"art":"crew-table","at":[13,8],"size":[3,1],"block":"low"},
-    {"art":"bar-stool","at":[13,9],"size":[1,1],"block":"low"},
-    {"art":"bar-stool","at":[15,7],"size":[1,1],"block":"low"},
+    {"art":"galley-unit","at":[2,1],"size":[2,1],"block":true},
+    {"art":"galley-unit","at":[4,1],"size":[2,1],"block":true},
+    {"art":"bar-counter","at":[6,1],"size":[2,1],"block":"low"},
+    {"art":"sofa","at":[13,1],"size":[3,1],"block":"low"},
+    {"art":"crew-table","at":[3,4],"size":[3,2],"block":"low"},
+    {"art":"crew-table","at":[10,4],"size":[3,2],"block":"low"},
+    {"art":"crew-table","at":[12,7],"size":[3,2],"block":"low"},
+    {"art":"parts-shelf","at":[1,7],"size":[2,1],"block":true},
     {"art":"cargo-crate","at":[1,9],"size":[1,1],"block":"low"},
     {"art":"crate-closed","at":[1,10],"size":[1,1],"block":"low"},
-    {"art":"cargo-crate","at":[16,1],"size":[1,1],"block":"low"}
+    {"art":"cargo-crate","at":[16,10],"size":[1,1],"block":"low"},
+    {"art":"locker","at":[16,4],"size":[1,1],"block":true},
+    {"art":"locker","at":[16,5],"size":[1,1],"block":true}
   ],
   "npcs": [
     {"id":"tull","at":[10,2],"face":"down","wander":0.4}

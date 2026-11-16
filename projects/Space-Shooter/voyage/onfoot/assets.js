@@ -32,6 +32,8 @@ export const GROUND_FILES = Object.freeze({ plating: 'tile-plating.png', regolit
 export const CAST_FILES = Object.freeze({
   chibby: 'chibby.webp', ralph: 'ralph.webp', mel: 'mel.webp', edna: 'edna.webp', captain: 'cap-a.webp',
   hask: 'hask.webp', vey: 'vey.webp', garrity: 'garrity.webp',
+  // launch map lane: Reck, the Tin Duchess's seventh gunner (the launch art lane's gunner-alive, batch 1).
+  reck: 'reck.webp',
 });
 
 // The four captain looks. The hangar's look ids are p1..p4 (data.js PORTRAITS); the cast lane
@@ -63,6 +65,12 @@ export const CAST_LOOK = Object.freeze({
   hask: { name: 'Hask', color: '#9fe870', scale: castScale('hask') },
   vey: { name: 'Vey', color: '#c8a2ff', scale: castScale('vey') },
   garrity: { name: 'Garrity', color: '#e0b061', scale: castScale('garrity') },
+  // The Tin Duchess crew (launch opening slice; quest lane STORY-NOW.md). Tull, Nessa and Pip have no sprite yet
+  // (a stand-in figure with their colour ring, ART-NEEDS in lhc-lanes/stardust/launch/maps).
+  tull: { name: 'Captain Tull', color: '#ffb23a', scale: 1 },
+  nessa: { name: 'Nessa', color: '#38e6ff', scale: 1 },
+  pip: { name: 'Pip', color: '#9bff5a', scale: 1 },
+  reck: { name: 'Reck', color: '#ffc93a', scale: 1.9 },
 });
 
 const images = new Map();
