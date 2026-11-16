@@ -279,7 +279,8 @@ export function drawContained(ctx, img, p, pad = 0, piece = null) {
     const ox = wx * Math.cos(-rot) - wy * Math.sin(-rot), oy = wx * Math.sin(-rot) + wy * Math.cos(-rot);
     ctx.globalAlpha = big ? sh.bigAlpha ?? sh.alpha : sh.alpha; ctx.drawImage(sc, x - pad * k + ox, y - pad * k + oy, sc.width * k, sc.height * k); ctx.globalAlpha = 1;
     // Kit art from the round-3 lanes is made on the value ladder already; older art is lifted onto it.
-    const lift = activeLook.props.byArt?.[p.art]?.lift ?? (LOOK_ART.prop[p.art] ? activeLook.props.kitLift ?? '' : activeLook.props.lift);
+    // launch maps: a prop's own `lift` (a state can recolour its lit part, e.g. a console screen red -> cyan when fixed).
+    const lift = p.lift ?? activeLook.props.byArt?.[p.art]?.lift ?? (LOOK_ART.prop[p.art] ? activeLook.props.kitLift ?? '' : activeLook.props.lift);
     ctx.drawImage(litCopy(img, lift), x, y, w, h);
     ctx.restore();
     return;

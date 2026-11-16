@@ -19,7 +19,7 @@
   ],
   "tags": {
     "reactor": {"states":["running","broken","fixed"],"state":"running","by":[{"state":"broken","flag":"duchess-busted"},{"state":"fixed","flags":["duchess-busted","reactor-fixed"]}]},
-    "engine-console": {"states":["on","broken"],"state":"on","by":[{"state":"broken","flag":"duchess-busted","notFlag":"reactor-fixed"}]},
+    "engine-console": {"states":["on","broken","fixed"],"state":"on","by":[{"state":"broken","flag":"duchess-busted"},{"state":"fixed","flags":["duchess-busted","power-fixed"]},{"state":"fixed","flags":["duchess-busted","reactor-fixed"]}]},
     "conduit": {"states":["closed","open"],"state":"closed","by":[{"state":"open","flag":"duchess-busted","notFlag":"power-fixed"}]},
     "coolant": {"states":["intact","leaking"],"state":"intact","by":[{"state":"leaking","flag":"duchess-busted","notFlag":"coolant-fixed"}]},
     "hull-patch": {"states":["patched","blown"],"state":"patched","by":[{"state":"blown","flag":"duchess-busted","notFlag":"hull-patched"}]},
@@ -52,6 +52,8 @@
       {"kind":"prop","at":[6,1],"size":[2,1],"pool":[7,2.2],"r":2.0,"color":"engine","strength":0.14,"flicker":true,"when":{"engine-console":"broken"}},
       {"kind":"screen","at":[7.45,1.2],"size":[0.2,0.2],"pool":[7.4,1.9],"r":1.2,"color":"#ff8a3a","strength":0.14,"flicker":true,"when":{"engine-console":"broken"}},
       {"kind":"screen","at":[6.2,1.25],"size":[0.6,0.3],"pool":[6.8,2.0],"r":1.4,"color":"engine","strength":0.14,"when":{"engine-console":"on"}},
+      {"kind":"prop","at":[6,1],"size":[2,1],"pool":[7,2.2],"r":2.0,"color":"core","strength":0.18,"when":{"engine-console":"fixed"}},
+      {"kind":"screen","at":[6.2,1.25],"size":[0.6,0.3],"pool":[6.8,2.0],"r":1.4,"color":"core","strength":0.14,"when":{"engine-console":"fixed"}},
       {"kind":"lamp","at":[10.5,6.8],"r":3.0,"color":"warm","strength":0.22},
       {"kind":"lamp","at":[3.0,5.0],"r":3.0,"color":"warm","strength":0.22},
       {"kind":"prop","at":[13,2],"size":[1,1],"pool":[12.4,2.6],"r":1.8,"color":"warm","strength":0.22},
@@ -82,7 +84,7 @@
   },
   "props": [
     {"art":"reactor-core-fixed","at":[6,3],"size":[3,3],"block":true,"tag":"reactor","name":"reactor","states":{"broken":{"art":"reactor-core-broken"}},"interact":{"kind":"repair","id":"engine","label":"The reactor core"}},
-    {"art":"engine-console","at":[6,1],"size":[2,1],"block":"low","tag":"engine-console","states":{"broken":{"art":"engine-console-broken"}},"interact":{"kind":"console","id":"engine-console","label":"Pip's engine console"}},
+    {"art":"engine-console","at":[6,1],"size":[2,1],"block":"low","tag":"engine-console","states":{"broken":{"art":"engine-console-broken"},"fixed":{"lift":"hue-rotate(185deg) saturate(1.2) brightness(1.08)"}},"interact":{"kind":"console","id":"engine-console","label":"Pip's engine console"}},
     {"art":"power-conduit-panel-closed","at":[13,2],"size":[1,1],"block":true,"tag":"conduit","states":{"open":{"art":"power-conduit-panel-open"}},"interact":{"kind":"repair","id":"power","label":"Power conduit panel"}},
     {"art":"power-conduit-panel-closed","at":[13,6],"size":[1,1],"block":true},
     {"art":"pipe-run-intact","at":[9,1.5],"size":[3,0.5],"block":true,"tag":"coolant","name":"coolant-pipe","states":{"leaking":{"art":"pipe-run-leaking","at":[9,1.25],"size":[3,0.75]}},"interact":{"kind":"repair","id":"coolant","label":"Coolant line"}},
