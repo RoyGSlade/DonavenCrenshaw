@@ -71,7 +71,7 @@ export const CAST_LOOK = Object.freeze({
   garrity: { name: 'Garrity', color: '#e0b061', scale: castScale('garrity') },
   // The Tin Duchess crew (launch opening slice; quest lane STORY-NOW.md). Tull, Nessa and Pip have no sprite yet
   // (a stand-in figure with their colour ring, ART-NEEDS in lhc-lanes/stardust/launch/maps).
-  tull: { name: 'Captain Tull', color: '#ffb23a', scale: 1.9, lift: 'brightness(1.1) saturate(1) contrast(1.06)' }, // lift: his wine-red coat is already saturated, so the look maps' people boost (saturate 1.8) would turn it hot pink
+  tull: { name: 'Captain Tull', color: '#ffb23a', scale: 1.9, lift: 'brightness(1.01) saturate(0.97) contrast(1.06)' }, // lift: his wine-red coat is already saturated, so the look maps' people boost (saturate 1.8) would turn it hot pink
   nessa: { name: 'Nessa', color: '#38e6ff', scale: 1.82 },
   pip: { name: 'Pip', color: '#9bff5a', scale: 1.82 },
   reck: { name: 'Reck', color: '#ffc93a', scale: 1.9 },
