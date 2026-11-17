@@ -26,6 +26,11 @@ import { icon, keyCap, promptIcon } from '../datapad/icons.js';
 import { mapsHolding, doorToward } from '../datapad/route.js';
 import { BASICS_DATA } from '../datapad/data.js';
 import { hudArt } from '../ui/assets.js';
+// launch maps: things that switch in play (doors, the goo, the reactor) are map data (rules/states.js).
+import { hasStates, resolveStates, applyStates, stateSignature } from './rules/states.js';
+import { compileMap } from './rules/mapdata.js';
+import { markerPoint } from '../slice/places.js';
+import { placeName as roomName } from '../slice/places.js';
 
 const VERBS = Object.fromEntries(Object.entries(BASICS_DATA.marks.kinds).map(([k, v]) => [k, v.verb]));
 // Donaven: "what if the label only pops up when you are in range say 2 tiles or less from the interactable".
@@ -72,11 +77,42 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
   const hidden = new Set();
   const following = new Set();
   const opened = new Set(unlocked);
+  // launch maps: switchable things. baseMap is the map as made; map is it in its current states.
+  let baseMap = null, stateSig = '', stateClock = 0;
+  const stateOverrides = new Map(); // map id -> { tag: state } forced by a script (world.setState)
+  const flagsNow = () => hooks.flags?.() || {};
+  const overridesFor = id => stateOverrides.get(id) || {};
+  function withStates(m) {
+    if (!hasStates(m.def)) { stateSig = ''; return m; }
+    const states = resolveStates(m.def, flagsNow(), overridesFor(m.id));
+    stateSig = stateSignature(states);
+    return compileMap(applyStates(m.def, states));
+  }
+  /** Re-resolve the current map's states; when anything switched, rebuild the walk map and the baked layer. */
+  function refreshStates(force = false) {
+    if (!baseMap || !hasStates(baseMap.def)) return false;
+    const sig = stateSignature(resolveStates(baseMap.def, flagsNow(), overridesFor(baseMap.id)));
+    if (!force && sig === stateSig) return false;
+    map = withStates(baseMap);
+    const keep = new Map(npcs.map(n => [n.id, n]));
+    npcs = map.npcs.map(n => keep.get(n.id) || { ...n, home: { ...n.home }, vx: 0, vy: 0, moving: false });
+    for (const n of keep.values()) if (n.follow && !npcs.includes(n)) npcs.push(n);
+    layerDirty = true;
+    emit('map:state', { map: map.id, states: { ...(map.def.stateOf || {}) } });
+    return true;
+  }
+  const doorBodies = () => [walker, ...npcs.filter(n => !hidden.has(n.id))];
+  const doorShown = d => {
+    if (doorLocked(d)) return 'locked';
+    const cx = d.x + d.w / 2, cy = d.y + d.h / 2, r = map.tile * 1.6;
+    return doorBodies().some(b => b && Math.hypot(b.x - cx, b.y - cy) <= r) ? 'open' : 'closed';
+  };
 
   const offArt = onArtLoaded(() => { layerDirty = true; });
 
   function setMap(id, spawnName = 'default') {
-    map = enterMap(id); // a generic place (the cantina) is dressed fresh on every visit
+    baseMap = enterMap(id); // a generic place (the cantina) is dressed fresh on every visit
+    map = withStates(baseMap); // launch maps: in the states the save's flags (and scripts) say
     preload(map);
     const s = map.spawns[spawnName] || map.spawns.default;
     const keep = walker;
@@ -125,6 +161,7 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
   const doorGate = d => {
     const def = findDoorDef(d) || {};
     if (def.locked && !opened.has(def.locked)) return { reason: 'Locked.', key: def.locked };
+    if (def.sealed) return { reason: typeof def.sealed === 'string' ? def.sealed : 'Sealed.' }; // launch maps: a state can seal a door
     const g = hooks.gate?.(def, map) || null;
     if (g?.hack && opened.has(`hack:${map.id}:${d.id}`)) return null;
     return g;
@@ -255,7 +292,19 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
   const stationOf = (it) => it.station || (it.kind === 'station' ? it.id : null);
   /** Where the objective is: a point in this map, or the door that leads toward it. */
   function objectiveAim() {
-    if (!objective || (!objective.station && !objective.npc)) return null;
+    if (!objective || (!objective.station && !objective.npc && !objective.map)) return null;
+    // launch slice: a spot in a named room ({ map, npc | zone | prop }): the spot itself when you are in that room, else the door toward it.
+    if (objective.map && !objective.station) {
+      if (map.id === objective.map) {
+        const live = objective.npc ? npcs.find(x => !hidden.has(x.id) && x.id === objective.npc) : null;
+        const pt = live ? { x: live.x, y: live.y } : markerPoint(map, objective);
+        if (pt) return { x: pt.x, y: pt.y, ...(live ? { npc: live.id } : {}), label: objective.label || (live ? castLook(live.id).name : null) };
+        return null;
+      }
+      const doorTo = doorToward(map.id, [objective.map], MAP_DEFS);
+      const dd = doorTo && map.doors.find(x => x.id === doorTo);
+      return dd ? { x: dd.x + dd.w / 2, y: dd.y + dd.h / 2, door: dd.id, through: true, label: roomName(objective.map) ? `To ${roomName(objective.map)}` : dd.label } : null;
+    }
     const n = npcs.find(x => !hidden.has(x.id) && (objective.npc ? x.id === objective.npc : x.station === objective.station));
     if (n) return { x: n.x, y: n.y, npc: n.id, label: objective.label || castLook(n.id).name };
     if (objective.station) {
@@ -395,7 +444,7 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     ctx.fillStyle = '#05080d';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ensureLayer(cam.zoom);
-    if (layer.blit) layer.blit(ctx, cam, view); // r3-look hook: a look map draws its outside and padded layer itself (onfoot/look)
+    if (layer.blit) { layer.blit(ctx, cam, view); layer.drawDoors?.(ctx, cam, view, doorShown, t); } // r3-look hook: a look map draws its outside and padded layer itself (onfoot/look); launch maps: doors open as you walk up
     else {
     // The static layer, cropped to the view.
     const s = layer.scale;
@@ -483,13 +532,11 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
 
   function drawNpc(n) {
     const look = castLook(n.id);
-    const img = castSprite(n.id) || (look.dog ? null : sprite('npc-stand-in'));
-    // r3 basics: the mark chip and the prompt name people now; the drawn label only marks a stand-in sprite.
-    drawBody(ctx, n.x, n.y, n.angle, img, { size: 46 * look.scale, t: t + n.x * 0.01, moving: n.moving, stride: (t * 3) % 4, tint: look.color, label: !castSprite(n.id) ? look.name : null, dog: look.dog });
-    if (img && !castSprite(n.id)) {
-      // Stand-in sprite: a coloured ring says who it is until the cast lane's sprite lands.
-      ctx.strokeStyle = look.color; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(n.x, n.y, 23 * look.scale, 0, Math.PI * 2); ctx.stroke();
-    }
+    // People without a sprite of their own are a re-tinted cast person (assets.js CAST_STAND_IN), never a ship.
+    const img = castSprite(n.id);
+    // r3 basics: the mark chip and the prompt name people now. launch maps: one label per person, so the canvas
+    // never draws a second name tag under the chip.
+    drawBody(ctx, n.x, n.y, n.angle, img, { size: 46 * look.scale, t: t + n.x * 0.01, moving: n.moving, stride: (t * 3) % 4, tint: look.color, label: null, dog: look.dog, lift: look.lift });
   }
 
   function drawEnemy(e) {
@@ -529,6 +576,8 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     last = now;
     if (document.hidden) return;
     t += dt;
+    stateClock += dt;
+    if (stateClock > 0.2) { stateClock = 0; refreshStates(); } // launch maps: a flag the story just set switches things
     const zoom = viewZoom(view.w, view.h, map.kind) * (mode === 'walk' ? 1 : 0.9);
     let cam;
     for (const d of dust) d.life -= dt;
@@ -580,7 +629,7 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     unlock(id) { opened.add(id); layerDirty = true; sound('unlock'); },
     /** The story's objective ({ text, station, npc? } or null): a marker in the world and a line on screen. */
     setObjective(o) {
-      objective = o ? { text: o.text || '', station: o.station || null, npc: o.npc || null, label: o.label || null } : null;
+      objective = o ? { text: o.text || '', station: o.station || null, npc: o.npc || null, label: o.label || null, ...(o.map ? { map: o.map, zone: o.zone || null, prop: o.prop || null } : {}) } : null;
       objectiveLine.hidden = !objective?.text;
       if (objective?.text) objectiveLine.textContent = objective.text;
     },
@@ -599,6 +648,15 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     setNpcVisible(id, on) { if (on) hidden.delete(id); else hidden.add(id); },
     follow(id, on) { if (on) following.add(id); else following.delete(id); },
     redraw() { layerDirty = true; },
+    /** launch maps: force a tag's state on this map (a scene, the director, a test); null goes back to the flags. */
+    setState(tag, state, mapId = map.id) {
+      const o = { ...overridesFor(mapId) };
+      if (state == null) delete o[tag]; else o[tag] = state;
+      stateOverrides.set(mapId, o);
+      if (mapId === map.id) refreshStates(true);
+    },
+    /** launch maps: a tag's state on this map now (or every tag's: no argument). */
+    stateOf(tag) { const st = map.def.stateOf || {}; return tag ? st[tag] ?? null : { ...st }; },
     pause() { paused = true; input.enabled = false; },
     resume() { paused = false; input.enabled = true; },
     /** For tests and the director: use whatever is in reach. */

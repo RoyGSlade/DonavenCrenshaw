@@ -8,6 +8,7 @@
 //   "look": { "set": "hangar", "accents": { "board": "#6fe3ff" }, "decals": [...], "lights": [...],
 //             "emitters": [...], "mounts": [...], "clutter": [...], "doorColors": { "workshop": "pad" } }
 import LOOKS from './looks.json' with { type: 'json' };
+import { lookImage } from './lookArt.js';
 import { gridOf, paintOutside, paintFloor, paintDecals, paintWallShadows, paintWalls, paintDoors, paintMounts, paintClutter, paintLightmap, paintFixtures, paintPools, lightsPx } from './paint.js';
 export { lightsPx, shadowOffset } from './paint.js';
 
@@ -68,6 +69,8 @@ export function buildLookLayer(map, scale, { drawProps, isLocked = () => false }
   paintClutter(ctx, map, g);
   if (lightsOn()) paintLightmap(ctx, map, g, lights, { floorOnly: true });
   paintFixtures(ctx, map, g, lights);
+  const doorSprites = bakeDoorSprites(map, look, g, s);
+  const doorOpen = new Map(); let doorT = null;
   const flickers = lights.filter(l => l.flicker);
   const overheads = lights.filter(l => l.kind === 'lamp');
 
@@ -82,6 +85,41 @@ export function buildLookLayer(map, scale, { drawProps, isLocked = () => false }
       const sx = (cam.x + M) * s, sy = (cam.y + M) * s, sw = cam.vw * s, sh = cam.vh * s;
       const x0 = Math.max(0, sx), y0 = Math.max(0, sy), x1 = Math.min(canvas.width, sx + sw), y1 = Math.min(canvas.height, sy + sh);
       if (x1 > x0 && y1 > y0) c.drawImage(canvas, x0, y0, x1 - x0, y1 - y0, ((x0 - sx) / s) * k, ((y0 - sy) / s) * k, ((x1 - x0) / s) * k, ((y1 - y0) / s) * k);
+    },
+    /**
+     * Doors with art (look.doorArt, e.g. "ship-door": ship-door-closed/-open/-locked): drawn each frame over the
+     * baked passage, lit like the room. shown(door) -> 'locked' | 'open' | 'closed'; an opening door slides its
+     * leaves apart over the open picture (about 0.15 s; at once under reduced motion).
+     */
+    drawDoors(c, cam, view, shown, t = 0) {
+      if (!doorSprites.length) return;
+      const dt = doorT == null ? 1 : Math.max(0, t - doorT); doorT = t;
+      const k = cam.zoom * view.dpr, step = stillPlease() ? 1 : dt * 7;
+      c.save(); c.setTransform(1, 0, 0, 1, 0, 0);
+      for (const ds of doorSprites) {
+        const d = ds.door, want = shown(d);
+        const x = (d.x - cam.x) * k, y = (d.y - cam.y) * k, w = d.w * k, h = d.h * k;
+        if (x > c.canvas.width || y > c.canvas.height || x + w < 0 || y + h < 0) continue;
+        if (want === 'locked') { doorOpen.set(d.id, 0); c.drawImage(ds.locked, x, y, w, h); continue; }
+        const o0 = doorOpen.get(d.id) ?? (want === 'open' ? 1 : 0);
+        const o = want === 'open' ? Math.min(1, o0 + step) : Math.max(0, o0 - step);
+        doorOpen.set(d.id, o);
+        if (o <= 0) { c.drawImage(ds.closed, x, y, w, h); continue; }
+        // Opening: the closed leaves slide apart into the jambs (along the wall) over the baked passage, which shows
+        // the next room's light. Fully open, the open picture's frame stays faint so the doorway keeps its shape.
+        if (o >= 1) { c.globalAlpha = 0.35; c.drawImage(ds.open, x, y, w, h); c.globalAlpha = 1; }
+        c.save(); c.beginPath(); c.rect(x, y, w, h); c.clip();
+        const turn = ds.turn, sw = ds.closed.width, sh = ds.closed.height, slide = 0.42 * o;
+        if (!turn) {
+          c.drawImage(ds.closed, 0, 0, sw / 2, sh, x - w * slide, y, w / 2, h);
+          c.drawImage(ds.closed, sw / 2, 0, sw / 2, sh, x + w / 2 + w * slide, y, w / 2, h);
+        } else {
+          c.drawImage(ds.closed, 0, 0, sw, sh / 2, x, y - h * slide, w, h / 2);
+          c.drawImage(ds.closed, 0, sh / 2, sw, sh / 2, x, y + h / 2 + h * slide, w, h / 2);
+        }
+        c.restore();
+      }
+      c.restore();
     },
     /** After the bodies: a gentle flicker on the odd faulty lamp (never under reduced motion), then the look's own vignette. */
     overlay(c, cam, view, t = 0, carrier = null) {
@@ -147,6 +185,43 @@ export function buildLookLayer(map, scale, { drawProps, isLocked = () => false }
       c.drawImage(vig, 0, 0, c.canvas.width, c.canvas.height);
     },
   };
+}
+
+// ---- door pictures: each door's closed, open and locked art, lit like the room, baked once per layer -------
+function bakeDoorSprites(map, look, g, s) {
+  if (!look.doorArt) return [];
+  const T = map.tile, out = [];
+  for (const d of map.doors) {
+    const side = d.y <= 0 ? 'n' : d.y + d.h >= map.h ? 's' : d.x <= 0 ? 'w' : d.x + d.w >= map.w ? 'e' : null;
+    if (!side || d.look === 'ramp') continue;
+    const base = d.art || look.doorArt;
+    const imgs = ['closed', 'open', 'locked'].map(st => lookImage('prop', `${base}-${st}`));
+    if (imgs.some(i => !i)) continue; // not loaded yet: the layer is rebuilt when art lands
+    const turn = side === 'w' || side === 'e';
+    const sprites = imgs.map(img => {
+      const c = document.createElement('canvas');
+      c.width = Math.max(1, Math.ceil(d.w * s)); c.height = Math.max(1, Math.ceil(d.h * s));
+      const x = c.getContext('2d');
+      x.setTransform(s, 0, 0, s, -d.x * s, -d.y * s);
+      // One picture per tile along the door; doors in the side walls are the same picture turned a quarter.
+      const n = Math.max(1, Math.round(Math.max(d.w, d.h) / T));
+      for (let i = 0; i < n; i++) {
+        const cx = d.x + (turn ? d.w / 2 : (i + 0.5) * T), cy = d.y + (turn ? (i + 0.5) * T : d.h / 2);
+        x.save(); x.translate(cx, cy); if (turn) x.rotate(Math.PI / 2); x.drawImage(img, -T / 2, -T / 2, T, T); x.restore();
+      }
+      if (lightsOn() && g.lightmap) {
+        // Light it like the room, then cut back to the art's own shape (one mask for all its tiles: a two-tile door
+        // masked tile by tile would erase itself).
+        const mask = document.createElement('canvas'); mask.width = c.width; mask.height = c.height;
+        mask.getContext('2d').drawImage(c, 0, 0);
+        x.globalCompositeOperation = 'multiply'; x.drawImage(g.lightmap, 0, 0, map.w, map.h);
+        x.globalCompositeOperation = 'destination-in'; x.setTransform(1, 0, 0, 1, 0, 0); x.drawImage(mask, 0, 0);
+      }
+      return c;
+    });
+    out.push({ door: d, closed: sprites[0], open: sprites[1], locked: sprites[2], turn });
+  }
+  return out;
 }
 
 // ---- lit copies: props and people brightened once (not per frame) -------------------------

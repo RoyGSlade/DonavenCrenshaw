@@ -15,6 +15,7 @@ export function createFoot(params) {
     title: params.title || 'On foot',
     enemy: structuredClone(params.enemy || { name: 'Guards', hp: 20 }),
     dc: params.dc || 10, // d20 scale (data.js CHECK)
+    arena: params.arena ? structuredClone(params.arena) : null, // launch slice: the room and enemies of this fight
     log: [],
     done: false,
     outcome: null,
@@ -27,7 +28,7 @@ export function viewFoot(state, ctx = {}) {
     enemy: { ...state.enemy },
     dc: state.dc,
     note: 'Fight it live on foot, or let one Constitution roll decide it.',
-    live: { kind: 'foot', setup: questFightSetup(state.enemy, (ctx.run?.seed ?? 1) + (ctx.run?.steps ?? 0)) },
+    live: { kind: 'foot', setup: questFightSetup(state.enemy, (ctx.run?.seed ?? 1) + (ctx.run?.steps ?? 0), state.arena) },
     moves: [{ id: 'fight', label: 'Fight it out (Constitution)' }, { id: 'retreat', label: 'Back away' }],
     log: [...state.log],
     done: state.done,

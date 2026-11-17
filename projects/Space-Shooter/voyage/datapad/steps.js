@@ -15,10 +15,13 @@ import { QUESTS } from '../quests/data/quests/index.js';
 import { SECTORS } from '../quests/data/sectors.js';
 import { QUEST_GIVERS } from '../quests/data/givers.js';
 import { GIVER_PLACE } from '../explore/rules.js';
+import { placeName as roomName } from '../slice/places.js';
+import { markerFor } from '../slice/rules.js';
 
 const LEG = new Map(LEGS.map((l) => [l.id, l]));
 const PLACE_GIVER = Object.fromEntries(Object.entries(GIVER_PLACE).map(([giver, place]) => [place, giver]));
-const placeName = (id) => SECTORS[id]?.name || null;
+// A place is a sector or (launch slice) a Tin Duchess room: "the mess hall" reads "The mess hall".
+const placeName = (id) => SECTORS[id]?.name || (roomName(id) ? roomName(id).replace(/^./, (c) => c.toUpperCase()) : null);
 
 /** The tutorial leg in progress, with its steps ticked off. */
 export function tutorialTrack(save) {
@@ -91,8 +94,9 @@ export function jobTrack(save, quests = QUESTS) {
   for (const [id, run] of Object.entries(active)) {
     const quest = quests[id];
     if (!quest || run?.ended) continue;
-    // No floor marker: a job you have taken plays wherever you are (round 3), from the tracker's Continue.
-    return { kind: 'job', id, title: quest.title, giver: quest.giver, steps: stepStates(quest, run), target: null };
+    // A job you have taken plays wherever you are (round 3), from the tracker's Continue. Only a step with a spot in a room
+    // (the opening slice: `where` + `at`) carries a floor marker: { map, npc | zone | prop }.
+    return { kind: 'job', id, title: quest.title, giver: quest.giver, steps: stepStates(quest, run), target: markerFor(quest, run) };
   }
   return null;
 }

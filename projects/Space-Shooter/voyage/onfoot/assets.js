@@ -19,6 +19,8 @@ export const SPRITE_FILES = Object.freeze({
   'moon-boulder-s': 'moon-boulder-s.png', 'moon-boulder-m': 'moon-boulder-m.png', 'moon-boulder-l': 'moon-boulder-l.png',
   'moon-rock-cluster-a': 'moon-rock-cluster-a.png', 'moon-rock-cluster-b': 'moon-rock-cluster-b.png',
   'moon-rubble-a': 'moon-rubble-a.png', 'moon-rubble-b': 'moon-rubble-b.png', 'moon-crater-rim': 'moon-crater-rim.png',
+  // The Cinder Reavers (launch art lane, batch 1: the look-art cuts), as on-foot enemies in the Tin Duchess.
+  'marauder-grunt-a': 'look/prop-marauder-grunt-a.webp', 'marauder-boss': 'look/prop-marauder-boss.webp',
   'asteroid': 'asteroid.png', 'relay-station': 'relay-station.png', 'relay-gate': 'relay-gate.png', 'warden': 'warden.png',
 });
 
@@ -32,6 +34,10 @@ export const GROUND_FILES = Object.freeze({ plating: 'tile-plating.png', regolit
 export const CAST_FILES = Object.freeze({
   chibby: 'chibby.webp', ralph: 'ralph.webp', mel: 'mel.webp', edna: 'edna.webp', captain: 'cap-a.webp',
   hask: 'hask.webp', vey: 'vey.webp', garrity: 'garrity.webp',
+  // launch map lane: Reck, the Tin Duchess's seventh gunner (the launch art lane's gunner-alive, batch 1).
+  reck: 'reck.webp',
+  // launch art lane batch 2: the Tin Duchess crew (128 px sprites, figure 110 px tall, 9 px margin).
+  tull: 'tull.webp', nessa: 'nessa.webp', pip: 'pip.webp',
 });
 
 // The four captain looks. The hangar's look ids are p1..p4 (data.js PORTRAITS); the cast lane
@@ -63,6 +69,12 @@ export const CAST_LOOK = Object.freeze({
   hask: { name: 'Hask', color: '#9fe870', scale: castScale('hask') },
   vey: { name: 'Vey', color: '#c8a2ff', scale: castScale('vey') },
   garrity: { name: 'Garrity', color: '#e0b061', scale: castScale('garrity') },
+  // The Tin Duchess crew (launch opening slice; quest lane STORY-NOW.md). Tull, Nessa and Pip have no sprite yet
+  // (a stand-in figure with their colour ring, ART-NEEDS in lhc-lanes/stardust/launch/maps).
+  tull: { name: 'Captain Tull', color: '#ffb23a', scale: 1.9, lift: 'brightness(1.01) saturate(0.97) contrast(1.06)' }, // lift: his wine-red coat is already saturated, so the look maps' people boost (saturate 1.8) would turn it hot pink
+  nessa: { name: 'Nessa', color: '#38e6ff', scale: 1.82 },
+  pip: { name: 'Pip', color: '#9bff5a', scale: 1.82 },
+  reck: { name: 'Reck', color: '#ffc93a', scale: 1.9 },
 });
 
 const images = new Map();
@@ -103,7 +115,28 @@ export function roomArt(room) {
   return { floor: floor ? loadImage(floor.url) : null, floorCovers: floor?.covers || [4, 4], wall: piece => (walls[piece] ? loadImage(walls[piece]) : null) };
 }
 export const interiorProp = id => INTERIOR_ART.props[id] || null;
-export const castImage = id => (id === 'captain' ? captainSprite() : CAST_FILES[id] ? loadImage(at(`cast/${CAST_FILES[id]}`)) : null);
+// People without their own sprite yet are drawn as a cast person re-tinted (never a ship or a placeholder shape):
+// the Tin Duchess crew (launch map lane) until the art lane paints them, and any other npc id (`person`).
+export const CAST_STAND_IN = Object.freeze({
+  tull: { from: 'garrity', filter: 'hue-rotate(-18deg) saturate(1.35) brightness(1.05)' },
+  nessa: { from: 'mel', filter: 'hue-rotate(170deg) saturate(1.3)' },
+  pip: { from: 'chibby', filter: 'hue-rotate(75deg) saturate(1.1)' },
+  person: { from: 'hask', filter: 'saturate(0.55)' },
+});
+const tints = new Map();
+function standIn(id) {
+  const s = CAST_STAND_IN[id] || CAST_STAND_IN.person;
+  const base = loadImage(at(`cast/${CAST_FILES[s.from]}`));
+  if (!base || typeof document === 'undefined') return null;
+  let c = tints.get(id);
+  if (!c) {
+    c = document.createElement('canvas'); c.width = base.naturalWidth; c.height = base.naturalHeight;
+    const x = c.getContext('2d'); if ('filter' in x) x.filter = s.filter; x.drawImage(base, 0, 0);
+    tints.set(id, c);
+  }
+  return c;
+}
+export const castImage = id => (id === 'captain' ? captainSprite() : CAST_FILES[id] ? loadImage(at(`cast/${CAST_FILES[id]}`)) : standIn(id));
 export const playerFrames = () => ['player-f1', 'player-f2', 'player-f3', 'player-f4'].map(sprite);
 
 /** Start loading everything a map needs, so the first frames have art. */

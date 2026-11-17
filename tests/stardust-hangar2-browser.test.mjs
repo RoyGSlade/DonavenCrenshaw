@@ -47,7 +47,7 @@ test('round-2 hangar: dice licence, stations in place, skill tree and respec, di
   page.on('pageerror', (e) => errors.push(e.message));
   page.on('console', (m) => { if (m.type() === 'error' && !/api\.donavencrenshaw\.com|Failed to load resource/.test(m.text())) errors.push(m.text()); });
   page.on('response', (r) => { if (r.status() >= 400 && r.url().includes('/voyage/')) errors.push(`${r.status()} ${r.url()}`); });
-  await page.goto(`${server.origin}${HANGAR}?newgame=1&dev=1`);
+  await page.goto(`${server.origin}${HANGAR}?newgame=1&start=hangar&dev=1`);
   await recordBus(page);
   // Round 2: a new save opens on the story's intro; this check skips the tutorial (the e2e test plays it).
   await page.locator('.sy-intro-skipall').click();
@@ -205,7 +205,7 @@ test('round-2 hangar: dice licence, stations in place, skill tree and respec, di
   const p2 = await phone.newPage();
   const phoneErrors = [];
   p2.on('pageerror', (e) => phoneErrors.push(e.message));
-  await p2.goto(`${server.origin}${HANGAR}?newgame=1`);
+  await p2.goto(`${server.origin}${HANGAR}?newgame=1&start=hangar`);
   await p2.locator('.sy-intro-skipall').click();
   await p2.locator('#hg-licence').waitFor();
   assert.equal(await p2.evaluate(() => document.getElementById('hg-dice').width / document.getElementById('hg-dice').getBoundingClientRect().width), 2);

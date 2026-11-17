@@ -194,7 +194,11 @@ export function buildStaticLayer(map, scale, { extraArt = null, isLocked = () =>
 /** A map's still props, lowest first (walk-over pieces under everything). extraArt(ctx, p) may draw special props. */
 function drawProps(ctx, map, extraArt) {
   const T = map.tile;
-  const props = [...map.props].sort((a, b) => (a.block === false ? -1 : 0) - (b.block === false ? -1 : 0) || a.y + a.h - (b.y + b.h));
+  // Floor-layer pieces (rugs, grids, goo, scorch) first, then walk-over pieces, then the rest; inside each group
+  // a prop's `z` (default 0) and then its bottom edge. So a small decal with z 1 sits on a big floor plate even
+  // when the plate's bottom edge is lower (launch maps: goo on the holodeck grid).
+  const group = p => (p.layer === 'floor' ? 0 : p.block === false ? 1 : 2);
+  const props = [...map.props].sort((a, b) => group(a) - group(b) || (a.z ?? 0) - (b.z ?? 0) || a.y + a.h - (b.y + b.h));
   for (const p of props) {
     if (activeLook?.props.hide?.includes(p.art)) continue; // the look paints it (the range) until art lands
     if (extraArt?.(ctx, p)) continue;
@@ -265,6 +269,8 @@ export function drawContained(ctx, img, p, pad = 0, piece = null) {
   if (activeLook) {
     // Look maps: a soft shadow in the art's own shape, down and right, and the art lifted onto the value ladder.
     const sh = activeLook.props.shadow, k = w / img.width;
+    // `flat: true` (paint on the floor: goo, scorch, a body decal) casts no shadow.
+    if (p.flat) { const lift0 = activeLook.props.byArt?.[p.art]?.lift ?? (LOOK_ART.prop[p.art] ? activeLook.props.kitLift ?? '' : activeLook.props.lift); ctx.globalAlpha = p.alpha ?? 1; ctx.drawImage(litCopy(img, lift0), x, y, w, h); ctx.restore(); return; }
     // Bigger things cast longer, softer shadows; the ship and other big pieces keep the room's down-right light.
     const size = Math.min(w, h) / activeTile, big = size >= 1.8;
     const { canvas: sc, pad } = silhouette(img, ((sh.blur + (sh.blurPerTile ?? 0) * size) * activeTile) / k);
@@ -273,7 +279,8 @@ export function drawContained(ctx, img, p, pad = 0, piece = null) {
     const ox = wx * Math.cos(-rot) - wy * Math.sin(-rot), oy = wx * Math.sin(-rot) + wy * Math.cos(-rot);
     ctx.globalAlpha = big ? sh.bigAlpha ?? sh.alpha : sh.alpha; ctx.drawImage(sc, x - pad * k + ox, y - pad * k + oy, sc.width * k, sc.height * k); ctx.globalAlpha = 1;
     // Kit art from the round-3 lanes is made on the value ladder already; older art is lifted onto it.
-    const lift = activeLook.props.byArt?.[p.art]?.lift ?? (LOOK_ART.prop[p.art] ? activeLook.props.kitLift ?? '' : activeLook.props.lift);
+    // launch maps: a prop's own `lift` (a state can recolour its lit part, e.g. a console screen red -> cyan when fixed).
+    const lift = p.lift ?? activeLook.props.byArt?.[p.art]?.lift ?? (LOOK_ART.prop[p.art] ? activeLook.props.kitLift ?? '' : activeLook.props.lift);
     ctx.drawImage(litCopy(img, lift), x, y, w, h);
     ctx.restore();
     return;
@@ -289,9 +296,9 @@ export function drawContained(ctx, img, p, pad = 0, piece = null) {
 /**
  * A straight-down body: sprite rotated to its heading (sprites face up), with
  * the code sway and bob the art lead advised (straight down hides the legs).
- * opts: { size, t, moving, stride, frames, hit, look }
+ * opts: { size, t, moving, stride, frames, hit, look, lift }
  */
-export function drawBody(ctx, x, y, angle, img, { size = 44, t = 0, moving = false, stride = 0, hit = 0, tint = null, label = null, dog = false } = {}) {
+export function drawBody(ctx, x, y, angle, img, { size = 44, t = 0, moving = false, stride = 0, hit = 0, tint = null, label = null, dog = false, lift = null } = {}) {
   const sway = moving ? Math.sin(stride * Math.PI) * 0.07 : Math.sin(t * 1.6) * 0.015;
   const bob = moving ? 1 + Math.abs(Math.sin(stride * Math.PI)) * 0.035 : 1 + Math.sin(t * 2.1) * 0.01;
   ctx.save();
@@ -300,7 +307,7 @@ export function drawBody(ctx, x, y, angle, img, { size = 44, t = 0, moving = fal
     // Look maps: people are the brightest, most saturated things on screen, with a soft contact shadow down-right.
     const pl = activeLook.people;
     size *= pl.scale ?? 1;
-    img = litCopy(img, pl.lift);
+    img = litCopy(img, lift || pl.lift); // a person's own `lift` (cast data) replaces the room's people boost
     // The soft shadow moves with the body and falls away from the nearest lamp.
     const [sx, sy] = shadowOffset(activeLights, x, y, size * 0.15);
     const g = ctx.createRadialGradient(sx, sy, 0, sx, sy, size * 0.44);
@@ -343,7 +350,7 @@ function drawPersonPlaceholder(ctx, size, tint, dog) {
 }
 
 export function castSprite(id) { return castImage(id) || null; }
-export function castLook(id) { return CAST_LOOK[id] || { name: id, color: '#eaf4f5', scale: 1 }; }
+export function castLook(id) { return CAST_LOOK[id] || { name: String(id).charAt(0).toUpperCase() + String(id).slice(1), color: '#eaf4f5', scale: 1.86 }; } // unknown people: a re-tinted cast stand-in at cast size
 
 /** A vignette for the view, built once per size: dims the edges so the middle reads. */
 export function buildVignette(w, h, dpr, strength = 0.55) {

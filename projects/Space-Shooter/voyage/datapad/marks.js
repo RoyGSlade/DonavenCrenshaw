@@ -97,12 +97,19 @@ export function createMarks({ root, reducedMotion = () => false, data = MARKS })
           else x = r.right + half;
         }
       }
-      for (let tries = 0; tries < 4; tries++) {
-        const hit = placed.find((r) => x + half - 8 > r.l && x - half + 8 < r.r && y > r.t && y - c.height < r.b);
+      // Chips never overlap each other (launch maps, Erik: two people side by side on a phone showed two chips on
+      // top of each other). The full chip box counts; a chip that would hit one already down moves above it when
+      // there is room under the header, else below it.
+      const w0 = c.width / 2;
+      for (let tries = 0; tries < 6; tries++) {
+        const hit = placed.find((r) => x + w0 > r.l + 2 && x - w0 < r.r - 2 && y > r.t + 2 && y - c.height < r.b - 2);
         if (!hit) break;
-        y = hit.b + c.height + 3;
+        // Whichever way moves it least (above or below the chip in the way), inside the screen.
+        const up = hit.t - 3, down = hit.b + c.height + 3;
+        const upOk = up - c.height >= safe.top + 6, downOk = down <= view.h - safe.bottom - 6;
+        y = upOk && (!downOk || Math.abs(up - y) <= Math.abs(down - y)) ? up : down;
       }
-      placed.push({ l: x - half + 8, r: x + half - 8, t: y - c.height, b: y });
+      placed.push({ l: x - w0, r: x + w0, t: y - c.height, b: y });
       x = Math.round(x); y = Math.round(y);
       const pos = `translate(${x}px, ${y}px)`;
       if (c.pos !== pos) { c.el.style.transform = pos; c.pos = pos; }

@@ -86,8 +86,9 @@ test('a quest rolls the same pieces from the same seed, and different pieces acr
 });
 
 test('all fifteen quests, the givers and the event cards pass validation', () => {
-  assert.equal(Object.keys(QUESTS).length, 15);
-  for (const [id, giver] of Object.entries(QUEST_GIVERS)) assert.equal(giver.quests.length, 5, `${id} gives five jobs`);
+  assert.equal(Object.keys(QUESTS).length, 15 + 6, 'the fifteen board quests plus the opening slice\'s six scenes');
+  // The slice's captain hands out his scenes through the slice director, not a board: his `quests` stays empty.
+  for (const [id, giver] of Object.entries(QUEST_GIVERS)) if (!giver.slice) assert.equal(giver.quests.length, 5, `${id} gives five jobs`);
   for (const q of Object.values(QUESTS)) assert.deepEqual(validateQuest(q), [], q.id);
   assert.deepEqual(validateEvents(), []);
   for (const q of Object.values(QUESTS)) assert.ok(QUEST_GIVERS[q.giver] && GIVERS[q.giver], `${q.id} giver ${q.giver}`);

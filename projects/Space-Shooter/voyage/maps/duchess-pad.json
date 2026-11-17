@@ -1,0 +1,96 @@
+{
+  "id": "duchess-pad",
+  "name": "Berth 7: the Tin Duchess",
+  "kind": "interior",
+  "tile": 48,
+  "floor": "deck",
+  "ambient": "hangar",
+  "grid": [
+    "########################",
+    "#......................#",
+    "#......................#",
+    "#......................#",
+    "#......................#",
+    "#......................#",
+    "#......................#",
+    "#......................#",
+    "#......................#",
+    "#......................#",
+    "#......................#",
+    "#......................#",
+    "#......................#",
+    "#......................#",
+    "##########..############"
+  ],
+  "tags": {
+    "duchess-hull": {"states":["whole","busted","repaired"],"state":"whole","by":[{"state":"busted","flag":"duchess-busted"},{"state":"repaired","flag":"duchess-repaired"}]},
+    "tull-pad": {"states":["away","here"],"state":"away","by":[{"state":"here","flag":"duchess-busted"}]},
+    "berth-door": {"states":["shut","open"],"state":"shut","by":[{"state":"open","flag":"day-five-over"}]}
+  },
+  "look": {
+    "set": "freighter",
+    "accents": {"pad":"#ffb054","warm":"#ffb867","cool":"#68dcef"},
+    "doorColors": {"hangar":"pad"},
+    "decals": [
+      {"art":"pad-bay-10x6","at":[6,1],"size":[12,10],"alpha":0.85},
+      {"kind":"text","at":[15.9,9.4],"text":"07","size":0.8,"color":"pad","alpha":0.6},
+      {"kind":"lane","path":[[11,13.5],[11,11.6]],"width":1.8,"every":3},
+      {"art":"oil-1","at":[4,7],"size":[1.6,1.6],"alpha":0.7},
+      {"art":"oil-3","at":[18.5,8],"size":[1.3,1.3],"alpha":0.6},
+      {"art":"scorch-1","at":[13,9.2],"size":[1.6,1.6],"alpha":0.5},
+      {"art":"scuff-1","at":[3,12],"size":[2.4,1.2]},
+      {"art":"drain-round","at":[20,6],"size":[1,1]}
+    ],
+    "lights": [
+      {"kind":"prop","at":[6,1],"size":[1,1],"pool":[7.2,2.2],"r":3.2,"color":"pad","strength":0.24},
+      {"kind":"prop","at":[17,1],"size":[1,1],"pool":[16.8,2.2],"r":3.2,"color":"pad","strength":0.24},
+      {"kind":"prop","at":[6,10],"size":[1,1],"pool":[7.2,9.6],"r":3.2,"color":"pad","strength":0.24},
+      {"kind":"prop","at":[17,10],"size":[1,1],"pool":[16.8,9.6],"r":3.2,"color":"pad","strength":0.24},
+      {"kind":"flood","at":[1.2,7.0],"pool":[5,6.5],"r":4.2,"color":"warm","strength":0.3},
+      {"kind":"flood","at":[22.8,7.0],"pool":[19,6.5],"r":4.2,"color":"cool","strength":0.26},
+      {"kind":"prop","at":[7,2],"size":[10,7],"pool":[12,6.8],"r":4.4,"color":"cool","strength":0.16},
+      {"kind":"screen","at":[11.65,2.78],"size":[0.7,0.34],"pool":[12,3.6],"r":1.8,"color":"cool","strength":0.22},
+      {"kind":"prop","at":[2,2],"size":[1,1],"pool":[3,3],"r":2.0,"color":"warm","strength":0.24},
+      {"kind":"lamp","at":[20.5,11.2],"r":3.0,"color":"warm","strength":0.3},
+      {"kind":"lamp","at":[11.5,12.2],"r":2.8,"color":"warm","strength":0.26}
+    ],
+    "mounts": [
+      {"art":"wall-sign-hazard","at":[4,0.25],"size":[2,0.5],"face":true},
+      {"art":"wall-screen","at":[18,0.14],"size":[2,0.75],"face":true},
+      {"art":"hose-reel","at":[22.2,4],"size":[1,0.75]}
+    ],
+    "clutter": [
+      {"art":"traffic-cone","at":[5.2,11.2],"size":[0.5,0.5]},
+      {"art":"traffic-cone-b","at":[18.3,11.2],"size":[0.5,0.5]},
+      {"art":"hose-coil","at":[4.2,2.3],"size":[0.9,0.9]},
+      {"art":"tyre-stack","at":[22,12.4],"size":[0.9,0.9]}
+    ]
+  },
+  "props": [
+    {"art":"freighter-hull-busted","at":[7,2],"size":[10,7],"block":true,"tag":"duchess-hull","name":"duchess-hull","states":{"whole":{"art":"freighter-hull-repaired"},"repaired":{"art":"freighter-hull-repaired"}},"interact":{"kind":"console","id":"duchess-hull","label":"The Tin Duchess: walk round her"}},
+    {"art":"pad-beacon","at":[6,1],"size":[1,1],"block":false},
+    {"art":"pad-beacon","at":[17,1],"size":[1,1],"block":false},
+    {"art":"pad-beacon","at":[6,10],"size":[1,1],"block":false},
+    {"art":"pad-beacon","at":[17,10],"size":[1,1],"block":false},
+    {"art":"fuel-pump","at":[2,2],"size":[1,1],"block":true},
+    {"art":"fuel-barrel","at":[2,4],"size":[1,1],"block":"low"},
+    {"art":"fuel-barrel","at":[3,4],"size":[1,1],"block":"low"},
+    {"art":"cargo-crate","at":[20,2],"size":[1,1],"block":"low"},
+    {"art":"cargo-crate","at":[21,2],"size":[1,1],"block":"low"},
+    {"art":"crate-closed","at":[20,3],"size":[1,1],"block":"low"},
+    {"art":"chibby-workbench","at":[19,11],"size":[3,1],"block":"low"},
+    {"art":"chibby-parts-rack","at":[1,11],"size":[2,1],"block":true}
+  ],
+  "npcs": [
+    {"id":"tull","at":[14,10],"face":"left","wander":0.3,"tag":"tull-pad","states":{"away":{"hidden":true}}}
+  ],
+  "doors": [
+    {"id":"ramp","at":[11,9],"size":[2,1],"to":"duchess-cargo","arrive":"from-pad","label":"Up the ramp into the Duchess","look":"ramp"},
+    {"id":"hangar","at":[10,14],"size":[2,1],"to":"hangar","arrive":"from-pad","label":"Chibby's hangar","tag":"berth-door","states":{"shut":{"sealed":"Not yet. The Duchess has to be yours first."}}}
+  ],
+  "spawns": {
+    "default": [11.5,12,"up"],
+    "from-ramp": [11.5,10.4,"down"],
+    "from-hangar": [10.5,13,"up"]
+  }
+}

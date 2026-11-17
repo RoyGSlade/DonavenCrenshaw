@@ -33,7 +33,7 @@ test('every map is plain JSON, compiles, and links up (doors, spawns, npcs, stat
   // Every map has a way out, and the hangar reaches the ship and the buildings.
   for (const map of Object.values(MAP_DEFS)) assert.ok(map.doors.length >= 1, `${map.id} has a door`);
   const hangarDoors = MAP_DEFS.hangar.doors.map(d => d.to).sort();
-  assert.deepEqual(hangarDoors, ['cantina', 'edna-den', 'mel-bay', 'ship', 'workshop']);
+  assert.deepEqual(hangarDoors, ['cantina', 'duchess-pad', 'edna-den', 'mel-bay', 'ship', 'workshop']); // launch slice: Berth 7, the way back to the Tin Duchess's pad
   // The ship has the crew's repair points.
   assert.deepEqual(MAP_DEFS.ship.props.filter(p => p.interact?.kind === 'repair').map(p => p.interact.id).sort(), ['engine', 'guns', 'hull']);
 });
@@ -418,7 +418,9 @@ test('rotated props: the art is fitted into the UNturned box, then turned (no sq
 });
 
 test('every story map is valid for procgen (validateMap on whole tiles); the generic cantina falls back to a valid hand-made room', () => {
-  const story = ['hangar', 'ship', 'workshop', 'mel-bay', 'edna-den', 'hask-office', 'vey-lounge', 'garrity-office', 'moon-outpost', 'cantina'];
+  const story = ['hangar', 'ship', 'workshop', 'mel-bay', 'edna-den', 'hask-office', 'vey-lounge', 'garrity-office', 'moon-outpost', 'cantina',
+    // The Tin Duchess (launch map lane); every state of these rooms is checked in stardust-duchess.test.mjs.
+    'duchess-corridor', 'duchess-mess', 'duchess-holodeck', 'duchess-quarters', 'duchess-bridge', 'duchess-airlock', 'duchess-engine', 'duchess-cargo', 'duchess-pad'];
   for (const id of story) {
     const v = validateMap(MAP_DEFS[id]);
     assert.deepEqual(v.problems, [], `${id} breaks procgen's hard rules`);

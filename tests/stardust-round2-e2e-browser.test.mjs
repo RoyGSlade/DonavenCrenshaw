@@ -88,7 +88,7 @@ test('round 2 end to end: new captain -> intro -> dice -> full tutorial -> first
   await page.exposeFunction('__e2eEvent', (type) => events.push(type));
 
   // 1. The intro: Begin, a couple of beats tapped through, then the rest skipped.
-  await page.goto(`${server.origin}${HANGAR}?newgame=1`);
+  await page.goto(`${server.origin}${HANGAR}?newgame=1&start=hangar`);
   await page.waitForFunction(() => window.__stardust);
   await page.evaluate(() => window.__stardust.bus.on('*', (type) => window.__e2eEvent(type)));
   await page.locator('.sy-intro .sy-begin').click();
@@ -203,7 +203,7 @@ test('round 2 end to end: new captain -> intro -> dice -> full tutorial -> first
   await blockHub(phone);
   const p2 = await phone.newPage();
   const shot2 = async (name) => { if (PROOF) await p2.screenshot({ path: `${PROOF}/${name}.png` }); };
-  await p2.goto(`${server.origin}${HANGAR}?newgame=1`);
+  await p2.goto(`${server.origin}${HANGAR}?newgame=1&start=hangar`);
   await p2.locator('.sy-intro .sy-begin').tap();
   await p2.locator('.sy-intro-skip').tap();
   await p2.locator('#hg-licence:not([hidden])').waitFor();

@@ -1,0 +1,105 @@
+{
+  "id": "duchess-mess",
+  "name": "Tin Duchess: mess hall",
+  "kind": "interior",
+  "tile": 48,
+  "floor": "deck",
+  "ambient": "ship-hum",
+  "grid": [
+    "##############",
+    "#............#",
+    "#............#",
+    "#............#",
+    "#............#",
+    "#............#",
+    "#............#",
+    "#............#",
+    "#............#",
+    "#######.######"
+  ],
+  "look": {
+    "set": "freighter",
+    "accents": {"mess":"#ffb23a","warm":"#ffb867","board":"#ff5a4d"},
+    "doorColors": {"corridor":"warm"},
+    "decals": [
+      {"kind":"stain","at":[5.4,4.2],"r":0.6},
+      {"kind":"stain","at":[6.8,7.2],"r":0.5},
+      {"kind":"stain","at":[2.3,3.2],"r":0.4},
+      {"art":"scuff-2","at":[4.6,6.2],"size":[2.4,1.2]},
+      {"art":"scuff-4","at":[9,3.6],"size":[2.4,1.2],"alpha":0.8},
+      {"art":"drain-round","at":[6,5],"size":[1,1]},
+      {"art":"cable-loose-1","at":[5.2,5.6],"size":[2,1],"alpha":0.9},
+      {"kind":"stain","at":[7.0,4.6],"r":0.7},
+      {"art":"oil-3","at":[10.6,7.6],"size":[1.3,1.3],"alpha":0.45},
+      {"kind":"mark","at":[3.8,1.9],"size":[2.6,1.2],"color":"mess"}
+    ],
+    "lights": [
+      {"kind":"prop","at":[1,1],"size":[1,1],"pool":[1.6,2.4],"r":2.6,"color":"mess","strength":0.36},
+      {"kind":"screen","at":[1.25,1.62],"size":[0.5,0.16],"pool":[1.6,2.6],"r":1.8,"color":"mess","strength":0.24},
+      {"kind":"lamp","at":[2.5,4.6],"r":3.2,"color":"warm","strength":0.27},
+      {"kind":"lamp","at":[9.5,5.6],"r":3.2,"color":"warm","strength":0.27},
+      {"kind":"screen","at":[9.3,0.3],"size":[2.4,0.14],"pool":[10.5,2.4],"r":3.0,"color":"board","strength":0.2},
+      {"kind":"screen","at":[4.3,0.35],"size":[1.4,0.12],"pool":[5,2.2],"r":2.4,"color":"warm","strength":0.24},
+      {"kind":"strip","art":"light-strip-warm-v","at":[13.08,3.0],"size":[0.3,1.2],"pool":[11.6,3.6],"r":2.6,"color":"warm","strength":0.2},
+      {"kind":"strip","art":"light-strip-warm-h","at":[3.4,9.08],"size":[1.2,0.3],"pool":[4.0,7.8],"r":2.6,"color":"warm","strength":0.22},
+      {"kind":"strip","art":"light-strip-cyan-h","at":[9.6,9.08],"size":[1.2,0.3],"pool":[10.2,7.8],"r":2.2,"color":"cool","strength":0.16}
+    ],
+    "mounts": [
+      {"art":"crew-board","at":[9,0.12],"size":[3,0.78],"face":true},
+      {"kind":"hatch","at":[4.15,0.1],"size":[1.7,0.8],"color":"mess"},
+      {"art":"fire-extinguisher","at":[13.25,7.0],"size":[0.5,0.5]},
+      {"art":"wall-vent","at":[6.6,0.25],"size":[1,0.5]}
+    ],
+    "clutter": [
+      {"kind":"steam","at":[1.5,0.9],"size":0.9},
+      {"kind":"tray","at":[6.4,4.0],"size":0.45,"rot":0.6},
+      {"kind":"cup","at":[5.6,3.6],"size":0.24},
+      {"kind":"cup","at":[1.7,4.8],"size":0.28},
+      {"kind":"cup","at":[3.1,5.1],"size":0.26},
+      {"kind":"tray","at":[2.3,4.95],"size":0.5},
+      {"kind":"bowl","at":[8.7,5.9],"size":0.34},
+      {"kind":"tray","at":[9.6,5.8],"size":0.5},
+      {"kind":"cup","at":[10.4,6.1],"size":0.26},
+      {"kind":"cup","at":[4.5,1.45],"size":0.26},
+      {"kind":"cup","at":[5.4,1.5],"size":0.26},
+      {"kind":"bowl","at":[6.9,1.5],"size":0.3},
+      {"kind":"cup","at":[6.3,6.9],"size":0.24,"rot":1},
+      {"kind":"rag","at":[11.2,4.4],"size":0.4},
+      {"art":"plant-succulent","at":[12.15,1.15],"size":[0.8,0.8]},
+      {"art":"small-crates","at":[2.1,8.2],"size":[1,0.75]},
+      {"art":"jerrycan","at":[11.2,8.3],"size":[0.5,0.5]}
+    ]
+  },
+  "props": [
+    {"art":"coffee-urn","at":[1,1],"size":[1,1],"block":true,"name":"coffee-machine","interact":{"kind":"console","id":"coffee","label":"The coffee machine"}},
+    {"art":"galley-stove-on","at":[2,1],"size":[1,1],"block":true},
+    {"art":"galley-cooler","at":[3,1],"size":[1,1],"block":true},
+    {"art":"bar-counter","at":[4,1],"size":[2,1],"block":"low"},
+    {"art":"galley-stove","at":[6,1],"size":[1,1],"block":true},
+    {"art":"galley-cooler-open","at":[7,1],"size":[1,1],"block":true},
+    {"art":"bar-stool","at":[4,2],"size":[0.8,0.8],"block":"low"},
+    {"art":"bar-stool","at":[5.2,2],"size":[0.8,0.8],"block":"low"},
+    {"art":"mess-table","at":[1,5],"size":[3,1.5],"block":"low"},
+    {"art":"mess-bench-pair","at":[1,4],"size":[3,1],"block":"low"},
+    {"art":"mess-table","at":[8,5],"size":[3,1.5],"block":"low"},
+    {"art":"mess-bench-pair","at":[8,4],"size":[3,1],"block":"low"},
+    {"art":"mess-bench-pair","at":[8,7.0],"size":[3,1],"block":"low"},
+    {"art":"sofa","at":[12,4],"size":[1,3],"block":"low","rot":1.5708},
+    {"art":"cargo-crate","at":[1,7],"size":[1,1],"block":"low"},
+    {"art":"crate-closed","at":[1,8],"size":[1,1],"block":"low"},
+    {"art":"cargo-crate","at":[12,8],"size":[1,1],"block":"low"}
+  ],
+  "npcs": [
+    {"id":"tull","at":[10,2],"face":"down","wander":0.3}
+  ],
+  "doors": [
+    {"id":"corridor","at":[7,9],"size":[1,1],"to":"duchess-corridor","arrive":"from-mess","label":"Out to the corridor"}
+  ],
+  "spawns": {
+    "default": [7,8,"up"],
+    "from-corridor": [7,8,"up"]
+  },
+  "zones": [
+    {"id":"crew-board","at":[8,1],"size":[5,2]}
+  ]
+}

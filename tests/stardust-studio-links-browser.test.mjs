@@ -24,7 +24,7 @@ test('studio play links open the exact spot on a throwaway save', { skip: !proce
   page.on('pageerror', (e) => errors.push(e.message));
 
   // A real captain on this device first; the links must leave it alone.
-  await page.goto(`${server.origin}${HANGAR}?newgame=1`);
+  await page.goto(`${server.origin}${HANGAR}?newgame=1&start=hangar`);
   await page.waitForFunction(() => window.__stardust);
   await page.evaluate(() => { window.__stardust.store.createCharacter({ name: 'Real Captain' }); window.__stardust.store.grant({ money: 123 }); });
   const real = await page.evaluate((k) => localStorage.getItem(k), REAL);

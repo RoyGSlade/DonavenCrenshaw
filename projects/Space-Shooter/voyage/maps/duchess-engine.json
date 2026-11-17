@@ -1,0 +1,111 @@
+{
+  "id": "duchess-engine",
+  "name": "Tin Duchess: engine room",
+  "kind": "interior",
+  "tile": 48,
+  "floor": "deck",
+  "ambient": "ship-hum",
+  "grid": [
+    "###############",
+    "#.............#",
+    "#.............#",
+    "#.............#",
+    "..............#",
+    "#.............#",
+    "#.............#",
+    "#.............#",
+    "#.............#",
+    "###############"
+  ],
+  "tags": {
+    "reactor": {"states":["running","broken","fixed"],"state":"running","by":[{"state":"broken","flag":"duchess-busted"},{"state":"fixed","flags":["duchess-busted","reactor-fixed"]}]},
+    "engine-console": {"states":["on","broken","fixed"],"state":"on","by":[{"state":"broken","flag":"duchess-busted"},{"state":"fixed","flags":["duchess-busted","power-fixed"]},{"state":"fixed","flags":["duchess-busted","reactor-fixed"]}]},
+    "conduit": {"states":["closed","open"],"state":"closed","by":[{"state":"open","flag":"duchess-busted","notFlag":"power-fixed"}]},
+    "coolant": {"states":["intact","leaking"],"state":"intact","by":[{"state":"leaking","flag":"coolant-leaking","notFlag":"coolant-fixed"},{"state":"leaking","flag":"duchess-busted","notFlag":"coolant-fixed"}]},
+    "hull-patch": {"states":["patched","blown"],"state":"patched","by":[{"state":"blown","flag":"duchess-busted","notFlag":"hull-patched"}]},
+    "pip": {"states":["here","gone"],"state":"here","by":[{"state":"gone","flag":"pip-quit"}]}
+  },
+  "look": {
+    "set": "freighter",
+    "accents": {"engine":"#ff4d4d","warm":"#ffb867","core":"#5ce8ff"},
+    "doorColors": {"corridor":"engine"},
+    "decals": [
+      {"kind":"mark","at":[5.5,2.5],"size":[4,4],"color":"warm"},
+      {"kind":"hazard","at":[5.5,6.55],"size":[4,0.26]},
+      {"art":"cable-loose-2","at":[8.8,2.4],"size":[2,1]},
+      {"art":"cable-loose-1","at":[3.8,4.6],"size":[2.2,1],"rot":0.2},
+      {"art":"oil-1","at":[3,5.6],"size":[1.6,1.6],"alpha":0.7},
+      {"art":"oil-2","at":[9.6,6.4],"size":[1.6,1.1],"alpha":0.6},
+      {"art":"scorch-1","at":[4.6,2.4],"size":[1.8,1.8],"alpha":0.75,"when":{"reactor":"broken"}},
+      {"art":"scorch-2","at":[8.8,5.6],"size":[1.6,1.6],"alpha":0.7,"when":{"reactor":"broken"}},
+      {"art":"drain-round","at":[10,3],"size":[1,1]},
+      {"art":"vent-2","at":[3,2],"size":[1,1]},
+      {"art":"scuff-3","at":[2,3.6],"size":[2.4,1.2]},
+      {"kind":"stain","at":[12,7],"r":0.6},
+      {"kind":"stain","at":[10.3,2.6],"r":0.6,"when":{"coolant":"leaking"}}
+    ],
+    "lights": [
+      {"kind":"prop","at":[6,3],"size":[3,3],"pool":[7.5,4.5],"r":3.2,"color":"core","strength":0.22,"when":{"reactor":["running","fixed"]}},
+      {"kind":"prop","at":[6,3],"size":[3,3],"pool":[7.5,4.5],"r":2.8,"color":"engine","strength":0.26,"flicker":true,"when":{"reactor":"broken"}},
+      {"kind":"beacon","at":[4.85,0.3],"size":[0.3,0.3],"pool":[5,1.8],"r":2.6,"color":"engine","strength":0.32,"flicker":true,"when":{"reactor":"broken"}},
+      {"kind":"prop","at":[6,1],"size":[2,1],"pool":[7,2.2],"r":2.0,"color":"engine","strength":0.18,"when":{"engine-console":"on"}},
+      {"kind":"prop","at":[6,1],"size":[2,1],"pool":[7,2.2],"r":2.0,"color":"engine","strength":0.14,"flicker":true,"when":{"engine-console":"broken"}},
+      {"kind":"screen","at":[7.45,1.2],"size":[0.2,0.2],"pool":[7.4,1.9],"r":1.2,"color":"#ff8a3a","strength":0.14,"flicker":true,"when":{"engine-console":"broken"}},
+      {"kind":"screen","at":[6.2,1.25],"size":[0.6,0.3],"pool":[6.8,2.0],"r":1.4,"color":"engine","strength":0.14,"when":{"engine-console":"on"}},
+      {"kind":"prop","at":[6,1],"size":[2,1],"pool":[7,2.2],"r":2.0,"color":"core","strength":0.18,"when":{"engine-console":"fixed"}},
+      {"kind":"screen","at":[6.2,1.25],"size":[0.6,0.3],"pool":[6.8,2.0],"r":1.4,"color":"core","strength":0.14,"when":{"engine-console":"fixed"}},
+      {"kind":"lamp","at":[10.5,6.8],"r":3.0,"color":"warm","strength":0.22},
+      {"kind":"lamp","at":[3.0,5.0],"r":3.0,"color":"warm","strength":0.22},
+      {"kind":"prop","at":[13,2],"size":[1,1],"pool":[12.4,2.6],"r":1.8,"color":"warm","strength":0.22},
+      {"kind":"screen","at":[13.62,2.18],"size":[0.18,0.18],"pool":[12.6,2.6],"r":1.4,"color":"warm","strength":0.14},
+      {"kind":"prop","at":[1,7],"size":[1,1],"pool":[1.6,7.4],"r":1.8,"color":"warm","strength":0.2},
+      {"kind":"screen","at":[1.68,7.12],"size":[0.18,0.18],"pool":[1.8,7.4],"r":1.4,"color":"warm","strength":0.14},
+      {"kind":"prop","at":[9,1.5],"size":[3,0.5],"pool":[10.5,2.4],"r":1.8,"color":"core","strength":0.16},
+      {"kind":"screen","at":[9.35,1.62],"size":[0.5,0.1],"pool":[10,2.3],"r":1.4,"color":"core","strength":0.12}
+    ],
+    "mounts": [
+      {"art":"wall-sign-hazard","at":[5.5,9.25],"size":[2,0.5],"face":true},
+      {"art":"fuse-box","at":[12.2,9.25],"size":[1,0.5],"face":true},
+      {"art":"wall-vent","at":[3.0,0.25],"size":[1,0.5]},
+      {"art":"tool-pegboard","at":[8.4,9.11],"size":[2,0.75],"face":true},
+      {"kind":"pipe","at":[14.3,3.2],"size":[0.28,2.6],"valve":true},
+      {"kind":"pipe","at":[8.6,0.32],"size":[5.2,0.26]},
+      {"kind":"pipe","at":[0.4,5.6],"size":[0.26,3.0]},
+      {"kind":"pipe","at":[1.4,0.6],"size":[3.6,0.22]}
+    ],
+    "clutter": [
+      {"art":"tools-spanners","at":[8.4,7.3],"size":[0.7,0.5]},
+      {"art":"cable-coil","at":[4.4,7.2],"size":[0.65,0.65]},
+      {"art":"jerrycan","at":[12.3,6.9],"size":[0.5,0.5]},
+      {"kind":"toolbox","at":[3.6,1.5],"size":0.42},
+      {"kind":"rag","at":[9.6,2.7],"size":0.38},
+      {"kind":"cup","at":[6.3,1.5],"size":0.22}
+    ]
+  },
+  "props": [
+    {"art":"reactor-core-fixed","at":[6,3],"size":[3,3],"block":true,"tag":"reactor","name":"reactor","states":{"broken":{"art":"reactor-core-broken"}},"interact":{"kind":"repair","id":"engine","label":"The reactor core"}},
+    {"art":"engine-console","at":[6,1],"size":[2,1],"block":"low","tag":"engine-console","states":{"broken":{"art":"engine-console-broken"},"fixed":{"lift":"hue-rotate(185deg) saturate(1.2) brightness(1.08)"}},"interact":{"kind":"console","id":"engine-console","label":"Pip's engine console"}},
+    {"art":"power-conduit-panel-closed","at":[13,2],"size":[1,1],"block":true,"tag":"conduit","states":{"open":{"art":"power-conduit-panel-open"}},"interact":{"kind":"repair","id":"power","label":"Power conduit panel"}},
+    {"art":"power-conduit-panel-closed","at":[13,6],"size":[1,1],"block":true},
+    {"art":"pipe-run-intact","at":[9,1.5],"size":[3,0.5],"block":true,"tag":"coolant","name":"coolant-pipe","states":{"leaking":{"art":"pipe-run-leaking","at":[9,1.25],"size":[3,0.75]}},"interact":{"kind":"repair","id":"coolant","label":"Coolant line"}},
+    {"art":"pipe-run-intact","at":[3,8.5],"size":[3,0.5],"block":true},
+    {"art":"hull-patch-panel-patched","at":[1,7],"size":[1,1],"block":true,"tag":"hull-patch","name":"hull-patch","states":{"blown":{"art":"hull-patch-panel-blown"}},"interact":{"kind":"repair","id":"hull","label":"Hull plate"}},
+    {"art":"supply-pod","at":[11,4],"size":[2,2],"block":true},
+    {"art":"chibby-workbench","at":[8,8],"size":[3,1],"block":"low"},
+    {"art":"chibby-tool-chest","at":[11,8],"size":[1,1],"block":"low"},
+    {"art":"fuel-barrel","at":[1,1],"size":[1,1],"block":"low"},
+    {"art":"fuel-barrel","at":[2,1],"size":[1,1],"block":"low"},
+    {"art":"cargo-crate","at":[13,8],"size":[1,1],"block":"low"},
+    {"art":"crate-closed","at":[1,8],"size":[1,1],"block":"low"}
+  ],
+  "npcs": [
+    {"id":"pip","at":[8,2],"face":"up","wander":0.2,"tag":"pip","states":{"gone":{"hidden":true}}}
+  ],
+  "doors": [
+    {"id":"corridor","at":[0,4],"size":[1,1],"to":"duchess-corridor","arrive":"from-engine","label":"Out to the corridor"}
+  ],
+  "spawns": {
+    "default": [1,4,"right"],
+    "from-corridor": [1,4,"right"]
+  }
+}

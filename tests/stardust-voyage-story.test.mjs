@@ -120,6 +120,7 @@ test('every line the tutorial, talks and picks name exists', () => {
   for (const id of named) assert.ok(lineById(id), `missing line ${id}`);
   addLines(contentLines()); // the content lane's quests carry their own pitches (contract section 2)
   for (const [giver, data] of Object.entries(QUEST_GIVERS)) {
+    if (data.slice) continue; // the opening slice's captain has no board pitches
     for (const q of data.quests) assert.ok(lineById(`${giver}.job.${q}`), `${giver} has no pitch for ${q}`);
     assert.ok(lineById(`${giver}.done.success`) && lineById(`${giver}.done.failure`));
   }

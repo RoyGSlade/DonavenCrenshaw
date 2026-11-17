@@ -7,10 +7,10 @@ import { cameraFor } from '../projects/Space-Shooter/voyage/onfoot/viewport.js';
 import { LOOK_ART } from '../projects/Space-Shooter/voyage/onfoot/look/lookArt.js';
 import { existsSync, statSync } from 'node:fs';
 
-test('only the hangar opts into the round-3 look; its grid is a clean rectangle', () => {
+test('only the hangar and the Tin Duchess rooms opt into the round-3 look; the hangar grid is a clean rectangle', () => {
   for (const id of Object.keys(MAP_DEFS)) {
     const look = lookFor(getMap(id));
-    if (id === 'hangar') assert.ok(look, 'hangar has a look'); else assert.equal(look, null, `${id} draws as before`);
+    if (id === 'hangar' || id.startsWith('duchess-')) assert.ok(look, `${id} has a look`); else assert.equal(look, null, `${id} draws as before`);
   }
   const grid = MAP_DEFS.hangar.grid;
   assert.ok(grid.every(r => r.length === grid[0].length), 'every row the same width');

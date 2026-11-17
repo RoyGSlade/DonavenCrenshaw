@@ -42,6 +42,7 @@ test('quest, speaker, badge and shop files are Studio data: strict JSON bodies',
 test('fifteen quests, five per giver, each with its own job kind, all valid', () => {
   assert.equal(QUEST_LIST.length, 15);
   for (const [id, giver] of Object.entries(QUEST_GIVERS)) {
+    if (giver.slice) continue; // the opening slice's captain: his scenes come from the slice director, not a board
     assert.equal(giver.quests.length, 5, id);
     for (const qid of giver.quests) assert.equal(QUESTS[qid].giver, id, qid);
   }

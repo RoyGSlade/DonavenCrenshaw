@@ -251,6 +251,8 @@ export function createOnFoot({ root, store = null, bus = null, hooks = {}, mapId
       // r3 basics: open job offers here (a giver in person, a board's postings), for the "job here" mark.
       offers: (here) => hooks.offers?.(here) || 0,
       entered: (map) => hooks.entered?.(map),
+      // launch maps: the save's flags switch things in the map (rules/states.js).
+      flags: () => save()?.flags || {},
       // Away from home, the ship's ramp opens onto the place it is docked at.
       doorTo: (door, map) => (map.id === 'ship' && door.id === 'ramp' && docked !== 'home' && PLACES[docked]?.map ? { to: PLACES[docked].map, arrive: 'from-dock' } : null),
     },
