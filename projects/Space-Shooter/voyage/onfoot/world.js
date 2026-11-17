@@ -536,7 +536,7 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     const img = castSprite(n.id);
     // r3 basics: the mark chip and the prompt name people now. launch maps: one label per person, so the canvas
     // never draws a second name tag under the chip.
-    drawBody(ctx, n.x, n.y, n.angle, img, { size: 46 * look.scale, t: t + n.x * 0.01, moving: n.moving, stride: (t * 3) % 4, tint: look.color, label: null, dog: look.dog });
+    drawBody(ctx, n.x, n.y, n.angle, img, { size: 46 * look.scale, t: t + n.x * 0.01, moving: n.moving, stride: (t * 3) % 4, tint: look.color, label: null, dog: look.dog, lift: look.lift });
   }
 
   function drawEnemy(e) {
