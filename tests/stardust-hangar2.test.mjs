@@ -97,13 +97,13 @@ test('licence: pending rolls survive a reload and are cleaned; roll words explai
   const s = memory({ [PENDING_KEY]: JSON.stringify({ cha: 5, con: 9, dex: 'x', wis: 1 }) });
   assert.deepEqual(readPending(s), { cha: 5, wis: 1 });
   assert.deepEqual(readPending(memory({ [PENDING_KEY]: '{oops' })), {});
-  // Contract v1.2: a stat is the bonus on a fresh 2d6 attempt; the words say the bonus and the odds.
-  assert.match(rollWords('dex', 6), /\+3 on every attempt/);
-  assert.match(rollWords('dex', 6), /Your odds: easy 97%/);
-  assert.match(rollWords('wis', 3), /\+0 on every attempt[\s\S]*Average/);
-  assert.match(rollWords('con', 1), /-2 on every attempt/);
-  assert.ok(Math.abs(chance(4, 7) - 0.72) < 0.01, '2d6 + 1 meets 7 about 72% of the time');
-  assert.ok(chance(1, 30) > 0, 'a double six always works');
+  // Launch (d20, doc Section 5): stats no longer add to rolls (CHECK.addStat off); the words say their passives.
+  assert.doesNotMatch(rollWords('dex', 6), /on every attempt|odds/i);
+  assert.match(rollWords('dex', 6), /aim 30% steadier/);
+  assert.match(rollWords('wis', 3), /Average/);
+  assert.match(rollWords('con', 1), /hull/);
+  assert.equal(chance(1, 10), 0.6, 'd20 + level 1 meets 10 on a 9 or better');
+  assert.equal(chance(1, 40), 0.05, 'a natural 20 always works');
   for (const s2 of STATS) assert.ok(STAT_TEXT[s2.id]?.short, `${s2.id} has plain words`);
   assert.equal(STATS.length, 5, 'five stats, Strength included');
 });

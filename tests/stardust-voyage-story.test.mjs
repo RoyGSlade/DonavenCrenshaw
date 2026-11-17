@@ -152,29 +152,28 @@ test('say shows a line, holds it for its reading time, and a tap cuts it short',
 
 // --- Stats -------------------------------------------------------------------------------
 
-test('attempts are a fresh 2d6 + stat bonus; a double six always passes; no auto-fail', () => {
-  const six = { stats: { str: 6, con: 3, dex: 3, wis: 3, cha: 6 }, skills: { hacker: 3 } };
+test('attempts are a fresh d20 + skill level; a natural 20 always passes; no auto-fail', () => {
+  const six = { stats: { str: 6, con: 3, dex: 3, wis: 3, cha: 6 }, skills: { hacker: 3 }, levels: { social: 4 } };
   const one = { stats: { str: 1, con: 3, dex: 3, wis: 3, cha: 1 }, skills: {} };
-  const boxcars = check(one, { stat: 'cha', dc: 99 }, () => 0.99);
-  assert.deepEqual([boxcars.dice, boxcars.natural, boxcars.pass], [[6, 6], true, true], 'a double six beats any target with any stat');
-  const snake = check(six, { stat: 'cha', dc: 5 }, () => 0);
-  assert.deepEqual([snake.total, snake.natural, snake.pass], [5, false, true], 'double one is just a low roll: 2 + 3 meets 5');
+  const nat = check(one, { stat: 'cha', dc: 99 }, () => 0.99);
+  assert.deepEqual([nat.dice, nat.natural, nat.pass], [[20], true, true], 'a natural 20 beats any target at any level');
+  const low = check(six, { stat: 'cha', dc: 5 }, () => 0);
+  assert.deepEqual([low.total, low.natural, low.pass], [5, false, true], 'a 1 is just a low roll: 1 + Social 4 meets 5');
   assert.equal(check(six, { stat: 'cha', dc: 6 }, () => 0).pass, false);
-  const r = check(one, { stat: 'str', dc: 7 }, seq([0.5, 0.5]));
-  assert.deepEqual([r.dice, r.roll, r.statMod, r.bonus, r.total, r.pass, r.natural], [[4, 4], 8, -2, -2, 6, false, false]);
-  assert.equal(check(six, { stat: 'cha', tag: 'hack', dc: 7 }, seq([0.5, 0.5])).bonus, 3, 'skills never add to a roll');
-  for (const v of [1, 2, 3, 4, 5, 6]) for (const dc of [6, 7, 9, 11, 30]) {
+  const r = check(one, { stat: 'str', dc: 10 }, seq([0.5]));
+  assert.deepEqual([r.dice, r.roll, r.skill, r.statMod, r.bonus, r.total, r.pass, r.natural], [[11], 11, null, 0, 0, 11, true, false], 'Strength has no skill: the bare d20; stats do not add');
+  assert.equal(check(six, { stat: 'cha', tag: 'hack', dc: 7 }, seq([0.5])).bonus, 1, 'the tag picks Hacking (level 1); tree skills never add');
+  for (let v = 1; v <= 9; v++) for (const dc of [8, 10, 14, 18, 30]) {
     const p = chance(v, dc);
-    assert.ok(p > 0 && p < 1, `stat ${v} vs ${dc} is ${p}`);
+    assert.ok(p > 0 && p <= 1, `level ${v} vs ${dc} is ${p}`);
   }
-  assert.equal(chance(1, 30).toFixed(4), (1 / 36).toFixed(4), 'only a double six');
-  assert.equal(chance(6, 5), 1, 'with no auto-fail, an easy enough target is certain for a 6');
-  assert.equal(chance(3, 7).toFixed(4), (21 / 36).toFixed(4));
-  assert.equal(chance(6, 9).toFixed(4), (26 / 36).toFixed(4));
-  assert.equal(chance(1, 9).toFixed(4), (3 / 36).toFixed(4));
+  assert.equal(chance(1, 30), 1 / 20, 'only a natural 20');
+  assert.equal(chance(9, 10), 1, 'with no auto-fail, level 9 always makes a normal target');
+  assert.equal(chance(1, 10), 12 / 20);
+  assert.equal(chance(4, 14), 11 / 20);
   const table = oddsTable();
   assert.deepEqual(table.map((row) => row.name), ['easy', 'normal', 'tough', 'hard', 'heroic']);
-  for (const row of table) for (let i = 1; i < 6; i++) assert.ok(row.byStat[i] >= row.byStat[i - 1]);
+  for (const row of table) for (let i = 1; i < row.byLevel.length; i++) assert.ok(row.byLevel[i] >= row.byLevel[i - 1]);
 });
 
 test('five stats with passive effects; the words come from the numbers', () => {
@@ -186,16 +185,21 @@ test('five stats with passive effects; the words come from the numbers', () => {
   assert.equal(effect(c, 'aim'), 0.2);
   assert.equal(effect(c, 'hint'), 0);
   for (const id of STAT_IDS) {
-    assert.match(sixText(id), /^A 6: \+3 on every roll \(easy \d+%, normal \d+%, hard \d+%\)/);
-    assert.match(oneText(id), /double six still always works/);
+    // d20 (launch): stats no longer add to rolls, so their cards speak of passives only.
+    assert.match(sixText(id), /^A 6: /);
+    assert.doesNotMatch(sixText(id), /on every roll/);
+    assert.match(oneText(id), /natural 20 still always works/);
     const card = statCard(id, 6);
-    assert.ok(card.line && card.rolls && card.odds && card.now.endsWith('.'));
+    assert.ok(card.line && card.rolls && card.now.endsWith('.'));
+    assert.equal(card.odds, '', 'no odds line while stats do not add');
     assert.equal(statCard(id, 3).now, 'Average: no extra effects.');
-    assert.equal(statCard(id, 3).bonus, '+0');
+    assert.equal(statCard(id, 3).bonus, '');
   }
   assert.deepEqual(passiveWords('cha', 6), ['prices 6% lower', 'rep 15% faster']);
   assert.match(sixText('con'), /\+15 hull/);
-  assert.equal(optionTag('dex'), '[Dexterity]');
+  assert.equal(optionTag('dex'), '[Piloting]', 'a talk option shows the skill it rolls');
+  assert.equal(optionTag('str'), '', 'a bare d20 shows no tag');
+  assert.equal(optionTag('cha', 'stealth'), '[Stealth]');
   assert.match(statCard('wis', 1).now, /hints 2 misses later/);
   assert.ok(HOW_CHECKS_WORK.every((line) => !/[{}]/.test(line)), 'every placeholder filled');
 });
@@ -245,10 +249,12 @@ test('a new save starts at the intro, and the whole tutorial plays in order', as
   assert.equal(choices.talk, 'edna');
   const attempts = choices.options.filter((o) => o.kind === 'attempt');
   assert.deepEqual(attempts.map((o) => o.stat), ['cha', 'str', 'con', 'dex', 'wis'], 'one attempt per stat');
-  assert.ok(attempts.every((o) => !o.locked && o.chance > 0 && o.chance < 1), 'anyone may try; the stat only moves the odds');
+  assert.ok(attempts.every((o) => !o.locked && o.chance > 0 && o.chance < 1), 'anyone may try; the level only moves the odds');
   const cha = attempts.find((o) => o.stat === 'cha');
-  assert.match(cha.label, /^\[Charisma\] /);
-  assert.equal(cha.chance.toFixed(4), (33 / 36).toFixed(4), 'charisma 6 vs 7: anything but 2 or 3 on 2d6');
+  assert.match(cha.label, /^\[Social\] /);
+  assert.equal(cha.chance, 12 / 20, 'd20 + Social 1 vs 10: a 9 or better');
+  assert.equal(cha.roll, 'd20 + Social 1');
+  assert.equal(attempts.find((o) => o.stat === 'str').label.startsWith('['), false, 'the Strength option is a bare d20: no tag');
   const gated = choices.options.find((o) => o.kind === 'skill');
   assert.equal(gated.locked, true);
   assert.equal(gated.reason, 'Needs the Trader skill.');
@@ -257,7 +263,7 @@ test('a new save starts at the intro, and the whole tutorial plays in order', as
   env.bus.emit('story:choose', { index: cha.index });
   await env.director.idle();
   const roll = env.seen.find((e) => e.type === 'roll:attempt').detail;
-  assert.deepEqual([roll.dice, roll.bonus, roll.total, roll.dc, roll.pass, roll.who], [[4, 3], 3, 10, 7, true, 'Vela Quint']);
+  assert.deepEqual([roll.dice, roll.bonus, roll.total, roll.dc, roll.pass, roll.who], [[12], 1, 13, 10, true, 'Vela Quint']);
   assert.ok(env.said.includes('edna.talk.cha'));
   assert.equal(env.director.state().step, 'puzzle');
   assert.equal(env.director.state().choices.edna, cha.index);

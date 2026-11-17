@@ -325,11 +325,11 @@ export const HANGAR_DATA = {
   "licence": {
     "eyebrow": "CAPTAIN'S LICENCE · DRIFTWAKE REGISTRY",
     "title": "Who flies this ship?",
-    "body": "Pick a face, name your captain, then roll the die once for each stat. Whatever lands face up is yours. A 3 is average; each stat is the bonus on every attempt, but only the dice decide, and a double six always works.",
+    "body": "Pick a face, name your captain, then roll the die once for each stat. Whatever lands face up is yours. A 3 is average. Stats give small boosts for life: prices, hull, aim and more. Rolls are a d20 plus your skill level, and a natural 20 always works.",
     "sign": "Sign the licence",
     "rolledAll": "All five rolled. Sign the licence when you're ready.",
     "hint": "Flick the tray or press Roll. Whatever lands face up is your {stat}.",
-    "hintDone": "Five stats, rolled once. Each one is the bonus on every attempt you make. They stay until your captain dies.",
-    "checkDc": 7
+    "hintDone": "Five stats, rolled once. Each gives small boosts in play. They stay until your captain dies.",
+    "checkDc": 10
   }
 };

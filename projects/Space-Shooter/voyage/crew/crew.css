@@ -23,3 +23,17 @@
 .cw-note{color:var(--cyan)!important}
 #cw-leave,#cw-close{margin-top:14px}
 .qs-crew{color:var(--cyan)}
+.cw-seats li[data-kind=ai] b{color:#c9b8ff}
+.cw-seats li[data-kind=open] b{color:var(--muted)}
+.cw-seats li button{margin-left:auto}
+.cw-hire{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:8px 0 4px}
+.cw-hire span{flex:1 1 100%;font:11px Consolas,monospace;letter-spacing:.08em;color:var(--muted)}
+.cw-hire button{min-height:36px}
+.cw-roster{list-style:none;margin:8px 0 2px;padding:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+@media (max-width:520px){.cw-roster{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.cw-roster li{display:grid;gap:2px;padding:7px 10px;border:1px solid var(--line);border-radius:4px;background:#0b1522}
+.cw-roster span{font:10px Consolas,monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--cyan)}
+.cw-roster li[data-kind=ai] span{color:#c9b8ff}
+.cw-roster li[data-kind=open]{opacity:.55}
+.cw-roster li[data-presence=away] b{color:var(--orange)}
+.cw-roster li.is-me{border-color:var(--cyan);box-shadow:0 0 0 1px #81e6df55}

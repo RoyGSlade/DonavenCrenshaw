@@ -1,8 +1,9 @@
 // Who the crew is, and what they earn (P11). Pure; no DOM.
 //
 // The crew card: the second player's own captain, as much of them as the
-// pilot's game needs to roll their checks (S55): name, the four stats and
-// their skills. It travels crew -> host and is cleaned on arrival.
+// pilot's game needs to roll their checks (S55): name, the stats, their tree
+// skills and (launch, d20) their roll-skill levels. It travels crew -> host and
+// is cleaned on arrival; a card from an older page has every level at 1.
 //
 // The crew's share (S32: each player keeps their own save): whenever a step
 // pays the pilot, the crew gets the same credits, rep with that giver, skill
@@ -10,7 +11,7 @@
 // cargo stay with the pilot, whose job it is. Fines and losses are not shared.
 // A share already granted stays if the pilot leaves mid-job (S58).
 import { STATS, SKILLS, GIVERS, ITEMS } from '../data.js';
-import { cleanName } from '../character.js';
+import { cleanName, cleanLevels } from '../character.js';
 
 const STAT_IDS = STATS.map((s) => s.id);
 const SKILL = new Map(SKILLS.map((s) => [s.id, s]));
@@ -29,6 +30,7 @@ export function crewCard(character) {
     name: character.name,
     stats: Object.fromEntries(STAT_IDS.map((id) => [id, character.stats?.[id] ?? 3])),
     skills: Object.fromEntries(Object.entries(character.skills || {}).filter(([id, rank]) => SKILL.has(id) && rank > 0)),
+    levels: cleanLevels(character.levels),
   };
 }
 
@@ -51,7 +53,9 @@ export function cleanCrewCard(card) {
     const r = skill ? int(rank, 1, skill.max) : null;
     if (r != null) skills[id] = r;
   }
-  return { name, stats, skills };
+  // username: a signed-in friend's account name, so the hub can pay their share (server mode).
+  const username = typeof card.username === 'string' && /^[A-Za-z0-9_-]{3,20}$/.test(card.username) ? card.username : null;
+  return { name, stats, skills, levels: cleanLevels(card.levels), ...(username ? { username } : {}) };
 }
 
 /** The crew's share of a step's grant events, or null when there is nothing to share. */

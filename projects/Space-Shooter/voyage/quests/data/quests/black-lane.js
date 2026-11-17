@@ -133,11 +133,12 @@ export default {
           "to": "duel"
         },
         {
-          "label": "\"Take a message to your warlord instead.\" (Charisma)",
+          "label": "\"Take a message to your warlord instead.\" (Social)",
           "check": {
+            "skill": "social",
             "stat": "cha",
             "tag": "talk",
-            "dc": 9,
+            "dc": 14,
             "pass": "end-message",
             "fail": "duel"
           }

@@ -23,26 +23,73 @@ export const START_POINTS = 2;
 export const START_KIT = Object.freeze({ money: 80, items: { scrap: 4 } });
 
 // Round 2 (story lane, lhc-lanes/stardust/story/STATS.md; Donaven 2026-11-11):
-// STATS are rolled once (1d6 each) and are the BONUS on everyday attempt rolls:
-// talking, brawling and lifting, shrugging off poison and bad food, reflexes,
-// noticing, gambling. SKILLS never add to rolls; they unlock things (SKILLS below).
-// `rolls`: what attempts the stat is the bonus for (words for the player).
+// STATS are rolled once (1d6 each) and give small passive effects (`effects`
+// below). Launch (design doc Section 5, Nov 15): they no longer add to rolls
+// unless CHECK.addStat is turned on; the d20 adds the SKILL LEVEL instead.
+// `rolls`: the everyday attempts the stat is about (words for the player).
 // `effects`: small passive numbers, per point over STAT_BASELINE (negative
 // below), read with effect(c, tag). Ids are what saves keep: rename the name.
 
-// Attempts (Donaven, 2026-11-11: "you roll to get stats which improve your
-// attempts at stuff; they do not predetermine your attempts as fail or success
-// until rolled again"). Every attempt is a fresh roll of 2d6, plus the stat's
-// bonus (stat - STAT_BASELINE: -2 at a 1, +3 at a 6), against a target. A
-// natural top face, double six (alwaysPass 12), always works whatever the bonus
-// or target (Donaven: "yes, a natural 6 always passes"). alwaysFail is off (0):
-// a double one is just a low roll. Named targets below; quests may use numbers.
+// Attempts (design doc Section 5, "The d20", confirmed Nov 15: "The d20
+// replaces 2d6 everywhere. Dialogue and other non-action checks roll a d20, add
+// the skill level, and must beat a difficulty number. Advantage means rolling
+// twice and keeping the higher."). Every attempt is a fresh d20 + the level of
+// the skill the check uses (ROLL_SKILLS, 1..9) + any extra (a ship), against a
+// target (dc). A natural 20 always passes, whatever the bonus or target; it
+// replaces "a double six always works" (launch tech lane assumption A1).
+// alwaysFail stays off (0): a natural 1 is just a low roll. addStat (A2): when
+// true the old stat bonus (stat - STAT_BASELINE) adds on top of the level.
+// Named targets below (A4); content may use numbers. Old 2d6 targets were
+// moved with new = 2 x old - 4 (quests/runUpgrade.js dcFrom2d6).
 export const CHECK = Object.freeze({
-  dice: 2,
-  sides: 6,
-  alwaysPass: 12,
+  dice: 1,
+  sides: 20,
+  alwaysPass: 20,
   alwaysFail: 0,
-  levels: { easy: 6, normal: 7, tough: 8, hard: 9, heroic: 11 },
+  addStat: false,
+  levels: { easy: 8, normal: 10, tough: 12, hard: 14, heroic: 18 },
+});
+
+// The eight skills of the design doc (Section 5): each levels 1..9 by use, and
+// the level is what a d20 roll adds. Levels are earned from XP, which the home
+// server owns (launch plan, outcome 2); until then every captain is level 1.
+// Ids are what saves keep (character.levels): rename the name, not the id.
+export const LEVEL_MIN = 1;
+export const LEVEL_MAX = 9;
+export const ROLL_SKILLS = Object.freeze([
+  { id: 'shooting', name: 'Shooting', blurb: 'Guns, in the ship and on foot.' },
+  { id: 'piloting', name: 'Piloting', blurb: 'Flying, racing, dodging and landing.' },
+  { id: 'stealth', name: 'Stealth', blurb: 'Moving quiet and staying unseen.' },
+  { id: 'hacking', name: 'Hacking', blurb: 'Terminals, locks with brains, other ships.' },
+  { id: 'repair', name: 'Repair', blurb: 'Fixing ships and things that rattle.' },
+  { id: 'crafting', name: 'Crafting', blurb: 'Making parts and gear.' },
+  { id: 'social', name: 'Social', blurb: 'Talking, haggling, bluffing and gambling.' },
+  { id: 'navigation', name: 'Navigation', blurb: 'Scanning, noticing and finding the way.' },
+]);
+export const ROLL_SKILL_IDS = Object.freeze(ROLL_SKILLS.map((s) => s.id));
+
+// AI crew by tier (design doc Section 9, Donaven Nov 16: low skill, mistakes,
+// paid per job). The page's defaults; with the home server on, the hub's
+// games/stardust/rules.json "voyage" ai and wages win (sent with /v1/clock).
+export const AI_CREW = Object.freeze({
+  1: Object.freeze({ level: 1, mistake: 0.30, wage: 0.10 }),
+  2: Object.freeze({ level: 2, mistake: 0.20, wage: 0.15 }),
+  3: Object.freeze({ level: 3, mistake: 0.10, wage: 0.25 }),
+});
+
+// Which skill a check uses when it does not name one (`skill` on the check
+// wins): its tag first, then its stat. null = no skill: the bare d20 (A3:
+// Strength and Health have no home among the eight; the quest lane names a
+// `skill` on new checks).
+export const CHECK_SKILL = Object.freeze({
+  byTag: Object.freeze({
+    nav: 'piloting', dodge: 'piloting', race: 'piloting', fly: 'piloting',
+    fight: 'shooting', shoot: 'shooting',
+    talk: 'social', trade: 'social', haggle: 'social', gamble: 'social', bluff: 'social',
+    scan: 'navigation', notice: 'navigation', route: 'navigation',
+    hack: 'hacking', repair: 'repair', craft: 'crafting', sneak: 'stealth', hide: 'stealth',
+  }),
+  byStat: Object.freeze({ cha: 'social', wis: 'navigation', dex: 'piloting', str: null, con: null }),
 });
 
 export const STATS = Object.freeze([
@@ -82,7 +129,7 @@ export const TREES = Object.freeze([
   { id: 'wrench', name: 'Wrench', blurb: 'Repair, tech, puzzles and trade.' },
 ]);
 
-// SKILLS UNLOCK things; they never add to a roll (Donaven, 2026-11-11: "Skills
+// SKILLS (the trees) UNLOCK things; they never add to a roll (Donaven, 2026-11-11: "Skills
 // should be for neat stuff or locked areas"; SKILL LEVELS: each level unlocks
 // any of three kinds). Each level costs one point. `max` = the number of levels.
 // `needs`: points already in a tree before level 1. A skill in two trees counts

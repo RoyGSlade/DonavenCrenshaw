@@ -14,7 +14,7 @@ export function createFoot(params) {
     kind: 'foot',
     title: params.title || 'On foot',
     enemy: structuredClone(params.enemy || { name: 'Guards', hp: 20 }),
-    dc: params.dc || 7,
+    dc: params.dc || 10, // d20 scale (data.js CHECK)
     log: [],
     done: false,
     outcome: null,

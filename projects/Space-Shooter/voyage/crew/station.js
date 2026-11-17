@@ -173,7 +173,19 @@ export function createStation({ root, send, me, reducedMotion = () => false }) {
       el('h2', { text: s.job ? s.job.title : 'Docked in the hangar' }),
       s.job ? el('p', { class: 'vy-note', text: s.job.where }) : null,
       s.hullMax ? bar('Hull', s.hull, s.hullMax) : null,
+      roster(s),
     ];
+  }
+
+  // Who is aboard (outcome 3: up to four seats; AI crew marked with their tier).
+  function roster(s) {
+    if (!Array.isArray(s.seats) || s.seats.length < 2) return null;
+    const mine = me()?.name;
+    return el('ul', { class: 'cw-roster', 'aria-label': 'Who is aboard' }, ...s.seats.slice(0, 4).map((x) => el('li', {
+      dataset: { kind: String(x.kind || 'open'), presence: String(x.presence || 'open') },
+      class: x.kind !== 'open' && x.name === mine && x.kind === 'human' ? 'is-me' : null,
+    }, el('span', { text: x.kind === 'host' ? 'Pilot' : x.kind === 'ai' ? `AI · tier ${x.tier}` : x.kind === 'human' ? 'Crew' : 'Open' }),
+    el('b', { text: x.kind === 'open' ? '—' : String(x.name || '…') }))));
   }
 
   function talk(s) {
@@ -185,7 +197,7 @@ export function createStation({ root, send, me, reducedMotion = () => false }) {
       el('ul', { class: 'vy-list cw-checks' }, ...s.checks.map((c) => el('li', {},
         el('span', { text: c.label }),
         el('button', { type: 'button', dataset: { check: String(c.index) }, onclick: () => send({ job: 'check', index: c.index }),
-          text: `Take it: 2d6 + your ${c.statName} bonus vs ${c.dc}` })))),
+          text: c.skilled === false ? `Take it: d20 vs ${c.dc}` : `Take it: d20 + your ${c.statName} level vs ${c.dc}` })))),
     );
   }
 
@@ -233,7 +245,7 @@ export function createStation({ root, send, me, reducedMotion = () => false }) {
         el('button', { type: 'button', 'aria-pressed': String(t.mark === r.id), onclick: () => send({ job: 'mark', route: r.id }), text: t.mark === r.id ? 'Recommended' : 'Recommend' })))),
       t.next ? el('p', { class: 'qs-text', dataset: { odds: String(t.nextOdds) }, text: `Next jump: ${t.next}, ${t.nextOdds}% chance of trouble${t.scanned ? ' (scanned)' : ''}.` }) : null,
       el('button', { type: 'button', id: 'cw-scan', disabled: !t.canScan, onclick: () => send({ job: 'scan' }),
-        text: t.canScan ? `Scan the next jump (2d6 + your Wisdom bonus vs ${CREW_RULES.scan.dc})` : 'Next jump scanned' }),
+        text: t.canScan ? `Scan the next jump (d20 + your Navigation level vs ${CREW_RULES.scan.dc})` : 'Next jump scanned' }),
       el('p', { class: 'vy-note', text: 'A good scan spots trouble early and halves the next jump\'s odds.' }),
     );
   }

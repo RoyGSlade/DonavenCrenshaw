@@ -10,7 +10,7 @@ export const ENEMIES = Object.freeze({
     abilities: { pickN: 1, from: ['shield', 'emp', 'mines', 'missiles'] },
     damage: [6, 10],
     parley: true,
-    parleyDc: 8,
+    parleyDc: 12,
   },
   drone: {
     name: { pick: ['Warden drone', 'Dead-relay sentinel'] },
@@ -29,7 +29,7 @@ export const ENEMIES = Object.freeze({
     abilities: { pickN: 1, from: ['cloak', 'emp', 'repair'] },
     damage: [7, 11],
     parley: true,
-    parleyDc: 9,
+    parleyDc: 14,
   },
   scav: {
     name: { pick: ['Driftborn scow', 'Claim-jumper tug'] },
@@ -39,7 +39,7 @@ export const ENEMIES = Object.freeze({
     abilities: { pickN: 1, from: ['mines', 'repair'] },
     damage: [5, 9],
     parley: true,
-    parleyDc: 6,
+    parleyDc: 8,
   },
   ace: {
     name: 'Red Kestrel',
@@ -49,7 +49,7 @@ export const ENEMIES = Object.freeze({
     abilities: { pickN: 2, from: ['shield', 'missiles', 'mines', 'repair'] },
     damage: [8, 12],
     parley: true,
-    parleyDc: 10,
+    parleyDc: 16,
   },
   guards: {
     name: { pick: ['Depot guards', 'Syndicate dockhands', 'Two bored sentries'] },

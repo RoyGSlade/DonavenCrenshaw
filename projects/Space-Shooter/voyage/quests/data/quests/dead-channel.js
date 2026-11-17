@@ -81,11 +81,12 @@ export default {
           "to": "trip"
         },
         {
-          "label": "\"Why is it my number, Hask?\" (Wisdom)",
+          "label": "\"Why is it my number, Hask?\" (Social)",
           "check": {
+            "skill": "social",
             "stat": "wis",
             "tag": "talk",
-            "dc": 7,
+            "dc": 10,
             "pass": "hask-knows",
             "fail": "trip"
           }
@@ -129,11 +130,12 @@ export default {
           "to": "guards"
         },
         {
-          "label": "Fly in under their scan (Dexterity)",
+          "label": "Fly in under their scan (Stealth)",
           "check": {
+            "skill": "stealth",
             "stat": "dex",
             "tag": "dodge",
-            "dc": 8,
+            "dc": 12,
             "pass": "crawl",
             "fail": "guards"
           }
@@ -189,7 +191,7 @@ export default {
       "mode": "foot",
       "title": "Crawlspace sentries",
       "enemy": "$sentries",
-      "dc": 7,
+      "dc": 10,
       "outcomes": {
         "win": "panel",
         "lose": "end-thrown-out",

@@ -15,6 +15,7 @@ import { iconFor, HANGAR_ART } from './ui/assets.js';
 import { CAST_NAMES } from './hangarStations.js';
 import { launches } from './hangarApi.js';
 import { BADGES_DATA } from './quests/data/badges.js';
+import { economy } from './account.js';
 
 const NAP = BASICS_DATA.nap;
 
@@ -96,6 +97,7 @@ export function createHangar({ panes, store, ship, crew, toast, dev = false, onT
           text: top ? 'Top tier' : `Fit tier ${next.tier}`,
           on: { click: () => {
             const r = store.upgrade(u.id);
+            if (r.ok) economy.spend('upgrade', `${u.id}-${next.tier}`);
             toast(r.ok ? `${u.name} tier ${next.tier} fitted. Chibby wipes his hands on his overalls, proud as anything.` : r.reason);
             if (r.ok) bus?.emit('hangar:upgraded', { system: u.id, tier: next.tier });
           } },
@@ -298,7 +300,12 @@ export function createHangar({ panes, store, ship, crew, toast, dev = false, onT
         el('button', { type: 'button', id: 'vy-dev-check', text: 'Test a check', on: { click: () => {
           const c = store.get().character;
           if (!c) { toast('Make a captain first.'); return; }
-          bus?.emit('roll:attempt', { ...check(c, { stat: 'dex', tag: 'test', dc: 8 }, Math.random), who: c.name, label: 'Test: thread the needle' });
+          bus?.emit('roll:attempt', { ...check(c, { stat: 'dex', tag: 'test', dc: 12 }, Math.random), who: c.name, label: 'Test: thread the needle' });
+        } } }),
+        el('button', { type: 'button', id: 'vy-dev-advantage', text: 'Test advantage', on: { click: () => {
+          const c = store.get().character;
+          if (!c) { toast('Make a captain first.'); return; }
+          bus?.emit('roll:attempt', { ...check(c, { skill: 'piloting', tag: 'test', dc: 14, advantage: true }, Math.random), who: c.name, label: 'Test: with advantage' });
         } } }),
         el('button', { type: 'button', id: 'vy-dev-reset', text: 'Fresh save', on: { click: () => { if (confirm('Start a fresh save on this device? Your account copy is replaced on the next sync.')) store.reset(); } } }),
       ]),

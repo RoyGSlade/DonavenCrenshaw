@@ -23,5 +23,5 @@ export const STAT_TEXT = Object.freeze(Object.fromEntries(STATS.map((s) => {
   return [s.id, Object.freeze({ short: card?.line || s.blurb, rolls: card?.rolls || '', options: optionTag(s.id), six: card?.six || '' })];
 })));
 
-/** The chance an attempt passes (0..1): 2d6 + (stat - 3) + bonus vs dc, a double six always works. */
-export const chance = (stat, dc, bonus = 0) => storyChance(stat, dc, bonus);
+/** The chance an attempt passes (0..1): d20 + skill level + bonus vs dc; a natural 20 always works. */
+export const chance = (level, dc, bonus = 0) => storyChance(level, dc, bonus);

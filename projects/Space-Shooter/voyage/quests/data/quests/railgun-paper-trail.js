@@ -157,21 +157,23 @@ export default {
       "text": "One railgun, crated, waiting for a requisition that will never come. Guards on the door. Bored ones, if we're lucky.",
       "choices": [
         {
-          "label": "Go in through the vents (Dexterity)",
+          "label": "Go in through the vents (Stealth)",
           "check": {
+            "skill": "stealth",
             "stat": "dex",
             "tag": "dodge",
-            "dc": 8,
+            "dc": 12,
             "pass": "vault",
             "fail": "guards"
           }
         },
         {
-          "label": "Walk in with a forged manifest (Charisma)",
+          "label": "Walk in with a forged manifest (Social)",
           "check": {
+            "skill": "social",
             "stat": "cha",
             "tag": "talk",
-            "dc": 8,
+            "dc": 12,
             "pass": "vault",
             "fail": "guards"
           }
@@ -201,7 +203,7 @@ export default {
       "mode": "foot",
       "title": "Warehouse guards",
       "enemy": "$guards",
-      "dc": 7,
+      "dc": 10,
       "outcomes": {
         "win": "vault",
         "lose": "end-caught",
@@ -239,11 +241,12 @@ export default {
       "text": "The lock buzzes. Somewhere above you, a klaxon clears its throat.",
       "choices": [
         {
-          "label": "Run for it (Dexterity)",
+          "label": "Run for it (Stealth)",
           "check": {
+            "skill": "stealth",
             "stat": "dex",
             "tag": "dodge",
-            "dc": 7,
+            "dc": 10,
             "pass": "end-empty",
             "fail": "end-caught"
           }
@@ -260,11 +263,12 @@ export default {
       "text": "Lane-defence ordnance is form 27-B. With a 9-C if the ordnance is kinetic. Unless it is Tuesday. Is it Tuesday?",
       "choices": [
         {
-          "label": "Fill in the forms properly (Wisdom)",
+          "label": "Fill in the forms properly (Social)",
           "check": {
+            "skill": "social",
             "stat": "wis",
             "tag": "puzzle",
-            "dc": 7,
+            "dc": 10,
             "pass": "stamped",
             "fail": "wrong-form"
           }
@@ -311,11 +315,12 @@ export default {
       "text": "This is a 27-A. A 27-A requisitions decorative ordnance. Do you want a decorative railgun?",
       "choices": [
         {
-          "label": "Ask nicely, and mean it (Charisma)",
+          "label": "Ask nicely, and mean it (Social)",
           "check": {
+            "skill": "social",
             "stat": "cha",
             "tag": "talk",
-            "dc": 8,
+            "dc": 12,
             "pass": "stamped",
             "fail": "end-rejected"
           }
@@ -390,11 +395,12 @@ export default {
           }
         },
         {
-          "label": "Earn the loan of one: shift scrap all morning (Strength)",
+          "label": "Earn the loan of one: shift scrap all morning",
           "check": {
+            "skill": "none",
             "stat": "str",
             "tag": "lift",
-            "dc": 7,
+            "dc": 10,
             "pass": "mine",
             "fail": "no-drill"
           }
@@ -444,11 +450,12 @@ export default {
       "text": "The seam glitters under your lights. The drill bucks like it has opinions about you.",
       "choices": [
         {
-          "label": "Dig deep (Strength)",
+          "label": "Dig deep",
           "check": {
+            "skill": "none",
             "stat": "str",
             "tag": "dig",
-            "dc": 7,
+            "dc": 10,
             "pass": "ore",
             "fail": "collapse"
           }
@@ -461,11 +468,12 @@ export default {
       "text": "The seam collapses in a slow grey cloud. There is more ore behind it. Probably.",
       "choices": [
         {
-          "label": "Dig again, harder (Strength)",
+          "label": "Dig again, harder",
           "check": {
+            "skill": "none",
             "stat": "str",
             "tag": "dig",
-            "dc": 9,
+            "dc": 14,
             "pass": "ore",
             "fail": "end-no-gun"
           }

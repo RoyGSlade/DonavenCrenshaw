@@ -157,7 +157,7 @@ test('quest state in the save: kept, repaired, and trimmed to its budget', () =>
     done: { 'cold-run': { result: 'success', outcome: 'quiet', at: 5, times: 2 }, 'black-lane': { result: 'maybe' } },
     future: { keep: 1 },
   });
-  assert.deepEqual(q.active, { 'cold-run': run });
+  assert.deepEqual(q.active, { 'cold-run': { ...run, v: 2 } }, 'a run from before the d20 is upgraded on load (runUpgrade.js)');
   assert.deepEqual(q.done, { 'cold-run': { result: 'success', outcome: 'quiet', at: 5, times: 2 } });
   assert.deepEqual(q.future, { keep: 1 }, 'unknown keys are kept for newer pages');
   const big = cleanQuests({ active: { 'cold-run': { ...run, log: ['x'.repeat(40 * 1024)] } }, done: { 'cold-run': { result: 'failure', outcome: 'x', at: 1, times: 1 } } });

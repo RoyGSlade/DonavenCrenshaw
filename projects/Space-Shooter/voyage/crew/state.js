@@ -9,7 +9,7 @@ import { view } from '../quests/engine.js';
 import { crewFight, crewTrip } from '../quests/parts/crew.js';
 import { eventChance, routeOdds, SCAN_FACTOR } from '../quests/parts/travel.js';
 import { SECTORS } from '../quests/data/sectors.js';
-import { STAT_NAMES } from '../quests/core.js';
+import { checkName, checkSkillOf } from '../quests/core.js';
 
 const cut = (text, n = 380) => {
   const s = String(text ?? '');
@@ -107,7 +107,7 @@ export function crewState({ quest = null, run = null, save, live = false }) {
     speaker: v.speaker ? cut(v.speaker, 40) : null,
     text: cut(v.text),
     checks: (v.choices || []).filter((c) => c.check && !c.locked).slice(0, 9).map((c) => ({
-      index: c.index, label: cut(c.label, 120), stat: c.check.stat, statName: STAT_NAMES[c.check.stat] || c.check.stat, dc: c.check.dc,
+      index: c.index, label: cut(c.label, 120), stat: c.check.stat, statName: checkName(c.check), skilled: Boolean(checkSkillOf(c.check)), dc: c.check.dc,
     })),
   };
 }

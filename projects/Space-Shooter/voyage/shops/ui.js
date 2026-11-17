@@ -14,6 +14,7 @@
 import { el, button } from '../quests/ui/player.js';
 import { shopView, buy, sell, tryDeal, equip, unequip, GEAR, SLOTS, SHOPS } from './shop.js';
 import { ITEMS, rollText } from '../quests/core.js';
+import { economy } from '../account.js';
 
 const money = (n) => `${Math.trunc(n).toLocaleString('en-US')} cr`;
 const itemName = (id) => ITEMS[id]?.name || id;
@@ -60,6 +61,7 @@ export function mountShop({ root, shop: shopId, store, speak = null, bus = null,
       el('div', { class: 'sh-buy' },
         price,
         button(s.ok ? 'Buy' : s.reasons[0], () => commit(buy(store.get(), shopId, s.item), () => {
+          economy.spend('stock', `${shopId}:${s.item}`, s.list && s.cost.money < s.list ? Math.round((1 - s.cost.money / s.list) * 100) : 0);
           flash = s.item; note = `Bought ${s.name}.`;
           emit('shop:bought', { shop: shopId, item: s.item });
           toast(note);
@@ -89,7 +91,7 @@ export function mountShop({ root, shop: shopId, store, speak = null, bus = null,
     return el('ul', { class: 'sh-list' }, ...v.buys.map((b) => el('li', { class: 'sh-item', dataset: { sell: b.item } },
       el('div', { class: 'sh-what' }, el('strong', { text: b.name }), el('small', { class: 'sh-owned', text: `You have ${b.owned}${b.worn ? ' (worn)' : ''}` })),
       el('div', { class: 'sh-buy' }, el('span', { class: 'sh-price', text: money(b.money) }),
-        button('Sell one', () => commit(sell(store.get(), shopId, b.item), () => { note = `Sold ${b.name} for ${money(b.money)}.`; emit('shop:sold', { shop: shopId, item: b.item }); })))),
+        button('Sell one', () => commit(sell(store.get(), shopId, b.item), () => { economy.spend('sell', `${shopId}:${b.item}`); note = `Sold ${b.name} for ${money(b.money)}.`; emit('shop:sold', { shop: shopId, item: b.item }); })))),
     ));
   }
 
@@ -99,12 +101,17 @@ export function mountShop({ root, shop: shopId, store, speak = null, bus = null,
       el('h4', { text: 'RISKY DEALS' }),
       el('ul', { class: 'sh-list' }, ...v.deals.map((d) => el('li', { class: 'sh-item sh-deal', dataset: { deal: d.id } },
         el('div', { class: 'sh-what' }, el('strong', { text: d.name }), el('p', { text: d.blurb }),
-          el('small', { class: 'sh-tag', text: `A roll: ${d.statName}, 2d6 ${d.mod < 0 ? '-' : '+'} ${Math.abs(d.mod)} vs ${d.dc} (${Math.round(d.chance * 100)}%)` })),
+          el('small', { class: 'sh-tag', text: `A roll: ${d.roll} vs ${d.dc} (${Math.round(d.chance * 100)}%)` })),
         el('div', { class: 'sh-buy' }, el('span', { class: 'sh-price', text: costText(d.cost) }),
-          button(d.ok ? 'Take the deal' : d.reasons[0], () => {
-            const out = tryDeal(store.get(), shopId, d.id, { rng });
+          button(d.ok ? 'Take the deal' : d.reasons[0], async () => {
+            // Server mode: the hub rolls the die (a roll that pays out is the hub's); the deal then plays with that face.
+            const server = economy.on ? await economy.roll(d.id) : null;
+            if (economy.on && !server) { note = 'The Guild bank would not cover that deal.'; render(); return; }
+            const face = server?.attempt?.roll;
+            const out = tryDeal(store.get(), shopId, d.id, { rng: face ? () => (face - 0.5) / 20 : rng });
+            if (server) queueMicrotask(() => economy.pull());
             commit(out, () => {
-              note = `${rollText(out.roll)}: ${out.pass ? (out.roll.natural ? 'double six, it pays off!' : 'it pays off.') : 'no luck.'} ${out.text}`;
+              note = `${rollText(out.roll)}: ${out.pass ? (out.roll.natural ? 'natural 20, it pays off!' : 'it pays off.') : 'no luck.'} ${out.text}`;
               emit('roll:attempt', { ...out.roll, who: store.get().character?.name || null, label: d.name });
               emit('shop:deal', { shop: shopId, deal: d.id, pass: out.pass });
             });

@@ -110,21 +110,21 @@ test('the view carries the stage direction and the voice line; a hull patch node
   assert.equal(out.save.items['hull-patch'], undefined, 'the patch is used up');
 });
 
-test('dice rule: stats never gate an option, they add to a fresh roll; the set has a gamble, a brawl and bad food', () => {
+test('dice rule: stats never gate an option; every check is a fresh d20; the set has a gamble, a brawl and bad food', () => {
   for (const q of QUEST_LIST) for (const c of choicesOf(q)) for (const g of gates(c.requires)) assert.equal(g.stats, undefined, `${q.id}: ${c.label}`);
   const checks = QUEST_LIST.flatMap((q) => choicesOf(q).filter((c) => c.check).map((c) => ({ q: q.id, ...c.check })));
   assert.ok(checks.some((c) => c.tag === 'gamble'), 'a gamble');
   assert.ok(checks.some((c) => c.tag === 'brawl' && c.stat === 'str'), 'a brawl on Strength');
   assert.ok(checks.some((c) => c.tag === 'food' && c.stat === 'con'), 'bad food on Health');
-  for (const c of checks) assert.ok(c.dc >= 6 && c.dc <= 10, `${c.q}: dc ${c.dc}`);
-  // The attempt (contract section 6): 2d6 + (stat - 3), fresh every time.
-  const strong = testCharacter({ cha: 3, con: 3, dex: 3, wis: 3, str: 6 });
-  const r = check(strong, { stat: 'str', tag: 'brawl', dc: 8 }, () => 0);
-  assert.deepEqual(r.dice, [1, 1]);
-  assert.equal(r.total, 2 + 3, 'double one plus Strength 6');
+  for (const c of checks) assert.ok(c.dc >= 8 && c.dc <= 16, `${c.q}: dc ${c.dc} (d20 scale)`);
+  // The attempt (launch, doc Section 5): a fresh d20 + the skill level. A brawl has no skill among the eight (A3): the bare d20.
+  const strong = { ...testCharacter({ cha: 3, con: 3, dex: 3, wis: 3, str: 6 }), levels: { social: 9 } };
+  const r = check(strong, { stat: 'str', tag: 'brawl', dc: 12 }, () => 0);
+  assert.deepEqual(r.dice, [1]);
+  assert.equal(r.total, 1, 'a natural 1, no skill to add, and Strength does not add');
   assert.equal(r.pass, false, 'a strong captain can still miss');
   const weak = testCharacter({ cha: 1, con: 1, dex: 1, wis: 1, str: 1 });
-  assert.equal(check(weak, { stat: 'str', tag: 'brawl', dc: 11 }, () => 0.99).pass, true, 'a weak one can still land a double six');
+  assert.equal(check(weak, { stat: 'str', tag: 'brawl', dc: 18 }, () => 0.99).pass, true, 'a weak one can still land a natural 20');
 });
 
 test('skill gates: level 1 and level 2-3 doors, routes and options, shown with their level while locked', () => {
@@ -243,7 +243,7 @@ test('Edna: her Charisma 6 boon and the teapot discount stack on core\'s price',
   assert.equal(priceAt('mel', family, 200), priceFor(family, 200), 'other shops do not care');
 });
 
-test('Edna\'s risky deals: a fresh d6 + stat roll each time, either way it lands in the save', () => {
+test('Edna\'s risky deals: a fresh d20 + skill roll each time, either way it lands in the save', () => {
   const save = captain(3, { money: 200 });
   const lucky = tryDeal(save, 'edna', 'mystery-crate', { rng: seq(0.99) });
   assert.equal(lucky.ok, true);
@@ -254,7 +254,7 @@ test('Edna\'s risky deals: a fresh d6 + stat roll each time, either way it lands
   const unlucky = tryDeal(save, 'edna', 'mystery-crate', { rng: seq(0) });
   assert.equal(unlucky.pass, false);
   assert.equal(unlucky.save.items.scrap, 3);
-  assert.equal(unlucky.roll.total, unlucky.roll.roll + 0, 'Wisdom 3 adds nothing');
+  assert.equal(unlucky.roll.total, unlucky.roll.roll + 1, 'd20: a notice check rolls Navigation (level 1); Wisdom does not add');
   const hot = tryDeal(cleanSave({ ...save, rep: { hask: 20 } }), 'edna', 'hot-crate', { rng: seq(0) });
   assert.equal(hot.save.rep.hask, 14);
   assert.equal(hot.save.money, 160, 'the fine');

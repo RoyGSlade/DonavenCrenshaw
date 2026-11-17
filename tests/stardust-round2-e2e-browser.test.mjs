@@ -155,7 +155,7 @@ test('round 2 end to end: new captain -> intro -> dice -> full tutorial -> first
   await talkTo(page, 'edna');
   await untilStep(page, 'talk');
   await page.locator('#hg-dialogue .ui-dlg-choice[data-kind="attempt"]').first().waitFor({ timeout: 30000 });
-  assert.match(await page.locator('#hg-dialogue .ui-dlg-choice[data-kind="attempt"]').first().innerText(), /Roll 2d6 vs \d+: \d+%/);
+  assert.match(await page.locator('#hg-dialogue .ui-dlg-choice[data-kind="attempt"]').first().innerText(), /Roll d20( \+ \w+ \d+)? vs \d+: \d+%/);
   assert.equal(await page.locator('#hg-dialogue .ui-dlg-choice[data-kind="skill"][disabled]').count(), 1, 'the Trader option shows, locked, with its reason');
   await shot('e2e-07-edna-talk')();
   await page.locator('#hg-dialogue .ui-dlg-choice[data-kind="attempt"]').first().click();

@@ -85,7 +85,7 @@ export const SHOPS_DATA = {
           "name": "A mystery crate",
           "blurb": "Sealed, unmarked, and it rattles in an interesting way. Read Edna's face before you pay.",
           "price": { "money": 60 },
-          "check": { "stat": "wis", "tag": "notice", "dc": 8 },
+          "check": { "skill": "navigation", "stat": "wis", "tag": "notice", "dc": 12 },
           "pass": { "reward": { "items": { "circuit": 2, "fuel-cell": 1 } }, "text": "You spot the crate she keeps not looking at. Circuit boards and a fuel cell, packed in knitting.", "line": "deal-pass" },
           "fail": { "reward": { "items": { "scrap": 3 } }, "text": "Packing straw, three bits of scrap and a very old biscuit.", "line": "deal-fail" }
         },
@@ -94,7 +94,7 @@ export const SHOPS_DATA = {
           "name": "Mind a crate for a week",
           "blurb": "Edna pays you to keep a Guild crate in your hold, no questions. Talk your way past the inspectors if they come.",
           "price": {},
-          "check": { "stat": "cha", "tag": "talk", "dc": 8 },
+          "check": { "skill": "social", "stat": "cha", "tag": "talk", "dc": 12 },
           "pass": { "reward": { "money": 90, "rep": { "hask": -2 } }, "text": "An inspector peers into your hold. You talk about the weather until he leaves. Edna pays up.", "line": "deal-pass" },
           "fail": { "reward": { "money": -40, "rep": { "hask": -6 } }, "text": "The inspector finds the crate. You pay the fine, and Hask gets a report with your name on it.", "line": "deal-fail" }
         },
@@ -103,7 +103,7 @@ export const SHOPS_DATA = {
           "name": "A game of knucklebones",
           "blurb": "Edna plays for credits, and she cheats like a grandmother. Twenty a throw.",
           "price": { "money": 20 },
-          "check": { "stat": "dex", "tag": "gamble", "dc": 8 },
+          "check": { "skill": "social", "stat": "dex", "tag": "gamble", "dc": 12 },
           "pass": { "reward": { "money": 45 }, "text": "You catch all five bones off the back of your hand. Edna claps, and pays.", "line": "deal-pass" },
           "fail": { "reward": {}, "text": "The bones scatter under the tea trolley. Edna keeps the twenty and gives you a biscuit.", "line": "deal-fail" }
         }

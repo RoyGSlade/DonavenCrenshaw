@@ -22,6 +22,8 @@ import { createRunRecorder } from '../systems/hubRuns.js';
 import { newGameFlag } from './flag.js';
 import { createVoyageStore } from './store.js';
 import { startVoyageSync } from './live.js';
+import { serverMode, probeSession, showMaintenance } from './session.js';
+import { economy } from './account.js';
 import { createHangar } from './hangar.js';
 import { createHangarPlace } from './hangarPlace.js';
 import { provideHangar, hangarApi, addLaunch } from './hangarApi.js';
@@ -37,7 +39,7 @@ import { createSettings } from './ui/settings.js';
 import { createAttemptRoller } from './ui/attemptRoll.js';
 import { mountStory } from './story/mount.js';
 import { storyOf, currentStep } from './story/progress.js';
-import { STEP_IDS } from './story/tutorial.js';
+import { STEP_IDS, STEPS } from './story/tutorial.js';
 import { addLines, lineById } from './story/lines.js';
 import { contentLines } from './quests/lines.js';
 import { voiceUrl, scratchReady } from './story/voice.js';
@@ -69,10 +71,32 @@ if (!flag.enabled) {
   $('vy-closed').hidden = false;
 } else {
   // Scratch voices (dev server only, ?voice=scratch) load their list first; otherwise this is instant.
-  scratchReady.catch(() => 0).then(() => boot());
+  scratchReady.catch(() => 0).then(() => gate()).then((session) => boot(session));
 }
 
-function boot() {
+// The session gate (launch tech lane, outcome 2): with the home server mode on, no
+// run starts while the hub is down; a maintenance screen waits for it instead.
+// Studio play links (throwaway saves) and server mode off play as they always have.
+async function gate() {
+  const linked = params.get('studio') === '1' || ['step', 'quest', 'map', 'explore'].some((k) => params.get(k));
+  if (linked || !serverMode({ config: runtimeConfig, search: location.search })) return { mode: 'local' };
+  const recorder = createRunRecorder();
+  const probe = async () => { await recorder.connect(); return probeSession({ api: recorder.api, gamePath: recorder.gamePath, signedIn: Boolean(recorder.player) }); };
+  const first = await probe();
+  if (first.mode !== 'maintenance') return { ...first, recorder };
+  const chip = $('vy-sync');
+  chip.textContent = 'Guild bank offline';
+  chip.dataset.status = 'offline';
+  return new Promise((resolve) => {
+    showMaintenance($('vy-maint'), {
+      reason: first.reason,
+      classicHref: '../?activity=classic',
+      onRetry: async () => { const next = await probe(); if (next.mode !== 'maintenance') resolve({ ...next, recorder }); return next; },
+    });
+  });
+}
+
+function boot(session = { mode: 'local' }) {
   $('vy-hangar').hidden = false;
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
   const still = () => reducedMotion.matches;
@@ -124,6 +148,19 @@ function boot() {
     }));
     if (!store.stored) chip.textContent = 'This browser is not keeping saves';
   }
+  // Server mode: the hub owns the money (voyage/account.js). A guest plays a demo that pays nothing real.
+  if (!throwaway && session.mode === 'play') {
+    economy.enable({ api: recorder.api, gamePath: recorder.gamePath, store, toast });
+    ready.then(() => economy.pull()).catch(() => {});
+    // Tutorial step rewards are hub claims (rules.json "voyage".claims, once each).
+    const paysReal = (id) => { const r = STEPS.find((st) => st.id === id)?.reward; return Boolean(r?.money || Object.keys(r?.items || {}).length); };
+    bus.on('story:reward', (d) => { for (const step of d?.steps || []) if (paysReal(step)) economy.claim(`tutorial:${step}`); });
+  } else if (!throwaway && session.mode === 'guest') {
+    const tag = document.createElement('span');
+    tag.className = 'vy-guest';
+    tag.textContent = 'Guest demo: sign in to keep progress';
+    chip.after(tag);
+  }
 
   // --- Sound: nothing plays until the player touches the page ---
   const audio = createHangarAudio();
@@ -140,7 +177,7 @@ function boot() {
   const touch = isTouchDevice();
   document.body.classList.toggle('is-touch', touch);
   const dialogueBox = createDialogueBox({ root: $('hg-dialogue'), bus, audio, reducedMotion: still });
-  // Every attempt in play is its own 2d6 roll; the corner dice show it (the rules already decided the numbers).
+  // Every attempt in play is its own d20 roll; the corner d20 shows it (the rules already decided the number).
   createAttemptRoller({ root: $('hg-attempt'), bus, reducedMotion: still });
   // The director's sound and juice hooks: a soft chime (no file; muted with the rest).
   bus.on('story:cue', (d) => audio.cue?.(d?.cue));
@@ -235,6 +272,8 @@ function boot() {
     reducedMotion: still,
     joinCode: linkedCrew || null,
   });
+  // Server mode: the hub's AI crew tiers and wages (rules.json "voyage") replace the page's defaults.
+  if (session.clock?.crewTiers) crew.hooks.setTiers(session.clock.crewTiers);
 
   // --- The captain's licence: a new captain, a death, an old captain meeting Strength ---
   const licence = createLicence({
@@ -536,5 +575,5 @@ function boot() {
 
   // For tests and poking around in the console (no secrets: the save is the player's own).
   setTimeout(maybeControls, 600);
-  window.__stardust = { store, story, onfoot, place, jobs, licence, bus, pad, tracker, controls, pause, jobTalk, jobCard };
+  window.__stardust = { store, story, onfoot, place, jobs, licence, bus, pad, tracker, controls, pause, jobTalk, jobCard, crew };
 }

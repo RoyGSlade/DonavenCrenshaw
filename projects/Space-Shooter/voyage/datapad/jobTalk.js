@@ -114,7 +114,7 @@ export function createJobTalk({ bus, store, take = () => {}, onBusy = () => {}, 
         label: c.label,
         locked: c.locked,
         reason: c.locked ? (c.reasons || [])[0] || '' : '',
-        ...(c.check ? { kind: 'attempt', chance: c.check.chance, dc: c.check.dc } : { kind: 'choice' }),
+        ...(c.check ? { kind: 'attempt', chance: c.check.chance, dc: c.check.dc, roll: c.check.roll } : { kind: 'choice' }),
       }));
       return await ask([...options, { index: -1, label: W.later, kind: 'later' }]);
     } finally {

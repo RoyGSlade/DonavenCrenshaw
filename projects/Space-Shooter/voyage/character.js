@@ -1,8 +1,10 @@
-// The Voyage captain: name, look, five 1d6 stats (the bonus on attempt rolls),
-// skill points in three trees (skills unlock things), and death. Pure rules: no DOM, no clock or randomness of their own (rng and
+// The Voyage captain: name, look, five 1d6 stats (small passive effects), the
+// eight roll skills' levels (what a d20 attempt adds), skill points in three
+// trees (tree skills unlock things), and death. Pure rules: no DOM, no clock or randomness of their own (rng and
 // now are handed in), and every change returns a new character.
 import {
   NAME_MAX, STAT_DIE, STAT_BASELINE, START_POINTS, STATS, STAT_IDS, TREES, SKILLS, DEATH, PORTRAITS, COLORS, CHECK,
+  ROLL_SKILLS, ROLL_SKILL_IDS, LEVEL_MIN, LEVEL_MAX, CHECK_SKILL,
 } from './data.js';
 
 const SKILL = new Map(SKILLS.map((s) => [s.id, s]));
@@ -47,6 +49,20 @@ function makeId(rng) {
   return s;
 }
 
+/** Every roll skill at level 1: a new captain, or an old save made before the d20. */
+export const startLevels = () => Object.fromEntries(ROLL_SKILL_IDS.map((id) => [id, LEVEL_MIN]));
+
+/** Levels from a save or the network: the eight known skills, whole numbers clamped to 1..9. */
+export function cleanLevels(input) {
+  const out = startLevels();
+  if (!input || typeof input !== 'object' || Array.isArray(input)) return out;
+  for (const id of ROLL_SKILL_IDS) {
+    const v = input[id];
+    if (Number.isFinite(v)) out[id] = Math.min(LEVEL_MAX, Math.max(LEVEL_MIN, Math.trunc(v)));
+  }
+  return out;
+}
+
 /** A new captain with rolled stats. Returns null when the name is empty. */
 export function createCharacter({ name, look } = {}, rng = Math.random, now = Date.now) {
   const clean = cleanName(name);
@@ -56,6 +72,7 @@ export function createCharacter({ name, look } = {}, rng = Math.random, now = Da
     name: clean,
     look: cleanLook(look),
     stats: rollStats(rng),
+    levels: startLevels(),
     earned: START_POINTS,
     permanent: 0,
     skills: {},
@@ -138,69 +155,107 @@ export function statBonus(c, tag) {
 /** Everything the captain adds to a passive tag: stats and skills. Rounded to 3 places. */
 export const effect = (c, tag) => Math.round((statBonus(c, tag) + skillBonus(c, tag)) * 1000) / 1000;
 
-/** A stat's bonus to attempts: its distance from the baseline (-2 at a 1, +3 at a 6). */
+/** A stat's old bonus to attempts: its distance from the baseline (-2 at a 1, +3 at a 6). Adds to a d20 only with CHECK.addStat. */
 export const statMod = (value) => (Number.isInteger(value) ? value : STAT_BASELINE) - STAT_BASELINE;
 
+const ROLL_SKILL = new Map(ROLL_SKILLS.map((s) => [s.id, s]));
+/** What content writes for a check no skill helps with (a brawl, bad food, digging): the bare d20. */
+export const NO_SKILL = 'none';
+export const rollSkillById = (id) => ROLL_SKILL.get(id) || null;
+
+/** The roll skill a check uses: its own `skill` ('none' = the bare d20), else by its tag, else by its stat; null = none. */
+export function checkSkill(spec = {}) {
+  if (spec?.skill === NO_SKILL) return null;
+  if (ROLL_SKILL.has(spec?.skill)) return spec.skill;
+  const byTag = CHECK_SKILL.byTag[spec?.tag];
+  if (byTag) return byTag;
+  const byStat = CHECK_SKILL.byStat[spec?.stat];
+  return byStat || null;
+}
+
+/** The captain's level in a roll skill (1..9; level 1 without a captain); 0 for no skill. */
+export function rollLevel(c, skillId) {
+  if (!ROLL_SKILL.has(skillId)) return 0;
+  const v = c?.levels?.[skillId];
+  return Number.isFinite(v) ? Math.min(LEVEL_MAX, Math.max(LEVEL_MIN, Math.trunc(v))) : LEVEL_MIN;
+}
+
+// What a check adds before the die: { skill, level, statMod, extra, bonus }.
+function bonusFor(c, spec = {}) {
+  const skill = checkSkill(spec);
+  const level = rollLevel(c, skill);
+  const stat = STAT_IDS.includes(spec.stat) ? spec.stat : null;
+  const mod = CHECK.addStat && stat ? statMod(c?.stats?.[stat] ?? STAT_BASELINE) : 0;
+  const extra = Number.isFinite(spec.extra) ? spec.extra : 0;
+  return { skill, level, stat, statMod: mod, extra, bonus: level + mod + extra };
+}
+
 /**
- * An attempt (a "check"): a fresh roll of CHECK.dice x d{CHECK.sides}, plus the
- * stat's bonus and any `extra` (a ship's race bonus, say), against dc. Skills
- * never add to a roll (they unlock things); `tag` is kept for logs only. A
- * natural CHECK.alwaysPass (double six) always passes, whatever the bonus or
- * target. CHECK.alwaysFail (0 = off) would make a roll at or below it always
- * fail. Returns the attempt: { kind: 'attempt', stat, tag, dc, dice, roll,
- * statMod, extra, bonus, total, pass, natural } with natural: true on a double
- * six (the UI celebrates it). Without a captain the stat counts as
- * STAT_BASELINE. Deterministic in rng (CHECK.dice draws).
+ * An attempt (a "check"): a fresh d20 (two with `advantage`, keeping the
+ * higher) plus the level of the skill the check uses (checkSkill), plus any
+ * `extra` (a ship's race bonus, say), against dc. A natural CHECK.alwaysPass
+ * (20) always passes, whatever the bonus or target; CHECK.alwaysFail (0 = off)
+ * would make a kept roll at or below it always fail. Returns the attempt:
+ * { kind: 'attempt', sides, skill, stat, tag, dc, dice, roll, level, statMod,
+ * extra, bonus, total, pass, natural, advantage }: `dice` is every d20 thrown
+ * (one, or two with advantage), `roll` the one kept; natural is true on a kept
+ * 20 (the UI celebrates it). Without a captain every skill is level 1.
+ * Deterministic in rng (one draw, or two with advantage).
  */
-export function check(c, { stat = null, tag = null, dc = CHECK.levels.normal, extra = 0 } = {}, rng = Math.random) {
-  const dice = [];
-  for (let i = 0; i < CHECK.dice; i++) dice.push(rollDie(rng, CHECK.sides));
-  const roll = dice.reduce((a, b) => a + b, 0);
-  const mod = STAT_IDS.includes(stat) ? statMod(c?.stats?.[stat] ?? STAT_BASELINE) : 0;
-  const more = Number.isFinite(extra) ? extra : 0;
-  const bonus = mod + more;
-  const total = roll + bonus;
+export function check(c, spec = {}, rng = Math.random) {
+  const { dc = CHECK.levels.normal, tag = null } = spec || {};
+  const advantage = Boolean(spec?.advantage);
+  const dice = [rollDie(rng, CHECK.sides)];
+  if (advantage) dice.push(rollDie(rng, CHECK.sides));
+  const roll = Math.max(...dice);
+  const b = bonusFor(c, spec || {});
+  const total = roll + b.bonus;
   const natural = roll >= CHECK.alwaysPass;
   const fumble = CHECK.alwaysFail > 0 && roll <= CHECK.alwaysFail;
   const pass = natural || (!fumble && total >= dc);
-  return { kind: 'attempt', stat: STAT_IDS.includes(stat) ? stat : null, tag: tag || null, dc, dice, roll, statMod: mod, extra: more, bonus, total, pass, natural };
+  return {
+    kind: 'attempt', sides: CHECK.sides, skill: b.skill, stat: b.stat, tag: tag || null, dc, dice, roll,
+    level: b.level, statMod: b.statMod, extra: b.extra, bonus: b.bonus, total, pass, natural, advantage,
+  };
 }
 /** The same roll under the name the round-2 contract uses for it. */
 export const rollAttempt = check;
 
-// The chance of each total of the dice, built once.
-const SUMS = (() => {
-  let dist = new Map([[0, 1]]);
-  for (let i = 0; i < CHECK.dice; i++) {
-    const next = new Map();
-    for (const [sum, n] of dist) for (let f = 1; f <= CHECK.sides; f++) next.set(sum + f, (next.get(sum + f) || 0) + n);
-    dist = next;
-  }
-  return [...dist]; // [sum, ways]
-})();
-const ALL_WAYS = CHECK.sides ** CHECK.dice;
-
-/** Chance (0..1) an attempt passes with this total bonus against dc. Never 0 (double six). */
-export function attemptChance(bonus, dc) {
-  let ways = 0; // whole numbers, so 36/36 is exactly 1
-  for (const [roll, n] of SUMS) {
+/** Chance (0..1) an attempt passes with this total bonus against dc. Never 0 (a natural 20). */
+export function attemptChance(bonus, dc, { advantage = false } = {}) {
+  let ways = 0; // whole faces, so 20/20 is exactly 1
+  for (let roll = 1; roll <= CHECK.sides; roll++) {
     const fumble = CHECK.alwaysFail > 0 && roll <= CHECK.alwaysFail;
-    if (roll >= CHECK.alwaysPass || (!fumble && roll + bonus >= dc)) ways += n;
+    if (roll >= CHECK.alwaysPass || (!fumble && roll + bonus >= dc)) ways++;
   }
-  return ways / ALL_WAYS;
+  const one = ways / CHECK.sides;
+  return advantage ? 1 - (1 - one) ** 2 : one;
 }
 
 /** The chance for a captain and a check spec (what a choice can show before it is taken). */
-export function checkChance(c, { stat = null, dc = CHECK.levels.normal, extra = 0 } = {}) {
-  const mod = STAT_IDS.includes(stat) ? statMod(c?.stats?.[stat] ?? STAT_BASELINE) : 0;
-  return attemptChance(mod + (Number.isFinite(extra) ? extra : 0), dc);
+export function checkChance(c, spec = {}) {
+  return attemptChance(bonusFor(c, spec || {}).bonus, spec?.dc ?? CHECK.levels.normal, { advantage: Boolean(spec?.advantage) });
+}
+
+/** The words for what a check adds, for odds lines: "d20 + Social 2", "d20 + Piloting 1 + 2 ship", "d20". */
+export function checkBonusText(c, spec = {}) {
+  const b = bonusFor(c, spec || {});
+  const parts = ['d20'];
+  if (spec?.advantage) parts[0] = 'd20 (advantage)';
+  if (b.skill) parts.push(`${ROLL_SKILL.get(b.skill).name} ${b.level}`);
+  if (b.statMod) parts.push(`${b.statMod < 0 ? '- ' : ''}${Math.abs(b.statMod)} ${STATS.find((s) => s.id === b.stat)?.name || b.stat}`);
+  if (b.extra) parts.push(`${b.extra < 0 ? '- ' : ''}${Math.abs(b.extra)} ship`);
+  return parts.join(' + ').replace('+ - ', '- ');
 }
 
 const signed = (n) => (n < 0 ? `- ${-n}` : `+ ${n}`);
-/** An attempt in words for logs: "4+3 + 2 = 9 vs 8" (with "double six!" on a natural). */
+/** An attempt in words for logs: "d20 14 + 2 = 16 vs 12" (advantage and natural 20 noted). */
 export function rollText(r) {
-  const nat = r.natural ? ' (double six!)' : '';
-  return `${(r.dice || [r.roll]).join('+')} ${signed(r.bonus)} = ${r.total} vs ${r.dc}${nat}`;
+  const dice = Array.isArray(r?.dice) && r.dice.length ? r.dice : [r?.roll];
+  const kept = r?.roll ?? Math.max(...dice);
+  const adv = dice.length > 1 ? ` (advantage, ${dice.filter((d, i) => i !== dice.indexOf(kept)).join(', ')} dropped)` : '';
+  const nat = r?.natural ? ' (natural 20!)' : '';
+  return `d20 ${kept}${adv} ${signed(r?.bonus || 0)} = ${r?.total} vs ${r?.dc}${nat}`;
 }
 
 // --- Skills unlock things (levels -> access, activity, ability) -----------------
@@ -307,6 +362,7 @@ export function cleanCharacter(input) {
     name,
     look: cleanLook(input.look),
     stats,
+    levels: cleanLevels(input.levels),
     earned: int(input.earned, 0, 9999, 0),
     permanent: int(input.permanent, 0, 9999, 0),
     skills,

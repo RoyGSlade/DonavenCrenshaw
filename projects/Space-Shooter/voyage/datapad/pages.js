@@ -3,8 +3,8 @@
 // carried, equip here), Jobs (what you are doing, step by step; who is hiring;
 // what you have done) and Map (a plan of where you are). Draw only; every
 // write goes through the store. All words through textContent.
-import { STATS, ITEMS, GIVERS, REP_MAX, MAX_REP_REWARDS, UNLOCK_NAMES, CURRENCY, TREES, SKILLS } from '../data.js';
-import { unspentPoints, spentPoints, canLearn } from '../character.js';
+import { STATS, ITEMS, GIVERS, REP_MAX, MAX_REP_REWARDS, UNLOCK_NAMES, CURRENCY, TREES, SKILLS, ROLL_SKILLS } from '../data.js';
+import { unspentPoints, spentPoints, canLearn, rollLevel } from '../character.js';
 import { HANGAR_DATA } from '../hangarData.js';
 import { money, itemName, repBand } from '../economy.js';
 import { statCard, HOW_CHECKS_WORK } from '../story/stats.js';
@@ -95,9 +95,12 @@ export function createCaptainPage({ root, store, toast, tutorialOn, reducedMotio
         const art = iconFor(s.id);
         return el('li', { class: 'dp-stat', dataset: { stat: s.id } },
           art ? el('img', { src: art, alt: '' }) : el('i'),
-          el('div', {}, el('strong', { text: s.name }), el('small', { text: card?.line || s.blurb }), card ? el('small', { class: 'dp-odds', text: `${card.bonus} on attempts · ${card.odds.replace('Your odds: ', '')}` }) : null),
+          el('div', {}, el('strong', { text: s.name }), el('small', { text: card?.line || s.blurb }), card ? el('small', { class: 'dp-odds', text: card.bonus ? `${card.bonus} on attempts · ${card.odds.replace(/^Your odds[^:]*: /, '')}` : card.now }) : null),
           el('b', { 'data-stat': s.id, text: String(c.stats[s.id]) }));
       })),
+      // The eight skills a d20 roll adds (levels 1-9).
+      el('h3', { class: 'dp-h', text: 'SKILLS · d20 + LEVEL' }),
+      el('ul', { class: 'dp-levels' }, ROLL_SKILLS.map((k) => el('li', { dataset: { skill: k.id }, title: k.blurb }, el('span', { text: k.name }), el('b', { text: String(rollLevel(c, k.id)) })))),
       el('details', { class: 'ui-how' }, el('summary', { text: 'How rolls work' }), el('ul', { class: 'vy-list' }, HOW_CHECKS_WORK.map((t) => el('li', { text: t })))));
     tree.render(save);
     fill(root,

@@ -16,7 +16,7 @@ import { settleCardFight } from './travel.js';
 export const CREW_RULES = Object.freeze({
   turret: { base: 4, spread: 3 },   // 4-7 damage, plus the crew's fight bonus
   patch: { base: 5, perRank: 2 },   // hull per patch: 5, +2 per repair skill rank, +1 per Constitution over 3
-  scan: { stat: 'wis', tag: 'scan', dc: 6 },
+  scan: { stat: 'wis', tag: 'scan', dc: 8 },
   holdMs: 1200,                     // how long the crew holds to repair (the crew's page times it)
 });
 

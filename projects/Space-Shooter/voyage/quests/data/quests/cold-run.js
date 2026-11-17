@@ -114,9 +114,10 @@ export default {
         {
           "label": "\"What's really in it?\"",
           "check": {
+            "skill": "navigation",
             "stat": "wis",
             "tag": "scan",
-            "dc": 7,
+            "dc": 10,
             "pass": "intro-knows",
             "fail": "intro-shrug"
           }
@@ -124,9 +125,10 @@ export default {
         {
           "label": "\"Half up front, Stationmaster.\"",
           "check": {
+            "skill": "social",
             "stat": "cha",
             "tag": "trade",
-            "dc": 8,
+            "dc": 12,
             "pass": "intro-advance",
             "fail": "intro-no"
           }
@@ -277,21 +279,23 @@ export default {
           "to": "fight"
         },
         {
-          "label": "Kill the lights and slip past (Dexterity)",
+          "label": "Kill the lights and slip past (Stealth)",
           "check": {
+            "skill": "stealth",
             "stat": "dex",
             "tag": "nav",
-            "dc": 8,
+            "dc": 12,
             "pass": "dock-quiet",
             "fail": "fight"
           }
         },
         {
-          "label": "\"This is Guild cargo. You want the Guild on you?\" (Charisma)",
+          "label": "\"This is Guild cargo. You want the Guild on you?\" (Social)",
           "check": {
+            "skill": "social",
             "stat": "cha",
             "tag": "talk",
-            "dc": 8,
+            "dc": 12,
             "pass": "dock-quiet",
             "fail": "fight"
           }
@@ -350,11 +354,12 @@ export default {
           "to": "fight"
         },
         {
-          "label": "Outrun it to the dock (Dexterity)",
+          "label": "Outrun it to the dock (Piloting)",
           "check": {
+            "skill": "piloting",
             "stat": "dex",
             "tag": "nav",
-            "dc": 7,
+            "dc": 10,
             "pass": "dock-quiet",
             "fail": "fight"
           }
@@ -385,11 +390,12 @@ export default {
       "text": "Courier, hold at pad nineteen. Pad one-nine. Thank you for flying Beacon Prime.",
       "choices": [
         {
-          "label": "\"Something's off. Give me another pad.\" (Wisdom)",
+          "label": "\"Something's off. Give me another pad.\" (Navigation)",
           "check": {
+            "skill": "navigation",
             "stat": "wis",
             "tag": "scan",
-            "dc": 7,
+            "dc": 10,
             "pass": "dock-quiet",
             "fail": "fight"
           }

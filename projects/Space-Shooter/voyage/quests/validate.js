@@ -6,7 +6,7 @@ import { ENEMIES } from './data/enemies.js';
 import { SECTORS } from './data/sectors.js';
 import { EVENTS } from './data/events.js';
 import { TRACKS } from './data/tracks.js';
-import { GIVERS, ITEMS, STAT_NAMES } from './core.js';
+import { GIVERS, ITEMS, STAT_NAMES, checkIssues } from './core.js';
 import { SKILLS as SKILL_LIST } from '../data.js';
 
 const SKILLS = Object.fromEntries(SKILL_LIST.map((s) => [s.id, s]));
@@ -79,7 +79,7 @@ function reqIssues(req, where) {
     if (!SKILLS[skill]) out.push(`${where}: unknown skill ${skill}`);
     else if (!(level >= 1 && level <= SKILLS[skill].max)) out.push(`${where}: ${skill} only goes to level ${SKILLS[skill].max}`);
   }
-  // Stats never gate an option (Donaven's dice rule): they only add to a roll.
+  // Stats never gate an option (Donaven's dice rule): use a check (a roll) or a skill gate.
   if (req.stats) out.push(`${where}: a stat gate; use a check (a roll) or a skill gate`);
   for (const sub of req.anyOf || []) out.push(...reqIssues(sub, where));
   return out;
@@ -115,7 +115,8 @@ export function validateQuest(quest) {
       for (const [i, choice] of (node.choices || []).entries()) {
         if (!choice.label) err(`${id}: choice ${i} has no label`);
         if (!choice.to && !choice.check) err(`${id}: choice ${i} goes nowhere`);
-        if (choice.check && !STAT_NAMES[choice.check.stat]) err(`${id}: choice ${i} checks unknown stat`);
+        if (choice.check && !STAT_NAMES[choice.check.stat] && !choice.check.skill) err(`${id}: choice ${i} checks unknown stat`);
+        if (choice.check) for (const issue of checkIssues(choice.check)) err(`${id}: choice ${i} ${issue}`);
         errors.push(...reqIssues(choice.requires, `${quest.id}: ${id}[${i}]`), ...rewardIssues(choice.reward, `${quest.id}: ${id}[${i}]`));
       }
     }

@@ -48,7 +48,7 @@ test('shops: buy and wear Mel\'s gear, take Edna\'s deal, Chibby\'s parts; a que
   await page.locator('[data-shop="edna"]').click();
   const crate = page.locator('[data-deal="mystery-crate"]');
   await crate.getByRole('button', { name: 'Take the deal' }).click();
-  assert.match(await page.locator('.sh-note').innerText(), /vs 8( \(double six!\))?: (double six, it pays off!|it pays off\.|no luck\.)/);
+  assert.match(await page.locator('.sh-note').innerText(), /vs 12( \(natural 20!\))?: (natural 20, it pays off!|it pays off\.|no luck\.)/);
 
   await page.getByRole('button', { name: 'Back to the job board' }).click();
   await page.locator('[data-shop="chibby"]').click();

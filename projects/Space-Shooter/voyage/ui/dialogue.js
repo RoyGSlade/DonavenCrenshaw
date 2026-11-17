@@ -123,11 +123,11 @@ export function createDialogueBox({ root, bus, audio, reducedMotion = () => fals
       b.textContent = o.label;
       if (o.kind) b.dataset.kind = o.kind;
       if (o.kind === 'later') b.classList.add('is-later');
-      // An attempt shows its odds: a fresh 2d6 plus the stat, against the target.
+      // An attempt shows its odds: a fresh d20 plus the skill level, against the target.
       if (o.kind === 'attempt' && Number.isFinite(o.chance)) {
         const odds = document.createElement('small');
         odds.className = 'ui-dlg-odds';
-        odds.textContent = `Roll 2d6 vs ${o.dc}: ${Math.round(o.chance * 100)}%`;
+        odds.textContent = `Roll ${o.roll || 'd20'} vs ${o.dc}: ${Math.round(o.chance * 100)}%`;
         b.append(odds);
       }
       if (o.locked && o.reason) {

@@ -1,18 +1,47 @@
-// The crew seat (P11): you and 1 friend aboard the same ship (S15, S52). The
-// pilot opens a crew room on the Stardust relay and invites a friend from the
-// account's friends list (a crew invite on the hub, `game: 'crew'`) or with a
-// link. The pilot's browser runs the job, as Dogfight's host runs the fight;
-// the crew's browser shows their station (crew/station.js) and sends back what
-// they do. Each player keeps their own save (S32): the crew's share of each
-// reward goes straight into theirs. Names reach the page through textContent.
+// The crew (P11; launch outcome 3): up to four aboard the same ship (S15, S52).
+// The pilot opens a crew room on the Stardust relay and invites friends from
+// the account's friends list (a crew invite on the hub, `game: 'crew'`) or with
+// a link or the room code. The pilot's browser runs the job, as Dogfight's host
+// runs the fight; each crew browser shows their station (crew/station.js) and
+// sends back what they do. The pilot can hire AI crew into empty seats (tiers
+// 1-3: low skill, mistakes from the job's seeded roller, paid 10/15/25% of the
+// job); a friend coming aboard mid-job takes the lowest AI seat (crew/seats.js).
+// Each player keeps their own save (S32): with the home server off the crew's
+// share of each reward goes straight into theirs; with it on, the hub pays
+// everyone at the end of the job (AI wages first, the rest split evenly) or, if
+// the pilot quits, at the last checkpoint. Names reach the page through textContent.
 import { pilotName } from '../dogfight/invites.js';
 import { openCrewLink, CODE } from './crew/room.js';
 import { crewCard, cleanCrewCard, crewShare, cleanCrewReward } from './crew/card.js';
 import { crewState } from './crew/state.js';
 import { createStation } from './crew/station.js';
-import { STATS } from './data.js';
+import { CREW_SEATS } from './crew/protocol.js';
+import { createSeats, crewSeats, join as joinSeat, hire, release, aiAct, aiTiers } from './crew/seats.js';
+import { hashSeed, roller } from './quests/rng.js';
+import { economy } from './account.js';
+import { ROLL_SKILLS } from './data.js';
 
-export const CREW_SIZE = 2;
+export const CREW_SIZE = CREW_SEATS;
+
+/** What an AI crewmate may do right now, from the crew's view of the job (never a dialogue check: that is the captain's call). */
+export function aiOptions(state) {
+  if (state?.step === 'fight' && state.fight && !state.fight.live) {
+    const out = [];
+    if (state.fight.turretReady) out.push({ job: 'turret', hit: true });
+    if (state.fight.repairReady) {
+      for (const [id, broken] of Object.entries(state.fight.systems || {})) if (broken) out.push({ job: 'repair', system: id });
+      if (state.fight.hull < state.fight.hullMax) out.push({ job: 'repair', system: 'hull' });
+    }
+    return out;
+  }
+  if (state?.step === 'trip' && state.trip?.canScan && state.trip.next) return [{ job: 'scan' }];
+  return [];
+}
+
+/** The seats the hub pays (voyage/account.js): host, friends (username when signed in), AI by tier. */
+export function hubSeats(table) {
+  return table.filter((s) => s.kind !== 'open').map((s) => (s.kind === 'ai' ? { kind: 'ai', tier: s.tier } : s.kind === 'human' ? { kind: 'human', ...(s.card?.username ? { username: s.card.username } : {}) } : { kind: 'host' }));
+}
 
 /** Friends from the hub's answer, cleaned and capped (pure, for tests). */
 export function cleanFriends(data) {
@@ -50,7 +79,11 @@ const INVITE_ERRORS = {
 const POLL_MS = 15000;
 const TICK_MS = 1500;
 const KEEPALIVE_MS = 20000;
-const statLine = (card) => STATS.map((s) => `${s.name.slice(0, 3)} ${card.stats[s.id]}`).join(' · ');
+// What a crewmate brings to a roll: their best skill levels (the d20 adds levels, not stats).
+const statLine = (card) => {
+  const best = ROLL_SKILLS.map((k) => [k.name, card.levels?.[k.id] || 1]).filter(([, v]) => v > 1).sort((a, b) => b[1] - a[1]).slice(0, 2);
+  return best.length ? best.map(([n, v]) => `${n} ${v}`).join(' · ') : 'every skill level 1';
+};
 
 const readSeat = () => { try { const v = JSON.parse(sessionStorage.getItem(SEAT_KEY)); return v && CODE.test(v.code) && typeof v.token === 'string' ? v : null; } catch { return null; } };
 const writeSeat = (v) => { try { if (v) sessionStorage.setItem(SEAT_KEY, JSON.stringify(v)); else sessionStorage.removeItem(SEAT_KEY); } catch { /* storage blocked: no reload rejoin */ } };
@@ -74,13 +107,18 @@ export function createCrew({ pane, recorder, store, toast = () => {}, say = () =
   let invites = [];
   const seenInvites = new Set();
   const sentInvites = new Map();
-  // Pilot side.
+  // Pilot side: the seat table (host, friends, AI), and which relay seat each friend sits in.
   let link = null;
   let code = null;
-  let presence = 'open';
-  let card = null;
+  let table = createSeats({ size: CREW_SEATS, host: null });
+  let hubTiers = null;
+  const aiSeen = new Map(); // seat -> the job moment it last acted on
   let lastSent = '';
   let lastSentAt = 0;
+  const tiers = () => aiTiers(hubTiers);
+  const humans = () => table.filter((s) => s.kind === 'human');
+  const byRelay = (r) => table.find((s) => s.kind === 'human' && s.relay === r) || null;
+  const checkpointsSoFar = () => economy.checkpointCount?.(jobs?.crewView()?.quest?.id) || 0;
   // Crew side.
   let seat = null;
   let retried = false;
@@ -125,19 +163,61 @@ export function createCrew({ pane, recorder, store, toast = () => {}, say = () =
   const dismiss = (id) => recorder.api(`/api/dogfight/invites/${encodeURIComponent(id)}`, { method: 'DELETE' });
 
   // ---- pilot side ----
-  const aboard = () => (mode === 'host' && presence === 'here' && card ? card : null);
+  // Who the job sees as crew: a friend at their station, else an AI (the engine takes each act with the actor's own card).
+  const aboard = () => {
+    const crew = crewSeats(table);
+    const s = crew.find((x) => x.kind === 'human' && x.presence === 'here') || crew.find((x) => x.kind === 'ai');
+    return s ? s.card : null;
+  };
+  // The roster every station shows.
+  const rosterView = () => table.map((s) => ({ seat: s.seat, kind: s.kind, name: s.kind === 'host' ? (captain()?.name || 'The captain').slice(0, 40) : s.card?.name?.slice(0, 40) || null, tier: s.tier || null, presence: s.kind === 'human' ? s.presence || 'here' : s.kind === 'open' ? 'open' : 'here' }));
   function sendState(force = false) {
-    if (mode !== 'host' || presence !== 'here' || !link) return;
+    if (mode !== 'host' || !link || !humans().some((h) => h.presence === 'here')) return;
     const view = jobs?.crewView() || {};
-    const state = crewState({ quest: view.quest, run: view.run, live: view.live, save: store.get() });
+    const state = { ...crewState({ quest: view.quest, run: view.run, live: view.live, save: store.get() }), seats: rosterView() };
     const text = JSON.stringify(state);
     if (!force && text === lastSent && Date.now() - lastSentAt < KEEPALIVE_MS) return;
     lastSent = text;
     lastSentAt = Date.now();
     link.send(state);
   }
-  const ticker = setInterval(() => sendState(false), TICK_MS);
+  // AI crew take a turn when the job moves on (a new round, a new leg), with the job's seeded roller.
+  function aiTurns() {
+    const view = jobs?.crewView();
+    if (!view?.run || view.run.ended || view.live || !jobs) return;
+    const state = crewState({ quest: view.quest, run: view.run, live: view.live, save: store.get() });
+    const moment = `${view.run.seed}:${view.run.steps}:${state.step}:${state.fight?.round ?? ''}:${state.trip?.next ?? ''}`;
+    for (const s of crewSeats(table).filter((x) => x.kind === 'ai')) {
+      if (aiSeen.get(s.seat) === moment) continue;
+      aiSeen.set(s.seat, moment);
+      const options = aiOptions(crewState({ quest: view.quest, run: jobs.crewView().run, save: store.get() }));
+      if (!options.length) continue;
+      const rng = roller({ rng: hashSeed('ai-crew', view.run.seed, s.seat, view.run.steps, state.fight?.round ?? 0) }).next;
+      const turn = aiAct(s, options, rng, tiers());
+      if (turn.mistake && turn.action.job === 'repair') { toast(`${s.card.name} fumbles the repair.`); continue; }
+      const action = turn.mistake && turn.action.job === 'turret' ? { job: 'turret', hit: false } : turn.mistake ? null : turn.action;
+      if (!action) { toast(`${s.card.name} fumbles the scan.`); continue; }
+      jobs.crewAct(action, s.card);
+    }
+  }
+  const ticker = setInterval(() => { sendState(false); aiTurns(); }, TICK_MS);
   void ticker;
+
+  // ---- AI crew (the pilot hires; works solo or with friends) ----
+  function hireAi(tier) {
+    const before = table;
+    table = hire(table, { tier, tiers: tiers(), from: checkpointsSoFar() });
+    if (table === before) { message = 'No empty seat to hire into.'; render(); return; }
+    const s = table.filter((x) => x.kind === 'ai').at(-1);
+    toast(`${s.card.name} signs on (tier ${s.tier}: ${Math.round(tiers()[s.tier].wage * 100)}% of each job).`);
+    sendState(true); render(); jobs?.render();
+  }
+  function letGo(seat) {
+    const s = table.find((x) => x.seat === seat);
+    table = release(table, seat);
+    if (s?.card) toast(`${s.card.name} leaves the ship.`);
+    sendState(true); render(); jobs?.render();
+  }
 
   function openRoom() {
     if (!captain()) { message = 'Sign on a captain first.'; render(); return; }
@@ -148,24 +228,38 @@ export function createCrew({ pane, recorder, store, toast = () => {}, say = () =
   }
 
   function hostEvent(e) {
-    if (e.type === 'room') { mode = 'host'; code = e.code; presence = 'open'; message = ''; render(); return; }
+    if (e.type === 'room') {
+      mode = 'host'; code = e.code; message = '';
+      // A protocol-1 relay seats two: keep the pilot's first seats (an AI hired solo may have to go).
+      if (e.capacity < table.length) table = table.slice(0, e.capacity);
+      render();
+      return;
+    }
     if (e.type === 'roster') {
-      const was = presence;
-      presence = e.seats[1]?.presence || 'open';
-      if (presence === 'open') { if (card && was !== 'open') toast(`${card.name} left the crew. You fly on alone.`); card = null; }
-      if (presence === 'away' && was === 'here' && card) toast(`${card.name}'s connection dropped. Their seat is held.`);
-      if (presence === 'here' && was !== 'here') sendState(true);
+      e.seats.forEach((r, relay) => {
+        if (relay === 0) return;
+        const s = byRelay(relay);
+        if (!s) return;
+        if (r.presence === 'open') { toast(`${s.card.name} left the crew.`); table = release(table, s.seat); return; }
+        if (r.presence === 'away' && s.presence !== 'away') toast(`${s.card.name}'s connection dropped. Their seat is held.`);
+        if (r.presence === 'here' && s.presence === 'away') { toast(`${s.card.name} is back aboard.`); sendState(true); }
+        table = table.map((x) => (x === s ? { ...x, presence: r.presence } : x));
+      });
       render();
       return;
     }
     if (e.type === 'data') {
       const d = e.data;
+      const from = Number.isInteger(e.from) ? e.from : 1;
       if (d.kind === 'card') {
         const next = cleanCrewCard(d);
         if (!next) return;
-        const first = !card;
-        card = next;
-        if (first) toast(`${card.name} came aboard.`);
+        const had = byRelay(from);
+        if (had) { table = table.map((x) => (x === had ? { ...x, card: next, presence: 'here' } : x)); sendState(true); render(); return; }
+        const taken = joinSeat(table, next, { at: checkpointsSoFar() });
+        if (taken.seat == null) { link.send({ kind: 'note', text: 'The crew is full.' }, from); return; }
+        table = taken.table.map((x) => (x.seat === taken.seat ? { ...x, relay: from, presence: 'here' } : x));
+        toast(taken.replaced ? `${next.name} came aboard and takes over from ${taken.replaced.card.name}.` : `${next.name} came aboard.`);
         sendState(true);
         render();
         jobs?.render();
@@ -173,19 +267,23 @@ export function createCrew({ pane, recorder, store, toast = () => {}, say = () =
       }
       if (d.kind === 'act') {
         const { kind: _kind, ...action } = d;
-        const error = jobs ? jobs.crewAct(action) : 'The captain has not taken a job yet.';
-        if (error) link.send({ kind: 'note', text: String(error).slice(0, 200) });
+        const s = byRelay(from);
+        const error = !s ? 'Your seat is not aboard yet.' : jobs ? jobs.crewAct(action, s.card) : 'The captain has not taken a job yet.';
+        if (error) link.send({ kind: 'note', text: String(error).slice(0, 200) }, from);
         else sendState(true);
       }
       return;
     }
     if (e.type === 'error') { if (e.fatal) { mode = 'solo'; link = null; } message = e.message; render(); return; }
-    if (e.type === 'closed') { mode = 'solo'; link = null; code = null; card = null; presence = 'open'; message = e.reason; render(); jobs?.render(); }
+    if (e.type === 'closed') { mode = 'solo'; link = null; code = null; dropFriends(); message = e.reason; render(); jobs?.render(); }
   }
+
+  // The room is gone: friends' seats open; AI crew stay aboard.
+  function dropFriends() { for (const h of humans()) table = release(table, h.seat); }
 
   function closeRoom() {
     link?.leave();
-    link = null; mode = 'solo'; code = null; card = null; presence = 'open';
+    link = null; mode = 'solo'; code = null; dropFriends();
     message = 'You closed the crew room.';
     render();
     jobs?.render();
@@ -220,7 +318,8 @@ export function createCrew({ pane, recorder, store, toast = () => {}, say = () =
       retried = false;
       if (!back) { showStation(); onAboard(); toast(e.rejoined ? 'Back aboard.' : 'You are aboard. Wait for the captain to take a job.'); }
       const mine = crewCard(captain());
-      if (mine) link.send({ kind: 'card', ...mine });
+      // The username lets the hub pay this seat's share into this account (server mode).
+      if (mine) link.send({ kind: 'card', ...mine, ...(recorder.player?.username ? { username: String(recorder.player.username).slice(0, 20) } : {}) });
       return;
     }
     if (e.type === 'data') {
@@ -250,7 +349,8 @@ export function createCrew({ pane, recorder, store, toast = () => {}, say = () =
         setTimeout(() => { if (mode === 'guest') { link = openCrewLink({ role: 'guest', code: seat.code, token: seat.token, on: (ev) => guestEvent(ev, seat.code) }); } }, 800);
         return;
       }
-      endGuest(`${e.reason}${earned ? ' Your crew rewards are in your Ledger.' : ''}`);
+      const captainLeft = /captain/i.test(e.reason || '');
+      endGuest(`${e.reason}${captainLeft && economy.on ? ' The job is kept at its last checkpoint; the Guild bank pays your share up to there.' : ''}${earned ? ' Your crew rewards are in your Ledger.' : ''}`);
     }
   }
 
@@ -302,15 +402,40 @@ export function createCrew({ pane, recorder, store, toast = () => {}, say = () =
     return list;
   }
 
+  // The seat roster (pilot side): who sits where, what an AI costs, and the hire buttons.
+  function seatList(c) {
+    const list = make('ul', null, 'vy-list cw-seats');
+    for (const st of table) {
+      const li = make('li');
+      li.dataset.seat = st.kind === 'human' ? st.presence || 'here' : st.kind;
+      li.dataset.kind = st.kind;
+      const label = `Seat ${st.seat + 1} · ${st.kind === 'host' ? 'pilot' : st.kind === 'ai' ? `AI crew, tier ${st.tier}` : 'crew'}`;
+      let who = 'Empty';
+      if (st.kind === 'host') who = c?.name || 'You';
+      else if (st.kind === 'ai') who = `${st.card.name} · level ${tiers()[st.tier].level} · ${Math.round(tiers()[st.tier].wage * 100)}% of each job`;
+      else if (st.kind === 'human') who = st.presence === 'away' ? `${st.card.name}: connection lost, seat held` : `${st.card.name} (${statLine(st.card)})`;
+      li.append(make('span', label), make('b', who));
+      if (st.kind === 'ai') { const go = btn('Let go', () => letGo(st.seat)); go.dataset.letGo = String(st.seat); li.append(go); }
+      list.append(li);
+    }
+    return list;
+  }
+  function hireRow() {
+    const open = table.some((x) => x.kind === 'open');
+    const row = make('div', null, 'cw-hire');
+    row.append(make('span', open ? 'Hire AI crew for an empty seat:' : 'Every seat is taken.'));
+    for (const t of [1, 2, 3]) {
+      const b = btn(`Tier ${t} · ${Math.round(tiers()[t].wage * 100)}%`, () => hireAi(t));
+      b.dataset.hire = String(t);
+      b.disabled = !open;
+      b.title = `Skill level ${tiers()[t].level}, a mistake on ${Math.round(tiers()[t].mistake * 100)}% of its turns, paid ${Math.round(tiers()[t].wage * 100)}% of each job.`;
+      row.append(b);
+    }
+    return row;
+  }
+
   function renderHost(c) {
-    const seats = make('ul', null, 'vy-list cw-seats');
-    const one = make('li');
-    one.append(make('span', 'Seat 1 · pilot'), make('b', c?.name || 'You'));
-    const two = make('li');
-    two.dataset.seat = presence;
-    const who = presence === 'here' && card ? `${card.name} (${statLine(card)})` : presence === 'away' && card ? `${card.name}: connection lost, seat held` : presence === 'here' ? 'Coming aboard…' : 'Empty';
-    two.append(make('span', 'Seat 2 · crew'), make('b', who));
-    seats.append(one, two);
+    const seats = seatList(c);
     const url = inviteLink(code);
     const linkBox = make('input');
     linkBox.type = 'text';
@@ -331,9 +456,9 @@ export function createCrew({ pane, recorder, store, toast = () => {}, say = () =
     const friendStatus = make('p', '', 'vy-note');
     pane.replaceChildren(
       make('p', `CREW ROOM · ${code}`, 'vy-eyebrow'),
-      make('h2', 'Your ship, two seats'),
-      make('p', 'Take a job at the job board. Your crew sees it on their station: they man the turret, repair the ship, read the scopes and take checks with their own stats.'),
-      seats, code_, linkBox, copy, status,
+      make('h2', `Your ship, ${table.length} seats`),
+      make('p', 'Take a job at the job board. Your crew sees it on their station: they man the turret, repair the ship, read the scopes and take checks with their own skills. A friend who joins mid-job takes over the lowest AI seat.'),
+      seats, hireRow(), code_, linkBox, copy, status,
       make('h3', 'INVITE A FRIEND'), friendStatus, friendList(friendStatus),
       close,
     );
@@ -343,11 +468,12 @@ export function createCrew({ pane, recorder, store, toast = () => {}, say = () =
     const status = make('p', message, 'vy-note');
     status.setAttribute('role', 'status');
     const parts = [
-      make('p', 'CREW · 1 FRIEND', 'vy-eyebrow'),
-      make('h2', 'Fly with a friend'),
-      make('p', 'Two seats, one ship. The pilot flies and runs the job; the crew mans a turret, repairs the ship, reads the scopes and takes checks with their own stats. Each of you keeps your own save, and the crew gets a share of every reward.'),
+      make('p', 'CREW · UP TO 3 FRIENDS OR AI', 'vy-eyebrow'),
+      make('h2', 'Fly with a crew'),
+      make('p', 'Four seats, one ship. The pilot flies and runs the job; the crew mans a turret, repairs the ship, reads the scopes and takes checks with their own skills. Each of you keeps your own save. Empty seats can take AI crew: cheap ones fumble more.'),
       status,
     ];
+    if (crewSeats(table).length || c) parts.push(make('h3', 'YOUR SEATS'), seatList(c), hireRow());
     if (pending) {
       const box = make('div', null, 'cw-ask');
       box.append(make('p', `Join crew room ${pending}?`), btn('Join', () => join(pending), 'primary'), btn('Not now', () => { pending = null; render(); }));
@@ -413,16 +539,21 @@ export function createCrew({ pane, recorder, store, toast = () => {}, say = () =
     /** What the job board needs (voyage/jobs.js `crew`). */
     hooks: {
       aboard,
+      /** The seats for the hub's job ticket, checkpoints and settle (server mode). */
+      hubSeats: () => hubSeats(table),
+      /** The hub's AI tiers and wages, when it sent them (/v1/clock). */
+      setTiers(t) { hubTiers = t; render(); },
       step(events) {
         if (!aboard()) return;
-        const share = crewShare(events);
-        if (share) link.send({ kind: 'reward', reward: share });
+        // Server mode: the hub pays every friend's share at the end of the job; with it off, each friend's share goes into their save now.
+        const share = economy.on ? null : crewShare(events);
+        if (share && link) for (const h of humans()) if (h.presence === 'here') link.send({ kind: 'reward', reward: share }, h.relay);
         sendState(true);
       },
       changed() { sendState(true); },
       /** A live fight frame for the crew's scope (races lane), sent as a crew-room 'state'. */
       live(frame) {
-        if (!aboard() || !link) return;
+        if (!humans().length || !link) return;
         link.send({ kind: 'state', v: 1, step: 'live', captain: (captain()?.name || 'The captain').slice(0, 40), checks: [], log: [], frame });
       },
     },

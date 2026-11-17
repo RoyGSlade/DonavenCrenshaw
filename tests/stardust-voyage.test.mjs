@@ -122,19 +122,19 @@ test('character: death loses half the earned points (spent and unspent), refunds
   assert.equal(die(captain({ earned: 1 }), seq(0.5)).lost, 0, 'one point: nothing to halve away');
 });
 
-test('character: attempts are 2d6 + stat bonus (never skills), a double six always passes; passive effects count from 3', () => {
-  const c = captain({ stats: { str: 3, cha: 5, con: 1, dex: 3, wis: 3 }, skills: { trader: 2 }, earned: 4 });
-  assert.equal(skillBonus(c, 'talk'), 0, 'skills add nothing to rolls');
-  assert.deepEqual(check(c, { stat: 'cha', tag: 'talk', dc: 10 }, seq(0.5)),
-    { kind: 'attempt', stat: 'cha', tag: 'talk', dc: 10, dice: [4, 4], roll: 8, statMod: 2, extra: 0, bonus: 2, total: 10, pass: true, natural: false });
-  assert.equal(check(null, { stat: 'cha', dc: 7 }, seq(0)).total, 2, 'no captain counts the stat as 3 (+0)');
-  assert.equal(check(c, { stat: 'cha', dc: 4 }, seq(0)).pass, true, 'no automatic fail: 1+1 + 2 meets 4');
+test('character: attempts are d20 + skill level (never tree skills or stats), a natural 20 always passes; passive effects count from 3', () => {
+  const c = captain({ stats: { str: 3, cha: 5, con: 1, dex: 3, wis: 3 }, skills: { trader: 2 }, levels: { social: 3 }, earned: 4 });
+  assert.equal(skillBonus(c, 'talk'), 0, 'tree skills add nothing to rolls');
+  assert.deepEqual(check(c, { stat: 'cha', tag: 'talk', dc: 14 }, seq(0.5)),
+    { kind: 'attempt', sides: 20, skill: 'social', stat: 'cha', tag: 'talk', dc: 14, dice: [11], roll: 11, level: 3, statMod: 0, extra: 0, bonus: 3, total: 14, pass: true, natural: false, advantage: false });
+  assert.equal(check(null, { stat: 'cha', dc: 10 }, seq(0)).total, 2, 'no captain rolls at level 1');
+  assert.equal(check(c, { stat: 'cha', dc: 4 }, seq(0)).pass, true, 'no automatic fail: 1 + Social 3 meets 4');
   assert.equal(check(c, { stat: 'cha', dc: 5 }, seq(0)).pass, false);
-  const nat = check(captain({ stats: { str: 1, cha: 1, con: 1, dex: 1, wis: 1 } }), { stat: 'cha', dc: 20 }, seq(0.99));
-  assert.equal(nat.pass, true, 'double six always passes');
+  const nat = check(captain({ stats: { str: 1, cha: 1, con: 1, dex: 1, wis: 1 } }), { stat: 'cha', dc: 40 }, seq(0.99));
+  assert.equal(nat.pass, true, 'a natural 20 always passes');
   assert.equal(nat.natural, true);
-  assert.equal(check(c, { stat: 'dex', dc: 9, extra: 2 }, seq(0.5)).total, 10, 'an extra bonus (a ship) adds on');
-  assert.ok(checkChance(c, { stat: 'cha', dc: 7 }) > checkChance(c, { stat: 'con', dc: 7 }));
+  assert.equal(check(c, { stat: 'dex', dc: 9, extra: 2 }, seq(0.5)).total, 14, 'an extra bonus (a ship) adds on: 11 + Piloting 1 + 2');
+  assert.ok(checkChance(c, { stat: 'cha', dc: 12 }) > checkChance(c, { stat: 'con', dc: 12 }), 'Social 3 beats a bare d20');
   assert.equal(effect(c, 'price'), 4, 'charisma 5 is two over the baseline at 2% each');
   assert.equal(effect(c, 'ship.hp'), -10, 'health 1 costs hull');
   assert.equal(effect(c, 'rep'), 10, 'two over baseline at 5%; skills add nothing');

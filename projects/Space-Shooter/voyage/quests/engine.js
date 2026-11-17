@@ -18,7 +18,7 @@
 // Rewards, costs and requirements use core's formats (INTERFACES.md section 3).
 import { hashSeed, roller } from './rng.js';
 import { roll, fill } from './rolls.js';
-import { grant, spend, meets, missing, check, combatStats, GIVERS, STAT_NAMES, rollText, checkChance, collectRolls } from './core.js';
+import { grant, spend, meets, missing, check, combatStats, GIVERS, rollText, checkChance, collectRolls, checkBonusText, checkName, checkSkillOf } from './core.js';
 import { SECTORS } from './data/sectors.js';
 import { createSkirmish, viewSkirmish, actSkirmish, hullAfter } from './parts/skirmish.js';
 import { createFoot, viewFoot, actFoot } from './parts/foot.js';
@@ -28,7 +28,9 @@ import { createRace, viewRace, actRace } from './parts/race.js';
 import { createTrip, viewTrip, actTrip, createEventStep, viewEventStep, actEventStep } from './parts/travel.js';
 import { actCrew } from './parts/crew.js';
 
-export const RUN_VERSION = 1;
+// Run v 2: targets on the d20 scale; v 1 runs are upgraded on load (runUpgrade.js).
+export { RUN_VERSION } from './runUpgrade.js';
+import { RUN_VERSION } from './runUpgrade.js';
 const LOG_LIMIT = 40;
 
 // Quest fights fly the upgraded ship: core's ship-fight activity (upgrades and
@@ -234,11 +236,10 @@ function choiceFor(choice, run, save) {
   return { ...choice, ...over, variants: undefined };
 }
 
-// "Charisma: 2d6 + 2 vs 8 (72%)": the roll the player is about to make, with their odds.
+// "Social: d20 + Social 2 vs 12 (65%)": the roll the player is about to make, with their odds.
 function checkText(chk, c) {
-  const mod = (c?.stats?.[chk.stat] ?? 3) - 3;
   const pct = Math.round(checkChance(c, chk) * 100);
-  return `${STAT_NAMES[chk.stat] || chk.stat}: 2d6 ${mod < 0 ? '-' : '+'} ${Math.abs(mod)} vs ${chk.dc} (${pct}%)`;
+  return `${checkName(chk)}: ${checkBonusText(c, chk)} vs ${chk.dc} (${pct}%)`;
 }
 
 // ---- public API --------------------------------------------------------
@@ -323,7 +324,7 @@ export function view(quest, run, save) {
         locked: reasons.length > 0,
         reasons: reasons.length && choice.lockedHint ? [choice.lockedHint] : reasons,
         hidden: reasons.length > 0 && Boolean(choice.hideLocked),
-        check: choice.check ? { stat: choice.check.stat, dc: choice.check.dc, text: checkText(choice.check, save.character), chance: checkChance(save.character, choice.check) } : null,
+        check: choice.check ? { stat: choice.check.stat, skill: checkSkillOf(choice.check), name: checkName(choice.check), dc: choice.check.dc, text: checkText(choice.check, save.character), roll: checkBonusText(save.character, choice.check), chance: checkChance(save.character, choice.check) } : null,
         cost: choice.cost || null,
       };
     }).filter(c => !c.hidden);
@@ -356,7 +357,7 @@ function choose(quest, run, ctx, node, index, roller, now) {
   if (choice.check) {
     const r = check(roller, choice.check, ctx.rng.next);
     const who = roller === ctx.save.character ? '' : `${roller.name || 'Your crew'} takes it. `;
-    pushLog(run, `${who}${STAT_NAMES[choice.check.stat] || choice.check.stat}: ${rollText(r)}, ${r.pass ? 'pass' : 'fail'}.`);
+    pushLog(run, `${who}${checkName(choice.check)}: ${rollText(r)}, ${r.pass ? 'pass' : 'fail'}.`);
     run.lastCheck = r;
     target = r.pass ? choice.check.pass : choice.check.fail;
   }

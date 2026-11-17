@@ -38,6 +38,7 @@ import { shipTierArt } from '../art.js';
 import { visualTier } from '../upgrades.js';
 import { effect } from '../character.js';
 import { createEl } from './dom.js';
+import { economy } from '../account.js';
 
 // The tutorial's hop targets, in the order the legs open them.
 export const TARGETS_IN_ORDER = Object.freeze(SECTOR_MAP.places.map(p => p.id));
@@ -83,6 +84,7 @@ export function createOnFoot({ root, store = null, bus = null, hooks = {}, mapId
     emit(TUTORIAL_EVENTS.hacked, { id: target.id, success: r.success, level: target.level || 1 });
     if (r.success && target.reward && !save()?.flags?.[`hack-${target.id}`]) {
       store?.grant({ ...(inTutorial() ? {} : target.reward), flags: { [`hack-${target.id}`]: 1 } });
+      if (!inTutorial()) economy.claim(`hack:${target.id}`);
       toast(target.rewardText || 'Cracked it.');
     } else if (r.success) toast('Lock open.');
     return r;
@@ -103,6 +105,7 @@ export function createOnFoot({ root, store = null, bus = null, hooks = {}, mapId
   async function mine(opts = {}) {
     const r = await playMining(root, { title: opts.title || 'Ore seam', seed: opts.seed || Date.now() % 100000, speed: 1 + fx('mine.speed'), mods: mods('mine'), sound, reducedMotion });
     const g = grant(r.reward);
+    if (g && r.reward?.items) economy.claim('mine', r.reward.items);
     if (g && r.ore) toast(`+${r.ore} ore in the hold`);
     emit(TUTORIAL_EVENTS.mined, { ore: r.ore });
     return r;
@@ -164,6 +167,7 @@ export function createOnFoot({ root, store = null, bus = null, hooks = {}, mapId
         onPoi: (poi) => {
           emit(TUTORIAL_EVENTS.poi, { id: poi.id });
           if (store) store.grant({ ...(inTutorial() ? {} : poi.reward || {}), flags: { [`poi-${poi.id}`]: 1 } });
+          if (store && !inTutorial() && poi.reward) economy.claim(`poi:${poi.id}`);
         },
       });
     } finally {

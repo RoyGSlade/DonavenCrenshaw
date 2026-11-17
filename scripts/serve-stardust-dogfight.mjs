@@ -24,7 +24,10 @@ import {
 } from "../projects/Space-Shooter/dogfight/protocol.js";
 import {
   CREW_MODE,
-  CREW_PROTOCOL,
+  CREW_PROTOCOLS,
+  CREW_SEATS,
+  LEGACY_SEATS,
+  cleanSeat,
   cleanCrewData,
 } from "../projects/Space-Shooter/voyage/crew/protocol.js";
 
@@ -375,11 +378,15 @@ export async function createDogfightServer({
     for (const p of room.players) send(p, message);
   }
   // ---- Crew rooms -------------------------------------------------------
-  // Seat 0 is the pilot, whose browser runs the job; seat 1 is the crew. The
-  // relay forwards cleaned crew messages between them. The crew's seat is held
-  // when their socket drops (rejoin with the seat token, as in Dogfight); the
-  // pilot leaving closes the room, and the job stays in the pilot's save.
-  function createCrewRoom(socket, now) {
+  // Seat 0 is the pilot, whose browser runs the job; seats 1..3 are crew (a
+  // protocol-1 room has one). The relay forwards cleaned crew messages: the
+  // host to one seat or all, a seat only to the host. A crew seat is held when
+  // its socket drops (rejoin with the seat token, as in Dogfight); the pilot
+  // leaving closes the room, and the job stays in the pilot's save.
+  function createCrewRoom(socket, message, now) {
+    const asked = message.seats;
+    const capacity = asked === undefined ? LEGACY_SEATS : Number.isInteger(asked) && asked >= 1 && asked <= CREW_SEATS ? asked : null;
+    if (!capacity) return error(socket, `A crew room has 1 to ${CREW_SEATS} seats.`);
     if (rooms.size >= 64) return error(socket, "Relay is full. Try again later.");
     let roomCode;
     do {
@@ -389,7 +396,7 @@ export async function createDogfightServer({
       code: roomCode,
       mode: CREW_MODE,
       mapId: null,
-      capacity: 2,
+      capacity,
       players: [socket],
       host: socket,
       guest: null,
@@ -407,7 +414,7 @@ export async function createDogfightServer({
     socket.room = room;
     socket.role = "host";
     socket.playerId = 0;
-    send(socket, { type: "room", role: "host", playerId: 0, code: roomCode, mode: CREW_MODE, capacity: 2, counted: false });
+    send(socket, { type: "room", role: "host", playerId: 0, seat: 0, code: roomCode, mode: CREW_MODE, capacity, counted: false });
     crewRoster(room);
   }
   function joinCrewRoom(socket, message, room, now) {
@@ -417,18 +424,23 @@ export async function createDogfightServer({
       return error(socket, "That code is a Dogfight room. Open it on the Dogfight page.");
     if (room && message.mode !== CREW_MODE)
       return error(socket, "That code is a crew room. Open it from the new hangar's Crew tab.");
-    const open = room && (room.players.length < 2 || room.seats[1]?.presence === "open");
-    if (!open) return error(socket, "That crew is full or the room has closed.");
+    // The lowest free seat: never taken, or opened by a crew member who left or whose hold ran out.
+    let id = -1;
+    for (let i = 1; room && i < room.capacity; i++) {
+      if (!room.seats[i] || (room.seats[i].presence === "open" && !room.players[i])) { id = i; break; }
+    }
+    if (id < 1) return error(socket, "That crew is full or the room has closed.");
     const token = seatToken();
-    room.players[1] = socket;
-    room.guest = socket;
-    room.seats[1] = { token, presence: "here", awaySince: 0, pilot: null };
+    room.players[id] = socket;
+    if (id === 1) room.guest = socket;
+    room.seats[id] = { token, presence: "here", awaySince: 0, pilot: null };
+    for (let i = 1; i < id; i++) if (!room.seats[i]) room.seats[i] = { token: null, presence: "open", awaySince: 0, pilot: null };
     room.lastActivity = now;
     socket.v3 = true;
     socket.room = room;
     socket.role = "guest";
-    socket.playerId = 1;
-    send(socket, { type: "room", role: "guest", playerId: 1, code: room.code, mode: CREW_MODE, capacity: 2, counted: false, seatToken: token });
+    socket.playerId = id;
+    send(socket, { type: "room", role: "guest", playerId: id, seat: id, code: room.code, mode: CREW_MODE, capacity: room.capacity, counted: false, seatToken: token });
     crewRoster(room);
   }
   function crewMessage(socket, room, message) {
@@ -436,8 +448,14 @@ export async function createDogfightServer({
       const from = socket === room.host ? "host" : "guest";
       const data = cleanCrewData(from, message.data);
       if (!data) return error(socket, "That crew message was not understood.");
-      const to = from === "host" ? room.players[1] : room.host;
-      send(to, { type: "crew", data });
+      if (from === "guest") return send(room.host, { type: "crew", data, from: socket.playerId });
+      // The host: to one seat ({ to }), or to every crew seat.
+      if (message.to !== undefined) {
+        const to = cleanSeat(message.to);
+        if (!to || to >= room.capacity) return error(socket, "No such crew seat.");
+        return send(room.players[to], { type: "crew", data });
+      }
+      for (let i = 1; i < room.players.length; i++) send(room.players[i], { type: "crew", data });
       return;
     }
     if (message.type === "leave") {
@@ -445,10 +463,11 @@ export async function createDogfightServer({
         detach(socket, "The captain closed the crew room.");
         return send(socket, { type: "closed", reason: "You closed the crew room." });
       }
-      // The crew stepping off leaves the pilot flying on alone (S57).
-      room.players[1] = null;
-      room.guest = null;
-      room.seats[1] = { token: null, presence: "open", awaySince: 0, pilot: null };
+      // A crew member stepping off leaves the others flying on (S57); the seat opens.
+      const id = socket.playerId;
+      room.players[id] = null;
+      if (id === 1) room.guest = null;
+      room.seats[id] = { token: null, presence: "open", awaySince: 0, pilot: null };
       socket.room = null;
       socket.role = null;
       socket.playerId = null;
@@ -501,7 +520,8 @@ export async function createDogfightServer({
     socket.alive = true;
     socket.idleSince = Date.now();
     socket.v3 = false;
-    send(socket, { type: "hello", version: RELAY_VERSION, modes: ["duel", "ffa3"], crew: CREW_PROTOCOL });
+    // crew: 1 stays for pages from before outcome 3; crewProtocols lists what this relay speaks.
+    send(socket, { type: "hello", version: RELAY_VERSION, modes: ["duel", "ffa3"], crew: 1, crewProtocols: CREW_PROTOCOLS, crewSeats: CREW_SEATS });
     socket.on("pong", () => {
       socket.alive = true;
     });
@@ -585,6 +605,7 @@ export async function createDogfightServer({
             capacity: room.capacity,
             round: room.round,
             rejoined: true,
+            ...(room.mode === CREW_MODE ? { seat: id } : {}),
             counted: room.mode === "duel" && Boolean(seat.pilot),
             opponentCounted: room.mode === "duel" && Boolean(room.seats[0].pilot),
           });
@@ -598,7 +619,7 @@ export async function createDogfightServer({
           return;
         }
         if (message.type === "create" && message.mode === CREW_MODE)
-          return createCrewRoom(socket, now);
+          return createCrewRoom(socket, message, now);
         if (message.type === "join") {
           const target = typeof message.code === "string" ? rooms.get(message.code) : null;
           if (target?.mode === CREW_MODE || message.mode === CREW_MODE)

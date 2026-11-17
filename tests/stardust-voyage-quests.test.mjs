@@ -24,8 +24,10 @@ const low = () => ({ ...emptySave(), character: testCharacter({ cha: 1, con: 1, 
 // skills unlock options, stats only add to rolls).
 const KIT = { scrap: 20, ore: 10, circuit: 4, 'fuel-cell': 4, permit: 1, 'mining-drill': 1, 'breach-kit': 1, 'scan-goggles': 1, medkit: 1, 'hull-patch': 1, 'shield-cell': 1, 'ghost-transponder': 1, 'syndicate-codes': 1 };
 const SKILLED = { pilot: 3, navigator: 2, smuggler: 2, gunner: 2, brawler: 1, 'hard-stare': 2, mechanic: 3, hacker: 2, salvager: 1, lockpick: 2, trader: 2, demolitions: 1 };
-const high = () => ({ ...emptySave(), money: 500, items: { ...KIT }, flags: { 'fragment-1': 1, 'fragment-2': 1, 'fragment-3': 1, 'edna-teapot': 1 }, character: { ...testCharacter({ cha: 6, con: 6, dex: 6, wis: 6, str: 6 }), earned: 40, skills: { ...SKILLED } } });
-const mid = () => ({ ...emptySave(), money: 200, items: { scrap: 2 }, character: testCharacter({ cha: 3, con: 4, dex: 3, wis: 4, str: 4 }) });
+// d20 (launch): the roll adds skill levels, so the strong captain is level 9 in every skill and the middling one level 4.
+const LEVELS = (n) => Object.fromEntries(['shooting', 'piloting', 'stealth', 'hacking', 'repair', 'crafting', 'social', 'navigation'].map((id) => [id, n]));
+const high = () => ({ ...emptySave(), money: 500, items: { ...KIT }, flags: { 'fragment-1': 1, 'fragment-2': 1, 'fragment-3': 1, 'edna-teapot': 1 }, character: { ...testCharacter({ cha: 6, con: 6, dex: 6, wis: 6, str: 6 }), earned: 40, skills: { ...SKILLED }, levels: LEVELS(9) } });
+const mid = () => ({ ...emptySave(), money: 200, items: { scrap: 2 }, character: { ...testCharacter({ cha: 3, con: 4, dex: 3, wis: 4, str: 4 }), levels: LEVELS(4) } });
 // A weak captain with a full kit bag: the only way to need a medkit or a patch.
 const kitted = () => ({ ...emptySave(), money: 500, items: { ...KIT }, character: testCharacter({ cha: 1, con: 1, dex: 1, wis: 1, str: 1 }) });
 const quest = QUESTS[SLICE_QUEST];
@@ -97,7 +99,9 @@ test('every node and every ending of every quest is reachable with real actions'
     const nodes = new Set();
     const ends = new Set();
     for (const save of [low(), high(), mid(), kitted()]) {
-      const result = explore(q, save, { seeds: [1, 2, 3, 4, 5, 6] });
+      // d20: one die per check spreads less per seed than 2d6 + a low stat did, so ten seeds, not six
+      // (railgun-paper-trail's first rolls on seeds 1-6 all land 11+).
+      const result = explore(q, save, { seeds: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] });
       assert.deepEqual(result.errors, [], q.id);
       result.nodes.forEach(n => nodes.add(n));
       result.ends.forEach((_, id) => ends.add(id));
@@ -153,7 +157,7 @@ test('dialogue: skills unlock options, local flags unlock options, costs lock wh
   assert.equal(rich.choices.find(c => c.label.startsWith('Name the debt')).locked, false);
   assert.equal(rich.choices.find(c => c.label.startsWith('Vent two scrap')).locked, false);
   const check = rich.choices.find(c => c.check);
-  assert.match(check.check.text, /: 2d6 [+-] \d+ vs \d+ \(\d+%\)$/);
+  assert.match(check.check.text, /^\w+: d20( \+ \w+ \d+)? vs \d+ \(\d+%\)$/);
   assert.ok(check.check.chance > 0 && check.check.chance < 1, 'the odds are shown and never certain');
   // Picking a locked option is refused and changes nothing.
   let { run, save } = startQuest(quest, low(), { seed: 1 });
@@ -163,7 +167,7 @@ test('dialogue: skills unlock options, local flags unlock options, costs lock wh
   assert.equal(refused.run, run);
 });
 
-test('checks roll d6 + stat against the difficulty, deterministically', () => {
+test('checks roll a d20 + skill level against the difficulty, deterministically', () => {
   const outcomes = new Set();
   for (let seed = 1; seed < 40; seed++) {
     const { run, save } = startQuest(quest, mid(), { seed });
@@ -171,7 +175,8 @@ test('checks roll d6 + stat against the difficulty, deterministically', () => {
     outcomes.add(next.run.node);
     const r = next.run.lastCheck;
     assert.equal(r.total, r.roll + r.bonus);
-    assert.equal(r.pass, r.total >= 7);
+    assert.equal(r.dc, 10, 'the old 7 on the d20 scale');
+    assert.equal(r.pass, r.natural || r.total >= r.dc);
     assert.equal(next.run.node, r.pass ? 'intro-knows' : 'intro-shrug');
     assert.deepEqual(act(quest, run, save, { type: 'choose', index: 1 }).run, next.run);
   }

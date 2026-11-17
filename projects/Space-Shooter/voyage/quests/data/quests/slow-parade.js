@@ -106,21 +106,23 @@ export default {
           "to": "trip"
         },
         {
-          "label": "\"Could the convoy go any faster?\" (Charisma)",
+          "label": "\"Could the convoy go any faster?\" (Social)",
           "check": {
+            "skill": "social",
             "stat": "cha",
             "tag": "talk",
-            "dc": 7,
+            "dc": 10,
             "pass": "faster",
             "fail": "trip"
           }
         },
         {
-          "label": "Eat the grey biscuit, to be polite (Health)",
+          "label": "Eat the grey biscuit, to be polite",
           "check": {
+            "skill": "none",
             "stat": "con",
             "tag": "food",
-            "dc": 7,
+            "dc": 10,
             "pass": "biscuit-ok",
             "fail": "biscuit-bad"
           }
@@ -196,11 +198,12 @@ export default {
           "to": "fight"
         },
         {
-          "label": "Herd the convoy into the debris where he can't follow (Wisdom)",
+          "label": "Herd the convoy into the debris where he can't follow (Piloting)",
           "check": {
+            "skill": "piloting",
             "stat": "wis",
             "tag": "nav",
-            "dc": 8,
+            "dc": 12,
             "pass": "end-all-home",
             "fail": "fight"
           }
@@ -311,11 +314,12 @@ export default {
           }
         },
         {
-          "label": "Talk them out over the hauler's speakers (Charisma)",
+          "label": "Talk them out over the hauler's speakers (Social)",
           "check": {
+            "skill": "social",
             "stat": "cha",
             "tag": "talk",
-            "dc": 8,
+            "dc": 12,
             "pass": "end-all-home",
             "fail": "galley"
           }
@@ -327,7 +331,7 @@ export default {
       "mode": "foot",
       "title": "Galley boarders",
       "enemy": "$boarders",
-      "dc": 7,
+      "dc": 10,
       "outcomes": {
         "win": "end-all-home",
         "lose": "galley-down",
@@ -349,11 +353,12 @@ export default {
           }
         },
         {
-          "label": "Your sidearm is empty. Get up and punch him (Strength)",
+          "label": "Your sidearm is empty. Get up and punch him",
           "check": {
+            "skill": "none",
             "stat": "str",
             "tag": "brawl",
-            "dc": 8,
+            "dc": 12,
             "pass": "end-all-home",
             "fail": "end-nana"
           }
