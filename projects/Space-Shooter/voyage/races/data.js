@@ -26,12 +26,52 @@ export const ARENA = Object.freeze({
   modes: Object.freeze(['Duel: you and one friend', 'Free-for-all: three pilots, one winner']),
 });
 
+// ---- Launch (Nov 28): the speeders on two tracks, one fighter on two arenas ----
+// The launch lists are what the new game's entry points offer. Today's racing
+// page and today's Dogfight (4 arenas, 3 classes) never read them. More tracks
+// and arenas show as "coming soon" (the doc's launch scope, Section 14).
+//
+// The two tracks are the only two the new game can fly with a rival time from
+// the racing game's own test pilot (voyage/quests/data/tracks.js), and both are
+// today's weekly layouts, so both are fully built.
+export const LAUNCH_TRACKS = Object.freeze([
+  Object.freeze({ id: 'gantry-drop', job: 'race-gantry-drop', title: 'Gantry Drop', blurb: 'The long drop and the razor hairpin. Paid by the Guild bank, rival on the clock.' }),
+  Object.freeze({ id: 'abandoned-mall', job: 'race-abandoned-mall', title: 'The Abandoned Mall', blurb: 'Dead escalators, falling debris, every shop for itself. Longer, so it pays more.' }),
+]);
+export const COMING_SOON_TRACKS = Object.freeze({ id: 'more-tracks', title: 'More tracks', blurb: 'Eight more tracks are being built.', note: 'Coming soon' });
+
+// The two arenas are today's Shatterbelt and Stormworks maps (dogfight/maps.js),
+// dressed with the new backdrops. The fighter is the only ship offered.
+export const LAUNCH_ARENAS = Object.freeze([
+  Object.freeze({ id: 'shatterbelt', job: 'dogfight-shatterbelt', title: 'Shatterbelt', blurb: 'Crystal barricades and fuel pods. Cut through the cover, blow the pods when they fly close.' }),
+  Object.freeze({ id: 'stormworks', job: 'dogfight-stormworks', title: 'Stormworks', blurb: 'A ruined station, opposing boost streams, reactor vents that go live. Ride the arrows, mind the pulse.' }),
+]);
+export const COMING_SOON_ARENAS = Object.freeze({ id: 'more-arenas', title: 'More arenas', blurb: 'More maps and two more fighters are on the way.', note: 'Coming soon' });
+
+// What each activity pays. Credits; the Hub's own numbers (rules.json "voyage".jobs,
+// the patch from hubJobsFragment()) are the real limit: `max` per job, then the
+// per-hour cap. Placeholders, tuned by playing.
+//   race:     finish pays `finish`; beating the rival's time adds `win`.
+//   dogfight: a round played pays `played`; a win adds `win` (`duelAiWin` in a duel
+//             against AI) and up to `hullBonus` for the hull left; a loss is just `played`.
+//   fee:      a lost ship (race wreck, dogfight loss) costs this repair and tow fee,
+//             and the ship's upgrades (the Hub's /death). Never the character or gear.
+export const ACTIVITY_PAY = Object.freeze({
+  'race-gantry-drop': Object.freeze({ kind: 'race', track: 'gantry-drop', finish: 60, win: 60, max: 120, minSeconds: 45, xp: Object.freeze({ piloting: 20 }) }),
+  'race-abandoned-mall': Object.freeze({ kind: 'race', track: 'abandoned-mall', finish: 80, win: 80, max: 160, minSeconds: 53, xp: Object.freeze({ piloting: 25 }) }),
+  'dogfight-shatterbelt': Object.freeze({ kind: 'dogfight', arena: 'shatterbelt', played: 20, win: 100, duelAiWin: 60, hullBonus: 40, max: 160, minSeconds: 20, xp: Object.freeze({ shooting: 15 }) }),
+  'dogfight-stormworks': Object.freeze({ kind: 'dogfight', arena: 'stormworks', played: 20, win: 100, duelAiWin: 60, hullBonus: 40, max: 160, minSeconds: 20, xp: Object.freeze({ shooting: 15 }) }),
+});
+export const SHIP_LOSS = Object.freeze({ fee: 40, note: 'The ship was flown by remote control, so you are fine. Its upgrades are gone, and the repair and the tow cost the fee.' });
+
 // Copy for the quest race screens, in the new tone. {rival}, {track} and
 // {gap} are filled in by the page with textContent.
 export const RACE_COPY = Object.freeze({
   questEyebrow: 'QUEST RACE',
   circuitEyebrow: 'PRACTICE CIRCUIT',
+  paidEyebrow: 'PAID RACE',
   noBoards: 'Off the books: no leaderboard, no ghost, no personal best, no weekly entry. Just you, {rival} and the clock.',
+  paidNoBoards: 'Paid by the Guild bank, nothing on any board: no leaderboard, no ghost, no personal best, no weekly entry. Just you, {rival} and the clock.',
   lineUp: 'Line up',
   forfeit: 'Back off (you lose the race)',
   leave: 'Back to the hangar',
