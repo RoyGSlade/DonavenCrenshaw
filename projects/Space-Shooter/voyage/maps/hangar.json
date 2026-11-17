@@ -14,8 +14,8 @@
     "#..::::::::::............#",
     "#..:........:............#",
     "#..:........:............#",
-    "#..:........:............#",
-    "#..:........:............#",
+    "...:........:............#",
+    "...:........:............#",
     "#..::::::::::............#",
     "#.........................",
     "#///......................",
@@ -163,10 +163,12 @@
     {"id":"mel-bay","at":[25,8],"size":[1,2],"to":"mel-bay","arrive":"from-hangar","label":"Mel's fitting bay"},
     {"id":"backroom","at":[25,12],"size":[1,1],"to":"edna-den","arrive":"from-hangar","label":"Edna's back room","station":"backroom"},
     {"id":"concourse","at":[10,15],"size":[2,1],"to":"cantina","arrive":"from-hangar","label":"Concourse: the cantina"},
-    {"id":"ramp","at":[7,7],"size":[2,1],"look":"ramp","to":"ship","arrive":"from-hangar","label":"Board your ship"}
+    {"id":"ramp","at":[7,7],"size":[2,1],"look":"ramp","to":"ship","arrive":"from-hangar","label":"Board your ship"},
+    {"id":"berth","at":[0,5],"size":[1,2],"to":"duchess-pad","arrive":"from-hangar","label":"Berth 7: the Tin Duchess"}
   ],
   "spawns": {
     "default": [10,9,"up"],
+    "from-pad": [1,5,"right"],
     "ship-ramp": [8,8,"down"],
     "from-workshop": [11.5,1,"down"],
     "from-mel-bay": [24,8.5,"left"],

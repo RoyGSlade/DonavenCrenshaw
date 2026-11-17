@@ -8,6 +8,8 @@ import { EVENTS } from './data/events.js';
 import { TRACKS } from './data/tracks.js';
 import { GIVERS, ITEMS, STAT_NAMES, checkIssues } from './core.js';
 import { SKILLS as SKILL_LIST } from '../data.js';
+import { isPlace } from '../slice/places.js';
+import { ENEMY_TYPES } from '../onfoot/rules/shooter.js';
 
 const SKILLS = Object.fromEntries(SKILL_LIST.map((s) => [s.id, s]));
 import { SPEAKERS_DATA } from './data/speakers.js';
@@ -91,7 +93,8 @@ export function validateQuest(quest) {
   if (!ID.test(quest.id || '')) err('id must be a short lowercase id');
   if (!quest.title) err('missing title');
   if (!GIVERS[quest.giver]) err(`unknown giver ${quest.giver}`);
-  if (quest.location && !SECTORS[quest.location]) err(`unknown location ${quest.location}`);
+  // A place is a sector, or (launch slice) a Tin Duchess room. Everything else stays strict.
+  if (quest.location && !SECTORS[quest.location] && !isPlace(quest.location)) err(`unknown location ${quest.location}`);
   if (!quest.nodes?.[quest.start]) err(`start node ${quest.start} is missing`);
   errors.push(...reqIssues(quest.requires, `${quest.id}: requires`));
   // Round 3 tracker steps (optional): [{ id, text, where?, nodes: [nodeId] }], in play order.
@@ -100,7 +103,13 @@ export function validateQuest(quest) {
     else quest.steps.forEach((s, i) => {
       if (!ID.test(s?.id || '')) err(`step ${i}: id must be a short lowercase id`);
       if (!s?.text) err(`step ${s?.id || i}: missing text`);
-      if (s?.where && !SECTORS[s.where]) err(`step ${s.id}: unknown place ${s.where}`);
+      if (s?.where && !SECTORS[s.where] && !isPlace(s.where)) err(`step ${s.id}: unknown place ${s.where}`);
+      // A marker spot inside a room: exactly one of npc / zone / prop (the tests check it exists and can be reached).
+      if (s?.at !== undefined) {
+        const keys = Object.keys(s.at || {});
+        if (!isPlace(s.where)) err(`step ${s.id}: a marker (at) needs a room as its place`);
+        if (keys.length !== 1 || !['npc', 'zone', 'prop'].includes(keys[0]) || typeof s.at[keys[0]] !== 'string') err(`step ${s.id}: at must be { npc } or { zone } or { prop }`);
+      }
       if (!Array.isArray(s?.nodes) || !s.nodes.length) err(`step ${s?.id || i}: needs nodes`);
       else for (const n of s.nodes) if (!quest.nodes?.[n]) err(`step ${s.id}: names missing node ${n}`);
     });
@@ -109,6 +118,15 @@ export function validateQuest(quest) {
   for (const [id, node] of Object.entries(quest.nodes || {})) {
     if (!NODE_TYPES.includes(node.type)) { err(`${id}: unknown type ${node.type}`); continue; }
     for (const target of links(node)) if (!quest.nodes[target]) err(`${id}: links to missing node ${target}`);
+    // Launch slice: where a node plays (a room), how the player gets there, and a fight's own arena.
+    if (node.room !== undefined && !isPlace(node.room)) err(`${id}: unknown room ${node.room}`);
+    if (node.arrive !== undefined && !['walk', 'cut'].includes(node.arrive)) err(`${id}: arrive must be walk or cut`);
+    if (node.arena !== undefined) {
+      if (node.type !== 'fight' || node.mode !== 'foot') err(`${id}: only an on-foot fight has an arena`);
+      if (!isPlace(node.arena?.map)) err(`${id}: arena needs a room as its map`);
+      if (!Array.isArray(node.arena?.enemies) || !node.arena.enemies.length) err(`${id}: arena needs enemies`);
+      for (const e of node.arena?.enemies || []) if (!ENEMY_TYPES[e.type] || !Array.isArray(e.at)) err(`${id}: arena enemy ${e.type} needs a known type and at: [x, y]`);
+    }
     errors.push(...rewardIssues(node.reward, `${quest.id}: ${id}`), ...rewardIssues(node.onEnter, `${quest.id}: ${id}`), ...lineIssues(node, `${quest.id}: ${id}`));
     if (node.type === 'dialogue') {
       if (!node.choices?.length) err(`${id}: dialogue needs at least one choice`);

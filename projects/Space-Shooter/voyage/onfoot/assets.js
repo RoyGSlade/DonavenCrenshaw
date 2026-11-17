@@ -19,6 +19,8 @@ export const SPRITE_FILES = Object.freeze({
   'moon-boulder-s': 'moon-boulder-s.png', 'moon-boulder-m': 'moon-boulder-m.png', 'moon-boulder-l': 'moon-boulder-l.png',
   'moon-rock-cluster-a': 'moon-rock-cluster-a.png', 'moon-rock-cluster-b': 'moon-rock-cluster-b.png',
   'moon-rubble-a': 'moon-rubble-a.png', 'moon-rubble-b': 'moon-rubble-b.png', 'moon-crater-rim': 'moon-crater-rim.png',
+  // The Cinder Reavers (launch art lane, batch 1: the look-art cuts), as on-foot enemies in the Tin Duchess.
+  'marauder-grunt-a': 'look/prop-marauder-grunt-a.webp', 'marauder-boss': 'look/prop-marauder-boss.webp',
   'asteroid': 'asteroid.png', 'relay-station': 'relay-station.png', 'relay-gate': 'relay-gate.png', 'warden': 'warden.png',
 });
 
@@ -34,6 +36,8 @@ export const CAST_FILES = Object.freeze({
   hask: 'hask.webp', vey: 'vey.webp', garrity: 'garrity.webp',
   // launch map lane: Reck, the Tin Duchess's seventh gunner (the launch art lane's gunner-alive, batch 1).
   reck: 'reck.webp',
+  // launch art lane batch 2: the Tin Duchess crew (128 px sprites, figure 110 px tall, 9 px margin).
+  tull: 'tull.webp', nessa: 'nessa.webp', pip: 'pip.webp',
 });
 
 // The four captain looks. The hangar's look ids are p1..p4 (data.js PORTRAITS); the cast lane
@@ -67,9 +71,9 @@ export const CAST_LOOK = Object.freeze({
   garrity: { name: 'Garrity', color: '#e0b061', scale: castScale('garrity') },
   // The Tin Duchess crew (launch opening slice; quest lane STORY-NOW.md). Tull, Nessa and Pip have no sprite yet
   // (a stand-in figure with their colour ring, ART-NEEDS in lhc-lanes/stardust/launch/maps).
-  tull: { name: 'Captain Tull', color: '#ffb23a', scale: castScale('garrity') * 1.08 },
-  nessa: { name: 'Nessa', color: '#38e6ff', scale: castScale('mel') },
-  pip: { name: 'Pip', color: '#9bff5a', scale: castScale('chibby') * 0.95 },
+  tull: { name: 'Captain Tull', color: '#ffb23a', scale: 1.9, lift: 'brightness(1.01) saturate(0.97) contrast(1.06)' }, // lift: his wine-red coat is already saturated, so the look maps' people boost (saturate 1.8) would turn it hot pink
+  nessa: { name: 'Nessa', color: '#38e6ff', scale: 1.82 },
+  pip: { name: 'Pip', color: '#9bff5a', scale: 1.82 },
   reck: { name: 'Reck', color: '#ffc93a', scale: 1.9 },
 });
 

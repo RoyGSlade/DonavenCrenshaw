@@ -29,6 +29,8 @@ import { hudArt } from '../ui/assets.js';
 // launch maps: things that switch in play (doors, the goo, the reactor) are map data (rules/states.js).
 import { hasStates, resolveStates, applyStates, stateSignature } from './rules/states.js';
 import { compileMap } from './rules/mapdata.js';
+import { markerPoint } from '../slice/places.js';
+import { placeName as roomName } from '../slice/places.js';
 
 const VERBS = Object.fromEntries(Object.entries(BASICS_DATA.marks.kinds).map(([k, v]) => [k, v.verb]));
 // Donaven: "what if the label only pops up when you are in range say 2 tiles or less from the interactable".
@@ -290,7 +292,19 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
   const stationOf = (it) => it.station || (it.kind === 'station' ? it.id : null);
   /** Where the objective is: a point in this map, or the door that leads toward it. */
   function objectiveAim() {
-    if (!objective || (!objective.station && !objective.npc)) return null;
+    if (!objective || (!objective.station && !objective.npc && !objective.map)) return null;
+    // launch slice: a spot in a named room ({ map, npc | zone | prop }): the spot itself when you are in that room, else the door toward it.
+    if (objective.map && !objective.station) {
+      if (map.id === objective.map) {
+        const live = objective.npc ? npcs.find(x => !hidden.has(x.id) && x.id === objective.npc) : null;
+        const pt = live ? { x: live.x, y: live.y } : markerPoint(map, objective);
+        if (pt) return { x: pt.x, y: pt.y, ...(live ? { npc: live.id } : {}), label: objective.label || (live ? castLook(live.id).name : null) };
+        return null;
+      }
+      const doorTo = doorToward(map.id, [objective.map], MAP_DEFS);
+      const dd = doorTo && map.doors.find(x => x.id === doorTo);
+      return dd ? { x: dd.x + dd.w / 2, y: dd.y + dd.h / 2, door: dd.id, through: true, label: roomName(objective.map) ? `To ${roomName(objective.map)}` : dd.label } : null;
+    }
     const n = npcs.find(x => !hidden.has(x.id) && (objective.npc ? x.id === objective.npc : x.station === objective.station));
     if (n) return { x: n.x, y: n.y, npc: n.id, label: objective.label || castLook(n.id).name };
     if (objective.station) {
@@ -522,7 +536,7 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     const img = castSprite(n.id);
     // r3 basics: the mark chip and the prompt name people now. launch maps: one label per person, so the canvas
     // never draws a second name tag under the chip.
-    drawBody(ctx, n.x, n.y, n.angle, img, { size: 46 * look.scale, t: t + n.x * 0.01, moving: n.moving, stride: (t * 3) % 4, tint: look.color, label: null, dog: look.dog });
+    drawBody(ctx, n.x, n.y, n.angle, img, { size: 46 * look.scale, t: t + n.x * 0.01, moving: n.moving, stride: (t * 3) % 4, tint: look.color, label: null, dog: look.dog, lift: look.lift });
   }
 
   function drawEnemy(e) {
@@ -615,7 +629,7 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     unlock(id) { opened.add(id); layerDirty = true; sound('unlock'); },
     /** The story's objective ({ text, station, npc? } or null): a marker in the world and a line on screen. */
     setObjective(o) {
-      objective = o ? { text: o.text || '', station: o.station || null, npc: o.npc || null, label: o.label || null } : null;
+      objective = o ? { text: o.text || '', station: o.station || null, npc: o.npc || null, label: o.label || null, ...(o.map ? { map: o.map, zone: o.zone || null, prop: o.prop || null } : {}) } : null;
       objectiveLine.hidden = !objective?.text;
       if (objective?.text) objectiveLine.textContent = objective.text;
     },

@@ -32,4 +32,16 @@ export const QUEST_GIVERS = Object.freeze({
     greeting: 'If it floats, I can sell it. If it sinks, I can sell it slower.',
     quests: ['dead-weight', 'deep-seam', 'lighthouse', 'dustfall-derby', 'black-box'],
   },
+  // The opening slice's captain (launch slice lane, 2026-11-16). He gives no board jobs: his six scenes are
+  // handed out by the slice director in order (quests/data/slice/index.js), so `quests` stays empty here.
+  tull: {
+    name: 'Captain Augustin "Gus" Tull',
+    short: 'Tull',
+    role: 'captain of the freighter Tin Duchess',
+    faction: 'none',
+    sector: 'alpha',
+    greeting: 'Janitor! Welcome aboard the finest ship in the Drift. Don\'t look at the board.',
+    slice: true,
+    quests: [],
+  },
 });

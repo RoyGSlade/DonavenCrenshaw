@@ -56,7 +56,7 @@ test('slice loop: preview card -> captain -> job -> reward -> upgrade -> a stron
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
   page.on('console', (m) => { if (m.type() === 'error' && !/api\.donavencrenshaw\.com|Failed to load resource/.test(m.text())) errors.push(m.text()); });
-  await page.goto(`${server.origin}${HANGAR}?newgame=1`);
+  await page.goto(`${server.origin}${HANGAR}?newgame=1&start=hangar`);
 
   // No captain yet: the captain's licence opens; roll the stats and sign.
   await signOnCaptain(page, 'Vela Quint');
@@ -123,7 +123,7 @@ test('slice loop: preview card -> captain -> job -> reward -> upgrade -> a stron
   const p2 = await phone.newPage();
   const phoneErrors = [];
   p2.on('pageerror', (e) => phoneErrors.push(e.message));
-  await p2.goto(`${server.origin}${HANGAR}?newgame=1`);
+  await p2.goto(`${server.origin}${HANGAR}?newgame=1&start=hangar`);
   await openStation(p2, 'board');
   await p2.locator('.vy-posting').first().waitFor();
   assert.equal(await p2.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, 'no sideways scroll at 390 px');

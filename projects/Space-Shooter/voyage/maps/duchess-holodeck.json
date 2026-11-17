@@ -23,7 +23,8 @@
   "tags": {
     "holo-goo": {"states":["dirty","clean"],"state":"dirty","by":[{"state":"clean","flag":"goo-cleared"}]},
     "holo-valve": {"states":["leaking","fixed"],"state":"leaking","by":[{"state":"fixed","flag":"goo-source-fixed"}]},
-    "holo-projector": {"states":["on","fried"],"state":"on","by":[{"state":"fried","flag":"holo-projector-fried"}]}
+    "holo-projector": {"states":["on","fried"],"state":"on","by":[{"state":"fried","flag":"holo-projector-fried"}]},
+    "pip-gym": {"states":["under","out"],"state":"under","by":[{"state":"out","flag":"goo-source-fixed"}]}
   },
   "look": {
     "set": "freighter",
@@ -74,38 +75,21 @@
       {"art":"wall-vent","at":[3.0,0.25],"size":[1,0.5]}
     ],
     "clutter": [
-      {"art":"plant-palm","at":[1.05,6.5],"size":[0.95,0.95]},
-      {"art":"plant-fern","at":[3.0,1.15],"size":[0.85,0.85]},
-      {"art":"plant-palm","at":[15.0,10.0],"size":[0.95,0.95]},
       {"art":"planter-box","at":[10,11],"size":[2,1]},
-      {"art":"plant-fern","at":[13.9,6.1],"size":[0.85,0.85]},
-      {"art":"plant-succulent","at":[1.2,10.3],"size":[0.8,0.8]},
-      {"art":"plant-palm","at":[2.4,3.0],"size":[0.9,0.9]},
-      {"art":"plant-fern","at":[3.2,9.6],"size":[0.85,0.85]},
-      {"art":"plant-palm","at":[12.0,10.0],"size":[0.9,0.9]},
-      {"art":"plant-fern","at":[15.2,7.6],"size":[0.8,0.8]},
-      {"art":"plant-palm","at":[9.9,1.0],"size":[0.85,0.85]},
-      {"art":"plant-succulent","at":[5.0,10.6],"size":[0.7,0.7]},
-      {"art":"plant-fern","at":[13.2,4.8],"size":[0.7,0.7]},
-      {"art":"plant-palm","at":[4.8,2.0],"size":[0.8,0.8]},
-      {"art":"plant-palm","at":[1.05,2.2],"size":[0.9,0.9]},
-      {"art":"plant-fern","at":[1.1,8.7],"size":[0.8,0.8]},
-      {"art":"plant-palm","at":[1.0,11.0],"size":[0.95,0.95]},
-      {"art":"plant-fern","at":[2.2,10.9],"size":[0.8,0.8]},
-      {"art":"plant-palm","at":[3.4,11.0],"size":[0.9,0.9]},
-      {"art":"plant-fern","at":[4.3,10.9],"size":[0.75,0.75]},
-      {"art":"plant-palm","at":[9.1,11.0],"size":[0.85,0.85]},
-      {"art":"plant-fern","at":[16.0,10.9],"size":[0.8,0.8]},
-      {"art":"plant-palm","at":[16.0,8.6],"size":[0.9,0.9]},
-      {"art":"plant-fern","at":[16.05,2.9],"size":[0.75,0.75]},
-      {"art":"plant-fern","at":[5.15,2.95],"size":[0.7,0.7]},
-      {"art":"plant-fern","at":[11.95,2.95],"size":[0.7,0.7]},
-      {"art":"plant-fern","at":[5.15,8.15],"size":[0.7,0.7]},
-      {"art":"plant-fern","at":[11.95,8.15],"size":[0.7,0.7]},
-      {"art":"plant-palm","at":[8.4,3.0],"size":[0.8,0.8]},
-      {"art":"plant-palm","at":[8.5,8.2],"size":[0.8,0.8]},
-      {"art":"plant-fern","at":[6.9,1.1],"size":[0.75,0.75]},
-      {"art":"plant-palm","at":[11.0,1.2],"size":[0.8,0.8]},
+      {"art":"holo-palm","at":[0.4,4.6],"size":[2,2],"tag":"holo-projector","states":{"fried":{"art":"holo-palm-glitch"}}},
+      {"art":"holo-palm","at":[15.2,7.2],"size":[2,2],"tag":"holo-projector","states":{"fried":{"art":"holo-palm-glitch"}},"rot":3.14},
+      {"art":"holo-fern","at":[14.6,9.4],"size":[2,2],"tag":"holo-projector","states":{"fried":{"art":"holo-fern-glitch"}}},
+      {"art":"holo-fern","at":[0.6,9.2],"size":[2,2],"tag":"holo-projector","states":{"fried":{"art":"holo-fern-glitch"}},"rot":1.0},
+      {"art":"holo-vines","at":[2.8,0.55],"size":[3,1],"tag":"holo-projector","states":{"fried":{"art":"holo-vines-glitch"}}},
+      {"art":"holo-vines","at":[10.0,0.55],"size":[3,1],"tag":"holo-projector","states":{"fried":{"art":"holo-vines-glitch"}}},
+      {"art":"holo-vines","at":[1.0,11.0],"size":[3,1],"tag":"holo-projector","states":{"fried":{"art":"holo-vines-glitch"}}},
+      {"art":"holo-vines","at":[12.5,11.0],"size":[3,1],"tag":"holo-projector","states":{"fried":{"art":"holo-vines-glitch"}}},
+      {"art":"holo-waterfall","at":[3.4,9.2],"size":[2,2],"tag":"holo-projector","states":{"fried":{"art":"holo-waterfall-glitch"}}},
+      {"art":"holo-flower-patch","at":[6.4,10.0],"size":[1,1]},
+      {"art":"holo-flower-patch","at":[8.6,1.1],"size":[1,1]},
+      {"art":"holo-flower-patch","at":[15.4,3.4],"size":[1,1]},
+      {"art":"mop","at":[13.2,2.6],"size":[1,1],"rot":0.3},
+      {"art":"pip-under-panel","at":[14.4,4.4],"size":[1.5,1.5],"when":{"pip-gym":"under"}},
       {"kind":"rag","at":[13.4,2.6],"size":0.4}
     ]
   },
@@ -124,7 +108,7 @@
   ],
   "npcs": [
     {"id":"nessa","at":[9,1],"face":"down","wander":0.2},
-    {"id":"pip","at":[15,5],"face":"right","wander":0}
+    {"id":"pip","at":[15,5],"face":"right","wander":0,"tag":"pip-gym","states":{"under":{"hidden":true}}}
   ],
   "doors": [
     {"id":"corridor","at":[8,0],"size":[1,1],"to":"duchess-corridor","arrive":"from-holodeck","label":"Out to the corridor"}

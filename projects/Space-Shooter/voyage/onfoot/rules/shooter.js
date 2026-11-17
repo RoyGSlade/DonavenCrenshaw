@@ -287,7 +287,9 @@ export function footStats(character, { effect } = {}) {
  * A live fight for a quest's on-foot step: turns the quest's rolled enemy
  * ({ name, hp }) into a few bodies on a map. Bigger hp means more of them.
  */
-export function questFightSetup(enemy = {}, seed = 1) {
+export function questFightSetup(enemy = {}, seed = 1, arena = null) {
+  // A fight node that names its own arena (a room, its enemies and where they stand) plays in that room, not on the moon.
+  if (arena?.map && Array.isArray(arena.enemies)) return { map: arena.map, ...(arena.spawn ? { spawn: arena.spawn } : {}), exit: arena.exit || null, seed, enemies: arena.enemies.map(e => ({ ...e })) };
   const hp = Math.max(10, enemy.hp || 20);
   const name = String(enemy.name || '').toLowerCase();
   const pick = /drone|bot|machine/.test(name) ? ['drone', 'gundrone', 'drone', 'turret'] : /bug|crawler|swarm|creature/.test(name) ? ['bug', 'bug', 'bug', 'bug', 'bug'] : ['grunt', 'grunt', 'heavy', 'grunt'];

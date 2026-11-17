@@ -203,12 +203,12 @@ export function createJobsPage({ root, store, onContinue = () => {} }) {
             el('strong', { text: g.name }),
             el('span', { 'data-rep': g.id, text: `${rep} / ${REP_MAX} · ${repBand(rep)}` }),
             el('div', { class: 'vy-bar', role: 'progressbar', 'aria-label': `${g.name} rep`, 'aria-valuemin': '0', 'aria-valuemax': String(REP_MAX), 'aria-valuenow': String(rep) }, el('i', { style: `width:${(rep / REP_MAX) * 100}%` })),
-            prize ? el('small', { text: `${save.account?.maxRep?.[g.id] ? 'Earned' : `At ${REP_MAX}`}: +${prize.permanent} permanent skill points, ${prize.unlocks.map((u) => UNLOCK_NAMES[u] || u).join(', ')}` }) : null);
+            prize?.permanent ? el('small', { text: `${save.account?.maxRep?.[g.id] ? 'Earned' : `At ${REP_MAX}`}: +${prize.permanent} permanent skill points, ${prize.unlocks.map((u) => UNLOCK_NAMES[u] || u).join(', ')}` }) : null);
         }))),
       el('div', { class: 'dp-jobs-right' },
         // Jobs you haven't taken are in the world: this says where to go, it does not start them.
         el('h3', { class: 'dp-h', text: 'WHERE THE WORK IS' }),
-        el('ul', { class: 'dp-offers' }, Object.keys(QUEST_GIVERS).map((gid) => {
+        el('ul', { class: 'dp-offers' }, Object.keys(QUEST_GIVERS).filter((gid) => !QUEST_GIVERS[gid].slice).map((gid) => {
           const list = giverOffers(gid, save);
           return el('li', { class: 'dp-offer-giver', dataset: { giver: gid } },
             el('strong', { text: QUEST_GIVERS[gid].name }),

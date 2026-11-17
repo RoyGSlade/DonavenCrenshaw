@@ -82,7 +82,7 @@ export function createTracker({ root, store, bus = null, world = () => null, sta
     if (!w) return;
     const target = track?.target || null;
     const label = target?.station ? stationInfo(target.station)?.name || null : null;
-    const want = target ? { text: track.steps.find((s) => s.state === 'now')?.text || '', station: target.station || null, npc: target.npc || null, label } : null;
+    const want = target ? { text: track.steps.find((s) => s.state === 'now')?.text || '', station: target.station || null, npc: target.npc || null, map: target.map || null, zone: target.zone || null, prop: target.prop || null, label } : null;
     w.setObjective(want);
   }
 

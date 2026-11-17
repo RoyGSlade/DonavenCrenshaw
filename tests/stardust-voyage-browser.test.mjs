@@ -26,7 +26,7 @@ test('new hangar: closed by default; captain, credits, upgrade and skill survive
   assert.equal(await page.locator('#vy-closed').isVisible(), true, 'closed without the flag');
   assert.equal(await page.locator('#vy-hangar').isVisible(), false);
 
-  await page.goto(`${base}?newgame=1&dev=1`);
+  await page.goto(`${base}?newgame=1&start=hangar&dev=1`);
   await signOnCaptain(page, 'Vela Quint');
   // Round 3: the pad opened on the new captain; close it for the test tools, reopen on Captain (K).
   await page.keyboard.press('Escape');
@@ -76,7 +76,7 @@ test('new hangar: closed by default; captain, credits, upgrade and skill survive
   await phone.route('https://api.donavencrenshaw.com/**', (route) => route.fulfill({ status: 401, json: { user: null } }));
   const p2 = await phone.newPage();
   p2.on('pageerror', (e) => errors.push(e.message));
-  await p2.goto(`${base}?newgame=1`);
+  await p2.goto(`${base}?newgame=1&start=hangar`);
   const ratio = () => p2.evaluate(() => document.querySelector('#hg-floor .of-canvas').width / innerWidth);
   assert.equal(await ratio(), 2);
   await p2.evaluate(() => localStorage.setItem('stardust.newgame.renderScale', 'fast'));

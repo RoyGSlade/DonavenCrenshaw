@@ -296,9 +296,9 @@ export function drawContained(ctx, img, p, pad = 0, piece = null) {
 /**
  * A straight-down body: sprite rotated to its heading (sprites face up), with
  * the code sway and bob the art lead advised (straight down hides the legs).
- * opts: { size, t, moving, stride, frames, hit, look }
+ * opts: { size, t, moving, stride, frames, hit, look, lift }
  */
-export function drawBody(ctx, x, y, angle, img, { size = 44, t = 0, moving = false, stride = 0, hit = 0, tint = null, label = null, dog = false } = {}) {
+export function drawBody(ctx, x, y, angle, img, { size = 44, t = 0, moving = false, stride = 0, hit = 0, tint = null, label = null, dog = false, lift = null } = {}) {
   const sway = moving ? Math.sin(stride * Math.PI) * 0.07 : Math.sin(t * 1.6) * 0.015;
   const bob = moving ? 1 + Math.abs(Math.sin(stride * Math.PI)) * 0.035 : 1 + Math.sin(t * 2.1) * 0.01;
   ctx.save();
@@ -307,7 +307,7 @@ export function drawBody(ctx, x, y, angle, img, { size = 44, t = 0, moving = fal
     // Look maps: people are the brightest, most saturated things on screen, with a soft contact shadow down-right.
     const pl = activeLook.people;
     size *= pl.scale ?? 1;
-    img = litCopy(img, pl.lift);
+    img = litCopy(img, lift || pl.lift); // a person's own `lift` (cast data) replaces the room's people boost
     // The soft shadow moves with the body and falls away from the nearest lamp.
     const [sx, sy] = shadowOffset(activeLights, x, y, size * 0.15);
     const g = ctx.createRadialGradient(sx, sy, 0, sx, sy, size * 0.44);

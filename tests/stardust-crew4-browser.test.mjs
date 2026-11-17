@@ -14,7 +14,7 @@ import path from 'node:path';
 import { loadPlaywright, startServer } from '../scripts/stardust-test-kit.mjs';
 import { signOnCaptain, openStation } from '../scripts/stardust-hangar-kit.mjs';
 
-const HANGAR = '/projects/Space-Shooter/voyage/?newgame=1';
+const HANGAR = '/projects/Space-Shooter/voyage/?newgame=1&start=hangar';
 const HUB = 'https://api.donavencrenshaw.com';
 const proofDir = process.env.CREW_PROOF_DIR || null;
 const DESK = { width: 1440, height: 900 };

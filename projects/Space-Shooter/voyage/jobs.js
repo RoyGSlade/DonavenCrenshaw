@@ -58,7 +58,7 @@ export function createJobs({ pane, store, say, toast, dev = false, onCaptain = (
       const lost = store.die();
       if (lost != null) toast(`Your captain died. ${lost} skill point${lost === 1 ? '' : 's'} lost, stats rolled again, skills refunded${DEATH.loseUpgrades ? ', ship upgrades lost' : ''}.`);
     },
-    onExit: () => { presenter?.card(null); render(); crew.changed(); },
+    onExit: () => { presenter?.card(null); render(); crew.changed(); presenter?.exit?.(); },
     exitLabel: 'Done',
     presenter,
     onChange: () => { onPlaying(player.active); crew.changed(); },

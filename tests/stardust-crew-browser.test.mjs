@@ -15,7 +15,7 @@ import path from 'node:path';
 import { loadPlaywright, startServer, DESKTOP, PHONE } from '../scripts/stardust-test-kit.mjs';
 import { signOnCaptain, openStation } from '../scripts/stardust-hangar-kit.mjs';
 
-const HANGAR = '/projects/Space-Shooter/voyage/?newgame=1';
+const HANGAR = '/projects/Space-Shooter/voyage/?newgame=1&start=hangar';
 const SAVE_KEY = 'stardust.voyage.v1';
 const HUB = 'https://api.donavencrenshaw.com';
 const proofDir = process.env.CREW_PROOF_DIR || null;

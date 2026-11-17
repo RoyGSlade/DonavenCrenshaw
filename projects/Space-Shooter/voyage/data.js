@@ -264,6 +264,8 @@ export const GIVERS = Object.freeze([
   { id: 'hask', name: 'Stationmaster Orrin Hask', short: 'Hask', faction: 'Relay Guild' },
   { id: 'vey', name: 'Lucan Vey', short: 'Vey', faction: 'Beacon Prime (unaligned)' },
   { id: 'garrity', name: 'Hob Garrity', short: 'Garrity', faction: 'Driftborn' },
+  // The opening slice's captain (launch slice lane): his rep is the crew's trust in you.
+  { id: 'tull', name: 'Captain Augustin Tull', short: 'Tull', faction: 'The Tin Duchess' },
 ]);
 
 // Rep bands, for showing a number as a word.
@@ -278,6 +280,8 @@ export const MAX_REP_REWARDS = Object.freeze({
   hask: { permanent: 1, unlocks: ['title:lane-warden', 'paint:guild-livery'] },
   vey: { permanent: 1, unlocks: ['title:beacon-regular', 'paint:gilded'] },
   garrity: { permanent: 1, unlocks: ['title:dustfall-made', 'paint:scrapper-livery'] },
+  // The opening slice's captain: no prize, his rep is only the crew's trust in you.
+  tull: { permanent: 0, unlocks: [] },
 });
 
 export const UNLOCK_KINDS = Object.freeze(['title', 'paint', 'decal', 'badge']);

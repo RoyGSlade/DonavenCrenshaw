@@ -55,7 +55,7 @@
       {"kind":"screen","at":[7.75,8.36],"size":[0.2,0.08],"pool":[7.8,8.4],"r":1.0,"color":"gun","strength":0.14,"when":{"reck":"down"}}
     ],
     "mounts": [
-      {"art":"wall-screen","at":[5.2,0.14],"size":[2,0.75],"face":true},
+      {"art":"bridge-viewport","at":[4.5,0.14],"size":[4,0.75],"face":true,"tag":"gunner-seat","states":{"broken":{"art":"bridge-viewport-cracked"},"intact":{}}},
       {"art":"wall-screen","at":[6,9.11],"size":[2,0.75],"face":true},
       {"art":"fuse-box","at":[10.4,9.25],"size":[1,0.5],"face":true},
       {"art":"fire-extinguisher","at":[13.25,2.2],"size":[0.5,0.5]},

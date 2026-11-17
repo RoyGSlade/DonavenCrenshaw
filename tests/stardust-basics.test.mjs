@@ -116,7 +116,7 @@ test('jobs you have not taken are in the world: givers in person, the hangar boa
   assert.equal(payText(QUESTS['cold-run']), '70-95 credits');
   assert.match(whereText('vey'), /Beacon Prime/);
   // Every job can be taken from somewhere (in person and on the board).
-  for (const id of Object.keys(QUESTS)) assert.ok(offersAt({ map: 'hangar', board: true }, save).some((o) => o.id === id), `${id} is posted`);
+  for (const id of Object.keys(QUESTS).filter((q) => QUESTS[q].giver !== 'tull')) assert.ok(offersAt({ map: 'hangar', board: true }, save).some((o) => o.id === id), `${id} is posted`);
   // One job at a time.
   const busy = { ...save, quests: { active: { 'cold-run': { quest: 'cold-run' } } } };
   assert.ok(giverOffers('vey', busy).every((o) => !o.ok && /Finish the job/.test(o.reasons[0])));

@@ -116,6 +116,46 @@
         "gap": 0.1,
         "spread": 0.06
       }
+    },
+    "marauder": {
+      "name": "Cinder Reaver",
+      "art": "marauder-grunt-a",
+      "hp": 30,
+      "radius": 15,
+      "speed": 95,
+      "brain": "gunner",
+      "range": [
+        170,
+        290
+      ],
+      "shot": {
+        "damage": 7,
+        "speed": 360,
+        "rate": 1.3,
+        "burst": 3,
+        "gap": 0.12,
+        "spread": 0.08
+      }
+    },
+    "marauder-boss": {
+      "name": "Reaver boss",
+      "art": "marauder-boss",
+      "hp": 64,
+      "radius": 19,
+      "speed": 62,
+      "brain": "gunner",
+      "range": [
+        110,
+        210
+      ],
+      "shot": {
+        "damage": 5,
+        "speed": 320,
+        "rate": 1.8,
+        "burst": 1,
+        "pellets": 5,
+        "spread": 0.32
+      }
     }
   },
   "mining": {
