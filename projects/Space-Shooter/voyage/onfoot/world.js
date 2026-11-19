@@ -14,7 +14,7 @@ import { enterMap, MAP_DEFS } from '../maps/index.js';
 import { createWalker, stepWalker, stepNpc, WALK } from './rules/walk.js';
 import { createFight, stepFight, STEP, ENEMY_TYPES } from './rules/shooter.js';
 import { buildStaticLayer, buildVignette, drawBody, drawContained, castSprite, castLook } from './draw.js';
-import { sprite, playerFrames, preload, onArtLoaded, captainSprite } from './assets.js';
+import { sprite, playerFrames, preload, onArtLoaded, captainSprite, playerArt } from './assets.js';
 import { fitCanvas, viewZoom, cameraFor } from './viewport.js';
 import { createInput } from './input.js';
 import { createEl } from './dom.js';
@@ -521,7 +521,7 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     const frames = playerFrames();
     const img = cap || (moving ? frames[Math.floor(stride) % 4] || frames[0] : frames[0]);
     if (ghost) ctx.globalAlpha = 0.6;
-    drawBody(ctx, x, y, angle, img, { size: cap ? 46 * castLook('captain').scale : 52, t, moving, stride, hit, tint: '#81e6df' });
+    drawBody(ctx, x, y, angle, img, { size: cap ? 46 * playerArt().scale : 52, t, moving, stride, hit, tint: '#81e6df' });
     ctx.globalAlpha = 1;
     if (fight && !fight.ended) {
       // A short laser sight: where you're aiming.

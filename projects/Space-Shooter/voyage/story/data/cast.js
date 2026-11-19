@@ -54,6 +54,36 @@ export const CAST_DATA = {
       "color": "#ffad72",
       "giver": true
     },
+    "tull": {
+      "name": "Captain Tull",
+      "role": "Captain of the Tin Duchess",
+      "station": "duchess",
+      "color": "#ffb23a"
+    },
+    "nessa": {
+      "name": "Nessa Calloway",
+      "role": "Pilot, Tin Duchess",
+      "station": "duchess",
+      "color": "#38e6ff"
+    },
+    "pip": {
+      "name": "Pip Rourke",
+      "role": "Engineer, Tin Duchess",
+      "station": "duchess",
+      "color": "#ffd84a"
+    },
+    "reck": {
+      "name": "Tobin Reck",
+      "role": "Gunner number seven, Tin Duchess",
+      "station": "duchess",
+      "color": "#6fb2ff"
+    },
+    "reaver": {
+      "name": "Cinder Reaver boss",
+      "role": "Raider leader, masked",
+      "station": "duchess",
+      "color": "#ff7a45"
+    },
     "narrator": {
       "name": "Relay Night",
       "role": "Late-night lane radio",
@@ -135,6 +165,31 @@ export const CAST_DATA = {
       "neutral": "cap-d-neutral.webp",
       "happy": "cap-d-happy.webp",
       "annoyed": "cap-d-annoyed.webp"
+    },
+    "tull": {
+      "neutral": "tull-neutral.webp",
+      "happy": "tull-happy.webp",
+      "annoyed": "tull-annoyed.webp"
+    },
+    "nessa": {
+      "neutral": "nessa-neutral.webp",
+      "happy": "nessa-happy.webp",
+      "annoyed": "nessa-annoyed.webp"
+    },
+    "pip": {
+      "neutral": "pip-neutral.webp",
+      "happy": "pip-happy.webp",
+      "annoyed": "pip-annoyed.webp"
+    },
+    "reck": {
+      "neutral": "reck-neutral.webp",
+      "happy": "reck-happy.webp",
+      "annoyed": "reck-neutral.webp"
+    },
+    "reaver": {
+      "neutral": "reaver-neutral.webp",
+      "happy": "reaver-neutral.webp",
+      "annoyed": "reaver-annoyed.webp"
     }
   }
 };
