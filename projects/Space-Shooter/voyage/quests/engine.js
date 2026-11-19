@@ -119,6 +119,7 @@ function makeCtx(run, save, out, crew = null) {
     crew,
     ship: shipFor(save),
     rng: roller(run),
+    out,
     log: line => pushLog(run, line),
     grant(reward) {
       const result = grant(ctx.save, reward);
@@ -310,6 +311,7 @@ export function view(quest, run, save) {
     location: run.location,
     locationName: SECTORS[run.location]?.name || run.location,
     log: run.log.slice(-8),
+    minigame: run.minigame ? { ...run.minigame } : null,
     ended: run.ended ? { ...run.ended, text: fill(node.text || '', s), reward: resolveReward(node.reward, run) || null } : null,
   };
   if (node.type === 'dialogue') {
@@ -324,6 +326,7 @@ export function view(quest, run, save) {
         locked: reasons.length > 0,
         reasons: reasons.length && choice.lockedHint ? [choice.lockedHint] : reasons,
         hidden: reasons.length > 0 && Boolean(choice.hideLocked),
+        minigame: choice.minigame ? { kind: choice.minigame.kind, title: choice.minigame.title || null, who: choice.minigame.who || null, what: choice.minigame.what || null, lock: choice.minigame.lock ?? null, open: choice.minigame.open ?? null, best: choice.minigame.best ?? null } : null,
         check: choice.check ? { stat: choice.check.stat, skill: checkSkillOf(choice.check), name: checkName(choice.check), dc: choice.check.dc, text: checkText(choice.check, save.character), roll: checkBonusText(save.character, choice.check), chance: checkChance(save.character, choice.check) } : null,
         cost: choice.cost || null,
       };
@@ -344,6 +347,7 @@ const CREW_PUZZLE = Object.freeze({ cipher: 'guess', riddle: 'answer' });
 function choose(quest, run, ctx, node, index, roller, now) {
   const raw = node.choices?.[index];
   if (!raw) return 'No such option.';
+  if (run.minigame) return 'Finish the minigame first.';
   const choice = { ...choiceFor(raw, run, ctx.save) };
   if (choice.cost) choice.cost = resolveReward(choice.cost, run);
   const reasons = reqReasons(choice.requires, run, ctx.save);
@@ -359,8 +363,29 @@ function choose(quest, run, ctx, node, index, roller, now) {
     const who = roller === ctx.save.character ? '' : `${roller.name || 'Your crew'} takes it. `;
     pushLog(run, `${who}${checkName(choice.check)}: ${rollText(r)}, ${r.pass ? 'pass' : 'fail'}.`);
     run.lastCheck = r;
+    if (choice.minigame && roller === ctx.save.character) {
+      // The captain plays it: the d20 only sets the minigame up (tier from total, dc and natural); the page sends { type: 'minigame', branch } when it ends.
+      run.minigame = { node: run.node, index, kind: choice.minigame.kind, attempt: { total: r.total, dc: r.dc, natural: r.natural } };
+      return null;
+    }
     target = r.pass ? choice.check.pass : choice.check.fail;
   }
+  enter(quest, target, ctx, now);
+  return null;
+}
+
+// The page hands back how a minigame ended: branch 'win' | 'mid' | 'lose' (sceneHook.branchOf) and the XP it earned.
+function finishMinigame(quest, run, ctx, node, action, now) {
+  const pending = run.minigame;
+  if (!pending || pending.node !== run.node) return 'No minigame to finish.';
+  const choice = node.choices?.[pending.index];
+  const target = { win: choice?.check?.pass, lose: choice?.check?.fail, mid: choice?.minigame?.mid }[action.branch];
+  if (!target) return 'That minigame has no such ending.';
+  run.minigame = null;
+  run.steps++;
+  const xp = Math.max(0, Math.min(10, Math.trunc(action.xp) || 0));
+  if (xp > 0) ctx.out.events.push({ type: 'skill-xp', skill: action.skill, xp });
+  pushLog(run, `${choice.minigame.title || choice.minigame.kind}: ${action.branch}.`);
   enter(quest, target, ctx, now);
   return null;
 }
@@ -403,7 +428,10 @@ function actInner(quest, runIn, saveIn, action, { now = 0, crew = null } = {}) {
   const node = quest.nodes[run.node];
   const fail = error => ({ run: runIn, save: saveIn, events: [], error });
 
-  if (action?.type === 'crew') {
+  if (action?.type === 'minigame') {
+    const error = finishMinigame(quest, run, ctx, node, action, now);
+    if (error) return fail(error);
+  } else if (action?.type === 'crew') {
     const error = actAsCrew(quest, run, ctx, node, action, now);
     if (error) return fail(error);
   } else if (run.part) {

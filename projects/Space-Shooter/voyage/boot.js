@@ -37,6 +37,7 @@ import { createDialogueBox } from './ui/dialogue.js';
 import { createLicence } from './ui/licence.js';
 import { createSettings } from './ui/settings.js';
 import { createAttemptRoller } from './ui/attemptRoll.js';
+import { createMinigameSheet } from './minigames/sheet.js';
 import { mountStory } from './story/mount.js';
 import { storyOf, currentStep } from './story/progress.js';
 import { STEP_IDS, STEPS } from './story/tutorial.js';
@@ -397,6 +398,13 @@ function boot(session = { mode: 'local' }) {
   presenter.dialogue = (v, pick) => (slice ? slice.beat(v, () => playBeat(v, pick)) : playBeat(v, pick));
   presenter.foot = (part, done) => (slice ? slice.fight(part, done) : done(null));
   presenter.exit = () => slice?.afterCard();
+  // The opening's hooked choices (scenes 3, 4, 5): the d20 set the tier, the minigame sheet plays it, the result goes back to the engine.
+  const minigameSheet = createMinigameSheet({
+    root: $('hg-minigame'), eyebrow: $('hg-minigame-eyebrow'), title: $('hg-minigame-title'), stage: $('hg-minigame-stage'),
+    character: () => store.get().character, reducedMotion: still,
+    onChange: (on) => { if (on) { overlays.add('minigame'); dialogueBox.hide(); } else overlays.delete('minigame'); holdFloor(); tracker?.render(); },
+  });
+  presenter.minigame = (spec, done) => minigameSheet.play(spec, done);
   const jobs = createJobs({
     pane: panes.jobs, store, toast, dev: flag.dev, presenter,
     say: (events) => hangar.say(events),
