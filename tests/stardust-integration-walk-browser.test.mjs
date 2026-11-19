@@ -152,6 +152,28 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
         await page.waitForSelector('#wb-talk', { state: 'detached' });
       });
 
+      await sub('no ghost toast: leaving Perihelion leaves a toast, and walking into the yard clears it', async () => {
+        await use(page, 'wb-nav');
+        await roll();
+        await checkFull('nav (toast)', { leaveSel: '.pr-leave' });
+        await leave('.pr-leave');
+        const toast = () => page.evaluate(() => { const t = document.getElementById('vy-toast'); return { shown: t.classList.contains('show'), text: t.textContent }; });
+        assert.match((await toast()).text, /left the game/i, 'leaving says so');
+        // a new full-screen game starts on a clean screen
+        await use(page, 'wb-lock');
+        await page.waitForSelector('.wb-full .rp-panel');
+        assert.deepEqual(await toast(), { shown: false, text: '' }, 'the last toast is gone when the next game opens');
+        await leave();
+        await use(page, 'wb-nav'); await roll(); await checkFull('nav (toast 2)', { leaveSel: '.pr-leave' }); await leave('.pr-leave');
+        assert.equal((await toast()).shown, true, 'the toast is up before the walk');
+        await page.evaluate(() => __stardust.onfoot.world.go('workbench-yard', 'from-bay'));
+        await page.waitForFunction(() => __stardust.onfoot.world.map.id === 'workbench-yard');
+        assert.deepEqual(await toast(), { shown: false, text: '' }, 'no ghost toast in the yard');
+        await shot('walk-yard-clean');
+        await page.evaluate(() => __stardust.onfoot.world.go('workbench', 'from-yard'));
+        await page.waitForFunction(() => __stardust.onfoot.world.map.id === 'workbench');
+      });
+
       await sub('the patrol yard is the whole screen already: the door in the bay south wall leads there and back', async () => {
         const door = await page.evaluate(() => __stardust.onfoot.world.map.doors.map((d) => d.id));
         assert.deepEqual(door, ['to-yard']);

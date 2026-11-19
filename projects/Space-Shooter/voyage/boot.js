@@ -117,6 +117,10 @@ function boot(session = { mode: 'local' }) {
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => toastNode.classList.remove('show'), 3400);
   };
+  // A toast belongs to what just happened: it goes (text, class and timer) when the player changes room or a full-screen game opens.
+  const clearToast = () => { clearTimeout(toastTimer); toastNode.classList.remove('show'); toastNode.textContent = ''; };
+  bus.on('hangar:toast-clear', clearToast);
+  document.addEventListener('wb-fullscreen', clearToast);
   bus.on('hangar:toast', (d) => d?.text && toast(String(d.text)));
 
   // --- The save: the real one, or a throwaway one for Studio play links ---
@@ -467,7 +471,7 @@ function boot(session = { mode: 'local' }) {
       tutorial: () => tutorialOn(store.get()),
       // During the tutorial, a lesson waits for its turn (the director pays for each one once).
       allow: (target) => allowLesson(target),
-      entered: (map) => { slice?.entered(map); setBed(map.ambient); place?.closeStation({ restoreFocus: false }); place?.place(); setPlaceName(placeNameFor(map)); },
+      entered: (map) => { clearToast(); slice?.entered(map); setBed(map.ambient); place?.closeStation({ restoreFocus: false }); place?.place(); setPlaceName(placeNameFor(map)); },
       flying: (on) => { flying = on; holdFloor(); place?.place(); if (on) setPlaceName('The Drift'); else if (onfoot?.world?.map) setPlaceName(placeNameFor(onfoot.world.map)); },
       stationInfo: (id) => (workbenchRoom && String(id).startsWith('wb-') ? workbenchRoom.stationInfo(id) : stationInfo(id)),
       // Live stealth (the workbench's patrol yard): the test character's stealth points, and the guards' events as toasts.

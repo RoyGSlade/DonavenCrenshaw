@@ -31,7 +31,10 @@ export function playPersuade(root, { state, who = 'The dockmaster', what = 'let 
 
   function paint() {
     trustBar.querySelector('u').style.width = `${Math.min(100, (100 * s.trust) / s.goal)}%`;
-    trustBar.querySelector('b').textContent = `${s.trust} of ${s.goal}`;
+    // One plain word, not a score: the bar already shows how far there is to go.
+    const frac = s.goal ? s.trust / s.goal : 0;
+    trustBar.querySelector('b').textContent = s.trust >= s.goal ? 'won' : frac >= 0.6 ? 'close' : frac >= 0.25 ? 'warming' : 'cold';
+    trustBar.setAttribute('aria-label', `Trust: ${trustBar.querySelector('b').textContent}`);
     pips.replaceChildren(...Array.from({ length: s.patienceMax }, (_, i) => h('span', { class: i < s.patience ? 'on' : '' })));
     s.hand.forEach((c, i) => {
       const b = cards[i], done = s.played.includes(c.id);

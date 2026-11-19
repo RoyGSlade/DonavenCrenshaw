@@ -24,3 +24,23 @@
 .wb-full .pr-leave{display:inline-flex}
 /* A tall game inside the full-screen stage scrolls inside its panel; its parts keep their height rather than squashing into each other. */
 .wb-fstage>.rp-panel:not(.cc-panel):not(.pr-full):not(.ga-full)>*{flex-shrink:0}
+
+/* ONE LAYOUT RULE FOR EVERY OVERLAY ON A PHONE (integration round 2).
+   The HUD sits at the top (the helper's bar, then the game's own meters); the frame starts right under it and fills the screen down to the
+   bottom edge, so there is no dead band above or below it; the play area floats in the free height between the HUD and the actions;
+   the action buttons are pinned to the bottom of the frame, where the thumb is. */
+@media (max-width:700px){
+  .wb-fstage>.rp-panel,.wb-fstage>.rp-panel:is(.hk-panel,.hg-panel,.pc-panel,.it-panel,.mh-panel,.pl-panel,.st-panel,.cf-panel){flex:1 1 0;margin:0;max-width:none;width:100%}
+  .wb-fstage>.rp-panel>:is(.rp-stage,.mh-field,.hk-canvas,.st-grid,.pl-view,.hg-track,.cf-heatbox,.cf-shape,.it-ladder,.pc-hand){margin-block:auto}
+  .wb-fstage>.rp-panel>:is(.rp-foot,.mh-actions,.it-row,.pl-controls,.hk-btn,.nv-back){margin-top:auto}
+  .wb-fstage>.rp-panel>:is(.rp-foot,.hk-btn){margin-bottom:6px}
+  /* Persuade: all eight cards on one screen, no scrolling inside the frame. Short quote, small type, two columns by four rows. */
+  .pc-panel .pc-tells{margin:0 0 4px}.pc-panel .pc-tells li{padding:5px 8px;font-size:13px}
+  .pc-panel .pc-lead{margin:2px 0}
+  .pc-panel .pc-hand{grid-template-columns:1fr 1fr;gap:6px;margin-block:auto 6px}
+  .pc-panel .pc-card,.mg-skin .pc-panel .pc-card{min-height:0;padding:2px 4px;gap:1px;border-width:9px 12px 9px 12px;border-image-width:9px 12px 9px 12px}
+  .pc-panel .pc-card b{font-size:10px}
+  .pc-panel .pc-card span{font-size:12px;line-height:1.2;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+  .pc-panel .pc-card small{min-height:0;font-size:10px}.pc-panel .pc-card small:empty{display:none}
+  .pc-panel .pc-card .pc-named{display:none}
+}

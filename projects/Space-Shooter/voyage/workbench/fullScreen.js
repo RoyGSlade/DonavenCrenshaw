@@ -27,6 +27,8 @@ function ensureStyles() {
 
 export function openFullScreen({ word = '', title = '', note = '', onLeave = () => {}, bare = false, noLeave = false } = {}) {
   ensureStyles();
+  // A new game starts on a clean screen: the last game's toast ("You left the game") must not sit on top of it.
+  document.dispatchEvent(new CustomEvent('wb-fullscreen', { detail: { open: true } }));
   const leave = h('button', { type: 'button', class: 'wb-leave wb-fleave ui-btn', text: 'Leave this game' });
   leave.addEventListener('click', () => onLeave());
   if (noLeave) leave.hidden = true; // a scene's mini-game ends on its own result card; a scene must never be left half-played

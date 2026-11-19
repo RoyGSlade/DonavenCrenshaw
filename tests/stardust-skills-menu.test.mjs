@@ -341,3 +341,10 @@ test('no new file carries a second dice notation the d20 scan reads (lesson from
   const dir = path.join(ROOT, 'projects/Space-Shooter/voyage/skills');
   for (const f of fs.readdirSync(dir)) assert.doesNotMatch(fs.readFileSync(path.join(dir, f), 'utf8'), /2d6/i, f);
 });
+
+test('hacking Size is called "Puzzle size" in the menu, the same name picker.js gives it (and the words under it are hacking v2)', () => {
+  const menu = M.SKILL_UI.hacking.cats.find((c) => c.id === 'size').name;
+  const pick = CATEGORIES.hacking.cats.find((c) => c.id === 'size').name;
+  assert.equal(menu, 'Puzzle size');
+  assert.equal(menu, pick);
+});
