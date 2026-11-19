@@ -48,13 +48,14 @@ export function cleanPoints(points, categories, level = POINT_MAX) {
 }
 
 // --- Repair v2: closed pipe network, no clock (Donaven 2026-11-18) -----------------
-// The coolant flows from the pump and pours out of every open end it reaches; the spill fills a pool
-// along the bottom of the board; a full pool floods the line. Categories: time, size, quality.
-//   time     +6 pool depth per point (0..9 -> +0..+54): a deeper pool floods later (a point = 6 seconds of one open end)
+// The coolant flows from the pump and pours out of every open end it reaches; the spill is water that rises up
+// the board from the bottom row (v3); the water reaching the valve loses the line. `capacity` is how much spill
+// brings the water from the bottom to the valve. Categories: time, size, quality.
+//   time     +6 capacity per point (0..9 -> +0..+54): the water rises slower (a point = 6 seconds of one open end)
 //   size     one fewer row and column per 3 points (0-2: 0, 3-5: -1, 6-8: -2, 9: -3)
 //   quality  +4 quality points per point           (0..9 -> +0..+36)
-// Base 5 x 5 board, pool depth 120 (one open end fills it in 120 s at flow 1; three open ends in 40 s).
-// Tier: pool depth x (0.70 .. 1.30), flow per open end +0.1 per step rougher (1.2 .. 0.8), size +/-1 board step.
+// Base 5 x 5 board, capacity 120 (one open end brings the water to the valve in 120 s at flow 1; three open ends in 40 s).
+// Tier: capacity x (0.70 .. 1.30), flow per open end +0.1 per step rougher (1.2 .. 0.8), size +/-1 board step.
 // The board is never smaller than 3 x 3 or larger than 6 x 6.
 export const REPAIR_BASE = Object.freeze({ size: 5, capacity: 120, minSize: 3, maxSize: 6, capacityPerPoint: 6, pointsPerStep: 3, qualityPerPoint: 4, flowPerTier: 0.1 });
 export const REPAIR_CATEGORIES = Object.freeze(['time', 'size', 'quality']);
@@ -70,7 +71,7 @@ export function setupRepair({ tier = 0, points = {}, level = POINT_MAX } = {}) {
   return { size, capacity, flow, qualityBonus: b.qualityPerPoint * p.quality, tier: k, points: p, label: t.label };
 }
 
-/** How long the pool lasts with one leak open, in plain words, to the nearest half minute ("about 2\u00bd minutes"). */
+/** How long until the water reaches the valve with one leak open, in plain words, to the nearest half minute ("about 2\u00bd minutes"). */
 export function poolLasts({ capacity, flow = 1 } = {}) {
   const halves = Math.round((capacity / (flow || 1)) / 30);
   if (halves < 1) return 'under half a minute';
@@ -79,7 +80,7 @@ export function poolLasts({ capacity, flow = 1 } = {}) {
   return `about ${n} minute${whole > 1 || (whole === 1 && half) ? 's' : ''}`;
 }
 
-// --- Hacking: the existing bypass ring (onfoot/rules/hack.js) ---------------------
+// --- Hacking, the old bypass ring (onfoot/rules/hack.js): kept for the practice dummy lock ---------------
 // Categories: time, size, retries.
 //   time     +1.5 s per point   (0..9 -> +0..+13.5 s)
 //   size     every point widens the lit window 5% (0..9 -> x1..x1.45); every 2nd point also removes a tumbler
@@ -87,19 +88,52 @@ export function poolLasts({ capacity, flow = 1 } = {}) {
 //   retries  one more allowed miss per 2 points (0..9 -> +0..+4)
 // Base: the lock level's own numbers. Tier: time x, size +/-1 tumbler, spare miss +1/-1.
 // Never fewer than 2 tumblers; never fewer than 0 allowed misses; never under 1.8 s per tumbler.
-export const HACK_CATEGORIES = Object.freeze(['time', 'size', 'retries']);
-export const HACK_SECONDS_PER_TUMBLER = 1.8;
-export const HACK_WINDOW_PER_POINT = 0.05;
-export function setupHack({ tier = 0, points = {}, level = POINT_MAX, lock = { time: 16, tumblers: 3, misses: 2 } } = {}) {
+export const RING_SECONDS_PER_TUMBLER = 1.8;
+export const RING_WINDOW_PER_POINT = 0.05;
+export function setupRing({ tier = 0, points = {}, level = POINT_MAX, lock = { time: 16, tumblers: 3, misses: 2 } } = {}) {
   const p = cleanPoints(points, HACK_CATEGORIES, level);
   const t = tierInfo(tier);
   const tumblers = Math.max(2, lock.tumblers - Math.floor(p.size / 2) + t.size);
   // Floor: a perfect run of a Rough level-4 lock used 98% of its clock, so no hack gets under 1.8 s per tumbler.
-  const time = Math.max(tumblers * HACK_SECONDS_PER_TUMBLER, Math.round(+((lock.time + 1.5 * p.time) * t.time).toFixed(6) * 10) / 10);
+  const time = Math.max(tumblers * RING_SECONDS_PER_TUMBLER, Math.round(+((lock.time + 1.5 * p.time) * t.time).toFixed(6) * 10) / 10);
   return {
-    time: Math.round(time * 10) / 10, tumblers, window: Math.round((1 + HACK_WINDOW_PER_POINT * p.size) * 100) / 100,
+    time: Math.round(time * 10) / 10, tumblers, window: Math.round((1 + RING_WINDOW_PER_POINT * p.size) * 100) / 100,
     misses: Math.max(0, lock.misses + Math.floor(p.retries / 2) + t.extra),
     tier: Math.max(-2, Math.min(2, Math.trunc(tier) || 0)), points: p, label: t.label,
+  };
+}
+
+// --- Hacking v2: mirrors, a portal and firewalls (Donaven 2026-11-18) ---------------------------------
+// "use mirrors, click a box and hold to rotate them, open a portal with a timed catch, then shoot a projectile
+// to break a firewall per stage; you are timed per firewall; miss it and the mirrors and portal reset on the same
+// seed; fail all your retries and security is alerted." Categories: time, size, retries.
+//   time     +2 s per firewall per point (0..9 -> +0..+18 s)
+//   size     every point brings the farthest a mirror can start from its place one step closer (12 .. 3 steps of 7.5 degrees);
+//            every 2 points one fewer decoy mirror on every stage (never under 0); every 3 points one fewer mirror on the path (never under 1)
+//   retries  +1 retry per point (0..9): a retry is a reset of the same firewall on the same seed
+// Base: lock grade 1..4 = that many firewalls (grade 1 has only one). Time 26 s a firewall. Mirrors on the path by stage
+// [2, 3, 3, 4], decoys [1, 2, 3, 3]. One retry. The portal catch: a marker sweeps a bar at 0.9 bars a second, a window 20% wide.
+// Tier: time x (0.70 .. 1.30); decoys -1 at +2 and +1 at -2; retries +1 at Good and Smooth, -1 at Rough; the catch window x(1 + 0.1 x tier).
+// Never under 8 s a firewall.
+export const HACK_CATEGORIES = Object.freeze(['time', 'size', 'retries']);
+export const HACK_BASE = Object.freeze({ time: 26, timePerPoint: 2, minTime: 8, spread: 12, minSpread: 3, mirrors: Object.freeze([2, 3, 3, 4]), decoys: Object.freeze([1, 2, 3, 3]), retries: 1, spreadPerPoint: 1, pointsPerDecoy: 2, pointsPerMirror: 3, catchWindow: 0.2, catchSpeed: 0.9 });
+export function setupHack({ tier = 0, points = {}, level = POINT_MAX, lock = 1 } = {}) {
+  const p = cleanPoints(points, HACK_CATEGORIES, level);
+  const k = Math.max(-2, Math.min(2, Math.trunc(tier) || 0));
+  const t = tierInfo(k);
+  const b = HACK_BASE;
+  const grade = Math.max(1, Math.min(4, Math.trunc(typeof lock === 'object' ? lock?.level : lock) || 1));
+  const r4 = (x) => Math.round(+x.toFixed(6) * 10000) / 10000;
+  const stage = (list, i) => list[Math.min(i, list.length - 1)];
+  const mirrors = Array.from({ length: grade }, (_, i) => Math.max(1, stage(b.mirrors, i) - Math.floor(p.size / b.pointsPerMirror)));
+  const decoys = Array.from({ length: grade }, (_, i) => Math.max(0, stage(b.decoys, i) - Math.floor(p.size / b.pointsPerDecoy) + (k === 2 ? -1 : k === -2 ? 1 : 0)));
+  return {
+    firewalls: grade, mirrors, decoys,
+    time: Math.round(Math.max(b.minTime, (b.time + b.timePerPoint * p.time) * t.time) * 10) / 10,
+    spread: Math.max(b.minSpread, b.spread - b.spreadPerPoint * p.size),
+    retries: Math.max(0, b.retries + (k >= 1 ? 1 : k === -2 ? -1 : 0) + p.retries),
+    catchWindow: r4(b.catchWindow * (1 + 0.1 * k)), catchSpeed: b.catchSpeed,
+    tier: k, points: p, label: t.label,
   };
 }
 

@@ -1,6 +1,6 @@
-// The repair minigame (v2, closed network, no clock) in a real browser: closed without the new-game flag,
-// open with it, the coolant flows and pours from open ends into a rising pool, tap-solvable at phone size
-// with touch, key-solvable on the desktop, and a full pool floods the line. Screenshots go to PROOF_DIR when it is set.
+// The repair minigame (v3, closed network, no clock, rising water) in a real browser: closed without the new-game flag,
+// open with it, the coolant flows and pours from open ends and the water rises up the board, submerged pieces lock,
+// tap-solvable at phone size with touch, key-solvable on the desktop, and water at the valve loses the line (shut the valve). Screenshots go to PROOF_DIR when it is set.
 // Opt-in like the other browser checks; run it on its own, capped:
 //   STARDUST_BROWSER_TEST=1 ~/kauto-3d/bin/capped 6G timeout 300 node --test tests/stardust-minigames-browser.test.mjs
 import test from 'node:test';
@@ -46,7 +46,9 @@ test('repair minigame in the browser', { skip }, async () => {
       assert.equal(await st(page, 's.size'), 5);
       assert.equal(await page.locator('.rp-tile').count(), 25);
       assert.equal(await page.locator('.rp-clock').count(), 0, 'no clock');
-      assert.equal(await page.locator('.rp-pool').count(), 1, 'a pool along the bottom');
+      assert.equal(await page.locator('.rp-sea').count(), 1, 'a water layer over the board');
+      assert.equal(await page.locator('.rp-line').count(), 1, 'a valve line marks where the water loses the line');
+      assert.equal(await page.locator('.rp-pool').count(), 0, 'no band under the board any more');
 
       // 1. The water is seen mid-flow: some piece is only part full.
       await page.waitForFunction(() => document.querySelector('.rp-tile.is-filling'), null, { timeout: 4000, polling: 'raf' });
@@ -60,8 +62,8 @@ test('repair minigame in the browser', { skip }, async () => {
       await page.waitForFunction(() => { const s = document.querySelector('.rp-panel').__state; return s.pool > s.capacity * 0.12; }, null, { timeout: 90000, polling: 500 });
       await shot(page, `repair-${name}-3-leak`);
       assert.ok(await st(page, 's.pool') > p0, 'the pool is rising');
-      const m = await page.evaluate(() => { const el = document.querySelector('.rp-mouth.is-pouring'); const r = getComputedStyle(el, '::after'); return { fall: parseFloat(r.height), pool: parseFloat(document.querySelector('.rp-pool-fill').style.height) }; });
-      assert.ok(m.fall > 0, 'a stream falls from the open connector'); assert.ok(m.pool > 0, 'the pool band has water in it');
+      const m = await page.evaluate(() => { const el = document.querySelector('.rp-mouth.is-pouring'); const r = getComputedStyle(el, '::after'); const sea = document.querySelector('.rp-sea').getBoundingClientRect(), board = document.querySelector('.rp-board').getBoundingClientRect(); return { fall: parseFloat(r.height), sea: sea.height, bottomGap: Math.abs(sea.bottom - board.bottom) }; });
+      assert.ok(m.fall > 0, 'a stream falls from the open connector'); assert.ok(m.sea > 0, 'the water has risen into the board'); assert.ok(m.bottomGap < 2, 'the water sits on the bottom row');
       assert.ok(await st(page, 's.open.length') > 0);
 
       let caught = false;
@@ -96,13 +98,27 @@ test('repair minigame in the browser', { skip }, async () => {
       await page.goto(`${server.origin}${PAGE}?newgame=1&roll=1&dc=20&level=1&seed=3&auto=1`);
       await page.waitForSelector('.rp-panel');
       await page.waitForSelector('.rp-mouth.is-pouring', { timeout: 8000 });
-      await page.evaluate(() => { const s = document.querySelector('.rp-panel').__state; s.capacity = s.pool + 8; });
-      await page.waitForFunction(() => { const s = document.querySelector('.rp-panel').__state; return s.pool > s.capacity * 0.6; }, null, { timeout: 20000 });
-      await shot(page, `repair-${name}-5a-pool-high`);
+      // Put the water just over the bottom row (only the bottom row is under), then let the leaks do the rest.
+      await page.evaluate(() => { const s = document.querySelector('.rp-panel').__state; s.pool = s.capacity * (1.05 / s.reach); });
+      await page.waitForTimeout(250);
+      // Submerged pieces read as under water and do not turn.
+      const under = await page.evaluate(() => { const els = [...document.querySelectorAll('.rp-tile.is-under')]; const s = document.querySelector('.rp-panel').__state; return { n: els.length, moves: s.moves, i: els[0] && Number(els[0].dataset.i) }; });
+      assert.ok(under.n >= 1, 'the bottom row is under water');
+      await page.locator(`.rp-tile[data-i="${under.i}"]`).click({ force: true });
+      assert.equal(await st(page, 's.moves'), under.moves, 'a submerged piece does not turn');
+      await shot(page, `repair-${name}-5a-water-high`);
+      await page.evaluate(() => { const s = document.querySelector('.rp-panel').__state; s.pool = s.capacity * 0.999; });
       await page.waitForSelector('.rp-result.is-bad', { timeout: 20000 });
       assert.equal(await st(page, 's.result.how'), 'flooded');
+      assert.equal(await st(page, 's.result.broken'), true);
+      assert.equal(await page.locator('.rp-shut').count(), 1, 'a lost line offers the valve');
       await page.waitForTimeout(300);
-      await shot(page, `repair-${name}-5-flooded`);
+      await shot(page, `repair-${name}-5-lost`);
+      await page.click('.rp-shut');
+      assert.equal(await st(page, 's.result.valveShut'), true);
+      assert.equal(await st(page, 's.result.offline'), 'engine-cooling');
+      await page.waitForTimeout(300);
+      await shot(page, `repair-${name}-5b-valve-shut`);
 
       // Keys: arrows move focus, Space turns.
       await page.goto(`${server.origin}${PAGE}?newgame=1&seed=2&auto=1`);

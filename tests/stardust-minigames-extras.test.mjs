@@ -82,18 +82,16 @@ test('every skill has three categories; the ids match the eight roll skills', ()
 test('picker numbers ARE the minigames numbers: repair and hacking', () => {
   for (let n = 0; n <= 9; n++) {
     const r = setupRepair({ points: { time: n } });
-    assert.match(CATEGORIES.repair.cats[0].words(n), new RegExp(`\\(${r.capacity} s\\)`));
+    assert.match(CATEGORIES.repair.cats[0].words(n), new RegExp(`\\(${r.capacity} s of one leak\\)`));
     const sz = setupRepair({ points: { size: n } }).size;
     assert.equal(CATEGORIES.repair.cats[1].words(n), `${sz} x ${sz} board`);
     const q = setupRepair({ points: { quality: n } }).qualityBonus;
     assert.equal(CATEGORIES.repair.cats[2].words(n), `${q ? '+' : ''}${q} quality on every patch`);
-    const lock = { time: 16, tumblers: 9, misses: 2 };
-    const h = setupHack({ points: { size: n }, lock });
-    const hr = setupHack({ points: { retries: n }, lock });
-    assert.equal(CATEGORIES.hacking.cats[1].words(n), `${9 - h.tumblers} fewer tumbler${9 - h.tumblers === 1 ? '' : 's'} (never under 2), lit window ${n ? '+' : ''}${Math.round((h.window - 1) * 100)}% wider`);
-    assert.equal(CATEGORIES.hacking.cats[2].words(n), `${hr.misses - 2 ? '+' : ''}${hr.misses - 2} spare miss${hr.misses - 2 === 1 ? '' : 'es'}`);
-    const ht = setupHack({ points: { time: n } }).time;
-    assert.equal(CATEGORIES.hacking.cats[0].words(n), `${n ? '+' : ''}${Math.round((ht - 16) * 10) / 10} s on every hack`);
+    // hacking v2: the words come from the same setup the game uses (lock 4 so every stage shows)
+    const hs = setupHack({ points: { size: n }, level: 9, lock: 4 }), hr = setupHack({ points: { retries: n }, level: 9, lock: 4 }), ht = setupHack({ points: { time: n }, level: 9, lock: 4 }).time;
+    assert.equal(CATEGORIES.hacking.cats[1].words(n), `mirrors start up to ${hs.spread} steps off, ${Math.floor(n / 2)} fewer decoy${Math.floor(n / 2) === 1 ? '' : 's'}, ${Math.floor(n / 3)} fewer path mirror${Math.floor(n / 3) === 1 ? '' : 's'} (never under 1)`);
+    assert.equal(CATEGORIES.hacking.cats[2].words(n), `${hr.retries - 1 ? '+' : ''}${hr.retries - 1} ${hr.retries - 1 === 1 ? 'retry' : 'retries'} on the same board`);
+    assert.equal(CATEGORIES.hacking.cats[0].words(n), `${n ? '+' : ''}${Math.round((ht - 26) * 10) / 10} s on every firewall`);
   }
 });
 
@@ -106,6 +104,6 @@ test('describeCategory: now, next, and when a stepped category next changes', ()
   assert.deepEqual([d.next, d.canAdd], [null, false]);
   assert.equal(describeCategory('repair', {}, 3, 'nope'), null);
   d = describeCategory('hacking', { retries: 0 }, 5, 'retries');
-  assert.deepEqual(d.nextChange, { at: 2 });
+  assert.equal(d.nextChange, null, 'every retry point changes something');
   assert.equal(describeSkill('social', {}, 4).length, 3);
 });

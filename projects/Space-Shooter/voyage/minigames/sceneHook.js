@@ -7,7 +7,8 @@
 //     "minigame": { "kind": "repair"|"hack"|"haggle", ...params, "mid": "<node>" (haggle only) } }
 // Result -> node: win = check.pass, lose = check.fail, mid = minigame.mid (haggle's fair deal).
 import { tierOf, setupRepair, setupHack, setupHaggle } from './setup.js';
-import { lockFor } from './hack.js';
+import { CONTEXTS } from './mirrors.js';
+import { SYSTEMS, worldOf } from './repair.js';
 import { outcomeOf as haggleOutcome } from './haggle.js';
 import { HACK_CATEGORIES, REPAIR_CATEGORIES, SOCIAL_CATEGORIES } from './setup.js';
 
@@ -33,7 +34,9 @@ export function hookIssues(choice, nodes = {}) {
     if (!Number.isInteger(m.open) || !Number.isInteger(m.best) || m.best <= m.open) out.push('haggle needs whole open and best prices, best above open');
     if (!m.mid) out.push('haggle needs a mid node for a fair deal'); else if (nodes && Object.keys(nodes).length && !nodes[m.mid]) out.push(`mid node ${m.mid} does not exist`);
   } else if (m.mid) out.push(`${m.kind} has no mid outcome`);
-  if (m.kind === 'hack' && m.lock != null && !(Number.isInteger(m.lock) && m.lock >= 1 && m.lock <= 4)) out.push('hack lock is a whole number 1 to 4');
+  if (m.kind === 'hack' && m.lock != null && !(Number.isInteger(m.lock) && m.lock >= 1 && m.lock <= 4)) out.push('hack lock is a whole number 1 to 4 (the number of firewalls)');
+  if (m.kind === 'hack' && m.context != null && !CONTEXTS.includes(m.context)) out.push(`hack context is one of ${CONTEXTS.join(', ')}`);
+  if (m.kind === 'repair' && m.system != null && !SYSTEMS[m.system]) out.push(`repair system is one of ${Object.keys(SYSTEMS).join(', ')}`);
   return out;
 }
 
@@ -43,9 +46,9 @@ export function startHook(choice, attempt, character = {}) {
   const tier = tierOf(attempt);
   const level = levelFor(m.kind, character), points = pointsFor(m.kind, character);
   const setup = m.kind === 'repair' ? setupRepair({ tier, level, points })
-    : m.kind === 'hack' ? setupHack({ tier, level, points, lock: lockFor(m.lock ?? 1) })
+    : m.kind === 'hack' ? setupHack({ tier, level, points, lock: m.lock ?? 1 })
     : setupHaggle({ tier, level, points });
-  return { kind: m.kind, tier, setup, lock: m.lock ?? 1, title: m.title || null, who: m.who || null, what: m.what || null, open: m.open ?? null, best: m.best ?? null };
+  return { kind: m.kind, tier, setup, lock: m.lock ?? 1, context: m.context ?? 'foot', system: m.system ?? null, title: m.title || null, who: m.who || null, what: m.what || null, open: m.open ?? null, best: m.best ?? null };
 }
 
 /** The minigame's result as the branch it picks: 'win', 'mid' or 'lose'. Repair and hack: success. Haggle: well, fair, walked. */
@@ -58,6 +61,18 @@ export function branchOf(kind, result) {
 export function targetFor(choice, result) {
   const branch = branchOf(choice.minigame.kind, result);
   return branch === 'win' ? choice.check.pass : branch === 'lose' ? choice.check.fail : choice.minigame.mid;
+}
+
+/**
+ * What a finished minigame did to the world, as plain facts the scene or the workbench can show (nothing here edits scene data):
+ *   repair: { broken, flooding, offline, system, systemName }  (a lost line stays broken; shutting the valve takes the system offline)
+ *   hack:   { security, terminal | port | section }            (alerted after the last retry; by context: terminal 'locked' on foot, port 'closed' on a ship, section 'changed' in ship to ship combat)
+ *   others: {}
+ */
+export function worldResult(kind, result) {
+  if (kind === 'repair') return worldOf(result);
+  if (kind === 'hack') { const { security, terminal, port, section } = result || {}; return Object.fromEntries(Object.entries({ security, terminal, port, section }).filter(([, v]) => v != null)); }
+  return {};
 }
 
 /** The skill XP event for a result: { type: 'skill-xp', skill, xp } or null when nothing is earned. */

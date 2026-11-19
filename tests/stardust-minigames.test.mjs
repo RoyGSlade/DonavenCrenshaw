@@ -5,7 +5,7 @@
 // same seed. Pure modules, no browser.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { tierOf, tierInfo, cleanPoints, setupHack } from '../projects/Space-Shooter/voyage/minigames/setup.js';
+import { tierOf, tierInfo, cleanPoints, setupRing } from '../projects/Space-Shooter/voyage/minigames/setup.js';
 import { runtimeConfig } from '../projects/Space-Shooter/runtime-config.js';
 
 test('the new game stays off', () => assert.equal(runtimeConfig.newGame, false));
@@ -31,12 +31,12 @@ test('cleanPoints: whole numbers, 0..9, never more than the level in total', () 
 });
 
 test('hack setup: the exact numbers per category point against the base lock (16 s, 3 tumblers, 2 misses)', () => {
-  const at = (cat, n, tier = 0) => setupHack({ tier, points: { [cat]: n }, level: 9 });
+  const at = (cat, n, tier = 0) => setupRing({ tier, points: { [cat]: n }, level: 9 });
   assert.deepEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => at('time', n).time), [16, 17.5, 19, 20.5, 22, 23.5, 25, 26.5, 28, 29.5]);
   assert.deepEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => at('size', n).tumblers), [3, 3, 2, 2, 2, 2, 2, 2, 2, 2]);
   assert.deepEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => at('retries', n).misses), [2, 2, 3, 3, 4, 4, 5, 5, 6, 6]);
-  assert.equal(setupHack({ tier: 2, lock: { time: 16, tumblers: 5, misses: 2 } }).tumblers, 4);
-  assert.equal(setupHack({ tier: -2, lock: { time: 16, tumblers: 5, misses: 0 } }).misses, 0);
-  assert.equal(setupHack({ tier: -2, lock: { time: 16, tumblers: 3, misses: 2 } }).tumblers, 4);
+  assert.equal(setupRing({ tier: 2, lock: { time: 16, tumblers: 5, misses: 2 } }).tumblers, 4);
+  assert.equal(setupRing({ tier: -2, lock: { time: 16, tumblers: 5, misses: 0 } }).misses, 0);
+  assert.equal(setupRing({ tier: -2, lock: { time: 16, tumblers: 3, misses: 2 } }).tumblers, 4);
 });
 

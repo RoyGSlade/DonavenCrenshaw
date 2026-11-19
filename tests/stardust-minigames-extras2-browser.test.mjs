@@ -32,7 +32,7 @@ test('bench board and holodeck gym in the browser', { skip }, async () => {
       await page.goto(`${server.origin}${PAGE}${Q}`);
       await page.waitForSelector('.bn-list');
       const par = await page.evaluate(() => window.__bench.bench.par);
-      assert.match(await page.locator('.bn-day', { hasText: 'Bench board for day' }).innerText(), new RegExp(`day 20800: a 5 x 5 board, a 120 s pool, par ${par} turns`));
+      assert.match(await page.locator('.bn-day', { hasText: 'Bench board for day' }).innerText(), new RegExp(`day 20800: a 5 x 5 board, water that takes 120 s to reach the valve, par ${par} turns`));
       assert.equal(await page.locator('.bn-list li').count(), 3);
       assert.match(await page.locator('.bn-stand').innerText(), /have not sealed/);
       await page.locator('.bn-list').scrollIntoViewIfNeeded(); await shot(page, `extras2-${name}-1-bench`);
