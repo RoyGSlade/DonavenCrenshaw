@@ -33,9 +33,16 @@ export function windRead(w, setupWind = 1.5) {
   return { dir: w > 0 ? 1 : -1, word: w > 0 ? 'blowing right' : 'blowing left', strength: Math.min(1, Math.abs(w) / Math.max(0.5, setupWind * 2)) };
 }
 
-/** The end-of-flight sentence, no numbers. `r` is the model's result. */
+/** The end-of-flight sentence under the field, no numbers. It says what happened; the card title says it too, so keep them different. `r` is the model's result. */
 export function endWords(r) {
   if (r.outcome === 'landed') return r.soft ? 'Down on the pad, a soft touch.' : 'Down on the pad, safe.';
-  if (r.outcome === 'crashed') return 'You hit too fast. Slow the fall with Thrust.';
+  if (r.outcome === 'crashed') return r.fuelLeft <= 0 ? 'The tank ran dry on the way down.' : 'The ship hit the ground hard.';
   return 'You came down beside the pad.';
+}
+
+/** What to try next, for the result card's line (never repeats the card's title). No numbers. */
+export function tryWords(r) {
+  if (r.outcome === 'crashed') return r.fuelLeft <= 0 ? 'Save some Thrust for the last stretch' : 'Hold Thrust earlier to slow the fall';
+  if (r.outcome === 'missed') return 'Drift over the pad sooner';
+  return '';
 }
