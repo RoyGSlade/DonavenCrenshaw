@@ -10,6 +10,7 @@ import path from 'node:path';
 import { loadPlaywright, startServer, PHONE } from '../scripts/stardust-test-kit.mjs';
 import { raceKicker } from '../projects/Space-Shooter/ui/raceIntro.js';
 import { drawTerrain } from '../projects/Space-Shooter/dogfight/terrainView.js';
+import { ACTIVITY_PAY } from '../projects/Space-Shooter/voyage/races/data.js';
 import { createArena } from '../projects/Space-Shooter/dogfight/maps.js';
 
 const maps = new URL('../projects/Space-Shooter/voyage/maps/', import.meta.url).pathname;
@@ -34,10 +35,13 @@ test('polish: the holodeck arrival has room (the door spawn and Nessa)', () => {
   assert.ok(Math.hypot(sp[0] - nessa.at[0], sp[1] - nessa.at[1]) >= 2);
 });
 
-test('polish: the race banner names the track on a paid race and says it pays', () => {
+test('polish: the race banner says it is a paid race and what it pays', () => {
   const scene = { questRace: true, levelInfo: { title: 'Gantry Drop' } };
-  assert.equal(raceKicker(scene, { kind: 'circuit', paid: true, title: 'Gantry Drop' }), 'GANTRY DROP · PAID RACE');
-  assert.equal(raceKicker({ questRace: true, levelInfo: { title: 'The Abandoned Mall' } }, { kind: 'circuit', paid: true }), 'THE ABANDONED MALL · PAID RACE');
+  const pay = (id) => ACTIVITY_PAY[`race-${id}`];
+  assert.equal(raceKicker(scene, { kind: 'circuit', paid: true, pay: pay('gantry-drop') }), 'PAID RACE · PAYS 60');
+  assert.equal(raceKicker(scene, { kind: 'circuit', paid: true, pay: pay('abandoned-mall') }), 'PAID RACE · PAYS 80');
+  assert.equal(raceKicker(scene, { kind: 'circuit', paid: true }), 'PAID RACE');
+  assert.doesNotMatch(raceKicker(scene, { kind: 'circuit', paid: true, pay: pay('gantry-drop') }), /GANTRY/, 'the big title already names the track');
   // practice and quest races read as before
   assert.equal(raceKicker(scene, { kind: 'circuit' }), 'PRACTICE CIRCUIT · THE HANGAR');
   assert.equal(raceKicker(scene, { kind: 'quest' }), 'QUEST RACE · OFF THE BOOKS');

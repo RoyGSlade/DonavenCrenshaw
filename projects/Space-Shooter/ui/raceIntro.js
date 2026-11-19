@@ -36,7 +36,7 @@ export function planIntro(scene, seconds) {
 /** The small line above the track name on the intro card. Exported for tests. */
 export function raceKicker(scene, mode = questRaceMode()) {
   if (scene?.questRace) {
-    if (mode?.paid) return `${String(mode.title || scene?.levelInfo?.title || 'Race').toUpperCase()} · PAID RACE`;
+    if (mode?.paid) return Number.isFinite(mode.pay?.finish) ? `PAID RACE · PAYS ${mode.pay.finish}` : 'PAID RACE';
     return mode?.kind === 'circuit' ? 'PRACTICE CIRCUIT · THE HANGAR' : 'QUEST RACE · OFF THE BOOKS';
   }
   if (scene?.weekly) return `WEEKLY TIME TRIAL · WEEK ${scene.weekly.week}`;
