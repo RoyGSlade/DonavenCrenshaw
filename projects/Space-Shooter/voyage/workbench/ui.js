@@ -90,3 +90,21 @@ export function renderSparPicker(root, { count, onCount, onStart, onClose }) {
     h('div', { class: 'gm-row wb-count' }, ...[1, 2, 3, 4].map((n) => button(`${n} marauder${n === 1 ? '' : 's'}`, () => onCount(n), { class: n === count ? 'primary wb-n is-on' : 'wb-n', 'data-n': n, 'aria-pressed': String(n === count) }))),
     h('div', { class: 'gm-row' }, button('Start the fight', onStart, { class: 'primary wb-start', primary: true }), button('Not now', onClose)));
 }
+
+/** The crafting bench's menu: the chain's games and recipe, the older heat-and-shape game, the cutter's grade, and a part left in hand. */
+export function renderCraftMenu(root, { part = null, partWords = '', tool = 'shop', onPick, onTool, onClose }) {
+  const items = [
+    ['cut', 'Cut a plate', 'Cut: drag the blade round the outline. One game, about 20 seconds.'],
+    ['screw', 'Drive a bolt', 'Screw: circle the bolt head, stop in the green. One game, about 15 seconds.'],
+    ['bolt-plate', 'Bolt plate', 'Cut the plate, then bolt it down. Two games, one roll, a part kept between them.'],
+    ['heat', 'Heat and shape', 'The older game: heat the stock, then tap the tools in order.'],
+  ];
+  root.replaceChildren(
+    h('p', { class: 'bn-day', text: 'One d20 roll sets how rough or smooth the whole craft is.' }),
+    ...(part ? [ h('div', { class: 'wb-part' }, button(`Pick up your part`, () => onPick('resume'), { class: 'primary wb-c', 'data-craft': 'resume', primary: true }), h('span', { class: 'rp-help', text: partWords }))] : []),
+    ...items.map(([id, name, what]) => h('div', { class: 'wb-craftrow' }, button(name, () => onPick(id), { class: 'wb-c', 'data-craft': id }), h('span', { class: 'rp-help', text: what }))),
+    h('h3', { class: 'gm-h', text: 'Your cutter' }),
+    h('div', { class: 'gm-row wb-tools' }, ...[['worn', 9], ['shop', 12], ['good', 15]].map(([t, w]) => button(`${t[0].toUpperCase()}${t.slice(1)} cutter (${w} wide)`, () => onTool(t), { class: t === tool ? 'primary wb-t is-on' : 'wb-t', 'data-tool': t, 'aria-pressed': String(t === tool) }))),
+    h('p', { class: 'rp-help', text: 'A wider line is easier to stay inside. The good cutter is the one you earn, not the shop one.' }),
+    h('div', { class: 'gm-row' }, button('Not now', onClose, { class: 'wb-no' })));
+}

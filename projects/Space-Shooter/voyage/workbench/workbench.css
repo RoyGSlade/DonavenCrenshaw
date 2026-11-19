@@ -16,3 +16,5 @@
 .wb-skills .ex-skills{grid-template-columns:repeat(2,minmax(0,1fr))}
 @media (max-width:700px){.wb-hud{top:58px;left:8px;max-width:calc(100vw - 16px)}.wb-skills .ex-skills{grid-template-columns:1fr}}
 .hg-fight .wb-hud{display:none}
+
+.wb-craftrow,.wb-part{display:grid;gap:4px;justify-items:start}.wb-craftrow .rp-help,.wb-part .rp-help{margin:0}

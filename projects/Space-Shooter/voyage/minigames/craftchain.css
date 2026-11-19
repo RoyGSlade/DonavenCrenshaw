@@ -1,0 +1,61 @@
+/* The crafting chain (Cut, Screw and the recipe runner). Same tokens as minigames.css; the canvas draws the metal itself. */
+.cc-recipe{display:grid;gap:10px}
+.cc-recipe>.rp-eyebrow{margin:0}
+.hg-sheet .cc-recipe>.rp-eyebrow{display:none}
+.cc-steps{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
+.cc-step{display:flex;flex-direction:column;gap:1px;min-width:92px;padding:6px 10px;border:1px solid #2a4152;border-radius:6px;background:#0a1624;font:11px Consolas,monospace;color:#8fa6b7}
+.cc-step b{font-size:12px;letter-spacing:.06em;color:#b5c8d5}
+.cc-step.is-now{border-color:#81e6df;box-shadow:0 0 0 1px #81e6df55 inset}.cc-step.is-now b{color:#81e6df}
+.cc-step.is-done{border-color:#4d7d3a}.cc-step.is-done span{color:#9fe870;font-weight:700}
+.cc-spoil{margin:0;font:11px/1.45 Consolas,monospace;color:#9db3c2}
+.cc-spoil[data-spoils="0"]{color:#7f95a5}.cc-spoil:not([data-spoils="0"]){color:#ffb48a}
+.cc-chips{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:5px}
+.cc-chip{padding:4px 8px;border:1px solid #2a4152;border-radius:999px;background:#0b1a29;font:11px/1.3 Inter,sans-serif;color:#cfe3ec}
+.cc-chip[data-chip=roll]{border-color:#81e6df88}.cc-chip[data-chip=tool]{border-color:#ffad7288}.cc-chip[data-chip=speed],.cc-chip[data-chip=build]{border-color:#b9a4ff88}
+.cc-chip[data-chip=quality]{border-color:#9fe87088}.cc-chip[data-chip=material]{border-color:#ffd16688}
+.cc-panel{max-width:none!important;display:grid;gap:8px}
+.cc-panel .rp-eyebrow{margin:0}
+.cc-hud{display:grid;grid-template-columns:2fr 1fr 1fr;gap:8px}
+.cc-hud4{grid-template-columns:repeat(4,1fr)}
+.cc-stat{display:grid;gap:3px;padding:6px 8px;border:1px solid #2a4152;border-radius:6px;background:#0a1624;min-width:0}
+.cc-stat span{font:10px Consolas,monospace;letter-spacing:.12em;color:#8fa6b7;text-transform:uppercase}
+.cc-stat em{font:700 14px Consolas,monospace;color:#eaf4f5;font-style:normal;white-space:nowrap}
+.cc-live{color:#9fe870!important;font-size:18px!important}
+.cc-meter{position:relative;height:8px;border-radius:4px;background:#1b2d3d;overflow:visible}
+.cc-meter i{display:block;height:100%;width:0;border-radius:4px;background:#81e6df;transition:background .1s}
+.cc-meter .cc-tick{position:absolute;top:-4px;bottom:-4px;width:2px;margin-left:-1px;background:#ffc857}
+.cc-feedstat.is-over .cc-meter i{background:#ff5a45}.cc-feedstat.is-over em{color:#ff8a70}
+.cc-boardwrap{position:relative;border:2px solid #0b121a;border-radius:8px;box-shadow:0 6px 18px #0008;overflow:hidden;background:#1a2530}
+.cc-square{max-width:min(100%,400px);margin:0 auto;width:100%}
+.cc-canvas{display:block;width:100%;height:auto;touch-action:none;cursor:crosshair;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.cc-screwcanvas{cursor:grab}
+.cc-status{min-height:1.5em;margin:0}
+.cc-row{display:flex;gap:8px;flex-wrap:wrap}.cc-row button{min-height:44px}
+.cc-torquebox{display:grid;gap:3px}
+.cc-thead{display:flex;justify-content:space-between;font:10px Consolas,monospace;letter-spacing:.12em;color:#8fa6b7;text-transform:uppercase}
+.cc-tnote{color:#b5c8d5;text-transform:none;letter-spacing:.04em}
+.cc-torque{position:relative;height:26px;border:1px solid #2a4152;border-radius:6px;background:linear-gradient(90deg,#16293a,#1d3347);opacity:.45;transition:opacity .2s;overflow:hidden}
+.cc-torque.is-awake{opacity:1}
+.cc-zone{position:absolute;top:0;bottom:0;background:linear-gradient(180deg,#7be36a,#3f9d3a);box-shadow:0 0 12px #7be36a88}
+.cc-over{position:absolute;top:0;bottom:0;background:repeating-linear-gradient(135deg,#8c2f24 0 6px,#5a1d17 6px 12px)}
+.cc-needle{position:absolute;top:-2px;bottom:-2px;width:4px;margin-left:-2px;background:#fff;border-radius:2px;box-shadow:0 0 8px #fff}
+.cc-torque.is-green .cc-needle{background:#d8ffd0;box-shadow:0 0 14px #9fe870}
+.cc-tscale{display:flex;justify-content:space-between;font:10px Consolas,monospace;color:#6f879a}
+.cc-grade{display:grid;gap:8px;justify-items:start}
+.cc-gnum{font:800 44px/1 Inter,sans-serif;letter-spacing:-.02em;color:#eaf4f5}
+.cc-grade.is-ok .cc-gnum{color:#9fe870}.cc-grade.is-bad .cc-gnum{color:#ff6b5a}
+.cc-gword{font:700 13px Consolas,monospace;letter-spacing:.1em;text-transform:uppercase;color:#cfe3ec}
+.cc-gbar{position:relative;width:100%;height:12px;margin:2px 0 14px;border-radius:6px;background:#1b2d3d}
+.cc-gbar i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,#4aa3a0,#9fe870)}
+.cc-grade.is-bad .cc-gbar i{background:linear-gradient(90deg,#8c4a3c,#ff6b5a)}
+.cc-gmark{position:absolute;top:-3px;bottom:-3px;width:2px;margin-left:-1px;background:#ffffffaa;font:10px Consolas,monospace;color:#8fa6b7;text-indent:-8px;display:block}
+.cc-gmark{height:18px;line-height:40px}
+.cc-why{font-size:13px;color:#b5c8d5}
+.cc-final .cc-line{font-size:13px;color:#b5c8d5}
+.cc-final .cc-mat{color:#ffd166}
+@media (max-width:700px){
+  .cc-hud{grid-template-columns:1fr 1fr}.cc-hud>.cc-feedstat{grid-column:1/3}
+  .cc-hud4{grid-template-columns:repeat(2,1fr)}
+  .cc-chip{font-size:10.5px}
+  .cc-gnum{font-size:36px}
+}

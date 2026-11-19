@@ -3,7 +3,7 @@
 // scene hooks and the gym use), and a finished game pays real XP into the skill (state.js earnXp). DOM lives in games.js.
 import { check } from '../character.js';
 import { ROLL_SKILLS } from '../data.js';
-import { tierOf, tierInfo, setupHack } from '../minigames/setup.js';
+import { tierOf, tierInfo, setupHack, setupCut, setupScrew } from '../minigames/setup.js';
 import { GYM_GAMES, gymGame } from '../minigames/gym.js';
 import { rollPreview } from '../minigames/rollPreview.js';
 import { cleanSkillPoints } from '../minigames/picker.js';
@@ -44,11 +44,12 @@ export function loadoutOf(state, skill) {
  * Everything the page needs to open a station's game after the d20: the tier, the setup (level and points applied) and the
  * preview line ("Smooth roll: 15 s more...") with how far the next tier is. `attempt` is the check's attempt (total, dc, natural).
  */
-export function startStation(state, station, attempt) {
+const CHAIN_SETUP = Object.freeze({ cut: (o) => setupCut(o), screw: (o) => setupScrew(o), 'bolt-plate': (o) => setupCut(o) });
+export function startStation(state, station, attempt, { tool = 'shop' } = {}) {
   const { level, points } = loadoutOf(state, station.skill);
   const tier = tierOf(attempt);
-  const game = gymGame(station.id);
-  const setup = station.id === 'hack' ? setupHack({ tier, level, points, lock: station.lock }) : game.setup({ tier, level, points });
+  const chain = CHAIN_SETUP[station.id];
+  const setup = chain ? chain({ tier, level, points, tool }) : station.id === 'hack' ? setupHack({ tier, level, points, lock: station.lock }) : gymGame(station.id).setup({ tier, level, points });
   const preview = rollPreview(station.id, attempt, { level, points });
   return { station, tier, label: tierInfo(tier).label, setup, level, points, preview };
 }
@@ -82,7 +83,8 @@ export function settleStation(state, station, result) {
   }
   const name = SKILL_NAME[station.skill];
   const won = station.id === 'haggle' ? result?.outcome !== 'walked' : Boolean(result?.success);
-  const parts = [won ? `${station.id[0].toUpperCase()}${station.id.slice(1)}: you did it.` : `${station.id[0].toUpperCase()}${station.id.slice(1)}: not this time.`];
+  const nm = station.label || `${station.id[0].toUpperCase()}${station.id.slice(1)}`;
+  const parts = [won ? `${nm}: you did it.` : `${nm}: not this time.`];
   parts.push(earned.xp ? `+${earned.xp} ${name} XP.` : 'No XP this time.');
   if (earned.gained) parts.push(`${name} is now level ${next.progress.levels[station.skill]}.`);
   if (credits) parts.push(`+${credits} credits.`);
