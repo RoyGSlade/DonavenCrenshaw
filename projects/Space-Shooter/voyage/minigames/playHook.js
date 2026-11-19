@@ -13,5 +13,5 @@ export async function playHook(root, { start, seed = 1, sound = () => {}, reduce
   const result = kind === 'repair' ? await playRepair(root, { seed, setup, title: start.title || 'Repair', sound, reducedMotion })
     : kind === 'hack' ? await playSetupHack(root, { state: createSetupHack({ seed, lock: start.lock, setup }), title: start.title || 'Lock', sound, reducedMotion })
     : await playHaggle(root, { state: createHaggle({ seed, open: start.open, best: start.best, setup }), who: start.who || 'Them', what: start.what || 'the deal', sound, reducedMotion });
-  return { branch: branchOf(kind, result), xp: result?.xp || 0, skill: HOOK_KINDS[kind].skill, result };
+  return { branch: branchOf(kind, result), xp: result?.xp || 0, skill: HOOK_KINDS[kind].skill, result, ...(kind === 'haggle' && Number.isFinite(result?.price) ? { price: result.price } : {}) };
 }

@@ -160,6 +160,14 @@ export function resolveReward(reward, run) {
   return out;
 }
 
+// A haggle's price is the pay: the number on the card is the number in the wallet. The result picks the ending (and its rep and
+// flags); run.pay.money, set when the haggle ends, replaces the ending's fixed credits. No price (a stubbed result) keeps the data's.
+const HAGGLE_PAY_MAX = 40;
+function endReward(node, run) {
+  const reward = resolveReward(node.reward, run);
+  return reward && run.pay && node.type === 'end' && reward.money > 0 ? { ...reward, money: run.pay.money } : reward;
+}
+
 function resolveEnemy(spec, ctx) {
   if (typeof spec === 'string' && spec.startsWith('$')) return structuredClone(lookup(ctx.run.rolls, spec.slice(1)));
   return roll(spec, ctx.rng);
@@ -196,7 +204,7 @@ function enter(quest, nodeId, ctx, now, depth = 0) {
     return enter(quest, hit ? hit.to : node.else, ctx, now, depth + 1);
   }
   if (node.type === 'end') {
-    if (node.reward) ctx.grant(resolveReward(node.reward, run));
+    if (node.reward) ctx.grant(endReward(node, run));
     // death: true marks an ending the captain does not walk away from (S25). The
     // page calls core's store.die() when it sees it; the engine only reports it.
     run.ended = { result: node.result, outcome: node.outcome || nodeId, title: node.title || '', followUp: node.followUp || null, node: nodeId, death: Boolean(node.death) };
@@ -312,7 +320,7 @@ export function view(quest, run, save) {
     locationName: SECTORS[run.location]?.name || run.location,
     log: run.log.slice(-8),
     minigame: run.minigame ? { ...run.minigame } : null,
-    ended: run.ended ? { ...run.ended, text: fill(node.text || '', s), reward: resolveReward(node.reward, run) || null } : null,
+    ended: run.ended ? { ...run.ended, text: fill(node.text || '', s), reward: endReward(node, run) || null } : null,
   };
   if (node.type === 'dialogue') {
     base.choices = (node.choices || []).map((raw, index) => {
@@ -385,6 +393,7 @@ function finishMinigame(quest, run, ctx, node, action, now) {
   run.steps++;
   const xp = Math.max(0, Math.min(10, Math.trunc(action.xp) || 0));
   if (xp > 0) ctx.out.events.push({ type: 'skill-xp', skill: action.skill, xp });
+  if (choice.minigame.kind === 'haggle' && Number.isFinite(action.price)) run.pay = { money: Math.max(0, Math.min(HAGGLE_PAY_MAX, Math.round(action.price))) };
   pushLog(run, `${choice.minigame.title || choice.minigame.kind}: ${action.branch}.`);
   enter(quest, target, ctx, now);
   return null;

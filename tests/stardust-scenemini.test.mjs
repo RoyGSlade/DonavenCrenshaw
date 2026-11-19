@@ -3,6 +3,10 @@
 // approved outcome come from launch/minigames/SCENE-HOOKS.md. Pure: no browser. The page side is tests/stardust-scenemini-browser.test.mjs.
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import os from 'node:os';
+import path from 'node:path';
+import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import { SLICE_LIST } from '../projects/Space-Shooter/voyage/quests/data/slice/index.js';
 import { validateQuest } from '../projects/Space-Shooter/voyage/quests/validate.js';
 import { startQuest, act, view } from '../projects/Space-Shooter/voyage/quests/engine.js';
@@ -209,4 +213,45 @@ test('a reload keeps the pending minigame: the saved run reopens it with the sam
   assert.equal(v.minigame.kind, 'hack'); assert.deepEqual(v.minigame.attempt, r.run.minigame.attempt);
   const done = act(quest, saved, r.save, { type: 'minigame', branch: 'win', xp: 1, skill: 'hacking' }, { now: 1 });
   assert.equal(done.error, undefined); assert.equal(done.run.node, 'end-sealed');
+});
+
+test('haggle money is one number: the price on the result card is the credits in the wallet (the result still picks the ending, rep and flags)', () => {
+  const rows = [['win', 27, 'end-hired-well-end', 3, true], ['win', 36, 'end-hired-well-end', 3, true], ['mid', 22, 'end-hired-fair-end', 2, false], ['lose', 8, 'end-lowballed-end', -1, false], ['win', 99, 'end-hired-well-end', 3, true]];
+  for (const node of HAGGLE_NODES) for (const [branch, price, end, rep, raised] of rows) {
+    const { quest, run, save } = toNode('the-eighth-gunner', node, ROUTE[node]);
+    const idx = quest.nodes[node].choices.findIndex((x) => x.label.startsWith('Haggle'));
+    let r = act(quest, run, save, { type: 'choose', index: idx }, { now: 1 });
+    const before = r.save;
+    r = act(quest, r.run, r.save, { type: 'minigame', branch, xp: 3, skill: 'social', price }, { now: 1 });
+    assert.equal(r.error, undefined);
+    let cur = r, card = null;
+    for (let i = 0; i < 12 && !cur.run.ended; i++) { const open = view(quest, cur.run, cur.save).choices.filter((c) => !c.locked); cur = act(quest, cur.run, cur.save, { type: 'choose', index: open[0].index }, { now: 1 }); }
+    card = view(quest, cur.run, cur.save).ended.reward.money;
+    const paid = Math.min(40, price);
+    assert.equal(cur.run.node, end);
+    assert.equal(cur.save.money - before.money, paid, `${node} ${branch} ${price}: wallet`);
+    assert.equal(card, paid, 'the end card shows the same number');
+    assert.equal((cur.save.rep.tull || 0) - (before.rep.tull || 0), rep);
+    assert.equal(Boolean(cur.save.flags['pay-raised']), raised);
+  }
+  // A repair result with a price is ignored; a haggle without one keeps the approved 30 / 20 / 10 (the table above).
+  const h = HOOKS.coolant, t = toNode(h.scene, h.node);
+  let r = act(t.quest, t.run, t.save, { type: 'choose', index: t.quest.nodes[h.node].choices.findIndex((x) => x.label === h.label) }, { now: 1 });
+  const b = r.save; r = act(t.quest, r.run, r.save, { type: 'minigame', branch: 'win', price: 3 }, { now: 1 });
+  assert.equal(finish(t.quest, r.run, r.save).save.money - b.money, 25);
+});
+
+// Round trip: regenerating the six scene files from the drafts with the lane's converter (launch/slice/tools/convert.mjs, which
+// lives in the lane folder, not in this repo) gives these exact files, so a regenerate keeps the five minigame blocks.
+// Skipped where the lane folder is not present (CI, other machines).
+const LANES = process.env.STARDUST_LANES || path.join(os.homedir(), 'Desktop', 'lhc-lanes', 'stardust', 'launch');
+const convert = path.join(LANES, 'slice', 'tools', 'convert.mjs'), drafts = path.join(LANES, 'quests', 'scenes-draft');
+test('converter round trip: a regenerate from the drafts reproduces the data files, minigame blocks included', { skip: !existsSync(convert) || !existsSync(drafts) }, () => {
+  const out = mkdtempSync(path.join(os.tmpdir(), 'scenemini-convert-'));
+  try {
+    execFileSync(process.execPath, [convert, drafts, out], { stdio: 'pipe' });
+    const here = new URL('../projects/Space-Shooter/voyage/quests/data/slice/', import.meta.url);
+    for (const q of SLICE_LIST) assert.equal(readFileSync(path.join(out, `${q.id}.js`), 'utf8'), readFileSync(new URL(`${q.id}.js`, here), 'utf8'), `${q.id} regenerates unchanged`);
+    assert.equal((readFileSync(path.join(out, 'the-eighth-gunner.js'), 'utf8').match(/"kind": "haggle"/g) || []).length, 3);
+  } finally { rmSync(out, { recursive: true, force: true }); }
 });

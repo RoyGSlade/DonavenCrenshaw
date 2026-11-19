@@ -240,7 +240,7 @@
 
 /* The attempt roller: a small die in the corner for each check in play. */
 .ui-attempt{position:fixed;z-index:13;right:16px;top:108px;display:grid;grid-template-columns:120px minmax(0,1fr);gap:10px;align-items:center;width:min(340px,92vw);cursor:pointer}
-.hg-sheet-open .ui-attempt{right:auto;left:16px}
+.hg-sheet-open .ui-attempt{right:auto;left:16px;top:50%;transform:translateY(-50%)} /* mid-left: below the job tracker (top left), above the dialogue box (bottom) */
 .hg-sheet-open[data-sheet-side=left] .ui-attempt{left:auto;right:16px}
 .ui-attempt-die{width:120px;height:96px;display:block;border-radius:4px;background:#060c14}
 .ui-attempt p{margin:0}

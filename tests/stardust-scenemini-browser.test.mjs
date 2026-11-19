@@ -180,6 +180,15 @@ test('the opening mini-games in the real game: hack (scene 3), haggle (scene 4),
         assert.match(m.frame, /panel\.webp/); assert.ok(m.sheet && m.sheet.top >= 0 && m.sheet.bottom <= m.ih, 'the sheet is on screen');
         assert.equal(m.small, 0, 'every tap target is 44px');
         assert.notEqual(m.atRun, 'null', 'the saved run holds the pending mini-game');
+        if (sizeName === 'desktop') {
+          // The d20 tray stays clear of the job tracker (its title must be readable).
+          const clear = await page.evaluate(() => {
+            const box = (e) => { const b = e.getBoundingClientRect(); return { l: b.left, r: b.right, t: b.top, b: b.bottom }; };
+            const tray = box(document.querySelector('#hg-attempt')), trackers = [...document.querySelectorAll('.dp-tracker')].filter((e) => e.getClientRects().length && !e.hidden).map(box);
+            return { trackers, tray, n: trackers.length, hit: trackers.filter((k) => tray.l < k.r && tray.r > k.l && tray.t < k.b && tray.b > k.t).length };
+          });
+          assert.ok(clear.n >= 1, 'the tracker is on screen'); assert.equal(clear.hit, 0, 'the d20 tray does not cover the tracker ' + JSON.stringify(clear));
+        }
         await shot('2-open');
 
         // Scene 3: a reload in the middle reopens the same mini-game.
@@ -191,6 +200,7 @@ test('the opening mini-games in the real game: hack (scene 3), haggle (scene 4),
         await bot(page, tap, mid);
         await page.waitForSelector('.rp-result', { timeout: 40000 });
         await settle(page, 300); await shot('4-result');
+        const cardPay = sc.kind === 'haggle' ? Number((await page.locator('.rp-result').innerText()).match(/(\d+) credits/)[1]) : null;
         await page.click('.rp-result button');
         await page.waitForSelector('#hg-minigame', { state: 'hidden' });
         const after = await page.evaluate(() => { const s = window.__stardust.store.get(); return { money: s.money, rep: s.rep, flags: Object.keys(s.flags), active: Object.keys(s.quests.active), done: Object.keys(s.quests.done) }; });
@@ -200,6 +210,14 @@ test('the opening mini-games in the real game: hack (scene 3), haggle (scene 4),
         await settle(page, 400);
         await shot('5-next-line');
         const next = await page.evaluate(() => ({ text: document.querySelector('#hg-dialogue .ui-dlg-text')?.textContent || '', card: Boolean(document.querySelector('.qs-end')), mini: Boolean(window.__stardust.store.get().quests.active && Object.values(window.__stardust.store.get().quests.active)[0]?.minigame) }));
+        if (sc.kind === 'haggle') {
+          // One number: the credits on the result card are the credits that land in the wallet.
+          await pick(page, 'Go on');
+          await page.waitForSelector('.qs-end', { timeout: 15000 });
+          const wallet = (await page.evaluate(() => window.__stardust.store.get().money)) - before.money;
+          assert.equal(wallet, cardPay, `the card said ${cardPay}, the wallet got ${wallet}`);
+          assert.match(await page.locator('.qs-end').innerText(), new RegExp(`\\+${cardPay} credits`));
+        }
         assert.equal(next.mini, false, 'the pending mini-game is cleared');
         assert.ok(next.text || next.card, 'a next line or the result card shows');
         if (sc.id === 'scene4-haggle') assert.ok(after.flags.includes('gunner-hired') || next.text.length > 0);
