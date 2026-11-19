@@ -4,10 +4,12 @@
 //   ?newgame=1&mini=hack&roll=9&dc=12&level=6&lock=2&time=1&size=2&retries=3&auto=1
 import { runtimeConfig } from '../../runtime-config.js';
 import { newGameFlag } from '../flag.js';
-import { tierOf, tierInfo, setupRepair, REPAIR_CATEGORIES, HACK_CATEGORIES } from './setup.js';
+import { tierOf, tierInfo, setupRepair, setupHaggle, REPAIR_CATEGORIES, HACK_CATEGORIES, SOCIAL_CATEGORIES } from './setup.js';
 import { playRepair } from './repairView.js';
 import { createSetupHack, hackSetup } from './hack.js';
 import { playSetupHack } from './hackView.js';
+import { createHaggle } from './haggle.js';
+import { playHaggle } from './haggleView.js';
 
 const flag = newGameFlag({ config: runtimeConfig, search: location.search });
 const $ = (id) => document.getElementById(id);
@@ -17,8 +19,8 @@ else boot();
 function boot() {
   $('mg-page').hidden = false;
   const params = new URLSearchParams(location.search);
-  const ids = ['roll', 'level', 'dc', 'lock', 'time', 'size', 'quality', 'retries'];
-  if (['repair', 'hack'].includes(params.get('mini'))) $('mg-mini').value = params.get('mini');
+  const ids = ['roll', 'level', 'dc', 'lock', 'time', 'size', 'quality', 'retries', 'haggle'];
+  if (['repair', 'hack', 'haggle'].includes(params.get('mini'))) $('mg-mini').value = params.get('mini');
   for (const id of ids) { const v = params.get(id); if (v != null && /^\d+$/.test(v)) $(id).value = v; }
   const mini = () => $('mg-mini').value;
   const read = () => Object.fromEntries(ids.map((id) => [id, Number($(id).value)]));
@@ -26,7 +28,9 @@ function boot() {
     const v = read();
     const attempt = { total: v.roll + v.level, dc: v.dc, natural: v.roll === 20 };
     const tier = tierOf(attempt);
-    const setup = mini() === 'hack'
+    const setup = mini() === 'haggle'
+      ? setupHaggle({ tier, level: v.level, points: Object.fromEntries(SOCIAL_CATEGORIES.map((c) => [c, v[c] ?? 0])) })
+      : mini() === 'hack'
       ? hackSetup({ tier, level: v.level, lock: v.lock, points: Object.fromEntries(HACK_CATEGORIES.map((c) => [c, v[c]])) })
       : setupRepair({ tier, level: v.level, points: Object.fromEntries(REPAIR_CATEGORIES.map((c) => [c, v[c]])) });
     return { v, attempt, tier, setup };
@@ -34,10 +38,12 @@ function boot() {
   const show = () => {
     const { v, attempt, tier, setup } = compute();
     for (const id of ids) $(`o-${id}`).textContent = $(id).value;
-    const hack = mini() === 'hack';
-    $('l-lock').hidden = !hack; $('l-retries').hidden = !hack; $('l-quality').hidden = hack;
+    const hack = mini() === 'hack', hag = mini() === 'haggle', rep = mini() === 'repair';
+    $('l-lock').hidden = !hack; $('l-retries').hidden = !hack; $('l-quality').hidden = !rep; $('l-time').hidden = hag; $('l-size').hidden = hag; $('l-haggle').hidden = !hag;
     const spent = Object.values(setup.points).reduce((a, b) => a + b, 0);
-    const what = hack
+    const what = hag
+      ? `Band <b>${Math.round(setup.band * 1000) / 10}%</b> of the range · needle <b>${setup.speed}</b>/s · <b>${setup.patience}</b> patience · <b>${setup.rounds}</b> rounds · price +<b>${Math.round(setup.priceBonus * 1000) / 10}%</b>`
+      : hack
       ? `Ring <b>${setup.tumblers} tumblers</b> · <b>${setup.time}s</b> · <b>${setup.misses}</b> spare misses`
       : `Board <b>${setup.size} x ${setup.size}</b> · <b>${setup.seconds}s</b> · quality +<b>${setup.qualityBonus}</b>`;
     $('mg-readout').innerHTML = `d20 ${v.roll} + ${v.level} = <b>${attempt.total}</b> vs ${v.dc}${attempt.natural ? ' (natural 20)' : ''}<br>`
@@ -50,7 +56,9 @@ function boot() {
     stage.replaceChildren();
     if (innerWidth < 760) stage.scrollIntoView({ block: 'start' });
     const { setup, v } = compute();
-    const result = mini() === 'hack'
+    const result = mini() === 'haggle'
+      ? await playHaggle(stage, { state: createHaggle({ seed, open: 20, best: 30, setup }), who: 'Captain Tull', what: 'your share', reducedMotion })
+      : mini() === 'hack'
       ? await playSetupHack(stage, { state: createSetupHack({ seed, lock: v.lock, setup }), title: 'Door lock', reducedMotion })
       : await playRepair(stage, { seed, setup, reducedMotion });
     window.__minigame = { ...window.__minigame, last: result };

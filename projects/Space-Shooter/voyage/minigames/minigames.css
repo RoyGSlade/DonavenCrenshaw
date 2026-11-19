@@ -92,3 +92,16 @@
 
 /* The breadcrumb scrolls away on the dev pages (it floated over content at phone width). */
 .mg-page .vy-top{position:static;background:none;padding-left:0;padding-right:0;flex-wrap:wrap}
+
+/* Haggle */
+.hg-pips{display:flex;gap:6px;margin:0 0 14px}
+.hg-pips span{width:16px;height:16px;border-radius:50%;border:2px solid #3a566b;background:transparent}
+.hg-pips span.on{background:var(--orange);border-color:var(--orange)}
+.hg-track{position:relative;height:64px;margin:30px 0 4px;border-radius:6px;background:#0a1624;border:1px solid var(--line)}
+.hg-band{position:absolute;top:0;bottom:0;background:#81e6df33;border-left:2px solid var(--cyan);border-right:2px solid var(--cyan)}
+.hg-offer{position:absolute;top:-6px;bottom:-6px;width:0;border-left:2px dashed var(--orange)}
+.hg-offer span{position:absolute;bottom:4px;left:6px;font:10px Consolas,monospace;color:var(--orange)}
+.hg-needle{position:absolute;top:-6px;bottom:-6px;width:4px;margin-left:-2px;background:#eaf4f5;border-radius:2px;box-shadow:0 0 8px #eaf4f5aa}
+.hg-price{position:absolute;top:-30px;transform:translateX(-50%);font:700 15px Consolas,monospace;color:#eaf4f5}
+.hg-scale{display:flex;justify-content:space-between;font:11px Consolas,monospace;color:var(--muted);margin-bottom:14px}
+.hg-take{width:100%;margin-top:8px;min-height:44px}

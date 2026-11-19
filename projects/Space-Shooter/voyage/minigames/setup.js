@@ -87,3 +87,27 @@ export function setupHack({ tier = 0, points = {}, level = POINT_MAX, lock = { t
     tier: Math.max(-2, Math.min(2, Math.trunc(tier) || 0)), points: p, label: t.label,
   };
 }
+
+// --- Social: haggle (PLAN.md section 2.6, first mode built) -----------------------
+// Categories: persuade, intimidate, haggle (only haggle changes the haggle game).
+//   haggle   +1.5% on the closing price per point (0..9 -> +0..+13.5%, never above the cap)
+//            and the comfort band +0.4% of the price range per point (0..+3.6%)
+// Base: comfort band 12% of the range, needle 0.9 ranges a second, patience 3, rounds 3.
+// Tier: band x(1 + 0.15 x tier), needle x(1 - 0.06 x tier), patience +1 at +1 and +2 and -1 at -2,
+// rounds +1 at +2 and -1 at -2. Never under 2 rounds or 1 patience.
+export const SOCIAL_CATEGORIES = Object.freeze(['persuade', 'intimidate', 'haggle']);
+export const HAGGLE_BASE = Object.freeze({ band: 0.12, bandPerPoint: 0.004, speed: 0.9, patience: 3, rounds: 3, bonusPerPoint: 0.015 });
+export function setupHaggle({ tier = 0, points = {}, level = POINT_MAX } = {}) {
+  const p = cleanPoints(points, SOCIAL_CATEGORIES, level);
+  const t = Math.max(-2, Math.min(2, Math.trunc(tier) || 0));
+  const b = HAGGLE_BASE;
+  const r4 = (x) => Math.round(+x.toFixed(6) * 10000) / 10000;
+  return {
+    band: r4((b.band + b.bandPerPoint * p.haggle) * (1 + 0.15 * t)),
+    speed: r4(b.speed * (1 - 0.06 * t)),
+    patience: Math.max(1, b.patience + (t >= 1 ? 1 : 0) - (t <= -2 ? 1 : 0)),
+    rounds: Math.max(2, b.rounds + (t === 2 ? 1 : 0) - (t === -2 ? 1 : 0)),
+    priceBonus: r4(b.bonusPerPoint * p.haggle),
+    tier: t, points: p, label: tierInfo(t).label,
+  };
+}

@@ -42,7 +42,7 @@ export const CATEGORIES = Object.freeze({
   social: { built: false, cats: [
     { id: 'persuade', name: 'Persuade', words: (n) => `Open zone ${plus(5 * n, '%')} wider` },
     { id: 'intimidate', name: 'Intimidate', words: (n) => `Snap point ${f1(4 * n)}% later, Break zone ${plus(2 * n, '%')} wider` },
-    { id: 'haggle', name: 'Haggle', words: (n) => `${plus(1.5 * n, '%')} better final price` } ] },
+    { id: 'haggle', name: 'Haggle', words: (n) => `${plus(1.5 * n, '%')} better final price, comfort band ${plus(0.4 * n, '%')} wider` } ] },
   navigation: { built: false, cats: [
     { id: 'time', name: 'Travel time', words: (n) => `lanes cost ${f1(4 * n)}% less time` },
     { id: 'fuel', name: 'Fuel use', words: (n) => `lanes cost ${f1(4 * n)}% less fuel` },
