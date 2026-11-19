@@ -13,6 +13,7 @@ import { createIntimidate } from '../minigames/intimidate.js'; import { playInti
 import { createPilot } from '../minigames/pilot.js'; import { playPilot } from '../minigames/pilotView.js';
 import { playNavField } from '../minigames/perihelionEntry.js';
 import { createRecipe, RECIPES } from '../minigames/craftChain.js'; import { playRecipe } from '../minigames/recipeView.js';
+import { createAssembly } from '../minigames/assembly.js'; import { playAssembly } from '../minigames/assemblyView.js';
 import { createBribe } from '../talk/bribe.js'; import { playBribe } from '../talk/bribeView.js';
 
 let craftBank = 0; // scrap the last craft rounded up, carried into the next one (the game's own rule)
@@ -34,6 +35,7 @@ export async function playGame(stage, id, o = {}) {
   const { seed = 1, setup, title, who, what, sound = () => {}, reducedMotion = () => false } = o;
   switch (id) {
     case 'repair': return playRepair(stage, { seed, setup, system: o.system, title: title || 'Coolant line', sound, reducedMotion });
+    case 'assembly': return playAssembly(stage, { state: createAssembly({ seed, setup, layout: (globalThis.innerWidth || 1000) < (globalThis.innerHeight || 700) ? 'tall' : 'wide', system: o.system }), title: title || 'Rebuild the unit', reducedMotion });
     case 'hack': return playMirrors(stage, { seed, setup, context: o.context || 'foot', title: title || 'Bench terminal', sound, reducedMotion });
     case 'haggle': return playHaggle(stage, { state: createHaggle({ seed, open: o.open ?? 20, best: o.best ?? 30, setup }), who: who || 'the trader', what: what || 'the price', sound, reducedMotion });
     case 'cut': case 'screw': case 'bolt-plate': {

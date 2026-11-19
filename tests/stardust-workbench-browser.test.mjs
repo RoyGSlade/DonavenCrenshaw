@@ -148,6 +148,7 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
         for (const [id, skill] of NINE) {
           const before = await state(page);
           await use(page, `wb-${id}`);
+          if (id === 'repair') { await page.waitForSelector('.wb-r[data-repair="coolant"]'); await tapper(page, phone)('.wb-r[data-repair="coolant"]'); } // the repair bench asks: the coolant line or an assembly job
           if (id === 'craft') { await page.waitForSelector('.wb-c[data-craft="heat"]'); await tapper(page, phone)('.wb-c[data-craft="heat"]'); } // the bench asks what to make; the nine stations still play the heat-and-shape game
           if (id === 'hack') { await page.waitForSelector('.wb-w[data-where="foot"]'); if (before) await shot('2a-hack-where'); await tapper(page, phone)('.wb-w[data-where="foot"]'); }
           await page.waitForSelector('#hg-attempt:not([hidden])', { timeout: 5000 });
@@ -190,6 +191,7 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
       await sub('a lost coolant line stays broken; shutting the valve takes the system offline (the station says so)', async () => {
         const before = await state(page);
         await use(page, 'wb-repair');
+        await page.waitForSelector('.wb-r[data-repair="coolant"]'); await tapper(page, phone)('.wb-r[data-repair="coolant"]');
         await sheetOpen(page);
         // a few turns, then put the water just short of the valve and let a leak finish it
         await page.evaluate(() => { const s = document.querySelector('.rp-panel').__state; s.pool = s.capacity * 0.97; });

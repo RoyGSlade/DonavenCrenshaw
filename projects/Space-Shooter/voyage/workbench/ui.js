@@ -91,6 +91,18 @@ export function renderSparPicker(root, { count, onCount, onStart, onClose }) {
     h('div', { class: 'gm-row' }, button('Start the fight', onStart, { class: 'primary wb-start', primary: true }), button('Not now', onClose)));
 }
 
+/** The repair bench's menu: the coolant line, or the assembly job (rebuild a broken unit piece by piece and bolt it down). */
+export function renderRepairMenu(root, { onPick, onClose }) {
+  const items = [
+    ['coolant', 'Coolant line', 'Turn the pipes so the coolant reaches the valve with no open ends. No clock, only leaks.'],
+    ['assembly', 'Assembly: rebuild a unit', 'Fit each part to its socket, turn it right, bolt it down with the screwdriver. Beat the clock or the unit stays broken.'],
+  ];
+  root.replaceChildren(
+    h('p', { class: 'bn-day', text: 'One d20 roll sets how rough or smooth the job is. Your Repair points work in both.' }),
+    ...items.map(([id, name, what]) => h('div', { class: 'wb-craftrow' }, button(name, () => onPick(id), { class: 'wb-c wb-r', 'data-repair': id }), h('span', { class: 'rp-help', text: what }))),
+    h('div', { class: 'gm-row' }, button('Not now', onClose, { class: 'wb-no' })));
+}
+
 /** The crafting bench's menu: the chain's games and recipe, the older heat-and-shape game, the cutter's grade, and a part left in hand. */
 export function renderCraftMenu(root, { part = null, partWords = '', tool = 'shop', onPick, onTool, onClose }) {
   const items = [

@@ -26,7 +26,7 @@ import { checkChance, checkBonusText } from '../character.js';
 import { tierInfo } from '../minigames/setup.js';
 import { ROLL_SKILLS } from '../data.js';
 import { openFullScreen } from './fullScreen.js';
-import { renderHud, renderBoard, renderConfirm, renderSparPicker, renderWhere, renderCraftMenu, h } from './ui.js';
+import { renderHud, renderBoard, renderConfirm, renderSparPicker, renderWhere, renderCraftMenu, renderRepairMenu, h } from './ui.js';
 import { PEOPLE, personSheet } from '../people/index.js';
 import * as C from '../talk/convo.js';
 import { talkModel } from '../talk/model.js';
@@ -125,7 +125,7 @@ export function createWorkbench({ store, bus, onfoot, dialogueBox, sheet, hud, t
     return playStart(station, start, { who, what, open, best, lock, titleText, context, tool });
   }
   /** Games that own the whole screen (the house rule): every station and mini-game view. The side sheet is for menus and panels only. */
-  const FULL_SCREEN = new Set(['repair', 'hack', 'craft', 'nav', 'pilot', 'stealth', 'persuade', 'intimidate', 'haggle', 'cut', 'screw', 'bolt-plate']);
+  const FULL_SCREEN = new Set(['repair', 'assembly', 'hack', 'craft', 'nav', 'pilot', 'stealth', 'persuade', 'intimidate', 'haggle', 'cut', 'screw', 'bolt-plate']);
   const BARE = new Set(['nav']); // Perihelion draws its own top bar and Leave
   async function playStart(station, start, { who, what, open, best, lock, titleText, word, context, tool, resume } = {}) {
     sheet.stage.replaceChildren();
@@ -165,6 +165,19 @@ export function createWorkbench({ store, bus, onfoot, dialogueBox, sheet, hud, t
     const part = loadPart();
     openPanel('CRAFTING BENCH', 'What are you making?', (pane) => renderCraftMenu(pane, { part, partWords: partLine(part), tool: cutter, onTool: (t) => { cutter = t; api.openPanel?.draw(); }, onPick: (id) => { closePanel(); resolve(id); }, onClose: () => { closePanel(); resolve(null); } }));
   });
+  /** The repair bench: the coolant line (the older game) or an assembly job. */
+  const chooseRepair = () => new Promise((resolve) => {
+    openPanel('REPAIR BENCH', 'What needs fixing?', (pane) => renderRepairMenu(pane, { onPick: (id) => { closePanel(); resolve(id); }, onClose: () => { closePanel(); resolve(null); } }));
+  });
+  async function useRepair(base) {
+    const pick = await chooseRepair();
+    if (!pick) return;
+    if (pick === 'coolant') return useStation(base, { direct: true });
+    const station = { ...base, id: 'assembly', word: 'ASSEMBLY', title: 'Rebuild the unit', label: 'Assembly' };
+    const result = await rollAndPlay(station, { titleText: 'Rebuild the unit' });
+    if (!result) { toast('You left the game. No XP.'); return; }
+    commit(settleStation(state, station, result).state);
+  }
   const CRAFT_LABEL = { cut: ['CUT', 'Cut a plate', 'Cut'], screw: ['SCREW', 'Drive a bolt', 'Screw'], 'bolt-plate': ['BOLT PLATE', 'Bolt plate', 'Bolt plate'] };
   const cutterNow = () => (state.items?.['good-cutter'] ? 'good' : cutter); // the cutter you earned from Pip beats the test picker
   async function useCraft(base, forced = null) {
@@ -185,6 +198,7 @@ export function createWorkbench({ store, bus, onfoot, dialogueBox, sheet, hud, t
   }
   async function useStation(station, { direct = false } = {}) {
     if (station.id === 'craft' && !direct) return useCraft(station);
+    if (station.id === 'repair' && !direct) return useRepair(station);
     let context;
     if (station.id === 'hack') { context = await chooseWhere(); if (!context) return; }
     const result = await rollAndPlay(station, { context });
