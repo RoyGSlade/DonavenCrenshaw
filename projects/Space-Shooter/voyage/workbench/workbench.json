@@ -36,177 +36,177 @@
     "kind": "text",
     "at": [
      4,
-     3.3
+     2.45
     ],
     "text": "REPAIR",
     "size": 0.3,
     "color": "holo",
-    "alpha": 0.55
+    "alpha": 0.8
    },
    {
     "kind": "text",
     "at": [
      9,
-     3.3
+     2.45
     ],
     "text": "HACK",
     "size": 0.3,
     "color": "holo",
-    "alpha": 0.55
+    "alpha": 0.8
    },
    {
     "kind": "text",
     "at": [
      14.5,
-     3.3
+     2.45
     ],
     "text": "CRAFT",
     "size": 0.3,
     "color": "holo",
-    "alpha": 0.55
+    "alpha": 0.8
    },
    {
     "kind": "text",
     "at": [
      19,
-     3.8
+     3.5
     ],
     "text": "NAV",
     "size": 0.3,
     "color": "holo",
-    "alpha": 0.55
+    "alpha": 0.8
    },
    {
     "kind": "text",
     "at": [
      23.5,
-     3.8
+     3.5
     ],
     "text": "PILOT",
     "size": 0.3,
     "color": "holo",
-    "alpha": 0.55
+    "alpha": 0.8
    },
    {
     "kind": "text",
     "at": [
      4,
-     12.6
+     15.45
     ],
     "text": "STEALTH",
     "size": 0.3,
     "color": "holo",
-    "alpha": 0.55
+    "alpha": 0.8
    },
    {
     "kind": "text",
     "at": [
      9,
-     12.6
+     15.45
     ],
     "text": "PERSUADE",
     "size": 0.3,
     "color": "holo",
-    "alpha": 0.55
+    "alpha": 0.8
    },
    {
     "kind": "text",
     "at": [
      14,
-     12.6
+     15.45
     ],
     "text": "INTIMIDATE",
     "size": 0.3,
     "color": "holo",
-    "alpha": 0.55
+    "alpha": 0.8
    },
    {
     "kind": "text",
     "at": [
      19,
-     12.6
+     15.45
     ],
     "text": "HAGGLE",
     "size": 0.3,
     "color": "holo",
-    "alpha": 0.55
+    "alpha": 0.8
    },
    {
     "kind": "text",
     "at": [
      24.5,
-     12.6
+     15.45
     ],
     "text": "PRACTICE LOCK",
     "size": 0.3,
     "color": "warm",
-    "alpha": 0.55
+    "alpha": 0.8
    },
    {
     "kind": "text",
     "at": [
-     3.6,
-     7.62
+     2,
+     8.45
     ],
     "text": "SKILLS",
     "size": 0.3,
     "color": "warm",
-    "alpha": 0.55
+    "alpha": 0.8
    },
    {
     "kind": "text",
     "at": [
-     3.6,
-     4.62
+     2,
+     5.45
     ],
     "text": "SCAN",
     "size": 0.3,
     "color": "warm",
-    "alpha": 0.55
+    "alpha": 0.8
    },
    {
     "kind": "text",
     "at": [
-     3.7,
-     11.62
+     2,
+     12.45
     ],
     "text": "REPRINT",
     "size": 0.3,
     "color": "warm",
-    "alpha": 0.55
+    "alpha": 0.8
    },
    {
     "kind": "text",
     "at": [
-     27.5,
-     3.3
+     28,
+     5.45
     ],
     "text": "GYM",
     "size": 0.3,
     "color": "holo",
-    "alpha": 0.55
+    "alpha": 0.8
    },
    {
     "kind": "text",
     "at": [
-     27.5,
-     7.3
+     28,
+     9.45
     ],
     "text": "SPAR",
     "size": 0.3,
     "color": "spar",
-    "alpha": 0.55
+    "alpha": 0.8
    },
    {
     "kind": "text",
     "at": [
      27.5,
-     11.3
+     14.45
     ],
     "text": "RESET",
     "size": 0.3,
     "color": "warm",
-    "alpha": 0.55
+    "alpha": 0.8
    },
    {
     "kind": "hazard",

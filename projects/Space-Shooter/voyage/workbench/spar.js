@@ -8,7 +8,7 @@ export const SPAR_EXIT = 'spar-exit';
 export function sparSetup({ count = 2, seed = 1 } = {}) {
   const n = Math.max(1, Math.min(4, Math.trunc(count) || 2));
   const spots = [[25, 7], [25, 9], [24, 8], [26, 8]];
-  return { map: 'workbench', spawn: SPAR_SPAWN, exit: SPAR_EXIT, seed, enemies: spots.slice(0, n).map((at) => ({ type: SPAR_ENEMY, at })) };
+  return { map: 'workbench', spawn: SPAR_SPAWN, exit: SPAR_EXIT, seed, enemies: spots.slice(0, n).map((at) => ({ type: SPAR_ENEMY, at, size: 'player', radius: 22, lift: 'brightness(2.1) saturate(2.2) contrast(1.1)' })) };
 }
 
 /** Placeholder Shooting XP (shooting has no minigame, so the sparring spot is where its XP is tried): 2 a kill, +2 for clearing the ring. */
