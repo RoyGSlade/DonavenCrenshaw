@@ -22,7 +22,7 @@ export function renderRisk(root, { progress, snap }) {
 export function renderSkills(root, { progress, selected }, onSelect) {
   const ul = h('ul', { class: 'ex-skills', role: 'listbox', 'aria-label': 'Skills' });
   for (const s of ROLL_SKILLS) {
-    const lvl = progress.levels[s.id], into = progress.xp[s.id], need = xpToNext(lvl);
+    const lvl = progress.levels[s.id], into = progress.xp[s.id], need = xpToNext(lvl, progress.curve);
     const left = CATEGORIES[s.id] ? unspent(s.id, progress.points[s.id], lvl) : 0;
     const li = h('li', {});
     const b = h('button', { type: 'button', role: 'option', 'aria-selected': String(s.id === selected), class: `ex-skill${s.id === selected ? ' is-sel' : ''}`, 'data-skill': s.id },
@@ -36,7 +36,7 @@ export function renderSkills(root, { progress, selected }, onSelect) {
 }
 
 /** The picker for one skill: +/- per category, live numbers, and a line saying what is left. */
-export function renderPicker(root, { progress, selected, inGym = false }, onPoints) {
+export function renderPicker(root, { progress, selected, inGym = false, canTakeBack = true }, onPoints) {
   const skill = selected, level = progress.levels[skill], points = cleanSkillPoints(skill, progress.points[skill], level);
   const def = CATEGORIES[skill];
   const left = unspent(skill, points, level);
@@ -46,7 +46,8 @@ export function renderPicker(root, { progress, selected, inGym = false }, onPoin
   for (const d of describeSkill(skill, points, level)) {
     const minus = h('button', { type: 'button', class: 'ex-step', 'aria-label': `Take a point out of ${d.name}`, text: '−' });
     const plusB = h('button', { type: 'button', class: 'ex-step primary', 'aria-label': `Put a point into ${d.name}`, text: '+', 'data-cat': d.id });
-    minus.disabled = d.points === 0; plusB.disabled = !d.canAdd;
+    minus.disabled = d.points === 0 || !canTakeBack; plusB.disabled = !d.canAdd;
+    if (!canTakeBack) minus.hidden = true; // spent points stay spent (a respec has its own rules)
     minus.addEventListener('click', () => onPoints(skill, removePoint(skill, points, level, d.id)));
     plusB.addEventListener('click', () => onPoints(skill, addPoint(skill, points, level, d.id)));
     list.append(h('li', { class: 'ex-cat', 'data-cat': d.id },

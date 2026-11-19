@@ -83,43 +83,37 @@ test('round-2 hangar: dice licence, stations in place, skill tree and respec, di
   assert.equal(await page.evaluate(() => localStorage.getItem('stardust.newgame.pendingRolls')), null);
   assert.equal((await events(page)).filter(([e]) => e === 'captain:created').length, 1, 'the director hears captain:created once');
 
-  // 2. Round 3: the datapad opened on its Captain page. The skill tree: learn with a burst;
-  // points come back only with a nap at the bunk (it costs the respec rule's credits).
+  // 2. Skills menu: the datapad's Skills page (the old node tree is gone). A point added is pending
+  // until Lock in; points come back only with a nap at the bunk (it costs the respec rule's credits).
   await page.locator('.dp-pad[data-page="captain"]').waitFor();
-  assert.equal(await page.locator('.ui-node').count(), await page.evaluate(async () => (await import('/projects/Space-Shooter/voyage/data.js')).SKILLS.length));
+  assert.equal(await page.locator('.ui-node').count(), 0, 'no node tree in the new game');
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await page.keyboard.press('Escape');
   await page.locator('#vy-dev-open').click();
   await page.locator('#vy-dev-job').click();
-  await page.keyboard.press('KeyK');
-  await page.locator('.dp-pad[data-page="captain"]').waitFor();
-  await page.locator('[data-skill="pilot"]').click();
-  await page.locator('[data-detail="pilot"]').waitFor();
-  assert.match(await page.locator('[data-detail="pilot"]').innerText(), /1 skill point a rank/);
-  await page.locator('[data-learn="pilot"]').click();
-  assert.equal(await page.locator('[data-skill="pilot"].is-fresh .ui-burst').count(), 1, 'the learn burst plays');
-  await page.locator('.ui-tree').scrollIntoViewIfNeeded();
-  await page.waitForTimeout(250);
-  await snap(page, 'hangar2-03-skill-tree-learn-1440.png');
-  await page.locator('[data-learn="pilot"]').click();
-  const c = (await readSave(page)).character;
-  assert.equal(c.skills['pilot'], 2);
-  assert.equal(await page.locator('[data-unlearn]').count(), 0, 'no taking back on the pad');
-  assert.match(await page.locator('[data-nap-note]').innerText(), /nap at your bunk/);
+  await page.keyboard.press('KeyL');
+  await page.locator('.dp-pad[data-page="skills"]').waitFor();
+  await page.locator('[data-skill-tile="piloting"]').click();
+  await page.locator('.sk-page[data-skill="piloting"]').waitFor();
+  await page.locator('.sk-cat[data-cat-index="0"] .sk-notch[data-n="0"]').click();
+  assert.equal(await page.locator('.sk-cat[data-cat-index="0"] .sk-notch[data-n="0"]').getAttribute('data-state'), 'pending');
+  assert.equal((await readSave(page)).character.points?.piloting, undefined, 'pending is not saved');
+  await page.locator('[data-lock]').click();
+  await page.waitForFunction((key) => JSON.parse(localStorage.getItem(key)).character.points?.piloting?.handling === 1, SAVE_KEY);
+  assert.match(await page.locator('[data-bunk-line]').innerText(), /nap at your bunk/);
+  assert.equal(await page.locator('.sk-cat[data-cat-index="0"] .sk-notch[data-n="0"]').getAttribute('data-state'), 'locked');
   await page.keyboard.press('Escape');
   await page.emulateMedia({ reducedMotion: 'reduce' });
   const moneyBefore = (await readSave(page)).money;
   await openStation(page, 'quarters');
-  // Round 3 follow-up: you pick which ranks to take back; nothing picked, no nap.
   assert.equal(await page.locator('#hg-nap').isDisabled(), true, 'nothing picked: no nap');
-  await page.locator('[data-take="pilot"]').click();
-  await page.locator('[data-take="pilot"]').click();
-  assert.match(await page.locator('[data-nap-quote]').innerText(), /2 points to take back: 20 credits/);
+  await page.locator('[data-take="piloting.handling"]').click();
+  assert.match(await page.locator('[data-nap-quote]').innerText(), /1 point to take back: 10 credits/);
   await page.locator('#hg-nap').click();
   await page.waitForFunction(() => !document.querySelector('.dp-nap'), null, { timeout: 8000 });
   const respecced = await readSave(page);
-  assert.deepEqual(respecced.character.skills, {});
-  assert.equal(respecced.money, moneyBefore - 20, 'outside the tutorial a nap costs 10 credits a point');
+  assert.deepEqual(respecced.character.points, {});
+  assert.equal(respecced.money, moneyBefore - 10, 'outside the tutorial a nap costs 10 credits a point');
   assert.ok((await events(page)).some(([e]) => e === 'hangar:respec'));
   await page.emulateMedia({ reducedMotion: 'no-preference' });
 
@@ -175,9 +169,9 @@ test('round-2 hangar: dice licence, stations in place, skill tree and respec, di
   assert.equal(await page.locator('#hg-objective').innerText().then((x) => /Walk to Chibby/.test(x)), true);
   assert.equal(await page.locator('[data-station="pad"]').evaluate((b) => b.classList.contains('is-objective')), true);
   // The nap is free while the tutorial runs.
-  await page.evaluate(() => window.__stardust.store.learn('mechanic'));
+  await page.evaluate(() => window.__stardust.store.update((x) => ({ ...x, character: { ...x.character, points: { piloting: { handling: 1 } } } })));
   await openStation(page, 'quarters');
-  await page.locator('[data-take="mechanic"]').click();
+  await page.locator('[data-take="piloting.handling"]').click();
   assert.match(await page.locator('[data-nap-quote]').innerText(), /free while Chibby/);
 
   // 4. The dialogue box answers story:say, and the attempt roller shows a decided roll.

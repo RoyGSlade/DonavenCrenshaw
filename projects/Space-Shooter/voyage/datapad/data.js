@@ -33,6 +33,7 @@ export const BASICS_DATA = {
   },
   "pages": [
     { "id": "captain", "name": "Captain", "key": "KeyK", "keyLabel": "K", "icon": "captain" },
+    { "id": "skills", "name": "Skills", "key": "KeyL", "keyLabel": "L", "icon": "skills" },
     { "id": "pack", "name": "Pack", "key": "KeyI", "keyLabel": "I", "icon": "pack" },
     { "id": "jobs", "name": "Jobs", "key": "KeyJ", "keyLabel": "J", "icon": "jobs" },
     { "id": "map", "name": "Map", "key": "KeyM", "keyLabel": "M", "icon": "map" }
@@ -42,7 +43,7 @@ export const BASICS_DATA = {
     "closeMs": 220,
     "title": "DATAPAD",
     "bagLabel": "Bag",
-    "bagHint": "Your bag: captain, pack, jobs and map"
+    "bagHint": "Your bag: captain, skills, pack, jobs and map"
   },
   "tracker": {
     "maxLines": 4,
@@ -94,13 +95,11 @@ export const BASICS_DATA = {
     "costLine": "{points} point{s} to take back: {cost} credits ({fee} a point).",
     "freeLine": "{points} point{s} to take back: free while Chibby is still showing you around.",
     "nothing": "Nothing to rethink: you haven't spent a skill point yet.",
-    "pickFirst": "Pick the ranks you want back, then sleep on it.",
-    "planBroken": "That would leave a skill without the points it needs.",
-    "blocked": "{skill} needs those points. Take back {skill} first.",
-    "blockedBack": "{skill} needs points you are taking back. Keep the ranks it stands on first.",
+    "pickFirst": "Pick the points you want back, then sleep on it.",
+    "hub": "Your points are kept at the Guild bank, and a nap cannot reach them yet. Ask at the bank.",
     "pickTitle": "WHAT TO TAKE BACK",
-    "pickOne": "Take back a rank of {skill}",
-    "keepOne": "Keep a rank of {skill}",
+    "pickOne": "Take back a point of {skill}: {path}",
+    "keepOne": "Keep a point of {skill}: {path}",
     "broke": "A nap costs {cost} credits and you have {money}. Take a job first.",
     "dream": "You sleep like a dropped spanner.",
     "woke": "You wake up with {points} skill point{s} back to spend.",
@@ -115,7 +114,7 @@ export const BASICS_DATA = {
       { "keys": ["W", "A", "S", "D"], "text": "Walk (or the arrow keys)" },
       { "keys": ["E"], "text": "Use, talk, open: whatever is marked in reach" },
       { "keys": ["Tab"], "text": "Your bag and datapad" },
-      { "keys": ["K", "I", "J", "M"], "text": "Captain, Pack, Jobs and Map pages" },
+      { "keys": ["K", "L", "I", "J", "M"], "text": "Captain, Skills, Pack, Jobs and Map pages" },
       { "keys": ["T"], "text": "Show or hide the job tracker" },
       { "keys": ["Esc"], "text": "Close, or pause" }
     ],

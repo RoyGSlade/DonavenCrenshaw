@@ -24,6 +24,7 @@ import { createVoyageStore } from './store.js';
 import { startVoyageSync } from './live.js';
 import { serverMode, probeSession, showMaintenance } from './session.js';
 import { economy } from './account.js';
+import { createSkillSave } from './skillSave.js';
 import { createHangar } from './hangar.js';
 import { createHangarPlace } from './hangarPlace.js';
 import { provideHangar, hangarApi, addLaunch } from './hangarApi.js';
@@ -501,7 +502,7 @@ function boot(session = { mode: 'local' }) {
   const screenBusy = () => sheetOpen || Boolean(place.current) || overlays.has('intro') || overlays.has('licence') || overlays.has('nap') || overlays.has('pause') || flying
     || onfoot.world.mode !== 'walk' || Boolean(floor.querySelector('.of-panel, .of-overlay, .of-talk')) || !$('hg-licence').hidden;
   pad = createDatapad({
-    root: document.body, store, bus, toast, touch,
+    root: document.body, store, bus, toast, touch, skillSave: createSkillSave({ store, economy }),
     world: () => onfoot?.world || null,
     tutorialOn, reducedMotion: still, stationInfo,
     canOpen: () => !screenBusy(),

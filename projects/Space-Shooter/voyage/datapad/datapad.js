@@ -12,7 +12,8 @@ import { BASICS_DATA } from './data.js';
 import { icon, keyCap } from './icons.js';
 import { hudArt } from '../ui/assets.js';
 import { el, createCaptainPage, createPackPage, createJobsPage, createMapPage } from './pages.js';
-import { unspentPoints } from '../character.js';
+import { unspentOnCharacter } from '../skills/model.js';
+import { createSkillsPage } from '../skills/skillsPage.js';
 
 const KEYS = BASICS_DATA.keys;
 const PAGES = BASICS_DATA.pages;
@@ -32,7 +33,7 @@ function tabArt(p) {
  * onChange(open): the page holds or frees the floor. openLicence(): no captain yet.
  * stationInfo(id): { name, locked } for the map's legend.
  */
-export function createDatapad({ root = document.body, store, bus = null, toast = () => {}, world = () => null, tutorialOn = () => false, reducedMotion = () => false, canOpen = () => true, onChange = () => {}, openLicence = () => {}, stationInfo = () => null, touch = false, onContinueJob = () => {} }) {
+export function createDatapad({ root = document.body, store, skillSave = null, bus = null, toast = () => {}, world = () => null, tutorialOn = () => false, reducedMotion = () => false, canOpen = () => true, onChange = () => {}, openLicence = () => {}, stationInfo = () => null, touch = false, onContinueJob = () => {}, onTrain = null, onScan = null }) {
   // --- The bag in the HUD corner ---
   const bagArt = hudArt('bag-closed');
     const badge = el('span', { class: 'dp-bag-badge', hidden: true });
@@ -76,7 +77,8 @@ export function createDatapad({ root = document.body, store, bus = null, toast =
   root.append(bag, scrim);
 
   const pages = {
-    captain: createCaptainPage({ root: screens.captain, store, toast, tutorialOn, reducedMotion, bus, openLicence: () => { close(); openLicence(); } }),
+    captain: createCaptainPage({ root: screens.captain, store, openLicence: () => { close(); openLicence(); } }),
+    skills: createSkillsPage({ root: screens.skills, store, toast, skillSave, tutorialOn, reducedMotion, openLicence: () => { close(); openLicence(); }, onTrain, onScan }),
     pack: createPackPage({ root: screens.pack, store, toast }),
     jobs: createJobsPage({ root: screens.jobs, store, onContinue: () => { close(); onContinueJob(); } }),
     map: createMapPage({ root: screens.map, world, stationInfo }),
@@ -88,7 +90,7 @@ export function createDatapad({ root = document.body, store, bus = null, toast =
   let timer = 0;
 
   function paintBadge(save = store.get()) {
-    const n = save.character ? unspentPoints(save.character) : 0;
+    const n = save.character ? unspentOnCharacter(save.character) : 0;
     badge.hidden = !n;
     badge.textContent = n ? String(n) : '';
     bag.dataset.points = String(n);
@@ -162,6 +164,7 @@ export function createDatapad({ root = document.body, store, bus = null, toast =
       const at = PAGES.findIndex((p) => p.id === page);
       if (has(KEYS.prevPage, e.code)) { e.preventDefault(); show(PAGES[(at - 1 + PAGES.length) % PAGES.length].id); tabButtons[page].focus(); return; }
       if (has(KEYS.nextPage, e.code)) { e.preventDefault(); show(PAGES[(at + 1) % PAGES.length].id); tabButtons[page].focus(); return; }
+      if (e.target instanceof HTMLElement && e.target.closest('[data-own-arrows]') && e.code.startsWith('Arrow')) return; // a page that moves its own focus (the skills page)
       if (e.code === 'ArrowDown' || e.code === 'ArrowRight') { e.preventDefault(); moveFocus(1); return; }
       if (e.code === 'ArrowUp' || e.code === 'ArrowLeft') { e.preventDefault(); moveFocus(-1); return; }
       return;
