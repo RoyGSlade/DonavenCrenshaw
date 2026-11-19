@@ -82,6 +82,7 @@ export function sheetIssues(sheet, { items = {} } = {}) {
       if (pairs.has(`${p.ability}-${p.approach}`)) bad(`${pw}: that pair is used twice`); pairs.add(`${p.ability}-${p.approach}`);
       lineOk(p.say, pw, 'you'); lineOk(p.won, pw, sheet.speaker); lineOk(p.lost, pw, sheet.speaker);
       if (new Set([p.say, p.won, p.lost]).size !== 3) bad(`${pw}: say, won and lost must be three different lines`);
+      if ((p.needs?.facts?.length || p.needs?.items) && !p.hint) bad(`${pw}: a push with needs shows a hint of what you would need to know (hint)`);
       for (const f of p.needs?.facts || []) if (!facts[f]) bad(`${pw}: needs fact ${f} which does not exist`);
       for (const k of Object.keys(p.gives || {})) if (!['great', 'ok'].includes(k) || !['keep', 'lend'].includes(p.gives[k])) bad(`${pw}: gives must be great/ok: keep/lend`);
       if (p.gives?.ok === 'lend' && !w.lend) bad(`${pw}: lends but the want cannot be lent`);

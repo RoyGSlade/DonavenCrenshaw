@@ -24,6 +24,7 @@ import { talkModel } from '../talk/model.js';
 import { renderTalk } from '../talk/view.js';
 import { rollPreview } from '../minigames/rollPreview.js';
 import { cutStation } from './cut.js';
+import { voiceUrl } from '../story/voice.js';
 
 const SKILL_NAME = Object.fromEntries(ROLL_SKILLS.map((s) => [s.id, s.name]));
 const OTHERS = {
@@ -43,13 +44,25 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
  * { store, bus, onfoot, dialogueBox, sheet: { root, eyebrow, title, stage }, hud (an empty element), toast, reducedMotion(), sound(id),
  *   onBusy(on), storage, rng, seed }. Returns { openStation, stationInfo, talk, get state, rng, ... } (also what the tests drive).
  */
-export function createWorkbench({ store, bus, onfoot, dialogueBox, sheet, hud, toast = () => {}, reducedMotion = () => false, sound = () => {}, onBusy = () => {}, storage = globalThis.localStorage, rng = Math.random, seed = null, clock = () => Date.now() }) {
+export function createWorkbench({ store, bus, onfoot, dialogueBox, sheet, hud, toast = () => {}, reducedMotion = () => false, sound = () => {}, onBusy = () => {}, storage = globalThis.localStorage, rng = Math.random, seed = null, clock = () => Date.now(), audio = null }) {
   let state = loadState(storage);
   let busy = 0;
   let gymSkill = 'repair', boardSkill = null, sparCount = 2;
   let leave = null; // resolves the game in progress when the player leaves it
   let seedCounter = 0;
-  const api = { rng, clock, openPanel: null };
+  const api = { rng, clock, openPanel: null, voiced: [] }; // `voiced`: the lines the talk tried to speak, { id, url } (tests read it)
+  const debugVoice = (() => { try { return new URLSearchParams(location.search).get('voiceids') === '1'; } catch { return false; } })();
+  let voiceRun = 0;
+  /** Speak a person's lines one after the other with the scratch (or real) voice when a file exists; text always shows. */
+  async function speak(ids) {
+    const run = ++voiceRun;
+    for (const id of ids) {
+      if (run !== voiceRun) return;
+      const url = voiceUrl(id);
+      api.voiced.push({ id, url });
+      if (url && audio) { try { await audio.playLine(url); } catch { /* text is enough */ } }
+    }
+  }
   const hold = (on) => { busy = Math.max(0, busy + (on ? 1 : -1)); onBusy(busy > 0); };
   const nextSeed = () => (seed != null ? seed + seedCounter++ : (Date.now() % 100000) + seedCounter++);
 
@@ -312,14 +325,15 @@ export function createWorkbench({ store, bus, onfoot, dialogueBox, sheet, hud, t
     hold(true);
     let talk = C.newTalk(person);
     const greeting = C.greetingOf(state, person);
-    const ui = { greeting, lines: [greeting], notes: [], learned: [], ability: null, push: null };
-    const root = h('section', { class: 'tk-panel', id: 'wb-talk', role: 'dialog', 'aria-label': `Talk with ${person.name}`, 'data-person': person.id });
+    const ui = { greeting, lines: [greeting], notes: [], learned: [], push: null };
+    const root = h('section', { class: 'tk-panel ui-dialogue', id: 'wb-talk', role: 'dialog', 'aria-label': `Talk with ${person.name}`, 'data-person': person.id });
     document.body.append(root);
     document.body.classList.add('is-talking');
     let done;
     const finished = new Promise((r) => { done = r; });
-    const draw = () => renderTalk(root, talkModel(state, person, talk, ui, api.clock()), on);
-    const setReply = (r, extra = {}) => { Object.assign(ui, { lines: r.lines || [], learned: r.learned ? [r.learned] : [], notes: [], ability: null, push: null, ...extra }); };
+    const draw = () => renderTalk(root, talkModel(state, person, talk, ui, api.clock()), on, { debug: debugVoice });
+    const voice = (ids) => speak((ids || []).filter((id) => person.lines[id]?.who === person.speaker));
+    const setReply = (r, extra = {}) => { Object.assign(ui, { lines: r.lines || [], learned: r.learned ? [r.learned] : [], notes: [], push: null, ...extra }); voice(r.lines); };
     const on = {
       leave: () => done(),
       word: (lit) => {
@@ -337,8 +351,7 @@ export function createWorkbench({ store, bus, onfoot, dialogueBox, sheet, hud, t
         talk = r.talk; commit(r.state, { silent: true });
         setReply(r, { notes: r.bondDelta ? [`${person.name}'s bond up 1: ${talkBond()}.`] : [] }); draw();
       },
-      ability: (a) => { ui.ability = a; ui.push = null; draw(); },
-      approach: (optionId) => { ui.push = optionId; draw(); },
+      push: (id) => { ui.push = ui.push === id ? null : id; draw(); },
       giveBack: (wantId) => { const r = C.returnBorrowed(state, person, wantId); if (r.ok) { commit(r.state, { silent: true }); setReply({ lines: [] }, { notes: [`You gave the ${person.wants[wantId].label.replace(/^the /, '')} back before the day ended.`] }); draw(); } },
       say: async () => {
         const sel = talkModel(state, person, talk, ui, api.clock()).push?.selected;
@@ -353,14 +366,15 @@ export function createWorkbench({ store, bus, onfoot, dialogueBox, sheet, hud, t
         if (!result) { ui.notes = ['You backed off. Nothing was spent.']; ui.push = null; ui.lines = []; draw(); return; }
         const r = C.settlePush(state, person, talk, wantId, sel.id, result, api.clock());
         talk = r.talk; commit(r.state, { silent: true });
-        Object.assign(ui, { lines: [sel.say, ...r.lines], learned: [], notes: r.notes, ability: null, push: null });
-        draw();
+        Object.assign(ui, { lines: [sel.say, ...r.lines], learned: [], notes: r.notes, push: null });
+        draw(); voice(r.lines);
       },
     };
     const talkBond = () => C.personOf(state, person).bond + ' ' + 'of 5';
-    draw();
+    draw(); voice([greeting]);
     root.querySelector('.tk-leave')?.focus?.({ preventScroll: true });
     await finished;
+    voiceRun++; audio?.stopLine?.();
     root.remove();
     document.body.classList.remove('is-talking');
     hold(false);

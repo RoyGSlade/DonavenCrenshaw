@@ -55,12 +55,12 @@ export default {
       "lendLine": "pip.cutter.lend",
       "trustedLine": "pip.cutter.trusted",
       "pushes": [
-        { "id": "p-emp", "ability": "persuade", "approach": "empathy", "needs": { "facts": ["lost-cutter"] }, "say": "pip.p.p-emp", "won": "pip.cutter.p-emp.win", "lost": "pip.cutter.p-emp.no", "gives": { "great": "keep", "ok": "lend" } },
+        { "id": "p-emp", "ability": "persuade", "approach": "empathy", "needs": { "facts": ["lost-cutter"] }, "hint": "Know why he won't lend it", "say": "pip.p.p-emp", "won": "pip.cutter.p-emp.win", "lost": "pip.cutter.p-emp.no", "gives": { "great": "keep", "ok": "lend" } },
         { "id": "p-ang", "ability": "persuade", "approach": "anger", "needs": {}, "say": "pip.p.p-ang", "won": "pip.cutter.p-ang.win", "lost": "pip.cutter.p-ang.no", "gives": { "great": "keep", "ok": "lend" } },
         { "id": "i-ang", "ability": "intimidate", "approach": "anger", "needs": {}, "say": "pip.p.i-ang", "won": "pip.cutter.i-ang.win", "lost": "pip.cutter.i-ang.no", "gives": { "great": "keep", "ok": "keep" } },
-        { "id": "i-mon", "ability": "intimidate", "approach": "money", "needs": { "facts": ["off-books"] }, "say": "pip.p.i-mon", "won": "pip.cutter.i-mon.win", "lost": "pip.cutter.i-mon.no", "gives": { "great": "keep", "ok": "keep" } },
+        { "id": "i-mon", "ability": "intimidate", "approach": "money", "needs": { "facts": ["off-books"] }, "hint": "Know what he is hiding", "say": "pip.p.i-mon", "won": "pip.cutter.i-mon.win", "lost": "pip.cutter.i-mon.no", "gives": { "great": "keep", "ok": "keep" } },
         { "id": "b-mon", "ability": "bribe", "approach": "money", "needs": {}, "say": "pip.p.b-mon", "won": "pip.cutter.b-mon.win", "lost": "pip.cutter.b-mon.no", "gives": { "great": "keep", "ok": "keep" }, "bribe": { "min": 10, "max": 40, "best": 33 } },
-        { "id": "b-emp", "ability": "bribe", "approach": "empathy", "needs": { "facts": ["projector"], "items": { "circuit-board": 1 } }, "say": "pip.p.b-emp", "won": "pip.cutter.b-emp.win", "lost": "pip.cutter.b-emp.no", "gives": { "great": "keep", "ok": "keep" }, "bribe": { "min": 0, "max": 15, "best": 12, "gift": { "circuit-board": 1 } } }
+        { "id": "b-emp", "ability": "bribe", "approach": "empathy", "needs": { "facts": ["projector"], "items": { "circuit-board": 1 } }, "hint": "Know what he is stuck on, and bring a clean circuit board", "say": "pip.p.b-emp", "won": "pip.cutter.b-emp.win", "lost": "pip.cutter.b-emp.no", "gives": { "great": "keep", "ok": "keep" }, "bribe": { "min": 0, "max": 15, "best": 12, "gift": { "circuit-board": 1 } } }
       ]
     }
   },

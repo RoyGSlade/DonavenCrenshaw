@@ -3,7 +3,6 @@
 import * as C from './convo.js';
 import { BOND_NAMES, ABILITY_NAMES, APPROACH_NAMES } from './push.js';
 import { ITEMS } from '../people/index.js';
-import { ABILITIES, APPROACHES } from '../people/check.js';
 
 /** Split a line's words into plain and lit parts. A phrase lights the first time it appears (case-insensitive). */
 export function litParts(text, lits = []) {
@@ -51,20 +50,20 @@ export function talkModel(state, sheet, talk, ui, now) {
   if (!ask.length && !holding && ui.greeting && !(ui.lines || []).includes(ui.greeting) && litsOf(sheet).some((l) => l.kind === 'want' && lineView(sheet, ui.greeting).parts.some((x) => x.lit?.id === l.id))) lines = [{ ...lineView(sheet, ui.greeting), earlier: true }, ...lines];
   // the borrowed thing you can give back
   const owed = p.marks.owed && sheet.wants[p.marks.owed.want] ? { want: p.marks.owed.want, label: sheet.wants[p.marks.owed.want].label } : null;
-  const topics = C.topicsOf(state, sheet, talk).map((t) => ({ ...t, hint: t.locked ? `??? ${t.locked}` : null }));
-  // pushes: only after a no, for the want you refused
+  const topics = C.topicsOf(state, sheet, talk).map((t) => ({ ...t, hint: t.locked ? `${t.locked[0].toUpperCase()}${t.locked.slice(1)}\u2026` : null }));
+  // pushes: only after a no, for the want you refused. Each is a line you could say, with a small tag; the ones you cannot make yet are hints.
   let push = null;
-  const refusedWant = talk.refused.find((w) => C.pushOptions(state, sheet, talk, w, now).length);
+  const refusedWant = talk.refused.find((w) => C.pushOptions(state, sheet, talk, w, now).length || C.lockedPushes(state, sheet, talk, w, now).length);
   if (refusedWant) {
     const options = C.pushOptions(state, sheet, talk, refusedWant, now);
-    const abilities = ABILITIES.map((a) => ({ id: a, name: ABILITY_NAMES[a], available: options.some((o) => o.ability === a), tried: options.filter((o) => o.ability === a).every((o) => o.tried) }));
-    const abilityPicked = options.some((o) => o.ability === ui.ability) ? ui.ability : null;
-    const approaches = abilityPicked ? APPROACHES.map((ap) => { const o = options.find((x) => x.ability === abilityPicked && x.approach === ap); return { id: ap, name: APPROACH_NAMES[ap], available: Boolean(o), tried: Boolean(o?.tried), optionId: o?.id }; }) : [];
-    const selected = abilityPicked && options.find((o) => o.id === ui.push && o.ability === abilityPicked) || null;
-    push = { want: refusedWant, abilities, ability: abilityPicked, approaches, selected, patience: talk.patience, count: options.length };
+    const selected = options.find((o) => o.id === ui.push && !o.tried) || null;
+    push = {
+      want: refusedWant, patience: talk.patience, selected,
+      choices: options.map((o) => ({ id: o.id, say: sheet.lines[o.say].text, tag: `${ABILITY_NAMES[o.ability]} \u00b7 ${APPROACH_NAMES[o.approach]} \u00b7 ${o.chance}%`, tried: o.tried, on: selected?.id === o.id })),
+      locked: C.lockedPushes(state, sheet, talk, refusedWant, now).map((x) => ({ id: x.id, hint: `${x.hint}\u2026` })),
+    };
     if (selected) {
-      const push2 = selected.push;
-      push.cost = push2.bribe ? { gift: Object.entries(push2.bribe.gift || {}).map(([i, n]) => `${n} ${ITEMS[i]?.name.toLowerCase() || i}`), credits: C.bribeRange(state, push2) } : null;
+      push.cost = selected.push.bribe ? { gift: Object.entries(selected.push.bribe.gift || {}).map(([i, n]) => `${n} ${ITEMS[i]?.name.toLowerCase() || i}`), credits: C.bribeRange(state, selected.push) } : null;
       push.sayText = sheet.lines[selected.say].text;
     }
   }

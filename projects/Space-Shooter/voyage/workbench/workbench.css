@@ -17,50 +17,46 @@
 @media (max-width:700px){.wb-hud{top:58px;left:8px;max-width:calc(100vw - 16px)}.wb-skills .ex-skills{grid-template-columns:1fr}}
 .hg-fight .wb-hud{display:none}
 
-/* The conversation panel (social lane, plan 1.8): one stack at both sizes. Amber words are things you can raise. */
-.tk-panel{position:fixed;z-index:30;left:50%;bottom:12px;transform:translateX(-50%);width:min(880px,calc(100vw - 24px));max-height:calc(100dvh - 24px);overflow-y:auto;overflow-x:hidden;display:grid;gap:10px;padding:12px 14px 14px;border:1px solid #3b5a70;border-radius:10px;background:#0a1624f2;color:#e6f1f6;font:15px/1.45 Inter,system-ui,sans-serif;box-shadow:0 10px 40px #000a;overscroll-behavior:contain}
-.tk-panel[hidden]{display:none}
-.tk-head{display:grid;grid-template-columns:56px 1fr auto;gap:10px;align-items:center}
-.tk-portrait{width:56px;height:56px;border-radius:8px;overflow:hidden;background:#142638;border:1px solid #2a4152;display:grid;place-items:center;font:700 22px Inter,sans-serif;color:#9db3c2}
-.tk-portrait img{width:100%;height:100%;object-fit:cover}
-.tk-who{display:grid;gap:1px;min-width:0}
-.tk-name{font-size:17px}
-.tk-bond{font:12px Consolas,monospace;color:#9fe870;letter-spacing:.04em}
+/* The conversation (social lane): the game's own dialogue kit (portrait frame, metal box, kit buttons). Dialogue choices are what you say,
+   with a small tag after. Amber words are things you can raise. */
+body .tk-panel.ui-dialogue{z-index:30;cursor:default;width:min(820px,96vw);max-height:calc(100dvh - 28px);overflow-y:auto;overflow-x:hidden;bottom:14px;top:auto;left:50%;right:auto;transform:translateX(-50%);align-items:start;scrollbar-width:thin}
+body .tk-panel[hidden]{display:none}
+.tk-side{position:sticky;top:0;display:grid;gap:6px;justify-items:center;align-content:start}
+.tk-pips{display:flex;gap:4px}.tk-pips i{width:11px;height:11px;border-radius:50%;border:1px solid #6b7f8c;background:#0b1620;box-shadow:inset 0 0 3px #000}
+.tk-pips i.on{background:var(--ui-amber,#ffc857);border-color:#ffe3a0;box-shadow:0 0 7px #ffc857}
+.tk-bondname{font:700 10px Consolas,monospace;letter-spacing:.1em;color:var(--ui-muted,#9db3c2);text-transform:uppercase}
+.tk-body{display:grid;gap:8px;min-width:0}
+.tk-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.tk-head .ui-dlg-name{margin:0;font-size:13px}
 .tk-marks{font:11px Consolas,monospace;color:#ffb199}
-.tk-leave{min-height:44px;min-width:64px;padding:0 12px}
+.tk-leave{margin-left:auto;min-height:44px;min-width:70px;padding:0 14px}
 .tk-lines{display:grid;gap:6px}
-.tk-line{display:grid;gap:2px;padding:8px 10px;border-radius:8px;background:#102236;border-left:3px solid #4e8aa6}
-.tk-line.is-you{background:#14202a;border-left-color:#9fe870;margin-left:18px}
-.tk-speaker{font:700 11px Consolas,monospace;letter-spacing:.12em;color:#9db3c2;text-transform:uppercase}
-.tk-text{margin:0;font-size:16px}
+.tk-line{display:grid;gap:1px}
+.tk-line.is-you{padding-left:10px;border-left:3px solid var(--ui-cyan,#5fe0d6)}
+.tk-line.is-you .tk-text{color:#cfeee9;font-style:italic}
+.tk-line.is-earlier{opacity:.8}
+.tk-speaker{font:700 10px Consolas,monospace;letter-spacing:.14em;color:var(--ui-cyan,#5fe0d6);text-transform:uppercase}
 .tk-voice{font:10px Consolas,monospace;color:#6f8797}
-.tk-lit{all:unset;display:inline;cursor:pointer;color:#ffc857;border-bottom:2px dashed #ffc857;padding:0 1px;min-height:0}
+.tk-lit{all:unset;display:inline;cursor:pointer;color:#ffc857;border-bottom:2px dashed #ffc857;padding:0 1px}
 .tk-lit:hover,.tk-lit:focus-visible{background:#ffc85726;outline:2px solid #ffc857;outline-offset:2px}
 .tk-learned,.tk-notes{margin:0;padding:0;list-style:none;display:grid;gap:3px;font-size:13px}
 .tk-learned li{color:#ffc857;padding-left:18px;position:relative}.tk-learned li:before{content:"\2605";position:absolute;left:0}
 .tk-notes li{color:#bfe5c8;padding-left:18px;position:relative}.tk-notes li:before{content:"\203A";position:absolute;left:4px}
-.tk-want{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:6px 8px;border:1px dashed #6a5a2a;border-radius:8px;background:#201c0e80}
-.tk-want b{font:700 11px Consolas,monospace;letter-spacing:.12em;color:#ffc857;text-transform:uppercase}
-.tk-chip{padding:2px 10px;border-radius:99px;background:#ffc85722;border:1px solid #ffc857;color:#ffe3a0;font-size:13px}
+.tk-want{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:5px 8px;border:1px solid #6a5a2a;border-radius:4px;background:#1c180a99}
+.tk-want b{font:700 10px Consolas,monospace;letter-spacing:.14em;color:#ffc857;text-transform:uppercase}
+.tk-chip{padding:1px 10px;border-radius:99px;background:#ffc85722;border:1px solid #ffc857;color:#ffe3a0;font-size:13px}
 .tk-none{font-size:13px;color:#9db3c2}
-.tk-group{display:grid;gap:6px}
-.tk-group h3{margin:4px 0 0;font:700 11px Consolas,monospace;letter-spacing:.14em;color:#9db3c2;text-transform:uppercase}
-.tk-btn{min-height:44px;padding:8px 12px;text-align:left;border:1px solid #2f4c61;border-radius:8px;background:#122a3e;color:#e6f1f6;font:inherit;cursor:pointer}
-.tk-btn:hover:not(:disabled){border-color:#7fb4d0;background:#17364e}
-.tk-btn.primary{background:#1d4a36;border-color:#4d9d6e;color:#eafff1;font-weight:700}
-.tk-btn.primary:disabled{color:#9db3c2}
-.tk-btn.is-on{outline:2px solid #9fe870;background:#1a3b2c}
-.tk-btn:disabled,.tk-btn.is-locked{opacity:.55;cursor:default}
-.tk-btn.is-locked{border-style:dashed;color:#9db3c2}
-.tk-row{display:flex;flex-wrap:wrap;gap:6px}.tk-row .tk-btn{text-align:center;flex:1 1 110px}
-.tk-quote,.tk-say{margin:0;font-style:italic;color:#d3e7f0}
-.tk-note{margin:0;font-size:13px;color:#9db3c2}
-.tk-preview{display:grid;gap:4px;padding:10px;border:1px solid #4d9d6e;border-radius:8px;background:#0f2a22}
-.tk-roll{margin:0;font-size:16px;color:#9fe870}
+.tk-choices{margin-top:2px}
+.tk-choice{text-align:left;min-height:44px}
+.tk-said{display:block}
+.tk-choice.is-on{outline:2px solid var(--ui-cyan,#5fe0d6);outline-offset:1px}
+.tk-choice.is-locked{opacity:.7}.tk-choice.is-locked .tk-said{font-style:italic;color:#9db3c2}
+.tk-preview{display:grid;gap:3px;padding:8px 10px;border:1px solid #2f6b66;border-radius:4px;background:#0a2124cc}
+.tk-roll{margin:0;font-size:16px;color:var(--ui-cyan,#5fe0d6)}
 .tk-dc{margin:0;font:12px Consolas,monospace;color:#cfe8f0;overflow-wrap:anywhere}
-.tk-head-start{margin:0;font-size:13px;color:#ffc857}.tk-head-start:before{content:"\2605 ";}
+.tk-head-start{margin:0;font-size:13px;color:#ffc857}.tk-head-start:before{content:"\2605 "}
 .tk-cost{margin:0;font-size:13px;color:#ffb199}
-.tk-say-it{margin-top:4px;text-align:center;font-weight:700}
+.tk-note{margin:0;font-size:12px;color:#9db3c2}
+.tk-say-it{margin-top:4px;text-align:center;font-weight:700;min-height:44px}
 .tk-bag{margin:0;font:11px Consolas,monospace;color:#6f8797}
 .is-talking .wb-hud{display:none}
 .pc-card.is-named{outline:2px solid #ffc857}.pc-named{display:block;font:700 10px Consolas,monospace;color:#ffc857;letter-spacing:.08em;font-style:normal;text-transform:uppercase}
@@ -68,3 +64,4 @@
 .wb-want-pin{margin:0;padding:6px 10px;border:1px dashed #ffc857;border-radius:8px;color:#ffe3a0;font-weight:700}
 @media (max-width:700px){.tk-panel{bottom:0;left:0;transform:none;width:100vw;max-height:88dvh;border-radius:12px 12px 0 0;padding:10px 12px 14px;font-size:14px}.tk-text{font-size:15px}.tk-line.is-you{margin-left:8px}}
 .tk-line.is-earlier{opacity:.78;border-left-color:#3b5a70}
+@media (max-width:700px){body .tk-panel.ui-dialogue{top:auto;bottom:6px;left:50%;width:98vw;max-height:84dvh;grid-template-columns:56px minmax(0,1fr)}.tk-pips i{width:7px;height:7px}.tk-pips{gap:2px}.tk-bondname{font-size:8px}}

@@ -74,7 +74,7 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
     const openPip = async () => { await use(page, 'pip'); await page.waitForSelector('#wb-talk .tk-text'); };
     const leaveTalk = async () => { await tap('#wb-talk .tk-leave'); await page.waitForSelector('#wb-talk', { state: 'detached' }); await page.waitForTimeout(450); };
     const closePanel = async () => { await tap('.wb-pane .primary'); await sheetShut(page); await page.waitForTimeout(450); };
-    const pushVia = async (ability, approach) => { await tap(`[data-ability="${ability}"]`); await tap(`[data-approach="${approach}"]`); await page.waitForSelector('.tk-preview'); };
+    const pushVia = async (id) => { await tap(`[data-push="${id}"]`); await page.waitForSelector('.tk-preview'); };
     const sayIt = async () => { await tap('.tk-say-it'); await page.waitForSelector('#hg-attempt:not([hidden])'); await sheetOpen(page); };
     const closeCard = async () => { await tap('.rp-result button'); await sheetShut(page); await page.waitForSelector('#wb-talk:not([hidden]) .tk-line'); };
     const noScroll = async () => assert.equal(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth), 0, 'no sideways scroll');
@@ -97,32 +97,39 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
         await setPlayer(page);
         await use(page, 'wb-cut'); await page.waitForSelector('.wb-cutbar'); await closePanel();
         await openPip();
-        assert.match(await talkText(), /Pip[\s\S]*Bond 2 of 5 · Crew/);
+        assert.match(await talkText(), /Pip/);
         assert.match(await page.locator('#wb-talk .tk-text').first().innerText(), /I have the good cutter, and I am not giving it to you/);
         assert.equal(await page.locator('.tk-lit[data-lit="want"]').innerText(), 'good cutter');
         assert.match(await page.locator('.tk-want').innerText(), /you want[\s\S]*the good cutter/i);
         assert.equal(await page.locator('[data-topic="nan"]').isDisabled(), true, 'locked topics show what opens them');
-        assert.match(await page.locator('[data-topic="nan"]').innerText(), /^\?\?\? get to know Pip better/);
+        assert.match(await page.locator('[data-topic="nan"]').innerText(), /^Get to know Pip better…/);
+        assert.equal(await page.locator('.tk-voice').count(), 0, 'no debug voice ids');
+        assert.equal(await page.locator('#wb-talk.ui-dialogue .ui-dlg-portrait').count(), 1, 'the game\'s dialogue kit');
+        assert.equal(await page.locator('.tk-pips i.on').count(), 2, 'the bond as lit pips');
+        assert.ok((await page.evaluate(() => __stardust.workbench.voiced)).some((v) => v.id === 'pip.wb.hello'), 'the line is sent to the voice');
         await noScroll();
         await shot('social-2-greeting-lit-words');
         await tap('[data-topic="projector"]');
         assert.match(await talkText(), /You learned: The projector needs one clean circuit board/);
-        assert.match(await talkText(), /Bond 3 of 5 · Friendly/);
+        assert.equal(await page.locator('.tk-pips').getAttribute('aria-label'), 'Bond 3 of 5, Friendly');
         await shot('social-3-topic-teaches-a-fact');
         await tap('[data-topic="safety"]');
-        assert.match(await talkText(), /You learned: He has kept the ship flying two years on tape/); assert.match(await talkText(), /Bond 3 of 5/);
-        assert.equal(await page.locator('.tk-push').count(), 0, 'no pushes before the no');
-        await tap('.tk-ask .tk-btn');
-        await page.waitForSelector('.tk-push');
+        assert.match(await talkText(), /You learned: He has kept the ship flying two years on tape/); assert.equal(await page.locator('.tk-pips').getAttribute('data-bond'), '3');
+        assert.equal(await page.locator('[data-kind="push"]').count(), 0, 'no pushes before the no');
+        await tap('[data-kind="ask"]');
+        await page.waitForSelector('[data-kind="push"]');
         assert.match(await talkText(), /No\. Gunner four borrowed my last good cutter/);
         assert.match(await talkText(), /You learned: Gunner four lost his last good cutter/);
-        assert.deepEqual(await page.locator('[data-ability]').evaluateAll((els) => els.map((e) => e.dataset.ability)), ['persuade', 'intimidate', 'bribe']);
-        await pushVia('persuade', 'empathy');
+        assert.deepEqual(await page.locator('[data-push]').evaluateAll((els) => els.map((e) => e.dataset.push)), ['p-emp', 'p-ang', 'i-ang', 'b-mon', 'b-emp'], 'the pushes you can make, as lines you would say');
+        assert.match(await page.locator('[data-push="p-emp"]').innerText(), /I am not gunner four[\s\S]*Persuade · Empathy · 75%/);
+        assert.deepEqual(await page.locator('[data-push-locked]').evaluateAll((els) => els.map((e) => e.innerText.split('\n')[0])), ['Know what he is hiding…'], 'locked pushes are hints');
+        assert.ok((await page.evaluate(() => __stardust.workbench.voiced)).some((v) => v.id === 'pip.cutter.no'));
+        await pushVia('p-emp');
         const card = await page.locator('.tk-preview').innerText();
-        assert.match(card, /I am not gunner four\. I sign for it/); assert.match(card, /Roll d20 \+ Social 3 vs 9: 75%/);
+        assert.match(card, /Roll d20 \+ Social 3 vs 9: 75%/);
         assert.match(card, /DC: Their no 12, Empathy fits them -2, Bond Friendly -1 = 9/); assert.match(card, /You know what he guards: the ship/);
         await noScroll();
-        await page.locator('.tk-preview').scrollIntoViewIfNeeded();
+        await page.locator('.tk-say-it').scrollIntoViewIfNeeded();
         await shot('social-4-push-list-with-dcs');
         await sayIt();
         await page.waitForFunction(() => /Made it|Not this time|Natural/.test(document.getElementById('hg-attempt').innerText));
@@ -146,7 +153,7 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
         await openPip();
         const owed = Boolean((await state(page)).people.pip.marks.owed);
         assert.match(await page.locator('#wb-talk .tk-text').first().innerText(), owed ? /You have my cutter/ : /Oh good, it is you\. Come in, mind the tape/);
-        assert.match(await talkText(), /Bond 4 of 5 · Trusted/);
+        assert.equal(await page.locator('.tk-pips').getAttribute('aria-label'), 'Bond 4 of 5, Trusted'); assert.equal(await page.locator('.tk-pips i.on').count(), 4);
         await shot('social-7-changed-greeting');
         await leaveTalk();
         // the Cut station now says 15 wide
@@ -158,9 +165,9 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
       await sub('route B: Intimidate with Anger fails; the lost reply, bond 0, Tull rep -1, the want closed', async () => {
         await setPlayer(page);
         await openPip();
-        await tap('.tk-lit[data-lit="want"]'); await tap('.tk-ask .tk-btn');
-        await page.waitForSelector('.tk-push');
-        await pushVia('intimidate', 'anger');
+        await tap('.tk-lit[data-lit="want"]'); await tap('[data-kind="ask"]');
+        await page.waitForSelector('[data-kind="push"]');
+        await pushVia('i-ang');
         assert.match(await page.locator('.tk-preview').innerText(), /Roll d20 \+ Social 3 vs 14: 50%/);
         await sayIt();
         const g = await page.evaluate(() => { const s = document.querySelector('.it-panel').__state; s.rolls = Array(12).fill(0); return { chances: s.chances, reads: s.readsOdds }; });
@@ -177,7 +184,7 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
         await leaveTalk();
         await openPip();
         assert.match(await page.locator('#wb-talk .tk-text').first().innerText(), /I am busy\. I am always busy/);
-        assert.equal(await page.locator('.tk-ask .tk-btn').isDisabled(), true, 'the want is closed until tomorrow');
+        assert.equal(await page.locator('[data-kind="ask"]').isDisabled(), true, 'the want is closed until tomorrow');
         await leaveTalk();
       });
 
@@ -192,8 +199,8 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
         await tap('[data-topic="tag"]');
         assert.match(await talkText(), /You learned: The cutter is not on Tull's list; he bought it himself/);
         await tap('.tk-lit[data-lit="want"]');
-        await tap('.tk-ask .tk-btn'); await page.waitForSelector('.tk-push');
-        await pushVia('intimidate', 'money');
+        await tap('[data-kind="ask"]'); await page.waitForSelector('[data-kind="push"]');
+        await pushVia('i-mon');
         const card = await page.locator('.tk-preview').innerText();
         assert.match(card, /Roll d20 \+ Social 3 vs 11: 65%/); assert.match(card, /You know what he is hiding: the first push cannot snap/);
         await sayIt();
@@ -207,7 +214,7 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
         if (outcome === 'won') {
           assert.match(await talkText(), /Take it\. And do not sit with me at lunch/);
           const s = await state(page); assert.equal(s.items['good-cutter'], 1); assert.ok(s.people.pip.marks.scared); assert.equal(s.people.pip.bond, 3);
-          assert.equal(await page.locator('.tk-btn.is-locked').count(), 4, 'topics closed while scared');
+          assert.equal(await page.locator('.tk-choice.is-locked[data-kind="topic"]').count(), 4, 'topics closed while scared');
         }
         await leaveTalk();
       });
@@ -215,8 +222,8 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
       await sub('money: Bribe with Money: the needle, a deal inside the band pays and leaves Pip paid', async () => {
         await setPlayer(page);
         await openPip();
-        await tap('.tk-lit[data-lit="want"]'); await tap('.tk-ask .tk-btn'); await page.waitForSelector('.tk-push');
-        await pushVia('bribe', 'money');
+        await tap('.tk-lit[data-lit="want"]'); await tap('[data-kind="ask"]'); await page.waitForSelector('[data-kind="push"]');
+        await pushVia('b-mon');
         assert.match(await page.locator('.tk-preview').innerText(), /vs 12: 60%/); assert.match(await page.locator('.tk-preview').innerText(), /It costs: 10 to 40 credits at the needle/);
         await sayIt();
         await page.waitForSelector('.bb-panel');

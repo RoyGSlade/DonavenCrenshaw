@@ -156,12 +156,19 @@ export function askWant(state, sheet, talk, wantId, now) {
 
 // ---- pushes -------------------------------------------------------------------------------------------------------------------
 /** Why a push is not on offer (null when it is). Pushes need what the plan says they need: facts, items, credits. */
-function needsMissing(state, sheet, push) {
+export function needsMissing(state, sheet, push) {
   const p = personOf(state, sheet);
   for (const f of push.needs?.facts || []) if (!p.facts.includes(f)) return `learn: ${sheet.facts[f]?.label || f}`;
   for (const [item, n] of Object.entries(push.needs?.items || {})) if (have(state, item) < n) return `needs ${n} ${ITEMS[item]?.name || item}`;
   if (push.bribe && !push.bribe.gift && (state.credits || 0) < push.bribe.min + 1) return 'needs credits';
   return null;
+}
+
+/** The pushes you cannot make yet, as hints of what you would need to know (shown after a no, plan 1.8). */
+export function lockedPushes(state, sheet, talk, wantId, now) {
+  const w = sheet.wants[wantId];
+  if (!w || !talk.refused.includes(wantId) || talk.ended || wantClosed(state, sheet, wantId, now) || (w.item && have(state, w.item))) return [];
+  return w.pushes.map((push) => ({ push, missing: needsMissing(state, sheet, push) })).filter((x) => x.missing).map(({ push, missing }) => ({ id: push.id, ability: push.ability, approach: push.approach, hint: push.hint || `${missing[0].toUpperCase()}${missing.slice(1)}` }));
 }
 
 /** The credits the bribe needle can name: its range, capped by what you hold. */

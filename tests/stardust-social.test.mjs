@@ -87,6 +87,7 @@ test('sheet checker: it names what is wrong', () => {
   assert.match(bad((s) => { s.topics[0].fact = 'nope'; }), /fact nope does not exist/);
   assert.match(bad((s) => { s.wants['good-cutter'].pushes[0].needs.facts = ['ghost']; }), /needs fact ghost/);
   assert.match(bad((s) => { s.wants['good-cutter'].pushes[4].bribe = { min: 5, max: 5, best: 5 }; }), /bribe needs/);
+  assert.match(bad((s) => { delete s.wants['good-cutter'].pushes[3].hint; }), /shows a hint of what you would need to know/);
   assert.match(bad((s) => { s.facts.nan.named.value = 'pay'; }), /named card must be on something they care about/);
 });
 
@@ -747,17 +748,19 @@ test('model: the panel shows what the plan says, in order: wants, ask, topics wi
   let m = talkModel(s, pip, t, { lines: ['pip.wb.hello'] }, NOW);
   assert.deepEqual(m.wants, [{ id: 'good-cutter', label: 'the good cutter' }]);
   assert.equal(m.ask[0].say, 'Can I use the cutter? Just for the bench.'); assert.equal(m.push, null);
-  assert.deepEqual(m.topics.map((x) => x.hint), [null, null, '??? get to know Pip better', '??? look around for what they hide']);
+  assert.deepEqual(m.topics.map((x) => x.hint), [null, null, 'Get to know Pip better…', 'Look around for what they hide…']);
   assert.deepEqual(m.bond, { n: 2, name: 'Crew' });
   const a = C.askWant(s, pip, t, 'good-cutter', NOW); s = a.state; t = a.talk;
   m = talkModel(s, pip, t, { lines: a.lines, learned: [a.learned] }, NOW);
   assert.deepEqual(m.learned, ['Gunner four lost his last good cutter']);
-  assert.deepEqual(m.push.abilities.filter((x) => x.available).map((x) => x.id), ['persuade', 'intimidate', 'bribe']);
-  assert.deepEqual(m.push.approaches, []);
-  m = talkModel(s, pip, t, { ability: 'persuade', push: 'p-emp' }, NOW);
-  assert.deepEqual(m.push.approaches.filter((x) => x.available).map((x) => x.id), ['empathy', 'anger']);
-  assert.equal(m.push.selected.dc, 10); assert.equal(m.push.sayText, pip.lines['pip.p.p-emp'].text);
-  m = talkModel(s, pip, t, { ability: 'bribe', push: 'b-mon' }, NOW);
+  assert.deepEqual(m.push.choices.map((x) => x.id), ['p-emp', 'p-ang', 'i-ang', 'b-mon']);
+  assert.deepEqual(m.push.choices.map((x) => x.tag), ['Persuade · Empathy · 70%', 'Persuade · Anger · 50%', 'Intimidate · Anger · 50%', 'Bribe · Money · 60%']);
+  assert.equal(m.push.choices[0].say, pip.lines['pip.p.p-emp'].text);
+  assert.deepEqual(m.push.locked.map((x) => x.hint), ['Know what he is hiding…', 'Know what he is stuck on, and bring a clean circuit board…'], 'what you would need to know');
+  assert.equal(m.push.selected, null);
+  m = talkModel(s, pip, t, { push: 'p-emp' }, NOW);
+  assert.equal(m.push.selected.dc, 10); assert.equal(m.push.sayText, pip.lines['pip.p.p-emp'].text); assert.equal(m.push.choices[0].on, true);
+  m = talkModel(s, pip, t, { push: 'b-mon' }, NOW);
   assert.deepEqual(m.push.cost.credits, { min: 10, max: 40 });
   // a scared person: marks show, topics locked
   const scared = { ...s, people: { pip: { ...C.personOf(s, pip), marks: { scared: { bondWas: 2 } } } } };
@@ -787,4 +790,16 @@ test('model: until a want is pinned the greeting stays on show (its amber words 
   assert.deepEqual(m.lines.map((l) => l.id), ['pip.p.projector', 'pip.topic.projector']);
   m = talkModel(s, pip, t, { greeting: 'pip.hello.cold', lines: ['pip.p.nan'] }, NOW);
   assert.deepEqual(m.lines.map((l) => l.id), ['pip.p.nan'], 'a greeting with no amber word is not kept');
+});
+
+test('voice: a line shown is a line the voice can play (the site\'s scratch voice map finds Pip\'s lines)', async () => {
+  const man = join(process.env.HOME || '', 'Desktop/lhc-lanes/stardust/voice/manifest.json');
+  if (!existsSync(man)) return;
+  const { loadScratchVoice, voiceUrl } = await import('../projects/Space-Shooter/voyage/story/voice.js');
+  const data = JSON.parse(readFileSync(man, 'utf8'));
+  const n = await loadScratchVoice({ loc: new URL('http://127.0.0.1:4173/?voice=scratch'), fetchFn: async () => ({ ok: true, json: async () => data }) });
+  assert.ok(n > 0);
+  const missing = Object.entries(pip.lines).filter(([id, l]) => l.who === pip.speaker && !voiceUrl(id)).map(([id]) => id);
+  assert.deepEqual(missing, [], 'every Pip line has a voice file');
+  assert.match(voiceUrl('pip.cutter.no'), /__stardust-scratch-voice\/lines-scratch\/pip\/pip\.cutter\.no\.mp3$/);
 });
