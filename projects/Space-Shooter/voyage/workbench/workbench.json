@@ -743,6 +743,42 @@
    }
   },
   {
+   "art": "holo-terminal",
+   "at": [
+    10,
+    1
+   ],
+   "size": [
+    2,
+    1
+   ],
+   "block": "low",
+   "name": "wb-cut",
+   "interact": {
+    "kind": "station",
+    "id": "wb-cut",
+    "label": "Cut station: worn cutter, 9 wide"
+   }
+  },
+  {
+   "art": "power-conduit-panel-closed",
+   "at": [
+    15,
+    4
+   ],
+   "size": [
+    1,
+    1
+   ],
+   "block": "low",
+   "name": "wb-hook",
+   "interact": {
+    "kind": "station",
+    "id": "wb-hook",
+    "label": "Pip's hook: whose cutter is this?"
+   }
+  },
+  {
    "art": "janitor-cart",
    "at": [
     27,

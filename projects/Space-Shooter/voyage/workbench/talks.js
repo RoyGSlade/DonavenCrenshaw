@@ -1,5 +1,5 @@
-// The workbench room's test conversations, pure data and rules. Tull, Nessa and Pip each have a short talk with one social
-// check: Tull haggles a share, Nessa is persuaded, Pip is leaned on. A check choice rolls the real d20 (Social, the test
+// The workbench room's test conversations, pure data and rules. Tull and Nessa each have a short talk with one social
+// check: Tull haggles a share, Nessa is persuaded. (Pip has a full conversation instead: people/pip.js.) A check choice rolls the real d20 (Social, the test
 // character's level), then plays that mini-game at the roll's tier; the result picks the next line. Speakers are the cast ids
 // the dialogue box already knows (portraits). All words here; nothing is spoken by the quest engine.
 //
@@ -36,20 +36,8 @@ export const TALKS = Object.freeze({
       lose: { speaker: 'nessa', name: 'Nessa', text: 'No. You argued the wrong things. Try again when you have noticed what I care about.', emotion: 'annoyed', choices: [{ label: 'Fair.', goto: null }] },
     },
   },
-  pip: {
-    start: 'hello',
-    nodes: {
-      hello: { speaker: 'pip', name: 'Pip', text: "Oh. Hi. I have the good cutter, and I am not giving it to you, because you will lose it. Sorry. Not sorry. Sorry.", choices: [
-        { label: 'Lean on him for the cutter.', check: { game: 'intimidate', who: 'Pip', what: 'hand over the cutter' }, win: 'win', lose: 'lose' },
-        { label: 'What are you working on?', goto: 'work' },
-        { label: 'Leave him be.', goto: null },
-      ] },
-      work: { speaker: 'pip', name: 'Pip', text: 'The projector. It fries when you look at it wrong. I am not saying it is haunted. I am saying it has opinions.', choices: [{ label: 'Back to the cutter.', goto: 'hello' }, { label: 'Good luck.', goto: null }] },
-      win: { speaker: 'pip', name: 'Pip', text: 'OKAY. Okay! Take it! Please stop doing the face.', emotion: 'annoyed', choices: [{ label: 'Thanks, Pip.', goto: null }] },
-      lose: { speaker: 'pip', name: 'Pip', text: 'No. I have been shouted at by a reactor. You are not even close.', emotion: 'happy', choices: [{ label: 'Worth a try.', goto: null }] },
-    },
-  },
 });
+// Pip is not here: his talk is the social lane's person sheet (people/pip.js), played by talk/ (the cutter conversation).
 export const TALK_WHO = Object.freeze(Object.keys(TALKS));
 
 /** Problems in a talk tree as plain sentences (tests): unknown nodes, no ending, bad check games. Empty when fine. */

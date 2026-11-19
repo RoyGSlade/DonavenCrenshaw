@@ -44,7 +44,7 @@ test('map: every art it names is art the Duchess rooms or the look kit already u
   for (const d of WORKBENCH_DEF.look.decals) if (d.art) assert.ok(LOOK_ART.decal[d.art] || LOOK_ART.prop[d.art], `decal ${d.art}`);
 });
 
-const EXPECT = ['wb-repair', 'wb-hack', 'wb-craft', 'wb-nav', 'wb-pilot', 'wb-stealth', 'wb-persuade', 'wb-intimidate', 'wb-haggle', 'wb-lock', 'wb-board', 'wb-scan', 'wb-reprint', 'wb-gym', 'wb-spar', 'wb-reset'];
+const EXPECT = ['wb-cut', 'wb-hook', 'wb-repair', 'wb-hack', 'wb-craft', 'wb-nav', 'wb-pilot', 'wb-stealth', 'wb-persuade', 'wb-intimidate', 'wb-haggle', 'wb-lock', 'wb-board', 'wb-scan', 'wb-reprint', 'wb-gym', 'wb-spar', 'wb-reset'];
 test('map: one station for each of the nine games plus lock, board, scan, reprint, gym, spar and reset, each a station interact', () => {
   const ids = MAP.interacts.filter((i) => i.kind === 'station').map((i) => i.id).sort();
   assert.deepEqual(ids, [...EXPECT].sort());
@@ -96,11 +96,11 @@ test('entry: only with the new-game switch AND start=workbench; the shipped swit
   assert.equal(newGameFlag({ config: runtimeConfig, search: '?start=workbench', storage }).enabled, false, 'no flag, no room');
 });
 
-test('entry: no map, door, quest or link outside the room reaches it; only boot.js asks for it', () => {
+test('entry: no map, door, quest or link outside the room reaches it; only boot.js asks for it (talk/ and people/ are the room\'s social layer)', () => {
   assert.ok(!MAP_DEFS.workbench, 'not among the walkable places');
   for (const def of Object.values(MAP_DEFS)) for (const d of def.doors || []) assert.notEqual(d.to, 'workbench');
   const hits = [];
-  const walk = (dir) => { for (const n of readdirSync(dir)) { const p = join(dir, n); const st = statSync(p); if (st.isDirectory()) { if (n === 'node_modules' || n === 'art' || n === 'audio') continue; walk(p); } else if (/\.(js|json|html)$/.test(n) && !p.includes('/voyage/workbench/')) { const text = readFileSync(p, 'utf8'); if (/workbench\/|start=workbench|WORKBENCH_/.test(text)) hits.push(relative(VOYAGE, p)); } } };
+  const walk = (dir) => { for (const n of readdirSync(dir)) { const p = join(dir, n); const st = statSync(p); if (st.isDirectory()) { if (n === 'node_modules' || n === 'art' || n === 'audio') continue; walk(p); } else if (/\.(js|json|html)$/.test(n) && !p.includes('/voyage/workbench/') && !p.includes('/voyage/talk/') && !p.includes('/voyage/people/')) { const text = readFileSync(p, 'utf8'); if (/workbench\/|start=workbench|WORKBENCH_/.test(text)) hits.push(relative(VOYAGE, p)); } } };
   walk(VOYAGE);
   assert.deepEqual(hits, ['boot.js'], 'only the page boot names the room');
   assert.ok(readFileSync(join(VOYAGE, 'boot.js'), 'utf8').includes('wantsWorkbench'));
@@ -233,14 +233,14 @@ test('stations: the gym trains the same nine games', () => {
 });
 
 // ---- the conversations --------------------------------------------------------------------------------------------------
-test('talks: Tull, Nessa and Pip each have a clean tree with one check (haggle, persuade, intimidate) and an ending', () => {
-  assert.deepEqual([...TALK_WHO].sort(), ['nessa', 'pip', 'tull']);
+test('talks: Tull and Nessa each have a clean tree with one check (haggle, persuade) and an ending; Pip has the social lane\'s full conversation', () => {
+  assert.deepEqual([...TALK_WHO].sort(), ['nessa', 'tull']);
   const games = [];
   for (const who of TALK_WHO) {
     assert.deepEqual(talkIssues(TALKS[who]), [], who);
     for (const n of Object.values(TALKS[who].nodes)) for (const c of n.choices || []) if (c.check) games.push(c.check.game);
   }
-  assert.deepEqual(games.sort(), ['haggle', 'intimidate', 'persuade']);
+  assert.deepEqual(games.sort(), ['haggle', 'persuade']);
   assert.ok(talkIssues({ start: 'a', nodes: { a: { speaker: 'x', text: 'y', choices: [{ label: 'z', goto: 'nope' }] } } }).length >= 2);
   const choice = TALKS.tull.nodes.hello.choices[0];
   assert.deepEqual(['win', 'mid', 'lose'].map((b) => nextAfterCheck(choice, b)), ['well', 'fair', 'walked']);

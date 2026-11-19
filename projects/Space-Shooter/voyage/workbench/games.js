@@ -10,6 +10,7 @@ import { createStealth } from '../minigames/stealth.js'; import { playStealth } 
 import { createPersuade } from '../minigames/persuade.js'; import { playPersuade } from '../minigames/persuadeView.js';
 import { createIntimidate } from '../minigames/intimidate.js'; import { playIntimidate } from '../minigames/intimidateView.js';
 import { createPilot } from '../minigames/pilot.js'; import { playPilot } from '../minigames/pilotView.js';
+import { createBribe } from '../talk/bribe.js'; import { playBribe } from '../talk/bribeView.js';
 
 let craftBank = 0; // scrap the last craft rounded up, carried into the next one (the game's own rule)
 export const resetCraftBank = () => { craftBank = 0; };
@@ -27,9 +28,10 @@ export async function playGame(stage, id, o = {}) {
     case 'craft': { const r = await playCraft(stage, { state: createCraft({ seed, recipe: { materials: 4, build: 30 }, setup, bank: craftBank }), what: 'fitting', unit: 'scrap', reducedMotion }); if (Number.isFinite(r?.bank)) craftBank = r.bank; return r; }
     case 'nav': return playNav(stage, { state: createNav({ seed, setup }), title: title || 'Lane run', reducedMotion });
     case 'stealth': return playStealth(stage, { state: createStealth({ seed, setup }), title: title || 'Cargo hold', reducedMotion });
-    case 'persuade': return playPersuade(stage, { state: createPersuade({ seed, setup }), who: who || 'the dock clerk', what: what || 'let you through', reducedMotion });
+    case 'persuade': return playPersuade(stage, { state: createPersuade({ seed, setup, opening: o.opening }), who: who || 'the dock clerk', what: what || 'let you through', reducedMotion });
     case 'intimidate': return playIntimidate(stage, { state: createIntimidate({ seed, setup }), who: who || 'the Cinder Reaver', what: what || 'stand down', reducedMotion });
     case 'pilot': return playPilot(stage, { state: createPilot({ seed, setup }), where: 'the hangar pad', reducedMotion });
+    case 'bribe': return playBribe(stage, { state: createBribe({ seed, min: o.range?.min ?? 10, max: o.range?.max ?? 40, setup }), who: who || 'the trader', what: what || 'what you want', gift: o.gift || null, sound, reducedMotion });
     case 'practice': return playSetupHack(stage, { state: createPracticeHack({ seed }), title: 'Practice lock', sound, reducedMotion });
     default: throw new Error(`No mini-game ${id}`);
   }

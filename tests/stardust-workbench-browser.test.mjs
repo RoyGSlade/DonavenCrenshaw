@@ -207,11 +207,10 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
         await choose('Talk her'); await sheetOpen(page);
         await playToEnd(page, 'persuade', phone); await closeCard(page, phone); await sheetShut(page);
         await nextLine('Hands off the stick'); await choose('Thank you'); await page.waitForSelector('#hg-dialogue', { state: 'hidden' });
-        // Pip
-        await use(page, 'pip'); await nextLine('good cutter');
-        await choose('Lean on him'); await sheetOpen(page);
-        await playToEnd(page, 'intimidate', phone); await closeCard(page, phone); await sheetShut(page);
-        await nextLine('Take it'); await choose('Thanks, Pip'); await page.waitForSelector('#hg-dialogue', { state: 'hidden' });
+        // Pip has the social lane's full conversation: the panel opens with his greeting; the cutter talk itself is in stardust-social-browser.test.mjs
+        await use(page, 'pip'); await page.waitForSelector('#wb-talk .tk-lit');
+        assert.match(await page.locator('#wb-talk .tk-text').first().innerText(), /good cutter/);
+        await page.locator('#wb-talk .tk-leave')[phone ? 'tap' : 'click'](); await page.waitForSelector('#wb-talk', { state: 'detached' });
       });
 
       await sub('sparring: a marauder fight that starts, ends, pays Shooting XP, and can be fought again', async () => {

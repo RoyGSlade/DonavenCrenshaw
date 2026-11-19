@@ -18,9 +18,17 @@ import { checkChance, checkBonusText } from '../character.js';
 import { tierInfo } from '../minigames/setup.js';
 import { ROLL_SKILLS } from '../data.js';
 import { renderHud, renderBoard, renderGymPanel, renderConfirm, renderSparPicker, h } from './ui.js';
+import { PEOPLE, personSheet } from '../people/index.js';
+import * as C from '../talk/convo.js';
+import { talkModel } from '../talk/model.js';
+import { renderTalk } from '../talk/view.js';
+import { rollPreview } from '../minigames/rollPreview.js';
+import { cutStation } from './cut.js';
 
 const SKILL_NAME = Object.fromEntries(ROLL_SKILLS.map((s) => [s.id, s.name]));
 const OTHERS = {
+  cut: { name: 'Cut station', prompt: 'Cut station: how wide is the line?' },
+  hook: { name: "Pip's hook", prompt: 'Pip\'s hook: whose is it?' },
   lock: { name: 'Practice lock', prompt: 'Practice lock: no clock, no XP' },
   board: { name: 'Skills board', prompt: 'Skills board: levels, XP and risk' },
   scan: { name: 'Scan station', prompt: 'Scan station: save your progress' },
@@ -35,13 +43,13 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
  * { store, bus, onfoot, dialogueBox, sheet: { root, eyebrow, title, stage }, hud (an empty element), toast, reducedMotion(), sound(id),
  *   onBusy(on), storage, rng, seed }. Returns { openStation, stationInfo, talk, get state, rng, ... } (also what the tests drive).
  */
-export function createWorkbench({ store, bus, onfoot, dialogueBox, sheet, hud, toast = () => {}, reducedMotion = () => false, sound = () => {}, onBusy = () => {}, storage = globalThis.localStorage, rng = Math.random, seed = null }) {
+export function createWorkbench({ store, bus, onfoot, dialogueBox, sheet, hud, toast = () => {}, reducedMotion = () => false, sound = () => {}, onBusy = () => {}, storage = globalThis.localStorage, rng = Math.random, seed = null, clock = () => Date.now() }) {
   let state = loadState(storage);
   let busy = 0;
   let gymSkill = 'repair', boardSkill = null, sparCount = 2;
   let leave = null; // resolves the game in progress when the player leaves it
   let seedCounter = 0;
-  const api = { rng, openPanel: null };
+  const api = { rng, clock, openPanel: null };
   const hold = (on) => { busy = Math.max(0, busy + (on ? 1 : -1)); onBusy(busy > 0); };
   const nextSeed = () => (seed != null ? seed + seedCounter++ : (Date.now() % 100000) + seedCounter++);
 
@@ -190,6 +198,8 @@ export function createWorkbench({ store, bus, onfoot, dialogueBox, sheet, hud, t
     if (station) return useStation(station);
     switch (key) {
       case 'lock': return practice();
+      case 'cut': openCut(); break;
+      case 'hook': openHook(); break;
       case 'board': openBoard(); break;
       case 'scan': doScan(); break;
       case 'reprint': confirmDie(); break;
@@ -215,6 +225,7 @@ export function createWorkbench({ store, bus, onfoot, dialogueBox, sheet, hud, t
   bus.on('story:choose', (d) => { if (!asking) return; const a = asking; asking = null; a(Number(d?.index)); });
   const ask = (options) => new Promise((resolve) => { asking = resolve; dialogueBox.showChoices({ options }); });
   async function talk(who) {
+    if (personSheet(who)) return socialTalk(personSheet(who));
     const tree = TALKS[who];
     if (!tree) return null;
     hold(true);
@@ -244,6 +255,115 @@ export function createWorkbench({ store, bus, onfoot, dialogueBox, sheet, hud, t
       dialogueBox.hide();
       hold(false);
     }
+    return null;
+  }
+
+  // ---- social: the Cut station, the hook, and the full conversation with a person (people/*.js, talk/*) -------------------------------
+  const people = () => Object.values(PEOPLE);
+  const dayTick = () => { const r = C.tickDay(state, api.clock(), people()); if (r.state !== state) commit({ ...r.state, said: r.said.join(' ') || state.said }, { silent: !r.said.length }); };
+  function openCut() {
+    dayTick();
+    const cut = cutStation(state);
+    if (cut.pin && !(state.wants || []).includes(cut.pin)) commit(C.pinWant(state, cut.pin), { silent: true });
+    openPanel('CUT STATION', 'The cut line', (pane) => {
+      const c = cutStation(state);
+      const bar = h('div', { class: 'wb-cutbar', 'data-width': c.width, role: 'img', 'aria-label': `The cut line is ${c.width} wide` }, h('i', { style: `width:${Math.round((100 * c.width) / 15)}%` }), h('b', { text: `${c.width} wide` }));
+      pane.replaceChildren(bar, ...c.lines.map((l) => h('p', { class: 'rp-help wb-said', text: l })), ...(c.pin ? [h('p', { class: 'wb-want-pin', role: 'status', text: 'You want: the good cutter' })] : []), h('div', { class: 'gm-row' }, h('button', { type: 'button', class: 'primary', text: 'Close' })));
+      pane.querySelector('button').addEventListener('click', closePanel);
+    });
+  }
+  function openHook() {
+    const sheet = personSheet('pip');
+    const seen = C.seeThing(state, sheet, 'hook');
+    commit(seen.state, { silent: true });
+    openPanel('LOOK CLOSER', sheet.sees.hook.label, (pane) => {
+      pane.replaceChildren(h('p', { class: 'rp-help wb-said wb-hook-note', text: seen.note }), h('p', { class: 'rp-help', text: 'You could ask Pip about this.' }), h('div', { class: 'gm-row' }, h('button', { type: 'button', class: 'primary', text: 'Close' })));
+      pane.querySelector('button').addEventListener('click', closePanel);
+    });
+  }
+
+  /** The d20 tray, then the push's mini-game in the sheet. Resolves with the game's result, or null when the player leaves it. */
+  async function playPush(at, person, who) {
+    const station = { id: at.game === 'bribe' ? 'haggle' : at.game, skill: 'social', word: at.game.toUpperCase(), title: who };
+    const pv = rollPreview(at.game === 'bribe' ? 'haggle' : at.game, at.attempt, { level: at.level, points: at.points });
+    bus.emit('roll:attempt', { ...at.attempt, who: 'You', label: `Social attempt · ${at.opt.push.ability} with ${at.opt.push.approach}`, preview: [pv?.line, ...at.head.lines].filter(Boolean).join(' ') });
+    sound('talk');
+    await wait(reducedMotion() ? 500 : 1700);
+    sheet.stage.replaceChildren();
+    const note = h('p', { class: 'rp-help wb-preview', text: [pv?.line, pv?.nextLine, ...at.head.lines].filter(Boolean).join(' ') });
+    const stage = h('div', { class: 'wb-stage' });
+    const leaveBtn = h('button', { type: 'button', class: 'wb-leave', text: 'Back off (no cost)' });
+    sheet.stage.append(note, stage, leaveBtn);
+    showSheet(true, { word: `${at.opt.push.ability.toUpperCase()} · ${at.opt.push.approach.toUpperCase()} · ${at.label.toUpperCase()} ROLL`, titleText: who });
+    hold(true);
+    const left = new Promise((resolve) => { leave = () => resolve(null); leaveBtn.addEventListener('click', leave); });
+    const o = at.opt.push;
+    const range = o.bribe ? C.bribeRange(state, o) : null;
+    let result;
+    try { result = await Promise.race([playGame(stage, at.game, { seed: nextSeed(), setup: at.setup, opening: at.opening, range, gift: o.bribe?.gift ? Object.entries(o.bribe.gift).map(([i, n]) => `${n} ${i.replace(/-/g, ' ')}`).join(' and ') : null, who, what: person.wants[at.opt.push.want || 'good-cutter']?.label, sound: () => {}, reducedMotion }), left]); }
+    catch (error) { console.warn('Stardust workbench: the push could not run', error); result = null; }
+    leave = null; sheet.stage.replaceChildren(); showSheet(false); hold(false);
+    void station;
+    return result;
+  }
+
+  async function socialTalk(person) {
+    dayTick();
+    hold(true);
+    let talk = C.newTalk(person);
+    const greeting = C.greetingOf(state, person);
+    const ui = { greeting, lines: [greeting], notes: [], learned: [], ability: null, push: null };
+    const root = h('section', { class: 'tk-panel', id: 'wb-talk', role: 'dialog', 'aria-label': `Talk with ${person.name}`, 'data-person': person.id });
+    document.body.append(root);
+    document.body.classList.add('is-talking');
+    let done;
+    const finished = new Promise((r) => { done = r; });
+    const draw = () => renderTalk(root, talkModel(state, person, talk, ui, api.clock()), on);
+    const setReply = (r, extra = {}) => { Object.assign(ui, { lines: r.lines || [], learned: r.learned ? [r.learned] : [], notes: [], ability: null, push: null, ...extra }); };
+    const on = {
+      leave: () => done(),
+      word: (lit) => {
+        if (lit.kind === 'want') { commit(C.pinWant(state, lit.id), { silent: true }); ui.notes = [`You want: ${C.wantsShown(state).find((w) => w.id === lit.id)?.label || lit.id}. Ask for it when you are ready.`]; draw(); } else on.topic(lit.id);
+      },
+      want: (wantId) => {
+        const r = C.askWant(state, person, talk, wantId, api.clock());
+        state = { ...r.state }; talk = r.talk; commit(state, { silent: true });
+        const notes = r.kind === 'lent' ? [`You borrowed the ${person.wants[wantId].label.replace(/^the /, '')} until the game day ends.`] : r.kind === 'given' ? [`${person.name} gives you ${person.wants[wantId].label}.`] : [];
+        setReply(r, { notes }); draw();
+      },
+      topic: (id) => {
+        const r = C.askTopic(state, person, talk, id);
+        if (r.blocked && r.blocked !== 'work') { ui.notes = [r.blocked]; draw(); return; }
+        talk = r.talk; commit(r.state, { silent: true });
+        setReply(r, { notes: r.bondDelta ? [`${person.name}'s bond up 1: ${talkBond()}.`] : [] }); draw();
+      },
+      ability: (a) => { ui.ability = a; ui.push = null; draw(); },
+      approach: (optionId) => { ui.push = optionId; draw(); },
+      giveBack: (wantId) => { const r = C.returnBorrowed(state, person, wantId); if (r.ok) { commit(r.state, { silent: true }); setReply({ lines: [] }, { notes: [`You gave the ${person.wants[wantId].label.replace(/^the /, '')} back before the day ended.`] }); draw(); } },
+      say: async () => {
+        const sel = talkModel(state, person, talk, ui, api.clock()).push?.selected;
+        if (!sel) return;
+        const wantId = talkModel(state, person, talk, ui, api.clock()).push.want;
+        const at = C.attemptPush(state, person, talk, wantId, sel.id, api.clock(), api.rng);
+        if (!at) return;
+        at.opt.push = { ...at.opt.push, want: wantId };
+        root.hidden = true;
+        const result = await playPush(at, person, person.name);
+        root.hidden = false;
+        if (!result) { ui.notes = ['You backed off. Nothing was spent.']; ui.push = null; ui.lines = []; draw(); return; }
+        const r = C.settlePush(state, person, talk, wantId, sel.id, result, api.clock());
+        talk = r.talk; commit(r.state, { silent: true });
+        Object.assign(ui, { lines: [sel.say, ...r.lines], learned: [], notes: r.notes, ability: null, push: null });
+        draw();
+      },
+    };
+    const talkBond = () => C.personOf(state, person).bond + ' ' + 'of 5';
+    draw();
+    root.querySelector('.tk-leave')?.focus?.({ preventScroll: true });
+    await finished;
+    root.remove();
+    document.body.classList.remove('is-talking');
+    hold(false);
     return null;
   }
 
