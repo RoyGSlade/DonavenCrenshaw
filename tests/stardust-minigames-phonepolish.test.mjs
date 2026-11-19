@@ -4,6 +4,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { GAUGE_SPAN, safeMark, speedFill, speedWord, speedTone, fuelLevel, fuelWord, windRead, endWords, tryWords } from '../projects/Space-Shooter/voyage/minigames/pilotWords.js';
 import { heatRgb, heatColor, heatGlow, heatWord, stepPips, qualityWord } from '../projects/Space-Shooter/voyage/minigames/craftWords.js';
+import { clockWord, stageWord, retryWord, heatLevelWord, beatsWord } from '../projects/Space-Shooter/voyage/minigames/hudWords.js';
 import { createPilot } from '../projects/Space-Shooter/voyage/minigames/pilot.js';
 import { createCraft, shape, release, heatStart, stepCraft } from '../projects/Space-Shooter/voyage/minigames/craft.js';
 
@@ -88,4 +89,14 @@ test('step pips: empty, the next step, clean, spoiled; no numbers in the words',
   assert.deepEqual(stepPips(s), ['spoiled', 'clean', 'next', 'empty']);
   assert.equal(stepPips(s).length, s.strikes);
   assert.deepEqual([95, 70, 40].map(qualityWord), ['Flawless', 'Fine', 'Rough']);
+});
+
+test('audit HUD words: clock, firewall, retries, heat and beats say it in words with no digits', () => {
+  assert.deepEqual([30, 14, 5, 1].map((l) => clockWord(l, 30)), ['plenty of time', 'time is moving', 'hurry', 'almost out']);
+  assert.deepEqual([[0, 3], [1, 3], [2, 3], [0, 1]].map(([i, n]) => stageWord(i, n)), ['First firewall', 'Second firewall', 'Last firewall', 'The firewall']);
+  assert.equal(stageWord(9, 3), 'Last firewall', 'clamped');
+  assert.deepEqual([[2, 2], [1, 2], [1, 3], [0, 2], [0, 0]].map(([l, t]) => retryWord(l, t)), ['retries ready', 'last retry', 'last retry', 'no retries left', 'no retries']);
+  assert.deepEqual([0, 20, 60, 90].map((h) => heatLevelWord(h, 100)), ['unseen', 'warm', 'hot', 'nearly caught']);
+  assert.deepEqual([28, 10, 2].map((l) => beatsWord(l, 28)), ['plenty of time', 'time is moving', 'running out']);
+  for (const w of [clockWord(3, 30), stageWord(1, 3), retryWord(1, 2), heatLevelWord(50, 100), beatsWord(5, 28)]) assert.doesNotMatch(w, /\d/);
 });

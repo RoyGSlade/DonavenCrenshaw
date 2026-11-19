@@ -1,6 +1,7 @@
 // Shadow slip on screen: the map, the guards, the cones for your next beat (strong) and the beat
 // after (faint), a heat bar, a beats bar, a Wait button and a colour key under the map.
 // Tap a neighbouring cell to step, Wait (or Space) to stay; arrows step. DOM only, no art.
+import { heatLevelWord, beatsWord } from './hudWords.js';
 import { act, guardAt, watched, neighbours, gainAt, CELL } from './stealth.js';
 import { STEALTH_BASE } from './setup.js';
 
@@ -24,7 +25,7 @@ export function playStealth(root, { state, title = 'Cargo hold', sound = () => {
   const status = h('p', { class: 'rp-status', role: 'status', 'aria-live': 'polite', text: 'Each tap spends a beat: step to a neighbouring cell, or wait. Stay out of the lit cones.' });
   const waitBtn = h('button', { type: 'button', class: 'nv-back ui-btn', text: 'Wait a beat' });
   waitBtn.addEventListener('click', () => doAct(s.pos));
-  const facts = h('p', { class: 'rp-par', text: `${s.guards.length} guard${s.guards.length === 1 ? '' : 's'} · cones reach about ${Math.round(STEALTH_BASE.cone * s.rangeFactor)} cells · a heard step costs +${Math.round(STEALTH_BASE.heard * s.quiet)} heat · cools ${s.decay} a quiet beat` });
+  const facts = h('p', { class: 'rp-par', text: 'Guards see along their cones. A heard step costs heat, and heat cools when you keep quiet.' });
   const panel = h('section', { class: 'rp-panel nv-panel st-panel mg-skin ui-panel', role: 'group', 'aria-label': `Stealth: ${title}` },
     h('p', { class: 'rp-eyebrow ui-nameplate', text: `SLIP PAST · ${title.toUpperCase()} · ${s.guards.length} GUARD${s.guards.length === 1 ? '' : 'S'}` }), heatBar, beatBar, grid, key, status,
     h('div', { class: 'rp-foot' }, waitBtn, facts),
@@ -53,9 +54,9 @@ export function playStealth(root, { state, title = 'Cargo hold', sound = () => {
       b.setAttribute('aria-label', `Row ${Math.floor(i / n) + 1}, column ${(i % n) + 1}: ${s.cells[i]}${gd ? ', guard' : ''}${vis > 0 ? `, watched next beat (${Math.round(vis * 100)}%)` : ''}${i === s.pos ? ', you' : ''}${i === s.exit ? ', exit' : ''}`);
     });
     const hl = Math.max(0, Math.round(STEALTH_BASE.caught - s.heat));
-    heatBar.querySelector('u').style.width = `${Math.min(100, s.heat)}%`; heatBar.querySelector('b').textContent = `${Math.round(s.heat)} of ${STEALTH_BASE.caught}`;
+    heatBar.querySelector('u').style.width = `${Math.min(100, s.heat)}%`; heatBar.querySelector('b').textContent = heatLevelWord(s.heat, STEALTH_BASE.caught);
     heatBar.classList.toggle('is-low', s.heat >= 60);
-    beatBar.querySelector('u').style.width = `${(100 * (s.beats - s.beat)) / s.beats}%`; beatBar.querySelector('b').textContent = `${s.beats - s.beat} left of ${s.beats}`;
+    beatBar.querySelector('u').style.width = `${(100 * (s.beats - s.beat)) / s.beats}%`; beatBar.querySelector('b').textContent = beatsWord(s.beats - s.beat, s.beats);
     beatBar.classList.toggle('is-low', s.beats - s.beat < s.beats * 0.15);
     waitBtn.disabled = s.done;
   }

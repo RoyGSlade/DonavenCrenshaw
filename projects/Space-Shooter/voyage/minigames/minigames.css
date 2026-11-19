@@ -476,3 +476,9 @@ a.gm-train,a.gm-train:hover,a.gm-train:visited{color:#082126}
 
 /* A result card's button takes focus so the keyboard can press it, but a tap or click should not leave a ring on it. */
 .rp-result button.no-ring:focus,.rp-result button.no-ring:focus-visible{outline:none}
+
+/* Phone audit (round 3): where a game's play element can grow, it takes the free height instead of leaving a band. Full screen only. */
+.wb-full .wb-fstage>.rp-panel:is(.hk-panel,.it-panel,.hg-panel)>:is(.rp-eyebrow,.rp-status){margin-bottom:0}
+.wb-full .wb-fstage>.rp-panel.hk-panel>.hk-canvas{flex:1 1 0!important;height:auto;min-height:220px;margin:6px 0}
+.wb-full .wb-fstage>.rp-panel.it-panel>.it-ladder{flex:1 1 auto!important;grid-auto-rows:minmax(44px,1fr);margin:8px 0}
+.wb-full .wb-fstage>.rp-panel.hg-panel>.hg-track{flex:1 1 0!important;height:auto;min-height:168px;margin:10px 0 0}
