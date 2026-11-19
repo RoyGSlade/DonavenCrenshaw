@@ -4,7 +4,8 @@
 // points count (you train with what you have) but the roll is always Steady, tier 0.
 // Pure: the wallet and the hour log belong to the caller. Numbers are PLACEHOLDERS for the economy tune.
 import { cleanSkillPoints } from './picker.js';
-import { setupRepair, setupHack, setupHaggle, setupPersuade, setupIntimidate, setupCraft, setupNav, setupStealth, setupPilot, REPAIR_CATEGORIES, HACK_CATEGORIES, SOCIAL_CATEGORIES, CRAFT_CATEGORIES, NAV_CATEGORIES, STEALTH_CATEGORIES, PILOT_CATEGORIES } from './setup.js';
+import { setupNavTrainer, PERI_CATEGORIES } from './perihelionEntry.js';
+import { setupRepair, setupHack, setupHaggle, setupPersuade, setupIntimidate, setupCraft, setupStealth, setupPilot, REPAIR_CATEGORIES, HACK_CATEGORIES, SOCIAL_CATEGORIES, CRAFT_CATEGORIES, STEALTH_CATEGORIES, PILOT_CATEGORIES } from './setup.js';
 
 /** Where skill points are spent (design doc: "Spend skill points in the holodeck gym"): spending and training are one place. */
 export const SPEND_AT = 'gym';
@@ -19,7 +20,7 @@ export const GYM_GAMES = Object.freeze([
   { id: 'persuade', skill: 'social', name: 'Persuade', setup: (o) => setupPersuade(o), cats: SOCIAL_CATEGORIES },
   { id: 'intimidate', skill: 'social', name: 'Intimidate', setup: (o) => setupIntimidate(o), cats: SOCIAL_CATEGORIES },
   { id: 'craft', skill: 'crafting', name: 'Heat and shape', setup: (o) => setupCraft(o), cats: CRAFT_CATEGORIES },
-  { id: 'nav', skill: 'navigation', name: 'Plot the lane', setup: (o) => setupNav(o), cats: NAV_CATEGORIES },
+  { id: 'nav', skill: 'navigation', name: 'Perihelion trainer sectors', setup: (o) => setupNavTrainer(o), cats: PERI_CATEGORIES },
   { id: 'stealth', skill: 'stealth', name: 'Shadow slip', setup: (o) => setupStealth(o), cats: STEALTH_CATEGORIES },
   { id: 'pilot', skill: 'piloting', name: 'Touchdown', setup: (o) => setupPilot(o), cats: PILOT_CATEGORIES },
 ]);

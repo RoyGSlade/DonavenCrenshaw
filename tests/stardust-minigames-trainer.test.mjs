@@ -7,6 +7,9 @@ import { describeSkill, CATEGORIES } from '../projects/Space-Shooter/voyage/mini
 import { PAGES, BOOK_SKILLS, pagesOf, unlockedPages, nextPage, shuffledOrder, isRight, rereadWords, pageWords, pageXp, lineParts } from '../projects/Space-Shooter/voyage/minigames/books.js';
 import { FACTS, FACT_IDS, factHolds } from '../projects/Space-Shooter/voyage/minigames/bookFacts.js';
 import { answerPage, settleGallery, trainingOf, gallerySetup, lessonsFor, canStart, galleryLeft, GALLERY_CAP_XP, TRAINING, RAIL } from '../projects/Space-Shooter/voyage/minigames/trainer.js';
+import { sectorStatus, settleSector } from '../projects/Space-Shooter/voyage/minigames/trainer.js';
+import { GYM_GAMES, gymGame, gymSetup } from '../projects/Space-Shooter/voyage/minigames/gym.js';
+import { TRAINER_SECTORS, setupNavTrainer, trainerSettle } from '../projects/Space-Shooter/voyage/minigames/perihelionEntry.js';
 import { GYM } from '../projects/Space-Shooter/voyage/minigames/gym.js';
 import { cleanState, freshState } from '../projects/Space-Shooter/voyage/workbench/state.js';
 
@@ -199,7 +202,7 @@ test('hud words: spread is tight, medium or wide, and the range is as tall as th
 test('the trainer shows each skill its own training, with navigation left as a coming slot', () => {
   assert.deepEqual(RAIL.slice().sort(), Object.keys(TRAINING).sort());
   assert.equal(trainingOf('shooting'), 'gallery'); for (const s of ['crafting', 'repair', 'hacking']) assert.equal(trainingOf(s), 'book');
-  assert.equal(trainingOf('navigation'), 'coming'); for (const s of ['stealth', 'piloting', 'social']) assert.equal(trainingOf(s), 'replay');
+  assert.equal(trainingOf('navigation'), 'sectors'); for (const s of ['stealth', 'piloting', 'social']) assert.equal(trainingOf(s), 'replay');
   assert.deepEqual(lessonsFor(1).map((l) => l.open), [true, false, false]); assert.deepEqual(lessonsFor(7).map((l) => l.open), [true, true, true]);
   assert.equal(gallerySetup({ level: 1, lesson: 3 }).lesson, 1, 'a lesson the level has not opened is not served');
   assert.equal(gallerySetup({ level: 7, lesson: 3, points: { ammo: 2 } }).magazine, 8);
@@ -207,4 +210,20 @@ test('the trainer shows each skill its own training, with navigation left as a c
 });
 test('the workbench state keeps learned pages, drops unknown ones, and a fresh state has none', () => {
   assert.deepEqual(freshState().learned, {}); assert.deepEqual(cleanState({ learned: { 'repair-tee': true, nope: true, 'hacking-grade': 1 } }).learned, { 'repair-tee': true });
+});
+
+test('navigation trains on Perihelion: the gym replay is the trainer setup, sectors open in order, stars pay once, free', () => {
+  assert.equal(GYM_GAMES.length, 9, 'still nine gym games'); assert.equal(gymGame('nav').name, 'Perihelion trainer sectors');
+  assert.deepEqual(gymSetup('nav', { level: 5, points: { time: 2, fuel: 2, warning: 1 } }), setupNavTrainer({ points: { time: 2, fuel: 2, warning: 1 }, level: 5 }));
+  assert.equal(gymSetup('nav', { level: 1 }).tier, 0);
+  const none = sectorStatus({}); assert.equal(none.length, 5); assert.deepEqual(none.map((x) => x.unlocked), [true, false, false, false, false]);
+  const one = sectorStatus({ [TRAINER_SECTORS[0].id]: { stars: 1, bestFuel: 10, bestTurns: 3 } }); assert.deepEqual(one.map((x) => x.unlocked), [true, true, false, false, false]);
+  const res = (stars, id = TRAINER_SECTORS[0].id) => ({ success: true, mode: 'trainer', sector: id, stars, turns: 3, fuelUsed: 12, xp: 2 * stars });
+  const a = settleSector({ navProgress: {}, result: res(2) }); assert.equal(a.paid, 4); assert.match(a.said, /\+4 navigation XP for 2 new stars/);
+  const b = settleSector({ navProgress: a.navProgress, result: res(2) }); assert.equal(b.paid, 0); assert.match(b.said, /already have/);
+  const c = settleSector({ navProgress: a.navProgress, result: res(3) }); assert.equal(c.paid, 2);
+  assert.equal(settleSector({ navProgress: {}, result: { success: false } }).paid, 0);
+  assert.equal(trainerSettle({}, res(3)).xp, 6, 'a sector pays at most 6 XP, once');
+  assert.deepEqual(cleanState({ navProgress: { [TRAINER_SECTORS[1].id]: { stars: 9, bestFuel: 3, bestTurns: 2 }, bad: { stars: 1 } } }).navProgress, { [TRAINER_SECTORS[1].id]: { stars: 3, bestFuel: 3, bestTurns: 2 } });
+  assert.deepEqual(freshState().navProgress, {});
 });

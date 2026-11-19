@@ -4,17 +4,18 @@
 //   gallery  shooting: the shooting gallery (gallery.js)
 //   book     crafting, repair, hacking: read a page, answer a question (books.js)
 //   replay   stealth, piloting, social: the gym's replay of the mini-game at a Steady roll (gym.js), as before
-//   coming   navigation: a slot for the Perihelion lane game that another lane is building (NAV2-LANE.md); the replay stays until it lands
+//   sectors  navigation: Perihelion's five trainer sectors, unlocked in order; stars pay 2 XP each, once (perihelionEntry.js trainerSettle)
 // The entry fee (GYM.cost) is the gym's, unchanged, for a gallery round or a replay. The hour's cap is GYM.capXp for replays and GALLERY_CAP_XP for the
 // gallery. Book pages are free and exempt from the cap (they pay once). All placeholders for the economy tune.
 import { GYM, gymGamesFor, leftThisHour, paidThisHour, trainRun } from './gym.js';
 import { setupShooting, SHOOTING_LESSONS } from './setup.js';
+import { TRAINER_SECTORS, trainerSettle } from './perihelionEntry.js';
 import { pageById, pageXp, isLearned, rereadWords, isRight } from './books.js';
 
 /** The kind of training a skill has. */
 export const TRAINING = Object.freeze({
   shooting: 'gallery', crafting: 'book', repair: 'book', hacking: 'book',
-  stealth: 'replay', piloting: 'replay', social: 'replay', navigation: 'coming',
+  stealth: 'replay', piloting: 'replay', social: 'replay', navigation: 'sectors',
 });
 export const trainingOf = (skill) => TRAINING[skill] || 'replay';
 /** The skills in the rail, in the order the skills menu shows them. */
@@ -76,3 +77,21 @@ export function answerPage({ pageId, order, position, credits, log = {}, learned
 }
 
 export { GYM, gymGamesFor, leftThisHour, trainRun };
+
+/** The five Perihelion trainer sectors for the screen: [{ index, id, name, number, stars, bestTurns, bestFuel, unlocked }]. A sector opens when the one before has a star. */
+export function sectorStatus(navProgress = {}) {
+  return TRAINER_SECTORS.map((x, index) => {
+    const mine = navProgress[x.id] || { stars: 0, bestFuel: null, bestTurns: null };
+    const before = index === 0 ? null : navProgress[TRAINER_SECTORS[index - 1].id];
+    return { index, id: x.id, name: x.name, number: x.number, stars: mine.stars || 0, bestTurns: mine.bestTurns, bestFuel: mine.bestFuel, unlocked: index === 0 || (before?.stars || 0) >= 1 };
+  });
+}
+/**
+ * Settle a finished sector: stars pay 2 XP each once (a replay pays only for stars above the best), free and uncapped like a book page.
+ * Returns { ok, navProgress, paid, newStars, said }. Never mutates.
+ */
+export function settleSector({ navProgress = {}, result }) {
+  const r = trainerSettle(navProgress, result);
+  const said = !result?.success ? 'Sector lost. No XP.' : r.xp > 0 ? `+${r.xp} navigation XP for ${r.newStars} new star${r.newStars === 1 ? '' : 's'}.` : 'Cleared again: you already have these stars, so no new XP.';
+  return { ok: true, navProgress: r.progress, paid: r.xp, newStars: r.newStars, said };
+}

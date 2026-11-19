@@ -5,6 +5,7 @@
 import { newProgress, addXp, scanSnapshot, reprint, unscanned } from '../minigames/progress.js';
 import { cleanSkillPoints } from '../minigames/picker.js';
 import { PAGES } from '../minigames/bookPages.js';
+import { TRAINER_SECTORS } from '../minigames/perihelionData.js';
 import { ROLL_SKILLS, STATS, STAT_BASELINE, LEVEL_MIN, LEVEL_MAX } from '../data.js';
 
 export const STORAGE_KEY = 'stardust.workbench.v1';
@@ -16,7 +17,7 @@ const SKILL_IDS = ROLL_SKILLS.map((s) => s.id);
 /** A fresh test state: every skill at level 1, nothing spent, scanned at the start, 100 credits. */
 export function freshState() {
   const progress = newProgress();
-  return { progress, snap: scanSnapshot(progress), credits: START_CREDITS, gymLog: {}, learned: {}, dc: 12, deaths: 0, scans: 0, xpPaid: 0, said: 'A fresh test state.' };
+  return { progress, snap: scanSnapshot(progress), credits: START_CREDITS, gymLog: {}, learned: {}, navProgress: {}, dc: 12, deaths: 0, scans: 0, xpPaid: 0, said: 'A fresh test state.' };
 }
 
 /** What the d20 and the minigames read: the real character shape (levels, points) with stats at baseline, so only level and points move the roll. */
@@ -84,7 +85,7 @@ export function cleanState(input) {
   const progress = fixProgress(input.progress);
   const snap = input.snap ? fixProgress(input.snap) : scanSnapshot(progress);
   const n = (v, d) => (Number.isFinite(v) && v >= 0 ? Math.trunc(v) : d);
-  return { ...base, progress, snap: scanSnapshot(snap), credits: n(input.credits, base.credits), gymLog: input.gymLog && typeof input.gymLog === 'object' && !Array.isArray(input.gymLog) ? input.gymLog : {}, learned: Object.fromEntries(PAGES.filter((p) => input.learned?.[p.id] === true).map((p) => [p.id, true])), dc: DCS.includes(input.dc) ? input.dc : 12, deaths: n(input.deaths, 0), scans: n(input.scans, 0), xpPaid: n(input.xpPaid, 0), said: 'Welcome back to the workbench.' };
+  return { ...base, progress, snap: scanSnapshot(snap), credits: n(input.credits, base.credits), gymLog: input.gymLog && typeof input.gymLog === 'object' && !Array.isArray(input.gymLog) ? input.gymLog : {}, learned: Object.fromEntries(PAGES.filter((p) => input.learned?.[p.id] === true).map((p) => [p.id, true])), navProgress: Object.fromEntries(TRAINER_SECTORS.filter((x) => Number.isFinite(input.navProgress?.[x.id]?.stars)).map((x) => { const p = input.navProgress[x.id]; return [x.id, { stars: Math.max(0, Math.min(3, Math.trunc(p.stars))), bestFuel: Number.isFinite(p.bestFuel) ? p.bestFuel : null, bestTurns: Number.isFinite(p.bestTurns) ? p.bestTurns : null }]; })), dc: DCS.includes(input.dc) ? input.dc : 12, deaths: n(input.deaths, 0), scans: n(input.scans, 0), xpPaid: n(input.xpPaid, 0), said: 'Welcome back to the workbench.' };
 }
 
 /** Load and save (storage is optional: a private window or a test just keeps it in memory). */

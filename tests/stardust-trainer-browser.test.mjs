@@ -129,11 +129,41 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
         await shot(`t8-book-${skill}-right`);
       }
 
-      // ---- navigation has a slot for the Perihelion game
+      // ---- navigation trains on Perihelion's five trainer sectors, opened in order
       await tap('.tr-skill[data-skill="navigation"]');
-      await page.waitForSelector('.tr-coming');
-      assert.match(await page.locator('.tr-coming').innerText(), /COMING/);
-      await shot('t9-navigation-coming');
+      await page.waitForSelector('.tr-sectors');
+      assert.equal(await page.locator('.tr-sector').count(), 5);
+      assert.equal(await page.locator('.tr-fly:not([disabled])').count(), 1, 'only the first sector is open');
+      assert.equal(await page.locator('.tr-coming').count(), 0);
+      await shot('t9-navigation-sectors');
+      const n0 = await state(page);
+      await tap('.tr-fly[data-sector="0"]');
+      await page.waitForSelector('.pr-panel', { state: 'attached' });
+      await page.waitForTimeout(400);
+      if (await page.locator('.pr-begin:visible').count()) await tap('.pr-begin');
+      await page.waitForTimeout(300);
+      const plans = await page.evaluate(async () => { const b = await import('/projects/Space-Shooter/voyage/minigames/perihelionBot.js'); const p = document.querySelector('.pr-panel'); window.__p = b.solve(p.__state, { angles: 36, beam: 5 }).plans; p.__view.speed = 4; return window.__p.length; });
+      assert.ok(plans >= 1);
+      for (let i = 0; i < plans; i++) {
+        await page.evaluate((k) => { const p = document.querySelector('.pr-panel'), pl = window.__p[k]; p.__view.plan(pl.angle, pl.thrust); p.__view.launch(); }, i);
+        if (i === 0) { await page.waitForTimeout(500); await shot('t11-sector-mid-burn'); }
+        await page.waitForFunction(() => document.querySelector('.pr-panel').__state.phase !== 'burn', null, { timeout: 10000 });
+      }
+      await page.waitForSelector('.pr-result');
+      await page.waitForTimeout(400);
+      assert.equal(await page.locator('.pr-result .ga-lines [data-line]').count(), 4, 'turns, fuel, hull, marks');
+      assert.match(await page.locator('.pr-result').innerText(), /Total \+\d+ Navigation XP/);
+      assert.ok(await page.locator('.pr-bigstars i.on').count() >= 1, 'big stars');
+      await shot('t12-sector-result');
+      await page.waitForTimeout(600); await page.click('.pr-result button');
+      await page.waitForSelector('.tr-sectors');
+      const n1 = await state(page);
+      assert.equal(n1.credits, n0.credits, 'sectors are free');
+      assert.ok(n1.progress.xp.navigation > n0.progress.xp.navigation || n1.progress.levels.navigation > n0.progress.levels.navigation, 'stars paid XP');
+      assert.ok(Object.values(n1.navProgress)[0].stars >= 1, 'the stars are saved');
+      assert.equal(await page.locator('.tr-fly:not([disabled])').count(), 2, 'the next sector opened');
+      assert.deepEqual(n1.progress.points.navigation || {}, n0.progress.points.navigation || {}, 'no skill point');
+      await shot('t9-navigation-sectors-after');
       if (!phone) for (const w of [1440, 1024]) {
         await page.setViewportSize({ width: w, height: 800 }); await page.waitForTimeout(300);
         const clip = await page.evaluate(() => [...document.querySelectorAll('.tr-skill')].map((b) => { const t = b.querySelector('b'); return [t.textContent, t.scrollWidth - t.clientWidth, b.scrollWidth - b.clientWidth]; }).filter(([, a, c]) => a > 0 || c > 0));

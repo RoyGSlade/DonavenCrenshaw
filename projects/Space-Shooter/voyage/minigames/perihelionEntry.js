@@ -44,9 +44,10 @@ export function playNavField(root, { seed = 1, setup, title = 'Plot a burn', sou
   return playPerihelion(root, { state: createNavField({ seed, setup }), title, sound, reducedMotion });
 }
 /** Play one trainer sector on screen. opts: { index, setup, sound, reducedMotion }. */
-export function playNavTrainer(root, { index = 0, setup, sound = () => {}, reducedMotion = () => false } = {}) {
+export function playNavTrainer(root, { index = 0, setup, sound = () => {}, reducedMotion = () => false, progress = null } = {}) {
   const state = createNavTrainer({ index, setup });
-  return playPerihelion(root, { state, title: state.name, sound, reducedMotion });
+  // With the saved progress the result card shows what this run really pays (stars above the best so far).
+  return playPerihelion(root, { state, title: state.name, sound, reducedMotion, xpFor: progress ? (r) => trainerSettle(progress, r).xp : null });
 }
 
 /** What a trainer sector can pay: 2 XP per star. */

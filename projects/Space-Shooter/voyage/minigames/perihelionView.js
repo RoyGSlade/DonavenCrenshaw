@@ -12,7 +12,7 @@ const COL = { cyan: '#81e6df', amber: '#ffad72', silver: '#d6e2ec', violet: '#b9
 const MOD = { standard: COL.cyan, refuel: COL.green, slipstream: COL.violet, unstable: COL.amber };
 const MAX_DRAG = 200; // world units of drag for 100% thrust
 
-export function playPerihelion(root, { state, title: title0 = 'Perihelion', sound = () => {}, reducedMotion = () => false } = {}) {
+export function playPerihelion(root, { state, title: title0 = 'Perihelion', sound = () => {}, reducedMotion = () => false, xpFor = null } = {}) {
   const s = state;
   // On a desktop the game owns the screen like the trainer's gallery: a fixed overlay on <body>, HUD across the top, map as big as fits.
   const full = typeof matchMedia === 'function' && matchMedia('(min-width: 900px)').matches;
@@ -491,14 +491,27 @@ export function playPerihelion(root, { state, title: title0 = 'Perihelion', soun
     paintHud();
     say(WHY[r.how] || '');
     burnBtn.hidden = coastBtn.hidden = quitBtn.hidden = markBtn.hidden = true;
-    const stars = '★'.repeat(r.stars) + '☆'.repeat(3 - r.stars);
     const goBtn = h('button', { type: 'button', class: 'primary ui-btn', text: r.success ? 'Continue' : 'Step back' });
-    const par = r.success ? ` Par: ${r.parTurns} turns${r.stars < 2 || r.turns > r.parTurns ? '' : ' (met)'}, ${r.parFuel} fuel.` : '';
-    const line = r.success
-      ? `${r.turns} of ${r.maxTurns} turns · fuel used ${whole(r.fuelUsed)}${r.fuelSaved >= 0.5 ? ` (your points saved ${whole(r.fuelSaved)})` : ''} · hull ${r.hullLeft} of ${s.ship.maxHull} · ${r.marks} mark${r.marks === 1 ? '' : 's'} · +${r.xp} Navigation XP.${par}`
-      : `${WHY[r.how]} ${r.turns} turn${r.turns === 1 ? '' : 's'}, fuel used ${whole(r.fuelUsed)}. No XP.`;
-    const card = h('div', { class: `rp-result ui-card ${r.success ? 'is-ok' : 'is-bad'}`, role: 'status', 'data-outcome': r.success ? 'arrived' : 'lost' },
-      h('b', { class: 'rp-stars', text: r.success ? stars : r.how === 'hull' ? 'HULL LOST' : 'OUT OF TURNS' }), h('span', { text: line }), goBtn);
+    const pays = r.success ? (xpFor ? xpFor(r) : r.xp) : 0;
+    // The same card as the shooting gallery's results: big stars, then one line each for turns, fuel, hull, marks and XP.
+    const row = (id, label, detail, tag, paid) => h('li', { class: paid ? 'is-paid' : '', 'data-line': id }, h('b', { text: label }), h('span', { text: detail }), h('em', { text: tag }));
+    const lines = r.success ? [
+      row('turns', 'Turns', `${r.turns} of ${r.maxTurns} (par ${r.parTurns})`, r.turns <= r.parTurns ? 'par met' : 'over par', r.turns <= r.parTurns),
+      row('fuel', 'Fuel', `${whole(r.fuelUsed)} used (par ${r.parFuel})${r.fuelSaved >= 0.5 ? `, your points saved ${whole(r.fuelSaved)}` : ''}`, r.fuelUsed <= r.parFuel ? 'par met' : 'over par', r.fuelUsed <= r.parFuel),
+      row('hull', 'Hull', `${r.hullLeft} of ${s.ship.maxHull} left`, r.hullLeft >= s.ship.maxHull ? 'whole' : 'hit', r.hullLeft >= s.ship.maxHull),
+      row('marks', 'Marks', `${r.marks} ring${r.marks === 1 ? '' : 's'} pressed`, r.marks > 0 ? 'good' : '--', r.marks > 0),
+    ] : [
+      row('turns', 'Turns', `${r.turns} of ${r.maxTurns}`, '--', false),
+      row('fuel', 'Fuel', `${whole(r.fuelUsed)} used`, '--', false),
+      row('hull', 'Hull', `${r.hullLeft} of ${s.ship.maxHull} left`, '--', false),
+    ];
+    const title = r.success ? 'SECTOR CLEARED' : r.how === 'hull' ? 'HULL LOST' : 'OUT OF TURNS';
+    const card = h('div', { class: `rp-result ui-card ga-result pr-result ${r.success ? 'is-ok' : 'is-bad'}`, role: 'status', 'data-outcome': r.success ? 'arrived' : 'lost' },
+      h('b', { class: 'rp-stars', text: title }),
+      r.success ? h('p', { class: 'pr-bigstars', 'aria-label': `${r.stars} of 3 stars` }, ...[1, 2, 3].map((n) => h('i', { class: n <= r.stars ? 'on' : '', text: '★' }))) : null,
+      h('ul', { class: 'ga-lines' }, ...lines),
+      h('p', { class: 'ga-total', text: r.success ? (pays > 0 ? `Total +${pays} Navigation XP` : 'No new XP: you have these stars already.') : `${WHY[r.how] || ''} No XP.` }),
+      h('p', { class: 'ga-note', text: r.success ? 'Three stars wants par turns and par fuel. Training pays XP, never skill points.' : 'Step back and try again.' }), goBtn);
     setTimeout(() => {
       panel.append(card); card.scrollIntoView({ block: 'nearest' });
       let armed = false; setTimeout(() => { armed = true; goBtn.focus({ preventScroll: true }); }, 450);

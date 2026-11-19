@@ -14,7 +14,8 @@ import { TALKS, nextAfterCheck } from './talks.js';
 import { sparSetup, sparXp, sparSaid } from './spar.js';
 import { branchOf } from '../minigames/sceneHook.js';
 import { gymGame, trainRun, gymLoadout, gymSetup } from '../minigames/gym.js';
-import { trainingOf, gallerySetup, settleGallery, answerPage, galleryLeft } from '../minigames/trainer.js';
+import { trainingOf, gallerySetup, settleGallery, answerPage, galleryLeft, settleSector } from '../minigames/trainer.js';
+import { setupNavTrainer, playNavTrainer } from '../minigames/perihelionEntry.js';
 import { nextPage, shuffledOrder } from '../minigames/books.js';
 import { createGallery, rangeHeight } from '../minigames/gallery.js';
 import { playGallery } from '../minigames/galleryView.js';
@@ -205,12 +206,33 @@ export function createWorkbench({ store, bus, onfoot, dialogueBox, sheet, hud, t
     } else commit({ ...state, said: 'You left the range. No XP, no fee.' }, { silent: true });
     openGym();
   }
+  /** Fly one Perihelion trainer sector: stars pay XP once (free, uncapped), and the result card says what it really paid. */
+  async function flySector(index) {
+    const { level, points } = gymLoadout(state.progress, 'navigation');
+    const setup = setupNavTrainer({ points, level });
+    closePanel();
+    sheet.stage.replaceChildren();
+    const stage = h('div', { class: 'wb-stage' });
+    sheet.stage.append(stage);
+    showSheet(true, { word: 'PERIHELION · TRAINER', titleText: 'Plot a burn' });
+    hold(true);
+    let result = null;
+    try { result = await playNavTrainer(stage, { index, setup, sound: () => {}, reducedMotion, progress: state.navProgress }); }
+    catch (error) { console.warn('Stardust workbench: Perihelion could not run', error); }
+    sheet.stage.replaceChildren(); showSheet(false); hold(false);
+    if (result) {
+      const r = settleSector({ navProgress: state.navProgress, result });
+      const next = earnXp({ ...state, navProgress: r.navProgress }, 'navigation', r.paid).state;
+      commit({ ...next, said: r.said });
+    } else commit({ ...state, said: 'You left the sector. No XP.' }, { silent: true });
+    openGym();
+  }
   const openGym = () => openPanel('HOLODECK GYM', 'Train a skill', (pane) => renderTrainer(pane, {
     state, selected: gymSkill, now: Date.now(), lesson: gymLesson, book: bookFor(gymSkill), pointsOpen,
   }, {
     onSelect: (id) => { gymSkill = id; api.openPanel?.draw(); }, onLesson: (n) => { gymLesson = n; api.openPanel?.draw(); },
     onStart: () => playRange(), onAnswer: answer, onNext: () => { bookCur = { ...bookCur, lastId: bookCur.page?.id ?? bookCur.lastId, page: null, answered: null }; api.openPanel?.draw(); },
-    onReplay: (id) => train(id), onPoints: (skill, pts) => commit(setPoints(state, skill, pts), { silent: true }),
+    onReplay: (id) => train(id), onSector: (i) => flySector(i), onPoints: (skill, pts) => commit(setPoints(state, skill, pts), { silent: true }),
     onPointsToggle: (on) => { pointsOpen = on; }, onClose: closePanel,
   }));
 

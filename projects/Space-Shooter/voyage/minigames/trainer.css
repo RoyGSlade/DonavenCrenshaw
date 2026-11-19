@@ -191,3 +191,18 @@
 .tr-root .tr-skill{font-size:8px}
 .bk-craft .bk-paper{padding-bottom:30px}
 .tr-root .tr-skill{font-size:10px}
+
+/* Perihelion's result card: the gallery's card with big stars */
+.pr-result .pr-bigstars{margin:0;display:flex;gap:6px;justify-content:center;font-size:44px;line-height:1}
+.pr-result .pr-bigstars i{font-style:normal;color:#2a3d4d;text-shadow:none}
+.pr-result .pr-bigstars i.on{color:#ffe08a;text-shadow:0 0 14px #ffb54799}
+.pr-result .ga-lines li{grid-template-columns:70px 1fr auto}
+.pr-result .rp-stars{text-align:center}
+.pr-full .rp-result.pr-result{width:min(480px,92vw);background:#07111cf2}
+.tr-sectors{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.tr-sector{display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:center;padding:8px 10px;border:1px solid #2a4152;border-radius:6px;background:#07111c}
+.tr-sector b{font:700 14px Inter,sans-serif;color:#eaf4f5}
+.tr-sector small{grid-column:1;font:11px Consolas,monospace;color:#9db3c2}
+.tr-sector .tr-stars{grid-column:2;grid-row:1;font-size:18px;letter-spacing:2px;color:#2a3d4d}.tr-sector .tr-stars .on{color:#ffe08a}
+.tr-sector button{grid-column:2;grid-row:2;min-height:44px}
+.tr-sector.is-locked{opacity:.55}

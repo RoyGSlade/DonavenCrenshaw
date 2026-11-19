@@ -6,7 +6,7 @@ import { xpToNext } from './progress.js';
 import { unspent } from './picker.js';
 import { renderPicker } from './extrasView.js';
 import { GYM } from './gym.js';
-import { RAIL, SKILL_COLOURS, trainingOf, lessonsFor, gallerySetup, canStart, leftThisHour, galleryLeft, GALLERY_CAP_XP, gymGamesFor } from './trainer.js';
+import { RAIL, SKILL_COLOURS, trainingOf, lessonsFor, gallerySetup, canStart, leftThisHour, galleryLeft, GALLERY_CAP_XP, gymGamesFor, sectorStatus } from './trainer.js';
 import { spreadWord } from './gallery.js';
 import { renderBook } from './booksView.js';
 import { SHOOTING_BASE } from './setup.js';
@@ -15,7 +15,7 @@ const h = (tag, attrs = {}, ...kids) => { const el = document.createElement(tag)
 const NAME = Object.fromEntries(ROLL_SKILLS.map((s) => [s.id, s.name]));
 const emblem = (skill, lit) => new URL(`../ui/skills/emblem-${skill}-${lit ? 'lit' : 'dim'}.webp`, import.meta.url).href;
 const button = (text, onClick, attrs = {}) => { const b = h('button', { type: 'button', ...attrs, text }); b.addEventListener('click', onClick); return b; };
-const KIND_WORD = { gallery: 'Shooting gallery', book: 'Read and answer', replay: 'Gym replay', coming: 'Coming' };
+const KIND_WORD = { gallery: 'Shooting gallery', book: 'Read and answer', replay: 'Gym replay', sectors: 'Perihelion sectors' };
 
 /** The three shooting paths as drawn pieces: each shrinks or grows with its points, so the loadout shows what the points do. */
 function loadoutStrip(setup) {
@@ -56,7 +56,7 @@ export function renderTrainer(root, ctx, handlers) {
       h('i', { class: 'ex-bar tr-xp' }, h('u', { style: `width:${Number.isFinite(need) ? Math.round((100 * into) / need) : 100}%` })),
       h('p', { class: 'tr-kind', text: `${KIND_WORD[kind]} · training pays XP, never skill points` })));
 
-  const wallet = h('p', { class: 'tr-wallet', id: 'gm-wallet', role: 'status', text: kind === 'book' ? `${state.credits} credits · pages are free` : `${state.credits} credits · the gym still pays ${left} of ${kind === 'gallery' ? GALLERY_CAP_XP : GYM.capXp} ${NAME[skill]} XP this hour` });
+  const wallet = h('p', { class: 'tr-wallet', id: 'gm-wallet', role: 'status', text: kind === 'book' || kind === 'sectors' ? `${state.credits} credits · ${kind === 'book' ? 'pages' : 'sectors'} are free` : `${state.credits} credits · the gym still pays ${left} of ${kind === 'gallery' ? GALLERY_CAP_XP : GYM.capXp} ${NAME[skill]} XP this hour` });
 
   const train = h('div', { class: 'tr-train', 'data-kind': kind });
   if (kind === 'gallery') {
@@ -79,21 +79,25 @@ export function renderTrainer(root, ctx, handlers) {
     renderBook(train, { skill, page: book.page, order: book.order, answered: book.answered, level, learnedMap: state.learned, learned: book.page ? Boolean(state.learned?.[book.page.id]) : false, canAnswer: { ok: true, reason: '' } }, { onAnswer: handlers.onAnswer, onNext: handlers.onNext });
     train.append(h('p', { class: 'rp-help tr-fee', text: 'Pages are free. Each pays its XP once, the first time you answer it right.' }));
   } else {
-    if (kind === 'coming') {
-      train.append(h('div', { class: 'tr-coming', 'data-slot': 'perihelion' },
-        h('b', { text: 'COMING' }),
-        h('p', { text: 'Navigation will train with the Perihelion run, a lane-plotting game built in its own lane. Its slot is saved here.' }),
-        h('p', { class: 'rp-help', text: 'Until it lands, you can replay the lane plot below.' })));
+    if (kind === 'sectors') {
+      train.append(h('h4', { class: 'tr-h', text: 'Perihelion: plot the burn' }),
+        h('p', { class: 'rp-help', text: 'Five sectors, opened in order (a star opens the next). Each star pays 2 XP, once. Free to fly.' }),
+        h('ul', { class: 'tr-sectors' }, ...sectorStatus(state.navProgress).map((x) => h('li', { class: `tr-sector${x.unlocked ? '' : ' is-locked'}`, 'data-sector': String(x.index) },
+          h('b', { text: `${x.number}. ${x.name}` }),
+          h('span', { class: 'tr-stars', 'aria-label': `${x.stars} of 3 stars` }, ...[1, 2, 3].map((n) => h('span', { class: n <= x.stars ? 'on' : '', text: '★' }))),
+          h('small', { text: x.unlocked ? (x.bestTurns != null ? `best ${x.bestTurns} turns, ${Math.round(x.bestFuel)} fuel` : 'not flown yet') : 'locked: earn a star on the sector before' }),
+          button(x.stars ? 'Fly again' : 'Fly', () => handlers.onSector(x.index), { class: 'tr-fly', 'data-sector': String(x.index), disabled: !x.unlocked })))));
+    } else {
+      const games = gymGamesFor(skill);
+      train.append(h('h4', { class: 'tr-h', text: 'Gym replay' }),
+        games.length ? h('ul', { class: 'gm-list' }, ...games.map((g) => {
+          const can = canStart(skill, { credits: state.credits, log: state.gymLog, now });
+          return h('li', { class: 'gm-card', 'data-game': g.id }, h('b', { text: g.name }),
+            h('span', { class: 'gm-skill', text: `${g.skill}, always a Steady roll, with the points you have spent` }),
+            h('span', { text: `A win pays a quarter of the field XP. ${left} of ${GYM.capXp} XP left this hour.` }),
+            h('div', { class: 'gm-row' }, button(`Train (${GYM.cost} credits)`, () => handlers.onReplay(g.id), { class: 'wb-train', 'data-game': g.id, disabled: state.credits < GYM.cost, title: state.credits < GYM.cost ? can.reason : null })));
+        })) : h('p', { class: 'rp-help', text: 'Nothing to replay yet.' }));
     }
-    const games = gymGamesFor(skill);
-    train.append(h('h4', { class: 'tr-h', text: kind === 'coming' ? 'For now: the current replay' : 'Gym replay' }),
-      games.length ? h('ul', { class: 'gm-list' }, ...games.map((g) => {
-        const can = canStart(skill, { credits: state.credits, log: state.gymLog, now });
-        return h('li', { class: 'gm-card', 'data-game': g.id }, h('b', { text: g.name }),
-          h('span', { class: 'gm-skill', text: `${g.skill}, always a Steady roll, with the points you have spent` }),
-          h('span', { text: `A win pays a quarter of the field XP. ${left} of ${GYM.capXp} XP left this hour.` }),
-          h('div', { class: 'gm-row' }, button(`Train (${GYM.cost} credits)`, () => handlers.onReplay(g.id), { class: 'wb-train', 'data-game': g.id, disabled: state.credits < GYM.cost, title: state.credits < GYM.cost ? can.reason : null })));
-      })) : h('p', { class: 'rp-help', text: 'Nothing to replay yet.' }));
   }
 
   const pointsBox = h('div', { class: 'tr-points-body' });

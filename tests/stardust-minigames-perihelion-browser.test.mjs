@@ -117,7 +117,8 @@ test('navigation (Perihelion) in the browser', { skip, timeout: 300000 }, async 
       await page.waitForSelector('.rp-result[data-outcome="arrived"]');
       await page.waitForTimeout(300);
       const card = await page.locator('.rp-result').innerText();
-      assert.match(card, /turns? · fuel used [\d.]+.*hull \d of 3.*\+\d+ Navigation XP/);
+      assert.match(card, /Turns[\s\S]*Fuel[\s\S]*Hull[\s\S]*Marks[\s\S]*Total \+\d+ Navigation XP/);
+      assert.equal(await page.locator('.pr-result .ga-lines [data-line]').count(), 4); assert.ok(await page.locator('.pr-bigstars i.on').count() >= 1);
       await shot('8-result');
       assert.deepEqual(errors, [], 'no page errors');
       await context.close();
