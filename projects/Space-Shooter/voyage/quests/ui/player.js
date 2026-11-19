@@ -222,7 +222,7 @@ export function createQuestPlayer({ root, session, status = () => {}, onEnd = ()
         live = { close: () => {} };
         presenter.minigame({ block: choice.minigame, attempt: v.minigame.attempt, seed: hashSeed(current.run.seed, current.run.steps), node: v.node }, (r) => {
           live = null;
-          doAct({ type: 'minigame', branch: r.branch, xp: r.xp, skill: r.skill, ...(r.price != null ? { price: r.price } : {}) });
+          doAct({ type: 'minigame', branch: r.branch, xp: r.xp, skill: r.skill, ...(r.world && Object.keys(r.world).length ? { world: r.world } : {}), ...(r.price != null ? { price: r.price } : {}) });
         });
       } else {
         // No page to play it (the plain panel): the d20 stands as the result, as it did before the hooks.

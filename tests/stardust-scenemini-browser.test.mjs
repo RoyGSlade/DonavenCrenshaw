@@ -110,11 +110,15 @@ const BOTS = {
       if (idx == null) break; await tap(`.rp-tile[data-i="${idx}"]`); if (i === 3) await mid();
     }
   },
+  // Hacking v2 (mirrors, a portal, firewalls): per firewall put the mirrors in place through the state, catch the portal in its window, fire.
   hack: async (page, tap, mid) => {
-    for (let i = 0; i < 6; i++) {
-      if (await page.locator('.rp-result').count()) break;
-      await page.evaluate(() => { const s = document.querySelector('.hk-panel').__state; if (!s.done) { s.cursor = s.tumblers[s.index].at; s.dir = 0; } });
-      await tap('.hk-btn'); if (i === 1) await mid();
+    for (let stage = 0; stage < 6 && !(await page.locator('.rp-result').count()); stage++) {
+      await page.evaluate(() => { const s = document.querySelector('.mh-panel').__state; s.angles = s.layout.solved.map((v, i) => v ?? s.layout.start[i]); });
+      await page.evaluate(() => new Promise((res) => { import('/projects/Space-Shooter/voyage/minigames/mirrors.js').then((mod) => { const tick = () => { const s = document.querySelector('.mh-panel').__state; if (mod.inWindow(s) && s.portal.cooldown === 0) { document.querySelector('.mh-catch').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true })); res(true); } else requestAnimationFrame(tick); }; tick(); }); }));
+      await page.waitForSelector('.mh-fire:not([disabled])');
+      if (stage === 0) await mid();
+      await tap('.mh-fire');
+      await page.waitForFunction((k) => { const st = document.querySelector('.mh-panel')?.__state; return !st || st.stage > k || st.done; }, stage, { timeout: 12000 });
     }
   },
   haggle: async (page, tap, mid, want = 'win') => {
@@ -165,21 +169,21 @@ test('the opening mini-games in the real game: hack (scene 3), haggle (scene 4),
         await settle(page, 500);
         await shot('1-choice');
         await hooked.click();
-        // The d20 tray says what the roll did to the game; the sheet opens beside the floor.
-        await page.waitForSelector('#hg-minigame:not([hidden]) .rp-panel', { timeout: 15000 });
+        // The d20 tray says what the roll did to the game; the game opens full screen.
+        await page.waitForSelector('.wb-full .rp-panel', { timeout: 15000 }); // the game owns the whole screen (workbench/fullScreen.js)
         await page.waitForSelector('#hg-attempt .ui-attempt-preview:not([hidden])', { timeout: 15000 });
         const preview = await page.locator('#hg-attempt .ui-attempt-preview').innerText();
         assert.match(preview, /^(Rough|Shaky|Steady|Smooth|[A-Za-z]+) roll: .+\./, preview);
         assert.match(await page.locator('#hg-attempt .ui-attempt-verdict').innerText(), /Now play it/);
-        assert.match(await page.locator('#hg-minigame-eyebrow').innerText(), sc.eyebrow);
-        assert.match(await page.locator('#hg-minigame-title').innerText(), sc.title);
+        assert.match(await page.locator('.wb-feyebrow').innerText(), sc.eyebrow);
+        assert.match(await page.locator('.wb-ftitle').innerText(), sc.title);
         await settle(page, 350);
         const m = await page.evaluate(() => {
-          const r = (s) => { const e = document.querySelector(s); if (!e || e.hidden) return null; const b = e.getBoundingClientRect(); return { top: b.top, bottom: b.bottom, left: b.left, right: b.right }; };
-          return { sw: document.documentElement.scrollWidth, iw: innerWidth, ih: innerHeight, sheet: r('#hg-minigame'), frame: getComputedStyle(document.querySelector('#hg-minigame')).borderImageSource, small: [...document.querySelectorAll('#hg-minigame-stage .ui-btn, #hg-minigame-stage .rp-tile')].filter((b) => b.offsetParent && b.getBoundingClientRect().height < 44 && b.getBoundingClientRect().width < 44).length, atRun: JSON.stringify(Object.values(window.__stardust.store.get().quests.active)[0]?.minigame || null) };
+          const r = (s) => { const e = document.querySelector(s); if (!e || e.hidden) return null; const b = e.getBoundingClientRect(); return { top: b.top, bottom: b.bottom, left: b.left, right: b.right, width: b.width, height: b.height }; };
+          return { sw: document.documentElement.scrollWidth, iw: innerWidth, ih: innerHeight, sheet: r('.wb-full'), sheetBehind: !document.getElementById('hg-minigame').hidden, small: [...document.querySelectorAll('.wb-full .ui-btn, .wb-full .rp-tile')].filter((b) => b.offsetParent && b.getBoundingClientRect().height < 44 && b.getBoundingClientRect().width < 44).length, atRun: JSON.stringify(Object.values(window.__stardust.store.get().quests.active)[0]?.minigame || null) };
         });
         assert.ok(m.sw <= m.iw && m.iw === profile.viewport.width, `no sideways scroll, and the page is as wide as the phone (${m.sw} of ${m.iw})`);
-        assert.match(m.frame, /panel\.webp/); assert.ok(m.sheet && m.sheet.top >= 0 && m.sheet.bottom <= m.ih, 'the sheet is on screen');
+        assert.ok(m.sheet && m.sheet.width === m.iw && m.sheet.height === m.ih, 'the game owns the whole screen'); assert.equal(m.sheetBehind, false, 'the side sheet is not showing behind it');
         assert.equal(m.small, 0, 'every tap target is 44px');
         assert.notEqual(m.atRun, 'null', 'the saved run holds the pending mini-game');
         if (sizeName === 'desktop') {
@@ -196,7 +200,7 @@ test('the opening mini-games in the real game: hack (scene 3), haggle (scene 4),
         // Scene 3: a reload in the middle reopens the same mini-game.
         if (sc.id === 'scene3-hack' && sizeName === 'desktop') {
           await page.reload();
-          await page.waitForSelector('#hg-minigame:not([hidden]) .hk-panel', { timeout: 20000 });
+          await page.waitForSelector('.wb-full .mh-panel', { timeout: 20000 });
         }
         const bot = BOTS[sc.kind];
         await bot(page, tap, mid);
@@ -204,7 +208,7 @@ test('the opening mini-games in the real game: hack (scene 3), haggle (scene 4),
         await settle(page, 300); await shot('4-result');
         const cardPay = sc.kind === 'haggle' ? Number((await page.locator('.rp-result').innerText()).match(/(\d+) credits/)[1]) : null;
         await page.click('.rp-result button');
-        await page.waitForSelector('#hg-minigame', { state: 'hidden' });
+        await page.waitForSelector('.wb-full', { state: 'detached' });
         const after = await page.evaluate(() => { const s = window.__stardust.store.get(); return { money: s.money, rep: s.rep, flags: Object.keys(s.flags), active: Object.keys(s.quests.active), done: Object.keys(s.quests.done) }; });
         // The next line shows (the end of the scene, or the corridor fight after a lost hack).
         await readUntilChoices(page, 60);

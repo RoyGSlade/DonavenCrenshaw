@@ -97,11 +97,12 @@ test('entry: only with the new-game switch AND start=workbench; the shipped swit
   assert.equal(newGameFlag({ config: runtimeConfig, search: '?start=workbench', storage }).enabled, false, 'no flag, no room');
 });
 
+// (The shared full-screen helper workbench/fullScreen.js is plain DOM: importing it, as the scene mini-game sheet does, does not ask for the room.)
 test('entry: no map, door, quest or link outside the room reaches it; only boot.js asks for it (talk/ and people/ are the room\'s social layer)', () => {
   assert.ok(!MAP_DEFS.workbench, 'not among the walkable places');
   for (const def of Object.values(MAP_DEFS)) for (const d of def.doors || []) assert.notEqual(d.to, 'workbench');
   const hits = [];
-  const walk = (dir) => { for (const n of readdirSync(dir)) { const p = join(dir, n); const st = statSync(p); if (st.isDirectory()) { if (n === 'node_modules' || n === 'art' || n === 'audio') continue; walk(p); } else if (/\.(js|json|html)$/.test(n) && !p.includes('/voyage/workbench/') && !p.includes('/voyage/talk/') && !p.includes('/voyage/people/')) { const text = readFileSync(p, 'utf8'); if (/workbench\/|start=workbench|WORKBENCH_/.test(text)) hits.push(relative(VOYAGE, p)); } } };
+  const walk = (dir) => { for (const n of readdirSync(dir)) { const p = join(dir, n); const st = statSync(p); if (st.isDirectory()) { if (n === 'node_modules' || n === 'art' || n === 'audio') continue; walk(p); } else if (/\.(js|json|html)$/.test(n) && !p.includes('/voyage/workbench/') && !p.includes('/voyage/talk/') && !p.includes('/voyage/people/')) { const text = readFileSync(p, 'utf8'); if (/workbench\/|start=workbench|WORKBENCH_/.test(text) && text.replace(/import \{ openFullScreen \} from '\.\.\/workbench\/fullScreen\.js';/g, '').match(/workbench\/|start=workbench|WORKBENCH_/)) hits.push(relative(VOYAGE, p)); } } };
   walk(VOYAGE);
   assert.deepEqual(hits, ['boot.js'], 'only the page boot names the room');
   assert.ok(readFileSync(join(VOYAGE, 'boot.js'), 'utf8').includes('wantsWorkbench'));

@@ -383,6 +383,14 @@ function choose(quest, run, ctx, node, index, roller, now) {
 }
 
 // The page hands back how a minigame ended: branch 'win' | 'mid' | 'lose' (sceneHook.branchOf) and the XP it earned.
+const WORLD_KEYS = Object.freeze({ broken: 'boolean', flooding: 'boolean', offline: 'string', system: 'string', systemName: 'string', security: 'string', terminal: 'string', port: 'string', section: 'string' });
+/** Only the known plain facts of a mini-game's world result survive (the page is not trusted with arbitrary data). */
+function cleanWorld(w) {
+  if (!w || typeof w !== 'object') return null;
+  const out = {};
+  for (const [k, type] of Object.entries(WORLD_KEYS)) if (typeof w[k] === type) out[k] = type === 'string' ? w[k].slice(0, 40) : w[k];
+  return Object.keys(out).length ? out : null;
+}
 function finishMinigame(quest, run, ctx, node, action, now) {
   const pending = run.minigame;
   if (!pending || pending.node !== run.node) return 'No minigame to finish.';
@@ -394,6 +402,10 @@ function finishMinigame(quest, run, ctx, node, action, now) {
   const xp = Math.max(0, Math.min(10, Math.trunc(action.xp) || 0));
   if (xp > 0) ctx.out.events.push({ type: 'skill-xp', skill: action.skill, xp });
   if (choice.minigame.kind === 'haggle' && Number.isFinite(action.price)) run.pay = { money: Math.max(0, Math.min(HAGGLE_PAY_MAX, Math.round(action.price))) };
+  // The world result the v2 games already build (a lost coolant line and the valve you shut; a hack that alerted security and locked the terminal):
+  // kept as plain facts on the run and handed to the page as an event. It changes no scene text and no ending: only the branch picks the node.
+  const world = cleanWorld(action.world);
+  if (world) { run.world = { ...(run.world || {}), [choice.minigame.kind]: world }; ctx.out.events.push({ type: 'minigame-world', kind: choice.minigame.kind, world }); }
   pushLog(run, `${choice.minigame.title || choice.minigame.kind}: ${action.branch}.`);
   enter(quest, target, ctx, now);
   return null;
