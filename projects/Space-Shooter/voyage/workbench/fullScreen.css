@@ -31,18 +31,25 @@
    the action buttons are pinned to the bottom of the frame, where the thumb is. */
 @media (max-width:700px){
   .wb-fstage>.rp-panel,.wb-fstage>.rp-panel:is(.hk-panel,.hg-panel,.pc-panel,.it-panel,.mh-panel,.pl-panel,.st-panel,.cf-panel){flex:1 1 0;margin:0;max-width:none;width:100%}
-  .wb-fstage>.rp-panel>:is(.rp-stage,.mh-field,.hk-canvas,.st-grid,.pl-view,.hg-track,.cf-heatbox,.cf-shape,.it-ladder,.pc-hand){margin-block:auto}
-  .wb-fstage>.rp-panel>:is(.rp-foot,.mh-actions,.it-row,.pl-controls,.hk-btn,.nv-back){margin-top:auto}
+  /* Round 3: the play block (the game's HUD row, the play element, the instruction line) is ONE unit, centred in the free height; only the
+     action row pins to the bottom. Order does it without touching any game: eyebrow first, the play block, the instruction, the actions,
+     then small print. Two auto margins (under the nameplate, under the instruction) share the spare height equally. */
+  .wb-fstage>.rp-panel>.rp-eyebrow{order:-1;margin-bottom:auto}
+  .wb-fstage>.rp-panel>.rp-status{order:8;margin-bottom:auto}
+  .wb-fstage>.rp-panel>:is(.rp-foot,.mh-actions,.it-row,.pl-controls,.hk-btn,.nv-back,.hg-take){order:9}
+  .wb-fstage>.rp-panel>.rp-par{order:10}
   .wb-fstage>.rp-panel>:is(.rp-foot,.hk-btn){margin-bottom:6px}
-  /* the needle's price scale stays under its track */
-  .wb-fstage>.hg-panel>.hg-track{margin-bottom:0}.wb-fstage>.hg-panel>.hg-scale{margin-bottom:auto}
+  .wb-fstage>.rp-panel>:is(.rp-foot,.mh-actions,.it-row,.pl-controls){margin-top:6px}
+  /* a game whose instruction is its last line has no actions: the block still centres */
+  /* Haggle: the gauge takes the spare height (about 2.6x its old height), the price scale stays under it. */
+  .hg-panel .hg-track{height:168px;margin-bottom:0}.hg-panel .hg-scale{margin-bottom:10px}
   /* Persuade: all eight cards on one screen, no scrolling inside the frame. Short quote, small type, two columns by four rows. */
   .pc-panel .pc-tells{margin:0 0 4px}.pc-panel .pc-tells li{padding:5px 8px;font-size:13px}
   .pc-panel .pc-lead{margin:2px 0}
-  .pc-panel .pc-hand{grid-template-columns:1fr 1fr;gap:6px;margin-block:auto 6px}
-  .pc-panel .pc-card,.mg-skin .pc-panel .pc-card{min-height:0;padding:2px 4px;gap:1px;border-width:9px 12px 9px 12px;border-image-width:9px 12px 9px 12px}
-  .pc-panel .pc-card b{font-size:10px}
-  .pc-panel .pc-card span{font-size:12px;line-height:1.2;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+  .pc-panel .pc-hand{grid-template-columns:1fr 1fr;grid-auto-rows:minmax(0,1fr);gap:6px;flex:1 1 0;min-height:0;margin:4px 0 6px}
+  .pc-panel .pc-card,.mg-skin .pc-panel .pc-card{min-height:0;padding:2px 4px;gap:2px;justify-content:center;border-width:9px 12px 9px 12px;border-image-width:9px 12px 9px 12px}
+  .pc-panel .pc-card b{font-size:11px}
+  .pc-panel .pc-card span{font-size:16px;line-height:1.2;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
   .pc-panel .pc-card small{min-height:0;font-size:10px}.pc-panel .pc-card small:empty{display:none}
   .pc-panel .pc-card .pc-named{display:none}
 }
