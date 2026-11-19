@@ -34,7 +34,7 @@ export const SKILL_UI = Object.freeze({
   hacking: { name: 'Hacking', short: 'Hack', color: '#3DDC97', icon: 'M8 8h8v8H8zM12 3v5M12 16v5M3 12h5M16 12h5',
     tagline: 'Doors, locks, terminals. Anything with a circuit and an opinion.',
     game: 'Bypass ring', gameLine: 'Splice each tumbler when the sweep crosses the lit window.',
-    cats: [{ id: 'time', name: 'Time' }, { id: 'size', name: 'Fewer tumblers' }, { id: 'retries', name: 'Spare misses' }] },
+    cats: [{ id: 'time', name: 'Time' }, { id: 'size', name: 'Simpler locks' }, { id: 'retries', name: 'Spare misses' }] },
   repair: { name: 'Repair', short: 'Repair', color: '#5EE6E6', icon: 'M14.5 4a4.5 4.5 0 0 0 4.9 6.1L11 18.5a2.1 2.1 0 0 1-3-3l8.4-8.4A4.5 4.5 0 0 0 14.5 4z',
     tagline: 'Pipes, leaks, patches. Keeping a ship that should be scrap in one piece.',
     game: 'Coolant line', gameLine: 'Close every pipe end before the leak pool fills. No open ends allowed.',
