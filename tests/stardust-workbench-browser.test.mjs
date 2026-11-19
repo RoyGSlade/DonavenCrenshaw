@@ -41,8 +41,10 @@ async function use(page, id) {
   assert.equal(got, id, `the thing in reach is ${id} (${await page.evaluate(() => { const w = window.__stardust.onfoot.world; return JSON.stringify({ mode: w.mode, p: [Math.round(w.player.x), Math.round(w.player.y)], busy: window.__stardust.workbench.busy, panel: Boolean(document.querySelector('.of-panel, .of-overlay, .of-talk')), sheet: !document.getElementById('hg-minigame').hidden, dlg: !document.getElementById('hg-dialogue').hidden }); })})`);
 }
 const state = (page) => page.evaluate(() => JSON.parse(JSON.stringify(window.__stardust.workbench.state)));
-const sheetOpen = (page) => page.waitForSelector('#hg-minigame:not([hidden]) .wb-stage .rp-panel', { timeout: 15000 });
-const sheetShut = (page) => page.waitForSelector('#hg-minigame', { state: 'hidden', timeout: 15000 });
+// Every game owns the whole screen (workbench/fullScreen.js): open = the overlay with a panel in it; shut = the overlay gone.
+const sheetOpen = (page) => page.waitForSelector('.wb-full .wb-fstage .rp-panel', { timeout: 15000 });
+const sheetShut = (page) => page.waitForSelector('.wb-full', { state: 'detached', timeout: 15000 });
+const panelShut = (page) => page.waitForSelector('#hg-minigame', { state: 'hidden', timeout: 15000 });
 
 // Each game's bot: plays to the result card by tapping what a player taps (the skin test's bots).
 const BOTS = {
@@ -154,9 +156,10 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
           assert.match(tray, /14 \+ .* = 1\d[\s\S]*needs 12/, `the tray shows the d20 sum (${tray})`);
           if (id === 'repair') await shot('2-station-roll');
           await sheetOpen(page);
-          const m = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, iw: innerWidth, note: document.querySelector('.wb-preview').textContent, title: document.getElementById('hg-minigame-title').textContent, eyebrow: document.getElementById('hg-minigame-eyebrow').textContent, skin: Boolean(document.querySelector('.wb-stage .mg-skin, .wb-stage .ui-panel, .wb-stage .rp-panel')) }));
+          const m = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, iw: innerWidth, note: document.querySelector('.wb-preview')?.textContent ?? '', title: document.querySelector('.wb-ftitle')?.textContent ?? '', eyebrow: document.querySelector('.wb-feyebrow')?.textContent ?? '', full: (() => { const r = document.querySelector('.wb-full').getBoundingClientRect(); return [r.width, r.height]; })(), skin: Boolean(document.querySelector('.wb-fstage .mg-skin, .wb-fstage .ui-panel, .wb-fstage .rp-panel')) }));
           assert.equal(m.sw, m.iw, `${id}: no sideways scroll`);
-          assert.match(m.note, /roll:/, `${id}: preview line`); assert.match(m.eyebrow, /STEADY ROLL/);
+          assert.deepEqual(m.full, [m.iw, await page.evaluate(() => innerHeight)], `${id}: the game owns the whole screen`);
+          if (id !== 'nav') { assert.match(m.note, /roll:/, `${id}: preview line`); assert.match(m.eyebrow, /STEADY ROLL/); } // Perihelion draws its own top bar
           if (id === 'repair') await shot('3-station-game');
           if (id === 'hack') await shot('3b-hack-station-game');
           await playToEnd(page, id, phone);
@@ -177,7 +180,7 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
         const before = await state(page);
         await use(page, 'wb-lock');
         await sheetOpen(page);
-        assert.match(await page.locator('.wb-preview').textContent(), /no clock/i);
+        assert.match(await page.locator('.wb-preview').textContent(), /no clock/i); // the practice lock is full screen too
         await shot('5-practice-lock');
         await playToEnd(page, 'practice', phone);
         await closeCard(page, phone); await sheetShut(page);
@@ -241,13 +244,13 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
         const credits = mid.credits;
         await page.locator('.wb-train[data-game="stealth"]')[sel]();
         await sheetOpen(page);
-        assert.match(await page.locator('#hg-minigame-eyebrow').textContent(), /GYM/);
+        assert.match(await page.locator('.wb-feyebrow').textContent(), /GYM/);
         await playToEnd(page, 'stealth', phone); await closeCard(page, phone);
         await page.waitForSelector('#hg-minigame:not([hidden]) .tr-root');
         const after = await state(page);
         assert.equal(after.credits, credits - 10, 'the gym fee');
         assert.match(after.said, /XP|hour/);
-        await page.locator('.wb-pane .gm-row button', { hasText: 'Close' })[sel](); await sheetShut(page);
+        await page.locator('.wb-pane .gm-row button', { hasText: 'Close' })[sel](); await panelShut(page);
       });
 
       await sub('talks: Tull haggles, Nessa is persuaded, Pip is leaned on, with real checks and results', async () => {
@@ -310,7 +313,7 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
         await page.locator('.wb-dc')[phone ? 'tap' : 'click']();
         assert.equal((await state(page)).dc, 16); await page.locator('.wb-dc')[phone ? 'tap' : 'click'](); await page.locator('.wb-dc')[phone ? 'tap' : 'click']();
         assert.equal((await state(page)).dc, 12);
-        await page.locator('.wb-pane .gm-row button', { hasText: 'Close' })[phone ? 'tap' : 'click'](); await sheetShut(page);
+        await page.locator('.wb-pane .gm-row button', { hasText: 'Close' })[phone ? 'tap' : 'click'](); await panelShut(page);
         // scan: safe
         await use(page, 'wb-scan');
         await page.waitForFunction(() => document.getElementById('wb-hud').dataset.tone === 'safe');
@@ -323,7 +326,7 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
         await page.waitForSelector('#hg-minigame:not([hidden]) .wb-yes');
         assert.match(await page.locator('.wb-pane .ex-chip').innerText(), /10 XP at risk/);
         await shot('11-reprint');
-        await page.locator('.wb-yes')[phone ? 'tap' : 'click'](); await sheetShut(page);
+        await page.locator('.wb-yes')[phone ? 'tap' : 'click'](); await panelShut(page);
         const post = await state(page);
         assert.deepEqual(post.progress.levels, pre.snap.levels); assert.deepEqual(post.progress.xp, pre.snap.xp); assert.equal(post.deaths, 1);
         assert.equal(await page.evaluate(() => document.getElementById('wb-hud').dataset.tone), 'safe');
@@ -334,7 +337,7 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
         await page.evaluate(() => { window.__stardust.workbench.rng = () => 0.65; });
         await use(page, 'wb-reset');
         await page.waitForSelector('#hg-minigame:not([hidden]) .wb-yes');
-        await page.locator('.wb-yes')[phone ? 'tap' : 'click'](); await sheetShut(page);
+        await page.locator('.wb-yes')[phone ? 'tap' : 'click'](); await panelShut(page);
         const fresh = await state(page);
         assert.ok(Object.values(fresh.progress.levels).every((l) => l === 1)); assert.equal(fresh.credits, 100); assert.equal(fresh.xpPaid, 0); assert.equal(fresh.deaths, 0);
         assert.equal(await page.evaluate(() => __stardust.store.get().character.levels.repair), 1);

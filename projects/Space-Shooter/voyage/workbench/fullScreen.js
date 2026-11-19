@@ -15,9 +15,10 @@ const h = (tag, attrs = {}, ...kids) => {
   return el;
 };
 
-export function openFullScreen({ word = '', title = '', note = '', onLeave = () => {}, bare = false } = {}) {
+export function openFullScreen({ word = '', title = '', note = '', onLeave = () => {}, bare = false, noLeave = false } = {}) {
   const leave = h('button', { type: 'button', class: 'wb-leave wb-fleave ui-btn', text: 'Leave this game' });
   leave.addEventListener('click', () => onLeave());
+  if (noLeave) leave.hidden = true; // a scene's mini-game ends on its own result card; a scene must never be left half-played
   const top = h('div', { class: 'wb-ftop' }, h('div', { class: 'wb-fhead' }, h('p', { class: 'wb-feyebrow', text: word }), h('h2', { class: 'wb-ftitle', text: title })), leave);
   const noteEl = note ? h('p', { class: 'rp-help wb-preview wb-fnote', text: note }) : null;
   const stage = h('div', { class: 'wb-stage wb-fstage' });

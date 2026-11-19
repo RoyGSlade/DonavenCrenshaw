@@ -147,7 +147,7 @@ export function createWorkbench({ store, bus, onfoot, dialogueBox, sheet, hud, t
     }
     hold(true);
     let result;
-    try { result = await Promise.race([playGame(stage, station.game || station.id, { seed: nextSeed(), setup: start.setup, title, who: who || station.who, what: what || station.what, open: open ?? station.open, best: best ?? station.best, lock: lock ?? station.lock, context, tool, resume, embedded: Boolean(fs?.bare), sound: () => {}, reducedMotion }), left]); }
+    try { result = await Promise.race([playGame(stage, station.game || station.id, { seed: nextSeed(), setup: start.setup, title, who: who || station.who, what: what || station.what, open: open ?? station.open, best: best ?? station.best, lock: lock ?? station.lock, context, tool, resume, embedded: Boolean(fs?.bare), onLeave: fs?.bare ? () => leave?.() : null, sound: () => {}, reducedMotion }), left]); }
     catch (error) { console.warn('Stardust workbench: the game could not run', error); result = null; }
     leave = null;
     if (fs) fs.close(); else { sheet.stage.replaceChildren(); showSheet(false); }

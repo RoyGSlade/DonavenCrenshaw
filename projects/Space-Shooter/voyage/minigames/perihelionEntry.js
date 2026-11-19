@@ -40,8 +40,8 @@ export function createNavTrainer({ index = 0, setup = setupNavTrainer(), seed = 
 }
 
 /** Play a field game on screen. opts: { seed, setup, title, sound, reducedMotion }. */
-export function playNavField(root, { seed = 1, setup, title = 'Plot a burn', sound = () => {}, reducedMotion = () => false, embedded = false } = {}) {
-  return playPerihelion(root, { state: createNavField({ seed, setup }), title, sound, reducedMotion, embedded });
+export function playNavField(root, { seed = 1, setup, title = 'Plot a burn', sound = () => {}, reducedMotion = () => false, embedded = false, onLeave = null } = {}) {
+  return playPerihelion(root, { state: createNavField({ seed, setup }), title, sound, reducedMotion, embedded, onLeave });
 }
 /** Play one trainer sector on screen. opts: { index, setup, sound, reducedMotion }. */
 export function playNavTrainer(root, { index = 0, setup, sound = () => {}, reducedMotion = () => false, progress = null, embedded = false } = {}) {

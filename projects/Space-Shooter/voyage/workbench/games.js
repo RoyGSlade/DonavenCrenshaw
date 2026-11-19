@@ -43,7 +43,7 @@ export async function playGame(stage, id, o = {}) {
       return r;
     }
     case 'craft': { const r = await playCraft(stage, { state: createCraft({ seed, recipe: { materials: 4, build: 30 }, setup, bank: craftBank }), what: 'fitting', unit: 'scrap', reducedMotion }); if (Number.isFinite(r?.bank)) craftBank = r.bank; return r; }
-    case 'perihelion': return playNavField(stage, { seed, setup, title: title || 'Plot a burn', sound, reducedMotion, embedded: o.embedded });
+    case 'perihelion': return playNavField(stage, { seed, setup, title: title || 'Plot a burn', sound, reducedMotion, embedded: o.embedded, onLeave: o.onLeave });
     case 'nav': return playNav(stage, { state: createNav({ seed, setup }), title: title || 'Lane run', reducedMotion });
     case 'stealth': return playStealth(stage, { state: createStealth({ seed, setup }), title: title || 'Cargo hold', reducedMotion });
     case 'persuade': return playPersuade(stage, { state: createPersuade({ seed, setup, opening: o.opening }), who: who || 'the dock clerk', what: what || 'let you through', reducedMotion });

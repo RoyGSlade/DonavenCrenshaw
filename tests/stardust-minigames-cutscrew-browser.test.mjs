@@ -242,8 +242,8 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
 
       await sub('the older heat-and-shape game is still on the menu', async () => {
         await openMenu(); await tap('.wb-c[data-craft="heat"]');
-        await page.waitForSelector('#hg-minigame:not([hidden]) .cf-panel', { timeout: 15000 });
-        await tap('.wb-leave'); await page.waitForSelector('#hg-minigame', { state: 'hidden' });
+        await page.waitForSelector('.wb-full .cf-panel', { timeout: 15000 });
+        await tap('.wb-leave'); await page.waitForSelector('.wb-full', { state: 'detached' });
       });
       assert.deepEqual(errors.filter((e) => !/favicon|Failed to load resource/.test(e)), [], 'no page errors');
     } finally {

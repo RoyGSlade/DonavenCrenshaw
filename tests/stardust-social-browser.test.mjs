@@ -47,7 +47,9 @@ async function setPlayer(page, { level = 3, points = { persuade: 2, intimidate: 
     window.__stardust.workbench.state = S.setPoints(st, 'social', points);
   }, { level, points, credits });
 }
-const sheetOpen = (page) => page.waitForSelector('#hg-minigame:not([hidden]) .wb-stage .rp-panel', { timeout: 15000 });
+// A push's game owns the whole screen (workbench/fullScreen.js); panels (the Cut station) still use the side sheet.
+const sheetOpen = (page) => page.waitForSelector('.wb-full .wb-fstage .rp-panel', { timeout: 15000 });
+const gameShut = (page) => page.waitForSelector('.wb-full', { state: 'detached', timeout: 15000 });
 const sheetShut = (page) => page.waitForSelector('#hg-minigame', { state: 'hidden', timeout: 15000 });
 
 for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
@@ -76,7 +78,7 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
     const closePanel = async () => { await tap('.wb-pane .primary'); await sheetShut(page); await page.waitForTimeout(450); };
     const pushVia = async (id) => { await tap(`[data-push="${id}"]`); await page.waitForSelector('.tk-preview'); };
     const sayIt = async () => { await tap('.tk-say-it'); await page.waitForSelector('#hg-attempt:not([hidden])'); await sheetOpen(page); };
-    const closeCard = async () => { await tap('.rp-result button'); await sheetShut(page); await page.waitForSelector('#wb-talk:not([hidden]) .tk-line'); };
+    const closeCard = async () => { await tap('.rp-result button'); await gameShut(page); await page.waitForSelector('#wb-talk:not([hidden]) .tk-line'); };
     const noScroll = async () => assert.equal(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth), 0, 'no sideways scroll');
     try {
       await bootRoom(page, server.origin);

@@ -12,7 +12,7 @@ const COL = { cyan: '#81e6df', amber: '#ffad72', silver: '#d6e2ec', violet: '#b9
 const MOD = { standard: COL.cyan, refuel: COL.green, slipstream: COL.violet, unstable: COL.amber };
 const MAX_DRAG = 200; // world units of drag for 100% thrust
 
-export function playPerihelion(root, { state, title: title0 = 'Perihelion', sound = () => {}, reducedMotion = () => false, xpFor = null, embedded = false } = {}) {
+export function playPerihelion(root, { state, title: title0 = 'Perihelion', sound = () => {}, reducedMotion = () => false, xpFor = null, embedded = false, onLeave = null } = {}) {
   const s = state;
   // On a desktop the game owns the screen like the trainer's gallery: a fixed overlay on <body>, HUD across the top, map as big as fits.
   const full = embedded || (typeof matchMedia === 'function' && matchMedia('(min-width: 900px)').matches); // embedded: the shared workbench full-screen helper owns the screen, so the panel mounts in its stage
@@ -236,7 +236,7 @@ export function playPerihelion(root, { state, title: title0 = 'Perihelion', soun
   let introOpen = full;
   helpBtn.addEventListener('click', () => { if (full) introOpen = !introOpen && s.phase === 'plan'; else briefOpen = !briefOpen; paintHud(); if (full) resize(); });
   beginBtn.addEventListener('click', () => { introOpen = false; paintHud(); resize(); });
-  leaveBtn.addEventListener('click', () => { const wl = document.querySelector('.wb-leave'); if (wl) wl.click(); else if (!s.done) { abandon(s); handle([]); } });
+  leaveBtn.addEventListener('click', () => { const wl = document.querySelector('.wb-leave'); if (onLeave) onLeave(); else if (wl) wl.click(); else if (!s.done) { abandon(s); handle([]); } });
 
   // ---- drawing --------------------------------------------------------------------------------------------------------------
   const glow = (color, blur) => { if (!still()) { ctx.shadowColor = color; ctx.shadowBlur = blur * dpr; } };

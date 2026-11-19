@@ -88,3 +88,5 @@ body .tk-panel[hidden]{display:none}
 .wb-full-bare .wb-fstage{max-width:none;padding:0}
 .wb-full-bare .wb-fstage>.rp-panel.ga-full,.wb-full-bare .wb-fstage>.rp-panel.pr-full{position:relative;inset:auto;z-index:auto;max-width:none;overflow:hidden;background:none;border-radius:0;padding:0}
 .wb-full-bare{padding:0}
+/* Panels with no board to stretch (locks, haggle, persuade, intimidate) sit centred at their own height instead of leaving an empty frame. */
+.wb-fstage>.rp-panel:is(.hk-panel,.hg-panel,.pc-panel,.it-panel,.mh-panel,.pl-panel,.st-panel,.cf-panel){flex:0 1 auto;margin:auto}

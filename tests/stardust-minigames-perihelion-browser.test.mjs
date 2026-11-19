@@ -161,7 +161,7 @@ test('the workbench navigation station plays Perihelion, with the game owning th
       await page.waitForTimeout(1200);
       await page.evaluate(() => { window.__stardust.workbench.rng = () => 0.65; });
       await use(page, 'wb-nav');
-      await page.waitForSelector('#hg-minigame:not([hidden]) .wb-stage .rp-panel', { timeout: 15000 });
+      await page.waitForSelector('.wb-full .wb-fstage .rp-panel', { timeout: 15000 }); // full screen on the shared helper
       await page.waitForSelector('.pr-canvas', { state: 'attached' });
       await page.waitForSelector('#hg-attempt', { state: 'hidden', timeout: 12000 }).catch(() => {});
       await page.waitForTimeout(400);
