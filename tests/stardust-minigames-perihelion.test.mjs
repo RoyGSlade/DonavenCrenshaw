@@ -6,7 +6,7 @@ import { setupPerihelion } from '../projects/Space-Shooter/voyage/minigames/setu
 import { createPerihelion, setPlan, launch, advance, runBurn, predict, trim, pressMark, tick, planCosts, maxThrust, cloneSim, abandon, periXp, TICKS, BURN } from '../projects/Space-Shooter/voyage/minigames/perihelion.js';
 import { buildFieldSector } from '../projects/Space-Shooter/voyage/minigames/perihelionField.js';
 import { TRAINER_SECTORS } from '../projects/Space-Shooter/voyage/minigames/perihelionData.js';
-import { solve } from '../projects/Space-Shooter/voyage/minigames/perihelionBot.js';
+import { solve, explore } from '../projects/Space-Shooter/voyage/minigames/perihelionBot.js';
 import { createNavField, createNavTrainer, trainerSettle, setupNavTrainer } from '../projects/Space-Shooter/voyage/minigames/perihelionEntry.js';
 import { CATEGORIES } from '../projects/Space-Shooter/voyage/minigames/picker.js';
 import { rollPreview } from '../projects/Space-Shooter/voyage/minigames/rollPreview.js';
@@ -200,4 +200,18 @@ test('every field sector is solvable: a search bot clears the Steady roll over 5
   }
   console.log(`perihelion bot: raw draw ${raw}/${N} (${(raw / N * 100).toFixed(1)}%), after the entry re-draw ${fixed}/${N}, average ${(turns / raw).toFixed(2)} turns`);
   assert.ok(raw / N >= 0.95, `raw ${raw}`); assert.ok(fixed >= raw);
+});
+
+test('trainer pars: no-trim, no-ring play tops out at 2 stars; three stars needs the rings (the lesson)', { timeout: 600000 }, () => {
+  const rows = [];
+  for (let i = 0; i < 5; i++) {
+    const best = { plain: 0, marks: 0 };
+    for (const [k, marks] of [['plain', false], ['marks', true]]) for (const frugal of [0, 3, 8]) {
+      const e = explore(createNavTrainer({ index: i }), { marks, frugal }); best[k] = Math.max(best[k], e.best);
+    }
+    rows.push(`sector ${i + 1}: no rings ${best.plain} stars, rings pressed ${best.marks} stars`);
+    assert.ok(best.plain <= 2, `sector ${i + 1} without rings tops out at 2 (got ${best.plain})`);
+    assert.equal(best.marks, 3, `sector ${i + 1} gives three stars to a player who presses the rings`);
+  }
+  console.log(`perihelion pars: ${rows.join('; ')}`);
 });

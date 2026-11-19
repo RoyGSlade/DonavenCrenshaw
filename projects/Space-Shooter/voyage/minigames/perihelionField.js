@@ -5,7 +5,7 @@ import { step as rngStep, hashSeed } from '../quests/rng.js';
 
 const W = 1000, H = 680;
 const COLORS = ['#38bdf8', '#f59e0b'];
-const GATE_NAMES = { standard: 'Marker Buoy', refuel: 'Depot Waypoint', slipstream: 'Slipstream Relay', unstable: 'Collapse Node' };
+const GATE_NAMES = { standard: 'Waypoint gate', refuel: 'Refuel gate', slipstream: 'Slipstream gate', unstable: 'Relay gate' };
 
 export function buildFieldSector(seed = 1, setup = {}, attempt = 0) {
   let rng = hashSeed('peri-field', seed, attempt);
@@ -20,7 +20,7 @@ export function buildFieldSector(seed = 1, setup = {}, attempt = 0) {
   gates.push(wp);
   if (rand() < 0.3) gates.push({ id: 'f-opt', label: GATE_NAMES.unstable, kind: 'waypoint', mod: 'unstable', required: false, x: Math.round(between(250, 700)), y: Math.round(between(110, 570)), r: 34, expires: 2 });
   const ex = Math.round(between(850, 905)), ey = Math.round(between(170, 510));
-  const exit = { id: 'f-exit', label: 'Jump Gate', kind: 'exit', mod: 'standard', x: ex, y: ey, r: 36 };
+  const exit = { id: 'f-exit', label: 'Exit gate', kind: 'exit', mod: 'standard', x: ex, y: ey, r: 36 };
   if (rand() < 0.55) {
     const ay = Math.round(between(60, 130));
     exit.motion = { ox: ex, oy: Math.max(ay + 40, Math.min(H - ay - 40, ey)), ax: 0, ay, period: Math.round(between(58, 76)) / 10, phase: Math.round(between(0, 6.2) * 10) / 10 };
@@ -49,7 +49,7 @@ export function buildFieldSector(seed = 1, setup = {}, attempt = 0) {
   const n = rand() < 0.5 ? 1 : 2;
   return {
     id: `field-${seed}-${attempt}`, name: n === 1 ? 'Open space' : 'Drift lane', subtitle: 'Field sector',
-    briefing: 'Clear the waypoint, then thread the exit gate. Bend your burns round the wells.',
+    briefing: 'Clear the waypoint gate, then catch the exit. Bend your burns round the wells.',
     maxTurns: undefined, parTurns: 3, parFuel: 46, meteorEvery: setup.meteorEvery ?? 0,
     ship, wells, gates, asteroids, flares, fog: [],
   };

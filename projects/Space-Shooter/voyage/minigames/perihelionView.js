@@ -12,32 +12,36 @@ const COL = { cyan: '#81e6df', amber: '#ffad72', silver: '#d6e2ec', violet: '#b9
 const MOD = { standard: COL.cyan, refuel: COL.green, slipstream: COL.violet, unstable: COL.amber };
 const MAX_DRAG = 200; // world units of drag for 100% thrust
 
-export function playPerihelion(root, { state, title = 'Perihelion', sound = () => {}, reducedMotion = () => false } = {}) {
+export function playPerihelion(root, { state, title: title0 = 'Perihelion', sound = () => {}, reducedMotion = () => false } = {}) {
   const s = state;
   const still = () => reducedMotion();
   // ---- DOM ------------------------------------------------------------------------------------------------------------------
-  const meter = (cls, label) => h('div', { class: `pr-meter ${cls}` }, h('span', { text: label }), h('i', {}, h('u'), h('s'), h('em')), h('b'));
+  const meter = (cls, label) => h('div', { class: `pr-meter ${cls}` }, h('span', { text: label }), h('i', {}, h('u'), h('s'), h('em'), h('b')));
   const fuelM = meter('is-fuel', 'Fuel'), heatM = meter('is-heat', 'Heat');
-  const hullM = h('div', { class: 'pr-meter is-hull' }, h('span', { text: 'Hull' }), h('div', { class: 'pr-pips' }, ...Array.from({ length: s.ship.maxHull }, () => h('i'))), h('b'));
-  const turnM = h('div', { class: 'pr-turn' });
-  const kit = h('p', { class: 'pr-kit', 'aria-label': 'What your navigation points do' });
+  const hullM = h('div', { class: 'pr-meter is-hull', 'aria-label': 'Hull' }, h('span', { text: 'Hull' }), h('div', { class: 'pr-pips' }, ...Array.from({ length: s.ship.maxHull }, () => h('i'))));
+  const turnM = h('span', { class: 'pr-turn' });
+  const helpBtn = h('button', { type: 'button', class: 'pr-help-btn', 'aria-label': 'What is this sector?', 'aria-expanded': 'true', text: '?' });
+  const title = h('p', { class: 'rp-eyebrow pr-title', text: `PERIHELION · ${(title0 || '').toUpperCase()}` });
+  const pts = s.setup.points || {};
+  const mine = [pts.time > 0 && 'longer burns', pts.fuel > 0 && 'cheaper fuel', pts.warning > 0 && 'a longer arc and earlier shard warnings'].filter(Boolean);
+  const briefText = h('p', {}, `${s.briefing} Par: ${s.parTurns} turns, ${s.parFuel} fuel.${mine.length ? ` Your points: ${mine.join(', ')}.` : ''}`);
+  const brief = h('div', { class: 'pr-brief is-open' }, briefText);
   const canvas = h('canvas', { class: 'pr-canvas', 'aria-label': 'Sector map: drag from the ship to aim a burn' });
-  const markBtn = h('button', { type: 'button', class: 'pr-mark ui-btn', text: 'MARK', hidden: '' });
-  const stage = h('div', { class: 'pr-stage' }, canvas, markBtn);
+  const stage = h('div', { class: 'pr-stage' }, canvas, brief);
   const wrap = h('div', { class: 'pr-wrap' }, stage);
   const status = h('p', { class: 'rp-status pr-status', role: 'status', 'aria-live': 'polite' });
   const burnBtn = h('button', { type: 'button', class: 'pr-burn primary ui-btn', text: 'BURN' });
+  const markBtn = h('button', { type: 'button', class: 'pr-mark ui-btn', text: 'MARK', hidden: '' });
   const coastBtn = h('button', { type: 'button', class: 'pr-coast ui-btn', text: 'Coast' });
-  const quitBtn = h('button', { type: 'button', class: 'pr-quit ui-btn danger', text: 'Call it off' });
+  const quitBtn = h('button', { type: 'button', class: 'pr-quit ui-btn danger', text: 'Quit' });
   const angleIn = h('input', { type: 'range', min: '-180', max: '180', step: '1', 'aria-label': 'Aim angle in degrees' });
   const thrustIn = h('input', { type: 'range', min: '0', max: '100', step: '5', 'aria-label': 'Thrust percent' });
   const fine = h('details', { class: 'pr-fine' }, h('summary', { text: 'Fine tune' }), h('label', {}, h('span', { text: 'Aim' }), angleIn), h('label', {}, h('span', { text: 'Thrust' }), thrustIn));
-  const panel = h('section', { class: 'rp-panel pr-panel mg-skin ui-panel', role: 'group', 'aria-label': `Navigation: ${title}` },
-    h('p', { class: 'rp-eyebrow ui-nameplate', text: `NAVIGATE · PERIHELION · ${title.toUpperCase()}` }),
-    h('p', { class: 'rp-par pr-brief', text: s.briefing }),
-    h('div', { class: 'pr-hud' }, fuelM, heatM, hullM, turnM), kit, wrap, status,
-    h('div', { class: 'pr-foot' }, burnBtn, coastBtn, quitBtn), fine,
-    h('p', { class: 'rp-help', text: 'Drag from the ship to aim; the longer the drag, the harder the burn. Then BURN. Tap the left or right half of the map to trim, and press MARK when the ring is lit.' }));
+  const panel = h('section', { class: 'rp-panel pr-panel mg-skin ui-panel', role: 'group', 'aria-label': `Navigation: ${title0}` },
+    h('div', { class: 'pr-top' }, title, turnM, helpBtn),
+    h('div', { class: 'pr-hud' }, fuelM, heatM, hullM), wrap, status,
+    h('div', { class: 'pr-foot' }, burnBtn, markBtn, coastBtn, quitBtn), fine,
+    h('p', { class: 'rp-help pr-tip', text: 'Drag from the ship to aim; a longer drag is a harder burn. BURN, then tap the left or right half of the map to trim, and press MARK when the ring is lit.' }));
   panel.__state = s;
   root.append(panel);
   let finish;
@@ -51,9 +55,12 @@ export function playPerihelion(root, { state, title = 'Perihelion', sound = () =
   const P = (x, y) => (rot ? [y * k, (ARENA.w - x) * k] : [x * k, y * k]);
   const U = (sx, sy) => (rot ? [ARENA.w - sy / k, sx / k] : [sx / k, sy / k]);
   function resize() {
+    canvas.style.width = '1px'; stage.style.width = '1px'; // measure the room, not our own last size
     const avail = Math.max(240, wrap.clientWidth || panel.clientWidth || 360);
     rot = avail < 640 && innerHeight >= innerWidth * 0.9;
-    const maxH = Math.max(300, innerHeight * (rot ? 0.64 : 0.62));
+    const top = Math.max(0, Math.min(wrap.getBoundingClientRect().top, 170));
+    // On a phone the map takes what is left above the pinned buttons; on a desktop the map takes 62% of the window.
+    const maxH = rot ? Math.max(300, innerHeight - top - 112) : Math.max(300, innerHeight * 0.62);
     if (rot) { const hh = Math.min(avail * (ARENA.w / ARENA.h), maxH); W = Math.round(hh * (ARENA.h / ARENA.w)); H = Math.round(hh); k = W / ARENA.h; }
     else { W = Math.round(Math.min(avail, maxH * (ARENA.w / ARENA.h))); H = Math.round(W * (ARENA.h / ARENA.w)); k = W / ARENA.w; }
     dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -66,6 +73,7 @@ export function playPerihelion(root, { state, title = 'Perihelion', sound = () =
   ro?.observe(wrap);
   addEventListener('resize', resize);
   resize();
+  setTimeout(() => { if (!closed) resize(); }, 350); // a page that scrolls the game into view settles after the first layout
 
   // ---- scenery (seeded, so the same sector always looks the same) -----------------------------------------------------------
   let rng = hashSeed('peri-sky', s.seed, s.sector.id);
@@ -104,7 +112,7 @@ export function playPerihelion(root, { state, title = 'Perihelion', sound = () =
   function doLaunch() {
     if (s.phase !== 'plan' || ended) return;
     if (!launch(s)) { say('Not enough fuel for that burn. Pull back the thrust.'); sound('hurt'); return; }
-    sound('talk'); fx.shot = 0; live = []; liveAt = 0;
+    sound('talk'); fx.shot = 0; live = []; liveAt = 0; briefOpen = false;
     say('Burning. Tap the left or right half of the map to trim.');
     paintHud();
   }
@@ -171,9 +179,10 @@ export function playPerihelion(root, { state, title = 'Perihelion', sound = () =
   // ---- HUD ------------------------------------------------------------------------------------------------------------------
   const cache = new Map();
   const setT = (el, t) => { if (cache.get(el) !== t) { cache.set(el, t); el.textContent = t; } };
+  const whole = (n) => String(Math.max(0, Math.round(n)));
   function paintHud() {
-    const sh = s.ship, c = planCosts(s), planning = s.phase === 'plan';
-    // Fuel: the bar shows what is left; the amber block is this burn's price; the dotted block is what it would have cost.
+    const sh = s.ship, c = planCosts(s), planning = s.phase === 'plan', burning = s.phase === 'burn';
+    // Fuel: the bar shows what is left; the striped block is this burn's price; the dotted outline is what it would cost at full price.
     const mf = sh.maxFuel;
     fuelM.querySelector('u').style.width = `${Math.max(0, (sh.fuel / mf) * 100)}%`;
     const paying = planning ? c.fuel : 0;
@@ -182,25 +191,25 @@ export function playPerihelion(root, { state, title = 'Perihelion', sound = () =
     const full = s.fuelFactor < 1 && paying > 0 ? paying / s.fuelFactor : 0;
     ghost.style.left = `${Math.max(0, ((sh.fuel - full) / mf) * 100)}%`; ghost.style.width = `${(full / mf) * 100}%`; ghost.hidden = !full;
     const saved = full ? full - paying : 0;
-    setT(fuelM.querySelector('b'), planning ? `${f1(sh.fuel)} (burn ${f1(paying)}${saved ? `, saves ${f1(saved)}` : ''})` : `${f1(sh.fuel)} of ${mf}`);
+    setT(fuelM.querySelector('b'), whole(sh.fuel));
     fuelM.classList.toggle('is-low', sh.fuel / mf < 0.2);
     heatM.querySelector('u').style.width = `${sh.heat}%`;
     const ph = heatM.querySelector('s'); const end = planning ? c.endHeat : sh.heat;
     ph.style.left = `${Math.min(sh.heat, end)}%`; ph.style.width = `${Math.abs(end - sh.heat)}%`; ph.classList.toggle('is-cool', end < sh.heat);
-    setT(heatM.querySelector('b'), `${Math.round(sh.heat)}${sh.overheated ? ' HOT: trim locked, thrust capped' : planning && end !== sh.heat ? ` → ${Math.round(end)}` : ''}`);
+    setT(heatM.querySelector('b'), sh.overheated ? 'HOT' : whole(sh.heat));
     heatM.classList.toggle('is-hot', sh.overheated || sh.heat >= 75);
     [...hullM.querySelectorAll('.pr-pips i')].forEach((el, i) => el.classList.toggle('on', i < sh.hull));
-    setT(hullM.querySelector('b'), `${Math.max(0, sh.hull)} of ${sh.maxHull}`);
-    const spare = s.mode === 'trainer' ? s.maxTurns - s.sector.maxTurns : s.maxTurns - (s.setup.turns - Math.floor((s.setup.points?.time ?? 0) / 3));
-    setT(turnM, `Turn ${Math.min(s.turn, s.maxTurns)} of ${s.maxTurns}${s.turn <= s.parTurns ? ` · par ${s.parTurns}` : ''}`);
+    setT(turnM, `Turn ${Math.min(s.turn, s.maxTurns)}/${s.maxTurns}`);
     turnM.dataset.turn = String(Math.min(s.turn, s.maxTurns));
-    const p = s.setup.points || {};
-    setT(kit, `Engine fires ${f1(s.window)} s · burns cost x${s.fuelFactor} fuel · arc shows ${Math.round(s.arc * 100)}% · shard warning ${f1(s.warn)} s${s.scan ? ' · fog scanned' : ''}${spare > 0 ? ` · +${spare} spare turn${spare === 1 ? '' : 's'}` : ''}`);
-    kit.dataset.time = String(p.time ?? 0); kit.dataset.fuel = String(p.fuel ?? 0); kit.dataset.warning = String(p.warning ?? 0);
     burnBtn.disabled = !planning || s.done || !c.afford; burnBtn.hidden = !planning;
     coastBtn.hidden = !planning; quitBtn.hidden = !planning || s.done;
-    setT(burnBtn, `BURN ${c.thrust}% · ${f1(c.fuel)} fuel`);
-    const mk = s.burn?.mark; markBtn.hidden = !mk;
+    setT(burnBtn, `BURN ${c.thrust}% · ${whole(c.fuel)} fuel`);
+    // MARK takes the burn button's place in the thumb zone while the burn is live; it lights when a ring is closing.
+    const live = Boolean(s.burn?.mark);
+    markBtn.hidden = !burning; markBtn.classList.toggle('is-live', live); markBtn.setAttribute('aria-disabled', live ? 'false' : 'true');
+    setT(markBtn, live ? 'MARK' : 'MARK · wait for a ring');
+    brief.classList.toggle('is-open', briefOpen && !burning);
+    helpBtn.setAttribute('aria-expanded', String(briefOpen && !burning));
     if (angleIn !== document.activeElement) angleIn.value = String(Math.round((s.plan.angle * 180) / Math.PI));
     if (thrustIn !== document.activeElement) { thrustIn.max = String(maxThrust(s)); thrustIn.value = String(s.plan.thrust); }
     thrustIn.disabled = angleIn.disabled = !planning;
@@ -211,9 +220,11 @@ export function playPerihelion(root, { state, title = 'Perihelion', sound = () =
       if (!c.afford) say('Not enough fuel for that burn. Pull back the thrust.');
       else if (hit && hit.t <= s.arc * BURN) say(`${base} Warning: ${pred.unknown ? 'an unknown contact' : hit.label.toLowerCase()} at ${f1(hit.t)} s.`);
       else if (pred.win) say(`${base} This burn reaches the exit.`);
-      else say(`${base} The arc shows ${Math.round(s.arc * 100)}% of the burn; the engine fires for ${f1(s.window)} s.`);
+      else say(`${base} The dashed arc is where this burn takes you.${saved >= 0.5 ? ` Your points save ${whole(saved)} fuel.` : ''}`);
     }
   }
+  let briefOpen = true;
+  helpBtn.addEventListener('click', () => { briefOpen = !briefOpen; paintHud(); });
 
   // ---- drawing --------------------------------------------------------------------------------------------------------------
   const glow = (color, blur) => { if (!still()) { ctx.shadowColor = color; ctx.shadowBlur = blur * dpr; } };
@@ -221,6 +232,35 @@ export function playPerihelion(root, { state, title = 'Perihelion', sound = () =
   function path(points, close = false) { ctx.beginPath(); points.forEach((p, i) => { const [x, y] = P(p.x, p.y); if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y); }); if (close) ctx.closePath(); }
   function circle(x, y, r) { const [sx, sy] = P(x, y); ctx.beginPath(); ctx.arc(sx, sy, Math.max(0.5, r * k), 0, TAU); }
   const text = (t, x, y, size, color, align = 'center', alpha = 1) => { const [sx, sy] = P(x, y); ctx.globalAlpha = alpha; ctx.fillStyle = color; ctx.font = `700 ${size}px Consolas, monospace`; ctx.textAlign = align; ctx.fillText(t, sx, sy); ctx.globalAlpha = 1; };
+
+  // Labels are queued while the map draws and placed at the end of the frame, so none sits on another label or on a ring.
+  let labelQ = [], obst = [];
+  const queue = (t, wx, wy, wr, color, prio, o = {}) => labelQ.push({ t, wx, wy, wr, color, prio, ...o });
+  const solid = (wx, wy, wr, own) => obst.push({ wx, wy, wr, own });
+  function placeLabels() {
+    const size = Math.max(9, 10 * k * 2), rects = [];
+    const hits = (r, ox) => rects.some((q) => r.x0 < q.x1 && r.x1 > q.x0 && r.y0 < q.y1 && r.y1 > q.y0)
+      || obst.some((o) => { if (o === ox) return false; const [cx, cy] = P(o.wx, o.wy), rr = o.wr * k + 3, nx = Math.max(r.x0, Math.min(cx, r.x1)), ny = Math.max(r.y0, Math.min(cy, r.y1)); return (nx - cx) ** 2 + (ny - cy) ** 2 < rr * rr; });
+    labelQ.sort((a, b) => a.prio - b.prio);
+    for (const L of labelQ) {
+      const sz = L.size || size; ctx.font = `700 ${sz}px Consolas, monospace`;
+      const w = ctx.measureText(L.t).width, [sx, sy] = P(L.wx, L.wy), rr = L.wr * k, own = obst.find((o) => o.own === L.own && L.own);
+      const spots = L.center ? [[0, 0]] : [];
+      spots.push([0, -(rr + 8)], [0, rr + sz + 6], [rr + w / 2 + 8, sz / 3], [-(rr + w / 2 + 8), sz / 3], [0, -(rr + sz + 20)], [0, rr + 2 * sz + 22], [rr + w / 2 + 8, -(sz + 6)], [-(rr + w / 2 + 8), sz + 10]);
+      let pick = null;
+      for (const [dx, dy] of spots) {
+        let cx = sx + dx, by = sy + dy;
+        cx = Math.max(w / 2 + 4, Math.min(W - w / 2 - 4, cx)); by = Math.max(sz + 4, Math.min(H - 6, by));
+        const r = { x0: cx - w / 2 - 2, x1: cx + w / 2 + 2, y0: by - sz, y1: by + 3, cx, by };
+        if (!hits(r, own)) { pick = r; break; }
+        if (!pick && !L.drop) pick = r;
+      }
+      if (!pick || (L.drop && hits(pick, own))) continue;
+      rects.push(pick);
+      ctx.globalAlpha = L.alpha ?? 1; ctx.textAlign = 'center'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(7,13,23,0.85)'; ctx.strokeText(L.t, pick.cx, pick.by); ctx.fillStyle = L.color; ctx.fillText(L.t, pick.cx, pick.by); ctx.globalAlpha = 1;
+    }
+    labelQ = []; obst = [];
+  }
 
   function drawBackdrop() {
     const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#0b1724'); g.addColorStop(1, '#070d17');
@@ -246,7 +286,7 @@ export function playPerihelion(root, { state, title = 'Perihelion', sound = () =
       g.addColorStop(0, 'rgba(120,110,170,0.62)'); g.addColorStop(0.7, 'rgba(90,80,140,0.4)'); g.addColorStop(1, 'rgba(80,70,120,0)');
       ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill();
       for (let i = 0; i < 4; i++) { const a = T * 0.15 * (i % 2 ? 1 : -1) + i * 1.7; ctx.fillStyle = 'rgba(185,164,255,0.07)'; ctx.beginPath(); ctx.arc(x + Math.cos(a) * r * 0.45, y + Math.sin(a) * r * 0.4, r * 0.38, 0, TAU); ctx.fill(); }
-      text(f.hint.toUpperCase(), f.x, f.y + 4, Math.max(9, 10 * k * 2), 'rgba(214,226,236,0.8)');
+      queue(f.hint.toUpperCase(), f.x, f.y, 0, 'rgba(214,226,236,0.85)', 9, { center: true, drop: true });
     }
   }
   function drawWell(w) {
@@ -262,7 +302,7 @@ export function playPerihelion(root, { state, title = 'Perihelion', sound = () =
     ctx.fillStyle = '#02050a'; ctx.beginPath(); ctx.arc(x, y, w.core * k, 0, TAU); ctx.fill();
     ctx.strokeStyle = COL.red; ctx.lineWidth = 2; glow(COL.red, 8); ctx.beginPath(); ctx.arc(x, y, w.core * k, 0, TAU); ctx.stroke(); noGlow();
     for (let i = 0; i < 3; i++) { const a = (still() ? 0 : T * (1.4 + i * 0.5)) + i * 2.1; ctx.strokeStyle = `${col}aa`; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(x, y, (w.core * (0.45 + i * 0.17)) * k, a, a + 1.6); ctx.stroke(); }
-    text(w.label.toUpperCase(), w.x, w.y + w.sling + 16, Math.max(8, 9 * k * 2), `${col}`, 'center', 0.85);
+    queue(w.label.toUpperCase(), w.x, w.y, w.sling, col, 2, { alpha: 0.9 }); solid(w.x, w.y, w.core + 4);
   }
   function drawFlare(f) {
     const a = P(f.x, f.y), b = P(f.x + Math.cos(f.angle) * f.length, f.y + Math.sin(f.angle) * f.length);
@@ -291,9 +331,11 @@ export function playPerihelion(root, { state, title = 'Perihelion', sound = () =
     noGlow();
     if (g.kind === 'exit') { ctx.fillStyle = col; ctx.globalAlpha *= 0.9; for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.moveTo(x - r * 0.18 + i * r * 0.2 - r * 0.2, y - r * 0.22); ctx.lineTo(x + i * r * 0.2 - r * 0.02 - r * 0.2, y); ctx.lineTo(x - r * 0.18 + i * r * 0.2 - r * 0.2, y + r * 0.22); ctx.fill(); } }
     ctx.globalAlpha = 1;
-    const tag = g.cleared ? 'CLEARED' : g.collapsed ? 'COLLAPSED' : waiting ? 'LOCKED' : !open ? 'CLOSED' : g.mod === 'standard' ? '' : g.mod.toUpperCase();
-    if (tag) text(tag, g.x, g.y - g.r - 10, Math.max(8, 9 * k * 2), col);
-    if (g.mod === 'unstable' && !g.cleared && !g.collapsed && g.expires != null) text(`LEFT TURN ${g.expires}`, g.x, g.y + g.r + 16, Math.max(8, 9 * k * 2), COL.amber, 'center', 0.9);
+    const mod = { refuel: 'REFUEL', slipstream: 'SLIPSTREAM', unstable: 'RELAY', standard: 'GATE' }[g.mod];
+    const word = g.kind === 'exit' ? 'EXIT' : mod;
+    const state = g.cleared ? 'CLEARED' : g.collapsed ? 'COLLAPSED' : waiting ? 'LOCKED' : !open ? 'CLOSED' : '';
+    const tag = [word, state, g.mod === 'unstable' && !g.cleared && !g.collapsed && g.expires != null ? `gone after turn ${g.expires}` : ''].filter(Boolean).join(' · ');
+    queue(tag, g.x, g.y, g.r, col, 1, { own: g.id }); solid(g.x, g.y, g.r + 2);
   }
   function drawMeteors() {
     for (const m of s.meteors) {
@@ -376,7 +418,12 @@ export function playPerihelion(root, { state, title = 'Perihelion', sound = () =
     // the bright band is the sweet spot: pressing while the closing ring is inside it pays
     ctx.strokeStyle = 'rgba(127,240,168,0.28)'; ctx.lineWidth = Math.max(4, (rAt(PHYS.sweet[0]) - rAt(PHYS.sweet[1])) * k); ctx.beginPath(); ctx.arc(x, y, ((rAt(PHYS.sweet[0]) + rAt(PHYS.sweet[1])) / 2) * k, 0, TAU); ctx.stroke();
     ctx.strokeStyle = good ? COL.green : COL.amber; ctx.lineWidth = good ? 5 : 3; glow(good ? COL.green : COL.amber, 16); ctx.beginPath(); ctx.arc(x, y, rAt(p) * k, 0, TAU); ctx.stroke(); noGlow();
-    text(good ? 'NOW' : m.label, tgt.x, tgt.y - rAt(0) - 8, Math.max(10, 11 * k * 2), good ? COL.green : COL.amber);
+    queue(good ? 'NOW' : m.label, tgt.x, tgt.y, rAt(0), good ? COL.green : COL.amber, 0, { size: Math.max(10, 11 * k * 2) });
+  }
+  function drawTrimHint() {
+    if (s.phase !== 'burn') return;
+    ctx.fillStyle = 'rgba(129,230,223,0.28)'; ctx.font = '700 11px Consolas, monospace'; ctx.textAlign = 'center';
+    for (const [x, dir] of [[18, -1], [W - 18, 1]]) { ctx.beginPath(); ctx.moveTo(x + dir * 7, H / 2 - 12); ctx.lineTo(x - dir * 7, H / 2); ctx.lineTo(x + dir * 7, H / 2 + 12); ctx.closePath(); ctx.fill(); ctx.fillText('TRIM', x, H / 2 + 28); }
   }
   function drawFx(dt) {
     for (const p of fx.particles) { p.life -= dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= 0.96; p.vy *= 0.96; }
@@ -414,7 +461,7 @@ export function playPerihelion(root, { state, title = 'Perihelion', sound = () =
     for (const f of s.flares) drawFlare(f);
     for (const g of s.gates) drawGate(g);
     for (const a of s.asteroids) if (!isHidden(s, a)) drawRock(a);
-    drawArc(); drawLive(); drawMeteors(); drawMark(); drawShip(); drawAim(); drawFx(dt); drawFrame();
+    drawArc(); drawLive(); drawMeteors(); drawMark(); drawShip(); drawAim(); placeLabels(); drawTrimHint(); drawFx(dt); drawFrame();
     ctx.restore();
     raf = requestAnimationFrame(frame);
   }
@@ -431,8 +478,8 @@ export function playPerihelion(root, { state, title = 'Perihelion', sound = () =
     const goBtn = h('button', { type: 'button', class: 'primary ui-btn', text: r.success ? 'Continue' : 'Step back' });
     const par = r.success ? ` Par: ${r.parTurns} turns${r.stars < 2 || r.turns > r.parTurns ? '' : ' (met)'}, ${r.parFuel} fuel.` : '';
     const line = r.success
-      ? `${r.turns} of ${r.maxTurns} turns · fuel used ${f1(r.fuelUsed)}${r.fuelSaved > 0 ? ` (saved ${f1(r.fuelSaved)})` : ''} · hull ${r.hullLeft} of ${s.ship.maxHull} · ${r.marks} mark${r.marks === 1 ? '' : 's'} · +${r.xp} Navigation XP.${par}`
-      : `${WHY[r.how]} ${r.turns} turn${r.turns === 1 ? '' : 's'}, fuel used ${f1(r.fuelUsed)}. No XP.`;
+      ? `${r.turns} of ${r.maxTurns} turns · fuel used ${whole(r.fuelUsed)}${r.fuelSaved >= 0.5 ? ` (your points saved ${whole(r.fuelSaved)})` : ''} · hull ${r.hullLeft} of ${s.ship.maxHull} · ${r.marks} mark${r.marks === 1 ? '' : 's'} · +${r.xp} Navigation XP.${par}`
+      : `${WHY[r.how]} ${r.turns} turn${r.turns === 1 ? '' : 's'}, fuel used ${whole(r.fuelUsed)}. No XP.`;
     const card = h('div', { class: `rp-result ui-card ${r.success ? 'is-ok' : 'is-bad'}`, role: 'status', 'data-outcome': r.success ? 'arrived' : 'lost' },
       h('b', { class: 'rp-stars', text: r.success ? stars : r.how === 'hull' ? 'HULL LOST' : 'OUT OF TURNS' }), h('span', { text: line }), goBtn);
     setTimeout(() => {
