@@ -124,8 +124,9 @@ export function createWorkbench({ store, bus, onfoot, dialogueBox, sheet, hud, t
     await wait(reducedMotion() ? 500 : 1700);
     return playStart(station, start, { who, what, open, best, lock, titleText, context, tool });
   }
-  /** Games that own the whole screen (the house rule). Others still use the side sheet until their lanes move over: add the id here. */
-  const FULL_SCREEN = new Set(['cut', 'screw', 'bolt-plate']);
+  /** Games that own the whole screen (the house rule): every station and mini-game view. The side sheet is for menus and panels only. */
+  const FULL_SCREEN = new Set(['repair', 'hack', 'craft', 'nav', 'pilot', 'stealth', 'persuade', 'intimidate', 'haggle', 'cut', 'screw', 'bolt-plate']);
+  const BARE = new Set(['nav']); // Perihelion draws its own top bar and Leave
   async function playStart(station, start, { who, what, open, best, lock, titleText, word, context, tool, resume } = {}) {
     sheet.stage.replaceChildren();
     const noteText = start.preview ? `${start.preview.line} ${start.preview.nextLine}` : '';
@@ -133,7 +134,7 @@ export function createWorkbench({ store, bus, onfoot, dialogueBox, sheet, hud, t
     let stage, fs = null, leaveBtn = null;
     const left = new Promise((resolve) => { leave = () => resolve(null); });
     if (FULL_SCREEN.has(station.id)) {
-      fs = openFullScreen({ word: wordText, title, note: noteText, onLeave: () => leave?.() });
+      fs = openFullScreen({ word: wordText, title, note: noteText, onLeave: () => leave?.(), bare: BARE.has(station.id) });
       stage = fs.stage;
     } else {
       const note = h('p', { class: 'rp-help wb-preview', text: noteText });
@@ -146,7 +147,7 @@ export function createWorkbench({ store, bus, onfoot, dialogueBox, sheet, hud, t
     }
     hold(true);
     let result;
-    try { result = await Promise.race([playGame(stage, station.game || station.id, { seed: nextSeed(), setup: start.setup, title, who: who || station.who, what: what || station.what, open: open ?? station.open, best: best ?? station.best, lock: lock ?? station.lock, context, tool, resume, sound: () => {}, reducedMotion }), left]); }
+    try { result = await Promise.race([playGame(stage, station.game || station.id, { seed: nextSeed(), setup: start.setup, title, who: who || station.who, what: what || station.what, open: open ?? station.open, best: best ?? station.best, lock: lock ?? station.lock, context, tool, resume, embedded: Boolean(fs?.bare), sound: () => {}, reducedMotion }), left]); }
     catch (error) { console.warn('Stardust workbench: the game could not run', error); result = null; }
     leave = null;
     if (fs) fs.close(); else { sheet.stage.replaceChildren(); showSheet(false); }
@@ -192,15 +193,11 @@ export function createWorkbench({ store, bus, onfoot, dialogueBox, sheet, hud, t
   }
 
   async function practice() {
-    sheet.stage.replaceChildren();
-    const stage = h('div', { class: 'wb-stage' });
-    const leaveBtn = h('button', { type: 'button', class: 'wb-leave', text: 'Leave this game' });
-    sheet.stage.append(h('p', { class: 'rp-help wb-preview', text: 'A dummy lock: 3 tumblers, no clock, no trace, no XP. It never trips, so try the ring as long as you like.' }), stage, leaveBtn);
-    showSheet(true, { word: 'BYPASS · PRACTICE', titleText: 'Practice lock' });
+    const left = new Promise((resolve) => { leave = () => resolve(null); });
+    const fs = openFullScreen({ word: 'BYPASS · PRACTICE', title: 'Practice lock', note: 'A dummy lock: no clock, no trace, no XP. It never trips, so try it as long as you like.', onLeave: () => leave?.() });
     hold(true);
-    const left = new Promise((resolve) => { leave = () => resolve(null); leaveBtn.addEventListener('click', leave); });
-    try { await Promise.race([playGame(stage, 'practice', { seed: nextSeed(), sound: () => {}, reducedMotion }), left]); } catch (error) { console.warn('Stardust workbench: the practice lock could not run', error); }
-    leave = null; sheet.stage.replaceChildren(); showSheet(false); hold(false);
+    try { await Promise.race([playGame(fs.stage, 'practice', { seed: nextSeed(), sound: () => {}, reducedMotion }), left]); } catch (error) { console.warn('Stardust workbench: the practice lock could not run', error); }
+    leave = null; fs.close(); hold(false);
     commit({ ...state, said: 'Practice lock done. It pays nothing and risks nothing.' }, { silent: true });
   }
 
@@ -253,9 +250,11 @@ export function createWorkbench({ store, bus, onfoot, dialogueBox, sheet, hud, t
     closePanel();
     hold(true);
     hud.hidden = true;
+    const fs = openFullScreen({ bare: true, title: 'Shooting gallery' });
     let result = null;
-    try { result = await playGallery(document.body, { state: createGallery({ seed: nextSeed(), lesson: setup.lesson, setup, height }), xpLeft: left, sound: () => {}, reducedMotion }); }
+    try { result = await playGallery(fs.stage, { state: createGallery({ seed: nextSeed(), lesson: setup.lesson, setup, height }), xpLeft: left, sound: () => {}, reducedMotion }); }
     catch (error) { console.warn('Stardust workbench: the gallery could not run', error); }
+    fs.close();
     hud.hidden = false;
     hold(false);
     if (result) {
@@ -270,15 +269,12 @@ export function createWorkbench({ store, bus, onfoot, dialogueBox, sheet, hud, t
     const { level, points } = gymLoadout(state.progress, 'navigation');
     const setup = setupNavTrainer({ points, level });
     closePanel();
-    sheet.stage.replaceChildren();
-    const stage = h('div', { class: 'wb-stage' });
-    sheet.stage.append(stage);
-    showSheet(true, { word: 'PERIHELION · TRAINER', titleText: 'Plot a burn' });
+    const fs = openFullScreen({ bare: true, title: 'Plot a burn' });
     hold(true);
     let result = null;
-    try { result = await playNavTrainer(stage, { index, setup, sound: () => {}, reducedMotion, progress: state.navProgress }); }
+    try { result = await playNavTrainer(fs.stage, { index, setup, sound: () => {}, reducedMotion, progress: state.navProgress, embedded: true }); }
     catch (error) { console.warn('Stardust workbench: Perihelion could not run', error); }
-    sheet.stage.replaceChildren(); showSheet(false); hold(false);
+    fs.close(); hold(false);
     if (result) {
       const r = settleSector({ navProgress: state.navProgress, result });
       const next = earnXp({ ...state, navProgress: r.navProgress }, 'navigation', r.paid).state;
@@ -436,20 +432,17 @@ export function createWorkbench({ store, bus, onfoot, dialogueBox, sheet, hud, t
     bus.emit('roll:attempt', { ...at.attempt, who: 'You', label: `Social attempt · ${at.opt.push.ability} with ${at.opt.push.approach}`, preview: [pv?.line, ...at.head.lines].filter(Boolean).join(' ') });
     sound('talk');
     await wait(reducedMotion() ? 500 : 1700);
-    sheet.stage.replaceChildren();
-    const note = h('p', { class: 'rp-help wb-preview', text: [pv?.line, pv?.nextLine, ...at.head.lines].filter(Boolean).join(' ') });
-    const stage = h('div', { class: 'wb-stage' });
-    const leaveBtn = h('button', { type: 'button', class: 'wb-leave', text: 'Back off (no cost)' });
-    sheet.stage.append(note, stage, leaveBtn);
-    showSheet(true, { word: `${at.opt.push.ability.toUpperCase()} · ${at.opt.push.approach.toUpperCase()} · ${at.label.toUpperCase()} ROLL`, titleText: who });
+    const left = new Promise((resolve) => { leave = () => resolve(null); });
+    const fs = openFullScreen({ word: `${at.opt.push.ability.toUpperCase()} · ${at.opt.push.approach.toUpperCase()} · ${at.label.toUpperCase()} ROLL`, title: who, note: [pv?.line, pv?.nextLine, ...at.head.lines].filter(Boolean).join(' '), onLeave: () => leave?.() });
+    const stage = fs.stage;
+    fs.leave.textContent = 'Back off (no cost)';
     hold(true);
-    const left = new Promise((resolve) => { leave = () => resolve(null); leaveBtn.addEventListener('click', leave); });
     const o = at.opt.push;
     const range = o.bribe ? C.bribeRange(state, o) : null;
     let result;
     try { result = await Promise.race([playGame(stage, at.game, { seed: nextSeed(), setup: at.setup, opening: at.opening, range, gift: o.bribe?.gift ? Object.entries(o.bribe.gift).map(([i, n]) => `${n} ${i.replace(/-/g, ' ')}`).join(' and ') : null, who, what: person.wants[at.opt.push.want || 'good-cutter']?.label, sound: () => {}, reducedMotion }), left]); }
     catch (error) { console.warn('Stardust workbench: the push could not run', error); result = null; }
-    leave = null; sheet.stage.replaceChildren(); showSheet(false); hold(false);
+    leave = null; fs.close(); hold(false);
     void station;
     return result;
   }

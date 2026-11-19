@@ -78,3 +78,13 @@ body .tk-panel[hidden]{display:none}
 @media (max-width:700px){.tk-panel{bottom:0;left:0;transform:none;width:100vw;max-height:88dvh;border-radius:12px 12px 0 0;padding:10px 12px 14px;font-size:14px}.tk-text{font-size:15px}.tk-line.is-you{margin-left:8px}}
 .tk-line.is-earlier{opacity:.78;border-left-color:#3b5a70}
 @media (max-width:700px){body .tk-panel.ui-dialogue{top:auto;bottom:6px;left:50%;width:98vw;max-height:84dvh;grid-template-columns:56px minmax(0,1fr)}.tk-pips i{width:7px;height:7px}.tk-pips{gap:2px}.tk-bondname{font-size:8px}}
+
+/* Every station's game on the shared full-screen helper (integration lane). The game panel fills the stage; boards stay readable at their own
+   aspect and centre; long panels scroll inside the stage rather than the page. Games that draw their own top bar (gallery, Perihelion) are
+   mounted bare: their panel is the whole screen, so the fixed positioning they use alone is dropped here. */
+.wb-fstage>.rp-panel{flex:1 1 0;min-height:0;max-width:960px;width:100%;margin:0 auto;display:flex;flex-direction:column;gap:8px;overflow:auto;overscroll-behavior:contain;background:#0b141fcc;border-radius:10px}
+.wb-fstage>.rp-panel>.rp-eyebrow{margin:0}
+.wb-fstage>.rp-panel>.rp-help:not(.rp-status){display:none}
+.wb-full-bare .wb-fstage{max-width:none;padding:0}
+.wb-full-bare .wb-fstage>.rp-panel.ga-full,.wb-full-bare .wb-fstage>.rp-panel.pr-full{position:relative;inset:auto;z-index:auto;max-width:none;overflow:hidden;background:none;border-radius:0;padding:0}
+.wb-full-bare{padding:0}

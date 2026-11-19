@@ -15,17 +15,19 @@ const h = (tag, attrs = {}, ...kids) => {
   return el;
 };
 
-export function openFullScreen({ word = '', title = '', note = '', onLeave = () => {} } = {}) {
+export function openFullScreen({ word = '', title = '', note = '', onLeave = () => {}, bare = false } = {}) {
   const leave = h('button', { type: 'button', class: 'wb-leave wb-fleave ui-btn', text: 'Leave this game' });
   leave.addEventListener('click', () => onLeave());
   const top = h('div', { class: 'wb-ftop' }, h('div', { class: 'wb-fhead' }, h('p', { class: 'wb-feyebrow', text: word }), h('h2', { class: 'wb-ftitle', text: title })), leave);
   const noteEl = note ? h('p', { class: 'rp-help wb-preview wb-fnote', text: note }) : null;
   const stage = h('div', { class: 'wb-stage wb-fstage' });
-  const root = h('section', { class: 'wb-full', role: 'dialog', 'aria-label': title || 'Game' }, top, noteEl, stage);
+  // `bare`: for games that already draw their own top bar and Leave (Perihelion, the shooting gallery): the helper still owns the
+  // screen (backdrop, layer, body class) but adds no bar of its own.
+  const root = h('section', { class: bare ? 'wb-full wb-full-bare' : 'wb-full', role: 'dialog', 'aria-label': title || 'Game' }, ...(bare ? [] : [top, noteEl]), stage);
   document.body.append(root);
   document.body.classList.add('wb-full-open');
   return {
-    root, stage, leave,
+    root, stage, leave, bare,
     close() { root.remove(); document.body.classList.remove('wb-full-open'); },
   };
 }

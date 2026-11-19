@@ -12,10 +12,10 @@ const COL = { cyan: '#81e6df', amber: '#ffad72', silver: '#d6e2ec', violet: '#b9
 const MOD = { standard: COL.cyan, refuel: COL.green, slipstream: COL.violet, unstable: COL.amber };
 const MAX_DRAG = 200; // world units of drag for 100% thrust
 
-export function playPerihelion(root, { state, title: title0 = 'Perihelion', sound = () => {}, reducedMotion = () => false, xpFor = null } = {}) {
+export function playPerihelion(root, { state, title: title0 = 'Perihelion', sound = () => {}, reducedMotion = () => false, xpFor = null, embedded = false } = {}) {
   const s = state;
   // On a desktop the game owns the screen like the trainer's gallery: a fixed overlay on <body>, HUD across the top, map as big as fits.
-  const full = typeof matchMedia === 'function' && matchMedia('(min-width: 900px)').matches;
+  const full = embedded || (typeof matchMedia === 'function' && matchMedia('(min-width: 900px)').matches); // embedded: the shared workbench full-screen helper owns the screen, so the panel mounts in its stage
   const still = () => reducedMotion();
   // ---- DOM ------------------------------------------------------------------------------------------------------------------
   const meter = (cls, label) => h('div', { class: `pr-meter ${cls}` }, h('span', { text: label }), h('i', {}, h('u'), h('s'), h('em'), h('b')));
@@ -49,8 +49,8 @@ export function playPerihelion(root, { state, title: title0 = 'Perihelion', soun
     h('p', { class: 'rp-help pr-tip', text: 'Drag from the ship to aim; a longer drag is a harder burn. BURN, then tap the left or right half of the map to trim, and press MARK when the ring is lit.' }));
   panel.__state = s;
   // The stage keeps a small stand-in so the sheet behind still reads as "this game is open".
-  const behind = full ? h('div', { class: 'rp-panel mg-skin ui-panel pr-behind', text: 'Perihelion is open full screen.' }) : null;
-  if (full) { root.append(behind); document.body.append(panel); } else root.append(panel);
+  const behind = full && !embedded ? h('div', { class: 'rp-panel mg-skin ui-panel pr-behind', text: 'Perihelion is open full screen.' }) : null;
+  if (embedded) root.append(panel); else if (full) { root.append(behind); document.body.append(panel); } else root.append(panel);
   let finish;
   const promise = new Promise((r) => { finish = r; });
   promise.state = s;
