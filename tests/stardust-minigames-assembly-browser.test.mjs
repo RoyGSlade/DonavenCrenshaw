@@ -69,7 +69,7 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
     /** Where a loose part's first cell is on the board right now (tray size), after bringing the part into view in the tray. */
     const trayCell = (id) => page.evaluate(({ id }) => import('/projects/Space-Shooter/voyage/minigames/assembly.js').then((A) => {
       const s = document.querySelector('.asm-panel').__state, p = s.pieces.find((q) => q.id === id), T = A.areasOf(s).tray;
-      if (s.layout.scrolls) { const z = A.pieceSize(s, p); const over = p.x + z.w - (T.x + T.w - 10), under = T.x + 10 - p.x; if (over > 0) A.scrollTray(s, over); else if (under > 0) A.scrollTray(s, -under); }
+      if (s.layout.scrolls) { const z = A.pieceSize(s, p); const over = p.x + z.w - (T.x + T.w - 24), under = T.x + 24 - p.x; if (over > 0) A.scrollTray(s, over); else if (under > 0) A.scrollTray(s, -under); }
       const c = A.pieceCells(p)[0], cell = A.cellOf(s, p);
       return { x: p.x + (c[0] + 0.5) * cell, y: p.y + (c[1] + 0.5) * cell };
     }), { id });
@@ -138,6 +138,16 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
         await shot('1-start');
       });
 
+      await t.test('the tray at rest: no scroll, a padded left edge, then a part picked and turned from where the game left it', async () => {
+        const rest = await page.evaluate(() => import('/projects/Space-Shooter/voyage/minigames/assembly.js').then((A) => { const s = document.querySelector('.asm-panel').__state, T = A.areasOf(s).tray, ps = s.pieces.filter((p) => !p.placed); return { scroll: s.trayScroll, minX: Math.min(...ps.map((p) => p.x)) - T.x, minY: Math.min(...ps.map((p) => p.y)) - T.y, gutter: A.GUTTER, label: A.TRAY_LABEL, first: ps.sort((a, b) => a.home - b.home)[0].id }; }));
+        assert.equal(rest.scroll, 0); assert.ok(rest.minX >= rest.gutter, `the leftmost part clears the tray edge (${rest.minX})`); assert.ok(rest.minY >= rest.label, `the top row clears the PARTS label (${rest.minY})`);
+        // pick the first part where it lies (no scroll helper) and turn it once: this is the state the game leaves
+        const at = await px(await page.evaluate(({ id }) => import('/projects/Space-Shooter/voyage/minigames/assembly.js').then((A) => { const s = document.querySelector('.asm-panel').__state, p = s.pieces.find((q) => q.id === id), c = A.pieceCells(p)[0], cell = A.cellOf(s, p); return { x: p.x + (c[0] + 0.5) * cell, y: p.y + (c[1] + 0.5) * cell }; }), { id: rest.first }));
+        await hand.down(at); await wait(page, 60); await hand.up(); await wait(page, 100);
+        await tap('.asm-turn[data-turn=right]');
+        await shot('2-part-picked-turned');
+      });
+
       await t.test('a part picked and turned (the thumb buttons, Q and E, the wheel)', async () => {
         const k = await fitTurn(page);
         // pick it by tapping the piece in the tray
@@ -162,9 +172,9 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
           const s1 = await page.evaluate(() => document.querySelector('.asm-panel').__state.trayScroll);
           assert.ok(s1 > s0, `a sideways swipe scrolls the tray (${s0} to ${s1})`);
           assert.equal((await S(page)).phase, 'fit'); assert.equal(await page.evaluate(() => document.querySelector('.asm-panel').__state.held), null, 'a swipe does not pick a part up');
-          await shot('2b-tray-scrolled'); await page.evaluate(() => { document.querySelector('.asm-panel').__state.trayScroll = 0; });
+          await shot('2b-tray-scrolled');
         }
-        await shot('2-part-picked-turned');
+        await shot('2c-part-turned-buttons-keys-wheel');
       });
 
       await t.test('a wrong part bounces off with a red flash and counts as a wrong fit', async () => {

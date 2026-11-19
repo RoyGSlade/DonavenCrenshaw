@@ -153,7 +153,9 @@ test('the tray: mirror twins are the first decoys, the sockets sit in the housin
     const s = A.createAssembly({ seed, setup: setupAssembly({}), layout }), L = s.layout, ar = A.areasOf(s);
     const decoys = s.pieces.filter((p) => p.role === 'decoy'), partIds = s.pieces.filter((p) => p.role === 'part').map((p) => p.outline);
     assert.equal(decoys.filter((d) => partIds.includes(A.outlineById(d.outline).twin)).length, 3, 'with 4 parts all three decoys are mirror twins');
-    for (const p of s.pieces) { const z = A.pieceSize(s, p); assert.ok(z.w <= 3 * L.trayCell && z.h <= 3 * L.trayCell, 'a part in the tray is at tray size'); if (!L.scrolls) assert.ok(p.x >= ar.tray.x && p.y >= ar.tray.y && p.x + z.w <= ar.tray.x + ar.tray.w && p.y + z.h <= ar.tray.y + ar.tray.h, `${p.id} lies in its tray slot`); }
+    for (const p of s.pieces) { const z = A.pieceSize(s, p); assert.ok(z.w <= 3 * L.trayCell && z.h <= 3 * L.trayCell, 'a part in the tray is at tray size'); assert.ok(p.x >= ar.tray.x + A.GUTTER && p.y >= ar.tray.y + A.TRAY_LABEL && p.y + z.h <= ar.tray.y + ar.tray.h - A.GUTTER, `${p.id} sits inside the tray, clear of its label and edges`); if (!L.scrolls) assert.ok(p.x + z.w <= ar.tray.x + ar.tray.w - A.GUTTER, `${p.id} is clear of the right edge`); }
+    const loose = s.pieces.map((p) => ({ p, z: A.pieceSize(s, p) }));
+    for (let i = 0; i < loose.length; i++) for (let j = i + 1; j < loose.length; j++) { const a = loose[i], b = loose[j]; const gapX = Math.max(b.p.x - (a.p.x + a.z.w), a.p.x - (b.p.x + b.z.w)), gapY = Math.max(b.p.y - (a.p.y + a.z.h), a.p.y - (b.p.y + b.z.h)); assert.ok(Math.max(gapX, gapY) >= A.GUTTER - 1, `${a.p.id} and ${b.p.id} keep a ${A.GUTTER}-unit gutter in the tray (${Math.max(gapX, gapY)})`); }
     for (const k of s.sockets) assert.ok(k.x >= ar.housing.x && k.y >= ar.housing.y + A.HEADER && k.x + k.w * L.cell <= ar.housing.x + ar.housing.w && k.y + k.h * L.cell <= ar.housing.y + ar.housing.h, 'the open socket fits the housing');
     for (const k of s.sockets) assert.ok(Math.abs(k.x + (k.w * L.cell) / 2 - (ar.housing.x + ar.housing.w / 2)) <= 1 && Math.abs(k.y + (k.h * L.cell) / 2 - (ar.housing.y + A.HEADER + (ar.housing.h - A.HEADER) / 2)) <= 1, 'every socket opens in the middle of the housing: one large socket at a time');
     assert.ok(L.cell >= 100, 'cells are large');
@@ -192,6 +194,15 @@ test('the tray on a phone scrolls sideways and clamps; no scrolling on a wide bo
   const p = s.pieces.find((q) => q.home === 0), x0 = p.x;
   A.scrollTray(s, 100); assert.equal(Math.round(x0 - p.x), 100); A.scrollTray(s, 99999); assert.equal(s.trayScroll, max); A.scrollTray(s, -99999); assert.equal(s.trayScroll, 0);
   assert.equal(A.trayMax(A.createAssembly({ seed: 3, setup: setupAssembly({}), layout: 'wide' })), 0);
+  // the resting tray: scroll 0 leaves a padded left edge; scrolling then fitting a part rests it again (reset and re-layout together, in the game)
+  const r = A.createAssembly({ seed: 3, setup: setupAssembly({}), layout: 'tall' }), first = r.pieces.find((q) => q.home === 0);
+  assert.equal(r.trayScroll, 0); assert.ok(first.x >= A.areasOf(r).tray.x + A.GUTTER, 'the first part starts clear of the tray edge');
+  A.scrollTray(r, 300);
+  const k = A.socketOf(r), mine = A.pieceOf(r, k.part); A.select(r, mine.id); while (mine.rot !== 0) A.turn(r, 1);
+  A.grab(r, mine.id); A.carry(r, k.x + A.pieceSize(r, mine).w / 2, k.y + A.pieceSize(r, mine).h / 2); assert.equal(A.drop(r), 'snapped');
+  for (const b of r.bolts.slice()) { A.grabBolt(r, b.id); A.carryBolt(r, b.hx, b.hy); A.dropBolt(r); A.screwed(r, b.id, { success: true, grade: 90 }); }
+  assert.equal(r.trayScroll, 0, 'a new socket opens with the tray resting'); const f2 = r.pieces.filter((q) => !q.placed).sort((a, b) => a.home - b.home)[0];
+  assert.ok(f2.x >= A.areasOf(r).tray.x + A.GUTTER, 'and the first loose part is not clipped by the left edge');
 });
 
 // ---- the roll and the points ----------------------------------------------------------------------------------------------------

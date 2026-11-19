@@ -59,15 +59,18 @@ export const fitsSocket = (outline, rot, socketOutline) => keyOf(turnCells(outli
  */
 const mk = (o) => Object.freeze({ ...o, fit: Object.freeze({ housing: Object.freeze(o.fit.housing), tray: Object.freeze(o.fit.tray) }), bolt: Object.freeze({ housing: Object.freeze(o.bolt.housing), tray: Object.freeze(o.bolt.tray) }) });
 export const LAYOUTS = Object.freeze({
-  wide: mk({ kind: 'wide', W: 1000, H: 620, cell: 100, trayCell: 40, scrolls: false,
-    fit: { housing: { x: 20, y: 20, w: 580, h: 580 }, tray: { x: 620, y: 20, w: 360, h: 580, cols: 3, rows: 3 } },
-    bolt: { housing: { x: 20, y: 20, w: 580, h: 580 }, tray: { x: 620, y: 220, w: 360, h: 180, cols: 4, rows: 1 } } }),
+  wide: mk({ kind: 'wide', W: 1000, H: 620, cell: 100, trayCell: 36, scrolls: false,
+    fit: { housing: { x: 20, y: 20, w: 540, h: 580 }, tray: { x: 580, y: 20, w: 400, h: 580, cols: 3, rows: 3 } },
+    bolt: { housing: { x: 20, y: 20, w: 540, h: 580 }, tray: { x: 580, y: 220, w: 400, h: 180, cols: 4, rows: 1 } } }),
   tall: mk({ kind: 'tall', W: 620, H: 860, cell: 136, trayCell: 64, scrolls: true,
     fit: { housing: { x: 20, y: 20, w: 580, h: 540 }, tray: { x: 20, y: 580, w: 580, h: 260, cols: 0, rows: 1 } },
     bolt: { housing: { x: 20, y: 20, w: 580, h: 700 }, tray: { x: 20, y: 740, w: 580, h: 100, cols: 4, rows: 1 } } }),
 });
 export const layoutOf = (kind) => LAYOUTS[kind] || LAYOUTS.wide;
-export const HEADER = 64; // the housing's top strip (the unit's name and the bay icons)
+export const HEADER = 64;
+/** The tray's padding: a gutter between parts and to the tray's edge, and room for its label on top, so nothing touches or clips. */
+export const GUTTER = 16, TRAY_LABEL = 34;
+const trayStep = (L) => 3 * L.trayCell + 2 * GUTTER; // the housing's top strip (the unit's name and the bay icons)
 /** The housing and tray rectangles for what the player is doing now. */
 export const areasOf = (s) => (s.phase === 'bolt' ? s.layout.bolt : s.layout.fit);
 const slot = (area, i) => { const cw = area.w / area.cols, ch = area.h / area.rows, c = i % area.cols, r = Math.floor(i / area.cols); return { x: area.x + c * cw, y: area.y + r * ch, w: cw, h: ch }; };
@@ -152,8 +155,8 @@ export const trayPieces = (s) => s.pieces.filter((p) => !p.placed);
 /** How far the tray row can scroll (phones only: the tray is one row that scrolls sideways). */
 export const trayMax = (s) => {
   if (!s.layout.scrolls || s.phase === 'bolt') return 0;
-  const n = trayPieces(s).length, t = areasOf(s).tray, step = 3 * s.layout.trayCell + 24;
-  return Math.max(0, n * step + 24 - t.w);
+  const n = trayPieces(s).length, t = areasOf(s).tray;
+  return Math.max(0, n * trayStep(s.layout) + GUTTER - t.w);
 };
 /** Scroll the tray row by dx board units (clamped). */
 export function scrollTray(s, dx) { s.trayScroll = Math.max(0, Math.min(trayMax(s), s.trayScroll + dx)); place(s); return s.trayScroll; }
@@ -172,8 +175,12 @@ function home(s, p, i) {
   const L = s.layout, A = areasOf(s).tray;
   p.big = false;
   const z = pieceSize(s, p);
-  if (L.scrolls) { const step = 3 * L.trayCell + 24, box = { x: A.x + 12 + i * step - s.trayScroll, y: A.y, w: step - 24, h: A.h }; const pos = centred(box, z.w, z.h); p.x = pos.x; p.y = pos.y; }
-  else { const sl = slot(A, i), pos = centred(sl, z.w, z.h); p.x = pos.x; p.y = pos.y; }
+  if (L.scrolls) { const step = trayStep(L), box = { x: A.x + 2 * GUTTER + i * step - s.trayScroll, y: A.y + TRAY_LABEL, w: 3 * L.trayCell, h: A.h - TRAY_LABEL - GUTTER }; const pos = centred(box, z.w, z.h); p.x = pos.x; p.y = pos.y; }
+  else {
+    // a padded slot for every part: the tray's inner area (under the label, inside a gutter) split in a grid, a gutter kept round each slot, the part centred
+    const inner = { x: A.x + GUTTER, y: A.y + TRAY_LABEL, w: A.w - 2 * GUTTER, h: A.h - TRAY_LABEL - GUTTER, cols: A.cols, rows: A.rows };
+    const sl = slot(inner, i), box = { x: sl.x + GUTTER / 2, y: sl.y + GUTTER / 2, w: sl.w - GUTTER, h: sl.h - GUTTER }, pos = centred(box, z.w, z.h); p.x = pos.x; p.y = pos.y;
+  }
   p.homeX = p.x; p.homeY = p.y;
 }
 /** Switch between the wide and the tall board (a phone turned round). Loose pieces go home; placed ones stay in their sockets. */
@@ -318,7 +325,7 @@ function partDone(s) {
   k.done = true; push(s, 'part-done', { socket: k.id, index: s.active });
   s.bolts = null;
   if (s.active + 1 >= s.sockets.length) { finish(s, true); return; }
-  s.active++; s.phase = 'fit'; s.selected = null;
+  s.active++; s.phase = 'fit'; s.selected = null; s.trayScroll = 0; // a new socket opens with the tray resting at its padded left edge
   push(s, 'next-socket', { index: s.active });
   place(s);
 }
