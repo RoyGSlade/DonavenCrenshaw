@@ -186,7 +186,13 @@ export function createStealthLayer({ map, root, setup = null, reducedMotion = ()
     f.filter = 'none'; f.setTransform(1, 0, 0, 1, 0, 0);
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.imageSmoothingEnabled = true;
     ctx.drawImage(fogCanvas, 0, 0, W, H, 0, 0, ctx.canvas.width, ctx.canvas.height);
-    if (flash > 0) { ctx.fillStyle = `rgba(255,60,50,${Math.min(0.3, flash * 0.6)})`; ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height); }
+    if (sim.alarm.on || flash > 0) {
+      // A pulsing red edge only: the middle of the screen stays clear so the floor is readable.
+      const cw = ctx.canvas.width, ch = ctx.canvas.height, pulse = reducedMotion() ? 0.8 : 0.65 + Math.sin(sim.time * 5) * 0.35;
+      const g = ctx.createRadialGradient(cw / 2, ch / 2, Math.min(cw, ch) * 0.42, cw / 2, ch / 2, Math.hypot(cw, ch) * 0.55);
+      g.addColorStop(0, 'rgba(255,40,30,0)'); g.addColorStop(1, `rgba(255,40,30,${0.5 * pulse})`);
+      ctx.fillStyle = g; ctx.fillRect(0, 0, cw, ch);
+    }
     ctx.restore();
   }
 
