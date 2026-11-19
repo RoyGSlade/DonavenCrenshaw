@@ -58,9 +58,18 @@ export async function walkToInteract(page, kind, id, via = []) {
   // little under its reach, until the thing is in reach.
   const r = Math.max(40, Math.min(spot.reach * 0.75, 140));
   const sides = [[0, 1], [1, 0], [-1, 0], [0, -1], [0.7, 0.7], [-0.7, 0.7], [0.7, -0.7], [-0.7, -0.7]];
-  for (const [sx, sy] of sides) {
+  // Two passes: first only the sides whose standing point is clear of a wall, a window or the map's edge by a body's width, then every side. Walking at
+  // a point inside the wall only slides along it, and in a small room the slide runs past the return door and through it (Vey's
+  // lounge: "below Vey" is the south wall, the doorway is in that wall, and the player ended back aboard the ship). Props do not
+  // count: standing at a counter's edge is how Edna's counter is reached.
+  const inWall = (px, py) => page.evaluate(([x, y]) => {
+    const m = document.querySelector('.of-world').__world.map, T = m.tile, R = 30; // a body's width plus slack: a point hard against the wall face is just as bad as one inside it
+    return [[-R, -R], [R, -R], [-R, R], [R, R]].some(([ox, oy]) => { const row = m.cells[Math.floor((y + oy) / T)]; const c = row?.[Math.floor((x + ox) / T)]; return !c || c === 'wall' || c === 'window' || c === 'void'; });
+  }, [px, py]);
+  for (const openOnly of [true, false]) for (const [sx, sy] of sides) {
     const now = kind === 'npc' ? await page.evaluate((id) => document.querySelector('.of-world').__world.npcAt?.(id), id) : null;
     const cx = now?.x ?? spot.x, cy = now?.y ?? spot.y;
+    if (openOnly && await inWall(cx + sx * r, cy + sy * r)) continue;
     let w = await walkTo(page, cx + sx * r, cy + sy * r, { near: 18, tries: 90 });
     if (w.target?.kind === kind && w.target?.id === id) return w;
     for (let i = 0; i < 4; i++) {
