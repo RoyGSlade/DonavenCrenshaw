@@ -287,6 +287,37 @@ export function setupNav({ tier = 0, points = {}, level = POINT_MAX } = {}) {
   };
 }
 
+// --- Navigation v2: Perihelion, plot a burn (Donaven's Gemini concept, 2026-11-19) -----------------------------
+// Categories: time (travel time), fuel (fuel use), warning (hazard warning). Each one changes the game you can see:
+//   time     the engine fires 0.1 s longer per point (1.4 s .. 2.3 s of a 3.5 s burn), and one spare turn at 3, 6 and 9 points
+//   fuel     every burn and every trim costs 4% less fuel per point (x1 .. x0.64); the fuel bar draws the saving
+//   warning  the predicted arc shows 4.5% more of the burn per point (60% .. 100%), shards are flagged 0.12 s earlier per
+//            point (0.5 s .. 1.58 s), and from 6 points the fog gives up what it hides
+// Roll tier (shared clock for the turn limit): Rough -1 turn, Good and Smooth +1. Field sectors get busier on a bad roll:
+// wells 1 (2 on Rough), asteroids 2 +/- the tier, a solar flare on Shaky and Rough, shards on every burn after the first on
+// Rough, on the even turns on Shaky and Steady, none on Good and Smooth.
+export const PERI_CATEGORIES = Object.freeze(['time', 'fuel', 'warning']);
+export const PERI_BASE = Object.freeze({ turns: 5, window: 1.4, windowPerPoint: 0.1, pointsPerTurn: 3, costPerPoint: 0.04, arc: 0.6, arcPerPoint: 0.045, warn: 0.5, warnPerPoint: 0.12, fogAt: 6 });
+export function setupPerihelion({ tier = 0, points = {}, level = POINT_MAX } = {}) {
+  const p = cleanPoints(points, PERI_CATEGORIES, level);
+  const t = Math.max(-2, Math.min(2, Math.trunc(tier) || 0));
+  const b = PERI_BASE;
+  const r4 = (x) => Math.round(+x.toFixed(6) * 10000) / 10000;
+  return {
+    turns: b.turns + tierInfo(t).extra + Math.floor(p.time / b.pointsPerTurn),
+    window: r4(b.window + b.windowPerPoint * p.time),
+    fuelFactor: r4(1 - b.costPerPoint * p.fuel),
+    arc: r4(Math.min(1, b.arc + b.arcPerPoint * p.warning)),
+    warn: r4(b.warn + b.warnPerPoint * p.warning),
+    scan: p.warning >= b.fogAt,
+    wells: t === -2 ? 2 : 1,
+    asteroids: [4, 3, 2, 1, 1][t + 2],
+    flares: t <= -1 ? 1 : 0,
+    meteorEvery: [1, 2, 2, 0, 0][t + 2],
+    tier: t, points: p, label: tierInfo(t).label,
+  };
+}
+
 // --- Stealth: shadow slip (PLAN.md section 2.4) -----------------------------------
 // Categories: quiet (quiet movement), range (detection range), decay (heat decay).
 //   quiet   a heard step adds 7% less heat per point                 (12 .. 4.4 per heard step)

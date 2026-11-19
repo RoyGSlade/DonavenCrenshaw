@@ -2,7 +2,7 @@
 // "Smooth roll: 15 s more, a smaller board (4 x 4)." and how far the next tier up is: "2 more on the
 // d20 would make it Smooth." It compares the setup at the rolled tier with the setup at a Steady roll
 // (same level and points) using the real setup functions, so the line cannot disagree with the game. Pure.
-import { tierOf, tierInfo, setupRepair, setupHack, setupHaggle, setupPersuade, setupIntimidate, setupCraft, setupNav, setupStealth, setupPilot } from './setup.js';
+import { tierOf, tierInfo, setupRepair, setupHack, setupHaggle, setupPersuade, setupIntimidate, setupCraft, setupNav, setupPerihelion, setupStealth, setupPilot } from './setup.js';
 
 const r1 = (x) => Math.round(x * 10) / 10;
 const num = (x) => (Number.isInteger(r1(x)) ? String(r1(x)) : r1(x).toFixed(1));
@@ -20,6 +20,7 @@ export const SPECS = Object.freeze({
   intimidate: { setup: setupIntimidate, phrases: [(b, n) => { const d = n.chances[0] - b.chances[0]; return d === 0 ? null : `snap risk ${Math.abs(d)} points ${d < 0 ? 'lower' : 'higher'}`; }, (b, n) => (n.readsOdds === b.readsOdds ? null : n.readsOdds ? 'you read the exact risk' : 'you only read a word for the risk')] },
   craft: { setup: setupCraft, phrases: [(b, n) => { const d = n.strikes - b.strikes; return d === 0 ? null : `${Math.abs(d)} ${d < 0 ? 'fewer' : 'more'} shaping step${Math.abs(d) === 1 ? '' : 's'}`; }, pct('workFactor', 'work time', 'longer', 'shorter'), pct('zone', 'heat band')] },
   nav: { setup: setupNav, phrases: [board('size'), (b, n) => { const d = n.hazards - b.hazards; return d === 0 ? null : `${Math.abs(d)} ${d < 0 ? 'fewer' : 'more'} hazard${Math.abs(d) === 1 ? '' : 's'}`; }, pct('budgetFactor', 'time budget', 'bigger', 'smaller')] },
+  perihelion: { setup: setupPerihelion, phrases: [(b, n) => { const d = n.turns - b.turns; return d === 0 ? null : `${Math.abs(d)} ${d > 0 ? 'more' : 'fewer'} turn${Math.abs(d) === 1 ? '' : 's'}`; }, (b, n) => { const d = n.wells - b.wells; return d === 0 ? null : `${Math.abs(d)} ${d < 0 ? 'fewer' : 'more'} gravity well${Math.abs(d) === 1 ? '' : 's'}`; }, (b, n) => { const d = n.asteroids - b.asteroids; return d === 0 ? null : `${Math.abs(d)} ${d < 0 ? 'fewer' : 'more'} rock${Math.abs(d) === 1 ? '' : 's'}`; }, (b, n) => (n.flares === b.flares ? null : n.flares > b.flares ? 'a solar flare' : 'no solar flare'), (b, n) => (n.meteorEvery === b.meteorEvery ? null : n.meteorEvery === 0 ? 'no shards' : n.meteorEvery < b.meteorEvery || b.meteorEvery === 0 ? 'more shards' : 'fewer shards')] },
   stealth: { setup: setupStealth, phrases: [(b, n) => { const d = n.guards - b.guards; return d === 0 ? null : `${Math.abs(d)} ${d < 0 ? 'fewer' : 'more'} guard${Math.abs(d) === 1 ? '' : 's'}`; }, (b, n) => { const d = n.beats - b.beats; return d === 0 ? null : `${Math.abs(d)} ${d > 0 ? 'more' : 'fewer'} beats before the shift change`; }] },
   pilot: { setup: setupPilot, phrases: [secs('fall', 'of fall time'), pct('wind', 'wind', 'stronger', 'weaker'), pct('pad', 'pad', 'wider', 'narrower')] },
 });

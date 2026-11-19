@@ -4,7 +4,7 @@
 //   ?newgame=1&mini=hack&roll=9&dc=12&level=6&lock=2&time=1&size=2&retries=3&auto=1
 import { runtimeConfig } from '../../runtime-config.js';
 import { newGameFlag } from '../flag.js';
-import { tierOf, tierInfo, setupRepair, setupHack, poolLasts, setupHaggle, setupCraft, CRAFT_CATEGORIES, setupNav, NAV_CATEGORIES, setupStealth, STEALTH_CATEGORIES, setupPersuade, setupIntimidate, setupPilot, PILOT_CATEGORIES, REPAIR_CATEGORIES, HACK_CATEGORIES, SOCIAL_CATEGORIES } from './setup.js';
+import { tierOf, tierInfo, setupRepair, setupHack, poolLasts, setupHaggle, setupCraft, CRAFT_CATEGORIES, setupNav, NAV_CATEGORIES, setupPerihelion, PERI_CATEGORIES, setupStealth, STEALTH_CATEGORIES, setupPersuade, setupIntimidate, setupPilot, PILOT_CATEGORIES, REPAIR_CATEGORIES, HACK_CATEGORIES, SOCIAL_CATEGORIES } from './setup.js';
 import { playRepair } from './repairView.js';
 import { createRing } from './hack.js';
 import { playRing } from './hackView.js';
@@ -18,6 +18,7 @@ import { createIntimidate } from './intimidate.js';
 import { playIntimidate } from './intimidateView.js';
 import { createPracticeHack } from './hack.js';
 import { rollPreview } from './rollPreview.js';
+import { playNavField, playNavTrainer, TRAINER_SECTORS } from './perihelionEntry.js';
 import { createPilot } from './pilot.js';
 import { playPilot } from './pilotView.js';
 import { createCraft } from './craft.js';
@@ -35,8 +36,8 @@ else boot();
 function boot() {
   $('mg-page').hidden = false;
   const params = new URLSearchParams(location.search);
-  const ids = ['roll', 'level', 'dc', 'lock', 'time', 'size', 'quality', 'retries', 'haggle', 'persuade', 'intimidate', 'handling', 'boost', 'landing', 'speed', 'material', 'fuel', 'warning', 'quiet', 'range', 'decay'];
-  if (['repair', 'hack', 'haggle', 'persuade', 'intimidate', 'pilot', 'practice', 'craft', 'nav', 'stealth'].includes(params.get('mini'))) $('mg-mini').value = params.get('mini');
+  const ids = ['roll', 'level', 'dc', 'lock', 'time', 'size', 'quality', 'retries', 'haggle', 'persuade', 'intimidate', 'sector', 'handling', 'boost', 'landing', 'speed', 'material', 'fuel', 'warning', 'quiet', 'range', 'decay'];
+  if (['repair', 'hack', 'haggle', 'persuade', 'intimidate', 'pilot', 'practice', 'craft', 'nav', 'perihelion', 'trainer', 'stealth'].includes(params.get('mini'))) $('mg-mini').value = params.get('mini');
   for (const id of ids) { const v = params.get(id); if (v != null && /^\d+$/.test(v)) $(id).value = v; }
   if (Object.keys(CONSEQUENCES).includes(params.get('context'))) $('context').value = params.get('context');
   const mini = () => $('mg-mini').value;
@@ -55,6 +56,8 @@ function boot() {
       ? setupPersuade({ tier, level: v.level, points: Object.fromEntries(SOCIAL_CATEGORIES.map((c) => [c, v[c] ?? 0])) })
       : mini() === 'stealth'
       ? setupStealth({ tier, level: v.level, points: Object.fromEntries(STEALTH_CATEGORIES.map((c) => [c, v[c] ?? 0])) })
+      : mini() === 'perihelion' || mini() === 'trainer'
+      ? setupPerihelion({ tier: mini() === 'trainer' ? 0 : tier, level: v.level, points: Object.fromEntries(PERI_CATEGORIES.map((c) => [c, v[c] ?? 0])) })
       : mini() === 'nav'
       ? setupNav({ tier, level: v.level, points: Object.fromEntries(NAV_CATEGORIES.map((c) => [c, v[c] ?? 0])) })
       : mini() === 'craft'
@@ -69,8 +72,8 @@ function boot() {
   const show = () => {
     const { v, attempt, tier, setup } = compute();
     for (const id of ids) $(`o-${id}`).textContent = $(id).value;
-    const hack = mini() === 'hack', hag = mini() === 'haggle', rep = mini() === 'repair', cr = mini() === 'craft', nv = mini() === 'nav', sl = mini() === 'stealth', pe = mini() === 'persuade', it = mini() === 'intimidate', pl = mini() === 'pilot';
-    $('l-lock').hidden = !hack; $('l-context').hidden = !hack; $('l-retries').hidden = !hack; $('l-quality').hidden = !rep; $('l-time').hidden = hag || cr || sl || pe || it || pl; $('l-size').hidden = hag || cr || nv || sl || pe || it || pl; $('l-handling').hidden = !pl; $('l-boost').hidden = !pl; $('l-landing').hidden = !pl; $('l-persuade').hidden = !pe; $('l-intimidate').hidden = !it; $('l-quiet').hidden = !sl; $('l-range').hidden = !sl; $('l-decay').hidden = !sl; $('l-fuel').hidden = !nv; $('l-warning').hidden = !nv; $('l-haggle').hidden = !hag; $('l-speed').hidden = !cr; $('l-material').hidden = !cr; $('l-quality').hidden = !(rep || cr);
+    const hack = mini() === 'hack', hag = mini() === 'haggle', rep = mini() === 'repair', cr = mini() === 'craft', nv = mini() === 'nav' || mini() === 'perihelion' || mini() === 'trainer', pv = mini() === 'perihelion' || mini() === 'trainer', sl = mini() === 'stealth', pe = mini() === 'persuade', it = mini() === 'intimidate', pl = mini() === 'pilot';
+    $('l-lock').hidden = !hack; $('l-context').hidden = !hack; $('l-retries').hidden = !hack; $('l-quality').hidden = !rep; $('l-time').hidden = hag || cr || sl || pe || it || pl; $('l-sector').hidden = mini() !== 'trainer'; $('l-size').hidden = hag || cr || nv || sl || pe || it || pl; $('l-handling').hidden = !pl; $('l-boost').hidden = !pl; $('l-landing').hidden = !pl; $('l-persuade').hidden = !pe; $('l-intimidate').hidden = !it; $('l-quiet').hidden = !sl; $('l-range').hidden = !sl; $('l-decay').hidden = !sl; $('l-fuel').hidden = !nv; $('l-warning').hidden = !nv; $('l-haggle').hidden = !hag; $('l-speed').hidden = !cr; $('l-material').hidden = !cr; $('l-quality').hidden = !(rep || cr);
     if (mini() === 'practice') document.querySelectorAll('#mg-controls label[id^="l-"]').forEach((l) => { l.hidden = true; });
     const spent = Object.values(setup.points).reduce((a, b) => a + b, 0);
     const what = mini() === 'practice'
@@ -83,6 +86,8 @@ function boot() {
       ? `Trust needed <b>${setup.goal}</b> · patience <b>${setup.patience}</b> · you notice <b>${setup.tells}</b> thing${setup.tells === 1 ? '' : 's'} about them`
       : sl
       ? `<b>${setup.guards}</b> guards · shift <b>${setup.beats}</b> beats · a heard step <b>+${Math.round(12 * setup.noiseFactor)}</b> heat · cones about <b>${Math.round(4 * setup.rangeFactor)}</b> cells · cools <b>${setup.decay}</b> a quiet beat`
+      : pv
+      ? `<b>${setup.turns}</b> turns · engine fires <b>${setup.window}</b> s · burns and trims x<b>${setup.fuelFactor}</b> fuel · arc shows <b>${Math.round(setup.arc * 100)}%</b> · shard warning <b>${setup.warn}</b> s${setup.scan ? ' · fog scanned' : ''}${mini() === 'trainer' ? ` · sector <b>${v.sector}</b> of ${TRAINER_SECTORS.length}` : ` · <b>${setup.wells}</b> well${setup.wells === 1 ? '' : 's'} · <b>${setup.asteroids}</b> rocks · ${setup.flares ? 'a solar flare' : 'no flare'} · shards ${setup.meteorEvery === 0 ? 'none' : setup.meteorEvery === 1 ? 'every burn after the first' : 'on even turns'}`}`
       : nv
       ? `Map <b>${setup.size} x ${setup.size}</b> · <b>${setup.hazards}</b> hazards · warning <b>${setup.reveal}</b> ahead · time x<b>${setup.timeFactor}</b> · fuel x<b>${setup.fuelFactor}</b> · time budget x<b>${setup.budgetFactor}</b>`
       : cr
@@ -92,7 +97,7 @@ function boot() {
       : hack
       ? `<b>${setup.firewalls}</b> firewall${setup.firewalls === 1 ? '' : 's'} · <b>${setup.time}s</b> each · mirrors on the path <b>${setup.mirrors.join(', ')}</b> · decoys <b>${setup.decoys.join(', ')}</b> · mirrors start up to <b>${setup.spread}</b> steps off · <b>${setup.retries}</b> ${setup.retries === 1 ? 'retry' : 'retries'} · catch window <b>${Math.round(setup.catchWindow * 100)}%</b>`
       : `Board <b>${setup.size} x ${setup.size}</b> · the water reaches the valve in <b>${poolLasts(setup)}</b> with one leak open · flow <b>x${setup.flow}</b> · quality +<b>${setup.qualityBonus}</b>`;
-    const rp = mini() === 'practice' ? null : rollPreview(mini(), attempt, { level: v.level, points: setup.points });
+    const rp = mini() === 'practice' || mini() === 'trainer' ? null : rollPreview(mini(), attempt, { level: v.level, points: setup.points });
     $('mg-readout').innerHTML = `d20 ${v.roll} + ${v.level} = <b>${attempt.total}</b> vs ${v.dc}${attempt.natural ? ' (natural 20)' : ''}<br>`
       + `Tier <b>${tier > 0 ? '+' : ''}${tier} ${tierInfo(tier).label}</b><br>${what}<br>Points spent ${spent} of ${v.level}`
       + (rp ? `<br><span class="mg-rollline">${rp.line} ${rp.nextLine}</span>` : '');
@@ -115,6 +120,10 @@ function boot() {
       ? await playPersuade(stage, { state: createPersuade({ seed, setup }), who: 'The dockmaster', what: 'let you through', reducedMotion })
       : mini() === 'stealth'
       ? await playStealth(stage, { state: createStealth({ seed, setup }), title: 'Cargo hold', reducedMotion })
+      : mini() === 'perihelion'
+      ? await playNavField(stage, { seed, setup, title: 'Plot a burn', reducedMotion })
+      : mini() === 'trainer'
+      ? await playNavTrainer(stage, { index: Math.max(1, Math.min(TRAINER_SECTORS.length, v.sector || 1)) - 1, setup, reducedMotion })
       : mini() === 'nav'
       ? await playNav(stage, { state: createNav({ seed, setup }), title: 'Lane scan', reducedMotion })
       : mini() === 'craft'

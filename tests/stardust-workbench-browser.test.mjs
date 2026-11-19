@@ -69,7 +69,14 @@ const BOTS = {
     const order = await page.evaluate(() => document.querySelector('.cf-panel').__state.order);
     for (const t of order) await tap(`[data-tool="${t}"]`);
   },
-  nav: async (page, tap) => { const sol = await page.evaluate(() => [...document.querySelector('.nv-panel').__state.solution]); for (let k = 1; k < sol.length; k++) await tap(`.nv-cell[data-i="${sol[k]}"]`); },
+  // Navigation is Perihelion now: a search bot plans the burns from the real state, the view flies them (sped up).
+  nav: async (page) => {
+    const n = await page.evaluate(async () => { const m = await import('/projects/Space-Shooter/voyage/minigames/perihelionBot.js'); const p = document.querySelector('.pr-panel'); const r = m.solve(p.__state, { angles: 36, beam: 5 }); window.__plans = r.plans; p.__view.speed = 30; return r.plans.length; });
+    for (let i = 0; i < n; i++) {
+      await page.evaluate((k) => { const p = document.querySelector('.pr-panel'), pl = window.__plans[k]; p.__view.plan(pl.angle, pl.thrust); p.__view.launch(); }, i);
+      await page.waitForFunction(() => { const s = document.querySelector('.pr-panel')?.__state; return !s || s.phase !== 'burn'; });
+    }
+  },
   stealth: async (page, tap) => { const route = await page.evaluate(() => [...document.querySelector('.st-panel').__state.safe]); for (let k = 1; k < route.length; k++) await tap(`.st-panel .st-cell[data-i="${route[k]}"], .nv-cell[data-i="${route[k]}"]`); },
   persuade: async (page, tap) => { const cards = await page.evaluate(() => { const s = document.querySelector('.pc-panel').__state; return s.hand.filter((c) => s.cares.includes(c.value)).sort((a, b) => b.worth - a.worth).map((c) => c.id); }); for (let k = 0; k < cards.length && !(await page.locator('.rp-result').count()); k++) await tap(`.pc-card[data-id="${cards[k]}"]`); },
   intimidate: async (page, tap) => {
@@ -94,7 +101,8 @@ async function playToEnd(page, id, phone) {
   await page.waitForSelector('.rp-result', { timeout: 45000 });
   await page.waitForTimeout(250);
 }
-const closeCard = async (page, phone) => { await tapper(page, phone)('.rp-result button'); };
+// Perihelion's Continue is idle for 450 ms (a phone tap must not click through), so tap until the card goes.
+const closeCard = async (page, phone) => { for (let i = 0; i < 8; i++) { await tapper(page, phone)('.rp-result button').catch(() => {}); await page.waitForTimeout(250); if (!(await page.locator('.rp-result').count())) return; } };
 
 for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
   const phone = name === 'phone';

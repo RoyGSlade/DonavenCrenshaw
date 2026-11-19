@@ -324,3 +324,43 @@ a.gm-train,a.gm-train:hover,a.gm-train:visited{color:#082126}
 .is-still .mh-panel.is-reset .mh-field,.mh-panel.is-still.is-reset .mh-field{animation:none}
 @keyframes mh-shake{20%{transform:translateX(-4px)}60%{transform:translateX(4px)}}
 @media(max-width:520px){.mh-actions{grid-template-columns:1fr 1fr;}.mh-actions .mh-catch{grid-column:1/3;order:3}.mh-actions .mh-fire{grid-column:1/3;order:4}}
+
+/* Perihelion (navigation v2): canvas map plus a three-meter HUD. Navigation's colour is the hangar cyan. */
+.pr-panel{max-width:min(1040px,100%)}
+.pr-brief{margin:0 0 8px;font-size:12px;line-height:1.45}
+.pr-hud{display:grid;grid-template-columns:1.4fr 1fr auto auto;gap:6px 14px;align-items:center;margin:2px 0 6px}
+.pr-meter{display:grid;grid-template-columns:38px 1fr;gap:2px 8px;align-items:center;font:11px Consolas,monospace;color:#b5c8d5}
+.pr-meter i{position:relative;display:block;height:8px;background:#1b2d3d;border-radius:4px;overflow:hidden}
+.pr-meter u,.pr-meter s,.pr-meter em{position:absolute;top:0;bottom:0;display:block;text-decoration:none}
+.pr-meter u{left:0;background:var(--ui-cyan,#81e6df);transition:width .12s}
+.pr-meter.is-fuel u{background:linear-gradient(90deg,#ffad72,#ffd2a8)}
+.pr-meter s{background:repeating-linear-gradient(135deg,#ffffffcc 0 3px,#ff6b5acc 3px 6px)}
+.pr-meter em{border:1px dashed #81e6df;border-radius:2px;box-sizing:border-box}
+.pr-meter.is-heat u{background:linear-gradient(90deg,#81e6df,#ffad72 75%,#ff6b5a)}
+.pr-meter.is-heat s{background:#ffffff66}.pr-meter.is-heat s.is-cool{background:#81e6df88}
+.pr-meter.is-low u,.pr-meter.is-hot b{color:#ff6b5a}
+.pr-meter b{grid-column:2;font-weight:400;font-size:11px;color:#9db3c2;min-height:13px}
+.pr-meter.is-hull{grid-template-columns:38px auto;align-items:center}
+.pr-pips{display:flex;gap:4px}.pr-pips i{width:16px;height:10px;border-radius:2px;background:#1b2d3d;border:1px solid #3f5566}
+.pr-pips i.on{background:var(--ui-cyan,#81e6df);border-color:var(--ui-cyan,#81e6df);box-shadow:0 0 6px #81e6df88}
+.pr-turn{font:700 11px Consolas,monospace;letter-spacing:.08em;color:var(--ui-amber,#ffad72);text-transform:uppercase;white-space:nowrap}
+.pr-kit{margin:0 0 8px;font:11px/1.5 Consolas,monospace;color:#8fa6b7}
+.pr-stage{position:relative;margin:0 auto;max-width:100%;border:1px solid #3f5566;border-top:2px solid var(--ui-cyan,#81e6df);border-radius:3px;overflow:hidden;background:#070d17;line-height:0}
+.pr-canvas{display:block;touch-action:none;cursor:crosshair;user-select:none;-webkit-user-select:none}
+.pr-panel[data-phase=burn] .pr-canvas{cursor:pointer}
+.pr-mark{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);min-width:132px;min-height:60px;font:800 18px Consolas,monospace;letter-spacing:.18em;color:#071a12;background:#7ff0a8;border:2px solid #d6ffe6;border-radius:30px;box-shadow:0 0 22px #7ff0a8aa;animation:pr-pulse .5s ease-in-out infinite alternate;touch-action:manipulation}
+.pr-mark[hidden]{display:none}
+@keyframes pr-pulse{to{box-shadow:0 0 34px #7ff0a8;transform:translateX(-50%) scale(1.05)}}
+.pr-status{margin:10px 0 6px;min-height:42px}
+.pr-foot{display:flex;gap:10px;align-items:stretch;flex-wrap:wrap}
+.pr-foot .pr-burn{flex:1 1 180px;min-height:52px;font-size:14px;letter-spacing:.1em}
+.pr-foot .pr-coast,.pr-foot .pr-quit{min-height:52px}
+.pr-fine{margin:8px 0;font:11px Consolas,monospace;color:#9db3c2}
+.pr-fine summary{cursor:pointer;min-height:32px;display:flex;align-items:center}
+.pr-fine label{display:grid;grid-template-columns:52px 1fr;gap:10px;align-items:center;margin:6px 0}
+.pr-fine input{width:100%}
+@media (prefers-reduced-motion:reduce){.pr-mark{animation:none}}
+@media (max-width:640px){.pr-hud{grid-template-columns:1fr 1fr}.pr-turn{grid-column:1/3}.pr-panel{padding:0}}
+.pr-wrap{display:block;width:100%;line-height:0}
+@media (max-width:640px){.pr-panel.ui-panel{border-width:14px 12px 18px 12px;border-image-width:14px 12px 18px 12px}.pr-panel .rp-eyebrow{font-size:10px}}
+.pr-panel .pr-mark.ui-btn{border:2px solid #d6ffe6;border-image:none;background:#7ff0a8;color:#04140c;text-shadow:none;border-radius:30px;padding:0 22px}

@@ -122,8 +122,9 @@ test('a straight-line player is not a master; a wanderer almost never arrives', 
   assert.ok(g3 < 30, `greedy 3-star ${g3} of 200`); assert.ok(gfail > 20, `greedy failures ${gfail}`); assert.ok(wins < 20, `wanderer arrived ${wins}`);
 });
 
-test('the picker words match the game: travel time, fuel and hazard warning', () => {
-  assert.equal(CATEGORIES.navigation.cats[0].words(5), 'lanes cost 20% less time');
-  assert.equal(CATEGORIES.navigation.cats[2].words(0), 'hazards show 1 cell ahead');
-  for (let n = 0; n <= 9; n++) assert.match(CATEGORIES.navigation.cats[2].words(n), new RegExp(`^hazards show ${setupNav({ points: { warning: n } }).reveal} cells? ahead$`));
+test('the picker words now describe Perihelion (the new navigation game); the old lane plotter keeps its own setup until Donaven picks', () => {
+  assert.equal(CATEGORIES.navigation.built, true);
+  assert.equal(CATEGORIES.navigation.cats[1].words(5), 'burns and trims cost 20% less fuel');
+  assert.match(CATEGORIES.navigation.cats[2].words(0), /^the arc shows 60% of the burn, shards flagged 0\.5 s ahead$/);
+  assert.equal(setupNav({ points: { warning: 3 } }).reveal, 2, 'the old game still reads its own numbers');
 });
