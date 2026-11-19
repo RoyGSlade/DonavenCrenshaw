@@ -100,7 +100,7 @@ export function playBend(root, { state, what = 'bracket', reducedMotion = () => 
     else if (ev.type === 'slow') { ringFlash = 1; ringHue = '#ffc857'; say('Too slow: not enough pressure. Keep to the beat.'); }
     else if (ev.type === 'rushed') { ringFlash = 1; ringHue = '#ff5a45'; burst(10, P.x + 8, P.y - 8); shake = Math.max(shake, 5); say('Rushed: the bar strains. Wait for the green.'); }
     else if (ev.type === 'ignored') { hushPad = 1; say('The same key twice does nothing. Use the other one.'); }
-    else if (ev.type === 'kink') { shake = 22; flash = 1; flashHue = '#ff5a45'; burst(34, P.x, P.y, 1.4); banner = 'KINK'; bannerT = 1; vel -= 300; say('KINK. The bar snapped straight: bend it again (a kink costs 10).'); }
+    else if (ev.type === 'kink') { shake = 22; flash = 1; flashHue = '#ff5a45'; burst(34, P.x, P.y, 1.4); banner = 'KINK'; bannerT = 1; vel -= 300; say('KINK. The bar snapped straight: bend it again (a kink costs ten points).'); }
     else if (ev.type === 'set') { flash = 0.6; flashHue = '#9fe870'; banner = 'SET'; bannerT = 1; say(s.index < s.bends ? 'Set. Next bend: a fresh bar and a new line.' : 'Set.'); }
     else if (ev.type === 'done') {
       if (ev.how === 'over') { shake = 26; flash = 1; flashHue = '#ff5a45'; burst(40, P.x, P.y, 1.6); banner = 'CRACKED'; bannerT = 1; say('Bent past the line: it cracked. That cannot be saved.'); }
