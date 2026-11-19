@@ -88,7 +88,7 @@ function boot() {
       ? `Band <b>${Math.round(setup.band * 1000) / 10}%</b> of the range · needle <b>${setup.speed}</b>/s · <b>${setup.patience}</b> patience · <b>${setup.rounds}</b> rounds · price +<b>${Math.round(setup.priceBonus * 1000) / 10}%</b>`
       : hack
       ? `Ring <b>${setup.tumblers} tumblers</b> · <b>${setup.time}s</b> · <b>${setup.misses}</b> spare misses`
-      : `Board <b>${setup.size} x ${setup.size}</b> · <b>${setup.seconds}s</b> · quality +<b>${setup.qualityBonus}</b>`;
+      : `Board <b>${setup.size} x ${setup.size}</b> · pool <b>${setup.capacity}s</b> · flow <b>x${setup.flow}</b> · quality +<b>${setup.qualityBonus}</b>`;
     const rp = mini() === 'practice' ? null : rollPreview(mini(), attempt, { level: v.level, points: setup.points });
     $('mg-readout').innerHTML = `d20 ${v.roll} + ${v.level} = <b>${attempt.total}</b> vs ${v.dc}${attempt.natural ? ' (natural 20)' : ''}<br>`
       + `Tier <b>${tier > 0 ? '+' : ''}${tier} ${tierInfo(tier).label}</b><br>${what}<br>Points spent ${spent} of ${v.level}`

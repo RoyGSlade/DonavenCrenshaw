@@ -13,8 +13,8 @@ test('the day number: UTC days, the same for everyone', () => {
 
 test('one board a day: the same every time, different on different days, always fair (Steady, no points)', () => {
   const sig = (day) => JSON.stringify(benchBoard(day).tiles.map((t) => t.mask));
-  for (const day of [0, 1, 20500, 20776]) { assert.equal(sig(day), sig(day)); assert.equal(benchBoard(day).size, 5); assert.equal(benchBoard(day).seconds, 50); }
-  assert.deepEqual(BENCH_SETUP, { size: 5, seconds: 50, qualityBonus: 0 });
+  for (const day of [0, 1, 20500, 20776]) { assert.equal(sig(day), sig(day)); assert.equal(benchBoard(day).size, 5); assert.equal(benchBoard(day).capacity, 120); }
+  assert.deepEqual(BENCH_SETUP, { size: 5, capacity: 120, flow: 1, qualityBonus: 0 });
   assert.equal(new Set(Array.from({ length: 60 }, (_, i) => sig(20700 + i))).size >= 55, true, 'a month and more of different boards');
   assert.equal(benchSeed(7), benchSeed(7)); assert.notEqual(benchSeed(7), benchSeed(8));
   // every board has a way through, and a bot that follows the hints seals it
