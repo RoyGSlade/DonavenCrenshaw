@@ -2,10 +2,46 @@
 //   wallDoors: [{ id, at: [col,row], size: [w,h], style: 'slide' | 'swing', label?, color?, lock?, locked?, access?, far? }]
 //   entries:   [{ id, room: <wallDoor id>, far: <wallDoor id>, zone: { at, size }, spawn: <spawn in this vestibule>,
 //                 to: <map id>, arrive: <spawn in the other map's vestibule>, color? }]
+//   entries may instead name an existing link door: { id?, door: <id in def.doors>, depth?: 2|3, spawn, color? }. The link door
+//   becomes the room door (its label, lock and states keep working through def.doors), the far door and the vestibule zone are
+//   worked out from where it sits on the room's edge (def.roomBox, tiles [x0, y0, x1, y1]; default: the whole grid), and the
+//   spawn is the vestibule spawn named by the other map's door `arrive`. to/arrive come from the door.
 // The gap (door rect) is made of floor cells in the wall; the wall cells at both ends along the slide are the pockets.
 import { DEFAULT_LEGEND } from '../rules/mapdata.js';
 
 export const DOOR_STYLES = Object.freeze(['slide', 'swing']);
+/** Erik, 2026-11-18: sliding everywhere; the swing code stays but is never a default. */
+export const DEFAULT_STYLE = 'slide';
+export const DEPTH = 3;
+const OUT = { n: [0, -1], s: [0, 1], w: [-1, 0], e: [1, 0] };
+
+/** Which edge of the room a link door sits on, from def.roomBox (or the grid): 'n' | 's' | 'w' | 'e' | null. */
+export function sideOf(def, door) {
+  const box = def.roomBox || [0, 0, Math.max(0, ...(def.grid || []).map(r => r.length)), (def.grid || []).length];
+  const [c, r] = door.at, [w, h] = door.size || [1, 1];
+  if (r === box[1]) return 'n'; if (r + h === box[3]) return 's'; if (c === box[0]) return 'w'; if (c + w === box[2]) return 'e';
+  return null;
+}
+
+/** wallDoors and entries with the link-door entries worked out (pure). */
+export function expand(def) {
+  const wallDoors = [...(def.wallDoors || [])], entries = [];
+  for (const e of def.entries || []) {
+    if (!e.door) { entries.push(e); continue; }
+    const src = (def.doors || []).find(d => d.id === e.door);
+    if (!src) { entries.push({ ...e, room: e.door, far: `${e.door}-far`, broken: true }); continue; }
+    const side = sideOf(def, src) || 'n', [ox, oy] = OUT[side], depth = e.depth || DEPTH, [w, h] = src.size || [1, 1];
+    const axis = side === 'n' || side === 's' ? 'h' : 'v';
+    const color = e.color || def.look?.doorColors?.[src.id];
+    const far = `${src.id}-far`;
+    wallDoors.push({ id: src.id, at: src.at, size: [w, h], axis, style: DEFAULT_STYLE, label: src.label, color, entry: e.id || src.id, fromDoor: true });
+    wallDoors.push({ id: far, at: [src.at[0] + ox * (depth + 1) + (ox > 0 ? w - 1 : 0), src.at[1] + oy * (depth + 1) + (oy > 0 ? h - 1 : 0)], size: [w, h], axis, style: DEFAULT_STYLE, color, far: true, entry: e.id || src.id, fromDoor: true });
+    // zone: the cells between the two doors
+    const zc = ox < 0 ? src.at[0] - depth : ox > 0 ? src.at[0] + w : src.at[0], zr = oy < 0 ? src.at[1] - depth : oy > 0 ? src.at[1] + h : src.at[1];
+    entries.push({ id: e.id || src.id, room: src.id, far, zone: { at: [zc, zr], size: ox ? [depth, h] : [w, depth] }, spawn: e.spawn, to: src.to, arrive: src.arrive, color, side });
+  }
+  return { wallDoors, entries };
+}
 
 const cellSolid = (def, c, r) => {
   const ch = def.grid?.[r]?.[c];
@@ -19,22 +55,23 @@ function rectOf(def, d) {
   return { x: c * T, y: r * T, w: w * T, h: h * T, cols: [c, c + w - 1], rows: [r, r + h - 1] };
 }
 /** 'h' = a doorway in a horizontal wall (slides along x), 'v' = in a vertical wall (slides along y). */
-export const axisOf = d => ((d.size || [2, 1])[0] >= (d.size || [2, 1])[1] ? 'h' : 'v');
+export const axisOf = d => d.axis || ((d.size || [2, 1])[0] >= (d.size || [2, 1])[1] ? 'h' : 'v');
 
 /** Everything wrong with one map's wall doors and entries; [] when sound. */
 export function doorIssues(def) {
   const out = [], id = def?.id || '?';
-  const doors = def?.wallDoors || [], entries = def?.entries || [];
-  if (!doors.length && !entries.length) return out;
+  if (!def?.wallDoors?.length && !def?.entries?.length) return out;
+  const { wallDoors: doors, entries } = expand(def);
   const ids = new Set((def.doors || []).map(d => d.id));
   const byId = new Map();
   for (const d of doors) {
     const where = `${id}: door ${d.id}`;
     if (!/^[a-z0-9][a-z0-9-]{0,31}$/.test(d.id || '')) { out.push(`${where} has a bad id`); continue; }
-    if (ids.has(d.id)) out.push(`${where} repeats an id`);
+    if (ids.has(d.id) && !d.fromDoor) out.push(`${where} repeats an id`);
+    if (d.fromDoor && d.far && (def.doors || []).some(x => x.id === d.id)) out.push(`${where} repeats a link door id`);
     ids.add(d.id); byId.set(d.id, d);
     const [w, h] = d.size || [2, 1];
-    if (Math.min(w, h) !== 1 || Math.max(w, h) < 2) { out.push(`${where} must be 1 tile thick and 2 or more long (size ${w}x${h})`); continue; }
+    if (Math.min(w, h) !== 1) { out.push(`${where} must be 1 tile thick (size ${w}x${h})`); continue; }
     if (d.style && !DOOR_STYLES.includes(d.style)) out.push(`${where} has unknown style ${d.style}`);
     const R = rectOf(def, d), ax = axisOf(d);
     for (let r = R.rows[0]; r <= R.rows[1]; r++) for (let c = R.cols[0]; c <= R.cols[1]; c++) if (cellSolid(def, c, r)) out.push(`${where}: the gap cell ${c},${r} is solid (a door gap is floor)`);
@@ -48,6 +85,7 @@ export function doorIssues(def) {
   }
   for (const e of entries) {
     const where = `${id}: entry ${e.id}`;
+    if (e.broken) { out.push(`${where}: link door ${e.room} is missing`); continue; }
     const room = byId.get(e.room), far = byId.get(e.far);
     if (!room) { out.push(`${where}: room door ${e.room} is missing`); continue; }
     if (!far) { out.push(`${where}: far door ${e.far} is missing`); continue; }
@@ -77,16 +115,16 @@ export function doorIssues(def) {
 /** The other side of every entry exists, points back, and has the same vestibule footprint and style. */
 export function entryPairIssues(defs) {
   const out = [], by = new Map(defs.map(d => [d.id, d]));
-  for (const def of defs) for (const e of def.entries || []) {
+  for (const def of defs) for (const e of expand(def).entries) {
     const other = by.get(e.to), where = `${def.id}: entry ${e.id}`;
     if (!other) { out.push(`${where} goes to missing map ${e.to}`); continue; }
-    const back = (other.entries || []).find(x => x.spawn === e.arrive);
+    const back = expand(other).entries.find(x => x.spawn === e.arrive);
     if (!back) { out.push(`${where}: ${e.to} has no entry whose spawn is ${e.arrive}`); continue; }
     if (back.to !== def.id || back.arrive !== e.spawn) out.push(`${where}: ${back.id} in ${e.to} does not point back here`);
     const dim = x => [...x.zone.size].sort().join('x');
     if (dim(e) !== dim(back)) out.push(`${where}: the vestibule is ${dim(e)} here and ${dim(back)} in ${e.to} (the cut would show)`);
-    const style = x => (def.wallDoors.find(d => d.id === x.room) || {}).style || 'slide';
-    const styleBack = (other.wallDoors.find(d => d.id === back.room) || {}).style || 'slide';
+    const style = x => (expand(def).wallDoors.find(d => d.id === x.room) || {}).style || DEFAULT_STYLE;
+    const styleBack = (expand(other).wallDoors.find(d => d.id === back.room) || {}).style || DEFAULT_STYLE;
     if (style(e) !== styleBack) out.push(`${where}: door style differs across the entry`);
   }
   return out;
@@ -95,12 +133,13 @@ export function entryPairIssues(defs) {
 /** Compiled doors (world px) and entries for a compiled map. */
 export function compileDoors(map) {
   const def = map.def, T = map.tile;
-  const doors = (def.wallDoors || []).map(d => {
+  const ex = expand(def);
+  const doors = ex.wallDoors.map(d => {
     const R = rectOf(def, d), axis = axisOf(d);
-    return { ...d, x: R.x, y: R.y, w: R.w, h: R.h, axis, style: d.style || 'slide', length: axis === 'h' ? R.w : R.h, thick: axis === 'h' ? R.h : R.w, far: Boolean(d.far), entry: null };
+    return { ...d, x: R.x, y: R.y, w: R.w, h: R.h, axis, style: d.style || DEFAULT_STYLE, length: axis === 'h' ? R.w : R.h, thick: axis === 'h' ? R.h : R.w, far: Boolean(d.far), entry: null };
   });
   const byId = new Map(doors.map(d => [d.id, d]));
-  const entries = (def.entries || []).map(e => {
+  const entries = ex.entries.map(e => {
     const zone = { x: e.zone.at[0] * T, y: e.zone.at[1] * T, w: e.zone.size[0] * T, h: e.zone.size[1] * T };
     const room = byId.get(e.room), far = byId.get(e.far);
     if (room) room.entry = e.id; if (far) far.entry = e.id;

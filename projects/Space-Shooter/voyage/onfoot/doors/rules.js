@@ -39,9 +39,12 @@ export const passable = open => open >= TUNING.passAt;
  * while someone is in the gap), 'open' (let the arrival out), or 'free' (on approach). A locked or far door never opens.
  */
 export function doorWants({ mode = 'free', near = false, locked = false, far = false, gap = false }) {
-  if (far || locked) return false;
-  if (mode === 'shut') return gap;
+  if (far) return false;
+  // Arriving through an entry always lets you out: a lock or seal gates leaving by this door, never the arrival that brought you here
+  // (Berth 7: the pad's hangar door is sealed until the Duchess is yours, yet you can still walk in from the hangar).
   if (mode === 'open') return true;
+  if (locked) return gap; // a sealed door never closes on someone still in its gap (the arrival who just walked out)
+  if (mode === 'shut') return gap;
   return near || gap;
 }
 

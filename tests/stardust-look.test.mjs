@@ -33,7 +33,8 @@ test('the hangar look resolves its set, accents and art ids', () => {
 test('the hangar camera fits the whole room on a desktop and follows on a phone; other maps keep theirs', () => {
   const hangar = getMap('hangar');
   const desk = cameraFor(hangar, hangar.w / 2, hangar.h / 2, 1440, 900, 1.35);
-  assert.ok(desk.x <= 0 && desk.y <= 0 && desk.x + desk.vw >= hangar.w && desk.y + desk.vh >= hangar.h, 'the whole hangar is in view at 1440x900');
+  const [bx0, by0, bx1, by1] = (hangar.def.roomBox || [0, 0, hangar.cols, hangar.rows]).map((v, i) => v * hangar.tile); // the room itself (vestibule stubs sit outside it)
+  assert.ok(desk.x <= bx0 && desk.y <= by0 && desk.x + desk.vw >= bx1 && desk.y + desk.vh >= by1, 'the whole hangar is in view at 1440x900');
   const phone = cameraFor(hangar, hangar.w / 2, hangar.h / 2, 390, 844, 0.886);
   assert.ok(phone.zoom * hangar.tile >= 40, 'tiles stay readable on a phone');
   const ship = getMap('ship');

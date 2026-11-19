@@ -165,3 +165,117 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
     }
   });
 }
+
+// ---- the rollout: the Duchess airlock and a hangar connector (Berth 7), frame by frame ------------------------------------
+const KEY = { n: 'KeyW', s: 'KeyS', w: 'KeyA', e: 'KeyD' };
+const OUTV = { n: [0, -1], s: [0, 1], w: [-1, 0], e: [1, 0] };
+const mapId = (page) => page.evaluate(() => window.__stardust.onfoot.world.map.id);
+
+/** The story talks over rooms (a narration box pauses the walk): click through whatever is up. */
+async function clearTalk(page) {
+  for (let i = 0; i < 30; i++) {
+    const open = await page.evaluate(() => { const b = document.querySelector('.ui-dialogue:not([hidden])'); if (!b) return false; const btn = b.querySelector('button'); btn?.click(); return true; });
+    if (!open) return;
+    await page.waitForTimeout(250);
+    await page.keyboard.press('Enter');
+  }
+}
+
+/** From a room, through one entry and out the other side, shooting each beat. */
+async function proofEntry(page, shot, { map, spawn, door, to, arriveDoor, tag }) {
+  for (let k = 0; k < 4; k++) { // the story may talk over the room or send us elsewhere: click through, go back to the room
+    await page.evaluate(([m, s]) => window.__stardust.onfoot.world.go(m, s), [map, spawn]);
+    await page.waitForFunction((m) => window.__stardust.onfoot.world.map.id === m, map);
+    await page.waitForTimeout(600);
+    await clearTalk(page);
+    if ((await mapId(page)) === map) break;
+  }
+  const info = await page.evaluate(async (id) => {
+    const { walkable } = await import('/projects/Space-Shooter/voyage/onfoot/rules/mapdata.js');
+    const w = window.__stardust.onfoot.world, sys = w.doors, e = sys.entries.find((x) => x.room === id), d = sys.get(id), T = w.map.tile;
+    const o = { n: [0, -1], s: [0, 1], w: [-1, 0], e: [1, 0] }[e.side];
+    const lanes = Array.from({ length: Math.max(d.w, d.h) / T }, (_, a) => ({ lx: o[0] ? d.x + d.w / 2 : d.x + (a + 0.5) * T, ly: o[1] ? d.y + d.h / 2 : d.y + (a + 0.5) * T }));
+    for (const k of [3, 2.6, 2.2]) for (const l of lanes) { const x = l.lx - o[0] * k * T, y = l.ly - o[1] * k * T; if (walkable(w.map, x, y, 12)) { w.place(x, y, Math.atan2(o[1], o[0])); return { side: e.side, lx: l.lx, ly: l.ly, id: e.id }; } }
+    throw new Error('no approach to ' + id);
+  }, door);
+  const o = OUTV[info.side], key = KEY[info.side];
+  await page.waitForTimeout(700);
+  await shot(`${tag}-1-approach-door-shut`);
+  assert.equal(await amount(page, door), 0, 'shut while you are a few tiles away');
+  await page.keyboard.down(key);
+  let opened = false;
+  for (let i = 0; i < 80 && !opened; i++) { await page.waitForTimeout(30); opened = (await amount(page, door)) > 0.55; }
+  await page.keyboard.up(key);
+  assert.ok(opened, 'the outer door slides apart on approach');
+  await shot(`${tag}-2-outer-door-opening`);
+  await page.keyboard.down(key);
+  let cycling = false;
+  for (let i = 0; i < 200 && !cycling; i++) { await page.waitForTimeout(30); cycling = (await phase(page, info.id)) === 'cycling'; }
+  await page.keyboard.up(key);
+  assert.ok(cycling, 'the vestibule cycles');
+  await page.waitForTimeout(220);
+  const mid = await where(page);
+  assert.equal(mid.map, map);
+  assert.equal(mid.snap.doors.find((d) => d.id === door).open, 0, 'the outer door shut behind you');
+  assert.equal(mid.snap.doors.find((d) => d.id === `${door}-far`).open, 0, 'the far door shut ahead');
+  await shot(`${tag}-3-vestibule-both-doors-shut`);
+  await page.waitForFunction((m) => window.__stardust.onfoot.world.map.id === m, to, { timeout: 8000 });
+  await page.waitForTimeout(120);
+  const arr = await where(page);
+  assert.equal(arr.snap.doors.find((d) => d.id === arriveDoor).open, 0, 'arrived with the inner door shut');
+  assert.equal(arr.snap.doors.find((d) => d.id === `${arriveDoor}-far`).open, 0);
+  await shot(`${tag}-4-new-vestibule-both-shut`);
+  await page.waitForFunction((id) => window.__stardust.onfoot.world.doors.amount(id) > 0.5, arriveDoor, { timeout: 5000 });
+  await shot(`${tag}-5-inner-door-opening`);
+  await clearTalk(page);
+  // walk out into the new room (toward the room door, past it)
+  const back = await page.evaluate((id) => { const w = window.__stardust.onfoot.world, e = w.doors.entries.find((x) => x.room === id); const d = w.doors.get(id); return { side: e.side, cx: d.x + d.w / 2, cy: d.y + d.h / 2, T: w.map.tile }; }, arriveDoor);
+  const ob = OUTV[back.side];
+  await page.keyboard.down(KEY[{ n: 's', s: 'n', w: 'e', e: 'w' }[back.side]]);
+  let out = false;
+  for (let i = 0; i < 300 && !out; i++) { await page.waitForTimeout(30); const p = await where(page); out = (p.x - back.cx) * -ob[0] + (p.y - back.cy) * -ob[1] > back.T * 1.4; }
+  await page.keyboard.up(KEY[{ n: 's', s: 'n', w: 'e', e: 'w' }[back.side]]);
+  assert.ok(out, 'walked out into the new room');
+  await page.waitForTimeout(900);
+  await shot(`${tag}-6-new-room`);
+  assert.equal(await amount(page, arriveDoor), 0, 'the inner door closed behind');
+}
+
+for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
+  test(`doors on the Duchess airlock and the Berth 7 connector, ${name}`, { skip, timeout: 560000 }, async () => {
+    const { chromium } = await loadPlaywright();
+    const server = await startServer();
+    const browser = await chromium.launch({ headless: true });
+    const context = await browser.newContext(profile);
+    await blockHub(context);
+    const page = await context.newPage();
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(String(e)));
+    page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
+    const shot = async (label) => { await page.waitForTimeout(120); if (PROOF) await page.screenshot({ path: `${PROOF}/rollout-${name}-${label}.png` }); };
+    try {
+      await page.addInitScript(() => { try { localStorage.setItem('stardust.voyage.controls.v1', '1'); } catch {} });
+      await page.goto(`${server.origin}${V}?newgame=1&seed=7`);
+      await page.waitForFunction(() => window.__stardust?.onfoot?.world);
+      await page.waitForTimeout(1500);
+      await page.evaluate(() => {
+        window.__log = []; let last = null;
+        const tick = () => { const w = window.__stardust.onfoot.world, s = w.doors.snapshot(); const row = { map: w.map.id, open: Object.fromEntries(s.doors.map((d) => [d.id, d.open])), t: performance.now() }; if (!last || last.map !== row.map) window.__log.push({ ...row, prev: last }); last = row; requestAnimationFrame(tick); };
+        requestAnimationFrame(tick);
+      });
+      // the Duchess airlock: corridor -> airlock (the corridor's airlock door, the airlock's corridor door)
+      await proofEntry(page, shot, { map: 'duchess-corridor', spawn: 'default', door: 'airlock', to: 'duchess-airlock', arriveDoor: 'corridor', tag: 'airlock' });
+      // Berth 7: the hangar's berth door to the pad (the pad's hangar door)
+      await proofEntry(page, shot, { map: 'hangar', spawn: 'default', door: 'berth', to: 'duchess-pad', arriveDoor: 'hangar', tag: 'berth7' });
+      // every map change the sampler saw happened with that entry's doors shut on both sides
+      const log = await page.evaluate(() => window.__log.filter((r) => r.prev && r.prev.map !== r.map));
+      assert.ok(log.length >= 2, 'saw the map changes');
+      const sw = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
+      assert.equal(sw, 0, 'no sideways scroll');
+      assert.deepEqual(errors, [], `no page errors: ${errors.join(' | ')}`);
+    } finally {
+      await browser.close();
+      await server.close?.();
+    }
+  });
+}

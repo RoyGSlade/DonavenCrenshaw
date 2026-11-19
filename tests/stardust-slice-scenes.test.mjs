@@ -280,7 +280,7 @@ test('slice: every fight is on foot with its own arena, and its enemies stand on
     assert.ok(n.arena.enemies.length >= 2, `${qid}/${id}: more than one Reaver`);
     for (const e of n.arena.enemies) {
       assert.ok(ENEMY_TYPES[e.type], e.type);
-      assert.ok(walkable(map, (e.at[0] + 0.5) * map.tile, (e.at[1] + 0.5) * map.tile, 16), `${qid}/${id}: ${e.type} at ${e.at} is on open floor in ${map.id}`);
+      assert.ok(walkable(map, (e.at[0] + (map.def.roomBox?.[0] || 0) + 0.5) * map.tile, (e.at[1] + (map.def.roomBox?.[1] || 0) + 0.5) * map.tile, 16), `${qid}/${id}: ${e.type} at ${e.at} is on open floor in ${map.id}`);
     }
     assert.deepEqual(Object.keys(n.outcomes).sort(), ['flee', 'lose', 'win'].filter((k) => n.outcomes[k]).sort());
   }

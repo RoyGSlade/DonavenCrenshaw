@@ -66,6 +66,8 @@ test('rules: want open on approach; never when locked or far; a shut hold only s
   assert.equal(doorWants({ mode: 'shut', near: true }), false, 'sealing: closes even with someone near');
   assert.equal(doorWants({ mode: 'shut', near: true, gap: true }), true, 'never closes on someone');
   assert.equal(doorWants({ mode: 'open' }), true);
+  assert.equal(doorWants({ mode: 'open', locked: true }), true, 'arriving lets you out even through a sealed door');
+  assert.equal(doorWants({ mode: 'open', far: true }), false);
 });
 test('rules: slide leaves tuck into the wall (never wider apart than the gap); swing leaves turn toward 85 degrees', () => {
   const [a, b] = leaves(96, 1, 'slide');
@@ -83,7 +85,7 @@ test('data: the workbench and its annex have sound doors and entries on both sid
   const { doors, entries } = compileDoors(BENCH);
   assert.equal(entries.length, 1); assert.ok(doors.find(d => d.far), 'the far door');
   const a = compileDoors(ANNEX);
-  assert.deepEqual(a.doors.filter(d => !d.entry).map(d => d.style).sort(), ['slide', 'swing'], 'a sliding doorway and a swing door');
+  assert.deepEqual(a.doors.filter(d => !d.entry).map(d => d.style).sort(), ['slide', 'slide'], 'sliding doorways (Erik: slide everywhere)');
 });
 test('data: bad doors and entries are caught', () => {
   const clone = () => JSON.parse(JSON.stringify(WORKBENCH_DEF));
@@ -210,17 +212,91 @@ test('entry: the pure sequence swaps only when shut, and a body in the gap delay
   assert.deepEqual(ev.events.map(e => e.type), ['swap']);
 });
 
+// ---- the rollout: the Duchess and the hangar connectors --------------------------------------------------------------
+const OUTV = { n: [0, -1], s: [0, 1], w: [-1, 0], e: [1, 0] };
+const ROLLED = Object.values(MAP_DEFS).filter(d => d.entries?.length);
+const ROLLED_IDS = ['duchess-corridor', 'duchess-mess', 'duchess-holodeck', 'duchess-quarters', 'duchess-bridge', 'duchess-airlock', 'duchess-engine', 'duchess-cargo', 'duchess-pad', 'hangar', 'workshop', 'mel-bay', 'edna-den', 'cantina'];
+test('rollout: the Duchess rooms and the hangar connectors have entries; the validators are green on every map and every pair', () => {
+  assert.deepEqual(ROLLED.map(d => d.id).sort(), [...ROLLED_IDS].sort());
+  assert.equal(ROLLED.reduce((n, d) => n + d.entries.length, 0), 24, '12 links, 2 doors each');
+  for (const def of ROLLED) assert.deepEqual(doorIssues(def), [], def.id);
+  assert.deepEqual(entryPairIssues(ROLLED), []);
+  // the airlock and Berth 7 are among them
+  assert.ok(MAP_DEFS['duchess-corridor'].entries.some(e => e.door === 'airlock'));
+  assert.ok(MAP_DEFS.hangar.entries.some(e => e.door === 'berth') && MAP_DEFS['duchess-pad'].entries.some(e => e.door === 'hangar'));
+  assert.deepEqual(MAP_DEFS.hangar.entries.map(e => e.door).sort(), ['backroom', 'berth', 'concourse', 'mel-bay', 'workshop']);
+});
+test('rollout: sliding everywhere (swing stays in the code, never in the data)', () => {
+  for (const def of [...Object.values(MAP_DEFS), WORKBENCH_DEF, ANNEX_DEF]) for (const d of compileDoors(enterMap(def.id)).doors) assert.equal(d.style, 'slide', `${def.id}/${d.id}`);
+});
+test('rollout: every entry in every rolled map takes you to the same room the old door did, with both doors shut at the swap', () => {
+  let walked = 0;
+  for (const def of ROLLED) {
+    const map = enterMap(def.id);
+    const { entries } = compileDoors(map);
+    for (const e of entries) {
+      const link = def.doors.find(d => d.id === e.room);
+      assert.equal(e.to, link.to); assert.equal(e.arrive, link.arrive);
+      const R = runner(map, 'default'), room = e.roomDoor, out = OUTV[e.side], c = center(room);
+      // stand a step inside the room (a step the old door's apron guarantees is clear) and walk in through the vestibule
+      const lane = (door, o, tile, k) => Array.from({ length: Math.max(door.w, door.h) / tile }, (_, a) => ({ x: o[0] ? door.x + door.w / 2 : door.x + (a + 0.5) * tile, y: o[1] ? door.y + door.h / 2 : door.y + (a + 0.5) * tile })).map(p => ({ x: p.x - o[0] * k * tile, y: p.y - o[1] * k * tile, lx: p.x, ly: p.y }));
+      const far = center(e.farDoor);
+      const start = lane(room, out, map.tile, 1.5).find(p => walkable(map, p.x, p.y, 12));
+      assert.ok(start, `${def.id}/${e.id}: the approach is open floor`);
+      R.w.x = start.x; R.w.y = start.y;
+      R.log.stop = true;
+      for (let i = 0; i < 12 * 60 && !R.log.swaps.length; i++) {
+        const tx = out[0] ? far.x - out[0] * 0.8 * map.tile : start.lx, ty = out[1] ? far.y - out[1] * 0.8 * map.tile : start.ly;
+        const dx = tx - R.w.x, dy = ty - R.w.y, d = Math.hypot(dx, dy);
+        R.tick(d > 5 ? { x: dx / d, y: dy / d } : { x: 0, y: 0 });
+      }
+      assert.equal(R.log.swaps.length, 1, `${def.id}/${e.id}: one map change`);
+      const sw = R.log.swaps[0];
+      assert.equal(sw.to, link.to); assert.equal(sw.arrive, link.arrive);
+      assert.ok(sw.room <= TUNING.eps && sw.far <= TUNING.eps, `${def.id}/${e.id}: both doors shut at the swap`);
+      // arrive on the other side: shut, then the room door opens and you can walk out into that room
+      const dest = enterMap(link.to), B = runner(dest, link.arrive, { arrive: link.arrive });
+      const eb = B.sys.entries.find(x => x.spawn === link.arrive), back = eb.roomDoor, ob = OUTV[eb.side], cb = center(back);
+      assert.equal(B.sys.phase(eb.id), 'arrived');
+      B.idle(TUNING.settleSecs + 0.9);
+      assert.equal(B.sys.amount(back.id), 1, `${link.to}: the next door is open`);
+      const outPt = lane(back, ob, dest.tile, 1.5).find(p => walkable(dest, p.x, p.y, 12));
+      assert.ok(outPt && B.toward(outPt.x, outPt.y, 12), `${link.to}: you can walk out into the room`);
+      walked++;
+    }
+  }
+  assert.equal(walked, 24);
+});
+test('rollout: arriving at Berth 7 with the pad door sealed still lets you out; once out, the sealed door stays shut', () => {
+  const pad = enterMap('duchess-pad');
+  const R = runner(pad, 'from-hangar', { arrive: 'from-hangar', locked: d => d.id === 'hangar' });
+  R.idle(TUNING.settleSecs + 0.9);
+  assert.equal(R.sys.amount('hangar'), 1, 'the sealed door opens for the arrival');
+  const e = R.sys.entries.find(x => x.id === 'hangar'), o = OUTV[e.side], c = center(e.roomDoor);
+  const lane = [0, 1].map(a => ({ x: o[0] ? c.x : e.roomDoor.x + (a + 0.5) * pad.tile, y: o[1] ? c.y : e.roomDoor.y + (a + 0.5) * pad.tile })).map(p => ({ x: p.x - o[0] * 1.5 * pad.tile, y: p.y - o[1] * 1.5 * pad.tile })).find(p => walkable(pad, p.x, p.y, 12));
+  assert.ok(R.toward(lane.x, lane.y, 12), 'walked out into the pad');
+  R.toward(lane.x - o[0] * 2 * pad.tile, lane.y - o[1] * 2 * pad.tile); R.idle(1.2);
+  assert.equal(R.sys.amount('hangar'), 0, 'out in the room, the seal holds again');
+  R.toward(c.x - o[0] * 1.0 * pad.tile, c.y - o[1] * 1.0 * pad.tile); R.idle(1);
+  assert.equal(R.sys.amount('hangar'), 0, 'and it stays shut with you at it');
+});
+test('rollout: a sealed door stays shut (the airlock sealed by a state) and a state does not break the entry', () => {
+  const sealed = { ...enterMap('duchess-corridor') };
+  const R = runner(sealed, 'default', { locked: d => d.id === 'airlock' });
+  const e = R.sys.entries.find(x => x.id === 'airlock'), c = center(e.roomDoor), o = OUTV[e.side];
+  R.w.x = c.x - o[0] * T; R.w.y = c.y - o[1] * T; R.idle(1.2);
+  assert.equal(R.sys.amount('airlock'), 0, 'sealed: stays shut with you at it');
+  assert.ok(R.sys.gated(R.w, d => d.id === 'airlock').some(g => g.id === 'airlock'), 'E reports why');
+});
+
 // ---- what must not change -------------------------------------------------------------------------------------------
-test('guard: every existing room link still connects the same rooms; no existing map opted in; the new game stays off', () => {
+test('guard: every existing room link still connects the same rooms; the new game stays off', () => {
   assert.deepEqual(checkMaps(MAP_DEFS).problems, []);
   const links = Object.values(MAP_DEFS).flatMap(def => (def.doors || []).map(d => `${def.id}:${d.id}->${d.to}@${d.arrive || 'default'}`)).sort();
   assert.deepEqual(links, JSON.parse(readFileSync(new URL('./fixtures/stardust-door-links.json', import.meta.url), 'utf8')), 'the room links are the ones the slice walk was proven on');
-  for (const def of Object.values(MAP_DEFS)) {
-    assert.equal(def.wallDoors, undefined, `${def.id} has no wall doors yet (rollout is Erik's call)`);
-    assert.equal(def.entries, undefined, `${def.id} has no entries yet`);
-    assert.equal(compileDoors(enterMap(def.id)).doors.length, 0);
-  }
-  const sys = createDoorSystem(); const hangar = enterMap('hangar'); sys.load(hangar);
-  assert.equal(sys.walkMap(hangar), hangar, 'a map without wall doors is handed back untouched');
+  // every entry is one of those links (the door list still names where it goes), and every link door that became an entry has its other side as an entry too
+  for (const def of ROLLED) for (const e of def.entries) assert.ok(def.doors.some(d => d.id === e.door), `${def.id}: ${e.door} is a link door`);
+  const sys = createDoorSystem(); const ship = enterMap('ship'); sys.load(ship);
+  assert.equal(sys.walkMap(ship), ship, 'a map without wall doors is handed back untouched');
   assert.equal(runtimeConfig.newGame, false);
 });

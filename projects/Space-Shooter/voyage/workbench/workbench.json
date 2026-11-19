@@ -311,7 +311,7 @@
      2,
      1.6
     ],
-    "alpha": 0.9
+    "alpha": 0.54
    },
    {
     "kind": "hazard",
@@ -1003,5 +1003,11 @@
    "arrive": "from-bench",
    "color": "holo"
   }
+ ],
+ "roomBox": [
+  0,
+  0,
+  30,
+  17
  ]
 }

@@ -31,6 +31,7 @@ import { hasStates, resolveStates, applyStates, stateSignature } from './rules/s
 import { compileMap } from './rules/mapdata.js';
 import { createDoorSystem } from './doors/system.js'; // launch doors: doors built into the walls and two-door entries
 import { drawWallDoors } from './doors/paint.js';
+const expandEntries = def => def.entries || [];
 import { markerPoint } from '../slice/places.js';
 import { placeName as roomName } from '../slice/places.js';
 
@@ -84,7 +85,14 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
   const stateOverrides = new Map(); // map id -> { tag: state } forced by a script (world.setState)
   const flagsNow = () => hooks.flags?.() || {};
   const overridesFor = id => stateOverrides.get(id) || {};
-  function withStates(m) {
+  function withStates(m) { return withEntries(withStatesOnly(m)); }
+  /** launch doors hook: a link door that has become a two-door entry is not an old door any more (no walk-in, no old painting, no "Go" mark). */
+  function withEntries(m) {
+    const ids = new Set(expandEntries(m.def).filter(e => e.door).map(e => e.door));
+    if (!ids.size) return m;
+    return Object.freeze({ ...m, doors: m.doors.filter(d => !ids.has(d.id)), interacts: m.interacts.filter(i => !(i.kind === 'door' && ids.has(i.id))) });
+  }
+  function withStatesOnly(m) {
     if (!hasStates(m.def)) { stateSig = ''; return m; }
     const states = resolveStates(m.def, flagsNow(), overridesFor(m.id));
     stateSig = stateSignature(states);
@@ -324,7 +332,7 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
         return null;
       }
       const doorTo = doorToward(map.id, [objective.map], MAP_DEFS);
-      const dd = doorTo && map.doors.find(x => x.id === doorTo);
+      const dd = doorTo && (map.doors.find(x => x.id === doorTo) || doorsys.get(doorTo)); // launch doors hook: a link door that became a wall door
       return dd ? { x: dd.x + dd.w / 2, y: dd.y + dd.h / 2, door: dd.id, through: true, label: roomName(objective.map) ? `To ${roomName(objective.map)}` : dd.label } : null;
     }
     const n = npcs.find(x => !hidden.has(x.id) && (objective.npc ? x.id === objective.npc : x.station === objective.station));
@@ -338,7 +346,7 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     }
     // Not in this room: the door that leads toward it.
     const doorId = doorToward(map.id, mapsHolding(objective, MAP_DEFS), MAP_DEFS);
-    const d = doorId && map.doors.find(x => x.id === doorId);
+    const d = doorId && (map.doors.find(x => x.id === doorId) || doorsys.get(doorId)); // launch doors hook
     return d ? { x: d.x + d.w / 2, y: d.y + d.h / 2, door: d.id, through: true, label: d.label } : null;
   }
 

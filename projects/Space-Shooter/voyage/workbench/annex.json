@@ -38,7 +38,7 @@
      2,
      1.6
     ],
-    "alpha": 0.9
+    "alpha": 0.54
    },
    {
     "kind": "hazard",
@@ -263,7 +263,7 @@
     1,
     2
    ],
-   "style": "swing",
+   "style": "slide",
    "label": "Store door",
    "color": "warm",
    "lock": {
@@ -305,5 +305,11 @@
    "down"
   ]
  },
- "zones": []
+ "zones": [],
+ "roomBox": [
+  0,
+  4,
+  20,
+  14
+ ]
 }
