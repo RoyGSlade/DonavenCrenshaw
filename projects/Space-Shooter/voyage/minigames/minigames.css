@@ -120,3 +120,25 @@
 .cf-tile.is-bad{border-color:#ff6b5a;background:#4a2018}
 .cf-mat{font:12px Consolas,monospace!important;color:var(--muted)!important}
 .cf-work{margin-bottom:6px}
+
+/* Navigation: plot the lane */
+.nv-bar{display:grid;grid-template-columns:44px 1fr auto;gap:8px;align-items:center;margin:4px 0;font:11px Consolas,monospace;color:#b5c8d5}
+.nv-bar i{display:block;height:6px;background:#1b2d3d;border-radius:3px;overflow:hidden}
+.nv-bar u{display:block;height:100%;background:var(--cyan)}
+.nv-bar.is-fuel u{background:var(--orange)}
+.nv-bar.is-low u{background:#ff6b5a}
+.nv-grid{display:grid;grid-template-columns:repeat(var(--n),1fr);gap:4px;margin:12px 0;touch-action:manipulation}
+.nv-cell{position:relative;aspect-ratio:1;min-height:44px;padding:0;border-radius:6px;display:grid;place-items:center;font-weight:700}
+.nv-cell em{font-style:normal;font-size:18px;line-height:1;z-index:1}
+.nv-cell small{position:absolute;bottom:3px;right:5px;font:10px Consolas,monospace;color:#8fa6b7}
+.nv-lane{background:#0f2231}
+.nv-nebula{background:#241d3c}
+.nv-rubble{background:#33281a}
+.nv-cell.is-scan{box-shadow:inset 0 0 0 2px #81e6df55}
+.nv-cell.is-next:not(:disabled){border-color:#81e6df88}
+.nv-cell.is-route{border-color:var(--cyan);background-image:linear-gradient(#81e6df33,#81e6df33)}
+.nv-cell.is-head{border-color:#eaf4f5;color:#eaf4f5}
+.nv-cell.is-hazard{color:#ff6b5a;background-image:linear-gradient(#ff6b5a22,#ff6b5a22);border-color:#8c4a3c}
+.nv-cell.is-hit{background-image:linear-gradient(#ff6b5a55,#ff6b5a55)}
+.nv-back{min-width:120px;min-height:44px}
+.nv-panel .rp-foot{flex-wrap:wrap;gap:10px}.nv-panel .rp-par{flex:1 1 200px}

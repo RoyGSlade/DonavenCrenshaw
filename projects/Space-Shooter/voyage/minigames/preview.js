@@ -4,7 +4,7 @@
 //   ?newgame=1&mini=hack&roll=9&dc=12&level=6&lock=2&time=1&size=2&retries=3&auto=1
 import { runtimeConfig } from '../../runtime-config.js';
 import { newGameFlag } from '../flag.js';
-import { tierOf, tierInfo, setupRepair, setupHaggle, setupCraft, CRAFT_CATEGORIES, REPAIR_CATEGORIES, HACK_CATEGORIES, SOCIAL_CATEGORIES } from './setup.js';
+import { tierOf, tierInfo, setupRepair, setupHaggle, setupCraft, CRAFT_CATEGORIES, setupNav, NAV_CATEGORIES, REPAIR_CATEGORIES, HACK_CATEGORIES, SOCIAL_CATEGORIES } from './setup.js';
 import { playRepair } from './repairView.js';
 import { createSetupHack, hackSetup } from './hack.js';
 import { playSetupHack } from './hackView.js';
@@ -12,6 +12,8 @@ import { createHaggle } from './haggle.js';
 import { playHaggle } from './haggleView.js';
 import { createCraft } from './craft.js';
 import { playCraft } from './craftView.js';
+import { createNav } from './nav.js';
+import { playNav } from './navView.js';
 
 const flag = newGameFlag({ config: runtimeConfig, search: location.search });
 const $ = (id) => document.getElementById(id);
@@ -21,8 +23,8 @@ else boot();
 function boot() {
   $('mg-page').hidden = false;
   const params = new URLSearchParams(location.search);
-  const ids = ['roll', 'level', 'dc', 'lock', 'time', 'size', 'quality', 'retries', 'haggle', 'speed', 'material'];
-  if (['repair', 'hack', 'haggle', 'craft'].includes(params.get('mini'))) $('mg-mini').value = params.get('mini');
+  const ids = ['roll', 'level', 'dc', 'lock', 'time', 'size', 'quality', 'retries', 'haggle', 'speed', 'material', 'fuel', 'warning'];
+  if (['repair', 'hack', 'haggle', 'craft', 'nav'].includes(params.get('mini'))) $('mg-mini').value = params.get('mini');
   for (const id of ids) { const v = params.get(id); if (v != null && /^\d+$/.test(v)) $(id).value = v; }
   const mini = () => $('mg-mini').value;
   const read = () => Object.fromEntries(ids.map((id) => [id, Number($(id).value)]));
@@ -30,7 +32,9 @@ function boot() {
     const v = read();
     const attempt = { total: v.roll + v.level, dc: v.dc, natural: v.roll === 20 };
     const tier = tierOf(attempt);
-    const setup = mini() === 'craft'
+    const setup = mini() === 'nav'
+      ? setupNav({ tier, level: v.level, points: Object.fromEntries(NAV_CATEGORIES.map((c) => [c, v[c] ?? 0])) })
+      : mini() === 'craft'
       ? setupCraft({ tier, level: v.level, points: Object.fromEntries(CRAFT_CATEGORIES.map((c) => [c, v[c] ?? 0])) })
       : mini() === 'haggle'
       ? setupHaggle({ tier, level: v.level, points: Object.fromEntries(SOCIAL_CATEGORIES.map((c) => [c, v[c] ?? 0])) })
@@ -42,10 +46,12 @@ function boot() {
   const show = () => {
     const { v, attempt, tier, setup } = compute();
     for (const id of ids) $(`o-${id}`).textContent = $(id).value;
-    const hack = mini() === 'hack', hag = mini() === 'haggle', rep = mini() === 'repair', cr = mini() === 'craft';
-    $('l-lock').hidden = !hack; $('l-retries').hidden = !hack; $('l-quality').hidden = !rep; $('l-time').hidden = hag || cr; $('l-size').hidden = hag || cr; $('l-haggle').hidden = !hag; $('l-speed').hidden = !cr; $('l-material').hidden = !cr; $('l-quality').hidden = !(rep || cr);
+    const hack = mini() === 'hack', hag = mini() === 'haggle', rep = mini() === 'repair', cr = mini() === 'craft', nv = mini() === 'nav';
+    $('l-lock').hidden = !hack; $('l-retries').hidden = !hack; $('l-quality').hidden = !rep; $('l-time').hidden = hag || cr ? true : false; $('l-size').hidden = hag || cr || nv; $('l-fuel').hidden = !nv; $('l-warning').hidden = !nv; $('l-haggle').hidden = !hag; $('l-speed').hidden = !cr; $('l-material').hidden = !cr; $('l-quality').hidden = !(rep || cr);
     const spent = Object.values(setup.points).reduce((a, b) => a + b, 0);
-    const what = cr
+    const what = nv
+      ? `Map <b>${setup.size} x ${setup.size}</b> · <b>${setup.hazards}</b> hazards · warning <b>${setup.reveal}</b> ahead · time x<b>${setup.timeFactor}</b> · fuel x<b>${setup.fuelFactor}</b> · time budget x<b>${setup.budgetFactor}</b>`
+      : cr
       ? `<b>${setup.strikes}</b> steps · heat band <b>${Math.round(setup.zone * 1000) / 10}%</b> · heat rate x<b>${setup.speed}</b> · work x<b>${setup.workFactor}</b> · quality +<b>${setup.qualityBonus}</b> · build x<b>${setup.buildFactor}</b> · scrap x<b>${setup.materialFactor}</b> (4-scrap recipe; banked <b>${Math.round(craftBank * 100) / 100}</b>)`
       : hag
       ? `Band <b>${Math.round(setup.band * 1000) / 10}%</b> of the range · needle <b>${setup.speed}</b>/s · <b>${setup.patience}</b> patience · <b>${setup.rounds}</b> rounds · price +<b>${Math.round(setup.priceBonus * 1000) / 10}%</b>`
@@ -63,7 +69,9 @@ function boot() {
     stage.replaceChildren();
     if (innerWidth < 760) stage.scrollIntoView({ block: 'start' });
     const { setup, v } = compute();
-    const result = mini() === 'craft'
+    const result = mini() === 'nav'
+      ? await playNav(stage, { state: createNav({ seed, setup }), title: 'Lane scan', reducedMotion })
+      : mini() === 'craft'
       ? await playCraft(stage, { state: createCraft({ seed, recipe: { materials: 4, build: 30 }, setup, bank: craftBank }), what: 'fitting', unit: 'scrap', reducedMotion })
       : mini() === 'haggle'
       ? await playHaggle(stage, { state: createHaggle({ seed, open: 20, best: 30, setup }), who: 'Captain Tull', what: 'your share', reducedMotion })

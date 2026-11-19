@@ -139,3 +139,28 @@ export function setupCraft({ tier = 0, points = {}, level = POINT_MAX } = {}) {
     tier: t, points: p, label: tierInfo(t).label,
   };
 }
+
+// --- Navigation: plot the lane (PLAN.md section 2.3) ------------------------------
+// Categories: time (travel time), fuel (fuel use), warning (hazard warning).
+//   time     every lane costs 4% less travel time per point        (0..9 -> x1 .. x0.64, exact, never rounded)
+//   fuel     every lane costs 4% less fuel per point               (x1 .. x0.64)
+//   warning  hazards show this many cells from the route head: 0-2 points 1, 3-5: 2, 6-8: 3, 9: 4
+// Base: 6 x 6 grid, 5 hidden hazards, budgets 1.5 x the best hazard-free route. Tier: grid 5 at +2 and
+// 7 at -2, hazards -1 at +2 and +1 at -2, time budget x the shared tier clock (0.7 .. 1.3).
+export const NAV_CATEGORIES = Object.freeze(['time', 'fuel', 'warning']);
+export const NAV_BASE = Object.freeze({ size: 6, hazards: 5, reveal: 1, costPerPoint: 0.04, pointsPerReveal: 3, budget: 1.5 });
+export function setupNav({ tier = 0, points = {}, level = POINT_MAX } = {}) {
+  const p = cleanPoints(points, NAV_CATEGORIES, level);
+  const t = Math.max(-2, Math.min(2, Math.trunc(tier) || 0));
+  const b = NAV_BASE;
+  const r4 = (x) => Math.round(+x.toFixed(6) * 10000) / 10000;
+  return {
+    size: b.size - (t === 2 ? 1 : 0) + (t === -2 ? 1 : 0),
+    hazards: b.hazards - (t === 2 ? 1 : 0) + (t === -2 ? 1 : 0),
+    reveal: Math.min(4, b.reveal + Math.floor(p.warning / b.pointsPerReveal)),
+    timeFactor: r4(1 - b.costPerPoint * p.time),
+    fuelFactor: r4(1 - b.costPerPoint * p.fuel),
+    budgetFactor: tierInfo(t).time,
+    tier: t, points: p, label: tierInfo(t).label,
+  };
+}
