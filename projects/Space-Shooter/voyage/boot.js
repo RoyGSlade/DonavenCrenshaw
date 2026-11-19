@@ -469,6 +469,9 @@ function boot(session = { mode: 'local' }) {
       entered: (map) => { slice?.entered(map); setBed(map.ambient); place?.closeStation({ restoreFocus: false }); place?.place(); setPlaceName(placeNameFor(map)); },
       flying: (on) => { flying = on; holdFloor(); place?.place(); if (on) setPlaceName('The Drift'); else if (onfoot?.world?.map) setPlaceName(placeNameFor(onfoot.world.map)); },
       stationInfo: (id) => (workbenchRoom && String(id).startsWith('wb-') ? workbenchRoom.stationInfo(id) : stationInfo(id)),
+      // Live stealth (the workbench's patrol yard): the test character's stealth points, and the guards' events as toasts.
+      stealthSetup: () => workbenchRoom?.stealthSetup?.() || null,
+      stealthEvent: (e, world) => workbenchRoom?.stealthEvent?.(e, world),
       // Jobs you haven't taken: a giver offers theirs in person (after the tutorial). In the workbench room the three crew talk their test conversations.
       offerTalk: (who, map) => (workbenchRoom && map.id === WORKBENCH_ID ? workbenchRoom.talk(who) : jobsOpen() && offersAt({ map: map.id, npc: who }, store.get()).length ? jobTalk.offerAt({ map: map.id, npc: who }) : null),
       // The "job here" mark: open offers at a giver or a board.

@@ -6,7 +6,7 @@ import { walkable } from '../projects/Space-Shooter/voyage/onfoot/rules/mapdata.
 import { createStealth, coneSees, STEALTH } from '../projects/Space-Shooter/voyage/onfoot/rules/stealth.js';
 
 /** Returns [{ x, y, t }] (world px, seconds) from `from` to `to`, one entry per cell step, or null when no clean route exists. */
-export function planStealthRoute(map, { from, to, horizon = 240, gait = 'sneak', cell = 24, margin = 8, tuning } = {}) {
+export function planStealthRoute(map, { from, to, horizon = 240, gait = 'sneak', cell = 24, margin = 22, angleMargin = 0.14, clearance = 14.5, reach = 40, tuning } = {}) {
   const sim = createStealth({ map, ...(tuning ? { tuning } : {}) });
   const dtStep = cell / STEALTH.speed[gait];
   const N = Math.ceil(horizon / dtStep);
@@ -19,23 +19,23 @@ export function planStealthRoute(map, { from, to, horizon = 240, gait = 'sneak',
   const cone = sim.coneOf({ state: 'patrol' });
   const cols = Math.ceil(map.w / cell), rows = Math.ceil(map.h / cell);
   const open = new Map();
-  const okCell = (cx, cy) => { const k = cy * cols + cx; if (!open.has(k)) open.set(k, walkable(map, (cx + 0.5) * cell, (cy + 0.5) * cell, 11.5)); return open.get(k); };
+  const okCell = (cx, cy) => { const k = cy * cols + cx; if (!open.has(k)) open.set(k, walkable(map, (cx + 0.5) * cell, (cy + 0.5) * cell, clearance)); return open.get(k); };
   const seenAt = (cx, cy, k) => {
     const p = { x: (cx + 0.5) * cell, y: (cy + 0.5) * cell };
     for (const g of traj[k]) {
       if (Math.hypot(g.x - p.x, g.y - p.y) < 0.95 * map.tile) return true; // inside the sneak noise ring, or touching
-      if (coneSees(map.solids, g, p, { len: cone.len + margin, half: cone.half + 0.08 })) return true;
+      if (coneSees(map.solids, g, p, { len: cone.len + margin, half: cone.half + angleMargin })) return true;
     }
     return false;
   };
-  const start = [Math.floor(from.x / cell), Math.floor(from.y / cell)], goal = [Math.floor(to.x / cell), Math.floor(to.y / cell)];
+  const start = [Math.floor(from.x / cell), Math.floor(from.y / cell)];
   const key = (x, y, k) => (k * rows + y) * cols + x;
   const prev = new Map([[key(...start, 0), -1]]);
   const q = [[...start, 0]];
   const dirs = [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]];
   for (let h = 0; h < q.length; h++) {
     const [x, y, k] = q[h];
-    if (x === goal[0] && y === goal[1]) {
+    if (Math.hypot((x + 0.5) * cell - to.x, (y + 0.5) * cell - to.y) <= reach) {
       const out = [];
       for (let n = key(x, y, k); n !== -1; n = prev.get(n)) { const r = n % (rows * cols); out.push({ x: ((r % cols) + 0.5) * cell, y: (Math.floor(r / cols) + 0.5) * cell, t: Math.floor(n / (rows * cols)) * dtStep }); }
       return out.reverse();

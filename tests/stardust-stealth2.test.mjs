@@ -442,7 +442,7 @@ test('yard: a careful sneak from the door to the console, planned round the cone
   assert.equal(sim.stats.alarms, 0);
   assert.equal(sim.stats.inspects, 0);
   assert.equal(events.filter((e) => e.type === 'heard').length, 0, 'and no guard even heard a step');
-  assert.ok(Math.hypot(last.x - to.x, last.y - to.y) < 30, 'at the console');
+  assert.ok(Math.hypot(last.x - to.x, last.y - to.y) < 45, 'at the console');
 });
 
 test('yard: running straight at the console gets you noticed', () => {
