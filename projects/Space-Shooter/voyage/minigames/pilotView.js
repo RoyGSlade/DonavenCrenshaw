@@ -22,12 +22,12 @@ export function playPilot(root, { state, where = 'the hangar pad', sound = () =>
   const speedEl = h('b', { text: '' }), fuelBar = h('div', { class: 'nv-bar is-fuel pl-fuel' }, h('span', { text: 'Fuel' }), h('i', {}, h('u')), h('b', { text: '' }));
   const hud = h('div', { class: 'pl-hud' }, h('p', { class: 'pl-speed' }, h('span', { text: 'Speed ' }), speedEl, h('small', { text: ` (safe: ${Math.round(s.safe * 10) / 10})` })),
     h('p', { class: 'pl-wind', text: '' }), h('p', { class: 'pl-brakes', text: '' }));
-  const btn = (cls, text, label) => h('button', { type: 'button', class: `pl-btn ${cls}`, 'aria-label': label, text });
+  const btn = (cls, text, label) => h('button', { type: 'button', class: `pl-btn ui-btn ${cls}`, 'aria-label': label, text });
   const bL = btn('pl-left', '◀', 'Drift left'), bR = btn('pl-right', '▶', 'Drift right'), bT = btn('pl-thrust primary', 'Thrust', 'Thrust (hold)'), bB = btn('pl-brake', 'Brake', 'Emergency brake');
   const pad = h('div', { class: 'pl-controls' }, bL, bT, bR, bB);
   const status = h('p', { class: 'rp-status', role: 'status', 'aria-live': 'polite', text: `Bring the ship down on ${where}. Hold Thrust to slow the fall, Left and Right to drift.` });
-  const panel = h('section', { class: 'rp-panel pl-panel', role: 'group', 'aria-label': 'Landing' },
-    h('p', { class: 'rp-eyebrow', text: `TOUCHDOWN · ${where.toUpperCase()}` }), hud, fuelBar, svg, pad, status,
+  const panel = h('section', { class: 'rp-panel pl-panel mg-skin ui-panel', role: 'group', 'aria-label': 'Landing' },
+    h('p', { class: 'rp-eyebrow ui-nameplate', text: `TOUCHDOWN · ${where.toUpperCase()}` }), hud, fuelBar, svg, pad, status,
     h('p', { class: 'rp-help', text: 'Land on the lit pad slower than the safe speed. Thrust burns fuel; a brake cancels most of your fall once.' }));
   panel.__state = s;
   const input = { left: false, right: false, thrust: false };
@@ -81,8 +81,8 @@ export function playPilot(root, { state, where = 'the hangar pad', sound = () =>
     const r = s.result;
     status.textContent = r.outcome === 'landed' ? `Down on the pad at ${r.speed.toFixed(1)} (safe ${r.safe.toFixed(1)}).` : r.outcome === 'crashed' ? `You hit at ${r.speed.toFixed(1)}: the safe speed is ${r.safe.toFixed(1)}.` : `You came down ${Math.round(r.off)} off the pad.`;
     const stars = '★'.repeat(r.stars) + '☆'.repeat(3 - r.stars);
-    const go = h('button', { type: 'button', class: 'primary', text: r.success ? 'Continue' : 'Step back' });
-    const card = h('div', { class: `rp-result ${r.success ? 'is-ok' : 'is-bad'}`, role: 'status', 'data-outcome': r.outcome },
+    const go = h('button', { type: 'button', class: 'primary ui-btn', text: r.success ? 'Continue' : 'Step back' });
+    const card = h('div', { class: `rp-result ui-card ${r.success ? 'is-ok' : 'is-bad'}`, role: 'status', 'data-outcome': r.outcome },
       h('b', { class: 'rp-stars', text: r.success ? stars : WORDS[r.outcome] }),
       h('span', { text: r.success ? `${r.speed.toFixed(1)} speed · ${Math.round(r.fuelLeft)} s of fuel left · ${r.seconds} s${r.soft ? ' · soft touch' : ''} · +${r.xp} Piloting XP` : `${WORDS[r.outcome].toLowerCase()} · No XP` }), go);
     go.addEventListener('click', () => { panel.remove(); finish(r); });

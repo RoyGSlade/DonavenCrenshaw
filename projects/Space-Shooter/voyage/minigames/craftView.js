@@ -14,13 +14,13 @@ export function playCraft(root, { state, what = 'fitting', unit = 'scrap', sound
   const band = h('s', { class: 'cf-band', 'aria-hidden': 'true', style: `left:${100 * lo}%;width:${100 * (hi - lo)}%` });
   const heatTrack = h('div', { class: 'hg-track cf-heat', role: 'img', 'aria-label': 'Temperature' }, band, glow);
   const heatLabels = h('div', { class: 'hg-scale' }, h('span', { text: 'cold' }), h('span', { text: 'hot' }));
-  const heatBtn = h('button', { type: 'button', class: 'hk-btn primary cf-hold', text: 'Hold to heat' });
+  const heatBtn = h('button', { type: 'button', class: 'hk-btn primary cf-hold ui-btn', text: 'Hold to heat' });
   const workBar = h('div', { class: 'rp-clock cf-work', role: 'timer', 'aria-label': 'Time before the stock cools' }, h('i'));
   const order = h('p', { class: 'cf-order', text: `Rough to fine: ${TOOLS.map((t) => t.name).join(' → ')}` });
   const tiles = h('div', { class: 'cf-tiles', role: 'group', 'aria-label': 'Shaping tools' });
   const tileEls = new Map();
   for (const id of s.tiles) {
-    const b = h('button', { type: 'button', class: 'cf-tile', 'data-tool': id, text: NAME[id] });
+    const b = h('button', { type: 'button', class: 'cf-tile ui-btn', 'data-tool': id, text: NAME[id] });
     b.addEventListener('click', () => doShape(id));
     tileEls.set(id, b); tiles.append(b);
   }
@@ -28,8 +28,8 @@ export function playCraft(root, { state, what = 'fitting', unit = 'scrap', sound
   const facts = h('p', { class: 'rp-par', text: `${s.strikes} shaping steps · needs ${Math.ceil(s.strikes * 0.5)} clean · ${s.recipe.materials} ${unit} for the recipe` });
   const shapeBox = h('div', { class: 'cf-shape', hidden: '' }, workBar, order, tiles);
   const heatBox = h('div', { class: 'cf-heatbox' }, heatTrack, heatLabels, heatBtn);
-  const panel = h('section', { class: 'rp-panel cf-panel', role: 'group', 'aria-label': `Craft: ${what}`, 'data-phase': 'heat' },
-    h('p', { class: 'rp-eyebrow', text: `CRAFT · ${what.toUpperCase()} · HEAT AND SHAPE` }), heatBox, shapeBox, status, facts,
+  const panel = h('section', { class: 'rp-panel cf-panel mg-skin ui-panel', role: 'group', 'aria-label': `Craft: ${what}`, 'data-phase': 'heat' },
+    h('p', { class: 'rp-eyebrow ui-nameplate', text: `CRAFT · ${what.toUpperCase()} · HEAT AND SHAPE` }), heatBox, shapeBox, status, facts,
     h('p', { class: 'rp-help', text: 'Hold the button or Space to heat. Then tap the tools in order: a wrong tap spoils material.' }));
   panel.__state = s;
   root.append(panel);
@@ -85,9 +85,9 @@ export function playCraft(root, { state, what = 'fitting', unit = 'scrap', sound
     const r = s.result;
     const stars = '★'.repeat(r.stars) + '☆'.repeat(3 - r.stars);
     status.textContent = r.success ? `The ${what} is made.` : r.how === 'cooled' ? 'The stock went cold before you finished.' : `The ${what} is ruined.`;
-    const go = h('button', { type: 'button', class: 'primary', text: r.success ? 'Continue' : 'Step back' });
+    const go = h('button', { type: 'button', class: 'primary ui-btn', text: r.success ? 'Continue' : 'Step back' });
     const bankLine = `${unit}: ${r.materials} used (${Math.round(r.materialsExact * 100) / 100} exact), ${Math.round(r.bank * 100) / 100} banked for the next craft`;
-    const card = h('div', { class: `rp-result ${r.success ? 'is-ok' : 'is-bad'}`, role: 'status', 'data-outcome': r.success ? 'made' : 'ruined' },
+    const card = h('div', { class: `rp-result ui-card ${r.success ? 'is-ok' : 'is-bad'}`, role: 'status', 'data-outcome': r.success ? 'made' : 'ruined' },
       h('b', { class: 'rp-stars', text: r.success ? stars : r.how === 'cooled' ? 'WENT COLD' : 'RUINED' }),
       h('span', { text: r.success ? `Quality ${r.quality} · ${r.good} of ${r.strikes} clean · ${r.buildSeconds}s build · +${r.xp} Crafting XP` : `${r.good} of ${r.strikes} clean. No part, no XP.` }),
       h('span', { class: 'cf-mat', text: bankLine }), go);

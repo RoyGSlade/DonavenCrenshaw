@@ -13,15 +13,15 @@ export function playPersuade(root, { state, who = 'The dockmaster', what = 'let 
     ...(lines.length ? lines.map((t) => h('li', { text: t })) : [h('li', { class: 'is-none', text: 'They give nothing away. You will have to guess.' })]));
   const trustBar = h('div', { class: 'nv-bar is-time pc-trust' }, h('span', { text: 'Trust' }), h('i', {}, h('u')), h('b', { text: '' }));
   const pips = h('div', { class: 'hg-pips', 'aria-label': 'Their patience' });
-  const status = h('p', { class: 'rp-status', role: 'status', 'aria-live': 'polite', text: `You want ${who.toLowerCase()} to ${what}. Pick the argument they care about.` });
+  const status = h('p', { class: 'rp-status', role: 'status', 'aria-live': 'polite', text: `You want ${who.replace(/^The /, 'the ')} to ${what}. Pick the argument they care about.` });
   const cards = s.hand.map((c) => {
-    const b = h('button', { type: 'button', class: 'pc-card', 'data-id': c.id, 'data-value': c.value }, h('b', { text: VALUE_NAMES[c.value] }), h('span', { text: c.text }), h('small', { text: '' }));
+    const b = h('button', { type: 'button', class: 'pc-card ui-card', 'data-id': c.id, 'data-value': c.value }, h('b', { text: VALUE_NAMES[c.value] }), h('span', { text: c.text }), h('small', { text: '' }));
     b.addEventListener('click', () => doPlay(c.id));
     return b;
   });
   const hand = h('div', { class: 'pc-hand', role: 'group', 'aria-label': 'Your arguments' }, ...cards);
-  const panel = h('section', { class: 'rp-panel pc-panel', role: 'group', 'aria-label': `Persuade ${who}` },
-    h('p', { class: 'rp-eyebrow', text: `PERSUADE · ${who.toUpperCase()}` }), h('p', { class: 'pc-lead', text: 'What you notice' }), notice, trustBar, pips, hand, status,
+  const panel = h('section', { class: 'rp-panel pc-panel mg-skin ui-panel', role: 'group', 'aria-label': `Persuade ${who}` },
+    h('p', { class: 'rp-eyebrow ui-nameplate', text: `PERSUADE · ${who.toUpperCase()}` }), h('p', { class: 'pc-lead', text: 'What you notice' }), notice, trustBar, pips, hand, status,
     h('p', { class: 'rp-help', text: 'A card on something they care about lands, and landing cards in a row builds more trust. A miss costs patience; something they dislike costs two.' }));
   panel.__state = s;
   root.append(panel);
@@ -57,8 +57,8 @@ export function playPersuade(root, { state, who = 'The dockmaster', what = 'let 
     paint();
     const r = s.result;
     status.textContent = r.success ? `${who} agrees to ${what}.` : r.how === 'out' ? 'You ran out of things to say.' : `${who} has heard enough.`;
-    const go = h('button', { type: 'button', class: 'primary', text: r.success ? 'Continue' : 'Step back' });
-    const card = h('div', { class: `rp-result ${r.success ? 'is-ok' : 'is-bad'}`, role: 'status', 'data-outcome': r.outcome },
+    const go = h('button', { type: 'button', class: 'primary ui-btn', text: r.success ? 'Continue' : 'Step back' });
+    const card = h('div', { class: `rp-result ui-card ${r.success ? 'is-ok' : 'is-bad'}`, role: 'status', 'data-outcome': r.outcome },
       h('b', { class: 'rp-stars', text: WORDS[r.outcome] }),
       h('span', { text: `${r.trust} of ${r.goal} trust · ${r.cardsPlayed} card${r.cardsPlayed === 1 ? '' : 's'} played${r.xp ? ` · +${r.xp} Social XP` : ' · No XP'}` }), go);
     go.addEventListener('click', () => { panel.remove(); finish(r); });

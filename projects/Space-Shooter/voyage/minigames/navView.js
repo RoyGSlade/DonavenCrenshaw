@@ -21,15 +21,15 @@ export function playNav(root, { state, title = 'Lane run', sound = () => {}, red
     grid.append(b); return b;
   });
   const status = h('p', { class: 'rp-status', role: 'status', 'aria-live': 'polite', text: 'Tap the sector next to your ship to plot the route to the port (P).' });
-  const backBtn = h('button', { type: 'button', class: 'nv-back', text: 'Back up' });
+  const backBtn = h('button', { type: 'button', class: 'nv-back ui-btn', text: 'Back up' });
   backBtn.addEventListener('click', undo);
   const sw = (cls, text) => h('li', {}, h('i', { class: `nv-sw ${cls}` }), h('span', { text }));
   const key = h('ul', { class: 'nv-key', 'aria-label': 'Key' },
     sw('nv-lane', 'Open lane: T1 F1'), sw('nv-nebula', 'Nebula: T2 F1'), sw('nv-rubble', 'Rubble: T1 F2'),
     h('li', {}, h('b', { text: '▲' }), h('span', { text: 'your ship' })), h('li', {}, h('b', { class: 'nv-x', text: '✕' }), h('span', { text: `hazard, +T${HAZARD_COST.time} F${HAZARD_COST.fuel}` })));
   const legend = h('p', { class: 'rp-par', text: `T = travel time, F = fuel. You can see hazards ${s.reveal} sector${s.reveal === 1 ? '' : 's'} ahead.` });
-  const panel = h('section', { class: 'rp-panel nv-panel', role: 'group', 'aria-label': `Navigation: ${title}` },
-    h('p', { class: 'rp-eyebrow', text: `NAVIGATE · ${title.toUpperCase()} · ${n} x ${n}` }), timeBar, fuelBar, grid, key, status,
+  const panel = h('section', { class: 'rp-panel nv-panel mg-skin ui-panel', role: 'group', 'aria-label': `Navigation: ${title}` },
+    h('p', { class: 'rp-eyebrow ui-nameplate', text: `NAVIGATE · ${title.toUpperCase()} · ${n} x ${n}` }), timeBar, fuelBar, grid, key, status,
     h('div', { class: 'rp-foot' }, backBtn, legend),
     h('p', { class: 'rp-help', text: 'Backing up re-crosses the sector you leave, so it costs too. Keys: arrows extend the route, Backspace backs up.' }));
   panel.__state = s;
@@ -84,8 +84,8 @@ export function playNav(root, { state, title = 'Lane run', sound = () => {}, red
     const r = s.result;
     status.textContent = WORDS[r.how];
     const stars = '★'.repeat(r.stars) + '☆'.repeat(3 - r.stars);
-    const go2 = h('button', { type: 'button', class: 'primary', text: r.success ? 'Continue' : 'Step back' });
-    const card = h('div', { class: `rp-result ${r.success ? 'is-ok' : 'is-bad'}`, role: 'status', 'data-outcome': r.success ? 'arrived' : 'stranded' },
+    const go2 = h('button', { type: 'button', class: 'primary ui-btn', text: r.success ? 'Continue' : 'Step back' });
+    const card = h('div', { class: `rp-result ui-card ${r.success ? 'is-ok' : 'is-bad'}`, role: 'status', 'data-outcome': r.success ? 'arrived' : 'stranded' },
       h('b', { class: 'rp-stars', text: r.success ? stars : r.how === 'out-of-fuel' ? 'NO FUEL' : 'NO TIME' }),
       h('span', { text: r.success ? `${r.steps} sectors · time ${whole(r.time)} of ${r.budgetTime} · fuel ${whole(r.fuel)} of ${r.budgetFuel} · ${r.hits} hazard${r.hits === 1 ? '' : 's'} hit · +${r.xp} Navigation XP` : `${r.steps} sectors, ${r.backups} backed up. No XP.` }), go2);
     go2.addEventListener('click', () => { panel.remove(); finish(r); });

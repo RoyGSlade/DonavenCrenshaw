@@ -13,11 +13,11 @@ export function playIntimidate(root, { state, who = 'The loan clerk', what = 'dr
   const moodEl = h('p', { class: 'it-mood', 'aria-live': 'polite', text: '' });
   const have = h('p', { class: 'it-have', text: '' });
   const pips = h('div', { class: 'hg-pips it-saves', 'aria-label': 'Saves' });
-  const pushBtn = h('button', { type: 'button', class: 'primary it-push', text: 'Push' });
-  const standBtn = h('button', { type: 'button', class: 'it-stand', text: 'Stand' });
-  const status = h('p', { class: 'rp-status', role: 'status', 'aria-live': 'polite', text: `You want ${who.toLowerCase()} to ${what}. You need ${s.goal} to win. Push for more, or Stand and take it.` });
-  const panel = h('section', { class: 'rp-panel it-panel', role: 'group', 'aria-label': `Intimidate ${who}` },
-    h('p', { class: 'rp-eyebrow', text: `INTIMIDATE · ${who.toUpperCase()}` }), have, moodEl, pips, h('div', { class: 'it-row' }, pushBtn, standBtn), status, ladder,
+  const pushBtn = h('button', { type: 'button', class: 'primary it-push ui-btn', text: 'Push' });
+  const standBtn = h('button', { type: 'button', class: 'it-stand ui-btn', text: 'Stand' });
+  const status = h('p', { class: 'rp-status', role: 'status', 'aria-live': 'polite', text: `You want ${who.replace(/^The /, 'the ')} to ${what}. You need ${s.goal} to win. Push for more, or Stand and take it.` });
+  const panel = h('section', { class: 'rp-panel it-panel mg-skin ui-panel', role: 'group', 'aria-label': `Intimidate ${who}` },
+    h('p', { class: 'rp-eyebrow ui-nameplate', text: `INTIMIDATE · ${who.toUpperCase()}` }), have, moodEl, pips, h('div', { class: 'it-row' }, pushBtn, standBtn), status, ladder,
     h('p', { class: 'rp-help', text: `${s.readsOdds ? 'You can read the exact risk.' : 'You cannot read them well: the risk is only a word.'} A snap loses everything${s.saves ? '; a save shrugs one snap off' : ''}. Stars at ${s.stars.join(', ')}.` }));
   panel.__state = s;
   root.append(panel);
@@ -58,8 +58,8 @@ export function playIntimidate(root, { state, who = 'The loan clerk', what = 'dr
     const r = s.result;
     status.textContent = r.outcome === 'won' ? `${who} agrees to ${what}.` : r.outcome === 'snapped' ? `${who} loses their temper. You get nothing.` : `You stood at ${r.won}, short of ${r.goal}. They hold firm.`;
     const stars = '★'.repeat(r.stars) + '☆'.repeat(3 - r.stars);
-    const go = h('button', { type: 'button', class: 'primary', text: r.success ? 'Continue' : 'Step back' });
-    const card = h('div', { class: `rp-result ${r.success ? 'is-ok' : 'is-bad'}`, role: 'status', 'data-outcome': r.outcome },
+    const go = h('button', { type: 'button', class: 'primary ui-btn', text: r.success ? 'Continue' : 'Step back' });
+    const card = h('div', { class: `rp-result ui-card ${r.success ? 'is-ok' : 'is-bad'}`, role: 'status', 'data-outcome': r.outcome },
       h('b', { class: 'rp-stars', text: r.success ? stars : WORDS[r.outcome] }),
       h('span', { text: `${r.won} of ${r.goal} · ${r.pushes} push${r.pushes === 1 ? '' : 'es'}${r.savesUsed ? ` · ${r.savesUsed} save${r.savesUsed === 1 ? '' : 's'} used` : ''}${r.xp ? ` · +${r.xp} Social XP` : ' · No XP'}` }), go);
     go.addEventListener('click', () => { panel.remove(); finish(r); });

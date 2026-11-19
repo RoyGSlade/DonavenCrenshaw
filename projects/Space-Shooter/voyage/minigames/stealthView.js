@@ -22,11 +22,11 @@ export function playStealth(root, { state, title = 'Cargo hold', sound = () => {
   const key = h('ul', { class: 'nv-key', 'aria-label': 'Key' }, sw('st-now', 'watched if you end this beat there'), sw('st-later', 'dashed: watched the beat after'), sw('st-cover', 'cover: hides you'), sw('st-wall', 'wall'),
     h('li', {}, h('i', { class: 'nv-sw st-guard' }), h('span', { text: 'guard (arrow = way it walks)' })), h('li', {}, h('b', { text: '▲' }), h('span', { text: 'you' })), h('li', {}, h('b', { text: 'E' }), h('span', { text: 'exit' })));
   const status = h('p', { class: 'rp-status', role: 'status', 'aria-live': 'polite', text: 'Each tap spends a beat: step to a neighbouring cell, or wait. Stay out of the lit cones.' });
-  const waitBtn = h('button', { type: 'button', class: 'nv-back', text: 'Wait a beat' });
+  const waitBtn = h('button', { type: 'button', class: 'nv-back ui-btn', text: 'Wait a beat' });
   waitBtn.addEventListener('click', () => doAct(s.pos));
   const facts = h('p', { class: 'rp-par', text: `${s.guards.length} guard${s.guards.length === 1 ? '' : 's'} · cones reach about ${Math.round(STEALTH_BASE.cone * s.rangeFactor)} cells · a heard step costs +${Math.round(STEALTH_BASE.heard * s.quiet)} heat · cools ${s.decay} a quiet beat` });
-  const panel = h('section', { class: 'rp-panel nv-panel st-panel', role: 'group', 'aria-label': `Stealth: ${title}` },
-    h('p', { class: 'rp-eyebrow', text: `SLIP PAST · ${title.toUpperCase()} · ${s.guards.length} GUARD${s.guards.length === 1 ? '' : 'S'}` }), heatBar, beatBar, grid, key, status,
+  const panel = h('section', { class: 'rp-panel nv-panel st-panel mg-skin ui-panel', role: 'group', 'aria-label': `Stealth: ${title}` },
+    h('p', { class: 'rp-eyebrow ui-nameplate', text: `SLIP PAST · ${title.toUpperCase()} · ${s.guards.length} GUARD${s.guards.length === 1 ? '' : 'S'}` }), heatBar, beatBar, grid, key, status,
     h('div', { class: 'rp-foot' }, waitBtn, facts),
     h('p', { class: 'rp-help', text: 'Arrows step, Space waits. A step makes noise if a guard is within 2 cells.' }));
   panel.__state = s;
@@ -83,8 +83,8 @@ export function playStealth(root, { state, title = 'Cargo hold', sound = () => {
     const r = s.result;
     status.textContent = WORDS[r.how];
     const stars = '★'.repeat(r.stars) + '☆'.repeat(3 - r.stars);
-    const go = h('button', { type: 'button', class: 'primary', text: r.success ? 'Continue' : 'Step back' });
-    const card = h('div', { class: `rp-result ${r.success ? 'is-ok' : 'is-bad'}`, role: 'status', 'data-outcome': r.success ? 'slipped' : r.how },
+    const go = h('button', { type: 'button', class: 'primary ui-btn', text: r.success ? 'Continue' : 'Step back' });
+    const card = h('div', { class: `rp-result ui-card ${r.success ? 'is-ok' : 'is-bad'}`, role: 'status', 'data-outcome': r.success ? 'slipped' : r.how },
       h('b', { class: 'rp-stars', text: r.success ? stars : r.how === 'caught' ? 'CAUGHT' : 'TOO LATE' }),
       h('span', { text: r.success ? `${r.beats} beats · hottest ${r.maxHeat} heat · seen ${r.seenBeats}, heard ${r.heardBeats} · +${r.xp} Stealth XP` : `${r.beats} beats, hottest ${r.maxHeat}. No XP.` }), go);
     go.addEventListener('click', () => { panel.remove(); finish(r); });

@@ -21,6 +21,23 @@
 .mg-skin .rp-result.ui-card.is-ok .rp-stars{color:#9fe870}
 .mg-skin .rp-result.ui-card.is-bad .rp-stars{color:var(--ui-amber,#ffad72)}
 .mg-skin .hg-pips span.on{background:var(--ui-amber,#ffad72);border-color:var(--ui-amber,#ffad72)}
+/* The kit's buttons keep a clear middle: no flat button colour behind the picture. */
+.mg-skin .ui-btn,.mg-skin .ui-btn.primary{background:transparent}
+.mg-skin .ui-btn:disabled{opacity:1}
+/* Persuade: each argument is a card in the kit's light frame (the same picture as a result card). */
+.mg-skin .pc-card{border:solid transparent;border-width:13px 18px 12px 18px;border-image:url(../ui/kit/panel-light.webp) 26 37 23 38 fill / 13px 18px 12px 18px stretch;border-radius:0;background:none;min-height:104px;padding:6px 8px;color:var(--ui-text,#eaf4f5)}
+.mg-skin .pc-card:hover:not(:disabled){filter:brightness(1.25);background:none}
+.mg-skin .pc-card.is-played{background:none;filter:saturate(.4) brightness(.7)}
+.mg-skin .pc-card b{color:var(--ui-amber,#ffad72)}
+/* Piloting: a held button shows the kit's pressed picture. */
+.mg-skin .pl-btn.ui-btn.is-held{border-image-source:url(../ui/kit/button-pressed.webp);background:transparent}
+.mg-skin .pl-btn.ui-btn.primary.is-held{border-image-source:url(../ui/kit/button-primary-pressed.webp)}
+.mg-skin .cf-hold.ui-btn.is-held{border-image-source:url(../ui/kit/button-primary-pressed.webp);background:transparent}
+.mg-skin .cf-tile.ui-btn.is-done{opacity:.45}
+.mg-skin .cf-tile.ui-btn.is-bad{filter:hue-rotate(150deg) saturate(2)}
+.mg-skin .it-rung,.mg-skin .pc-tells li{border-radius:2px}
+.mg-skin .pl-view{border:1px solid #3f5566;border-radius:3px}
+.mg-skin .nv-cell{border-radius:3px}
 /* In a station sheet the sheet is the frame. */
 .hg-sheet .rp-panel.mg-skin.ui-panel{border:0;border-image:none;padding:0;max-width:none;margin:0}
 .hg-sheet .rp-panel.mg-skin .rp-eyebrow.ui-nameplate{display:none} /* the sheet's own head says it */

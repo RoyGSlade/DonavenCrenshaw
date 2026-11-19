@@ -47,8 +47,8 @@ test('intimidate (push your luck) in the browser', { skip }, async () => {
       await tap('.it-push'); await tap('.it-push');
       // After a tap (phone: the hover state sticks) Push must still read as the main button, not a disabled one.
       await page.waitForTimeout(300);
-      const look = await page.evaluate(() => { const b = document.querySelector('.it-push'); const c = getComputedStyle(b); return { bg: c.backgroundColor, color: c.color, op: c.opacity, dis: b.disabled }; });
-      assert.equal(look.dis, false); assert.equal(look.op, '1'); assert.match(look.bg, /rgb\((1[2-9]\d|2\d\d), (2\d\d), (2\d\d)\)/, `push is light: ${look.bg}`);
+      const look = await page.evaluate(() => { const b = document.querySelector('.it-push'); const c = getComputedStyle(b); return { img: c.borderImageSource, color: c.color, op: c.opacity, dis: b.disabled }; });
+      assert.equal(look.dis, false); assert.equal(look.op, '1'); assert.match(look.img, /button-primary(-hover|-pressed)?\.webp/, `push keeps the primary kit picture after a tap: ${look.img}`); assert.doesNotMatch(look.color, /rgb\((1[5-9]\d|2\d\d)/, `push text stays dark on the light picture: ${look.color}`);
       await page.waitForTimeout(100); await shot(page, `intimidate-${name}-3-mid`);
       await tap('.it-push');
       assert.match(await page.locator('.it-have').innerText(), /You have 10 of the 10 you need: enough/);
