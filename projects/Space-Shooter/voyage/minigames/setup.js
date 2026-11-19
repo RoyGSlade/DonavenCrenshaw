@@ -164,3 +164,27 @@ export function setupNav({ tier = 0, points = {}, level = POINT_MAX } = {}) {
     tier: t, points: p, label: tierInfo(t).label,
   };
 }
+
+// --- Stealth: shadow slip (PLAN.md section 2.4) -----------------------------------
+// Categories: quiet (quiet movement), range (detection range), decay (heat decay).
+//   quiet   a heard step adds 7% less heat per point                 (12 .. 4.4 per heard step)
+//   range   guard view cones are 6% shorter per point; the cone's last cell fades smoothly   (4 .. 1.84 cells)
+//   decay   heat cools 2 more per quiet beat per point               (8 .. 26 per beat)
+// Base: 2 guards, cone 4 cells, seen +34 heat per guard per beat, heard +12, alert ring 2, caught at 100,
+// shift change after 28 beats. Tier: guards -1 at +2 and +1 at -2 (never under 1); beats x the shared clock.
+export const STEALTH_CATEGORIES = Object.freeze(['quiet', 'range', 'decay']);
+export const STEALTH_BASE = Object.freeze({ guards: 2, cone: 4, seen: 34, heard: 12, alert: 2, caught: 100, beats: 28, decay: 8, quietPerPoint: 0.07, rangePerPoint: 0.06, decayPerPoint: 2 });
+export function setupStealth({ tier = 0, points = {}, level = POINT_MAX } = {}) {
+  const p = cleanPoints(points, STEALTH_CATEGORIES, level);
+  const t = Math.max(-2, Math.min(2, Math.trunc(tier) || 0));
+  const b = STEALTH_BASE;
+  const r4 = (x) => Math.round(+x.toFixed(6) * 10000) / 10000;
+  return {
+    guards: Math.max(1, b.guards - (t === 2 ? 1 : 0) + (t === -2 ? 1 : 0)),
+    beats: Math.round(+(b.beats * tierInfo(t).time).toFixed(6)),
+    noiseFactor: r4(1 - b.quietPerPoint * p.quiet),
+    rangeFactor: r4(1 - b.rangePerPoint * p.range),
+    decay: b.decay + b.decayPerPoint * p.decay,
+    tier: t, points: p, label: tierInfo(t).label,
+  };
+}

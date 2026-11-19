@@ -27,7 +27,7 @@
       <form id="mg-controls" class="mg-controls" aria-label="Setup">
         <h2>Set it up</h2>
         <p>The game rolls a d20 and spends skill points. Set them here and see what the minigame becomes.</p>
-        <label>Minigame <select id="mg-mini"><option value="repair">Repair: pipes</option><option value="hack">Hacking: bypass ring</option><option value="haggle">Social: haggle</option><option value="craft">Crafting: heat and shape</option><option value="nav">Navigation: plot the lane</option></select></label>
+        <label>Minigame <select id="mg-mini"><option value="repair">Repair: pipes</option><option value="hack">Hacking: bypass ring</option><option value="haggle">Social: haggle</option><option value="craft">Crafting: heat and shape</option><option value="nav">Navigation: plot the lane</option><option value="stealth">Stealth: shadow slip</option></select></label>
         <label>d20 roll <output id="o-roll"></output><input id="roll" type="range" min="1" max="20" value="12"></label>
         <label>Skill level <output id="o-level"></output><input id="level" type="range" min="1" max="9" value="3"></label>
         <label>Difficulty (dc) <output id="o-dc"></output><input id="dc" type="range" min="6" max="20" value="12"></label>
@@ -40,6 +40,9 @@
         <label id="l-material">Material points <output id="o-material"></output><input id="material" type="range" min="0" max="9" value="0"></label>
         <label id="l-fuel">Fuel points <output id="o-fuel"></output><input id="fuel" type="range" min="0" max="9" value="0"></label>
         <label id="l-warning">Warning points <output id="o-warning"></output><input id="warning" type="range" min="0" max="9" value="0"></label>
+        <label id="l-quiet">Quiet points <output id="o-quiet"></output><input id="quiet" type="range" min="0" max="9" value="0"></label>
+        <label id="l-range">Range points <output id="o-range"></output><input id="range" type="range" min="0" max="9" value="0"></label>
+        <label id="l-decay">Decay points <output id="o-decay"></output><input id="decay" type="range" min="0" max="9" value="0"></label>
         <label id="l-retries">Retries points <output id="o-retries"></output><input id="retries" type="range" min="0" max="9" value="0"></label>
         <div id="mg-readout" class="mg-readout" aria-live="polite"></div>
         <button id="mg-go" type="submit" class="primary">Start</button>

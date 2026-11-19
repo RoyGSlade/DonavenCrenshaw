@@ -148,3 +148,16 @@
 .nv-sw{width:16px;height:16px;border-radius:4px;border:1px solid var(--line);display:inline-block}
 .nv-key .nv-x{color:#ff6b5a}
 .nv-cell small{font-size:11px}
+
+/* Stealth: shadow slip */
+.st-floor{background:#0f2231}
+.st-wall{background:#2b3138;border-color:#3a424b;opacity:.9}
+.st-cover{background:#14304a}
+.st-cell.is-now{background-image:linear-gradient(rgba(255,107,90,calc(.12 + .30*var(--vis,1))),rgba(255,107,90,calc(.12 + .30*var(--vis,1))));border-color:#8c4a3c}
+.st-cell.is-later{background-image:linear-gradient(rgba(255,173,114,calc(.10 + .25*var(--vis,1))),rgba(255,173,114,calc(.10 + .25*var(--vis,1))));border-style:dashed}
+.st-cell em{font-size:20px}
+.st-cell small{position:absolute;top:2px;right:5px;bottom:auto;font-size:14px;color:#ff8a70}
+.st-cell:disabled{opacity:1}
+.st-wall:disabled{opacity:.9}
+.st-cell.is-head{box-shadow:inset 0 0 0 2px #eaf4f5}
+.st-now.nv-sw{background:#8a4a40}.st-later.nv-sw{background:#5a4430;border-style:dashed}.st-cover.nv-sw{background:#14304a}

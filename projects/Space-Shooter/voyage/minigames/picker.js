@@ -23,10 +23,10 @@ export const CATEGORIES = Object.freeze({
     { id: 'handling', name: 'Handling', words: (n) => `drift nudge ${plus(6 * n, '%')} in a landing` },
     { id: 'boost', name: 'Boost', words: (n) => `${Math.floor(n / 3)} emergency brake${Math.floor(n / 3) === 1 ? '' : 's'} per landing` },
     { id: 'landing', name: 'Landing', words: (n) => `safe touchdown speed ${f1(3 * (1 + 0.05 * n))}` } ] },
-  stealth: { built: false, cats: [
-    { id: 'quiet', name: 'Quiet movement', words: (n) => `-${f1(7 * n)}% noise from creeping` },
-    { id: 'range', name: 'Detection range', words: (n) => `guard sight cones ${f1(6 * n)}% shorter` },
-    { id: 'decay', name: 'Heat decay', words: (n) => `cools ${f1(2 + 0.4 * n)} heat per second` } ] },
+  stealth: { built: true, cats: [
+    { id: 'quiet', name: 'Quiet movement', words: (n) => `a heard step adds ${f1(12 * (1 - 0.07 * n))} heat` },
+    { id: 'range', name: 'Detection range', words: (n) => `guard view cones ${f1(4 * (1 - 0.06 * n))} cells long` },
+    { id: 'decay', name: 'Heat decay', words: (n) => `cools ${8 + 2 * n} heat on a quiet beat` } ] },
   hacking: { built: true, cats: [
     { id: 'time', name: 'Time', words: (n) => `${plus(1.5 * n, ' s')} on every hack` },
     { id: 'size', name: 'Puzzle size', words: (n) => `${Math.floor(n / 2)} fewer tumbler${Math.floor(n / 2) === 1 ? '' : 's'} (never under 2)` },
