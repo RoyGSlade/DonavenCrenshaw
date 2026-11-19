@@ -15,7 +15,7 @@ const MAX_DRAG = 200; // world units of drag for 100% thrust
 export function playPerihelion(root, { state, title: title0 = 'Perihelion', sound = () => {}, reducedMotion = () => false, xpFor = null, embedded = false, onLeave = null } = {}) {
   const s = state;
   // On a desktop the game owns the screen like the trainer's gallery: a fixed overlay on <body>, HUD across the top, map as big as fits.
-  const full = embedded || (typeof matchMedia === 'function' && matchMedia('(min-width: 900px)').matches); // embedded: the shared workbench full-screen helper owns the screen, so the panel mounts in its stage
+  const full = typeof matchMedia === 'function' && matchMedia('(min-width: 900px)').matches; // wide screens get the full-bleed layout; embedded: the shared workbench full-screen helper owns the screen, so the panel mounts in its stage
   const still = () => reducedMotion();
   // ---- DOM ------------------------------------------------------------------------------------------------------------------
   const meter = (cls, label) => h('div', { class: `pr-meter ${cls}` }, h('span', { text: label }), h('i', {}, h('u'), h('s'), h('em'), h('b')));

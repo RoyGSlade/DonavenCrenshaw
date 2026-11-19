@@ -129,20 +129,21 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
         await leave('.ga-leave');
         await page.waitForSelector('#hg-minigame:not([hidden]) .tr-root');
         await tap('.tr-skill[data-skill="navigation"]');
-        await page.waitForSelector('.tr-sector, .tr-root[data-skill="navigation"]');
-        const sector = page.locator('.tr-sector button, .tr-sector-go, [data-sector]').first();
-        if (await sector.count()) {
-          await (phone ? sector.tap() : sector.click());
-          await checkFull('perihelion trainer', { leaveSel: '.pr-leave' });
-          await shot('walk-perihelion-trainer');
-          await leave('.pr-leave');
-        }
+        await page.waitForSelector('.tr-fly[data-sector="0"]:not([disabled])');
+        await tap('.tr-fly[data-sector="0"]');
+        await checkFull('perihelion trainer', { leaveSel: '.pr-leave' });
+        await shot('walk-perihelion-trainer');
+        // A trainer sector has no 'no result': leaving abandons the sector and the result card says so (no stars, no XP).
+        await tap('.wb-full .pr-leave'); await page.waitForSelector('.rp-result'); await page.waitForTimeout(700);
+        for (let i = 0; i < 6 && (await page.locator('.wb-full').count()); i++) { await tap('.rp-result button').catch(() => {}); await page.waitForTimeout(300); }
+        await page.waitForSelector('.wb-full', { state: 'detached' });
+        await page.waitForSelector('#hg-minigame:not([hidden]) .tr-root');
         await page.evaluate(() => window.__stardust.workbench.closePanel());
         await page.waitForSelector('#hg-minigame', { state: 'hidden' });
       });
 
       await sub('Pip: the talk and a push into its game', async () => {
-        await page.evaluate(() => window.__stardust.workbench.talk('pip'));
+        await page.evaluate(() => { void window.__stardust.workbench.talk('pip'); });
         await page.waitForSelector('#wb-talk:not([hidden]) .tk-line');
         await shot('walk-pip-talk');
         const w = await page.evaluate(() => { const r = document.getElementById('wb-talk').getBoundingClientRect(); return { x1: r.right, iw: innerWidth, sw: document.documentElement.scrollWidth }; });

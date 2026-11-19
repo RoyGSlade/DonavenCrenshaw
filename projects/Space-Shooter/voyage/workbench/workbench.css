@@ -86,7 +86,11 @@ body .tk-panel[hidden]{display:none}
 .wb-fstage>.rp-panel>.rp-eyebrow{margin:0}
 .wb-fstage>.rp-panel>.rp-help:not(.rp-status){display:none}
 .wb-full-bare .wb-fstage{max-width:none;padding:0}
-.wb-full-bare .wb-fstage>.rp-panel.ga-full,.wb-full-bare .wb-fstage>.rp-panel.pr-full{position:relative;inset:auto;z-index:auto;max-width:none;overflow:hidden;background:none;border-radius:0;padding:0}
+.wb-full-bare .wb-fstage>.rp-panel.ga-full,.wb-full-bare .wb-fstage>.rp-panel.pr-full{position:relative;inset:auto;z-index:auto;max-width:none;overflow:hidden;background:none;border-radius:0}
 .wb-full-bare{padding:0}
 /* Panels with no board to stretch (locks, haggle, persuade, intimidate) sit centred at their own height instead of leaving an empty frame. */
 .wb-fstage>.rp-panel:is(.hk-panel,.hg-panel,.pc-panel,.it-panel,.mh-panel,.pl-panel,.st-panel,.cf-panel){flex:0 1 auto;margin:auto}
+/* Perihelion hides its own Leave on a phone (it has Quit); on the shared full-screen helper every game keeps a Leave. */
+.wb-full .pr-leave{display:inline-flex}
+/* A tall game inside the full-screen stage scrolls inside its panel; its parts keep their height rather than squashing into each other. */
+.wb-fstage>.rp-panel:not(.cc-panel):not(.pr-full):not(.ga-full)>*{flex-shrink:0}
