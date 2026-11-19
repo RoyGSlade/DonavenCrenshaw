@@ -69,10 +69,14 @@ test('skinned minigames beside the dialogue box and tracker', { skip }, async ()
             if (idx == null) break; await tap(`.rp-tile[data-i="${idx}"]`); if (i === 3) await mid();
           }
         } else if (game === 'hack') {
-          for (let i = 0; i < 6; i++) {
-            if (await page.locator('.rp-result').count()) break;
-            await page.evaluate(() => { const s = document.querySelector('.hk-panel').__state; if (!s.done) { s.cursor = s.tumblers[s.index].at; s.dir = 0; } });
-            await tap('.hk-btn'); if (i === 1) await mid();
+          // Two firewalls (lock 2): per stage turn each mirror to its place through the state, catch the portal when the marker is in the window, fire.
+          for (let stage = 0; stage < 2 && !(await page.locator('.rp-result').count()); stage++) {
+            await page.evaluate(() => { const s = document.querySelector('.mh-panel').__state; s.angles = s.layout.solved.map((v, i) => v ?? s.layout.start[i]); });
+            await page.evaluate(() => new Promise((res) => { const M = import('/projects/Space-Shooter/voyage/minigames/mirrors.js'); M.then((mod) => { const tick = () => { const s = document.querySelector('.mh-panel').__state; if (mod.inWindow(s) && s.portal.cooldown === 0) { document.querySelector('.mh-catch').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true })); res(true); } else requestAnimationFrame(tick); }; tick(); }); }));
+            await page.waitForSelector('.mh-fire:not([disabled])');
+            if (stage === 0) await mid();
+            await tap('.mh-fire');
+            await page.waitForFunction((k) => { const s = document.querySelector('.mh-panel')?.__state; return !s || s.stage > k || s.done; }, stage, { timeout: 12000 });
           }
         } else if (game === 'haggle') {
           await page.evaluate(async () => { const m = await import('/projects/Space-Shooter/voyage/minigames/haggle.js'); const s = document.querySelector('.hg-panel').__state; const [lo, hi] = m.bandPrices(s); const v = s.speed; s.phase = 0; s.t = 0; for (let t = 0; t < 4; t += 0.005) { const p = m.priceAt(s, m.needleAt(s, t)); if (p >= lo && p <= hi) { s.phase = (t * v) % 2; s.t = 0; s.speed = 0; break; } } });

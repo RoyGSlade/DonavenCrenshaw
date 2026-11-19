@@ -6,7 +6,7 @@ import { fitCanvas } from '../onfoot/viewport.js';
 
 const h = (tag, attrs = {}, ...kids) => { const el = document.createElement(tag); for (const [k, v] of Object.entries(attrs)) { if (k === 'text') el.textContent = v; else el.setAttribute(k, v); } el.append(...kids.filter(Boolean)); return el; };
 
-export function playSetupHack(root, { state, title = 'Lock', sound = () => {}, reducedMotion = () => false } = {}) {
+export function playRing(root, { state, title = 'Lock', sound = () => {}, reducedMotion = () => false } = {}) {
   const canvas = h('canvas', { class: 'hk-canvas', 'aria-hidden': 'true' });
   const s = state.setup || {};
   const status = h('p', { class: 'rp-status', role: 'status', 'aria-live': 'polite', text: `Set ${state.tumblers.length} tumblers. Splice when the sweep is in the lit window.` });

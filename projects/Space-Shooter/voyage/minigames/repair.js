@@ -1,12 +1,17 @@
-// The repair minigame (v2): route coolant from the pump to the leaking valve.
+// The repair minigame (v3): route coolant from the pump to the leaking valve.
 // A square board of pipe pieces; tap a piece to turn it a quarter. Two rules:
 //  1. A closed network. Every opening on every piece that coolant reaches must meet
 //     another opening (or the pump or the valve). A T only works if all three of its
 //     ends connect. Any open end on the wet network leaks.
 //  2. No clock. Coolant flows out of the pump at a steady speed through the connected
-//     pipe, pours out of every open end it reaches, and the spill collects in a pool
-//     along the bottom of the board. Pool full: the line floods. The patch holds when
-//     the coolant reaches the valve and nothing is left open.
+//     pipe and pours out of every open end it reaches. The spill is water that RISES up into the
+//     board from the bottom row (Donaven 2026-11-18). A piece with the water over all of it is
+//     submerged and cannot be turned. The water reaching the leaking valve's wheel (the repair)
+//     loses the line: it stays broken and the flood goes on until you shut the valve, which stops
+//     it but takes the system the coolant protects offline. If a submerged piece is left wrong so the
+//     line can never be sealed, the line is lost at once ("locked").
+//     The patch holds when the coolant reaches the valve and nothing is left open.
+//  The valve always sits in the top half of the board, so the water has room to rise.
 // Every board is built from a seed by drawing a closed network first (a route from
 // pump to valve plus loops that come back) and scrambling it after, so it always has
 // a solution. Pure: the page shows it and sends turns and ticks.
@@ -32,7 +37,11 @@ const MIN_SIZE = 3, MAX_SIZE = 6;
 const EAR_MAX = 4;
 export const FILL_SPEED = 4.5, DRAIN_SPEED = 12;
 
-export function createRepair({ seed = 1, size = 5, capacity = 120, flow = 1, qualityBonus = 0 } = {}) {
+/** The systems a coolant line can protect: id -> name. A lost line takes its system offline when the valve is shut. */
+export const SYSTEMS = Object.freeze({ 'engine-cooling': 'Engine cooling', 'weapon-cooling': 'Weapon cooling', 'reactor-loop': 'Reactor loop', 'life-support': 'Life support' });
+export const DEFAULT_SYSTEM = 'engine-cooling';
+
+export function createRepair({ seed = 1, size = 5, capacity = 120, flow = 1, qualityBonus = 0, system = DEFAULT_SYSTEM } = {}) {
   const n = Math.max(MIN_SIZE, Math.min(MAX_SIZE, Math.trunc(size) || 5));
   let rng = hashSeed('repair', seed, n);
   const rand = () => { const [v, next] = rngStep(rng); rng = next; return v; };
@@ -40,8 +49,9 @@ export function createRepair({ seed = 1, size = 5, capacity = 120, flow = 1, qua
   const shuffle = (a) => { for (let k = a.length - 1; k > 0; k--) { const j = Math.min(k, Math.floor(rand() * (k + 1))); [a[k], a[j]] = [a[j], a[k]]; } return a; };
 
   // The pump sits on the left edge, the valve on the right; the route between is drawn first.
-  let r0 = pickIdx(n), r1 = pickIdx(n);
-  if (r0 === r1) r1 = (r1 + 1 + pickIdx(n - 1)) % n;
+  const r1 = pickIdx(Math.ceil(n / 2)); // the valve is in the top half: room for the water to rise below it
+  let r0 = pickIdx(n);
+  if (r0 === r1) r0 = (r0 + 1 + pickIdx(n - 1)) % n;
   const src = r0 * n, dst = r1 * n + (n - 1);
   const path = drawPath(n, src + 1, dst - 1, new Set([src, dst]), rand);
 
@@ -105,19 +115,23 @@ export function createRepair({ seed = 1, size = 5, capacity = 120, flow = 1, qua
     size: n, cols: n, rows: n, tiles, src, dst, path, net, seed,
     par: 0, moves: 0, t: 0, capacity: Math.max(10, capacity), flow: Math.max(0.1, flow), qualityBonus: Math.max(0, qualityBonus),
     pool: 0, spilled: 0, powered: [], open: [], solved: false, done: false, result: null, events: [],
+    system: SYSTEMS[system] ? system : DEFAULT_SYSTEM, valveRow: r1, reach: n - r1 - 0.5, shut: false, locked: 0,
   };
   for (let attempt = 0; attempt < 40; attempt++) {
-    for (const t of tiles) {
-      if (t.fixed) continue;
+    // The bottom row is the first to go under: its pieces start in place (the water would lock them before anyone got there).
+    tiles.forEach((t, i) => {
+      if (t.fixed) return;
       t.mask = t.solved;
+      if (i >= n * (n - 1)) return;
       for (let k = pickIdx(4); k > 0; k--) t.mask = turn(t.mask);
-    }
-    const wrong = net.filter((i) => !same(tiles[i])).length;
+    });
+    const loose = net.filter((i) => i < n * (n - 1));
+    const wrong = loose.filter((i) => !same(tiles[i])).length;
     refresh(state);
-    if (wrong >= Math.ceil(net.length / 2) && !state.solved) break;
+    if (wrong >= Math.ceil(loose.length / 2) && !state.solved) break;
   }
   state.par = parTurns(tiles);
-  if (state.solved) return createRepair({ seed: Number(seed) + 7919, size, capacity, flow, qualityBonus });
+  if (state.solved) return createRepair({ seed: Number(seed) + 7919, size, capacity, flow, qualityBonus, system });
   return state;
 }
 
@@ -228,12 +242,63 @@ export function parTurns(tiles) {
 export function rotateTile(state, i) {
   const t = state.tiles[i];
   if (state.done || !t || t.fixed) return false;
+  if (isSubmerged(state, i)) { state.events = [{ type: 'locked', i }]; return false; }
   t.mask = turn(t.mask);
   state.moves++;
   state.events = [{ type: 'turn', i }];
   refresh(state);
   if (state.solved) finish(state, true, 'sealed');
+  else if (!winnable(state)) finish(state, false, 'flooded', 'locked');
   return true;
+}
+
+/** The water's height in board rows, from the bottom edge (0) up to `reach` (the valve wheel) when the pool is full. */
+export const waterLevel = (state) => Math.min(state.reach, (state.pool / state.capacity) * state.reach);
+/** A piece is submerged when the water is over all of it (its top edge is under the surface). Submerged pieces cannot be turned. */
+export function isSubmerged(state, i) {
+  const y = Math.floor(i / state.cols);
+  return waterLevel(state) >= state.rows - y - 1e-9 && i !== state.src && i !== state.dst;
+}
+
+/**
+ * Can the line still be sealed? A search over the pieces that can still turn (not submerged, not fixed) for an
+ * arrangement where the coolant from the pump reaches the valve with every opening on the wet pipe met. Pieces that
+ * cannot turn keep their openings. Gives up after a budget and says yes (so it never ends a line wrongly).
+ */
+export function winnable(state, budget = 40000) {
+  const { cols: n, rows, tiles } = state;
+  const options = tiles.map((t, i) => {
+    if (t.fixed || isSubmerged(state, i)) return [t.mask];
+    const out = []; let m = t.mask;
+    for (let k = 0; k < 4; k++) { if (!out.includes(m)) out.push(m); m = turn(m); }
+    return out;
+  });
+  let nodes = 0;
+  const assigned = new Map([[state.src, tiles[state.src].mask]]);
+  const dirs = [[N, 0, -1, S], [E, 1, 0, W], [S, 0, 1, N], [W, -1, 0, E]];
+  const go = () => {
+    if (nodes++ > budget) return true;
+    // find an opening on an assigned piece whose neighbour is not assigned yet
+    for (const [i, m] of assigned) {
+      const x = i % n, y = Math.floor(i / n);
+      for (const [bit, dx, dy, back] of dirs) {
+        if (!(m & bit)) continue;
+        const nx = x + dx, ny = y + dy;
+        if (nx < 0 || ny < 0 || nx >= n || ny >= rows) return false;
+        const j = ny * n + nx;
+        if (assigned.has(j)) { if (!(assigned.get(j) & back)) return false; continue; }
+        for (const cand of options[j]) {
+          if (!(cand & back)) continue;
+          assigned.set(j, cand);
+          if (go()) return true;
+          assigned.delete(j);
+        }
+        return false;
+      }
+    }
+    return assigned.has(state.dst);
+  };
+  return go();
 }
 
 /**
@@ -255,7 +320,15 @@ export function stepRepair(state, dt = 1 / 60) {
   state.t += dt;
   const spill = leaks(state).length * state.flow * dt;
   state.pool += spill; state.spilled += spill;
-  if (state.pool >= state.capacity) { state.pool = state.capacity; finish(state, false, 'flooded'); }
+  if (state.pool >= state.capacity) { state.pool = state.capacity; finish(state, false, 'flooded', 'level'); return state; }
+  let locked = 0;
+  for (let i = 0; i < state.tiles.length; i++) if (isSubmerged(state, i)) locked++;
+  if (locked !== state.locked) {
+    for (let i = 0; i < state.tiles.length; i++) if (isSubmerged(state, i) && !state._under?.has(i)) state.events.push({ type: 'submerged', i });
+    state._under = new Set(state.tiles.map((_, i) => i).filter((i) => isSubmerged(state, i)));
+    state.locked = locked;
+    if (!winnable(state)) finish(state, false, 'flooded', 'locked');
+  }
   return state;
 }
 
@@ -275,19 +348,43 @@ export const starsOf = (q) => (q >= 90 ? 3 : q >= 65 ? 2 : 1);
 /** Placeholder XP for a sealed patch (tuned by playing): 4 + 2 per board step above 3 x 3, +1 per star above one. */
 export const xpFor = (result, size) => (result?.success ? 4 + 2 * (size - MIN_SIZE) + (result.stars - 1) : 0);
 
-function finish(state, success, how) {
+function finish(state, success, how, cause = null) {
   state.done = true;
   const q = qualityOf({ success, moves: state.moves, par: state.par, spilled: state.spilled, capacity: state.capacity, qualityBonus: state.qualityBonus });
-  state.result = { success, how, moves: state.moves, par: state.par, time: Math.round(state.t * 10) / 10, spilled: Math.round(state.spilled * 10) / 10, quality: q, stars: success ? starsOf(q) : 0, size: state.size, xp: 0 };
+  state.result = {
+    success, how, moves: state.moves, par: state.par, time: Math.round(state.t * 10) / 10, spilled: Math.round(state.spilled * 10) / 10, quality: q, stars: success ? starsOf(q) : 0, size: state.size, xp: 0,
+    // The world result (Donaven 2026-11-18): a lost line stays broken and keeps flooding until the valve is shut.
+    cause, broken: !success, flooding: !success, valveShut: false, system: state.system, systemName: SYSTEMS[state.system], offline: null,
+  };
   state.result.xp = xpFor(state.result, state.size);
   state.events.push({ type: 'done', ...state.result });
 }
 
-/** A hint for the view: the first wrong piece of the network, next to the coolant if possible. */
+/**
+ * After a lost line, shut the valve: the flooding stops and the system the coolant protects goes offline.
+ * Returns the updated result ({ valveShut: true, flooding: false, offline: <system id>, how: 'valve-shut' }), or null when
+ * there is nothing to shut (the line is sealed, not lost yet, or the valve is already shut). The line stays broken.
+ */
+export function shutValve(state) {
+  const r = state.result;
+  if (!state.done || !r || r.success || state.shut) return null;
+  state.shut = true;
+  Object.assign(r, { how: 'valve-shut', valveShut: true, flooding: false, offline: state.system });
+  state.events = [{ type: 'valve-shut', system: state.system }];
+  return r;
+}
+
+/** The world result of a finished line as plain facts: { broken, flooding, offline, system } (what a scene hook or the workbench shows). */
+export const worldOf = (result) => ({ broken: !!result?.broken, flooding: !!result?.flooding, offline: result?.offline ?? null, system: result?.system ?? DEFAULT_SYSTEM, systemName: result?.systemName ?? SYSTEMS[DEFAULT_SYSTEM] });
+
+/** A hint for the view: a wrong piece of the network that can still turn, next to the coolant if possible. */
 export function nextHint(state) {
   const powered = new Set(state.powered);
-  const wrong = state.net.filter((i) => !same(state.tiles[i]));
+  const wrong = state.net.filter((i) => !same(state.tiles[i]) && !isSubmerged(state, i));
   if (!wrong.length) return null;
   const n = state.cols;
-  return wrong.find((i) => [i - 1, i + 1, i - n, i + n].some((j) => powered.has(j))) ?? wrong[0];
+  // Next to the coolant first; among those the lowest, because the water takes the low pieces first.
+  const near = wrong.filter((i) => [i - 1, i + 1, i - n, i + n].some((j) => powered.has(j)));
+  const pool = near.length ? near : wrong;
+  return pool.reduce((best, i) => (Math.floor(i / n) > Math.floor(best / n) ? i : best), pool[0]);
 }

@@ -74,7 +74,7 @@ function boot() {
   document.documentElement.dataset.game = game;
   $('sk-sheet').classList.toggle('is-fit', game === 'haggle'); // the game's sheet helper does the same for kind haggle
   document.body.classList.add('hg-sheet-open'); document.body.dataset.sheetSide = 'right';
-  const kindWord = more ? more.word : { repair: 'REPAIR', hack: 'BYPASS', haggle: 'HAGGLE' }[game];
+  const kindWord = more ? more.word : { repair: 'REPAIR', hack: 'HACK', haggle: 'HAGGLE' }[game];
   $('sk-eyebrow').textContent = `${kindWord} · ${tierInfo(start.tier).label.toUpperCase()} ROLL`;
   $('sk-title').textContent = choice.minigame.title || choice.minigame.who || quest.title;
   drawTracker($('sk-tracker'), quest, hook.node);

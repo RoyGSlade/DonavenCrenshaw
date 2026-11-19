@@ -12,10 +12,9 @@ import { emptySave } from '../projects/Space-Shooter/voyage/save.js';
 import { createCharacter } from '../projects/Space-Shooter/voyage/character.js';
 import { SLICE_FLAG } from '../projects/Space-Shooter/voyage/slice/rules.js';
 import { SCENE_HOOKS, applyHook } from '../projects/Space-Shooter/voyage/minigames/sceneHookData.js';
-import { hookIssues, startHook, targetFor, branchOf, xpEvent, HOOK_KINDS } from '../projects/Space-Shooter/voyage/minigames/sceneHook.js';
+import { hookIssues, startHook, targetFor, branchOf, xpEvent, worldResult, HOOK_KINDS } from '../projects/Space-Shooter/voyage/minigames/sceneHook.js';
 import { createRepair, rotateTile, stepRepair, nextHint } from '../projects/Space-Shooter/voyage/minigames/repair.js';
-import { createSetupHack, stepHack, splice } from '../projects/Space-Shooter/voyage/minigames/hack.js';
-import { cursorInWindow } from '../projects/Space-Shooter/voyage/onfoot/rules/hack.js';
+import { createMirrorHack, stepMirrors, rotateStep, catchPortal, fire, inWindow } from '../projects/Space-Shooter/voyage/minigames/mirrors.js';
 import { createHaggle, stepHaggle, ask, takeOffer, bandPrices, priceAt } from '../projects/Space-Shooter/voyage/minigames/haggle.js';
 
 const Q = Object.fromEntries(SLICE_LIST.map((q) => [q.id, q]));
@@ -30,9 +29,17 @@ function repairBot(setup, seed, want) {
   else for (let i = 0; i < 6000 && !s.done; i++) stepRepair(s, 0.1);
   return s.result;
 }
-function hackBot(setup, seed, lock, want) {
-  const s = createSetupHack({ seed, lock, setup });
-  for (let i = 0; i < 40000 && !s.done; i++) { stepHack(s, 1 / 120); if (want === 'win' && cursorInWindow(s)) splice(s); }
+function hackBot(setup, seed, start, want) {
+  const s = createMirrorHack({ seed, setup, context: start.context });
+  const dt = 1 / 120;
+  while (!s.done && s.t < 600) {
+    if (want === 'win') {
+      const solved = s.layout.solved.map((v, i) => v ?? s.layout.start[i]);
+      s.layout.mirrors.forEach((m, i) => { while (s.angles[i] !== solved[i]) rotateStep(s, i, 1); });
+      while (!inWindow(s) && !s.done) stepMirrors(s, dt);
+      catchPortal(s); if (fire(s)) for (let k = 0; k < 600 && s.projectile; k++) stepMirrors(s, dt);
+    } else stepMirrors(s, 0.1);
+  }
   return s.result;
 }
 function haggleBot(setup, seed, m, want) {
@@ -42,7 +49,7 @@ function haggleBot(setup, seed, m, want) {
   else { for (let i = 0; i < 60000 && !s.done; i++) { stepHaggle(s, 1 / 120); if (priceAt(s) >= s.cap - 1) ask(s); } }
   return s.result;
 }
-const bot = (hook, start, seed, want) => (hook.minigame.kind === 'repair' ? repairBot(start.setup, seed, want) : hook.minigame.kind === 'hack' ? hackBot(start.setup, seed, start.lock, want) : haggleBot(start.setup, seed, hook.minigame, want));
+const bot = (hook, start, seed, want) => (hook.minigame.kind === 'repair' ? repairBot(start.setup, seed, want) : hook.minigame.kind === 'hack' ? hackBot(start.setup, seed, start, want) : haggleBot(start.setup, seed, hook.minigame, want));
 
 // --- the walk: the real engine, with the hooked choice resolved the way the page would -----------------------------
 function walk(hook, want, { after = [] } = {}) {
@@ -110,7 +117,7 @@ test('hooks are well formed, and the real data carries the same blocks the dry r
   assert.match(hookIssues({ minigame: { kind: 'repair' } })[0], /needs a check/);
   assert.match(hookIssues({ check: { skill: 'social', pass: 'a', fail: 'b' }, minigame: { kind: 'repair' } })[0], /should be repair/);
   assert.match(hookIssues({ check: { skill: 'social', pass: 'a', fail: 'b' }, minigame: { kind: 'haggle', open: 20, best: 30 } })[0], /mid node/);
-  assert.match(hookIssues({ check: { skill: 'hacking' }, minigame: { kind: 'hack', lock: 9 } }).join(), /lock is a whole number 1 to 4/);
+  assert.match(hookIssues({ check: { skill: 'hacking' }, minigame: { kind: 'hack', lock: 9 } }).join(), /lock is a whole number 1 to 4/); assert.match(hookIssues({ check: { skill: 'hacking' }, minigame: { kind: 'hack', context: 'moon' } }).join(), /context is one of foot, ship, combat/); assert.match(hookIssues({ check: { skill: 'repair' }, minigame: { kind: 'repair', system: 'toaster' } }).join(), /system is one of engine-cooling/);
   assert.match(hookIssues({ minigame: { kind: 'dance' } })[0], /not one of/);
   assert.deepEqual(Object.keys(HOOK_KINDS), ['repair', 'hack', 'haggle']);
 });
@@ -137,7 +144,10 @@ test('scene 3, inner airlock (hack, dc 12): a cracked lock seals the door, a tri
   expectEnd(lose, { outcome: 'held', result: 'success', money: 15, rep: 3, flags: ['reavers-repelled'], notFlags: ['airlock-sealed'] });
   const bad = walk(H['scene3-airlock'], 'lose', { after: [{ fight: 'lose' }] });
   expectEnd(bad, { outcome: 'overrun', result: 'failure', money: -20, rep: -1 });
-  assert.equal(win.start.lock, 2); assert.equal(win.start.setup.tumblers >= 2, true);
+  assert.equal(win.start.lock, 2); assert.equal(win.start.setup.firewalls, 2); assert.equal(win.start.context, 'foot');
+  assert.deepEqual(worldResult('hack', lose.result), { security: 'alerted', terminal: 'locked' }, 'on foot a failed hack locks the terminal');
+  assert.deepEqual(worldResult('hack', win.result), { security: 'quiet' });
+  assert.deepEqual(worldResult('repair', walk(H['scene5-coolant'], 'lose').result), { broken: true, flooding: true, offline: null, system: 'engine-cooling', systemName: 'Engine cooling' });
 });
 
 test('scene 4, the share (haggle, dc 10): well, fair and walked map to 30, 20 and 10 credits', () => {

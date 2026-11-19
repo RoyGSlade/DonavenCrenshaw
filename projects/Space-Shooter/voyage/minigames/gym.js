@@ -14,7 +14,7 @@ export const GYM = Object.freeze({ cost: 10, share: 0.25, capXp: 6, windowMs: 36
 /** The games the gym offers: id, skill, name, the dev-page id, and how to set it up at Steady. */
 export const GYM_GAMES = Object.freeze([
   { id: 'repair', skill: 'repair', name: 'Coolant pipes', setup: (o) => setupRepair(o), cats: REPAIR_CATEGORIES },
-  { id: 'hack', skill: 'hacking', name: 'Bypass ring', setup: (o) => setupHack(o), cats: HACK_CATEGORIES },
+  { id: 'hack', skill: 'hacking', name: 'Mirrors and firewalls', setup: (o) => setupHack(o), cats: HACK_CATEGORIES },
   { id: 'haggle', skill: 'social', name: 'Haggle', setup: (o) => setupHaggle(o), cats: SOCIAL_CATEGORIES },
   { id: 'persuade', skill: 'social', name: 'Persuade', setup: (o) => setupPersuade(o), cats: SOCIAL_CATEGORIES },
   { id: 'intimidate', skill: 'social', name: 'Intimidate', setup: (o) => setupIntimidate(o), cats: SOCIAL_CATEGORIES },

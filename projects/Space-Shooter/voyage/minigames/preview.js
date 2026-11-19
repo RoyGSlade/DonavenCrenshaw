@@ -4,10 +4,12 @@
 //   ?newgame=1&mini=hack&roll=9&dc=12&level=6&lock=2&time=1&size=2&retries=3&auto=1
 import { runtimeConfig } from '../../runtime-config.js';
 import { newGameFlag } from '../flag.js';
-import { tierOf, tierInfo, setupRepair, setupHaggle, setupCraft, CRAFT_CATEGORIES, setupNav, NAV_CATEGORIES, setupStealth, STEALTH_CATEGORIES, setupPersuade, setupIntimidate, setupPilot, PILOT_CATEGORIES, REPAIR_CATEGORIES, HACK_CATEGORIES, SOCIAL_CATEGORIES } from './setup.js';
+import { tierOf, tierInfo, setupRepair, setupHack, poolLasts, setupHaggle, setupCraft, CRAFT_CATEGORIES, setupNav, NAV_CATEGORIES, setupStealth, STEALTH_CATEGORIES, setupPersuade, setupIntimidate, setupPilot, PILOT_CATEGORIES, REPAIR_CATEGORIES, HACK_CATEGORIES, SOCIAL_CATEGORIES } from './setup.js';
 import { playRepair } from './repairView.js';
-import { createSetupHack, hackSetup } from './hack.js';
-import { playSetupHack } from './hackView.js';
+import { createRing } from './hack.js';
+import { playRing } from './hackView.js';
+import { playMirrors } from './mirrorsView.js';
+import { CONSEQUENCES } from './mirrors.js';
 import { createHaggle } from './haggle.js';
 import { playHaggle } from './haggleView.js';
 import { createPersuade } from './persuade.js';
@@ -36,6 +38,7 @@ function boot() {
   const ids = ['roll', 'level', 'dc', 'lock', 'time', 'size', 'quality', 'retries', 'haggle', 'persuade', 'intimidate', 'handling', 'boost', 'landing', 'speed', 'material', 'fuel', 'warning', 'quiet', 'range', 'decay'];
   if (['repair', 'hack', 'haggle', 'persuade', 'intimidate', 'pilot', 'practice', 'craft', 'nav', 'stealth'].includes(params.get('mini'))) $('mg-mini').value = params.get('mini');
   for (const id of ids) { const v = params.get(id); if (v != null && /^\d+$/.test(v)) $(id).value = v; }
+  if (Object.keys(CONSEQUENCES).includes(params.get('context'))) $('context').value = params.get('context');
   const mini = () => $('mg-mini').value;
   const read = () => Object.fromEntries(ids.map((id) => [id, Number($(id).value)]));
   const compute = () => {
@@ -59,7 +62,7 @@ function boot() {
       : mini() === 'haggle'
       ? setupHaggle({ tier, level: v.level, points: Object.fromEntries(SOCIAL_CATEGORIES.map((c) => [c, v[c] ?? 0])) })
       : mini() === 'hack'
-      ? hackSetup({ tier, level: v.level, lock: v.lock, points: Object.fromEntries(HACK_CATEGORIES.map((c) => [c, v[c]])) })
+      ? setupHack({ tier, level: v.level, lock: v.lock, points: Object.fromEntries(HACK_CATEGORIES.map((c) => [c, v[c]])) })
       : setupRepair({ tier, level: v.level, points: Object.fromEntries(REPAIR_CATEGORIES.map((c) => [c, v[c]])) });
     return { v, attempt, tier, setup };
   };
@@ -67,7 +70,7 @@ function boot() {
     const { v, attempt, tier, setup } = compute();
     for (const id of ids) $(`o-${id}`).textContent = $(id).value;
     const hack = mini() === 'hack', hag = mini() === 'haggle', rep = mini() === 'repair', cr = mini() === 'craft', nv = mini() === 'nav', sl = mini() === 'stealth', pe = mini() === 'persuade', it = mini() === 'intimidate', pl = mini() === 'pilot';
-    $('l-lock').hidden = !hack; $('l-retries').hidden = !hack; $('l-quality').hidden = !rep; $('l-time').hidden = hag || cr || sl || pe || it || pl; $('l-size').hidden = hag || cr || nv || sl || pe || it || pl; $('l-handling').hidden = !pl; $('l-boost').hidden = !pl; $('l-landing').hidden = !pl; $('l-persuade').hidden = !pe; $('l-intimidate').hidden = !it; $('l-quiet').hidden = !sl; $('l-range').hidden = !sl; $('l-decay').hidden = !sl; $('l-fuel').hidden = !nv; $('l-warning').hidden = !nv; $('l-haggle').hidden = !hag; $('l-speed').hidden = !cr; $('l-material').hidden = !cr; $('l-quality').hidden = !(rep || cr);
+    $('l-lock').hidden = !hack; $('l-context').hidden = !hack; $('l-retries').hidden = !hack; $('l-quality').hidden = !rep; $('l-time').hidden = hag || cr || sl || pe || it || pl; $('l-size').hidden = hag || cr || nv || sl || pe || it || pl; $('l-handling').hidden = !pl; $('l-boost').hidden = !pl; $('l-landing').hidden = !pl; $('l-persuade').hidden = !pe; $('l-intimidate').hidden = !it; $('l-quiet').hidden = !sl; $('l-range').hidden = !sl; $('l-decay').hidden = !sl; $('l-fuel').hidden = !nv; $('l-warning').hidden = !nv; $('l-haggle').hidden = !hag; $('l-speed').hidden = !cr; $('l-material').hidden = !cr; $('l-quality').hidden = !(rep || cr);
     if (mini() === 'practice') document.querySelectorAll('#mg-controls label[id^="l-"]').forEach((l) => { l.hidden = true; });
     const spent = Object.values(setup.points).reduce((a, b) => a + b, 0);
     const what = mini() === 'practice'
@@ -87,8 +90,8 @@ function boot() {
       : hag
       ? `Band <b>${Math.round(setup.band * 1000) / 10}%</b> of the range · needle <b>${setup.speed}</b>/s · <b>${setup.patience}</b> patience · <b>${setup.rounds}</b> rounds · price +<b>${Math.round(setup.priceBonus * 1000) / 10}%</b>`
       : hack
-      ? `Ring <b>${setup.tumblers} tumblers</b> · <b>${setup.time}s</b> · <b>${setup.misses}</b> spare misses`
-      : `Board <b>${setup.size} x ${setup.size}</b> · pool <b>${setup.capacity}s</b> · flow <b>x${setup.flow}</b> · quality +<b>${setup.qualityBonus}</b>`;
+      ? `<b>${setup.firewalls}</b> firewall${setup.firewalls === 1 ? '' : 's'} · <b>${setup.time}s</b> each · mirrors on the path <b>${setup.mirrors.join(', ')}</b> · decoys <b>${setup.decoys.join(', ')}</b> · mirrors start up to <b>${setup.spread}</b> steps off · <b>${setup.retries}</b> ${setup.retries === 1 ? 'retry' : 'retries'} · catch window <b>${Math.round(setup.catchWindow * 100)}%</b>`
+      : `Board <b>${setup.size} x ${setup.size}</b> · the water reaches the valve in <b>${poolLasts(setup)}</b> with one leak open · flow <b>x${setup.flow}</b> · quality +<b>${setup.qualityBonus}</b>`;
     const rp = mini() === 'practice' ? null : rollPreview(mini(), attempt, { level: v.level, points: setup.points });
     $('mg-readout').innerHTML = `d20 ${v.roll} + ${v.level} = <b>${attempt.total}</b> vs ${v.dc}${attempt.natural ? ' (natural 20)' : ''}<br>`
       + `Tier <b>${tier > 0 ? '+' : ''}${tier} ${tierInfo(tier).label}</b><br>${what}<br>Points spent ${spent} of ${v.level}`
@@ -103,7 +106,7 @@ function boot() {
     if (innerWidth < 760) stage.scrollIntoView({ block: 'start' });
     const { setup, v } = compute();
     const result = mini() === 'practice'
-      ? await playSetupHack(stage, { state: createPracticeHack({ seed }), title: 'Practice dummy', reducedMotion })
+      ? await playRing(stage, { state: createPracticeHack({ seed }), title: 'Practice dummy', reducedMotion })
       : mini() === 'pilot'
       ? await playPilot(stage, { state: createPilot({ seed, setup }), where: 'the hangar pad', reducedMotion })
       : mini() === 'intimidate'
@@ -119,7 +122,7 @@ function boot() {
       : mini() === 'haggle'
       ? await playHaggle(stage, { state: createHaggle({ seed, open: 20, best: 30, setup }), who: 'Captain Tull', what: 'your share', reducedMotion })
       : mini() === 'hack'
-      ? await playSetupHack(stage, { state: createSetupHack({ seed, lock: v.lock, setup }), title: 'Door lock', reducedMotion })
+      ? await playMirrors(stage, { seed, setup, context: $('context').value, title: { foot: 'Door terminal', ship: 'Ship port', combat: 'Enemy ship' }[$('context').value], reducedMotion })
       : await playRepair(stage, { seed, setup, reducedMotion });
     if (mini() === 'craft' && result) { craftBank = result.bank; show(); }
     window.__minigame = { ...window.__minigame, last: result };
