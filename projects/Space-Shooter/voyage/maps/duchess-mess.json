@@ -15,7 +15,11 @@
     "#............#",
     "#............#",
     "#............#",
-    "#######.######"
+    "#######.######",
+    "      #.#     ",
+    "      #.#     ",
+    "      #.#     ",
+    "      #.#     "
   ],
   "look": {
     "set": "freighter",
@@ -31,7 +35,10 @@
       {"art":"cable-loose-1","at":[5.2,5.6],"size":[2,1],"alpha":0.9},
       {"kind":"stain","at":[7.0,4.6],"r":0.7},
       {"art":"oil-3","at":[10.6,7.6],"size":[1.3,1.3],"alpha":0.45},
-      {"kind":"mark","at":[3.8,1.9],"size":[2.6,1.2],"color":"mess"}
+      {"kind":"mark","at":[3.8,1.9],"size":[2.6,1.2],"color":"mess"},
+      {"art":"station-mat-cyan","alpha":0.5,"at":[7,10.15],"size":[1,2.7]},
+      {"kind":"hazard","at":[7,10],"size":[1,0.2]},
+      {"kind":"hazard","at":[7,12.8],"size":[1,0.2]}
     ],
     "lights": [
       {"kind":"prop","at":[1,1],"size":[1,1],"pool":[1.6,2.4],"r":2.6,"color":"mess","strength":0.36},
@@ -42,7 +49,8 @@
       {"kind":"screen","at":[4.3,0.35],"size":[1.4,0.12],"pool":[5,2.2],"r":2.4,"color":"warm","strength":0.24},
       {"kind":"strip","art":"light-strip-warm-v","at":[13.08,3.0],"size":[0.3,1.2],"pool":[11.6,3.6],"r":2.6,"color":"warm","strength":0.2},
       {"kind":"strip","art":"light-strip-warm-h","at":[3.4,9.08],"size":[1.2,0.3],"pool":[4.0,7.8],"r":2.6,"color":"warm","strength":0.22},
-      {"kind":"strip","art":"light-strip-cyan-h","at":[9.6,9.08],"size":[1.2,0.3],"pool":[10.2,7.8],"r":2.2,"color":"cool","strength":0.16}
+      {"kind":"strip","art":"light-strip-cyan-h","at":[9.6,9.08],"size":[1.2,0.3],"pool":[10.2,7.8],"r":2.2,"color":"cool","strength":0.16},
+      {"kind":"lamp","at":[7.5,11.5],"r":2.4,"color":"warm","strength":0.26}
     ],
     "mounts": [
       {"art":"crew-board","at":[9,0.12],"size":[3,0.78],"face":true},
@@ -97,9 +105,13 @@
   ],
   "spawns": {
     "default": [7,8,"up"],
-    "from-corridor": [7,8,"up"]
+    "from-corridor": [7,12,"up"]
   },
   "zones": [
     {"id":"crew-board","at":[8,1],"size":[5,2]}
+  ],
+  "roomBox": [0,0,14,10],
+  "entries": [
+    {"id":"corridor","door":"corridor","spawn":"from-corridor"}
   ]
 }

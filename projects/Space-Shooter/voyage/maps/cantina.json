@@ -6,7 +6,10 @@
   "room": "cantina",
   "floor": "deck-warm",
   "ambient": "cantina",
-  "dress": { "fresh": true, "type": "cantina" },
+  "dress": {
+    "fresh": true,
+    "type": "cantina"
+  },
   "grid": [
     "################",
     "#..............#",
@@ -18,7 +21,11 @@
     "#..............#",
     "#..............#",
     "#..............#",
-    "#######..#######"
+    "#######..#######",
+    "      #..#      ",
+    "      #..#      ",
+    "      #..#      ",
+    "      #..#      "
   ],
   "props": [
     {"art":"bar-counter","at":[1,1],"size":[6,1],"block":true,"interact":{"kind":"console","id":"bar","label":"The bar"}},
@@ -46,7 +53,11 @@
   ],
   "spawns": {
     "default": [7.5,9,"up"],
-    "from-hangar": [7.5,9,"up"],
+    "from-hangar": [7,13,"up"],
     "from-edna-den": [14,4.5,"left"]
-  }
+  },
+  "roomBox": [0,0,16,11],
+  "entries": [
+    {"id":"out","door":"out","spawn":"from-hangar"}
+  ]
 }
