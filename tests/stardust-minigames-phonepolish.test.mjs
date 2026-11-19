@@ -2,7 +2,7 @@
 // (house rule: state shows as drawn bars and plain words, never raw numbers). Pure: no browser.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { GAUGE_SPAN, safeMark, speedFill, speedWord, speedTone, fuelLevel, fuelWord, windRead, endWords } from '../projects/Space-Shooter/voyage/minigames/pilotWords.js';
+import { GAUGE_SPAN, safeMark, speedFill, speedWord, speedTone, fuelLevel, fuelWord, windRead, endWords, tryWords } from '../projects/Space-Shooter/voyage/minigames/pilotWords.js';
 import { heatRgb, heatColor, heatGlow, heatWord, stepPips, qualityWord } from '../projects/Space-Shooter/voyage/minigames/craftWords.js';
 import { createPilot } from '../projects/Space-Shooter/voyage/minigames/pilot.js';
 import { createCraft, shape, release, heatStart, stepCraft } from '../projects/Space-Shooter/voyage/minigames/craft.js';
@@ -39,6 +39,21 @@ test('wind: words and a strength for the streaks', () => {
 
 test('end words carry no digits', () => {
   for (const r of [{ outcome: 'landed', soft: true }, { outcome: 'landed' }, { outcome: 'crashed' }, { outcome: 'missed' }]) assert.doesNotMatch(endWords(r), /\d/);
+});
+
+test('the card line says what to try and never repeats the title or the line under the field', () => {
+  const TITLE = { crashed: 'CRASHED: TOO FAST', missed: 'MISSED THE PAD' };
+  const cases = [{ outcome: 'crashed', fuelLeft: 4 }, { outcome: 'crashed', fuelLeft: 0 }, { outcome: 'missed', fuelLeft: 2 }];
+  const seen = new Set();
+  for (const r of cases) {
+    const line = tryWords(r), under = endWords(r);
+    assert.ok(line.length > 8 && !/\d/.test(line), 'a plain tip');
+    assert.notEqual(line.toLowerCase(), TITLE[r.outcome].toLowerCase());
+    assert.ok(!line.toLowerCase().includes(TITLE[r.outcome].toLowerCase().replace('crashed: ', '')), 'not the title again');
+    assert.notEqual(line, under); seen.add(line);
+  }
+  assert.equal(seen.size, 3, 'out of fuel, too fast and off the pad each get their own tip');
+  assert.equal(tryWords({ outcome: 'landed' }), '');
 });
 
 test('heat colour climbs cold steel, dull red, orange, yellow, white and never leaves 0..255', () => {

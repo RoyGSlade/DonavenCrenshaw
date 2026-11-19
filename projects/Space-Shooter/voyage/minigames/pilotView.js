@@ -4,7 +4,7 @@
 // The view's height follows the box it is in, so on a phone it fills the free height. Fixed 60 Hz steps. DOM and SVG only, no art.
 // No raw numbers on the screen. Resolves with the rules' result.
 import { stepPilot, brake, windAt, onPad, PILOT_DT } from './pilot.js';
-import { speedFill, speedWord, speedTone, safeMark, fuelLevel, fuelWord, windRead, endWords } from './pilotWords.js';
+import { speedFill, speedWord, speedTone, safeMark, fuelLevel, fuelWord, windRead, endWords, tryWords } from './pilotWords.js';
 
 const h = (tag, attrs = {}, ...kids) => { const el = document.createElement(tag); for (const [k, v] of Object.entries(attrs)) { if (k === 'text') el.textContent = v; else el.setAttribute(k, v); } el.append(...kids.filter(Boolean)); return el; };
 const NS = 'http://www.w3.org/2000/svg';
@@ -83,7 +83,8 @@ export function playPilot(root, { state, where = 'the hangar pad', sound = () =>
   const KEYS = { ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right', ArrowUp: 'thrust', KeyW: 'thrust', Space: 'thrust' };
   const kd = (e) => { if (e.code === 'KeyB' || e.code === 'Enter') { e.preventDefault(); if (!e.repeat) doBrake(); return; } const k = KEYS[e.code]; if (k) { e.preventDefault(); input[k] = true; } };
   const ku = (e) => { const k = KEYS[e.code]; if (k) input[k] = false; };
-  addEventListener('keydown', kd); addEventListener('keyup', ku);
+  let viaKey = false; const noteKey = () => { viaKey = true; }; panel.addEventListener('pointerdown', () => { viaKey = false; }, true);
+  addEventListener('keydown', kd); addEventListener('keyup', ku); addEventListener('keydown', noteKey);
 
   const motion = () => !reducedMotion();
   let fl = 0, lastPaint = 0;
@@ -137,7 +138,7 @@ export function playPilot(root, { state, where = 'the hangar pad', sound = () =>
     if (s.done) end();
   }
   function end() {
-    cancelAnimationFrame(raf); removeEventListener('keydown', kd); removeEventListener('keyup', ku);
+    cancelAnimationFrame(raf); removeEventListener('keydown', kd); removeEventListener('keyup', ku); removeEventListener('keydown', noteKey);
     Object.keys(input).forEach((k) => { input[k] = false; });
     [bL, bR, bT, bB].forEach((b) => { b.disabled = true; });
     paint();
@@ -149,8 +150,9 @@ export function playPilot(root, { state, where = 'the hangar pad', sound = () =>
     const go = h('button', { type: 'button', class: 'primary ui-btn', text: r.success ? 'Continue' : 'Step back' });
     const card = h('div', { class: `rp-result ui-card ${r.success ? 'is-ok' : 'is-bad'}`, role: 'status', 'data-outcome': r.outcome },
       h('b', { class: 'rp-stars', text: r.success ? stars : WORDS[r.outcome] }),
-      h('span', { text: r.success ? `${r.soft ? 'A soft touch' : 'Safe landing'} · ${r.fuelLeft < s.fuelMax * 0.2 ? 'the tank nearly dry' : r.fuelLeft > s.fuelMax * 0.5 ? 'plenty of fuel left' : 'fuel to spare'} · +${r.xp} Piloting XP` : `${WORDS[r.outcome].toLowerCase()} · No XP` }), go);
+      h('span', { text: r.success ? `${r.soft ? 'A soft touch' : 'Safe landing'} · ${r.fuelLeft < s.fuelMax * 0.2 ? 'the tank nearly dry' : r.fuelLeft > s.fuelMax * 0.5 ? 'plenty of fuel left' : 'fuel to spare'} · +${r.xp} Piloting XP` : `${tryWords(r)} · No XP` }), go);
     go.addEventListener('click', () => { panel.remove(); finish(r); });
+    if (!viaKey) go.classList.add('no-ring'); go.addEventListener('keydown', () => go.classList.remove('no-ring'));
     panel.append(card); go.focus({ preventScroll: true }); card.scrollIntoView({ block: 'nearest' });
   }
   paint();

@@ -65,7 +65,7 @@ test('crafting forge (heat and shape) in the browser', { skip }, async () => {
       // Scrap: exact 4 x 0.96 x 1.1 = 4.224, ceil 5, bank 0.776
       assert.deepEqual([r.materials, Math.round(r.bank * 1000) / 1000], [5, 0.776]);
       await page.waitForTimeout(250); await shot(page, `craft-${name}-4-made`);
-      assert.match(await page.locator('.cf-mat').innerText(), /5 used \(4\.22 exact\), 0\.78 banked/);
+      assert.match(await page.locator('.cf-mat').innerText(), /5[\s\u00A0]used \(4\.22[\s\u00A0]exact\), 0\.78[\s\u00A0]banked/);
       await page.click('.rp-result button');
 
       // The bank carries into the next craft: readout shows it, and the next clean craft uses 4 and grows it.

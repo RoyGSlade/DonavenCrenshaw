@@ -87,7 +87,8 @@ export function playCraft(root, { state, what = 'fitting', unit = 'scrap', sound
   heatBtn.addEventListener('pointercancel', stopHeat);
   const kd = (e) => { if (e.code === 'Space' && s.phase === 'heat') { e.preventDefault(); if (!e.repeat) startHeat(); } };
   const ku = (e) => { if (e.code === 'Space' && s.phase === 'heat') { e.preventDefault(); stopHeat(); } };
-  addEventListener('keydown', kd); addEventListener('keyup', ku);
+  let viaKey = false; const noteKey = () => { viaKey = true; }; panel.addEventListener('pointerdown', () => { viaKey = false; }, true);
+  addEventListener('keydown', kd); addEventListener('keyup', ku); addEventListener('keydown', noteKey);
   function frame(now) {
     raf = requestAnimationFrame(frame);
     const dt = Math.min(0.05, (now - last) / 1000 || 0); last = now;
@@ -99,18 +100,22 @@ export function playCraft(root, { state, what = 'fitting', unit = 'scrap', sound
   }
   function end() {
     if (panel.querySelector('.rp-result')) return;
-    cancelAnimationFrame(raf); paint(); removeEventListener('keydown', kd); removeEventListener('keyup', ku);
+    cancelAnimationFrame(raf); paint(); removeEventListener('keydown', kd); removeEventListener('keyup', ku); removeEventListener('keydown', noteKey);
     const r = s.result;
     const stars = '★'.repeat(r.stars) + '☆'.repeat(3 - r.stars);
     foot.querySelector('.cf-footline').textContent = '';
     status.textContent = r.success ? `The ${what} is made.` : r.how === 'cooled' ? 'The stock went cold before you finished.' : `The ${what} is ruined.`;
     const go = h('button', { type: 'button', class: 'primary ui-btn', text: r.success ? 'Continue' : 'Step back' });
-    const bankLine = `${unit}: ${r.materials} used (${Math.round(r.materialsExact * 100) / 100} exact), ${Math.round(r.bank * 100) / 100} banked for the next craft${r.success ? ` · builds in ${r.buildSeconds} s` : ''}`;
+    const rd = (x) => Math.round(x * 100) / 100, NB = '\u00A0';
+    const exactNote = rd(r.materialsExact) === r.materials ? '' : ` (${rd(r.materialsExact)}${NB}exact)`;
+    const bankNote = rd(r.bank) === 0 ? 'none banked for the next craft' : `${rd(r.bank)}${NB}banked for the next craft`;
+    const bankLine = `${unit}: ${r.materials}${NB}used${exactNote}, ${bankNote}${r.success ? `. Builds in ${r.buildSeconds}${NB}s.` : '.'}`;
     const card = h('div', { class: `rp-result ui-card ${r.success ? 'is-ok' : 'is-bad'}`, role: 'status', 'data-outcome': r.success ? 'made' : 'ruined' },
       h('b', { class: 'rp-stars', text: r.success ? stars : r.how === 'cooled' ? 'WENT COLD' : 'RUINED' }),
       h('span', { text: r.success ? `${qualityWord(r.quality)} work · ${r.good >= r.strikes ? 'every step clean' : 'most steps clean'} · +${r.xp} Crafting XP` : 'Too few steps came out clean. No part, no XP.' }),
       h('span', { class: 'cf-mat', text: bankLine }), go);
     go.addEventListener('click', () => { panel.remove(); finish(r); });
+    if (!viaKey) go.classList.add('no-ring'); go.addEventListener('keydown', () => go.classList.remove('no-ring'));
     panel.append(card); go.focus({ preventScroll: true }); card.scrollIntoView({ block: 'nearest' });
   }
   paint();

@@ -179,7 +179,7 @@
 .cf-tile{min-height:56px;font-size:14px}
 .cf-tile.is-done{opacity:.4;border-color:#4d7d3a}
 .cf-tile.is-bad{border-color:#ff6b5a;background:#4a2018}
-.cf-mat{font:12px Consolas,monospace!important;color:var(--muted)!important}
+.cf-mat{font:13px/1.4 Inter,"Segoe UI",sans-serif!important;color:var(--muted)!important}
 .cf-work{margin-bottom:6px}
 
 /* Navigation: plot the lane */
@@ -473,3 +473,6 @@ a.gm-train,a.gm-train:hover,a.gm-train:visited{color:#082126}
 /* The result card floats over the play block, so the field does not shrink or jump when the flight or the work ends. */
 .wb-full .wb-fstage>.rp-panel:is(.pl-panel,.cf-panel){position:relative}
 .wb-full .wb-fstage>.rp-panel:is(.pl-panel,.cf-panel)>.rp-result{position:absolute;left:10px;right:10px;top:42%;transform:translateY(-50%);z-index:5;margin:0;max-width:560px;margin-inline:auto}
+
+/* A result card's button takes focus so the keyboard can press it, but a tap or click should not leave a ring on it. */
+.rp-result button.no-ring:focus,.rp-result button.no-ring:focus-visible{outline:none}
