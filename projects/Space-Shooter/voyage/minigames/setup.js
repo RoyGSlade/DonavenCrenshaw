@@ -262,6 +262,37 @@ export function setupCraft({ tier = 0, points = {}, level = POINT_MAX } = {}) {
   };
 }
 
+// --- Crafting chain, v3: Cut and Screw (v2/PLAN.md section 4) --------------------------------------
+// Same three categories as ever (quality, speed, material); Speed now means "that game's own work rate", 5% a point:
+//   Cut    clean feed speed 300 units a second, +5% a point (9 points: 435)
+//   Screw  thread per turn +5% a point (4 turns: 2.76 turns at 9 points = 4 / 1.45)
+// The roll (tier t, -2..+2): Cut line x (1 + 0.10 t) with a dotted guide at Good and Smooth; Screw turns 4 - 0.5 t (Smooth 3,
+// Rough 5) and snug zone 15 + 2.5 t percent of the last turn. The cutter has a grade: worn 9, shop 12, good 15 wide.
+// Quality +4 and Material -4% per point are the built rules and the same for every game; Speed also takes 5% off the build time.
+export const CUT_TOOLS = Object.freeze({ worn: 9, shop: 12, good: 15 });
+export const CUT_BASE = Object.freeze({ feed: 300, feedPerPoint: 0.05, tierWidth: 0.10, corners: 6, guideFrom: 1, qualityPerPoint: 4, buildPerPoint: 0.05, materialPerPoint: 0.04 });
+export const SCREW_BASE = Object.freeze({ turns: 4, tierTurns: 0.5, threadPerPoint: 0.05, zone: 0.15, tierZone: 0.025, strip: 0.25, ringIn: 40, ringOut: 110, qualityPerPoint: 4, buildPerPoint: 0.05, materialPerPoint: 0.04 });
+const clampTier = (tier) => Math.max(-2, Math.min(2, Math.trunc(tier) || 0));
+const r4c = (x) => Math.round(+x.toFixed(6) * 10000) / 10000;
+const craftBits = (b, p) => ({ qualityBonus: b.qualityPerPoint * p.quality, buildFactor: r4c(1 - b.buildPerPoint * p.speed), materialFactor: r4c(1 - b.materialPerPoint * p.material) });
+export function setupCut({ tier = 0, points = {}, level = POINT_MAX, tool = 'shop' } = {}) {
+  const p = cleanPoints(points, CRAFT_CATEGORIES, level), t = clampTier(tier), b = CUT_BASE;
+  const cutter = CUT_TOOLS[tool] ? tool : 'shop';
+  return {
+    kind: 'cut', tool: cutter, toolWidth: CUT_TOOLS[cutter], width: r4c(CUT_TOOLS[cutter] * (1 + b.tierWidth * t)),
+    feed: r4c(b.feed * (1 + b.feedPerPoint * p.speed)), guide: t >= b.guideFrom, corners: b.corners,
+    ...craftBits(b, p), tier: t, points: p, label: tierInfo(t).label,
+  };
+}
+export function setupScrew({ tier = 0, points = {}, level = POINT_MAX } = {}) {
+  const p = cleanPoints(points, CRAFT_CATEGORIES, level), t = clampTier(tier), b = SCREW_BASE;
+  return {
+    kind: 'screw', turns: r4c((b.turns - b.tierTurns * t) / (1 + b.threadPerPoint * p.speed)), zone: r4c(b.zone + b.tierZone * t),
+    strip: b.strip, ringIn: b.ringIn, ringOut: b.ringOut,
+    ...craftBits(b, p), tier: t, points: p, label: tierInfo(t).label,
+  };
+}
+
 // --- Navigation: plot the lane (PLAN.md section 2.3) ------------------------------
 // Categories: time (travel time), fuel (fuel use), warning (hazard warning).
 //   time     every lane costs 4% less travel time per point        (0..9 -> x1 .. x0.64, exact, never rounded)

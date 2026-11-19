@@ -2,7 +2,7 @@
 // "Smooth roll: 15 s more, a smaller board (4 x 4)." and how far the next tier up is: "2 more on the
 // d20 would make it Smooth." It compares the setup at the rolled tier with the setup at a Steady roll
 // (same level and points) using the real setup functions, so the line cannot disagree with the game. Pure.
-import { tierOf, tierInfo, setupRepair, setupHack, setupHaggle, setupPersuade, setupIntimidate, setupCraft, setupNav, setupPerihelion, setupStealth, setupPilot } from './setup.js';
+import { tierOf, tierInfo, setupRepair, setupHack, setupHaggle, setupPersuade, setupIntimidate, setupCraft, setupCut, setupScrew, setupNav, setupPerihelion, setupStealth, setupPilot } from './setup.js';
 
 const r1 = (x) => Math.round(x * 10) / 10;
 const num = (x) => (Number.isInteger(r1(x)) ? String(r1(x)) : r1(x).toFixed(1));
@@ -25,6 +25,13 @@ export const SPECS = Object.freeze({
   pilot: { setup: setupPilot, phrases: [secs('fall', 'of fall time'), pct('wind', 'wind', 'stronger', 'weaker'), pct('pad', 'pad', 'wider', 'narrower')] },
 });
 
+/** The crafting chain's games (Cut, Screw and the recipes) read the same way; kept apart from the nine so their count test still means nine. */
+export const CHAIN_SPECS = Object.freeze({
+  cut: { setup: setupCut, phrases: [pct('width', 'cutting line', 'wider', 'narrower'), (b, n) => (n.guide === b.guide ? null : n.guide ? 'a dotted guide on the line' : 'no dotted guide')] },
+  screw: { setup: setupScrew, phrases: [(b, n) => { const d = Math.round((n.turns - b.turns) * 100) / 100; return d === 0 ? null : `${Math.abs(d)} ${d < 0 ? 'fewer' : 'more'} turns`; }, pct('zone', 'snug zone')] },
+  'bolt-plate': { setup: (o) => ({ ...setupCut(o), turns: setupScrew(o).turns, zone: setupScrew(o).zone }), phrases: [pct('width', 'cutting line', 'wider', 'narrower'), (b, n) => { const d = Math.round((n.turns - b.turns) * 100) / 100; return d === 0 ? null : `${Math.abs(d)} ${d < 0 ? 'fewer' : 'more'} turns on the bolt`; }, pct('zone', 'snug zone')] }
+});
+
 /** The tier above this one's margin needed: { tier, needed } = how many more points on the d20 reach it, or null at Smooth. */
 export function nextTier(attempt = {}) {
   const t = tierOf(attempt);
@@ -39,7 +46,7 @@ export function nextTier(attempt = {}) {
  * Returns { tier, label, phrases, line, next, nextLine }; `line` reads "Smooth roll: 15 s more, a smaller board (4 x 4)."
  */
 export function rollPreview(gameId, attempt, { level = 1, points = {} } = {}) {
-  const spec = SPECS[gameId];
+  const spec = SPECS[gameId] || CHAIN_SPECS[gameId];
   if (!spec) return null;
   const tier = tierOf(attempt);
   const base = spec.setup({ tier: 0, level, points }), now = spec.setup({ tier, level, points });

@@ -142,6 +142,6 @@ test('material bank: exact cost, ceil, carried remainder, never under 1, spoils 
 });
 
 test('picker words match the game: speed and material', () => {
-  assert.equal(CATEGORIES.crafting.cats[1].words(3), `builds 15% faster, ${setupCraft({ points: { speed: 3 } }).strikes} shaping steps`);
+  assert.equal(CATEGORIES.crafting.cats[1].words(3), `builds 15% faster; Cut feed +15%, Screw thread +15% a turn; the older heat game ${setupCraft({ points: { speed: 3 } }).strikes} shaping steps`);
   assert.match(CATEGORIES.crafting.cats[2].words(5), /^20% less scrap, the fraction saved/);
 });

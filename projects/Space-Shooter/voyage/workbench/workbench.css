@@ -16,3 +16,17 @@
 .wb-skills .ex-skills{grid-template-columns:repeat(2,minmax(0,1fr))}
 @media (max-width:700px){.wb-hud{top:58px;left:8px;max-width:calc(100vw - 16px)}.wb-skills .ex-skills{grid-template-columns:1fr}}
 .hg-fight .wb-hud{display:none}
+
+.wb-craftrow,.wb-part{display:grid;gap:4px;justify-items:start}.wb-craftrow .rp-help,.wb-part .rp-help{margin:0}
+
+/* The shared full-screen game overlay (fullScreen.js). */
+.wb-full{position:fixed;inset:0;z-index:60;display:flex;flex-direction:column;gap:6px;padding:max(8px,env(safe-area-inset-top)) 12px max(8px,env(safe-area-inset-bottom));background:radial-gradient(120% 90% at 50% 0%,#0d1b2b,#04080e);color:#eaf4f5;overflow:hidden}
+.wb-full-open .wb-hud{display:none}
+.wb-ftop{display:flex;justify-content:space-between;align-items:center;gap:10px;max-width:1100px;width:100%;margin:0 auto}
+.wb-fhead{min-width:0}
+.wb-feyebrow{margin:0;font:700 11px Consolas,monospace;letter-spacing:.16em;color:#ffad72}
+.wb-ftitle{margin:0;font:700 18px Inter,sans-serif}
+.wb-fleave{margin:0;min-height:44px;min-width:88px}
+.wb-fnote{margin:0 auto;max-width:1100px;width:100%;font-size:12px}
+.wb-fstage{flex:1 1 0;min-height:0;display:flex;flex-direction:column;max-width:1100px;width:100%;margin:0 auto}
+@media (max-width:700px){.wb-fnote{display:none}.wb-ftitle{font-size:15px}}

@@ -146,6 +146,7 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
         for (const [id, skill] of NINE) {
           const before = await state(page);
           await use(page, `wb-${id}`);
+          if (id === 'craft') { await page.waitForSelector('.wb-c[data-craft="heat"]'); await tapper(page, phone)('.wb-c[data-craft="heat"]'); } // the bench asks what to make; the nine stations still play the heat-and-shape game
           if (id === 'hack') { await page.waitForSelector('.wb-w[data-where="foot"]'); if (before) await shot('2a-hack-where'); await tapper(page, phone)('.wb-w[data-where="foot"]'); }
           await page.waitForSelector('#hg-attempt:not([hidden])', { timeout: 5000 });
           await page.waitForFunction(() => /Made it|Not this time|Natural/.test(document.getElementById('hg-attempt').innerText), null, { timeout: 5000 });

@@ -12,9 +12,18 @@ import { createPersuade } from '../minigames/persuade.js'; import { playPersuade
 import { createIntimidate } from '../minigames/intimidate.js'; import { playIntimidate } from '../minigames/intimidateView.js';
 import { createPilot } from '../minigames/pilot.js'; import { playPilot } from '../minigames/pilotView.js';
 import { playNavField } from '../minigames/perihelionEntry.js';
+import { createRecipe, RECIPES } from '../minigames/craftChain.js'; import { playRecipe } from '../minigames/recipeView.js';
 
 let craftBank = 0; // scrap the last craft rounded up, carried into the next one (the game's own rule)
-export const resetCraftBank = () => { craftBank = 0; };
+export const resetCraftBank = () => { craftBank = 0; clearPart(); };
+
+// The bench keeps a part-made item between games of a craft (Cut done, Screw next), so a craft can be left and picked up.
+const PART_KEY = 'stardust.workbench.part.v1';
+export function loadPart(storage = globalThis.localStorage) { try { const p = JSON.parse(storage?.getItem(PART_KEY) || 'null'); return p && Array.isArray(p.list) && !p.done ? p : null; } catch { return null; } }
+export function savePart(part, storage = globalThis.localStorage) { try { storage?.setItem(PART_KEY, JSON.stringify(part)); } catch { /* a private window keeps it in memory only */ } }
+export function clearPart(storage = globalThis.localStorage) { try { storage?.removeItem(PART_KEY); } catch { /* nothing to clear */ } }
+/** The crafting chain's three crafts. */
+export const CHAIN_IDS = Object.freeze(['cut', 'screw', 'bolt-plate']);
 
 /**
  * `o`: { seed, setup, title, who, what, open, best, lock, context (hack: foot | ship | combat), system (repair), sound, reducedMotion }. Resolves with the game's result.
@@ -26,6 +35,12 @@ export async function playGame(stage, id, o = {}) {
     case 'repair': return playRepair(stage, { seed, setup, system: o.system, title: title || 'Coolant line', sound, reducedMotion });
     case 'hack': return playMirrors(stage, { seed, setup, context: o.context || 'foot', title: title || 'Bench terminal', sound, reducedMotion });
     case 'haggle': return playHaggle(stage, { state: createHaggle({ seed, open: o.open ?? 20, best: o.best ?? 30, setup }), who: who || 'the trader', what: what || 'the price', sound, reducedMotion });
+    case 'cut': case 'screw': case 'bolt-plate': {
+      const state = o.resume || createRecipe({ recipe: RECIPES[id], tier: setup?.tier ?? 0, points: setup?.points ?? {}, level: 9, tool: o.tool || 'shop', bank: craftBank, seed });
+      const r = await playRecipe(stage, { state, unit: 'scrap', reducedMotion, onProgress: (st) => { if (st.done) clearPart(); else if (st.list.length > 1 && st.grades.length) savePart(st); } });
+      if (Number.isFinite(r?.bank)) craftBank = r.bank;
+      return r;
+    }
     case 'craft': { const r = await playCraft(stage, { state: createCraft({ seed, recipe: { materials: 4, build: 30 }, setup, bank: craftBank }), what: 'fitting', unit: 'scrap', reducedMotion }); if (Number.isFinite(r?.bank)) craftBank = r.bank; return r; }
     case 'perihelion': return playNavField(stage, { seed, setup, title: title || 'Plot a burn', sound, reducedMotion });
     case 'nav': return playNav(stage, { state: createNav({ seed, setup }), title: title || 'Lane run', reducedMotion });

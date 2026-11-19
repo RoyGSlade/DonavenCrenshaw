@@ -9,7 +9,8 @@
 // captain's save so the rest of the page sees them. Nothing here edits quest data, the engine, the player or the maps list.
 import { loadState, saveState, characterOf, earnXp, setPoints, scan, die, reset, nextDc, withCredits, freshState } from './state.js';
 import { STATIONS, stationOfProp, rollStation, startStation, settleStation, previewLine, loadoutOf } from './stations.js';
-import { playGame, resetCraftBank } from './games.js';
+import { playGame, resetCraftBank, loadPart } from './games.js';
+import { partLine } from '../minigames/craftChain.js';
 import { TALKS, nextAfterCheck } from './talks.js';
 import { sparSetup, sparXp, sparSaid } from './spar.js';
 import { branchOf } from '../minigames/sceneHook.js';
@@ -23,7 +24,8 @@ import { renderTrainer } from '../minigames/trainerView.js';
 import { checkChance, checkBonusText } from '../character.js';
 import { tierInfo } from '../minigames/setup.js';
 import { ROLL_SKILLS } from '../data.js';
-import { renderHud, renderBoard, renderConfirm, renderSparPicker, renderWhere, h } from './ui.js';
+import { openFullScreen } from './fullScreen.js';
+import { renderHud, renderBoard, renderConfirm, renderSparPicker, renderWhere, renderCraftMenu, h } from './ui.js';
 
 const SKILL_NAME = Object.fromEntries(ROLL_SKILLS.map((s) => [s.id, s.name]));
 const OTHERS = {
@@ -44,7 +46,7 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 export function createWorkbench({ store, bus, onfoot, dialogueBox, sheet, hud, toast = () => {}, reducedMotion = () => false, sound = () => {}, onBusy = () => {}, storage = globalThis.localStorage, rng = Math.random, seed = null }) {
   let state = loadState(storage);
   let busy = 0;
-  let gymSkill = 'shooting', boardSkill = null, sparCount = 2, gymLesson = 1, pointsOpen = false;
+  let gymSkill = 'shooting', boardSkill = null, sparCount = 2, gymLesson = 1, pointsOpen = false, cutter = 'shop';
   let bookCur = { skill: null, page: null, order: [], answered: null, lastId: null };
   let leave = null; // resolves the game in progress when the player leaves it
   let seedCounter = 0;
@@ -90,31 +92,41 @@ export function createWorkbench({ store, bus, onfoot, dialogueBox, sheet, hud, t
   const closePanel = () => api.openPanel?.close();
 
   /** The d20 tray shows the roll with the preview line, then the sheet opens the game. Resolves with the game's result (or null when left). */
-  async function rollAndPlay(station, { who, what, open, best, lock, titleText, context } = {}) {
+  async function rollAndPlay(station, { who, what, open, best, lock, titleText, context, tool } = {}) {
     const attemptState = state;
     const attempt = rollStation(attemptState, station, api.rng);
-    const start = startStation(attemptState, station, attempt);
+    const start = startStation(attemptState, station, attempt, { tool });
     bus.emit('roll:attempt', { ...attempt, who: 'You', label: `${SKILL_NAME[station.skill]} attempt · ${station.id}`, preview: previewLine(start) });
     sound('talk');
     await wait(reducedMotion() ? 500 : 1700);
-    return playStart(station, start, { who, what, open, best, lock, titleText, context });
+    return playStart(station, start, { who, what, open, best, lock, titleText, context, tool });
   }
-  async function playStart(station, start, { who, what, open, best, lock, titleText, word, context } = {}) {
+  /** Games that own the whole screen (the house rule). Others still use the side sheet until their lanes move over: add the id here. */
+  const FULL_SCREEN = new Set(['cut', 'screw', 'bolt-plate']);
+  async function playStart(station, start, { who, what, open, best, lock, titleText, word, context, tool, resume } = {}) {
     sheet.stage.replaceChildren();
-    const note = h('p', { class: 'rp-help wb-preview', text: start.preview ? `${start.preview.line} ${start.preview.nextLine}` : '' });
-    const stage = h('div', { class: 'wb-stage' });
-    const leaveBtn = h('button', { type: 'button', class: 'wb-leave', text: 'Leave this game' });
-    sheet.stage.append(note, stage, leaveBtn);
-    showSheet(true, { word: word || `${station.word} · ${tierInfo(start.tier).label.toUpperCase()} ROLL`, titleText: titleText || station.title });
-    sheet.root.classList.toggle('is-fit', station.id === 'haggle');
+    const noteText = start.preview ? `${start.preview.line} ${start.preview.nextLine}` : '';
+    const wordText = word || `${station.word} · ${tierInfo(start.tier).label.toUpperCase()} ROLL`, title = titleText || station.title;
+    let stage, fs = null, leaveBtn = null;
+    const left = new Promise((resolve) => { leave = () => resolve(null); });
+    if (FULL_SCREEN.has(station.id)) {
+      fs = openFullScreen({ word: wordText, title, note: noteText, onLeave: () => leave?.() });
+      stage = fs.stage;
+    } else {
+      const note = h('p', { class: 'rp-help wb-preview', text: noteText });
+      stage = h('div', { class: 'wb-stage' });
+      leaveBtn = h('button', { type: 'button', class: 'wb-leave', text: 'Leave this game' });
+      leaveBtn.addEventListener('click', () => leave?.());
+      sheet.stage.append(note, stage, leaveBtn);
+      showSheet(true, { word: wordText, titleText: title });
+      sheet.root.classList.toggle('is-fit', station.id === 'haggle');
+    }
     hold(true);
-    const left = new Promise((resolve) => { leave = () => resolve(null); leaveBtn.addEventListener('click', leave); });
     let result;
-    try { result = await Promise.race([playGame(stage, station.game || station.id, { seed: nextSeed(), setup: start.setup, title: titleText || station.title, who: who || station.who, what: what || station.what, open: open ?? station.open, best: best ?? station.best, lock: lock ?? station.lock, context, sound: () => {}, reducedMotion }), left]); }
+    try { result = await Promise.race([playGame(stage, station.game || station.id, { seed: nextSeed(), setup: start.setup, title, who: who || station.who, what: what || station.what, open: open ?? station.open, best: best ?? station.best, lock: lock ?? station.lock, context, tool, resume, sound: () => {}, reducedMotion }), left]); }
     catch (error) { console.warn('Stardust workbench: the game could not run', error); result = null; }
     leave = null;
-    sheet.stage.replaceChildren();
-    showSheet(false);
+    if (fs) fs.close(); else { sheet.stage.replaceChildren(); showSheet(false); }
     hold(false);
     return result;
   }
@@ -124,7 +136,30 @@ export function createWorkbench({ store, bus, onfoot, dialogueBox, sheet, hud, t
   const chooseWhere = () => new Promise((resolve) => {
     openPanel('HACKING BENCH', 'Where is this hack?', (pane) => renderWhere(pane, { onPick: (w) => { closePanel(); resolve(w); }, onClose: () => { closePanel(); resolve(null); } }));
   });
-  async function useStation(station) {
+  /** The crafting bench: Cut, Screw, the two-game recipe, the older heat-and-shape game, or a part left in hand. */
+  const chooseCraft = () => new Promise((resolve) => {
+    const part = loadPart();
+    openPanel('CRAFTING BENCH', 'What are you making?', (pane) => renderCraftMenu(pane, { part, partWords: partLine(part), tool: cutter, onTool: (t) => { cutter = t; api.openPanel?.draw(); }, onPick: (id) => { closePanel(); resolve(id); }, onClose: () => { closePanel(); resolve(null); } }));
+  });
+  const CRAFT_LABEL = { cut: ['CUT', 'Cut a plate', 'Cut'], screw: ['SCREW', 'Drive a bolt', 'Screw'], 'bolt-plate': ['BOLT PLATE', 'Bolt plate', 'Bolt plate'] };
+  async function useCraft(base) {
+    const pick = await chooseCraft();
+    if (!pick) return;
+    if (pick === 'heat') return useStation(base, { direct: true });
+    let id = pick, part = null;
+    if (pick === 'resume') { part = loadPart(); if (!part) { toast('No part in hand.'); return; } id = part.recipe.id; }
+    const [word, title, label] = CRAFT_LABEL[id];
+    const station = { ...base, id, word, title, label };
+    let result;
+    if (part) {
+      const start = { station, tier: part.tier, setup: { tier: part.tier, points: part.points, label: part.label }, level: part.level, points: part.points, preview: null };
+      result = await playStart(station, start, { word: `${word} · PART IN HAND · ${String(part.label).toUpperCase()} ROLL`, titleText: title, tool: part.tool, resume: part });
+    } else result = await rollAndPlay(station, { titleText: title, tool: cutter });
+    if (!result) { toast('You left the game. Your part is kept if a game was done.'); return; }
+    commit(settleStation(state, station, result).state);
+  }
+  async function useStation(station, { direct = false } = {}) {
+    if (station.id === 'craft' && !direct) return useCraft(station);
     let context;
     if (station.id === 'hack') { context = await chooseWhere(); if (!context) return; }
     const result = await rollAndPlay(station, { context });
