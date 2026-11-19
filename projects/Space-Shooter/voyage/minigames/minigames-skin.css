@@ -37,7 +37,7 @@
 .mg-skin .cf-tile.ui-btn.is-done{opacity:.45}
 .mg-skin .cf-tile.ui-btn.is-bad{filter:hue-rotate(150deg) saturate(2)}
 .mg-skin .it-rung,.mg-skin .pc-tells li{border-radius:2px}
-.mg-skin .pl-view{border:1px solid #3f5566;border-radius:3px}
+.mg-skin .pl-field{outline:1px solid #3f5566;outline-offset:-1px;border-radius:3px}
 .mg-skin .nv-cell{border-radius:3px}
 /* In a station sheet the sheet is the frame. */
 .hg-sheet .rp-panel.mg-skin.ui-panel{border:0;border-image:none;padding:0;max-width:none;margin:0}

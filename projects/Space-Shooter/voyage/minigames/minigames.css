@@ -145,7 +145,33 @@
 .cf-heat{margin:12px 0 4px;height:56px;overflow:hidden}
 .cf-glow{position:absolute;left:0;top:0;bottom:0;width:15%;background:hsl(25 100% 35%);transition:none}
 .cf-heat.is-heating{border-color:var(--orange)}
-.cf-band{position:absolute;top:0;bottom:0;background:#ffffff22;border-left:2px solid #eaf4f5;border-right:2px solid #eaf4f5;z-index:1}
+.cf-band{position:absolute;top:0;bottom:0;background:#ffd58a30;border-left:2px solid #ffe9c2;border-right:2px solid #ffe9c2;z-index:1;box-shadow:0 0 14px 2px #ffd58a66 inset,0 0 10px #ffb84d44}
+.cf-band.is-in{background:#fff1c966;box-shadow:0 0 22px 6px #fff6dcbb inset,0 0 18px #ffd58a99;animation:cf-bandpulse .5s ease-in-out infinite alternate}
+@keyframes cf-bandpulse{to{background:#fff1c933}}
+/* The stock: a forge-lit box with a billet on an anvil. --cf-col and --cf-glow come from the heat; it cools while you shape. */
+.cf-stage{display:flex;flex-direction:column;gap:6px;min-height:0;--cf-col:rgb(44 50 58);--cf-glow:rgb(44 50 58 / 0);--cf-heat:0}
+.cf-forge{position:relative;flex:1 1 0;min-height:150px;border-radius:6px;overflow:hidden;border:1px solid #3f5566;background:linear-gradient(#070d15,#0c1722 70%,#111c27)}
+.cf-haze{position:absolute;inset:0;background:radial-gradient(60% 55% at 50% 52%,var(--cf-glow),transparent 72%)}
+.cf-billet{position:absolute;left:12%;right:12%;top:50%;height:clamp(34px,15%,74px);transform:translateY(-50%);border-radius:7px;background:var(--cf-col);box-shadow:0 0 calc(8px + 54px * var(--cf-heat)) calc(1px + 12px * var(--cf-heat)) var(--cf-glow);overflow:hidden}
+.cf-sheen{position:absolute;inset:0;background:linear-gradient(180deg,#ffffff55,#ffffff00 38%,#00000055)}
+.cf-anvil{position:absolute;left:18%;right:18%;top:calc(50% + clamp(17px,7.5%,37px));bottom:12%;background:linear-gradient(#2b3844,#1a232d);clip-path:polygon(0 0,100% 0,92% 38%,78% 52%,84% 100%,16% 100%,22% 52%,8% 38%);border-top:2px solid #5b6d7b}
+.cf-coals{position:absolute;left:0;right:0;bottom:0;height:22%;background:radial-gradient(70% 100% at 50% 100%,#ff6a2a55,#7a1d1230 55%,transparent 80%);animation:cf-ember 2.4s ease-in-out infinite alternate}
+@keyframes cf-ember{to{opacity:.55}}
+.cf-spark{position:absolute;top:44%;width:3px;height:3px;border-radius:50%;background:#ffd58a;box-shadow:0 0 6px #ffb84d;opacity:0}
+.cf-stage.is-heating .cf-spark,.cf-stage.is-inband .cf-spark{animation:cf-spark 1s ease-out infinite}
+@keyframes cf-spark{0%{opacity:1;transform:translate(0,0)}100%{opacity:0;transform:translate(14px,-60px)}}
+.cf-stage.is-heating .cf-billet{animation:cf-shimmer .12s linear infinite alternate}
+@keyframes cf-shimmer{to{filter:brightness(1.12)}}
+.cf-stage.is-inband .cf-forge{border-color:#fff6dc}
+.cf-gaugebox[hidden]{display:none}
+.cf-read{margin:2px 0 0;text-align:center;font:700 15px Inter,sans-serif;color:#9db3c2}
+.cf-read[data-state=ok]{color:#fff6dc;text-shadow:0 0 10px #ffd58a}.cf-read[data-state=hot]{color:#ff6b5a}
+.cf-foot{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:6px 0}
+.cf-pips{display:inline-flex;gap:6px}
+.cf-pip{display:block;width:16px;height:16px;border-radius:50%;border:2px solid #5b6d7b;background:transparent;transition:background .15s,border-color .15s}
+.cf-pip[data-s=next]{border-color:#eaf4f5;box-shadow:0 0 6px #ffffff66}.cf-pip[data-s=clean]{background:#9fe870;border-color:#9fe870}.cf-pip[data-s=spoiled]{background:#ff6b5a;border-color:#ff6b5a}
+.cf-footline{font-size:13px}
+@media (prefers-reduced-motion:reduce){.cf-spark,.cf-billet,.cf-band,.cf-coals{animation:none!important}}
 .cf-hold{user-select:none;-webkit-user-select:none;touch-action:none}
 .cf-hold.is-held{background:var(--orange);border-color:var(--orange)}
 .cf-order{margin:10px 0;color:var(--muted);font:12px Consolas,monospace}
@@ -235,14 +261,47 @@
 .it-row button{min-height:56px;font-size:16px}
 
 /* Piloting: touchdown */
-.pl-hud{display:flex;flex-wrap:wrap;gap:4px 16px;font:12px Consolas,monospace;color:#b5c8d5;margin:0 0 4px}
+/* Touchdown: drawn gauges and a play field that follows the free height (the view's viewBox follows the box). No numbers on screen. */
+.pl-hud{display:grid;grid-template-columns:1fr auto;gap:6px 14px;align-items:end;margin:0 0 2px;color:#b5c8d5}
 .pl-hud p{margin:0}
-.pl-speed b{font-size:18px}.pl-speed b.is-ok{color:#9fe870}.pl-speed b.is-warn{color:#ffad72}.pl-speed b.is-bad{color:#ff6b5a}
-.pl-view{display:block;width:100%;aspect-ratio:100/64;margin:8px 0;border-radius:6px;border:1px solid var(--line);touch-action:none}
-.pl-sky{fill:#09131f}.pl-ground{fill:#1c2a36}
-.pl-pad{fill:#3b7fa0}.pl-pad.is-over{fill:#9fe870}
-.pl-line{stroke:#3b7fa055;stroke-width:.4;stroke-dasharray:1.5 1.5}
-.pl-hull{fill:#eaf4f5}.pl-leg{fill:#8fa6b7}.pl-flame{fill:#ffad72;display:none}
+.pl-lab{font:700 10px Consolas,monospace;letter-spacing:.14em;text-transform:uppercase;color:#7f98aa}
+.pl-speed{display:grid;grid-template-columns:auto 1fr;gap:3px 8px;align-items:baseline;min-width:0}
+.pl-speed .pl-gtrack{grid-column:1/-1}
+.pl-gword{font:700 17px Inter,sans-serif;text-align:right}.pl-gword.is-ok{color:#9fe870}.pl-gword.is-warn{color:#ffad72}.pl-gword.is-bad{color:#ff6b5a}
+.pl-gtrack{position:relative;height:12px;border-radius:6px;background:#12202d;border:1px solid #3f5566}
+.pl-gsafe{position:absolute;left:0;top:0;bottom:0;background:#9fe87030;border-right:2px solid #9fe870;border-radius:6px 0 0 6px}
+.pl-gfill{position:absolute;left:0;top:0;bottom:0;background:#9fe870;border-radius:6px;opacity:.9}
+.pl-gtrack[data-tone=warn] .pl-gfill{background:#ffad72}.pl-gtrack[data-tone=bad] .pl-gfill{background:#ff6b5a}
+.pl-gneedle{position:absolute;top:-4px;bottom:-4px;width:3px;margin-left:-1.5px;background:#fff;border-radius:2px;box-shadow:0 0 6px #fff}
+.pl-wind{font:700 13px Inter,sans-serif;color:#9fd8ff;white-space:nowrap}
+.pl-wind.is-left::before{content:"\25C0";margin-right:6px;display:inline-block;animation:pl-nudge-l 1s ease-in-out infinite}
+.pl-wind.is-right::after{content:"\25B6";margin-left:6px;display:inline-block;animation:pl-nudge-r 1s ease-in-out infinite}
+@keyframes pl-nudge-l{50%{transform:translateX(-4px)}}@keyframes pl-nudge-r{50%{transform:translateX(4px)}}
+.pl-fuel{grid-column:1/-1;display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center}
+.pl-fuel i{display:block;height:10px;background:#12202d;border:1px solid #3f5566;border-radius:5px;overflow:hidden}
+.pl-fuel u{display:block;height:100%;background:#81e6df;border-radius:5px;transition:background .2s}
+.pl-fuel[data-level=amber] u{background:#ffb84d}.pl-fuel[data-level=low] u,.pl-fuel[data-level=empty] u{background:#ff5a4a}
+.pl-fuel[data-level=low] u{animation:pl-pulse .7s ease-in-out infinite}
+.pl-fuel b{min-width:34px;font:700 12px Inter,sans-serif;color:#ff6b5a;text-align:right}
+@keyframes pl-pulse{50%{opacity:.45}}
+.pl-hud:has(.pl-brakes:not([hidden])) .pl-fuel{grid-column:1}
+.pl-brakes{grid-column:2;display:flex;align-items:center;gap:5px}
+.pl-brakes i{width:11px;height:11px;border-radius:50%;background:#ffad72;border:1px solid #ffad72}.pl-brakes i.is-used{background:transparent;border-color:#5b6d7b}
+.pl-field{position:relative;width:calc(100% + 8px);aspect-ratio:100/64;margin:6px -4px;border-radius:6px;outline:1px solid var(--line);outline-offset:-1px;overflow:hidden;background:#09131f;touch-action:none}
+.pl-view{position:absolute;inset:0;width:100%;height:100%;display:block}
+.pl-sky{fill:url(#plSky)}.pl-ground{fill:#1c2a36}.pl-star{fill:#cfe3ee;opacity:.55}
+.pl-streak{stroke:#9fd8ff;stroke-width:.35;stroke-linecap:round;opacity:0}
+.pl-pad{fill:#3b7fa0}.pl-pad.is-over{fill:#9fe870}.pl-padglow{fill:#3b7fa0;opacity:.28}.pl-padglow.is-over{fill:#9fe870;opacity:.4}
+.pl-line{stroke:#3b7fa066;stroke-width:.35;stroke-dasharray:1.5 1.5}
+.pl-hull{fill:#eaf4f5;stroke:#9db3c2;stroke-width:.25}.pl-hull.is-wreck{fill:#7a5a50;stroke:#3a2a26}.pl-window{fill:#2c6f86}.pl-leg{fill:#8fa6b7}
+.pl-flame{fill:#ff8a3d;display:none;filter:drop-shadow(0 0 1.4px #ff8a3d)}.pl-flame-core{fill:#fff1b8;display:none}
+.pl-puff{fill:#c9d6df;opacity:0;transform-box:fill-box;transform-origin:center;animation:pl-puff .9s ease-out forwards}
+.pl-spark{fill:#ffad72;opacity:0;transform-box:fill-box;transform-origin:center;animation:pl-spark .7s ease-out forwards}
+@keyframes pl-puff{0%{opacity:.75;transform:translate(0,0) scale(.5)}100%{opacity:0;transform:translate(var(--dx,0),-4px) scale(2.6)}}
+@keyframes pl-spark{0%{opacity:1;transform:translate(0,0) scale(1)}100%{opacity:0;transform:translate(var(--dx,0),-12px) scale(.3)}}
+.pl-field.is-shake{animation:pl-shake .5s linear}
+@keyframes pl-shake{10%{transform:translate(-6px,3px)}30%{transform:translate(5px,-4px)}50%{transform:translate(-4px,2px)}70%{transform:translate(3px,-2px)}90%{transform:translate(-1px,1px)}}
+@media (prefers-reduced-motion:reduce){.pl-puff,.pl-spark,.pl-field.is-shake,.pl-wind::before,.pl-wind::after,.pl-fuel u{animation:none}}
 .pl-controls{display:grid;grid-template-columns:1fr 1.5fr 1fr 1.2fr;gap:8px;touch-action:none;user-select:none;-webkit-user-select:none}
 .pl-btn{min-height:64px;font-size:18px;touch-action:none}
 .pl-btn.is-held{background:#2e6b6b;border-color:var(--cyan)}
@@ -401,3 +460,16 @@ a.gm-train,a.gm-train:hover,a.gm-train:visited{color:#082126}
 .pr-intro .pr-begin{margin-top:8px;min-height:52px;min-width:180px}
 @media (max-width:899px){.pr-leave{display:none}}
 .pr-full:has(.pr-intro:not([hidden])) .pr-foot,.pr-full:has(.pr-intro:not([hidden])) .pr-status{visibility:hidden}
+
+/* Full screen (the workbench helper): the play block grows to the free height instead of sitting in a band. */
+.wb-full .wb-fstage>.rp-panel:is(.pl-panel,.cf-panel){flex:1 1 0;margin:0 auto}
+.wb-full .wb-fstage>.rp-panel:is(.pl-panel,.cf-panel)>.rp-eyebrow,.wb-full .wb-fstage>.rp-panel:is(.pl-panel,.cf-panel)>.rp-status{margin-bottom:0}
+.wb-full .wb-fstage>.rp-panel.pl-panel>.pl-field{flex:1 1 0!important;min-height:180px;aspect-ratio:auto;align-self:center;max-width:640px;width:100%;margin:0}
+.wb-full .wb-fstage>.rp-panel.cf-panel>.cf-stage{flex:1 1 0!important;min-height:0;align-self:center;width:100%;max-width:640px}
+.wb-full .wb-fstage>.rp-panel.cf-panel>.cf-foot{order:7;margin:0}
+.wb-full .wb-fstage>.rp-panel.cf-panel>:is(.cf-heatbox,.cf-shape){order:9}
+.wb-full .wb-fstage>.rp-panel.cf-panel .cf-heat{height:76px;margin:4px 0 2px}
+.wb-full .wb-fstage>.rp-panel.cf-panel .hg-scale{margin-bottom:0}
+/* The result card floats over the play block, so the field does not shrink or jump when the flight or the work ends. */
+.wb-full .wb-fstage>.rp-panel:is(.pl-panel,.cf-panel){position:relative}
+.wb-full .wb-fstage>.rp-panel:is(.pl-panel,.cf-panel)>.rp-result{position:absolute;left:10px;right:10px;top:42%;transform:translateY(-50%);z-index:5;margin:0;max-width:560px;margin-inline:auto}
