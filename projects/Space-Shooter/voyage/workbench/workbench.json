@@ -1,0 +1,890 @@
+{
+ "id": "workbench",
+ "name": "Workbench bay (test room)",
+ "kind": "interior",
+ "tile": 48,
+ "floor": "deck",
+ "ambient": "ship-hum",
+ "grid": [
+  "##############################",
+  "#............................#",
+  "#............................#",
+  "#............................#",
+  "#............................#",
+  "#............................#",
+  "#............................#",
+  "#............................#",
+  "#............................#",
+  "#............................#",
+  "#............................#",
+  "#............................#",
+  "#............................#",
+  "#............................#",
+  "#............................#",
+  "#............................#",
+  "##############################"
+ ],
+ "look": {
+  "set": "freighter",
+  "accents": {
+   "holo": "#2fe0c0",
+   "warm": "#ffb867",
+   "spar": "#ff6b5a"
+  },
+  "decals": [
+   {
+    "kind": "text",
+    "at": [
+     4,
+     3.3
+    ],
+    "text": "REPAIR",
+    "size": 0.3,
+    "color": "holo",
+    "alpha": 0.55
+   },
+   {
+    "kind": "text",
+    "at": [
+     9,
+     3.3
+    ],
+    "text": "HACK",
+    "size": 0.3,
+    "color": "holo",
+    "alpha": 0.55
+   },
+   {
+    "kind": "text",
+    "at": [
+     14.5,
+     3.3
+    ],
+    "text": "CRAFT",
+    "size": 0.3,
+    "color": "holo",
+    "alpha": 0.55
+   },
+   {
+    "kind": "text",
+    "at": [
+     19,
+     3.8
+    ],
+    "text": "NAV",
+    "size": 0.3,
+    "color": "holo",
+    "alpha": 0.55
+   },
+   {
+    "kind": "text",
+    "at": [
+     23.5,
+     3.8
+    ],
+    "text": "PILOT",
+    "size": 0.3,
+    "color": "holo",
+    "alpha": 0.55
+   },
+   {
+    "kind": "text",
+    "at": [
+     4,
+     12.6
+    ],
+    "text": "STEALTH",
+    "size": 0.3,
+    "color": "holo",
+    "alpha": 0.55
+   },
+   {
+    "kind": "text",
+    "at": [
+     9,
+     12.6
+    ],
+    "text": "PERSUADE",
+    "size": 0.3,
+    "color": "holo",
+    "alpha": 0.55
+   },
+   {
+    "kind": "text",
+    "at": [
+     14,
+     12.6
+    ],
+    "text": "INTIMIDATE",
+    "size": 0.3,
+    "color": "holo",
+    "alpha": 0.55
+   },
+   {
+    "kind": "text",
+    "at": [
+     19,
+     12.6
+    ],
+    "text": "HAGGLE",
+    "size": 0.3,
+    "color": "holo",
+    "alpha": 0.55
+   },
+   {
+    "kind": "text",
+    "at": [
+     24.5,
+     12.6
+    ],
+    "text": "PRACTICE LOCK",
+    "size": 0.3,
+    "color": "warm",
+    "alpha": 0.55
+   },
+   {
+    "kind": "text",
+    "at": [
+     3.6,
+     7.62
+    ],
+    "text": "SKILLS",
+    "size": 0.3,
+    "color": "warm",
+    "alpha": 0.55
+   },
+   {
+    "kind": "text",
+    "at": [
+     3.6,
+     4.62
+    ],
+    "text": "SCAN",
+    "size": 0.3,
+    "color": "warm",
+    "alpha": 0.55
+   },
+   {
+    "kind": "text",
+    "at": [
+     3.7,
+     11.62
+    ],
+    "text": "REPRINT",
+    "size": 0.3,
+    "color": "warm",
+    "alpha": 0.55
+   },
+   {
+    "kind": "text",
+    "at": [
+     27.5,
+     3.3
+    ],
+    "text": "GYM",
+    "size": 0.3,
+    "color": "holo",
+    "alpha": 0.55
+   },
+   {
+    "kind": "text",
+    "at": [
+     27.5,
+     7.3
+    ],
+    "text": "SPAR",
+    "size": 0.3,
+    "color": "spar",
+    "alpha": 0.55
+   },
+   {
+    "kind": "text",
+    "at": [
+     27.5,
+     11.3
+    ],
+    "text": "RESET",
+    "size": 0.3,
+    "color": "warm",
+    "alpha": 0.55
+   },
+   {
+    "kind": "hazard",
+    "at": [
+     17.5,
+     5.4
+    ],
+    "size": [
+     8,
+     0.25
+    ]
+   },
+   {
+    "kind": "hazard",
+    "at": [
+     17.5,
+     10.6
+    ],
+    "size": [
+     8,
+     0.25
+    ]
+   },
+   {
+    "kind": "text",
+    "at": [
+     21.5,
+     6.4
+    ],
+    "text": "SPARRING RING",
+    "size": 0.34,
+    "color": "spar",
+    "alpha": 0.4
+   },
+   {
+    "art": "scuff-1",
+    "at": [
+     10,
+     8
+    ],
+    "size": [
+     2.4,
+     1.2
+    ]
+   },
+   {
+    "art": "oil-2",
+    "at": [
+     14,
+     9
+    ],
+    "size": [
+     1.4,
+     1.4
+    ],
+    "alpha": 0.5
+   },
+   {
+    "art": "drain-round",
+    "at": [
+     15,
+     7
+    ],
+    "size": [
+     1,
+     1
+    ]
+   },
+   {
+    "kind": "text",
+    "at": [
+     17,
+     13.4
+    ],
+    "text": "EXIT THE SPAR",
+    "size": 0.24,
+    "color": "spar",
+    "alpha": 0.45
+   },
+   {
+    "kind": "hazard",
+    "at": [
+     16,
+     12
+    ],
+    "size": [
+     2,
+     0.2
+    ]
+   }
+  ],
+  "lights": [
+   {
+    "kind": "lamp",
+    "at": [
+     5,
+     4
+    ],
+    "r": 4.0,
+    "color": "cool",
+    "strength": 0.3
+   },
+   {
+    "kind": "lamp",
+    "at": [
+     10,
+     4
+    ],
+    "r": 4.0,
+    "color": "cool",
+    "strength": 0.3
+   },
+   {
+    "kind": "lamp",
+    "at": [
+     15,
+     4
+    ],
+    "r": 4.0,
+    "color": "cool",
+    "strength": 0.3
+   },
+   {
+    "kind": "lamp",
+    "at": [
+     20,
+     4
+    ],
+    "r": 4.0,
+    "color": "cool",
+    "strength": 0.3
+   },
+   {
+    "kind": "lamp",
+    "at": [
+     5,
+     12
+    ],
+    "r": 4.0,
+    "color": "warm",
+    "strength": 0.3
+   },
+   {
+    "kind": "lamp",
+    "at": [
+     10,
+     12
+    ],
+    "r": 4.0,
+    "color": "warm",
+    "strength": 0.3
+   },
+   {
+    "kind": "lamp",
+    "at": [
+     15,
+     12
+    ],
+    "r": 4.0,
+    "color": "warm",
+    "strength": 0.3
+   },
+   {
+    "kind": "lamp",
+    "at": [
+     20,
+     12
+    ],
+    "r": 4.0,
+    "color": "warm",
+    "strength": 0.3
+   },
+   {
+    "kind": "lamp",
+    "at": [
+     14.5,
+     8
+    ],
+    "r": 4.0,
+    "color": "warm",
+    "strength": 0.26
+   },
+   {
+    "kind": "lamp",
+    "at": [
+     22,
+     8
+    ],
+    "r": 4.0,
+    "color": "spar",
+    "strength": 0.3
+   },
+   {
+    "kind": "lamp",
+    "at": [
+     3,
+     8
+    ],
+    "r": 4.0,
+    "color": "warm",
+    "strength": 0.3
+   },
+   {
+    "kind": "lamp",
+    "at": [
+     26,
+     6
+    ],
+    "r": 4.0,
+    "color": "holo",
+    "strength": 0.3
+   }
+  ],
+  "mounts": [
+   {
+    "art": "wall-sign-hazard",
+    "at": [
+     11.4,
+     16.25
+    ],
+    "size": [
+     2,
+     0.5
+    ],
+    "face": true
+   },
+   {
+    "art": "fuse-box",
+    "at": [
+     5,
+     0.25
+    ],
+    "size": [
+     1,
+     0.5
+    ],
+    "face": true
+   }
+  ],
+  "clutter": [
+   {
+    "art": "traffic-cone",
+    "at": [
+     16.5,
+     6
+    ],
+    "size": [
+     0.5,
+     0.5
+    ]
+   },
+   {
+    "art": "cable-coil",
+    "at": [
+     12,
+     10.2
+    ],
+    "size": [
+     0.7,
+     0.7
+    ]
+   }
+  ]
+ },
+ "props": [
+  {
+   "art": "engine-console",
+   "at": [
+    3,
+    1
+   ],
+   "size": [
+    2,
+    1
+   ],
+   "block": "low",
+   "name": "wb-repair",
+   "interact": {
+    "kind": "station",
+    "id": "wb-repair",
+    "label": "Repair bench: coolant pipes"
+   }
+  },
+  {
+   "art": "holo-terminal",
+   "at": [
+    8,
+    1
+   ],
+   "size": [
+    2,
+    1
+   ],
+   "block": "low",
+   "name": "wb-hack",
+   "interact": {
+    "kind": "station",
+    "id": "wb-hack",
+    "label": "Hacking bench: bypass ring"
+   }
+  },
+  {
+   "art": "chibby-workbench",
+   "at": [
+    13,
+    1
+   ],
+   "size": [
+    3,
+    1
+   ],
+   "block": "low",
+   "name": "wb-craft",
+   "interact": {
+    "kind": "station",
+    "id": "wb-craft",
+    "label": "Crafting bench: heat and shape"
+   }
+  },
+  {
+   "art": "holo-table",
+   "at": [
+    18,
+    1
+   ],
+   "size": [
+    2,
+    2
+   ],
+   "block": "low",
+   "name": "wb-nav",
+   "interact": {
+    "kind": "station",
+    "id": "wb-nav",
+    "label": "Navigation table: plot the lane"
+   }
+  },
+  {
+   "art": "launch-console",
+   "at": [
+    23,
+    1
+   ],
+   "size": [
+    1,
+    2
+   ],
+   "block": "low",
+   "name": "wb-pilot",
+   "interact": {
+    "kind": "station",
+    "id": "wb-pilot",
+    "label": "Flight console: touchdown"
+   }
+  },
+  {
+   "art": "cargo-container-closed",
+   "at": [
+    3,
+    14
+   ],
+   "size": [
+    2,
+    1
+   ],
+   "block": "low",
+   "name": "wb-stealth",
+   "interact": {
+    "kind": "station",
+    "id": "wb-stealth",
+    "label": "Shadow lane: slip past the guards"
+   }
+  },
+  {
+   "art": "captain-desk",
+   "at": [
+    8,
+    14
+   ],
+   "size": [
+    2,
+    1
+   ],
+   "block": "low",
+   "name": "wb-persuade",
+   "interact": {
+    "kind": "station",
+    "id": "wb-persuade",
+    "label": "Parley desk: persuade"
+   }
+  },
+  {
+   "art": "airlock-door-closed",
+   "at": [
+    13,
+    14
+   ],
+   "size": [
+    2,
+    1
+   ],
+   "block": "low",
+   "name": "wb-intimidate",
+   "interact": {
+    "kind": "station",
+    "id": "wb-intimidate",
+    "label": "Standoff door: intimidate"
+   }
+  },
+  {
+   "art": "bar-counter",
+   "at": [
+    18,
+    14
+   ],
+   "size": [
+    2,
+    1
+   ],
+   "block": "low",
+   "name": "wb-haggle",
+   "interact": {
+    "kind": "station",
+    "id": "wb-haggle",
+    "label": "Trade counter: haggle"
+   }
+  },
+  {
+   "art": "power-conduit-panel-closed",
+   "at": [
+    24,
+    14
+   ],
+   "size": [
+    1,
+    1
+   ],
+   "block": "low",
+   "name": "wb-lock",
+   "interact": {
+    "kind": "station",
+    "id": "wb-lock",
+    "label": "Practice lock: no clock, no XP"
+   }
+  },
+  {
+   "art": "crew-board",
+   "at": [
+    1,
+    7
+   ],
+   "size": [
+    2,
+    1
+   ],
+   "block": "low",
+   "name": "wb-board",
+   "interact": {
+    "kind": "station",
+    "id": "wb-board",
+    "label": "Skills board: levels, XP and what a death costs"
+   }
+  },
+  {
+   "art": "engineering-console",
+   "at": [
+    1,
+    4
+   ],
+   "size": [
+    2,
+    1
+   ],
+   "block": "low",
+   "name": "wb-scan",
+   "interact": {
+    "kind": "station",
+    "id": "wb-scan",
+    "label": "Scan station: save your progress"
+   }
+  },
+  {
+   "art": "holo-terminal",
+   "at": [
+    1,
+    11
+   ],
+   "size": [
+    2,
+    1
+   ],
+   "block": "low",
+   "name": "wb-reprint",
+   "interact": {
+    "kind": "station",
+    "id": "wb-reprint",
+    "label": "Reprint pod: die and come back from your last scan"
+   }
+  },
+  {
+   "art": "holo-terminal",
+   "at": [
+    27,
+    4
+   ],
+   "size": [
+    2,
+    1
+   ],
+   "block": "low",
+   "name": "wb-gym",
+   "interact": {
+    "kind": "station",
+    "id": "wb-gym",
+    "label": "Gym trainer: spend points, then train"
+   }
+  },
+  {
+   "art": "mel-weapon-rack",
+   "at": [
+    27,
+    8
+   ],
+   "size": [
+    2,
+    1
+   ],
+   "block": "low",
+   "name": "wb-spar",
+   "interact": {
+    "kind": "station",
+    "id": "wb-spar",
+    "label": "Sparring rack: fight a marauder"
+   }
+  },
+  {
+   "art": "janitor-cart",
+   "at": [
+    27,
+    12
+   ],
+   "size": [
+    1,
+    2
+   ],
+   "block": "low",
+   "name": "wb-reset",
+   "interact": {
+    "kind": "station",
+    "id": "wb-reset",
+    "label": "Reset cart: back to a fresh test state"
+   }
+  },
+  {
+   "art": "holo-pylon",
+   "at": [
+    26,
+    4
+   ],
+   "size": [
+    1,
+    1
+   ],
+   "block": true
+  },
+  {
+   "art": "cargo-crate",
+   "at": [
+    19,
+    7
+   ],
+   "size": [
+    1,
+    1
+   ],
+   "block": "low"
+  },
+  {
+   "art": "cargo-crate",
+   "at": [
+    19,
+    9
+   ],
+   "size": [
+    1,
+    1
+   ],
+   "block": "low"
+  },
+  {
+   "art": "cargo-crate",
+   "at": [
+    23,
+    7
+   ],
+   "size": [
+    1,
+    1
+   ],
+   "block": "low"
+  },
+  {
+   "art": "cargo-crate",
+   "at": [
+    23,
+    9
+   ],
+   "size": [
+    1,
+    1
+   ],
+   "block": "low"
+  }
+ ],
+ "npcs": [
+  {
+   "id": "tull",
+   "at": [
+    6,
+    8
+   ],
+   "face": "right",
+   "wander": 0.2
+  },
+  {
+   "id": "nessa",
+   "at": [
+    10,
+    9
+   ],
+   "face": "left",
+   "wander": 0.3
+  },
+  {
+   "id": "pip",
+   "at": [
+    13,
+    7
+   ],
+   "face": "down",
+   "wander": 0.4
+  }
+ ],
+ "doors": [],
+ "spawns": {
+  "default": [
+   15,
+   12,
+   "up"
+  ],
+  "spar": [
+   17,
+   8,
+   "right"
+  ]
+ },
+ "zones": [
+  {
+   "id": "spar-ring",
+   "at": [
+    17,
+    6
+   ],
+   "size": [
+    10,
+    5
+   ]
+  },
+  {
+   "id": "spar-exit",
+   "at": [
+    16,
+    12
+   ],
+   "size": [
+    2,
+    2
+   ]
+  }
+ ]
+}
