@@ -26,12 +26,10 @@ function boot() {
   const log = [];
   const root = $('ex-root');
   const doc = (tag, cls, ...kids) => { const e = document.createElement(tag); e.className = cls; e.append(...kids); return e; };
-  const colRisk = doc('section', 'ex-col'), colSkills = doc('section', 'ex-col'), colPick = doc('section', 'ex-col'), colPlay = doc('section', 'ex-col');
-  const riskBox = doc('div', 'ex-riskbox'), skillBox = doc('div', ''), pickBox = doc('div', ''), logEl = doc('p', 'rp-help');
+  const colRisk = doc('section', 'ex-col'), colPlay = doc('section', 'ex-col');
+  const riskBox = doc('div', 'ex-riskbox'), logEl = doc('p', 'rp-help');
   logEl.setAttribute('role', 'status'); logEl.id = 'ex-log';
   colRisk.append(Object.assign(document.createElement('h2'), { textContent: 'What a death costs' }), riskBox);
-  colSkills.append(Object.assign(document.createElement('h2'), { textContent: 'Skills' }), skillBox);
-  colPick.append(Object.assign(document.createElement('h2'), { textContent: 'Spend points' }), pickBox);
   const play = (label, fn, cls = '') => { const b = Object.assign(document.createElement('button'), { type: 'button', textContent: label, className: cls }); b.addEventListener('click', () => { fn(); draw(); }); return b; };
   const earn = (skill, xp, what) => () => { const r = addXp(progress, skill, xp); progress = r.progress; logEl.textContent = `${what}: +${xp} ${skill} XP${r.gained ? `, level up (${r.gained})` : ''}.`; };
   colPlay.append(Object.assign(document.createElement('h2'), { textContent: 'Stand-ins for play' }),
@@ -52,16 +50,15 @@ function boot() {
   const drawBench = () => renderBench(benchBox, { bench, name: me, onPlay: async () => { benchStage.replaceChildren(); const r = await playBench(benchStage, day, () => matchMedia('(prefers-reduced-motion: reduce)').matches); submit(bench, { name: me, success: r.success, moves: r.moves, time: r.time }); drawBench(); } });
   // The holodeck gym.
   let wallet = Number(params.get('credits') ?? 60), gymLog = newGymLog();
-  const colGym = doc('section', 'ex-col'), gymBox = doc('div', '');
+  const colGym = doc('section', 'ex-col ex-gym'), gymBox = doc('div', '');
   colGym.append(Object.assign(document.createElement('h2'), { textContent: 'Holodeck gym' }), gymBox);
-  const drawGym = () => renderGym(gymBox, { wallet, log: gymLog, now: Date.now(), level: 5, onResult: (id, result) => { const r = trainRun(id, { credits: wallet, log: gymLog, now: Date.now(), result }); wallet = r.credits; gymLog = r.log; logEl.textContent = r.said; drawGym(); } });
+  const drawGym = () => renderGym(gymBox, { progress, selected, wallet, log: gymLog, now: Date.now(), onSelect: (id) => { selected = id; draw(); }, onPoints: (skill, pts) => { progress = { ...progress, points: { ...progress.points, [skill]: pts } }; draw(); }, onResult: (id, result) => { const r = trainRun(id, { credits: wallet, log: gymLog, now: Date.now(), result }); wallet = r.credits; gymLog = r.log; logEl.textContent = r.said; drawGym(); } });
   window.__bench = { bench, get wallet() { return wallet; }, get gymLog() { return gymLog; } };
-  root.append(colRisk, colSkills, colPick, colPlay, colBench, colGym);
-  drawBench(); drawGym();
+  root.append(colRisk, colGym, colPlay, colBench);
+  drawBench();
   function draw() {
     renderRisk(riskBox, { progress, snap });
-    renderSkills(skillBox, { progress, selected }, (id) => { selected = id; draw(); });
-    renderPicker(pickBox, { progress, selected }, (skill, pts) => { progress = { ...progress, points: { ...progress.points, [skill]: pts } }; draw(); });
+    drawGym();
     window.__extras = { progress, snap, selected };
   }
   draw();

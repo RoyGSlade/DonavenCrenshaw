@@ -77,3 +77,19 @@ test('a gym is no money printer: a perfect pilot earns less XP an hour than the 
   assert.ok(xp <= GYM.capXp * 2, `an hour of nonstop gym is ${xp} XP at most`);
   assert.ok(1000 - credits >= GYM.cost * 5);
 });
+
+import { SPEND_AT, gymGamesFor, gymLoadout } from '../projects/Space-Shooter/voyage/minigames/gym.js';
+import { newProgress, addXp } from '../projects/Space-Shooter/voyage/minigames/progress.js';
+test('points are spent in the gym, and a gym run uses exactly the points spent', () => {
+  assert.equal(SPEND_AT, 'gym');
+  let p = addXp(newProgress(), 'repair', 20 + 40 + 5).progress; // level 3
+  p = { ...p, points: { repair: { time: 2, size: 1 } } };
+  assert.deepEqual(gymLoadout(p, 'repair'), { level: 3, points: { time: 2, size: 1, quality: 0 } });
+  assert.deepEqual(gymLoadout(p, 'hacking'), { level: 1, points: { time: 0, size: 0, retries: 0 } });
+  const { level, points } = gymLoadout(p, 'repair');
+  assert.deepEqual(gymSetup('repair', { level, points }), setupRepair({ tier: 0, level: 3, points: { time: 2, size: 1 } }));
+  // More points than the level are never trained with.
+  assert.equal(Object.values(gymLoadout({ ...p, points: { repair: { time: 9 } } }, 'repair').points).reduce((a, b) => a + b, 0), 3);
+  // Every skill with a minigame has gym games; shooting has none; social has three.
+  assert.deepEqual(['repair', 'hacking', 'social', 'crafting', 'navigation', 'stealth', 'piloting', 'shooting'].map((s) => gymGamesFor(s).length), [1, 1, 3, 1, 1, 1, 1, 0]);
+});

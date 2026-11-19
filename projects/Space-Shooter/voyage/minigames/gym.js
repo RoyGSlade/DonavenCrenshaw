@@ -3,7 +3,11 @@
 // pays at most GYM_CAP_XP per skill in any hour. A loss costs only the credits. Your skill
 // points count (you train with what you have) but the roll is always Steady, tier 0.
 // Pure: the wallet and the hour log belong to the caller. Numbers are PLACEHOLDERS for the economy tune.
+import { cleanSkillPoints } from './picker.js';
 import { setupRepair, setupHack, setupHaggle, setupPersuade, setupIntimidate, setupCraft, setupNav, setupStealth, setupPilot, REPAIR_CATEGORIES, HACK_CATEGORIES, SOCIAL_CATEGORIES, CRAFT_CATEGORIES, NAV_CATEGORIES, STEALTH_CATEGORIES, PILOT_CATEGORIES } from './setup.js';
+
+/** Where skill points are spent (design doc: "Spend skill points in the holodeck gym"): spending and training are one place. */
+export const SPEND_AT = 'gym';
 
 export const GYM = Object.freeze({ cost: 10, share: 0.25, capXp: 6, windowMs: 3600000 });
 
@@ -19,6 +23,13 @@ export const GYM_GAMES = Object.freeze([
   { id: 'stealth', skill: 'stealth', name: 'Shadow slip', setup: (o) => setupStealth(o), cats: STEALTH_CATEGORIES },
   { id: 'pilot', skill: 'piloting', name: 'Touchdown', setup: (o) => setupPilot(o), cats: PILOT_CATEGORIES },
 ]);
+/** The games the gym has for a skill (shooting has none). */
+export const gymGamesFor = (skill) => GYM_GAMES.filter((g) => g.skill === skill);
+/** What you train with: the skill's level and the points you have actually spent in it (never more than the level). */
+export function gymLoadout(progress, skill) {
+  const level = progress?.levels?.[skill] ?? 1;
+  return { level, points: cleanSkillPoints(skill, progress?.points?.[skill], level) };
+}
 export const gymGame = (id) => GYM_GAMES.find((g) => g.id === id) || null;
 
 /** The setup for a gym run: always a Steady roll (tier 0), with the player's level and points. */

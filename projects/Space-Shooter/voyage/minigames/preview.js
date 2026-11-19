@@ -14,6 +14,8 @@ import { createPersuade } from './persuade.js';
 import { playPersuade } from './persuadeView.js';
 import { createIntimidate } from './intimidate.js';
 import { playIntimidate } from './intimidateView.js';
+import { createPracticeHack } from './hack.js';
+import { rollPreview } from './rollPreview.js';
 import { createPilot } from './pilot.js';
 import { playPilot } from './pilotView.js';
 import { createCraft } from './craft.js';
@@ -32,7 +34,7 @@ function boot() {
   $('mg-page').hidden = false;
   const params = new URLSearchParams(location.search);
   const ids = ['roll', 'level', 'dc', 'lock', 'time', 'size', 'quality', 'retries', 'haggle', 'persuade', 'intimidate', 'handling', 'boost', 'landing', 'speed', 'material', 'fuel', 'warning', 'quiet', 'range', 'decay'];
-  if (['repair', 'hack', 'haggle', 'persuade', 'intimidate', 'pilot', 'craft', 'nav', 'stealth'].includes(params.get('mini'))) $('mg-mini').value = params.get('mini');
+  if (['repair', 'hack', 'haggle', 'persuade', 'intimidate', 'pilot', 'practice', 'craft', 'nav', 'stealth'].includes(params.get('mini'))) $('mg-mini').value = params.get('mini');
   for (const id of ids) { const v = params.get(id); if (v != null && /^\d+$/.test(v)) $(id).value = v; }
   const mini = () => $('mg-mini').value;
   const read = () => Object.fromEntries(ids.map((id) => [id, Number($(id).value)]));
@@ -40,7 +42,9 @@ function boot() {
     const v = read();
     const attempt = { total: v.roll + v.level, dc: v.dc, natural: v.roll === 20 };
     const tier = tierOf(attempt);
-    const setup = mini() === 'pilot'
+    const setup = mini() === 'practice'
+      ? { points: {}, label: 'Practice', tier: 0 }
+      : mini() === 'pilot'
       ? setupPilot({ tier, level: v.level, points: Object.fromEntries(PILOT_CATEGORIES.map((c) => [c, v[c] ?? 0])) })
       : mini() === 'intimidate'
       ? setupIntimidate({ tier, level: v.level, points: Object.fromEntries(SOCIAL_CATEGORIES.map((c) => [c, v[c] ?? 0])) })
@@ -64,8 +68,11 @@ function boot() {
     for (const id of ids) $(`o-${id}`).textContent = $(id).value;
     const hack = mini() === 'hack', hag = mini() === 'haggle', rep = mini() === 'repair', cr = mini() === 'craft', nv = mini() === 'nav', sl = mini() === 'stealth', pe = mini() === 'persuade', it = mini() === 'intimidate', pl = mini() === 'pilot';
     $('l-lock').hidden = !hack; $('l-retries').hidden = !hack; $('l-quality').hidden = !rep; $('l-time').hidden = hag || cr || sl || pe || it || pl; $('l-size').hidden = hag || cr || nv || sl || pe || it || pl; $('l-handling').hidden = !pl; $('l-boost').hidden = !pl; $('l-landing').hidden = !pl; $('l-persuade').hidden = !pe; $('l-intimidate').hidden = !it; $('l-quiet').hidden = !sl; $('l-range').hidden = !sl; $('l-decay').hidden = !sl; $('l-fuel').hidden = !nv; $('l-warning').hidden = !nv; $('l-haggle').hidden = !hag; $('l-speed').hidden = !cr; $('l-material').hidden = !cr; $('l-quality').hidden = !(rep || cr);
+    if (mini() === 'practice') document.querySelectorAll('#mg-controls label[id^="l-"]').forEach((l) => { l.hidden = true; });
     const spent = Object.values(setup.points).reduce((a, b) => a + b, 0);
-    const what = pl
+    const what = mini() === 'practice'
+      ? 'Practice dummy lock: <b>3</b> tumblers · <b>no clock</b> · <b>no trace</b> · <b>no XP</b>. It never trips, so try the ring as long as you like.'
+      : pl
       ? `Fall <b>${setup.fall}</b> s · safe speed <b>${setup.safe}</b> · drift power <b>${Math.round(setup.drift * 10) / 10}</b> · wind <b>${Math.round(setup.wind * 10) / 10}</b> · pad <b>${Math.round(setup.pad * 10) / 10}</b> wide · fuel <b>${setup.fuel}</b> s · <b>${setup.brakes}</b> brake${setup.brakes === 1 ? '' : 's'}`
       : it
       ? `Risk on the first push <b>${setup.chances[0]}%</b>, the sixth <b>${setup.chances[5]}%</b> · <b>${setup.saves}</b> save${setup.saves === 1 ? '' : 's'} · ${setup.readsOdds ? 'you read the exact risk' : 'you only read a word for the risk'}`
@@ -82,8 +89,10 @@ function boot() {
       : hack
       ? `Ring <b>${setup.tumblers} tumblers</b> · <b>${setup.time}s</b> · <b>${setup.misses}</b> spare misses`
       : `Board <b>${setup.size} x ${setup.size}</b> · <b>${setup.seconds}s</b> · quality +<b>${setup.qualityBonus}</b>`;
+    const rp = mini() === 'practice' ? null : rollPreview(mini(), attempt, { level: v.level, points: setup.points });
     $('mg-readout').innerHTML = `d20 ${v.roll} + ${v.level} = <b>${attempt.total}</b> vs ${v.dc}${attempt.natural ? ' (natural 20)' : ''}<br>`
-      + `Tier <b>${tier > 0 ? '+' : ''}${tier} ${tierInfo(tier).label}</b><br>${what}<br>Points spent ${spent} of ${v.level}`;
+      + `Tier <b>${tier > 0 ? '+' : ''}${tier} ${tierInfo(tier).label}</b><br>${what}<br>Points spent ${spent} of ${v.level}`
+      + (rp ? `<br><span class="mg-rollline">${rp.line} ${rp.nextLine}</span>` : '');
   };
   const stage = $('mg-stage');
   const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -93,7 +102,9 @@ function boot() {
     stage.replaceChildren();
     if (innerWidth < 760) stage.scrollIntoView({ block: 'start' });
     const { setup, v } = compute();
-    const result = mini() === 'pilot'
+    const result = mini() === 'practice'
+      ? await playSetupHack(stage, { state: createPracticeHack({ seed }), title: 'Practice dummy', reducedMotion })
+      : mini() === 'pilot'
       ? await playPilot(stage, { state: createPilot({ seed, setup }), where: 'the hangar pad', reducedMotion })
       : mini() === 'intimidate'
       ? await playIntimidate(stage, { state: createIntimidate({ seed, setup }), who: 'The loan clerk', what: 'drop the fee', reducedMotion })

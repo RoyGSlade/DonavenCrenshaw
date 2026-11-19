@@ -32,7 +32,7 @@ test('bench board and holodeck gym in the browser', { skip }, async () => {
       await page.goto(`${server.origin}${PAGE}${Q}`);
       await page.waitForSelector('.bn-list');
       const par = await page.evaluate(() => window.__bench.bench.par);
-      assert.match(await page.locator('.bn-day').first().innerText(), new RegExp(`day 20800: a 5 x 5 board, 50 seconds, par ${par} turns`));
+      assert.match(await page.locator('.bn-day', { hasText: 'Bench board for day' }).innerText(), new RegExp(`day 20800: a 5 x 5 board, 50 seconds, par ${par} turns`));
       assert.equal(await page.locator('.bn-list li').count(), 3);
       assert.match(await page.locator('.bn-stand').innerText(), /have not sealed/);
       await page.locator('.bn-list').scrollIntoViewIfNeeded(); await shot(page, `extras2-${name}-1-bench`);
@@ -50,20 +50,30 @@ test('bench board and holodeck gym in the browser', { skip }, async () => {
       assert.equal(await page.locator('.bn-list li').count(), 4);
       await page.locator('.bn-list').scrollIntoViewIfNeeded(); await shot(page, `extras2-${name}-2-sealed`);
 
-      // The gym: 30 credits is three runs.
+      // The gym is also where points are spent: the picker is inside it, and training uses what you spend.
+      assert.equal(await page.locator('.ex-gym .ex-cats').count(), 1, 'the point picker lives in the gym');
+      assert.equal(await page.locator('.ex-gym .ex-skills').count(), 1, 'so does the skill list');
+      assert.equal(await page.locator('.ex-col > h2', { hasText: 'Spend points' }).count(), 0, 'no separate picker any more');
       const card = page.locator('.gm-card[data-game="repair"]');
       assert.match(await card.innerText(), /a quarter of the field XP \(a job that pays 8 pays 2\)\. 6 of 6 XP left this hour/);
-      assert.match(await card.locator('.gm-train').getAttribute('href'), /mini=repair.*roll=10.*dc=15.*level=5.*auto=1/);
-      await card.scrollIntoViewIfNeeded(); await shot(page, `extras2-${name}-3-gym`);
+      assert.match(await card.locator('.gm-train').getAttribute('href'), /mini=repair&roll=10&dc=13&level=3&auto=1&time=1$/);
+      await page.locator('.ex-gym').scrollIntoViewIfNeeded(); await shot(page, `extras2-${name}-3-gym`);
+      // Spend a point on Puzzle size: the Train link carries it.
+      await tap('.ex-gym .ex-cat[data-cat="size"] .ex-step.primary');
+      assert.match(await page.locator('.gm-card[data-game="repair"] .gm-train').getAttribute('href'), /level=3&auto=1&time=1&size=1$/);
+      assert.match(await page.locator('.ex-gym .ex-left').innerText(), /1 point to spend/);
+      await shot(page, `extras2-${name}-3b-spent`);
       for (const [wallet, left] of [[20, 4], [10, 2], [0, 0]]) {
         await tap('.gm-card[data-game="repair"] button:has-text("I won")');
         assert.match(await page.locator('#gm-wallet').innerText(), new RegExp(`You have ${wallet} credits`));
         assert.match(await page.locator('.gm-card[data-game="repair"]').innerText(), new RegExp(`${left} of 6 XP left`));
       }
       assert.equal(await page.locator('.gm-card[data-game="repair"] .gm-train').getAttribute('aria-disabled'), 'true');
+      assert.equal(await page.locator('.ex-gym .ex-cat[data-cat="size"] .ex-pts').innerText(), '1 / 9', 'spending points does not cost credits');
       await page.locator('#gm-wallet').scrollIntoViewIfNeeded(); await shot(page, `extras2-${name}-4-broke`);
       // The Train link opens the real minigame at Steady and starts it.
       await page.goto(`${server.origin}${PAGE}${Q}`); await page.waitForSelector('.gm-card');
+      await tap('.ex-skill[data-skill="piloting"]');
       const href = await page.locator('.gm-card[data-game="pilot"] .gm-train').getAttribute('href');
       await page.goto(new URL(href, `${server.origin}${PAGE}`).href);
       await page.waitForSelector('.pl-panel');

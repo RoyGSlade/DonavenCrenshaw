@@ -234,3 +234,9 @@ button.primary:disabled{background:#3b5a5c;border-color:#3b5a5c;color:#b5c8d5;op
 .gm-row button{background:#132232;color:var(--text);border-color:var(--line)}
 .gm-train.is-off{opacity:.45;pointer-events:none}
 a.gm-train,a.gm-train:hover,a.gm-train:visited{color:#082126}
+.mg-rollline{display:block;margin-top:8px;padding-top:8px;border-top:1px dashed var(--line);color:var(--orange)}
+
+.ex-gym{grid-column:span 2}
+.gm-h{margin:14px 0 6px;font:12px Consolas,monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--cyan)}
+@media(max-width:700px){.ex-gym{grid-column:auto}}
+.gm-pick{margin-top:14px}

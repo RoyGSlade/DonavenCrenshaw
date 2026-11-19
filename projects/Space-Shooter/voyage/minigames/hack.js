@@ -35,6 +35,16 @@ export function createSetupHack({ seed = 1, lock = 1, setup = null } = {}) {
   };
 }
 
+/**
+ * The practice dummy lock (extra 6): a lock on the pad that never trips. No clock, no trace, any number
+ * of misses; it only opens when you set every tumbler. Pays no XP. For trying the ring before the first airlock.
+ */
+export function createPracticeHack({ seed = 1, tumblers = 3 } = {}) {
+  const s = createSetupHack({ seed, lock: 1, setup: { time: Infinity, tumblers: Math.max(2, Math.min(5, Math.trunc(tumblers) || 3)), misses: Infinity, tier: 0, points: {}, label: 'Practice' } });
+  s.practice = true;
+  return s;
+}
+
 /** XP for an opened lock (placeholder): 3 + lock level, +1 for no misses. */
 export const hackXp = (result, lockLevel = 1) => (result?.success ? 3 + lockLevel + (result.misses === 0 ? 1 : 0) : 0);
 

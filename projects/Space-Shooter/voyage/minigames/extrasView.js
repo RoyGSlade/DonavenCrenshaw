@@ -36,7 +36,7 @@ export function renderSkills(root, { progress, selected }, onSelect) {
 }
 
 /** The picker for one skill: +/- per category, live numbers, and a line saying what is left. */
-export function renderPicker(root, { progress, selected }, onPoints) {
+export function renderPicker(root, { progress, selected, inGym = false }, onPoints) {
   const skill = selected, level = progress.levels[skill], points = cleanSkillPoints(skill, progress.points[skill], level);
   const def = CATEGORIES[skill];
   const left = unspent(skill, points, level);
@@ -54,5 +54,5 @@ export function renderPicker(root, { progress, selected }, onPoints) {
       h('p', { class: 'ex-now', text: `Now: ${d.now}` }),
       d.next ? h('p', { class: 'ex-next', text: d.nextChange ? `One more: no change yet. Next change at ${d.nextChange.at} points.` : `One more: ${d.next}` }) : h('p', { class: 'ex-next', text: 'At the most.' })));
   }
-  root.replaceChildren(head, list, h('p', { class: 'rp-help', text: def?.built ? 'You can try these numbers now in the minigame preview.' : 'This skill\'s minigame is planned; the numbers are the plan\'s.' }));
+  root.replaceChildren(head, list, h('p', { class: 'rp-help', text: inGym ? (def?.built ? 'Train with these numbers just below.' : 'This skill\'s minigame is planned; the numbers are the plan\'s.') : def?.built ? 'You can try these numbers now in the minigame preview.' : 'This skill\'s minigame is planned; the numbers are the plan\'s.' }));
 }

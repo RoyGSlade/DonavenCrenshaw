@@ -11,7 +11,7 @@ export function playSetupHack(root, { state, title = 'Lock', sound = () => {}, r
   const s = state.setup || {};
   const status = h('p', { class: 'rp-status', role: 'status', 'aria-live': 'polite', text: `Set ${state.tumblers.length} tumblers. Splice when the sweep is in the lit window.` });
   const btn = h('button', { type: 'button', class: 'hk-btn primary', text: 'Splice' });
-  const facts = h('p', { class: 'rp-par', text: `${s.label || 'Steady'} · ${state.tumblers.length} tumblers · ${state.time}s · ${state.allowed} spare ${state.allowed === 1 ? 'miss' : 'misses'}` });
+  const facts = h('p', { class: 'rp-par', text: state.practice ? `Practice dummy · ${state.tumblers.length} tumblers · no clock, no trace, no XP` : `${s.label || 'Steady'} · ${state.tumblers.length} tumblers · ${state.time}s · ${state.allowed} spare ${state.allowed === 1 ? 'miss' : 'misses'}` });
   const panel = h('section', { class: 'rp-panel hk-panel', role: 'group', 'aria-label': `Hack: ${title}` },
     h('p', { class: 'rp-eyebrow', text: `BYPASS · ${title.toUpperCase()} · LOCK GRADE ${state.difficulty} OF 4` }), canvas, btn, status, facts,
     h('p', { class: 'rp-help', text: 'Space, Enter or tap. Each tumbler sets faster and the sweep turns back. Too many misses trips the trace.' }));
@@ -27,7 +27,7 @@ export function playSetupHack(root, { state, title = 'Lock', sound = () => {}, r
     flash = 0.25; flashOk = r === 'set';
     sound(r === 'set' ? 'power' : 'hurt');
     if (r === 'miss') shake = 0.3;
-    status.textContent = r === 'set' ? (state.done ? 'Lock open.' : `Tumbler ${state.index} set.`) : `Miss. Trace ${state.misses} of ${state.allowed + 1}.`;
+    status.textContent = r === 'set' ? (state.done ? 'Lock open.' : `Tumbler ${state.index} set.`) : (state.practice ? `Miss. Nothing happens here: try again (${state.misses} so far).` : `Miss. Trace ${state.misses} of ${state.allowed + 1}.`);
     if (state.done) end();
   };
   const kd = (e) => { if (['Space', 'Enter', 'KeyE'].includes(e.code)) { e.preventDefault(); if (!e.repeat && !state.done) go(); } };
@@ -59,17 +59,17 @@ export function playSetupHack(root, { state, title = 'Lock', sound = () => {}, r
     ctx.beginPath(); ctx.moveTo(cx + Math.cos(state.cursor) * (R - 20), cy + Math.sin(state.cursor) * (R - 20)); ctx.lineTo(cx + Math.cos(state.cursor) * (R + 14), cy + Math.sin(state.cursor) * (R + 14)); ctx.stroke();
     ctx.fillStyle = '#2a4152'; ctx.fillRect(16, ht - 10, w - 32, 4);
     ctx.fillStyle = state.time - state.t < 4 ? '#ff6b5a' : '#81e6df'; ctx.fillRect(16, ht - 10, (w - 32) * Math.max(0, 1 - state.t / state.time), 4);
-    for (let i = 0; i <= state.allowed; i++) { ctx.fillStyle = i < state.misses ? '#ff6b5a' : '#2a4152'; ctx.fillRect(w - 24 - i * 14, 10, 10, 10); }
+    for (let i = 0; i <= (state.practice ? -1 : state.allowed); i++) { ctx.fillStyle = i < state.misses ? '#ff6b5a' : '#2a4152'; ctx.fillRect(w - 24 - i * 14, 10, 10, 10); }
     ctx.fillStyle = '#8fa6b7'; ctx.font = '10px Consolas, monospace'; ctx.fillText(`SWEEP ${speedOf(state).toFixed(1)}`, 16, 18);
   }
   function end() {
     cancelAnimationFrame(raf); draw(); removeEventListener('keydown', kd);
-    const r = { ...state.result, xp: hackXp(state.result, state.difficulty) };
+    const r = { ...state.result, xp: state.practice ? 0 : hackXp(state.result, state.difficulty), practice: !!state.practice };
     btn.hidden = true;
     const go2 = h('button', { type: 'button', class: 'primary', text: r.success ? 'Continue' : 'Step back' });
     const card = h('div', { class: `rp-result ${r.success ? 'is-ok' : 'is-bad'}`, role: 'status' },
       h('b', { class: 'rp-stars', text: r.success ? 'LOCK OPEN' : r.how === 'timeout' ? 'TIMED OUT' : 'TRACE TRIPPED' }),
-      h('span', { text: r.success ? `${r.misses} miss${r.misses === 1 ? '' : 'es'} · ${r.time}s · +${r.xp} Hacking XP` : 'No XP.' }), go2);
+      h('span', { text: r.success ? (r.practice ? `${r.misses} miss${r.misses === 1 ? '' : 'es'} · ${r.time}s · practice: no XP` : `${r.misses} miss${r.misses === 1 ? '' : 'es'} · ${r.time}s · +${r.xp} Hacking XP`) : 'No XP.' }), go2);
     go2.addEventListener('click', () => { panel.remove(); finish(r); });
     panel.append(card); state.result = r; go2.focus({ preventScroll: true });
     card.scrollIntoView({ block: 'nearest' });

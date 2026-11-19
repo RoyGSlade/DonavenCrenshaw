@@ -34,6 +34,7 @@ test('stealth (shadow slip) in the browser', { skip }, async () => {
       assert.equal(await page.locator('#mg-mini').inputValue(), 'stealth');
       // d20 11 + 7 = 18 vs 10: margin 8, Good. 7 points: quiet 2, range 3, decay 2.
       assert.match(await page.locator('#mg-readout').innerText(), /Tier \+1 Good[\s\S]*2 guards[\s\S]*shift 32 beats[\s\S]*heard step \+10 heat[\s\S]*cones about 3 cells[\s\S]*cools 12/);
+      assert.match(await page.locator('#mg-readout .mg-rollline').innerText(), /^Good roll: 4 more beats before the shift change\. 2 more on the d20 would make it Smooth\.$/);
       await shot(page, `stealth-${name}-1-setup`);
       await page.click('#mg-go');
       await page.waitForSelector('.st-panel');

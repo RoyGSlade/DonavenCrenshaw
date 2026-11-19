@@ -85,3 +85,22 @@ test('floor: a Rough level-4 lock still gets 1.8 s per tumbler, and a perfect ru
     assert.equal(s.result.success, true, `seed ${seed}`);
   }
 });
+
+import { createPracticeHack } from '../projects/Space-Shooter/voyage/minigames/hack.js';
+test('the practice dummy lock never trips: no clock, any number of misses, opens only when every tumbler is set, pays no XP', () => {
+  const s = createPracticeHack({ seed: 4 });
+  assert.equal(s.practice, true); assert.equal(s.tumblers.length, 3);
+  // A wild player: 500 splices at the worst moments and 100 simulated minutes of waiting.
+  for (let i = 0; i < 6000 * 10; i++) stepHack(s, 1 / 60);
+  assert.equal(s.done, false, 'the clock never runs out');
+  let misses = 0;
+  for (let i = 0; i < 500 && !s.done; i++) { stepHack(s, 1 / 7); if (!cursorInWindow(s) && splice(s) === 'miss') misses++; }
+  assert.ok(misses >= 300, `many misses: ${misses}`); assert.equal(s.done, false, 'misses never trip it');
+  assert.equal(s.index, 0);
+  // Set every tumbler: the lock opens.
+  for (let i = 0; i < 30000 && !s.done; i++) { stepHack(s, 1 / 120); if (cursorInWindow(s)) splice(s); }
+  assert.deepEqual([s.done, s.result.success, s.result.how, s.result.set], [true, true, 'open', 3]);
+  assert.ok(s.result.misses >= 300);
+  assert.equal(hackXp(s.result, 1) > 0, true, 'the rules would pay; the view pays 0 for a practice lock');
+  assert.deepEqual([2, 3, 5, 9].map((n) => createPracticeHack({ seed: 1, tumblers: n }).tumblers.length), [2, 3, 5, 5]);
+});
