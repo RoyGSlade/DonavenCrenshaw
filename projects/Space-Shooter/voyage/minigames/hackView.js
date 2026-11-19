@@ -10,10 +10,10 @@ export function playSetupHack(root, { state, title = 'Lock', sound = () => {}, r
   const canvas = h('canvas', { class: 'hk-canvas', 'aria-hidden': 'true' });
   const s = state.setup || {};
   const status = h('p', { class: 'rp-status', role: 'status', 'aria-live': 'polite', text: `Set ${state.tumblers.length} tumblers. Splice when the sweep is in the lit window.` });
-  const btn = h('button', { type: 'button', class: 'hk-btn primary', text: 'Splice' });
+  const btn = h('button', { type: 'button', class: 'hk-btn primary ui-btn', text: 'Splice' });
   const facts = h('p', { class: 'rp-par', text: state.practice ? `Practice dummy · ${state.tumblers.length} tumblers · no clock, no trace, no XP` : `${s.label || 'Steady'} · ${state.tumblers.length} tumblers · ${state.time}s · ${state.allowed} spare ${state.allowed === 1 ? 'miss' : 'misses'}` });
-  const panel = h('section', { class: 'rp-panel hk-panel', role: 'group', 'aria-label': `Hack: ${title}` },
-    h('p', { class: 'rp-eyebrow', text: `BYPASS · ${title.toUpperCase()} · LOCK GRADE ${state.difficulty} OF 4` }), canvas, btn, status, facts,
+  const panel = h('section', { class: 'rp-panel hk-panel mg-skin ui-panel', role: 'group', 'aria-label': `Hack: ${title}` },
+    h('p', { class: 'rp-eyebrow ui-nameplate', text: `BYPASS · ${title.toUpperCase()} · LOCK GRADE ${state.difficulty} OF 4` }), canvas, btn, status, facts,
     h('p', { class: 'rp-help', text: 'Space, Enter or tap. Each tumbler sets faster and the sweep turns back. Too many misses trips the trace.' }));
   panel.__state = state;
   root.append(panel);
@@ -66,8 +66,8 @@ export function playSetupHack(root, { state, title = 'Lock', sound = () => {}, r
     cancelAnimationFrame(raf); draw(); removeEventListener('keydown', kd);
     const r = { ...state.result, xp: state.practice ? 0 : hackXp(state.result, state.difficulty), practice: !!state.practice };
     btn.hidden = true;
-    const go2 = h('button', { type: 'button', class: 'primary', text: r.success ? 'Continue' : 'Step back' });
-    const card = h('div', { class: `rp-result ${r.success ? 'is-ok' : 'is-bad'}`, role: 'status' },
+    const go2 = h('button', { type: 'button', class: 'primary ui-btn', text: r.success ? 'Continue' : 'Step back' });
+    const card = h('div', { class: `rp-result ui-card ${r.success ? 'is-ok' : 'is-bad'}`, role: 'status' },
       h('b', { class: 'rp-stars', text: r.success ? 'LOCK OPEN' : r.how === 'timeout' ? 'TIMED OUT' : 'TRACE TRIPPED' }),
       h('span', { text: r.success ? (r.practice ? `${r.misses} miss${r.misses === 1 ? '' : 'es'} · ${r.time}s · practice: no XP` : `${r.misses} miss${r.misses === 1 ? '' : 'es'} · ${r.time}s · +${r.xp} Hacking XP`) : 'No XP.' }), go2);
     go2.addEventListener('click', () => { panel.remove(); finish(r); });

@@ -1,0 +1,26 @@
+/* The game's own look for the repair, hack and haggle panels (Erik, 2026-11-18). No new art: the panels wear the hangar kit's
+   frames and buttons (ui/kit.css: .ui-panel, .ui-nameplate, .ui-btn, .ui-card, the panel, nameplate, button and card pictures
+   already in ui/kit/) and the datapad's tokens, so a minigame looks like the dialogue box, the tracker and the station sheets
+   it opens beside. Inside a station sheet (.hg-sheet) the sheet is already the frame, so the panel drops its own. */
+.mg-skin{color:var(--ui-text,#eaf4f5)}
+.mg-skin.rp-panel.ui-panel{max-width:620px;padding:4px 6px 6px}
+.mg-skin .rp-eyebrow.ui-nameplate{display:inline-block;margin:0 0 8px;padding:0 12px 0 6px;font:700 11px Consolas,monospace;letter-spacing:.14em;color:var(--ui-amber,#ffad72);text-transform:uppercase}
+.mg-skin .rp-status{color:var(--ui-text,#eaf4f5);font:600 14px/1.45 Inter,"Segoe UI",sans-serif}
+.mg-skin .rp-help,.mg-skin .rp-par,.mg-skin .rp-foot{color:var(--ui-muted,#9db3c2)}
+.mg-skin .rp-hud{color:var(--ui-muted,#9db3c2)}
+.mg-skin .rp-hud b,.mg-skin .rp-moves{color:var(--ui-cyan,#81e6df)}
+.mg-skin .rp-clock{background:#0b1724;border:1px solid #3f5566;border-radius:2px}
+.mg-skin .rp-tile{background:var(--ui-glass,#0b1724);border:1px solid #3f5566;border-radius:3px}
+.mg-skin .rp-tile.is-on{border-color:var(--ui-cyan,#81e6df);background:#0c2530}
+.mg-skin .hg-track{background:var(--ui-glass,#0b1724);border:1px solid #3f5566;border-radius:3px}
+.mg-skin .hk-canvas{border:1px solid #3f5566;border-radius:3px}
+.mg-skin .hk-btn,.mg-skin .hg-take{width:100%}
+.mg-skin .rp-result.ui-card{padding:6px 4px}
+.mg-skin .rp-result.ui-card .rp-stars{font:700 14px Consolas,monospace;letter-spacing:.12em}
+.mg-skin .rp-result.ui-card span{color:var(--ui-text,#eaf4f5)}
+.mg-skin .rp-result.ui-card.is-ok .rp-stars{color:#9fe870}
+.mg-skin .rp-result.ui-card.is-bad .rp-stars{color:var(--ui-amber,#ffad72)}
+.mg-skin .hg-pips span.on{background:var(--ui-amber,#ffad72);border-color:var(--ui-amber,#ffad72)}
+/* In a station sheet the sheet is the frame. */
+.hg-sheet .rp-panel.mg-skin.ui-panel{border:0;border-image:none;padding:0;max-width:none;margin:0}
+.hg-sheet .rp-panel.mg-skin .rp-eyebrow.ui-nameplate{display:none} /* the sheet's own head says it */

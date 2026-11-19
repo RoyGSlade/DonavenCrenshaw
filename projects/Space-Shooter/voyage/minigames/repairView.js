@@ -50,9 +50,9 @@ export function playRepair(root, { seed = 1, setup = {}, title = 'Coolant line',
   });
   cells.forEach((c) => board.append(c.btn));
   const label = (i) => `Row ${Math.floor(i / n) + 1}, column ${(i % n) + 1}: ${SHAPE_WORDS[state.tiles[i].role === 'pump' || state.tiles[i].role === 'valve' ? state.tiles[i].role : shapeOf(state.tiles[i].mask)]}${state.tiles[i].fixed ? '' : '. Turn.'}`;
-  const hintBtn = h('button', { type: 'button', class: 'rp-hint', text: 'Hint' });
-  const panel = h('section', { class: 'rp-panel', role: 'group', 'aria-label': `Repair: ${title}`, 'data-size': n, 'data-tier': setup.tier ?? 0 },
-    h('p', { class: 'rp-eyebrow', text: `REPAIR · ${title.toUpperCase()} · ${n} x ${n}${setup.label ? ` · ${setup.label.toUpperCase()}` : ''}` }),
+  const hintBtn = h('button', { type: 'button', class: 'rp-hint ui-btn', text: 'Hint' });
+  const panel = h('section', { class: 'rp-panel mg-skin ui-panel', role: 'group', 'aria-label': `Repair: ${title}`, 'data-size': n, 'data-tier': setup.tier ?? 0 },
+    h('p', { class: 'rp-eyebrow ui-nameplate', text: `REPAIR · ${title.toUpperCase()} · ${n} x ${n}${setup.label ? ` · ${setup.label.toUpperCase()}` : ''}` }),
     h('div', { class: 'rp-hud' }, moves, timeText), clock, board, status,
     h('div', { class: 'rp-foot' }, hintBtn, h('span', { class: 'rp-par', text: `Par ${state.par} turns` })),
     h('p', { class: 'rp-help', text: 'Tap a piece to turn it. Arrows move, Enter or Space turns.' }));
@@ -115,10 +115,10 @@ export function playRepair(root, { seed = 1, setup = {}, title = 'Coolant line',
     cells.forEach((c) => { c.btn.disabled = true; });
     status.textContent = r.success ? 'Sealed. The coolant holds.' : 'Out of time. The line floods.';
     const stars = '★'.repeat(r.stars) + '☆'.repeat(3 - r.stars);
-    const card = h('div', { class: `rp-result ${r.success ? 'is-ok' : 'is-bad'}`, role: 'status' },
+    const card = h('div', { class: `rp-result ui-card ${r.success ? 'is-ok' : 'is-bad'}`, role: 'status' },
       h('b', { class: 'rp-stars', text: r.success ? stars : 'FLOODED' }),
       h('span', { text: r.success ? `Quality ${r.quality} · ${r.moves} turns (par ${r.par}) · ${r.time}s · +${r.xp} Repair XP` : `${r.moves} turns, no seal. No XP.` }));
-    const go = h('button', { type: 'button', class: 'primary', text: r.success ? 'Continue' : 'Step back' });
+    const go = h('button', { type: 'button', class: 'primary ui-btn', text: r.success ? 'Continue' : 'Step back' });
     go.addEventListener('click', () => { panel.remove(); finish(r); });
     card.append(go);
     panel.append(card);

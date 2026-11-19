@@ -19,11 +19,11 @@ export function playHaggle(root, { state, who = 'Captain Tull', what = 'your sha
   const scale = h('div', { class: 'hg-scale' }, h('span', { text: `${s.open}` }), h('span', { text: `${s.cap} cr` }));
   const pips = h('div', { class: 'hg-pips', 'aria-label': 'Their patience' });
   const status = h('p', { class: 'rp-status', role: 'status', 'aria-live': 'polite', text: `${who} offers ${s.open} for ${what}. Tap Ask when the needle is in the lit band.` });
-  const askBtn = h('button', { type: 'button', class: 'hk-btn primary', text: 'Ask' });
-  const takeBtn = h('button', { type: 'button', class: 'hg-take', text: `Take their offer (${s.offer})` });
+  const askBtn = h('button', { type: 'button', class: 'hk-btn primary ui-btn', text: 'Ask' });
+  const takeBtn = h('button', { type: 'button', class: 'hg-take ui-btn', text: `Take their offer (${s.offer})` });
   const facts = h('p', { class: 'rp-par', text: '' });
-  const panel = h('section', { class: 'rp-panel hg-panel', role: 'group', 'aria-label': `Haggle with ${who}` },
-    h('p', { class: 'rp-eyebrow', text: `HAGGLE · ${who.toUpperCase()} · ${s.rounds} ROUNDS` }), pips, track, scale, askBtn, status, takeBtn, facts,
+  const panel = h('section', { class: 'rp-panel hg-panel mg-skin ui-panel', role: 'group', 'aria-label': `Haggle with ${who}` },
+    h('p', { class: 'rp-eyebrow ui-nameplate', text: `HAGGLE · ${who.toUpperCase()} · ${s.rounds} ROUNDS` }), pips, track, scale, askBtn, status, takeBtn, facts,
     h('p', { class: 'rp-help', text: 'Ask inside the lit band to close near their limit. Asking too high costs patience and a round. Out of patience, they walk.' }));
   panel.__state = s;
   root.append(panel);
@@ -65,8 +65,8 @@ export function playHaggle(root, { state, who = 'Captain Tull', what = 'your sha
     askBtn.hidden = true; takeBtn.hidden = true;
     status.textContent = r.outcome === 'walked' ? `${who} walks. You get ${r.price}.` : r.bonus > 0 ? `Deal at ${r.base}, +${r.bonus} from your haggle points: ${r.price} credits.` : `Deal at ${r.price}.`;
     const ok = r.outcome !== 'walked';
-    const go = h('button', { type: 'button', class: 'primary', text: ok ? 'Continue' : 'Step back' });
-    const card = h('div', { class: `rp-result ${r.outcome === 'walked' ? 'is-bad' : 'is-ok'}`, role: 'status', 'data-outcome': r.outcome },
+    const go = h('button', { type: 'button', class: 'primary ui-btn', text: ok ? 'Continue' : 'Step back' });
+    const card = h('div', { class: `rp-result ui-card ${r.outcome === 'walked' ? 'is-bad' : 'is-ok'}`, role: 'status', 'data-outcome': r.outcome },
       h('b', { class: 'rp-stars', text: WORDS[r.outcome] }),
       h('span', { text: `${r.price} credits · ${r.asks} ask${r.asks === 1 ? '' : 's'} · ${r.how === 'sweet' ? 'closed in the band' : r.how === 'low-ask' ? 'you could have asked for more' : r.how === 'final' ? 'their final offer' : r.how === 'took' ? 'you took their offer' : 'too greedy'}${r.xp ? ` · +${r.xp} Social XP` : ' · No XP'}` }), go);
     go.addEventListener('click', () => { panel.remove(); finish(r); });
