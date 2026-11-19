@@ -34,6 +34,8 @@
   .wb-fstage>.rp-panel>:is(.rp-stage,.mh-field,.hk-canvas,.st-grid,.pl-view,.hg-track,.cf-heatbox,.cf-shape,.it-ladder,.pc-hand){margin-block:auto}
   .wb-fstage>.rp-panel>:is(.rp-foot,.mh-actions,.it-row,.pl-controls,.hk-btn,.nv-back){margin-top:auto}
   .wb-fstage>.rp-panel>:is(.rp-foot,.hk-btn){margin-bottom:6px}
+  /* the needle's price scale stays under its track */
+  .wb-fstage>.hg-panel>.hg-track{margin-bottom:0}.wb-fstage>.hg-panel>.hg-scale{margin-bottom:auto}
   /* Persuade: all eight cards on one screen, no scrolling inside the frame. Short quote, small type, two columns by four rows. */
   .pc-panel .pc-tells{margin:0 0 4px}.pc-panel .pc-tells li{padding:5px 8px;font-size:13px}
   .pc-panel .pc-lead{margin:2px 0}
