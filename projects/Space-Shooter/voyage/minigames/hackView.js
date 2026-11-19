@@ -71,6 +71,9 @@ export function playRing(root, { state, title = 'Lock', sound = () => {}, reduce
       h('b', { class: 'rp-stars', text: r.success ? 'LOCK OPEN' : r.how === 'timeout' ? 'TIMED OUT' : 'TRACE TRIPPED' }),
       h('span', { text: r.success ? (r.practice ? `${r.misses} miss${r.misses === 1 ? '' : 'es'} · ${r.time}s · practice: no XP` : `${r.misses} miss${r.misses === 1 ? '' : 'es'} · ${r.time}s · +${r.xp} Hacking XP`) : 'No XP.' }), go2);
     go2.addEventListener('click', () => { panel.remove(); finish(r); });
+    // The Splice button fires on pointerdown and the card then sits where it was, so the click that follows a phone tap would land on Continue and
+    // dismiss the result before it is read (found by the practice browser test). Keep Continue idle for a moment.
+    go2.disabled = true; setTimeout(() => { go2.disabled = false; }, 450);
     panel.append(card); state.result = r; go2.focus({ preventScroll: true });
     card.scrollIntoView({ block: 'nearest' });
   }

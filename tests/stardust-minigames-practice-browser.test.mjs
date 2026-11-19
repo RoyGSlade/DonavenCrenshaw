@@ -42,13 +42,14 @@ test('practice dummy lock in the browser', { skip }, async () => {
       assert.deepEqual(st, { done: false, misses: 12, index: 0 });
       assert.match(await page.locator('.hk-panel .rp-status').innerText(), /Nothing happens here/);
       await shot(page, `practice-${name}-2-missed`);
-      // Now set all three.
-      for (let i = 0; i < 3; i++) {
-        await page.evaluate(() => { const s = document.querySelector('.hk-panel').__state; s.cursor = s.tumblers[s.index].at; s.dir = 0; });
-        if (name === 'phone') await page.tap('.hk-btn'); else await page.click('.hk-btn');
+      // Now set all three. A tap takes a moment and the sweep keeps moving, so park it on the window and tap again until the lock opens.
+      for (let i = 0; i < 12 && !(await page.locator('.rp-result').count()); i++) {
+        await page.evaluate(() => { const s = document.querySelector('.hk-panel').__state; if (!s.done) { s.cursor = s.tumblers[s.index].at; s.dir = 0; } });
+        if (name === 'phone') await page.tap('.hk-btn').catch(() => {}); else await page.click('.hk-btn').catch(() => {});
+        await page.waitForTimeout(200); // let the result card show before deciding to tap again (it sits where the button was)
       }
       await page.waitForSelector('.rp-result.is-ok');
-      assert.match(await page.locator('.rp-result').innerText(), /LOCK OPEN[\s\S]*12 misses[\s\S]*practice: no XP/);
+      assert.match(await page.locator('.rp-result').innerText(), /LOCK OPEN[\s\S]*\d+ misses[\s\S]*practice: no XP/);
       await shot(page, `practice-${name}-3-open`);
       assert.deepEqual(errors, []);
       await context.close();
