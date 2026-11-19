@@ -1,7 +1,9 @@
 // The forge on screen, v2 (heat and shape). Phase 1: hold the big button (or Space) to heat the stock;
 // let go inside the lit band. Phase 2: tap the shaping tools in order, rough to fine, before the stock cools.
-// DOM only, no art. Resolves with the rules' result.
+// The stock itself is drawn: a bar of metal on an anvil that glows dull red, orange, yellow and white as it heats and cools again while you
+// shape it. The lit band is a glow window on the gauge. Step pips replace the numbers. DOM only, no art. Resolves with the rules' result.
 import { heatStart, release, shape, stepCraft, bandOf, TOOLS } from './craft.js';
+import { heatColor, heatGlow, heatWord, stepPips, qualityWord } from './craftWords.js';
 
 const h = (tag, attrs = {}, ...kids) => { const el = document.createElement(tag); for (const [k, v] of Object.entries(attrs)) { if (k === 'text') el.textContent = v; else el.setAttribute(k, v); } el.append(...kids.filter(Boolean)); return el; };
 const NAME = Object.fromEntries(TOOLS.map((t) => [t.id, t.name]));
@@ -14,6 +16,7 @@ export function playCraft(root, { state, what = 'fitting', unit = 'scrap', sound
   const band = h('s', { class: 'cf-band', 'aria-hidden': 'true', style: `left:${100 * lo}%;width:${100 * (hi - lo)}%` });
   const heatTrack = h('div', { class: 'hg-track cf-heat', role: 'img', 'aria-label': 'Temperature' }, band, glow);
   const heatLabels = h('div', { class: 'hg-scale' }, h('span', { text: 'cold' }), h('span', { text: 'hot' }));
+  const heatRead = h('p', { class: 'cf-read', 'aria-live': 'off', text: 'cold' });
   const heatBtn = h('button', { type: 'button', class: 'hk-btn primary cf-hold ui-btn', text: 'Hold to heat' });
   const workBar = h('div', { class: 'rp-clock cf-work', role: 'timer', 'aria-label': 'Time before the stock cools' }, h('i'));
   const order = h('p', { class: 'cf-order', text: `Rough to fine: ${TOOLS.map((t) => t.name).join(' → ')}` });
@@ -24,12 +27,19 @@ export function playCraft(root, { state, what = 'fitting', unit = 'scrap', sound
     b.addEventListener('click', () => doShape(id));
     tileEls.set(id, b); tiles.append(b);
   }
+  // The stock: a billet on an anvil, in a forge-lit box that fills the free height. Colour and glow come from the heat (see craftWords.js).
+  const billet = h('div', { class: 'cf-billet' }, h('i', { class: 'cf-sheen' }));
+  const sparks = Array.from({ length: 7 }, (_, i) => h('i', { class: 'cf-spark', style: `left:${22 + i * 9}%;animation-delay:${(i * 137) % 700}ms` }));
+  const forge = h('div', { class: 'cf-forge', role: 'img', 'aria-label': 'The stock on the anvil' }, h('div', { class: 'cf-haze' }), h('div', { class: 'cf-coals' }), billet, h('div', { class: 'cf-anvil' }), ...sparks);
+  const gauge = h('div', { class: 'cf-gaugebox' }, heatTrack, heatLabels, heatRead);
+  const stage = h('div', { class: 'cf-stage' }, forge, gauge);
   const status = h('p', { class: 'rp-status', role: 'status', 'aria-live': 'polite', text: `Hold to heat the stock. Let go inside the lit band.` });
-  const facts = h('p', { class: 'rp-par', text: `${s.strikes} shaping steps · needs ${Math.ceil(s.strikes * 0.5)} clean · ${s.recipe.materials} ${unit} for the recipe` });
+  const pipEls = Array.from({ length: s.strikes }, () => h('i', { class: 'cf-pip' }));
+  const foot = h('div', { class: 'rp-par cf-foot' }, h('span', { class: 'cf-pips', role: 'img', 'aria-label': 'Shaping steps' }, ...pipEls), h('span', { class: 'cf-footline', text: 'At least half the steps must come out clean.' }));
   const shapeBox = h('div', { class: 'cf-shape', hidden: '' }, workBar, order, tiles);
-  const heatBox = h('div', { class: 'cf-heatbox' }, heatTrack, heatLabels, heatBtn);
+  const heatBox = h('div', { class: 'cf-heatbox' }, heatBtn);
   const panel = h('section', { class: 'rp-panel cf-panel mg-skin ui-panel', role: 'group', 'aria-label': `Craft: ${what}`, 'data-phase': 'heat' },
-    h('p', { class: 'rp-eyebrow ui-nameplate', text: `CRAFT · ${what.toUpperCase()} · HEAT AND SHAPE` }), heatBox, shapeBox, status, facts,
+    h('p', { class: 'rp-eyebrow ui-nameplate', text: `CRAFT · ${what.toUpperCase()} · HEAT AND SHAPE` }), stage, foot, heatBox, shapeBox, status,
     h('p', { class: 'rp-help', text: 'Hold the button or Space to heat. Then tap the tools in order: a wrong tap spoils material.' }));
   panel.__state = s;
   root.append(panel);
@@ -39,10 +49,18 @@ export function playCraft(root, { state, what = 'fitting', unit = 'scrap', sound
 
   function paint() {
     glow.style.width = `${100 * s.temp}%`;
-    glow.style.background = `hsl(${Math.round(20 + 30 * s.temp)} 100% ${Math.round(25 + 40 * s.temp)}%)`;
+    glow.style.background = heatColor(s.temp);
     heatTrack.classList.toggle('is-heating', s.heating);
+    const inBand = s.phase === 'heat' && s.temp >= lo && s.temp <= hi;
+    band.classList.toggle('is-in', inBand);
+    // The stock glows with the temperature; while shaping it cools as the work clock runs down.
+    const t = s.phase === 'heat' ? s.temp : s.workMax ? s.temp * (0.25 + 0.75 * (s.work / s.workMax)) : s.temp;
+    stage.style.setProperty('--cf-col', heatColor(t)); stage.style.setProperty('--cf-glow', heatGlow(t)); stage.style.setProperty('--cf-heat', t.toFixed(3));
+    stage.classList.toggle('is-heating', s.heating); stage.classList.toggle('is-inband', inBand); stage.dataset.phase = s.phase;
+    heatRead.textContent = heatWord(s.temp, [lo, hi]); heatRead.dataset.state = s.temp > hi ? 'hot' : inBand ? 'ok' : 'cold';
     if (s.phase === 'shape') workBar.firstChild.style.width = `${(100 * s.work) / s.workMax}%`, workBar.classList.toggle('is-low', s.work < s.workMax * 0.25);
     s.order.forEach((id, i) => { const el = tileEls.get(id); el.classList.toggle('is-done', i < s.index); el.disabled = i < s.index || s.done; });
+    stepPips(s).forEach((st, i) => { if (pipEls[i].dataset.s !== st) pipEls[i].dataset.s = st; });
   }
   function startHeat() { if (s.phase !== 'heat' || s.done) return; heatStart(s); heatBtn.classList.add('is-held'); sound('power'); }
   function stopHeat() {
@@ -52,7 +70,7 @@ export function playCraft(root, { state, what = 'fitting', unit = 'scrap', sound
   }
   function toShape(verdict) {
     if (!verdict) return;
-    panel.dataset.phase = 'shape'; heatBox.hidden = true; shapeBox.hidden = false;
+    panel.dataset.phase = 'shape'; heatBox.hidden = true; gauge.hidden = true; shapeBox.hidden = false; foot.querySelector('.cf-footline').textContent = 'Tap the tools in order. A wrong tap spoils the step.';
     status.textContent = `${HEAT_WORDS[verdict]} Tap the tools in order.`;
     sound(verdict === 'ok' ? 'power' : 'hurt'); paint();
   }
@@ -60,7 +78,7 @@ export function playCraft(root, { state, what = 'fitting', unit = 'scrap', sound
     if (s.done || s.phase !== 'shape') return;
     const r = shape(s, id);
     if (r === 'wrong') { status.textContent = `${NAME[id]} is not next: material spoiled.`; sound('hurt'); const el = tileEls.get(id); el.classList.add('is-bad'); setTimeout(() => el.classList.remove('is-bad'), 300); }
-    else if (r) { status.textContent = `${NAME[id]}: ${r === 'good' ? 'clean' : 'fixed'}. ${s.index} of ${s.strikes}.`; sound('power'); }
+    else if (r) { status.textContent = `${NAME[id]}: ${r === 'good' ? 'clean' : 'fixed'}.`; sound('power'); }
     paint();
     if (s.done) end();
   }
@@ -84,12 +102,13 @@ export function playCraft(root, { state, what = 'fitting', unit = 'scrap', sound
     cancelAnimationFrame(raf); paint(); removeEventListener('keydown', kd); removeEventListener('keyup', ku);
     const r = s.result;
     const stars = '★'.repeat(r.stars) + '☆'.repeat(3 - r.stars);
+    foot.querySelector('.cf-footline').textContent = '';
     status.textContent = r.success ? `The ${what} is made.` : r.how === 'cooled' ? 'The stock went cold before you finished.' : `The ${what} is ruined.`;
     const go = h('button', { type: 'button', class: 'primary ui-btn', text: r.success ? 'Continue' : 'Step back' });
-    const bankLine = `${unit}: ${r.materials} used (${Math.round(r.materialsExact * 100) / 100} exact), ${Math.round(r.bank * 100) / 100} banked for the next craft`;
+    const bankLine = `${unit}: ${r.materials} used (${Math.round(r.materialsExact * 100) / 100} exact), ${Math.round(r.bank * 100) / 100} banked for the next craft${r.success ? ` · builds in ${r.buildSeconds} s` : ''}`;
     const card = h('div', { class: `rp-result ui-card ${r.success ? 'is-ok' : 'is-bad'}`, role: 'status', 'data-outcome': r.success ? 'made' : 'ruined' },
       h('b', { class: 'rp-stars', text: r.success ? stars : r.how === 'cooled' ? 'WENT COLD' : 'RUINED' }),
-      h('span', { text: r.success ? `Quality ${r.quality} · ${r.good} of ${r.strikes} clean · ${r.buildSeconds}s build · +${r.xp} Crafting XP` : `${r.good} of ${r.strikes} clean. No part, no XP.` }),
+      h('span', { text: r.success ? `${qualityWord(r.quality)} work · ${r.good >= r.strikes ? 'every step clean' : 'most steps clean'} · +${r.xp} Crafting XP` : 'Too few steps came out clean. No part, no XP.' }),
       h('span', { class: 'cf-mat', text: bankLine }), go);
     go.addEventListener('click', () => { panel.remove(); finish(r); });
     panel.append(card); go.focus({ preventScroll: true }); card.scrollIntoView({ block: 'nearest' });
