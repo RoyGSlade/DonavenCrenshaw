@@ -47,23 +47,27 @@ export function cleanPoints(points, categories, level = POINT_MAX) {
   return out;
 }
 
-// --- Repair: pipe routing (PLAN.md section 2) -------------------------------------
-// Categories: time, size, quality.
-//   time     +3 s per point                       (0..9 -> +0..+27 s)
+// --- Repair v2: closed pipe network, no clock (Donaven 2026-11-18) -----------------
+// The coolant flows from the pump and pours out of every open end it reaches; the spill fills a pool
+// along the bottom of the board; a full pool floods the line. Categories: time, size, quality.
+//   time     +6 pool depth per point (0..9 -> +0..+54): a deeper pool floods later (a point = 6 seconds of one open end)
 //   size     one fewer row and column per 3 points (0-2: 0, 3-5: -1, 6-8: -2, 9: -3)
 //   quality  +4 quality points per point           (0..9 -> +0..+36)
-// Base 5 x 5 board, 50 s. Tier: time x, size +/-1 board step, nothing else.
+// Base 5 x 5 board, pool depth 120 (one open end fills it in 120 s at flow 1; three open ends in 40 s).
+// Tier: pool depth x (0.70 .. 1.30), flow per open end +0.1 per step rougher (1.2 .. 0.8), size +/-1 board step.
 // The board is never smaller than 3 x 3 or larger than 6 x 6.
-export const REPAIR_BASE = Object.freeze({ size: 5, seconds: 50, minSize: 3, maxSize: 6, secondsPerPoint: 3, pointsPerStep: 3, qualityPerPoint: 4 });
+export const REPAIR_BASE = Object.freeze({ size: 5, capacity: 120, minSize: 3, maxSize: 6, capacityPerPoint: 6, pointsPerStep: 3, qualityPerPoint: 4, flowPerTier: 0.1 });
 export const REPAIR_CATEGORIES = Object.freeze(['time', 'size', 'quality']);
 
 export function setupRepair({ tier = 0, points = {}, level = POINT_MAX } = {}) {
   const p = cleanPoints(points, REPAIR_CATEGORIES, level);
   const t = tierInfo(tier);
   const b = REPAIR_BASE;
+  const k = Math.max(-2, Math.min(2, Math.trunc(tier) || 0));
   const size = Math.max(b.minSize, Math.min(b.maxSize, b.size - Math.floor(p.size / b.pointsPerStep) + t.size));
-  const seconds = Math.round(+((b.seconds + b.secondsPerPoint * p.time) * t.time).toFixed(6));
-  return { size, seconds, qualityBonus: b.qualityPerPoint * p.quality, tier: Math.max(-2, Math.min(2, Math.trunc(tier) || 0)), points: p, label: t.label };
+  const capacity = Math.round(+((b.capacity + b.capacityPerPoint * p.time) * t.time).toFixed(6));
+  const flow = Math.round((1 - b.flowPerTier * k) * 100) / 100;
+  return { size, capacity, flow, qualityBonus: b.qualityPerPoint * p.quality, tier: k, points: p, label: t.label };
 }
 
 // --- Hacking: the existing bypass ring (onfoot/rules/hack.js) ---------------------

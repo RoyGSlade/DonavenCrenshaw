@@ -32,7 +32,7 @@ export const CATEGORIES = Object.freeze({
     { id: 'size', name: 'Puzzle size', words: (n) => `${Math.floor(n / 2)} fewer tumbler${Math.floor(n / 2) === 1 ? '' : 's'} (never under 2)` },
     { id: 'retries', name: 'Retries', words: (n) => `${plus(Math.floor(n / 2), '')} spare miss${Math.floor(n / 2) === 1 ? '' : 'es'}` } ] },
   repair: { built: true, cats: [
-    { id: 'time', name: 'Time', words: (n) => `${plus(REPAIR_BASE.secondsPerPoint * n, ' s')} on every repair (${setupRepair({ points: { time: n } }).seconds} s)` },
+    { id: 'time', name: 'Time', words: (n) => `a deeper pool: ${plus(REPAIR_BASE.capacityPerPoint * n, ' s')} before a leak floods the line (${setupRepair({ points: { time: n } }).capacity} s)` },
     { id: 'size', name: 'Puzzle size', words: (n) => { const s = setupRepair({ points: { size: n } }).size; return `${s} x ${s} board`; } },
     { id: 'quality', name: 'Repair quality', words: (n) => `${plus(REPAIR_BASE.qualityPerPoint * n, '')} quality on every patch` } ] },
   crafting: { built: false, cats: [

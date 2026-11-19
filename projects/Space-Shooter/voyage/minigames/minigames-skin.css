@@ -10,6 +10,7 @@
 .mg-skin .rp-hud{color:var(--ui-muted,#9db3c2)}
 .mg-skin .rp-hud b,.mg-skin .rp-moves{color:var(--ui-cyan,#81e6df)}
 .mg-skin .rp-clock{background:#0b1724;border:1px solid #3f5566;border-radius:2px}
+.mg-skin .rp-pool{border-color:#3f5566;border-radius:2px;background:#07111c}
 .mg-skin .rp-tile{background:var(--ui-glass,#0b1724);border:1px solid #3f5566;border-radius:3px}
 .mg-skin .rp-tile.is-on{border-color:var(--ui-cyan,#81e6df);background:#0c2530}
 .mg-skin .hg-track{background:var(--ui-glass,#0b1724);border:1px solid #3f5566;border-radius:3px}
