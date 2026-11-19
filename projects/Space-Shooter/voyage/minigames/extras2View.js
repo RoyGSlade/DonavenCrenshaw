@@ -33,10 +33,10 @@ const URL_ID = { time: 'time', size: 'size', quality: 'quality', retries: 'retri
  * and below it that skill's games, each trained with the points you have just spent. Paid replays and the
  * hourly cap are unchanged. ctx: { progress, selected, wallet, log, now, onSelect, onPoints, onResult }.
  */
-export function renderGym(root, { progress, selected, wallet, log, now, onSelect, onPoints, onResult }) {
+export function renderGym(root, { progress, selected, wallet, log, now, onSelect, onPoints, onResult, canTakeBack = true }) {
   const skillBox = h('div', { class: 'gm-skills' }), pickBox = h('div', { class: 'gm-pick' });
   renderSkills(skillBox, { progress, selected }, onSelect);
-  renderPicker(pickBox, { progress, selected, inGym: true }, onPoints);
+  renderPicker(pickBox, { progress, selected, inGym: true, canTakeBack }, onPoints);
   const { level, points } = gymLoadout(progress, selected);
   const games = gymGamesFor(selected);
   const cards = games.map((g) => {

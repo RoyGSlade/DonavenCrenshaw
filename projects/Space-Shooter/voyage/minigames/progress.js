@@ -7,7 +7,10 @@
 import { ROLL_SKILLS, LEVEL_MIN, LEVEL_MAX } from '../data.js';
 
 export const XP_STEP = 20;
-export const xpToNext = (level) => (level >= LEVEL_MAX ? Infinity : XP_STEP * level);
+// A curve is the total XP needed to reach each level, from level 1 (curve[0] = 0). A progress may carry
+// its own `curve` (voyage/skillSave.js gives the hub's table); without one the placeholder below is used.
+export const PLACEHOLDER_CURVE = Object.freeze(Array.from({ length: LEVEL_MAX }, (_, i) => XP_STEP * (i * (i + 1)) / 2));
+export const xpToNext = (level, curve) => { const c = Array.isArray(curve) ? curve : PLACEHOLDER_CURVE; return level >= LEVEL_MAX ? Infinity : c[level] - c[level - 1]; };
 const NAME = Object.fromEntries(ROLL_SKILLS.map((s) => [s.id, s.name]));
 const clampLevel = (n) => Math.max(LEVEL_MIN, Math.min(LEVEL_MAX, Math.trunc(n) || LEVEL_MIN));
 
@@ -19,9 +22,9 @@ export const newProgress = () => ({
 });
 
 /** Total XP ever earned at (level, xpInto): the sum of the levels below plus the part-way XP. */
-export function totalXp(level, into = 0) {
+export function totalXp(level, into = 0, curve = PLACEHOLDER_CURVE) {
   let sum = 0;
-  for (let l = LEVEL_MIN; l < clampLevel(level); l++) sum += xpToNext(l);
+  for (let l = LEVEL_MIN; l < clampLevel(level); l++) sum += xpToNext(l, curve);
   return sum + Math.max(0, into);
 }
 
@@ -29,13 +32,14 @@ export function totalXp(level, into = 0) {
 export function addXp(progress, skill, amount) {
   if (!(skill in progress.levels) || !(amount > 0)) return { progress, gained: 0 };
   let level = progress.levels[skill], into = progress.xp[skill] + Math.trunc(amount), gained = 0;
-  while (level < LEVEL_MAX && into >= xpToNext(level)) { into -= xpToNext(level); level++; gained++; }
+  const curve = progress.curve || PLACEHOLDER_CURVE;
+  while (level < LEVEL_MAX && into >= xpToNext(level, curve)) { into -= xpToNext(level, curve); level++; gained++; }
   if (level >= LEVEL_MAX) into = 0;
   return { progress: { ...progress, levels: { ...progress.levels, [skill]: level }, xp: { ...progress.xp, [skill]: into } }, gained };
 }
 
 /** A scan: the snapshot a reprint goes back to. Deep enough that later play cannot change it. */
-export const scanSnapshot = (p) => ({ levels: { ...p.levels }, xp: { ...p.xp }, points: JSON.parse(JSON.stringify(p.points || {})) });
+export const scanSnapshot = (p) => ({ levels: { ...p.levels }, xp: { ...p.xp }, points: JSON.parse(JSON.stringify(p.points || {})), ...(p.curve ? { curve: p.curve } : {}) });
 
 /** Death and reprint: skill progress goes back to the snapshot (everything earned since the scan is gone). */
 export const reprint = (_p, snap) => scanSnapshot(snap);
@@ -47,9 +51,10 @@ export const reprint = (_p, snap) => scanSnapshot(snap);
  */
 export function unscanned(now, snap) {
   const rows = [];
+  const curve = now.curve || snap.curve || PLACEHOLDER_CURVE;
   for (const s of ROLL_SKILLS) {
     const id = s.id;
-    const xpGained = totalXp(now.levels[id], now.xp[id]) - totalXp(snap.levels[id], snap.xp[id]);
+    const xpGained = totalXp(now.levels[id], now.xp[id], curve) - totalXp(snap.levels[id], snap.xp[id], curve);
     if (xpGained <= 0) continue;
     const levelsGained = now.levels[id] - snap.levels[id];
     rows.push({ skill: id, name: NAME[id], fromLevel: snap.levels[id], toLevel: now.levels[id], levelsGained, xpGained, pointsAtRisk: levelsGained });
