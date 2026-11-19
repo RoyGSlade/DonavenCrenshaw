@@ -72,8 +72,17 @@ test('hacking v2 in the browser', { skip }, async () => {
       assert.notEqual(await st(page, `s.angles[${second}]`), b0);
 
       // A missed catch costs a short cooldown; a good catch opens the portal.
-      await page.waitForFunction(async () => !(await import('/projects/Space-Shooter/voyage/minigames/mirrors.js')).inWindow(document.querySelector('.mh-panel').__state), null, { polling: 'raf' });
-      await page.evaluate(() => document.querySelector('.mh-catch').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true })));
+      // The marker sweeps about once a second and the window is a fifth of the sweep, so "outside the window" must still be true when the tap
+      // lands: wait for a frame where the marker is outside AND will stay outside for the next 250 ms, and tap in that same frame (one task, no
+      // round trip between the check and the tap). Earlier this checked, returned to node and tapped later: the marker had often entered the window.
+      await page.evaluate(() => new Promise((res) => { import('/projects/Space-Shooter/voyage/minigames/mirrors.js').then((mod) => {
+        const tick = () => {
+          const s = document.querySelector('.mh-panel').__state;
+          const safe = [0, 0.05, 0.1, 0.15, 0.2, 0.25].every((t) => !mod.inWindow({ ...s, portal: { ...s.portal, phase: s.portal.phase + s.portal.speed * t } }));
+          if (safe && s.portal.cooldown === 0 && !s.portal.open) { document.querySelector('.mh-catch').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true })); res(); } else requestAnimationFrame(tick);
+        };
+        tick();
+      }); }));
       assert.equal(await st(page, 's.catchMisses'), 1); assert.match(await page.locator('.mh-portal-state').innerText(), /flickered/i);
       await shot(page, `hack-${name}-3-aiming`);
 
