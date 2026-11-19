@@ -72,14 +72,17 @@ export function setupRepair({ tier = 0, points = {}, level = POINT_MAX } = {}) {
 //   size     one fewer tumbler per 2 points (0-1: 0, 2-3: -1, 4-5: -2, 6-7: -3, 8-9: -4)
 //   retries  one more allowed miss per 2 points (0..9 -> +0..+4)
 // Base: the lock level's own numbers. Tier: time x, size +/-1 tumbler, spare miss +1/-1.
-// Never fewer than 2 tumblers; never fewer than 0 allowed misses.
+// Never fewer than 2 tumblers; never fewer than 0 allowed misses; never under 1.8 s per tumbler.
 export const HACK_CATEGORIES = Object.freeze(['time', 'size', 'retries']);
+export const HACK_SECONDS_PER_TUMBLER = 1.8;
 export function setupHack({ tier = 0, points = {}, level = POINT_MAX, lock = { time: 16, tumblers: 3, misses: 2 } } = {}) {
   const p = cleanPoints(points, HACK_CATEGORIES, level);
   const t = tierInfo(tier);
+  const tumblers = Math.max(2, lock.tumblers - Math.floor(p.size / 2) + t.size);
+  // Floor: a perfect run of a Rough level-4 lock used 98% of its clock, so no hack gets under 1.8 s per tumbler.
+  const time = Math.max(tumblers * HACK_SECONDS_PER_TUMBLER, Math.round(+((lock.time + 1.5 * p.time) * t.time).toFixed(6) * 10) / 10);
   return {
-    time: Math.round(+((lock.time + 1.5 * p.time) * t.time).toFixed(6) * 10) / 10,
-    tumblers: Math.max(2, lock.tumblers - Math.floor(p.size / 2) + t.size),
+    time: Math.round(time * 10) / 10, tumblers,
     misses: Math.max(0, lock.misses + Math.floor(p.retries / 2) + t.extra),
     tier: Math.max(-2, Math.min(2, Math.trunc(tier) || 0)), points: p, label: t.label,
   };

@@ -27,13 +27,15 @@
       <form id="mg-controls" class="mg-controls" aria-label="Setup">
         <h2>Set it up</h2>
         <p>The game rolls a d20 and spends skill points. Set them here and see what the minigame becomes.</p>
-        <label>Minigame <select id="mg-mini"><option value="repair">Repair: pipes</option></select></label>
+        <label>Minigame <select id="mg-mini"><option value="repair">Repair: pipes</option><option value="hack">Hacking: bypass ring</option></select></label>
         <label>d20 roll <output id="o-roll"></output><input id="roll" type="range" min="1" max="20" value="12"></label>
         <label>Skill level <output id="o-level"></output><input id="level" type="range" min="1" max="9" value="3"></label>
         <label>Difficulty (dc) <output id="o-dc"></output><input id="dc" type="range" min="6" max="20" value="12"></label>
+        <label id="l-lock">Lock level <output id="o-lock"></output><input id="lock" type="range" min="1" max="4" value="1"></label>
         <label>Time points <output id="o-time"></output><input id="time" type="range" min="0" max="9" value="0"></label>
         <label>Size points <output id="o-size"></output><input id="size" type="range" min="0" max="9" value="0"></label>
-        <label>Quality points <output id="o-quality"></output><input id="quality" type="range" min="0" max="9" value="0"></label>
+        <label id="l-quality">Quality points <output id="o-quality"></output><input id="quality" type="range" min="0" max="9" value="0"></label>
+        <label id="l-retries">Retries points <output id="o-retries"></output><input id="retries" type="range" min="0" max="9" value="0"></label>
         <div id="mg-readout" class="mg-readout" aria-live="polite"></div>
         <button id="mg-go" type="submit" class="primary">Start</button>
       </form>
