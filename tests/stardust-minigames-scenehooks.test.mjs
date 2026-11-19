@@ -25,7 +25,7 @@ const janitor = () => ({ ...emptySave(), money: 50, rep: { tull: 5 }, character:
 
 // --- bots: each plays the real minigame to a chosen branch --------------------------------------------------------
 function repairBot(setup, seed, want) {
-  const s = createRepair({ seed, size: setup.size, seconds: setup.seconds, qualityBonus: setup.qualityBonus });
+  const s = createRepair({ seed, size: setup.size, capacity: setup.capacity, flow: setup.flow, qualityBonus: setup.qualityBonus });
   if (want === 'win') for (let i = 0; i < 200 && !s.done; i++) { const h = nextHint(s); if (h == null) break; rotateTile(s, h); }
   else for (let i = 0; i < 6000 && !s.done; i++) stepRepair(s, 0.1);
   return s.result;
