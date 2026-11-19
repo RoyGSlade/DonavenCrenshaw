@@ -47,7 +47,7 @@ import { QUESTS } from './quests/data/quests/index.js';
 import { registerShops } from './shops/ui.js';
 import { registerRaceLaunches } from './races/hangarLaunches.js';
 import { createOnFoot, TARGETS_IN_ORDER } from './onfoot/onfoot.js';
-import { setCaptainLook } from './onfoot/assets.js';
+import { setCaptainLook, setJanitorPlayer } from './onfoot/assets.js';
 import { PLACES } from './explore/rules.js';
 import { MAP_DEFS } from './maps/index.js';
 // Round 3 basics: the bag and datapad, the quest tracker, the controls card and the pause sheet.
@@ -139,6 +139,7 @@ function boot(session = { mode: 'local' }) {
   // Launch slice: a fresh save opened with ?newgame=1 starts as the janitor on the Tin Duchess (?start=hangar keeps the hangar start).
   const slicing = wantsSlice({ save: store.get(), params, throwaway, newGame: flag.enabled });
   if (slicing) startSlice(store);
+  setJanitorPlayer(slicing); // the new game's player is the janitor; today's game and ?start=hangar keep the pilot
   let slice = null;
 
   const chip = $('vy-sync');

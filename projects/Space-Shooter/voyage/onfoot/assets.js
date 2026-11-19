@@ -49,8 +49,21 @@ export const captainLookId = lookId => (CAPTAIN_LOOKS[lookId] ? lookId : LOOK_AL
 let captainLook = 'cap-a';
 /** Choose which captain look castImage('captain') draws (the page calls this with save.character.look.portrait). */
 export const setCaptainLook = lookId => { captainLook = captainLookId(lookId); };
-/** The captain's top-down sprite image for a look id (default: the current look, else cap-a), or null while loading. */
-export const captainSprite = (lookId = captainLook) => loadImage(at(`cast/${CAPTAIN_LOOKS[captainLookId(lookId)]}`));
+// The new game's player is the janitor (launch art batch 3): the same four looks as colours (cap-a..cap-d -> janitor-a..d,
+// 128 px, faces up, body 78 px like Nessa) drawn at scale 2.0, 110% of Nessa's height. Today's game and ?start=hangar keep the
+// pilot looks; the page turns this on only when it starts the opening (boot.js `slicing`).
+export const JANITOR_LOOKS = Object.freeze({ 'cap-a': 'janitor-a.webp', 'cap-b': 'janitor-b.webp', 'cap-c': 'janitor-c.webp', 'cap-d': 'janitor-d.webp' });
+export const JANITOR_SCALE = 2.0;
+let janitorOn = false;
+/** Draw the player as the janitor (true: the new game's opening) or as the pilot captain (false: today's game). */
+export const setJanitorPlayer = on => { janitorOn = Boolean(on); };
+/** The player's sprite file and draw scale: { file, scale }. Defaults to the current look and mode. */
+export function playerArt({ janitor = janitorOn, lookId = captainLook } = {}) {
+  const id = captainLookId(lookId);
+  return janitor ? { file: JANITOR_LOOKS[id], scale: JANITOR_SCALE } : { file: CAPTAIN_LOOKS[id], scale: CAST_LOOK.captain.scale };
+}
+/** The player's top-down sprite image for a look id (default: the current look, else cap-a; the janitor in the new game), or null while loading. */
+export const captainSprite = (lookId = captainLook) => loadImage(at(`cast/${playerArt({ lookId }).file}`));
 
 // Canvas side in px at which each sprite's figure stands 72 px tall (Ralph 56, Vey and Garrity 84),
 // from scripts/stardust-art.py. drawBody draws a sprite at 46 * scale, so scale = side / 46.
