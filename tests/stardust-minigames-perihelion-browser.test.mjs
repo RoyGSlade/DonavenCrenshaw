@@ -12,6 +12,7 @@ const TRAIN = (n) => `?newgame=1&mini=trainer&sector=${n}&level=7&time=2&fuel=2&
 const PROOF = process.env.PROOF_DIR || null;
 const DESK = { viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 };
 const PHONE = { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true };
+const begin = async (page) => { if (await page.locator('.pr-begin:visible').count()) await page.click('.pr-begin'); await page.waitForTimeout(200); };
 const skip = process.env.STARDUST_BROWSER_TEST !== '1' && 'set STARDUST_BROWSER_TEST=1';
 
 test('navigation (Perihelion) in the browser', { skip, timeout: 300000 }, async () => {
@@ -33,11 +34,22 @@ test('navigation (Perihelion) in the browser', { skip, timeout: 300000 }, async 
       const tapAt = async (x, y) => { if (phone) await page.touchscreen.tap(x, y); else await page.mouse.click(x, y); };
 
       await page.goto(`${server.origin}${PAGE}${FIELD}`);
-      await page.waitForSelector('.pr-canvas');
+      await page.waitForSelector('.pr-canvas', { state: 'attached' });
       await page.waitForTimeout(400);
       // Plain words only: no dev line; whole-number fuel; the briefing names the points that are spent.
       assert.equal(await page.locator('.pr-kit').count(), 0, 'no dev stats line');
-      assert.match(await page.locator('.pr-brief').innerText(), /Par: 3 turns, 46 fuel\. Your points: longer burns, cheaper fuel, a longer arc/);
+      if (phone) assert.match(await page.locator('.pr-brief').innerText(), /Par: 3 turns, 46 fuel\. Your points: longer burns, cheaper fuel, a longer arc/);
+      else {
+        // Desktop: the game is a full-screen overlay and the briefing is a card before turn 1, not on the live map.
+        assert.equal(await page.evaluate(() => { const b = document.querySelector('.pr-panel').getBoundingClientRect(); return [b.width, b.height, getComputedStyle(document.querySelector('.pr-panel')).position].join(); }), '1440,900,fixed');
+        assert.equal(await page.locator('.pr-canvas').isVisible(), false, 'the map waits behind the card');
+        assert.match(await page.locator('.pr-intro').innerText(), /Par: 3 turns, 46 fuel[\s\S]*Your points: longer burns, cheaper fuel, a longer arc/);
+        await shot('0-intro-card');
+        await begin(page);
+        assert.equal(await page.locator('.pr-intro').isVisible(), false);
+        const mp = await page.locator('.pr-canvas').boundingBox(); assert.ok(mp.width > 1000 && mp.height > 600, `the map is large (${mp.width}x${mp.height})`);
+        const bb = await page.locator('.pr-burn').boundingBox(); assert.ok(bb.x > 700 && bb.y + bb.height <= 900, 'BURN is bottom right');
+      }
       const m = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, iw: innerWidth, burn: document.querySelector('.pr-burn').getBoundingClientRect().height, cw: document.querySelector('.pr-canvas').getBoundingClientRect().width }));
       assert.ok(m.sw <= m.iw, 'no sideways scroll'); assert.ok(m.burn >= 44, `burn button ${m.burn}`);
       assert.ok(await page.evaluate(() => document.querySelector('.pr-title').getBoundingClientRect().height < 22), 'the title does not wrap');
@@ -74,7 +86,7 @@ test('navigation (Perihelion) in the browser', { skip, timeout: 300000 }, async 
 
       // A slingshot: park the ship inside the first well's ring of the first trainer sector, coast, and press MARK in the band.
       await page.goto(`${server.origin}${PAGE}${TRAIN(1)}`);
-      await page.waitForSelector('.pr-canvas'); await page.waitForTimeout(300);
+      await page.waitForSelector('.pr-canvas', { state: 'attached' }); await page.waitForTimeout(300); await begin(page);
       assert.equal(await page.evaluate(() => document.querySelector('.pr-panel').dataset.mode), 'trainer');
       assert.match(await page.locator('.pr-title').innerText(), /LAGRANGE APPROACH/i);
       await shot('3-trainer-sector-1');
@@ -93,7 +105,7 @@ test('navigation (Perihelion) in the browser', { skip, timeout: 300000 }, async 
 
       // Clear sector 4 with the bot's plans, flown by the view, to reach a results card.
       await page.goto(`${server.origin}${PAGE}${TRAIN(4)}`);
-      await page.waitForSelector('.pr-canvas'); await page.waitForTimeout(300);
+      await page.waitForSelector('.pr-canvas', { state: 'attached' }); await page.waitForTimeout(300); await begin(page);
       await shot('6-trainer-sector-4');
       const plans = await page.evaluate(async () => { const b = await import('/projects/Space-Shooter/voyage/minigames/perihelionBot.js'); const p = document.querySelector('.pr-panel'); window.__p = b.solve(p.__state, { angles: 36, beam: 5 }).plans; p.__view.speed = 4; return window.__p.length; });
       assert.ok(plans >= 1);
@@ -148,9 +160,12 @@ test('the workbench navigation station plays Perihelion, with the game owning th
       await page.waitForTimeout(1200);
       await page.evaluate(() => { window.__stardust.workbench.rng = () => 0.65; });
       await use(page, 'wb-nav');
-      await page.waitForSelector('#hg-minigame:not([hidden]) .wb-stage .pr-canvas', { timeout: 15000 });
+      await page.waitForSelector('#hg-minigame:not([hidden]) .wb-stage .rp-panel', { timeout: 15000 });
+      await page.waitForSelector('.pr-canvas', { state: 'attached' });
       await page.waitForSelector('#hg-attempt', { state: 'hidden', timeout: 12000 }).catch(() => {});
       await page.waitForTimeout(400);
+      if (!phone) { assert.equal(await page.locator('.pr-intro').isVisible(), true, 'the briefing is a card before turn 1 ' + await page.evaluate(() => JSON.stringify({ h: document.querySelector('.pr-intro')?.hidden, st: document.querySelector('.pr-stage')?.hidden, ph: document.querySelector('.pr-panel')?.dataset.phase, w: innerWidth }))); await shot('0-intro-card'); }
+      await begin(page);
       const fits = async (what) => {
         const m = await page.evaluate(() => { const r = (q) => { const e = document.querySelector(q); if (!e || e.hidden) return null; const b = e.getBoundingClientRect(); return { top: b.top, bottom: b.bottom, left: b.left, right: b.right, h: b.height }; }; return { ih: innerHeight, iw: innerWidth, sw: document.documentElement.scrollWidth, burn: r('.pr-burn'), mark: r('.pr-mark'), canvas: r('.pr-canvas'), title: r('.pr-title') }; });
         assert.ok(m.sw <= m.iw, `${what}: no sideways scroll`);

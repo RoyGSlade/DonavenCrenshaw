@@ -14,6 +14,8 @@ const MAX_DRAG = 200; // world units of drag for 100% thrust
 
 export function playPerihelion(root, { state, title: title0 = 'Perihelion', sound = () => {}, reducedMotion = () => false } = {}) {
   const s = state;
+  // On a desktop the game owns the screen like the trainer's gallery: a fixed overlay on <body>, HUD across the top, map as big as fits.
+  const full = typeof matchMedia === 'function' && matchMedia('(min-width: 900px)').matches;
   const still = () => reducedMotion();
   // ---- DOM ------------------------------------------------------------------------------------------------------------------
   const meter = (cls, label) => h('div', { class: `pr-meter ${cls}` }, h('span', { text: label }), h('i', {}, h('u'), h('s'), h('em'), h('b')));
@@ -26,9 +28,12 @@ export function playPerihelion(root, { state, title: title0 = 'Perihelion', soun
   const mine = [pts.time > 0 && 'longer burns', pts.fuel > 0 && 'cheaper fuel', pts.warning > 0 && 'a longer arc and earlier shard warnings'].filter(Boolean);
   const briefText = h('p', {}, `${s.briefing} Par: ${s.parTurns} turns, ${s.parFuel} fuel.${mine.length ? ` Your points: ${mine.join(', ')}.` : ''}`);
   const brief = h('div', { class: 'pr-brief is-open' }, briefText);
+  const beginBtn = h('button', { type: 'button', class: 'primary ui-btn pr-begin', text: 'Begin' });
+  const intro = h('div', { class: 'pr-intro', hidden: '' }, h('p', { class: 'pr-intro-title', text: title0 }), h('p', { text: s.briefing }), h('p', { text: `Par: ${s.parTurns} turns, ${s.parFuel} fuel. Three stars wants both.` }), mine.length ? h('p', { class: 'pr-intro-kit', text: `Your points: ${mine.join(', ')}.` }) : null, beginBtn);
+  const leaveBtn = h('button', { type: 'button', class: 'pr-leave ui-btn', text: 'Leave' });
   const canvas = h('canvas', { class: 'pr-canvas', 'aria-label': 'Sector map: drag from the ship to aim a burn' });
   const stage = h('div', { class: 'pr-stage' }, canvas, brief);
-  const wrap = h('div', { class: 'pr-wrap' }, stage);
+  const wrap = h('div', { class: 'pr-wrap' }, intro, stage);
   const status = h('p', { class: 'rp-status pr-status', role: 'status', 'aria-live': 'polite' });
   const burnBtn = h('button', { type: 'button', class: 'pr-burn primary ui-btn', text: 'BURN' });
   const markBtn = h('button', { type: 'button', class: 'pr-mark ui-btn', text: 'MARK', hidden: '' });
@@ -37,13 +42,15 @@ export function playPerihelion(root, { state, title: title0 = 'Perihelion', soun
   const angleIn = h('input', { type: 'range', min: '-180', max: '180', step: '1', 'aria-label': 'Aim angle in degrees' });
   const thrustIn = h('input', { type: 'range', min: '0', max: '100', step: '5', 'aria-label': 'Thrust percent' });
   const fine = h('details', { class: 'pr-fine' }, h('summary', { text: 'Fine tune' }), h('label', {}, h('span', { text: 'Aim' }), angleIn), h('label', {}, h('span', { text: 'Thrust' }), thrustIn));
-  const panel = h('section', { class: 'rp-panel pr-panel mg-skin ui-panel', role: 'group', 'aria-label': `Navigation: ${title0}` },
-    h('div', { class: 'pr-top' }, title, turnM, helpBtn),
+  const panel = h('section', { class: `rp-panel pr-panel mg-skin ${full ? 'pr-full' : 'ui-panel'}`, role: full ? 'dialog' : 'group', 'aria-label': `Navigation: ${title0}` },
+    h('div', { class: 'pr-top' }, title, turnM, helpBtn, leaveBtn),
     h('div', { class: 'pr-hud' }, fuelM, heatM, hullM), wrap, status,
     h('div', { class: 'pr-foot' }, burnBtn, markBtn, coastBtn, quitBtn), fine,
     h('p', { class: 'rp-help pr-tip', text: 'Drag from the ship to aim; a longer drag is a harder burn. BURN, then tap the left or right half of the map to trim, and press MARK when the ring is lit.' }));
   panel.__state = s;
-  root.append(panel);
+  // The stage keeps a small stand-in so the sheet behind still reads as "this game is open".
+  const behind = full ? h('div', { class: 'rp-panel mg-skin ui-panel pr-behind', text: 'Perihelion is open full screen.' }) : null;
+  if (full) { root.append(behind); document.body.append(panel); } else root.append(panel);
   let finish;
   const promise = new Promise((r) => { finish = r; });
   promise.state = s;
@@ -57,10 +64,10 @@ export function playPerihelion(root, { state, title: title0 = 'Perihelion', soun
   function resize() {
     canvas.style.width = '1px'; stage.style.width = '1px'; // measure the room, not our own last size
     const avail = Math.max(240, wrap.clientWidth || panel.clientWidth || 360);
-    rot = avail < 640 && innerHeight >= innerWidth * 0.9;
+    rot = !full && avail < 640 && innerHeight >= innerWidth * 0.9;
     const top = Math.max(0, Math.min(wrap.getBoundingClientRect().top, 170));
-    // On a phone the map takes what is left above the pinned buttons; on a desktop the map takes 62% of the window.
-    const maxH = rot ? Math.max(300, innerHeight - top - 112) : Math.max(300, innerHeight * 0.62);
+    // Full screen: the map takes the room the wrap has. Phone: what is left above the pinned buttons. Narrow desktop window: 62% of it.
+    const maxH = full ? Math.max(260, wrap.clientHeight - 4) : rot ? Math.max(300, innerHeight - top - 112) : Math.max(300, innerHeight * 0.62);
     if (rot) { const hh = Math.min(avail * (ARENA.w / ARENA.h), maxH); W = Math.round(hh * (ARENA.h / ARENA.w)); H = Math.round(hh); k = W / ARENA.h; }
     else { W = Math.round(Math.min(avail, maxH * (ARENA.w / ARENA.h))); H = Math.round(W * (ARENA.h / ARENA.w)); k = W / ARENA.w; }
     dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -112,7 +119,7 @@ export function playPerihelion(root, { state, title: title0 = 'Perihelion', soun
   function doLaunch() {
     if (s.phase !== 'plan' || ended) return;
     if (!launch(s)) { say('Not enough fuel for that burn. Pull back the thrust.'); sound('hurt'); return; }
-    sound('talk'); fx.shot = 0; live = []; liveAt = 0; briefOpen = false;
+    sound('talk'); fx.shot = 0; live = []; liveAt = 0; briefOpen = false; introOpen = false;
     say('Burning. Tap the left or right half of the map to trim.');
     paintHud();
   }
@@ -137,6 +144,7 @@ export function playPerihelion(root, { state, title: title0 = 'Perihelion', soun
   const kd = (e) => {
     if (ended || e.target?.closest?.('input,textarea,select')) return;
     const k2 = e.key;
+    if (introOpen && full) return; // the card has its own Begin button (focused)
     if (s.phase === 'plan') {
       const step = e.shiftKey ? 0.2 : 0.05;
       if (k2 === 'ArrowLeft') { setPlan(s, { angle: s.plan.angle - step }); e.preventDefault(); }
@@ -188,9 +196,9 @@ export function playPerihelion(root, { state, title: title0 = 'Perihelion', soun
     const paying = planning ? c.fuel : 0;
     const cost = fuelM.querySelector('s'), ghost = fuelM.querySelector('em');
     cost.style.left = `${Math.max(0, ((sh.fuel - paying) / mf) * 100)}%`; cost.style.width = `${(paying / mf) * 100}%`;
-    const full = s.fuelFactor < 1 && paying > 0 ? paying / s.fuelFactor : 0;
-    ghost.style.left = `${Math.max(0, ((sh.fuel - full) / mf) * 100)}%`; ghost.style.width = `${(full / mf) * 100}%`; ghost.hidden = !full;
-    const saved = full ? full - paying : 0;
+    const fullCost = s.fuelFactor < 1 && paying > 0 ? paying / s.fuelFactor : 0;
+    ghost.style.left = `${Math.max(0, ((sh.fuel - fullCost) / mf) * 100)}%`; ghost.style.width = `${(fullCost / mf) * 100}%`; ghost.hidden = !fullCost;
+    const saved = fullCost ? fullCost - paying : 0;
     setT(fuelM.querySelector('b'), whole(sh.fuel));
     fuelM.classList.toggle('is-low', sh.fuel / mf < 0.2);
     heatM.querySelector('u').style.width = `${sh.heat}%`;
@@ -208,8 +216,9 @@ export function playPerihelion(root, { state, title: title0 = 'Perihelion', soun
     const live = Boolean(s.burn?.mark);
     markBtn.hidden = !burning; markBtn.classList.toggle('is-live', live); markBtn.setAttribute('aria-disabled', live ? 'false' : 'true');
     setT(markBtn, live ? 'MARK' : 'MARK · wait for a ring');
-    brief.classList.toggle('is-open', briefOpen && !burning);
-    helpBtn.setAttribute('aria-expanded', String(briefOpen && !burning));
+    intro.hidden = !(introOpen && full); stage.hidden = introOpen && full;
+    brief.classList.toggle('is-open', briefOpen && !burning && !full);
+    helpBtn.setAttribute('aria-expanded', String(full ? introOpen : briefOpen && !burning));
     if (angleIn !== document.activeElement) angleIn.value = String(Math.round((s.plan.angle * 180) / Math.PI));
     if (thrustIn !== document.activeElement) { thrustIn.max = String(maxThrust(s)); thrustIn.value = String(s.plan.thrust); }
     thrustIn.disabled = angleIn.disabled = !planning;
@@ -223,8 +232,11 @@ export function playPerihelion(root, { state, title: title0 = 'Perihelion', soun
       else say(`${base} The dashed arc is where this burn takes you.${saved >= 0.5 ? ` Your points save ${whole(saved)} fuel.` : ''}`);
     }
   }
-  let briefOpen = true;
-  helpBtn.addEventListener('click', () => { briefOpen = !briefOpen; paintHud(); });
+  let briefOpen = !full; // desktop shows a card before turn 1 instead of an overlay on the live map
+  let introOpen = full;
+  helpBtn.addEventListener('click', () => { if (full) introOpen = !introOpen && s.phase === 'plan'; else briefOpen = !briefOpen; paintHud(); if (full) resize(); });
+  beginBtn.addEventListener('click', () => { introOpen = false; paintHud(); resize(); });
+  leaveBtn.addEventListener('click', () => { const wl = document.querySelector('.wb-leave'); if (wl) wl.click(); else if (!s.done) { abandon(s); handle([]); } });
 
   // ---- drawing --------------------------------------------------------------------------------------------------------------
   const glow = (color, blur) => { if (!still()) { ctx.shadowColor = color; ctx.shadowBlur = blur * dpr; } };
@@ -447,6 +459,7 @@ export function playPerihelion(root, { state, title: title0 = 'Perihelion', soun
 
   function frame(now) {
     if (closed) return;
+    if (behind && !behind.isConnected) return teardown();
     const dt = Math.min(0.05, (now - lastT) / 1000); lastT = now; T += dt;
     if (s.phase === 'burn' && !s.done) handle(advance(s, dt * view.speed));
     else if (s.events.length) handle([]);
@@ -464,6 +477,10 @@ export function playPerihelion(root, { state, title: title0 = 'Perihelion', soun
     drawArc(); drawLive(); drawMeteors(); drawMark(); drawShip(); drawAim(); placeLabels(); drawTrimHint(); drawFx(dt); drawFrame();
     ctx.restore();
     raf = requestAnimationFrame(frame);
+  }
+
+  function teardown() {
+    closed = true; cancelAnimationFrame(raf); removeEventListener('keydown', kd); removeEventListener('resize', resize); ro?.disconnect(); panel.remove(); behind?.remove(); finish(s.result || null);
   }
 
   // ---- the result -----------------------------------------------------------------------------------------------------------
@@ -485,7 +502,7 @@ export function playPerihelion(root, { state, title: title0 = 'Perihelion', soun
     setTimeout(() => {
       panel.append(card); card.scrollIntoView({ block: 'nearest' });
       let armed = false; setTimeout(() => { armed = true; goBtn.focus({ preventScroll: true }); }, 450);
-      goBtn.addEventListener('click', () => { if (!armed) return; closed = true; cancelAnimationFrame(raf); panel.remove(); finish(r); });
+      goBtn.addEventListener('click', () => { if (!armed) return; closed = true; cancelAnimationFrame(raf); panel.remove(); behind?.remove(); finish(r); });
     }, still() ? 0 : 650);
   }
 
@@ -497,6 +514,7 @@ export function playPerihelion(root, { state, title: title0 = 'Perihelion', soun
     get pred() { return pred; }, get rot() { return rot; }, get fx() { return fx; }, P, U,
   };
   paintHud();
-  if (typeof requestAnimationFrame === 'function') raf = requestAnimationFrame(frame);
+  if (typeof requestAnimationFrame === "function") raf = requestAnimationFrame(frame);
+  if (full) setTimeout(() => { if (introOpen && !closed) beginBtn.focus({ preventScroll: true }); }, 50);
   return promise;
 }
