@@ -135,7 +135,7 @@ test('books: the numbers the pages quote are the numbers in the code', () => {
   const all = (skill) => pagesOf(skill).map((p) => p.lines.join(' ')).join(' ');
   assert.match(all('crafting'), /half the work time/); assert.match(all('crafting'), /quarter more time/); assert.match(all('crafting'), /a tenth of the job/); assert.match(all('crafting'), /fifteen and a half/);
   assert.match(all('hacking'), /twenty-six seconds/); assert.match(all('hacking'), /0\.6 seconds/); assert.match(all('hacking'), /0\.09 seconds/); assert.match(all('hacking'), /fifth of the bar/);
-  assert.match(all('repair'), /Forty for sealing/); assert.match(all('repair'), /Ninety and over earns three stars/);
+  assert.match(all('repair'), /Forty for sealing/); assert.match(all('repair'), /110 seconds, six more for each Time point/); assert.match(all('repair'), /mirror twin/); assert.match(all('repair'), /Ninety and over earns three stars/);
 });
 test('books: pages are picked in order, a wrong page returns after the others, and learned pages are skipped', () => {
   const first = nextPage('repair', 1, {}); assert.equal(first.level, 1);
@@ -175,7 +175,7 @@ test('paying: pages are exempt from the hour cap and the fee; no pages are "capp
   const r = answerPage({ pageId: pg.id, order: ord, position: rightPos, credits: 0, log });
   assert.deepEqual([r.ok, r.paid, r.credits], [true, 2, 0]); assert.equal(JSON.stringify(log), frozen); assert.equal(JSON.stringify(r.log), frozen, 'the replay gym\'s hour log is untouched');
   let learned = {}, total = 0; for (const p of PAGES.filter((x) => x.skill === 'repair')) { const q = answerPage({ pageId: p.id, order: [0, 1, 2, 3], position: p.answer, credits: 0, learned }); learned = q.learned; total += q.paid; }
-  assert.equal(total, 3 * 2 + 3 * 3 + 3 * 4, 'a whole book pays 27 XP in one sitting');
+  assert.equal(total, 3 * 2 + 4 * 3 + 4 * 4, 'a whole repair book (two assembly pages added) pays 34 XP in one sitting');
   assert.equal(GYM.cost, 10); assert.equal(GYM.capXp, 6, 'the replay gym keeps its own numbers');
 });
 test('paying: no page, round or replay ever pays a skill point', () => {

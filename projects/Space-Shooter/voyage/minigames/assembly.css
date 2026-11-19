@@ -33,5 +33,5 @@
   .cc-hud.asm-hud{grid-template-columns:1fr 1fr;gap:4px}
   .asm-stat{min-height:50px;padding:4px 6px}
   .asm-pip{width:12px;height:12px}
-  .asm-turn{min-height:64px}
+  .asm-actions .asm-turn{min-height:64px;height:64px}
 }

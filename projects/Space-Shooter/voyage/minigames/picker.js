@@ -6,7 +6,7 @@
 // card and the game cannot disagree. Shooting has no minigame: its three
 // categories are listed with no numbers yet.
 import { STEALTH } from '../onfoot/rules/stealth.js';
-import { POINT_MAX, REPAIR_BASE, setupRepair, setupHack, setupPersuade, setupIntimidate, setupPilot, setupPerihelion, setupShooting } from './setup.js';
+import { POINT_MAX, REPAIR_BASE, setupAssembly, setupRepair, setupHack, setupPersuade, setupIntimidate, setupPilot, setupPerihelion, setupShooting } from './setup.js';
 
 const f1 = (n) => (Math.round(n * 10) / 10).toString();
 const plus = (n, unit) => `${n > 0 ? '+' : ''}${f1(n)}${unit}`;
@@ -33,9 +33,9 @@ export const CATEGORIES = Object.freeze({
     { id: 'size', name: 'Puzzle size', words: (n) => { const s = setupHack({ points: { size: n }, level: 9 }); return `mirrors start up to ${s.spread} steps off, ${Math.floor(n / 2)} fewer decoy${Math.floor(n / 2) === 1 ? '' : 's'}, ${Math.floor(n / 3)} fewer path mirror${Math.floor(n / 3) === 1 ? '' : 's'} (never under 1)`; } },
     { id: 'retries', name: 'Retries', words: (n) => `${plus(n, '')} ${n === 1 ? 'retry' : 'retries'} on the same board` } ] },
   repair: { built: true, cats: [
-    { id: 'time', name: 'Time', words: (n) => `slower-rising water: ${plus(REPAIR_BASE.capacityPerPoint * n, ' s')} before it reaches the valve (${setupRepair({ points: { time: n } }).capacity} s of one leak)` },
-    { id: 'size', name: 'Puzzle size', words: (n) => { const s = setupRepair({ points: { size: n } }).size; return `${s} x ${s} board`; } },
-    { id: 'quality', name: 'Repair quality', words: (n) => `${plus(REPAIR_BASE.qualityPerPoint * n, '')} quality on every patch` } ] },
+    { id: 'time', name: 'Time', words: (n) => `slower-rising water: ${plus(REPAIR_BASE.capacityPerPoint * n, ' s')} before it reaches the valve (${setupRepair({ points: { time: n } }).capacity} s of one leak); assembly clock ${plus(6 * n, ' s')}` },
+    { id: 'size', name: 'Puzzle size', words: (n) => { const s = setupRepair({ points: { size: n } }).size; const a = setupAssembly({ points: { size: n }, level: 9 }); return `${s} x ${s} board; assembly: ${a.bolts} bolts, ${a.decoys} decoy part${a.decoys === 1 ? '' : 's'}`; } },
+    { id: 'quality', name: 'Repair quality', words: (n) => `${plus(REPAIR_BASE.qualityPerPoint * n, '')} quality on every patch and every assembly` } ] },
   crafting: { built: false, cats: [
     { id: 'quality', name: 'Quality', words: (n) => `${plus(4 * n, '')} quality on every part` },
     { id: 'speed', name: 'Speed', words: (n) => `builds ${f1(5 * n)}% faster; Cut feed +${f1(5 * n)}%, Screw thread +${f1(5 * n)}% a turn; the older heat game ${5 - Math.floor(n / 3)} shaping steps` },

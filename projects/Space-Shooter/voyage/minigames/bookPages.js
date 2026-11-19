@@ -62,6 +62,18 @@ export const PAGES = Object.freeze([
     'A patch that nearly flooded the bay can still hold, but it will not score high.',
   ], 'A patch scores 92. How many stars does it earn?', ['Two', 'One', 'None, only a hundred counts', 'Three'], 3, 3, ['repair.quality']),
 
+  page('repair', 3, 'sockets', 'Shapes and sockets', [
+    'An assembly job gives you a housing with one glowing socket and a tray of parts. Only one part in the tray has the socket’s outline, and it fits in one turn only.',
+    'Beware the mirror twin. It looks the same and it never fits, however you turn it.',
+    'A wrong part bounces off and counts against you. The right part turned the wrong way bounces too, but it costs nothing.',
+  ], 'The right part is in the socket’s outline but turned the wrong way. What happens when you drop it?', ['It snaps in anyway', 'It bounces and counts as a wrong fit', 'It bounces and costs nothing', 'The socket closes for good'], 2, 3, ['assembly.one-fit', 'assembly.bounce']),
+  page('repair', 6, 'bolted', 'Bolts and the clock', [
+    'A part is not done when it snaps in. Drag each bolt to a hole and drive it down. A stripped bolt comes back out; set it again.',
+    'The next socket opens only when the last bolt is snug.',
+    'The unit scores forty for finishing, up to thirty more for few wrong fits and up to thirty for the clock left. The clock is 110 seconds, six more for each Time point.',
+    'Ninety and over earns three stars.',
+  ], 'You snap in a part, but one of its bolts strips. What do you do?', ['Move on, the next socket is open', 'Take the bolt out and set it again', 'Give up the unit', 'Wait for the clock to reset'], 1, 1, ['assembly.next-socket', 'assembly.score']),
+
   // ---- Hacking: the ops terminal manual -------------------------------------------------------------------------------------
   page('hacking', 1, 'grade', 'Firewalls in a row', [
     'A lock is graded one to four, and the grade is the number of firewalls between you and the data.',

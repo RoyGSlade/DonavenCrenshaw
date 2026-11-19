@@ -7,7 +7,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { newProgress, addXp, totalXp, xpToNext, scanSnapshot, reprint, unscanned, riskLine, riskTone } from '../projects/Space-Shooter/voyage/minigames/progress.js';
 import { CATEGORIES, CATEGORY_SKILLS, cleanSkillPoints, unspent, canAdd, addPoint, removePoint, describeCategory, describeSkill } from '../projects/Space-Shooter/voyage/minigames/picker.js';
-import { setupRepair, setupHack } from '../projects/Space-Shooter/voyage/minigames/setup.js';
+import { setupRepair, setupHack, setupAssembly } from '../projects/Space-Shooter/voyage/minigames/setup.js';
 import { ROLL_SKILL_IDS } from '../projects/Space-Shooter/voyage/data.js';
 
 test('xp curve is a placeholder: 20 x level to the next; level 9 is the top', () => {
@@ -84,9 +84,11 @@ test('picker numbers ARE the minigames numbers: repair and hacking', () => {
     const r = setupRepair({ points: { time: n } });
     assert.match(CATEGORIES.repair.cats[0].words(n), new RegExp(`\\(${r.capacity} s of one leak\\)`));
     const sz = setupRepair({ points: { size: n } }).size;
-    assert.equal(CATEGORIES.repair.cats[1].words(n), `${sz} x ${sz} board`);
+    const as = setupAssembly({ points: { size: n }, level: 9 });
+    assert.equal(CATEGORIES.repair.cats[1].words(n), `${sz} x ${sz} board; assembly: ${as.bolts} bolts, ${as.decoys} decoy part${as.decoys === 1 ? '' : 's'}`);
+    assert.match(CATEGORIES.repair.cats[0].words(n), new RegExp(`assembly clock ${n ? '\\+' : ''}${6 * n} s`));
     const q = setupRepair({ points: { quality: n } }).qualityBonus;
-    assert.equal(CATEGORIES.repair.cats[2].words(n), `${q ? '+' : ''}${q} quality on every patch`);
+    assert.equal(CATEGORIES.repair.cats[2].words(n), `${q ? '+' : ''}${q} quality on every patch and every assembly`);
     // hacking v2: the words come from the same setup the game uses (lock 4 so every stage shows)
     const hs = setupHack({ points: { size: n }, level: 9, lock: 4 }), hr = setupHack({ points: { retries: n }, level: 9, lock: 4 }), ht = setupHack({ points: { time: n }, level: 9, lock: 4 }).time;
     assert.equal(CATEGORIES.hacking.cats[1].words(n), `mirrors start up to ${hs.spread} steps off, ${Math.floor(n / 2)} fewer decoy${Math.floor(n / 2) === 1 ? '' : 's'}, ${Math.floor(n / 3)} fewer path mirror${Math.floor(n / 3) === 1 ? '' : 's'} (never under 1)`);
@@ -97,9 +99,9 @@ test('picker numbers ARE the minigames numbers: repair and hacking', () => {
 
 test('describeCategory: now, next, and when a stepped category next changes', () => {
   let d = describeCategory('repair', { size: 0 }, 5, 'size');
-  assert.deepEqual([d.now, d.next, d.nextChange, d.canAdd], ['no bonus yet', '5 x 5 board', { at: 3 }, true]);
+  assert.deepEqual([d.now, d.next, d.nextChange, d.canAdd], ['no bonus yet', '5 x 5 board; assembly: 9 bolts, 3 decoy parts', null, true]);
   d = describeCategory('repair', { size: 2 }, 5, 'size');
-  assert.deepEqual([d.now, d.next, d.nextChange], ['5 x 5 board', '4 x 4 board', null]);
+  assert.deepEqual([d.now, d.next, d.nextChange], ['5 x 5 board; assembly: 8 bolts, 3 decoy parts', '4 x 4 board; assembly: 7 bolts, 3 decoy parts', null]);
   d = describeCategory('repair', { time: 9 }, 9, 'time');
   assert.deepEqual([d.next, d.canAdd], [null, false]);
   assert.equal(describeCategory('repair', {}, 3, 'nope'), null);

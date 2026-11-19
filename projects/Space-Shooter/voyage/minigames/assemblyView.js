@@ -169,10 +169,9 @@ export function playAssembly(root, { state, title = 'Rebuild the unit', reducedM
   async function runScrew(b) {
     if (!b || screwLive || s.done) return;
     const gs = createScrew({ setup: setupScrew({ tier: 0, level: 1 }) });
-    screwLive = gs; host.hidden = false; canvas.hidden = true; foot.hidden = true;
-    status.textContent = 'Circle the bolt head clockwise. Let go in the green. The clock is still running.';
+    screwLive = gs; host.hidden = false; canvas.hidden = true; foot.hidden = true; status.hidden = true;
     const result = await playScrew(host, { state: gs, what: 'bolt', reducedMotion });
-    host.replaceChildren(); host.hidden = true; canvas.hidden = false; foot.hidden = false;
+    host.replaceChildren(); host.hidden = true; canvas.hidden = false; foot.hidden = false; status.hidden = false;
     screwLive = null;
     if (s.done) return;
     const how = A.screwed(s, b.id, result);

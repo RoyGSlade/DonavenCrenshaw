@@ -15,7 +15,8 @@ import {
   createCraft, heatStart, release, stepCraft, shape, heatVerdict, bandOf, workSecondsFor, settleMaterials, qualityOf as craftQuality, starsOf as craftStars,
   TOOLS, SPOIL_SHARE, RUIN_BELOW, HOT_SPOILS, COLD_TIME, HOT_TIME, HEAT_START, HEAT_RATE,
 } from './craft.js';
-import { setupRepair, setupHack, setupCraft } from './setup.js';
+import { setupRepair, setupHack, setupCraft, setupAssembly } from './setup.js';
+import * as AS from './assembly.js';
 
 const close = (a, b, eps = 1e-6) => Math.abs(a - b) < eps;
 const seeds = (n) => Array.from({ length: n }, (_, i) => i + 1);
@@ -137,6 +138,33 @@ export const FACTS = Object.freeze({
     const q = (moves, spilled) => repairQuality({ success: true, moves, par: 4, spilled, capacity: 100 });
     return q(4, 0) === 100 && q(8, 0) === 85 && q(4, 100) === 70 && q(1000, 100) === 40 && repairQuality({ success: false, moves: 1, par: 1, spilled: 0, capacity: 1 }) === 0
       && repairStars(90) === 3 && repairStars(89) === 2 && repairStars(65) === 2 && repairStars(64) === 1;
+  } },
+
+  // ---- assembly repair (assembly.js, setup.js) ---------------------------------------------------------------------------------
+  'assembly.one-fit': { skill: 'repair', claim: 'A part fits its socket in exactly one turn, and its mirror twin never fits in any turn.', check() {
+    return AS.OUTLINES.every((o) => { const twin = AS.outlineById(o.twin); return [0, 1, 2, 3].filter((q) => AS.fitsSocket(o, q, o)).length === 1 && [0, 1, 2, 3].every((q) => !AS.fitsSocket(twin, q, o)); });
+  } },
+  'assembly.bounce': { skill: 'repair', claim: 'A wrong part bounces off and counts as a wrong fit; the right part turned the wrong way bounces too, but costs nothing.', check() {
+    const s = AS.createAssembly({ seed: 5, setup: setupAssembly({}) }), k = AS.socketOf(s);
+    const at = (p) => { AS.grab(s, p.id); AS.carry(s, k.x + AS.pieceSize(s, p).w / 2, k.y + AS.pieceSize(s, p).h / 2); return AS.drop(s); };
+    const decoy = s.pieces.find((p) => p.role === 'decoy'), mine = AS.pieceOf(s, k.part);
+    mine.rot = [0, 1, 2, 3].find((q) => !AS.fitsSocket(AS.outlineOfPiece(mine), q, AS.outlineById(k.outline)));
+    return at(decoy) === 'wrong' && s.wrongFits === 1 && at(mine) === 'turn' && s.wrongFits === 1;
+  } },
+  'assembly.next-socket': { skill: 'repair', claim: 'The next socket opens only when the last bolt of the part is snug; a stripped bolt comes back out.', check() {
+    const s = AS.createAssembly({ seed: 4, setup: setupAssembly({}) }), k = AS.socketOf(s), p = AS.pieceOf(s, k.part);
+    while (!AS.fitsSocket(AS.outlineOfPiece(p), p.rot, AS.outlineById(k.outline))) { AS.select(s, p.id); AS.turn(s, 1); }
+    AS.grab(s, p.id); AS.carry(s, k.x + AS.pieceSize(s, p).w / 2, k.y + AS.pieceSize(s, p).h / 2); if (AS.drop(s) !== 'snapped') return false;
+    const seat = (b) => { AS.grabBolt(s, b.id); AS.carryBolt(s, b.hx, b.hy); return AS.dropBolt(s); };
+    const first = s.bolts[0]; seat(first);
+    if (AS.screwed(s, first.id, { success: false }) !== 'stripped' || first.seated) return false;
+    for (const b of s.bolts.slice()) { if (s.active !== 0) return false; seat(b); AS.screwed(s, b.id, { success: true, grade: 90 }); }
+    return s.active === 1 && s.phase === 'fit';
+  } },
+  'assembly.score': { skill: 'repair', claim: 'A finished unit scores 40, up to 30 more for few wrong fits (6 off each), up to 30 more for the clock left; the clock is 110 seconds, 6 more for each Time point; 90 and over is three stars, 65 and over two.', check() {
+    const q = (wrongFits, left) => AS.qualityOf({ success: true, wrongFits, left, clock: 100 });
+    return q(0, 100) === 100 && q(1, 100) === 94 && q(0, 0) === 70 && q(5, 0) === 40 && AS.starsOf(90) === 3 && AS.starsOf(89) === 2 && AS.starsOf(65) === 2 && AS.starsOf(64) === 1
+      && setupAssembly({}).clock === 110 && setupAssembly({ level: 9, points: { time: 1 } }).clock === 116;
   } },
 
   // ---- hacking (mirrors.js, setup.js) -----------------------------------------------------------------------------------------
