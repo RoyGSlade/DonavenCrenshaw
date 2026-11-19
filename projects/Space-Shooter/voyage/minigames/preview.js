@@ -46,7 +46,7 @@ function boot() {
     $('l-lock').hidden = !hack; $('l-retries').hidden = !hack; $('l-quality').hidden = !rep; $('l-time').hidden = hag || cr; $('l-size').hidden = hag || cr; $('l-haggle').hidden = !hag; $('l-speed').hidden = !cr; $('l-material').hidden = !cr; $('l-quality').hidden = !(rep || cr);
     const spent = Object.values(setup.points).reduce((a, b) => a + b, 0);
     const what = cr
-      ? `<b>${setup.strikes}</b> strikes · zone <b>${Math.round(setup.zone * 1000) / 10}%</b> · needle <b>${setup.speed}</b>/s · quality +<b>${setup.qualityBonus}</b> · build x<b>${setup.buildFactor}</b> · material x<b>${setup.materialFactor}</b>`
+      ? `<b>${setup.strikes}</b> steps · heat band <b>${Math.round(setup.zone * 1000) / 10}%</b> · heat rate x<b>${setup.speed}</b> · work x<b>${setup.workFactor}</b> · quality +<b>${setup.qualityBonus}</b> · build x<b>${setup.buildFactor}</b> · scrap x<b>${setup.materialFactor}</b> (4-scrap recipe; banked <b>${Math.round(craftBank * 100) / 100}</b>)`
       : hag
       ? `Band <b>${Math.round(setup.band * 1000) / 10}%</b> of the range · needle <b>${setup.speed}</b>/s · <b>${setup.patience}</b> patience · <b>${setup.rounds}</b> rounds · price +<b>${Math.round(setup.priceBonus * 1000) / 10}%</b>`
       : hack
@@ -58,17 +58,19 @@ function boot() {
   const stage = $('mg-stage');
   const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
   let seed = Number(params.get('seed')) || 1;
+  let craftBank = Number(params.get('bank')) || 0; // fraction of scrap earlier crafts rounded up (carried between crafts)
   async function start() {
     stage.replaceChildren();
     if (innerWidth < 760) stage.scrollIntoView({ block: 'start' });
     const { setup, v } = compute();
     const result = mini() === 'craft'
-      ? await playCraft(stage, { state: createCraft({ seed, recipe: { materials: 10, build: 30 }, setup }), what: 'fitting', unit: 'scrap', reducedMotion })
+      ? await playCraft(stage, { state: createCraft({ seed, recipe: { materials: 4, build: 30 }, setup, bank: craftBank }), what: 'fitting', unit: 'scrap', reducedMotion })
       : mini() === 'haggle'
       ? await playHaggle(stage, { state: createHaggle({ seed, open: 20, best: 30, setup }), who: 'Captain Tull', what: 'your share', reducedMotion })
       : mini() === 'hack'
       ? await playSetupHack(stage, { state: createSetupHack({ seed, lock: v.lock, setup }), title: 'Door lock', reducedMotion })
       : await playRepair(stage, { seed, setup, reducedMotion });
+    if (mini() === 'craft' && result) { craftBank = result.bank; show(); }
     window.__minigame = { ...window.__minigame, last: result };
     seed++;
   }

@@ -118,8 +118,9 @@ export function setupHaggle({ tier = 0, points = {}, level = POINT_MAX } = {}) {
 //   speed     build time 5% shorter per point (0..-45%) and fewer strikes:
 //             0-2 points 5, 3-5: 4, 6-8: 3, 9: 2
 //   material  4% less material per point (0..-36%), never under 1 of an item
-// Base: strike zone 22% of the gauge, needle 1.1 gauges a second. Tier: zone x(1 + 0.15 x tier),
-// needle x(1 - 0.06 x tier), strikes -1 at +2 and +1 at -2. Never under 2 strikes.
+// v2 (heat and shape): the "strikes" are shaping steps. Base: heat band 22% of the temperature
+// gauge, heat rate 1.1 x 0.45 of the gauge a second. Tier: band x(1 + 0.15 x tier), heat rate
+// x(1 - 0.06 x tier), steps -1 at +2 and +1 at -2 (never under 2), work time x the shared tier clock.
 export const CRAFT_CATEGORIES = Object.freeze(['quality', 'speed', 'material']);
 export const CRAFT_BASE = Object.freeze({ zone: 0.22, speed: 1.1, strikes: 5, qualityPerPoint: 4, buildPerPoint: 0.05, materialPerPoint: 0.04, pointsPerStrike: 3 });
 export function setupCraft({ tier = 0, points = {}, level = POINT_MAX } = {}) {
@@ -132,6 +133,7 @@ export function setupCraft({ tier = 0, points = {}, level = POINT_MAX } = {}) {
     speed: r4(b.speed * (1 - 0.06 * t)),
     strikes: Math.max(2, b.strikes - Math.floor(p.speed / b.pointsPerStrike) - (t === 2 ? 1 : 0) + (t === -2 ? 1 : 0)),
     qualityBonus: b.qualityPerPoint * p.quality,
+    workFactor: tierInfo(t).time,
     buildFactor: r4(1 - b.buildPerPoint * p.speed),
     materialFactor: r4(1 - b.materialPerPoint * p.material),
     tier: t, points: p, label: tierInfo(t).label,

@@ -106,10 +106,17 @@
 .hg-scale{display:flex;justify-content:space-between;font:11px Consolas,monospace;color:var(--muted);margin-bottom:14px}
 .hg-take{width:100%;margin-top:8px;min-height:44px}
 
-/* Crafting */
-.cf-pips{display:flex;gap:6px;margin:0 0 14px}
-.cf-pips span{width:30px;height:8px;border-radius:2px;background:#2a4152}
-.cf-pips span.now{background:#eaf4f5}.cf-pips span.good{background:#9fe870}.cf-pips span.bad{background:#ff6b5a}
-.cf-track{margin-top:16px}
-.cf-zone{position:absolute;top:0;bottom:0;background:#ffad7255;border-left:2px solid var(--orange);border-right:2px solid var(--orange)}
-.cf-track.is-flash-good{border-color:#9fe870}.cf-track.is-flash-bad{border-color:#ff6b5a}
+/* Crafting: heat and shape */
+.cf-heat{margin:12px 0 4px;height:56px;overflow:hidden}
+.cf-glow{position:absolute;left:0;top:0;bottom:0;width:15%;background:hsl(25 100% 35%);transition:none}
+.cf-heat.is-heating{border-color:var(--orange)}
+.cf-band{position:absolute;top:0;bottom:0;background:#ffffff22;border-left:2px solid #eaf4f5;border-right:2px solid #eaf4f5;z-index:1}
+.cf-hold{user-select:none;-webkit-user-select:none;touch-action:none}
+.cf-hold.is-held{background:var(--orange);border-color:var(--orange)}
+.cf-order{margin:10px 0;color:var(--muted);font:12px Consolas,monospace}
+.cf-tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.cf-tile{min-height:56px;font-size:14px}
+.cf-tile.is-done{opacity:.4;border-color:#4d7d3a}
+.cf-tile.is-bad{border-color:#ff6b5a;background:#4a2018}
+.cf-mat{font:12px Consolas,monospace!important;color:var(--muted)!important}
+.cf-work{margin-bottom:6px}

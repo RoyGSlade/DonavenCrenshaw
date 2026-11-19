@@ -37,8 +37,8 @@ export const CATEGORIES = Object.freeze({
     { id: 'quality', name: 'Repair quality', words: (n) => `${plus(REPAIR_BASE.qualityPerPoint * n, '')} quality on every patch` } ] },
   crafting: { built: false, cats: [
     { id: 'quality', name: 'Quality', words: (n) => `${plus(4 * n, '')} quality on every part` },
-    { id: 'speed', name: 'Speed', words: (n) => `builds ${f1(5 * n)}% faster, ${5 - Math.floor(n / 3)} strikes` },
-    { id: 'material', name: 'Material use', words: (n) => `${f1(4 * n)}% less material` } ] },
+    { id: 'speed', name: 'Speed', words: (n) => `builds ${f1(5 * n)}% faster, ${5 - Math.floor(n / 3)} shaping steps` },
+    { id: 'material', name: 'Material use', words: (n) => `${f1(4 * n)}% less scrap, the fraction saved across crafts` } ] },
   social: { built: false, cats: [
     { id: 'persuade', name: 'Persuade', words: (n) => `Open zone ${plus(5 * n, '%')} wider` },
     { id: 'intimidate', name: 'Intimidate', words: (n) => `Snap point ${f1(4 * n)}% later, Break zone ${plus(2 * n, '%')} wider` },

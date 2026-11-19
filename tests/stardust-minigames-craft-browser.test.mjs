@@ -1,5 +1,6 @@
-// The forge in a real browser: set up from the address, a bot strikes when the needle is in the
-// lit zone (Space on desktop, tap on phone), a missing player ruins the part. Screenshots to PROOF_DIR.
+// The forge (heat and shape) in a real browser: set up from the address; hold-to-heat by key on
+// desktop and by touch hold on phone, release in the band, tap the tools in order; a burnt stock;
+// a wrong-order tap; the scrap bank carries between crafts. Screenshots to PROOF_DIR.
 //   STARDUST_BROWSER_TEST=1 ~/kauto-3d/bin/capped 6G timeout 300 node --test tests/stardust-minigames-craft-browser.test.mjs
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -13,14 +14,16 @@ const PHONE = { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isM
 const skip = process.env.STARDUST_BROWSER_TEST !== '1' && 'set STARDUST_BROWSER_TEST=1';
 const shot = async (page, name) => { if (PROOF) await page.screenshot({ path: `${PROOF}/${name}.png` }); };
 
-const bot = (page, { want, via }) => page.evaluate(({ want, via }) => {
-  const s = document.querySelector('.cf-panel').__state;
-  const inZone = () => { const x = (s.phase * 2 + s.t * s.speed) % 2; const p = x <= 1 ? x : 2 - x; const a = s.centres[s.index] - s.zone / 2, b = s.centres[s.index] + s.zone / 2; return p >= a && p <= b; };
-  const press = () => (via === 'key' ? dispatchEvent(new KeyboardEvent('keydown', { code: 'Space' })) : document.querySelector('.hk-btn').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true })));
-  window.__bot = setInterval(() => { if (!s.done && inZone() === want) press(); }, 4);
-}, { want, via });
+// Hold to heat, let go when the glow reaches `at` ('centre' | 'cold' | 'hot' | 'never').
+const heat = (page, { at, via }) => page.evaluate(({ at, via }) => {
+  const s = document.querySelector('.cf-panel').__state; const btn = document.querySelector('.cf-hold');
+  const lo = s.centre - s.zone / 2, hi = s.centre + s.zone / 2;
+  const target = { centre: s.centre, cold: lo - 0.06, hot: hi + 0.06, never: 2 }[at];
+  if (via === 'key') dispatchEvent(new KeyboardEvent('keydown', { code: 'Space' })); else btn.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true, pointerId: 1 }));
+  const t = setInterval(() => { if (s.phase !== 'heat') return clearInterval(t); if (s.temp >= target) { clearInterval(t); if (via === 'key') dispatchEvent(new KeyboardEvent('keyup', { code: 'Space' })); else btn.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, cancelable: true, pointerId: 1 })); } }, 2);
+}, { at, via });
 
-test('crafting forge in the browser', { skip }, async () => {
+test('crafting forge (heat and shape) in the browser', { skip }, async () => {
   const { chromium } = await loadPlaywright();
   const server = await startServer();
   const browser = await chromium.launch({ headless: true });
@@ -37,32 +40,52 @@ test('crafting forge in the browser', { skip }, async () => {
       await page.goto(`${server.origin}${PAGE}${Q}`);
       await page.waitForSelector('#mg-page:not([hidden])');
       assert.equal(await page.locator('#mg-mini').inputValue(), 'craft');
-      // d20 12 + 6 = 18 vs 12: margin 6, Good. Speed 3 points: 4 strikes, -1 at tier +1? no: strikes 4 (tier +1 leaves strikes).
-      assert.match(await page.locator('#mg-readout').innerText(), /Tier \+1 Good[\s\S]*4[\s\S]*strikes[\s\S]*zone 25\.3%[\s\S]*quality \+8[\s\S]*build x0\.85[\s\S]*material x0\.96/);
-      assert.equal(await page.locator('#l-haggle').isVisible(), false);
+      // d20 12 + 6 = 18 vs 12: margin 6, Good. 3 speed points: 4 steps. Band 25.3%, work x1.15.
+      assert.match(await page.locator('#mg-readout').innerText(), /Tier \+1 Good[\s\S]*4 steps[\s\S]*heat band 25\.3%[\s\S]*work x1\.15[\s\S]*quality \+8[\s\S]*build x0\.85[\s\S]*scrap x0\.96/);
       await shot(page, `craft-${name}-1-setup`);
       await page.click('#mg-go');
       await page.waitForSelector('.cf-panel');
-      const m = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, iw: innerWidth, btn: document.querySelector('.hk-btn').getBoundingClientRect().height, n: document.querySelector('.cf-panel').__state.strikes }));
+      const m = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, iw: innerWidth, btn: document.querySelector('.cf-hold').getBoundingClientRect().height, n: document.querySelector('.cf-panel').__state.strikes }));
       assert.ok(m.sw <= m.iw); assert.ok(m.btn >= 44); assert.equal(m.n, 4);
-      await page.waitForTimeout(400); await shot(page, `craft-${name}-2-start`);
+      await page.waitForTimeout(300); await shot(page, `craft-${name}-2-heat`);
 
-      await bot(page, { want: true, via });
-      await page.waitForSelector('.rp-result[data-outcome="made"]', { timeout: 30000 });
-      await page.evaluate(() => clearInterval(window.__bot));
+      await heat(page, { at: 'centre', via });
+      await page.waitForSelector('.cf-panel[data-phase="shape"]', { timeout: 10000 });
+      assert.equal(await page.evaluate(() => document.querySelector('.cf-panel').__state.heat), 'ok');
+      // One wrong tap first (spoils), then everything in order.
+      const { order, tiles } = await page.evaluate(() => { const s = document.querySelector('.cf-panel').__state; return { order: s.order, tiles: s.tiles }; });
+      const wrong = tiles.find((t) => t !== order[0]);
+      await page.click(`[data-tool="${wrong}"]`);
+      await shot(page, `craft-${name}-3-shape-wrong`);
+      for (const id of order) await page.click(`[data-tool="${id}"]`);
+      await page.waitForSelector('.rp-result[data-outcome="made"]');
       const r = await page.evaluate(() => document.querySelector('.cf-panel').__state.result);
-      assert.deepEqual([r.good, r.spoils, r.stars, r.quality, r.xp], [4, 0, 3, 100, 6]);
-      assert.equal(r.buildSeconds, 26); // 30 s x 0.85 rounded
-      await page.waitForTimeout(250); await shot(page, `craft-${name}-3-made`);
+      assert.deepEqual([r.success, r.good, r.wrong, r.spoils, r.quality, r.stars], [true, 3, 1, 1, 86, 2]);
+      assert.equal(r.buildSeconds, 26); // 30 x 0.85
+      // Scrap: exact 4 x 0.96 x 1.1 = 4.224, ceil 5, bank 0.776
+      assert.deepEqual([r.materials, Math.round(r.bank * 1000) / 1000], [5, 0.776]);
+      await page.waitForTimeout(250); await shot(page, `craft-${name}-4-made`);
+      assert.match(await page.locator('.cf-mat').innerText(), /5 used \(4\.22 exact\), 0\.78 banked/);
       await page.click('.rp-result button');
 
+      // The bank carries into the next craft: readout shows it, and the next clean craft uses 4 and grows it.
+      assert.match(await page.locator('#mg-readout').innerText(), /banked 0\.78/);
       await page.click('#mg-go'); await page.waitForSelector('.cf-panel');
-      await bot(page, { want: false, via });
-      await page.waitForSelector('.rp-result[data-outcome="ruined"]', { timeout: 30000 });
-      await page.evaluate(() => clearInterval(window.__bot));
+      await heat(page, { at: 'centre', via });
+      await page.waitForSelector('.cf-panel[data-phase="shape"]');
+      const o2 = await page.evaluate(() => document.querySelector('.cf-panel').__state.order);
+      for (const id of o2) await page.click(`[data-tool="${id}"]`);
+      await page.waitForSelector('.rp-result[data-outcome="made"]');
       const r2 = await page.evaluate(() => document.querySelector('.cf-panel').__state.result);
-      assert.deepEqual([r2.success, r2.xp, r2.materials], [false, 0, 10]);
-      await shot(page, `craft-${name}-4-ruined`);
+      assert.deepEqual([r2.spoils, r2.materials, Math.round(r2.bank * 1000) / 1000], [0, 4, 0.936]); // 3.84 - 0.776 = 3.064 -> 4, the credit grows
+      await page.click('.rp-result button');
+
+      // A burnt stock: hold forever.
+      await page.click('#mg-go'); await page.waitForSelector('.cf-panel');
+      await heat(page, { at: 'never', via });
+      await page.waitForSelector('.cf-panel[data-phase="shape"]', { timeout: 10000 });
+      assert.equal(await page.evaluate(() => document.querySelector('.cf-panel').__state.heat), 'hot');
+      await shot(page, `craft-${name}-5-burnt`);
       assert.deepEqual(errors, []);
       await context.close();
     }
