@@ -310,3 +310,36 @@ export function setupStealth({ tier = 0, points = {}, level = POINT_MAX } = {}) 
     tier: t, points: p, label: tierInfo(t).label,
   };
 }
+
+// --- Shooting: the shooting gallery (Donaven 2026-11-19) ------------------------------------------------
+// Shooting has no d20 roll (like live stealth): the gallery is set up by the points and the lesson level you pick.
+// Categories: reload, ammo, spray. Each point changes something you can see on the range.
+//   reload  a reload is 0.14 s faster per point (1.8 s .. 0.54 s): the reload bar is shorter
+//   ammo    one more round in the magazine per point (6 .. 15): one more pip in the magazine
+//   spray   the resting crosshair bloom is 0.22 units narrower per point (3.2 .. 1.22), and every shot kicks it
+//           0.12 units less (1.6 .. 0.52): the ring drawn around the crosshair is smaller
+// The bloom is the radius, in range units (the range is 160 wide and 100 high), a shot may land from where you aim.
+// It grows by one kick per shot fired (up to 4 shots' worth) and settles back at 2.5 shots a second.
+// Lessons (the difficulty; there is no roll): 1 Basic, 2 Standard, 3 Expert.
+export const SHOOTING_CATEGORIES = Object.freeze(['reload', 'ammo', 'spray']);
+export const SHOOTING_BASE = Object.freeze({ reload: 1.8, reloadPerPoint: 0.14, magazine: 6, spread: 3.2, spreadPerPoint: 0.22, kick: 1.6, kickPerPoint: 0.12, heatMax: 4, heatDecay: 2.5, fireGap: 0.22 });
+export const SHOOTING_LESSONS = Object.freeze([
+  Object.freeze({ id: 1, name: 'Basic', unlockLevel: 1, targets: 10, time: 30, par: 11, speed: 1, size: 1, bull: 0.32, hitXp: 2, bullXp: 1, bullEvery: 3 }),
+  Object.freeze({ id: 2, name: 'Standard', unlockLevel: 4, targets: 12, time: 28, par: 14, speed: 1.25, size: 0.85, bull: 0.28, hitXp: 3, bullXp: 2, bullEvery: 2 }),
+  Object.freeze({ id: 3, name: 'Expert', unlockLevel: 7, targets: 14, time: 26, par: 17, speed: 1.5, size: 0.7, bull: 0.24, hitXp: 4, bullXp: 3, bullEvery: 2 }),
+]);
+export const shootingLesson = (n) => SHOOTING_LESSONS[Math.max(1, Math.min(SHOOTING_LESSONS.length, Math.trunc(n) || 1)) - 1];
+export function setupShooting({ points = {}, level = POINT_MAX, lesson = 1 } = {}) {
+  const p = cleanPoints(points, SHOOTING_CATEGORIES, level);
+  const b = SHOOTING_BASE;
+  const r2 = (x) => Math.round(+x.toFixed(6) * 100) / 100;
+  const l = shootingLesson(lesson);
+  return {
+    reloadSeconds: r2(b.reload - b.reloadPerPoint * p.reload),
+    magazine: b.magazine + p.ammo,
+    spread: r2(b.spread - b.spreadPerPoint * p.spray),
+    kick: r2(b.kick - b.kickPerPoint * p.spray),
+    heatMax: b.heatMax, heatDecay: b.heatDecay, fireGap: b.fireGap,
+    lesson: l.id, points: p, label: l.name,
+  };
+}

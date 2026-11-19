@@ -14,10 +14,15 @@ import { TALKS, nextAfterCheck } from './talks.js';
 import { sparSetup, sparXp, sparSaid } from './spar.js';
 import { branchOf } from '../minigames/sceneHook.js';
 import { gymGame, trainRun, gymLoadout, gymSetup } from '../minigames/gym.js';
+import { trainingOf, gallerySetup, settleGallery, answerPage, leftThisHour } from '../minigames/trainer.js';
+import { nextPage, shuffledOrder } from '../minigames/books.js';
+import { createGallery } from '../minigames/gallery.js';
+import { playGallery } from '../minigames/galleryView.js';
+import { renderTrainer } from '../minigames/trainerView.js';
 import { checkChance, checkBonusText } from '../character.js';
 import { tierInfo } from '../minigames/setup.js';
 import { ROLL_SKILLS } from '../data.js';
-import { renderHud, renderBoard, renderGymPanel, renderConfirm, renderSparPicker, renderWhere, h } from './ui.js';
+import { renderHud, renderBoard, renderConfirm, renderSparPicker, renderWhere, h } from './ui.js';
 
 const SKILL_NAME = Object.fromEntries(ROLL_SKILLS.map((s) => [s.id, s.name]));
 const OTHERS = {
@@ -25,7 +30,7 @@ const OTHERS = {
   board: { name: 'Skills board', prompt: 'Skills board: levels, XP and risk' },
   scan: { name: 'Scan station', prompt: 'Scan station: save your progress' },
   reprint: { name: 'Reprint pod', prompt: 'Reprint pod: die and come back' },
-  gym: { name: 'Gym trainer', prompt: 'Gym trainer: spend points, then train' },
+  gym: { name: 'Gym trainer', prompt: 'Gym trainer: gallery, books and replays for XP' },
   spar: { name: 'Sparring rack', prompt: 'Sparring ring: fight a marauder' },
   reset: { name: 'Reset cart', prompt: 'Reset cart: a fresh test state' },
 };
@@ -38,7 +43,8 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 export function createWorkbench({ store, bus, onfoot, dialogueBox, sheet, hud, toast = () => {}, reducedMotion = () => false, sound = () => {}, onBusy = () => {}, storage = globalThis.localStorage, rng = Math.random, seed = null }) {
   let state = loadState(storage);
   let busy = 0;
-  let gymSkill = 'repair', boardSkill = null, sparCount = 2;
+  let gymSkill = 'shooting', boardSkill = null, sparCount = 2, gymLesson = 1, pointsOpen = false;
+  let bookCur = { skill: null, page: null, order: [], answered: null, lastId: null };
   let leave = null; // resolves the game in progress when the player leaves it
   let seedCounter = 0;
   const api = { rng, openPanel: null };
@@ -159,9 +165,56 @@ export function createWorkbench({ store, bus, onfoot, dialogueBox, sheet, hud, t
     } else commit({ ...state, said: 'You left the gym game. No XP, no fee.' }, { silent: true });
     openGym();
   }
-  const openGym = () => openPanel('HOLODECK GYM', 'Spend points, then train', (pane) => renderGymPanel(pane, state, {
-    selected: gymSkill, now: Date.now(), onSelect: (id) => { gymSkill = id; api.openPanel?.draw(); },
-    onPoints: (skill, pts) => commit(setPoints(state, skill, pts), { silent: true }), onTrain: (id) => train(id), onClose: closePanel,
+  // ---- the trainer: a gallery, a book or a replay for each skill --------------------------------------------------------
+  function bookFor(skill) {
+    if (trainingOf(skill) !== 'book') return { page: null, order: [], answered: null };
+    if (bookCur.skill !== skill) bookCur = { skill, page: null, order: [], answered: null, lastId: null };
+    if (!bookCur.page && !bookCur.answered) {
+      const page = nextPage(skill, state.progress.levels[skill], state.learned, bookCur.lastId);
+      if (page) bookCur = { ...bookCur, page, order: shuffledOrder(page, api.rng), answered: null };
+    }
+    return bookCur;
+  }
+  function answer(position) {
+    const page = bookCur.page;
+    if (!page || bookCur.answered) return;
+    const r = answerPage({ pageId: page.id, order: bookCur.order, position, credits: state.credits, log: state.gymLog, learned: state.learned, now: Date.now() });
+    if (!r.ok) { commit({ ...state, said: r.said }, { silent: true }); return; }
+    bookCur = { ...bookCur, answered: { position, right: r.right, said: r.said, reread: r.reread } };
+    const next = earnXp({ ...state, credits: r.credits, gymLog: r.log, learned: r.learned }, page.skill, r.paid).state;
+    commit({ ...next, said: r.said });
+  }
+  async function playRange() {
+    const skill = 'shooting';
+    const { level, points } = gymLoadout(state.progress, skill);
+    const setup = gallerySetup({ level, points, lesson: gymLesson });
+    const left = leftThisHour(state.gymLog, skill, Date.now());
+    closePanel();
+    sheet.stage.replaceChildren();
+    const stage = h('div', { class: 'wb-stage' });
+    const leaveBtn = h('button', { type: 'button', class: 'wb-leave', text: 'Leave this game' });
+    sheet.stage.append(stage, leaveBtn);
+    showSheet(true, { word: 'SHOOTING GALLERY', titleText: 'Gym: shooting gallery' });
+    hold(true);
+    const left$ = new Promise((resolve) => { leave = () => resolve(null); leaveBtn.addEventListener('click', leave); });
+    let result = null;
+    try { result = await Promise.race([playGallery(stage, { state: createGallery({ seed: nextSeed(), lesson: setup.lesson, setup }), xpLeft: left, sound: () => {}, reducedMotion }), left$]); }
+    catch (error) { console.warn('Stardust workbench: the gallery could not run', error); }
+    leave = null; sheet.stage.replaceChildren(); showSheet(false); hold(false);
+    if (result) {
+      const r = settleGallery({ credits: state.credits, log: state.gymLog, now: Date.now(), result });
+      const next = earnXp({ ...state, credits: r.credits, gymLog: r.log }, skill, r.paid).state;
+      commit({ ...next, said: r.said });
+    } else commit({ ...state, said: 'You left the range. No XP, no fee.' }, { silent: true });
+    openGym();
+  }
+  const openGym = () => openPanel('HOLODECK GYM', 'Train a skill', (pane) => renderTrainer(pane, {
+    state, selected: gymSkill, now: Date.now(), lesson: gymLesson, book: bookFor(gymSkill), pointsOpen,
+  }, {
+    onSelect: (id) => { gymSkill = id; api.openPanel?.draw(); }, onLesson: (n) => { gymLesson = n; api.openPanel?.draw(); },
+    onStart: () => playRange(), onAnswer: answer, onNext: () => { bookCur = { ...bookCur, lastId: bookCur.page?.id ?? bookCur.lastId, page: null, answered: null }; api.openPanel?.draw(); },
+    onReplay: (id) => train(id), onPoints: (skill, pts) => commit(setPoints(state, skill, pts), { silent: true }),
+    onPointsToggle: (on) => { pointsOpen = on; }, onClose: closePanel,
   }));
 
   function doScan() { commit(scan(state)); }

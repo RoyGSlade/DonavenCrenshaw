@@ -5,7 +5,7 @@
 // The numbers are the same functions the minigames use (setup.js), so the
 // card and the game cannot disagree. Shooting has no minigame: its three
 // categories are listed with no numbers yet.
-import { POINT_MAX, REPAIR_BASE, setupRepair, setupHack, setupPersuade, setupIntimidate, setupPilot } from './setup.js';
+import { POINT_MAX, REPAIR_BASE, setupRepair, setupHack, setupPersuade, setupIntimidate, setupPilot, setupShooting } from './setup.js';
 
 const f1 = (n) => (Math.round(n * 10) / 10).toString();
 const plus = (n, unit) => `${n > 0 ? '+' : ''}${f1(n)}${unit}`;
@@ -15,10 +15,10 @@ const plus = (n, unit) => `${n > 0 ? '+' : ''}${f1(n)}${unit}`;
  * `built`: which minigame exists to feel it (repair and hacking are playable; the rest are planned in PLAN.md).
  */
 export const CATEGORIES = Object.freeze({
-  shooting: { built: false, cats: [
-    { id: 'reload', name: 'Faster reload', words: () => 'numbers not set yet' },
-    { id: 'ammo', name: 'Bigger ammo capacity', words: () => 'numbers not set yet' },
-    { id: 'spray', name: 'Narrower spray pattern', words: () => 'numbers not set yet' } ] },
+  shooting: { built: true, cats: [
+    { id: 'reload', name: 'Faster reload', words: (n) => `a reload takes ${setupShooting({ points: { reload: n }, level: 9 }).reloadSeconds} s` },
+    { id: 'ammo', name: 'Bigger ammo capacity', words: (n) => `${setupShooting({ points: { ammo: n }, level: 9 }).magazine} rounds in a magazine` },
+    { id: 'spray', name: 'Narrower spray pattern', words: (n) => { const s = setupShooting({ points: { spray: n }, level: 9 }); return `crosshair bloom ${s.spread} wide at rest, ${s.kick} more with each shot`; } } ] },
   piloting: { built: true, cats: [
     { id: 'handling', name: 'Handling', words: (n) => `drift power ${f1(setupPilot({ points: { handling: n }, level: 9 }).drift)} in a landing` },
     { id: 'boost', name: 'Boost', words: (n) => { const b = setupPilot({ points: { boost: n }, level: 9 }); return `${b.fuel} s of thrust, ${b.brakes} emergency brake${b.brakes === 1 ? '' : 's'} per landing`; } },

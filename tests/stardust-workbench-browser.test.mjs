@@ -215,22 +215,26 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
         }
       });
 
-      await sub('gym trainer: spend a point, train for credits, the XP is a quarter', async () => {
+      await sub('gym trainer: spend a point, replay a game for credits (stealth keeps the gym replay), the XP is a quarter', async () => {
         await use(page, 'wb-gym');
-        await page.waitForSelector('#hg-minigame:not([hidden]) .wb-pane .ex-cats');
+        await page.waitForSelector('#hg-minigame:not([hidden]) .tr-root');
         await page.waitForTimeout(200);
         const sel = phone ? 'tap' : 'click';
+        await page.locator('.tr-skill[data-skill="repair"]')[sel]();
+        await page.locator('.tr-points summary')[sel]();
         const plus = page.locator('.wb-pane .ex-step.primary:not([disabled])').first();
         if (await plus.count()) { await plus[sel](); await page.waitForTimeout(150); }
         const mid = await state(page);
         assert.ok(Object.values(mid.progress.points.repair || {}).some((n) => n > 0), 'a point was spent');
+        await page.locator('.tr-skill[data-skill="stealth"]')[sel]();
+        await page.waitForSelector('.wb-train[data-game="stealth"]');
         await shot('6-gym');
         const credits = mid.credits;
-        await page.locator('.wb-train[data-game="repair"]')[sel]();
+        await page.locator('.wb-train[data-game="stealth"]')[sel]();
         await sheetOpen(page);
         assert.match(await page.locator('#hg-minigame-eyebrow').textContent(), /GYM/);
-        await playToEnd(page, 'repair', phone); await closeCard(page, phone);
-        await page.waitForSelector('#hg-minigame:not([hidden]) .wb-pane .gm-list');
+        await playToEnd(page, 'stealth', phone); await closeCard(page, phone);
+        await page.waitForSelector('#hg-minigame:not([hidden]) .tr-root');
         const after = await state(page);
         assert.equal(after.credits, credits - 10, 'the gym fee');
         assert.match(after.said, /XP|hour/);
