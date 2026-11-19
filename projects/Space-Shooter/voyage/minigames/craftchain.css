@@ -59,3 +59,23 @@
   .cc-chip{font-size:10.5px}
   .cc-gnum{font-size:36px}
 }
+
+.cc-depth i{background:#ffad72}.cc-depthstat em{font-size:12px}
+/* full screen (workbench/fullScreen.js): the recipe fills the overlay, the game's board takes what is left */
+.wb-full .cc-recipe{flex:1;min-height:0;display:flex;flex-direction:column;gap:6px}
+.wb-full .cc-stage{flex:1;min-height:0;display:flex;flex-direction:column}
+.wb-full .cc-panel{flex:1;min-height:0;display:flex;flex-direction:column;gap:6px;background:none;border:0;padding:0}
+.wb-full .cc-boardwrap{flex:1 1 0;min-height:0;display:grid;place-items:center;border:0;box-shadow:none;background:none;overflow:hidden;max-width:none}
+.wb-full .cc-boardwrap .cc-canvas{border:2px solid #0b121a;border-radius:8px;box-shadow:0 6px 18px #0008}
+.wb-full .cc-square{max-width:none}
+.wb-full .cc-panel .rp-help,.wb-full .cc-panel .rp-eyebrow{display:none}
+.wb-full .cc-chipbox{max-height:none}
+.wb-full .cc-grade,.wb-full .cc-final{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(480px,calc(100vw - 24px));max-height:calc(100vh - 24px);overflow:auto;z-index:3;background:#07111cf5}
+.wb-full .cc-stage{position:relative}
+@media (max-width:700px){
+  .wb-full .cc-chips{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px}.wb-full .cc-chip{white-space:nowrap}
+  .wb-full .cc-step{min-width:72px;padding:4px 8px}
+  .wb-full .cc-hud{gap:4px}.wb-full .cc-stat{padding:4px 6px}
+  .wb-full .cc-spoil{font-size:10px}
+}
+.wb-full .cc-recipe>.rp-eyebrow{display:none}

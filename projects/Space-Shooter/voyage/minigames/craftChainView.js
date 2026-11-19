@@ -19,27 +19,29 @@ export function ensureStyle() {
   document.head.append(link);
 }
 
-const r1 = (x) => Math.round(x * 10) / 10;
-const sign = (n) => (n >= 0 ? `+${n}` : `${n}`);
+const TOOL_WORDS = Object.freeze({ worn: 'thin line', shop: 'normal line', good: 'wide line' });
+export const toolWords = (tool) => `${tool[0].toUpperCase()}${tool.slice(1)} cutter: ${TOOL_WORDS[tool] || 'normal line'}`;
+const CUT_ROLL = Object.freeze({ '-2': 'a much narrower line', '-1': 'a narrower line', '0': 'a normal line', '1': 'a wider line and a dotted guide to follow', '2': 'a much wider line and a dotted guide to follow' });
+const SCREW_ROLL = Object.freeze({ '-2': 'more turns and a narrow snug zone', '-1': 'a few more turns and a narrower snug zone', '0': 'normal turns and a normal snug zone', '1': 'fewer turns and a wider snug zone', '2': 'much fewer turns and a wide snug zone' });
 
 /**
- * The effect chips for one game at this craft's roll: what the roll did, what each of the three paths did. Every point shown.
- * Returns [{ id, text }]; a path with no points reads "0 points: nothing yet".
+ * The effect chips for one game at this craft's roll, in plain words: what the roll did and what each of the three paths did.
+ * Every point shown; no formulas. Returns [{ id, text }].
  */
 export function effectChips(kind, setup) {
   const p = setup.points || {}, q = p.quality | 0, sp = p.speed | 0, ma = p.material | 0;
   const out = [];
   if (kind === 'cut') {
-    out.push({ id: 'roll', text: `${setup.label} roll: line ${r1(setup.width)} wide (${setup.toolWidth} x ${r1(1 + CUT_BASE.tierWidth * setup.tier)})${setup.guide ? ', dotted guide on' : ''}` });
-    out.push({ id: 'tool', text: `Cutter: ${setup.tool} (${setup.toolWidth} wide)` });
-    out.push({ id: 'speed', text: `Speed ${sp}: clean feed up to ${Math.round(setup.feed)} units a second${sp ? ` (+${Math.round(CUT_BASE.feedPerPoint * sp * 100)}%)` : ''}` });
+    out.push({ id: 'roll', text: `${setup.label} roll: ${CUT_ROLL[String(setup.tier)]}` });
+    out.push({ id: 'tool', text: toolWords(setup.tool) });
+    out.push({ id: 'speed', text: sp ? `Speed ${sp}: you can feed ${Math.round(CUT_BASE.feedPerPoint * sp * 100)}% faster before it tears` : 'Speed 0: normal feed' });
   } else if (kind === 'screw') {
-    out.push({ id: 'roll', text: `${setup.label} roll: ${r1(setup.turns * (1 + SCREW_BASE.threadPerPoint * sp))} turns before points, snug zone ${r1(setup.zone * 100)}% of the last turn` });
-    out.push({ id: 'speed', text: `Speed ${sp}: thread +${Math.round(SCREW_BASE.threadPerPoint * sp * 100)}% a turn, so ${Math.round(setup.turns * 100) / 100} turns` });
+    out.push({ id: 'roll', text: `${setup.label} roll: ${SCREW_ROLL[String(setup.tier)]}` });
+    out.push({ id: 'speed', text: sp ? `Speed ${sp}: the bolt goes in ${Math.round(SCREW_BASE.threadPerPoint * sp * 100)}% faster, so fewer turns` : 'Speed 0: normal thread' });
   }
-  out.push({ id: 'quality', text: `Quality ${q}: ${sign(setup.qualityBonus)} on the item` });
-  out.push({ id: 'material', text: `Material ${ma}: ${Math.round((1 - setup.materialFactor) * 100)}% less scrap, carried across crafts` });
-  if (sp) out.push({ id: 'build', text: `Speed ${sp}: ${Math.round((1 - setup.buildFactor) * 100)}% off the build time` });
+  out.push({ id: 'quality', text: q ? `Quality ${q}: +${setup.qualityBonus} on the item` : 'Quality 0: no bonus' });
+  out.push({ id: 'material', text: ma ? `Material ${ma}: ${Math.round((1 - setup.materialFactor) * 100)}% less scrap, carried across crafts` : 'Material 0: normal scrap use' });
+  if (sp) out.push({ id: 'build', text: `Speed ${sp}: ${Math.round((1 - setup.buildFactor) * 100)}% quicker build` });
   return out;
 }
 
@@ -47,12 +49,26 @@ export function chipList(chips) {
   return h('ul', { class: 'cc-chips', 'aria-label': 'What your roll and points did' }, ...chips.map((c) => h('li', { class: 'cc-chip', 'data-chip': c.id, text: c.text })));
 }
 
-/** A meter: a bar, a tick at the limit and a number. update(value) moves it. */
-export function meter({ label, limit, max, unit = '' }) {
-  const fill = h('i'), tick = h('b', { class: 'cc-tick', style: `left:${(100 * limit) / max}%` }), num = h('em', { text: `0 / ${Math.round(limit)}${unit}` });
+/** A meter: a bar with a tick at the limit and a word ("too fast" when over). update(value) moves it. No raw numbers. */
+export function meter({ label, limit, max, words = ['still', 'good', 'too fast'] }) {
+  const fill = h('i'), tick = h('b', { class: 'cc-tick', style: `left:${(100 * limit) / max}%` }), num = h('em', { text: words[0] });
   const bar = h('div', { class: 'cc-meter', role: 'img', 'aria-label': `${label} against its limit` }, fill, tick);
   const root = h('div', { class: 'cc-stat cc-feedstat' }, h('span', { text: label }), bar, num);
-  return { root, update(v) { fill.style.width = `${Math.min(100, (100 * v) / max)}%`; root.classList.toggle('is-over', v > limit); num.textContent = `${Math.round(v)} / ${Math.round(limit)}${unit}`; } };
+  return { root, update(v) { fill.style.width = `${Math.min(100, (100 * v) / max)}%`; root.classList.toggle('is-over', v > limit); num.textContent = v > limit ? words[2] : v < limit * 0.08 ? words[0] : words[1]; } };
+}
+
+/** Keep a canvas at its aspect ratio inside the space its wrapper is given (full-screen games); a no-op outside the overlay. */
+export function fitCanvas(wrap, canvas, aspect) {
+  if (typeof ResizeObserver === 'undefined') return;
+  const fit = () => {
+    if (!wrap.closest('.wb-full')) { canvas.style.width = ''; canvas.style.height = ''; return; }
+    const aw = wrap.clientWidth, ah = wrap.clientHeight;
+    if (!aw || !ah) return;
+    const w = Math.max(120, Math.floor(Math.min(aw, ah * aspect)));
+    canvas.style.width = `${w}px`; canvas.style.height = `${Math.floor(w / aspect)}px`;
+  };
+  new ResizeObserver(fit).observe(wrap);
+  requestAnimationFrame(fit);
 }
 
 /** The card a finished game leaves: the grade, its word, the three marks on a bar and what to do next. */

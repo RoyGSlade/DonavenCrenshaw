@@ -28,15 +28,15 @@ function makeSheet(seed) {
   return c;
 }
 
-export function playCut(root, { state, what = 'plate', reducedMotion = () => false } = {}) {
+export function playCut(root, { state, what = 'plate', reducedMotion = () => false, zoom = null } = {}) {
   ensureStyle();
   const s = state;
   const sheet = makeSheet(s.seed || 1);
   const canvas = h('canvas', { class: 'cc-canvas', width: String(BOARD.w * K), height: String(BOARD.h * K), 'aria-label': 'Sheet of metal with the part scribed on it. Press on START and drag round the outline.' });
   const ctx = canvas.getContext('2d');
-  const feed = meter({ label: 'Feed speed', limit: s.feed, max: s.feed * 1.6, unit: '' });
+  const feed = meter({ label: 'Feed speed', limit: s.feed, max: s.feed * 1.6 });
   const live = h('em', { class: 'cc-live', text: '0' });
-  const hud = h('div', { class: 'cc-hud' }, feed.root, h('div', { class: 'cc-stat' }, h('span', { text: 'Line' }), h('em', { text: `${Math.round(s.width * 10) / 10} wide` })), h('div', { class: 'cc-stat' }, h('span', { text: 'Grade so far' }), live));
+  const hud = h('div', { class: 'cc-hud' }, feed.root, h('div', { class: 'cc-stat' }, h('span', { text: `${s.tool} cutter` }), h('em', { text: ({ worn: 'thin line', shop: 'normal line', good: 'wide line' })[s.tool] || 'normal line' })), h('div', { class: 'cc-stat' }, h('span', { text: 'Grade so far' }), live));
   const status = h('p', { class: 'rp-status cc-status', role: 'status', 'aria-live': 'polite', text: `Press on START and drag round the ${what}. Stay on the line, and not too fast.` });
   const done = h('button', { type: 'button', class: 'ui-btn cc-done', text: 'Done cutting' });
   const panel = h('section', { class: 'rp-panel cc-panel mg-skin ui-panel', role: 'group', 'aria-label': `Cut the ${what}`, 'data-game': 'cut' },
@@ -45,9 +45,31 @@ export function playCut(root, { state, what = 'plate', reducedMotion = () => fal
   panel.__state = s;
   root.append(panel);
 
+  // On a touch screen the sheet is zoomed so the line is a finger's width; the view pans when the blade nears its edge.
+  let Z = zoom ?? (matchMedia('(pointer: coarse)').matches ? 1.6 : 1);
+  const camera = { x: 0, y: 0 };
+  const visW = () => BOARD.w / Z, visH = () => (BOARD.w / Z) * (canvas.height / canvas.width);
+  const clampCam = () => { camera.x = BOARD.w <= visW() ? (BOARD.w - visW()) / 2 : Math.max(0, Math.min(BOARD.w - visW(), camera.x)); camera.y = BOARD.h <= visH() ? (BOARD.h - visH()) / 2 : Math.max(0, Math.min(BOARD.h - visH(), camera.y)); };
+  camera.x = s.start.x - visW() / 2; camera.y = s.start.y - visH() / 2; clampCam();
+  const follow = () => { if (!s.last || Z <= 1) return; const mx = visW() * 0.22, my = visH() * 0.22; const { x, y } = s.last; if (x < camera.x + mx) camera.x = x - mx; else if (x > camera.x + visW() - mx) camera.x = x - visW() + mx; if (y < camera.y + my) camera.y = y - my; else if (y > camera.y + visH() - my) camera.y = y - visH() + my; clampCam(); };
+  // Full screen: the canvas fills its space. Zoomed (touch) it takes the whole box so the window shows as much sheet as the screen allows;
+  // otherwise it keeps the sheet's own shape.
+  const wrapEl = panel.querySelector('.cc-boardwrap'), dpr = Math.min(2, Math.max(1, window.devicePixelRatio || 1));
+  const refit = () => {
+    if (!wrapEl.closest('.wb-full')) return;
+    const aw = wrapEl.clientWidth, ah = wrapEl.clientHeight; if (!aw || !ah) return;
+    let w = aw, hh = ah;
+    if (Z <= 1) { w = Math.floor(Math.min(aw, ah * (BOARD.w / BOARD.h))); hh = Math.floor(w / (BOARD.w / BOARD.h)); }
+    canvas.style.width = `${w}px`; canvas.style.height = `${hh}px`;
+    const cw = Z > 1 ? Math.round(w * dpr) : BOARD.w * K, ch = Z > 1 ? Math.round(hh * dpr) : BOARD.h * K;
+    if (canvas.width !== cw || canvas.height !== ch) { canvas.width = cw; canvas.height = ch; clampCam(); }
+  };
+  if (typeof ResizeObserver !== 'undefined') new ResizeObserver(refit).observe(wrapEl);
+  requestAnimationFrame(refit);
+  panel.__view = () => ({ zoom: Z, pxPerUnit: canvas.getBoundingClientRect().width / visW(), cx: camera.x, cy: camera.y });
   const sparks = [];
   let shake = 0, tornFlash = 0, endAt = 0, smooth = 0, heads = false;
-  const toBoard = (e) => { const r = canvas.getBoundingClientRect(); return { x: ((e.clientX - r.left) * BOARD.w) / r.width, y: ((e.clientY - r.top) * BOARD.h) / r.height }; };
+  const toBoard = (e) => { const r = canvas.getBoundingClientRect(); return { x: camera.x + ((e.clientX - r.left) * visW()) / r.width, y: camera.y + ((e.clientY - r.top) * visH()) / r.height }; };
   const tOf = (e) => e.timeStamp / 1000;
   let finish; const promise = new Promise((res) => { finish = res; }); promise.state = s;
 
@@ -60,7 +82,7 @@ export function playCut(root, { state, what = 'plate', reducedMotion = () => fal
   canvas.addEventListener('pointermove', (e) => {
     if (s.done || !s.down) return; e.preventDefault();
     const list = e.getCoalescedEvents ? e.getCoalescedEvents() : null;
-    for (const ev of list && list.length ? list : [e]) { const p = toBoard(ev); cutMove(s, p.x, p.y, tOf(ev)); if (s.done) break; }
+    for (const ev of list && list.length ? list : [e]) { const p = toBoard(ev); cutMove(s, p.x, p.y, tOf(ev)); follow(); if (s.done) break; }
     heads = true;
   });
   const up = (e) => { if (s.down) { cutUp(s); canvas.releasePointerCapture?.(e.pointerId); } };
@@ -71,7 +93,8 @@ export function playCut(root, { state, what = 'plate', reducedMotion = () => fal
   // ---- drawing ----------------------------------------------------------------------------------------------------
   const path = (g) => { g.beginPath(); s.poly.forEach((p, i) => (i ? g.lineTo(p.x, p.y) : g.moveTo(p.x, p.y))); g.closePath(); };
   function draw(dt) {
-    const g = ctx; g.setTransform(K, 0, 0, K, 0, 0);
+    const g = ctx, sc = canvas.width / visW(); g.setTransform(sc, 0, 0, sc, -camera.x * sc, -camera.y * sc);
+    g.fillStyle = '#07101a'; g.fillRect(camera.x, camera.y, visW(), visH());
     const sh = shake > 0 && !reducedMotion() ? (Math.random() - 0.5) * 6 * shake / 0.3 : 0;
     g.save(); g.translate(sh, sh * 0.6);
     g.drawImage(sheet, 0, 0, BOARD.w, BOARD.h);
@@ -134,6 +157,7 @@ export function playCut(root, { state, what = 'plate', reducedMotion = () => fal
     }
     for (let i = sparks.length - 1; i >= 0; i--) { const p = sparks[i]; p.life -= dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 260 * dt; if (p.life <= 0) sparks.splice(i, 1); }
     shake = Math.max(0, shake - dt); tornFlash = Math.max(0, tornFlash - dt);
+    if (s.done) { Z += (1 - Z) * Math.min(1, dt * 7); camera.x += (0 - camera.x) * Math.min(1, dt * 7); camera.y += (0 - camera.y) * Math.min(1, dt * 7); if (Z < 1.005) { Z = 1; camera.x = camera.y = 0; } else clampCam(); }
     smooth += ((s.down ? s.speed : 0) - smooth) * Math.min(1, dt * 14);
     feed.update(smooth);
     live.textContent = String(Math.round(gradeOf(s)));

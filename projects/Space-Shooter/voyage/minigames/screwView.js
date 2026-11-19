@@ -2,7 +2,7 @@
 // mouse button held); the head turns and visibly sinks, a side view shows the shaft going down, and on the last turn a torque
 // bar wakes and shakes as you near the green. Let go in the green. Canvas 500 x 500 board units; resolves with the pure result.
 import { screwDown, screwMove, screwUp, screwGiveUp, SIZE, torque, inLastTurn, inGreen, gradeOf, greenFrom } from './screw.js';
-import { h, ensureStyle, loop, lcg } from './craftChainView.js';
+import { h, ensureStyle, loop, lcg, fitCanvas } from './craftChainView.js';
 
 const K = 1.5;
 const TAU = Math.PI * 2;
@@ -34,17 +34,18 @@ export function playScrew(root, { state, what = 'bolt', reducedMotion = () => fa
   const torqueNote = h('span', { class: 'cc-tnote', text: 'Torque wakes on the last turn' });
   const torqueBox = h('div', { class: 'cc-torquebox' }, h('div', { class: 'cc-thead' }, h('span', { text: 'Torque' }), torqueNote), bar,
     h('div', { class: 'cc-tscale' }, h('span', { text: 'loose' }), h('span', { text: 'snug' }), h('span', { text: 'over' })));
-  const turnsEl = h('em', { text: '0' }), slipsEl = h('em', { text: '0' }), stripEl = h('em', { text: '0' }), liveEl = h('em', { class: 'cc-live', text: '100' });
+  const depthFill = h('i'), depthEl = h('em', { text: 'start' }), slipsEl = h('em', { text: '0' }), stripEl = h('em', { text: '0' }), liveEl = h('em', { class: 'cc-live', text: '100' });
   const hud = h('div', { class: 'cc-hud cc-hud4' },
-    h('div', { class: 'cc-stat' }, h('span', { text: 'Turns' }), turnsEl), h('div', { class: 'cc-stat' }, h('span', { text: 'Slips' }), slipsEl),
+    h('div', { class: 'cc-stat cc-depthstat' }, h('span', { text: 'Bolt depth' }), h('div', { class: 'cc-meter cc-depth', role: 'img', 'aria-label': 'How far the bolt is in' }, depthFill), depthEl), h('div', { class: 'cc-stat' }, h('span', { text: 'Slips' }), slipsEl),
     h('div', { class: 'cc-stat' }, h('span', { text: 'Stripped' }), stripEl), h('div', { class: 'cc-stat' }, h('span', { text: 'Grade so far' }), liveEl));
   const status = h('p', { class: 'rp-status cc-status', role: 'status', 'aria-live': 'polite', text: `Press in the ring and circle clockwise to drive the ${what}. Let go when the torque is in the green.` });
   const giveUp = h('button', { type: 'button', class: 'ui-btn cc-done', text: 'Give up this bolt' });
   const panel = h('section', { class: 'rp-panel cc-panel mg-skin ui-panel', role: 'group', 'aria-label': `Screw: drive the ${what}`, 'data-game': 'screw' },
     h('p', { class: 'rp-eyebrow ui-nameplate', text: `SCREW · ${what.toUpperCase()}` }), hud, torqueBox, h('div', { class: 'cc-boardwrap cc-square' }, canvas), status,
-    h('div', { class: 'cc-row' }, giveUp), h('p', { class: 'rp-help', text: `Clockwise tightens, counter-clockwise loosens. Stay in the ring (${s.ringIn} to ${s.ringOut} units out) or the driver slips and a quarter turn is lost. Keep turning past the end and the head strips.` }));
+    h('div', { class: 'cc-row' }, giveUp), h('p', { class: 'rp-help', text: `Clockwise tightens, counter-clockwise loosens. Stay inside the ring or the driver slips and a quarter turn is lost. Keep turning past the end and the head strips.` }));
   panel.__state = s;
   root.append(panel);
+  fitCanvas(panel.querySelector('.cc-boardwrap'), canvas, 1);
 
   const toBoard = (e) => { const r = canvas.getBoundingClientRect(); return { x: ((e.clientX - r.left) * SIZE) / r.width, y: ((e.clientY - r.top) * SIZE) / r.height }; };
   let finish; const promise = new Promise((res) => { finish = res; }); promise.state = s;
@@ -117,7 +118,9 @@ export function playScrew(root, { state, what = 'bolt', reducedMotion = () => fa
     const near = inLastTurn(s) ? Math.max(0, 1 - Math.abs(s.turns - greenFrom(s)) / 0.3) : 0;
     shakeX = inLastTurn(s) && !reducedMotion() ? (Math.random() - 0.5) * (inGreen(s) ? 6 : 2 + 6 * near) : 0;
     needle.style.left = `${(100 * (last ? q : 0)) / total}%`; needle.style.transform = `translateX(calc(-50% + ${shakeX}px))`;
-    turnsEl.textContent = `${(Math.round(s.turns * 100) / 100).toFixed(2)} / ${(Math.round(s.T * 100) / 100).toFixed(2)}`;
+    const dp = s.status === 'stripped' ? 1 : Math.min(1, s.turns / s.T);
+    depthFill.style.width = `${100 * dp}%`;
+    depthEl.textContent = s.status === 'stripped' ? 'stripped' : dp < 0.05 ? 'start' : dp < 0.5 ? 'going in' : inGreen(s) ? 'home: let go' : inLastTurn(s) ? 'nearly home' : 'halfway';
     slipsEl.textContent = String(s.slips); stripEl.textContent = String(s.stripped); liveEl.textContent = String(gradeOf(s));
     giveUp.disabled = s.done;
     if (s.done && !endAt) { endAt = performance.now(); status.textContent = s.result.success ? 'Snug.' : s.result.how === 'gave-up' ? 'Given up.' : 'Too rough.'; }

@@ -51,17 +51,18 @@ const canvasRect = async (page, game) => {
   return page.evaluate((g) => { const r = document.querySelector(`.cc-panel[data-game=${g}] canvas`).getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; }, game);
 };
 
+const handCutPx = async (page) => async (x, y) => { const v = await page.evaluate(() => { const p = document.querySelector('.cc-panel[data-game=cut]'), r = p.querySelector('canvas').getBoundingClientRect(), w = p.__view(); return { l: r.left, t: r.top, k: w.pxPerUnit, cx: w.cx, cy: w.cy }; }); return { x: v.l + (x - v.cx) * v.k, y: v.t + (y - v.cy) * v.k }; };
 /** Cut by hand: press on START, follow the outline at about 180 units a second. `until` (0..1) stops and returns early (to shoot mid-drag). */
-async function handCut(page, input, { delay = 60, wobble = 0, until = null, release = true } = {}) {
-  const r = await canvasRect(page, 'cut');
-  const s = await page.evaluate(() => { const st = document.querySelector('.cc-panel[data-game=cut]').__state; return { start: st.start, targets: st.targets.map((p) => [p.x, p.y]) }; });
-  const px = (x, y, k = 0) => ({ x: r.x + (x * r.w) / 1000 + wobble * Math.sin(k / 6), y: r.y + (y * r.w) / 1000 });
-  const pts = [px(s.start.x, s.start.y), ...s.targets.slice(1).map((t, i) => px(t[0], t[1], i)), px(s.start.x, s.start.y)];
-  await input.down(pts[0]);
+async function handCut(page, input, { delay = 60, until = null, release = true, probe = null } = {}) {
+  const sel = '.cc-panel[data-game=cut]';
+  const s = await page.evaluate((sel) => { const st = document.querySelector(sel).__state; return { start: st.start, targets: st.targets.map((p) => [p.x, p.y]) }; }, sel);
+  const px = async (x, y) => { const v = await page.evaluate((sel) => { const p = document.querySelector(sel), r = p.querySelector('canvas').getBoundingClientRect(), w = p.__view(); return { l: r.left, t: r.top, k: w.pxPerUnit, cx: w.cx, cy: w.cy }; }, sel); return { x: v.l + (x - v.cx) * v.k, y: v.t + (y - v.cy) * v.k }; };
+  const pts = [[s.start.x, s.start.y], ...s.targets.slice(1), [s.start.x, s.start.y]];
+  await input.down(await px(...pts[0]));
   const stop = until == null ? pts.length : Math.floor(pts.length * until);
-  for (let i = 1; i < stop; i++) { await input.move(pts[i]); await wait(page, delay); if (await page.locator('.cc-grade').count()) break; }
+  for (let i = 1; i < stop; i++) { await input.move(await px(...pts[i])); await wait(page, delay); if (await page.locator('.cc-grade').count()) break; }
   if (until == null && release) await input.up().catch(() => {});
-  return { input, pts };
+  return { input, pts, px, at: stop };
 }
 /** Screw by hand: circle clockwise in the middle of the ring. `toTurns` is where to stop circling; `lift` lets go there. */
 async function handScrew(page, input, { toTurns, lift = true, dir = 1, down = true, delay = 12 } = {}) {
@@ -99,9 +100,9 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
     const sub = (title, fn) => (!only || only.includes(title) ? t.test(title, fn) : null);
     const tap = (sel) => go(page, sel);
     // A failed step must not leave the sheet open for the next one.
-    const recover = async () => { for (let i = 0; i < 3; i++) { if (await page.locator('#hg-minigame:not([hidden]) .wb-leave').count()) { await page.locator('.wb-leave').click(); await wait(page, 300); } else if (await page.locator('.wb-no').count()) { await page.locator('.wb-no').first().click(); await wait(page, 300); } } };
+    const recover = async () => { for (let i = 0; i < 3; i++) { if (await page.locator('.wb-full .wb-leave').count()) { await page.locator('.wb-leave').click(); await wait(page, 300); } else if (await page.locator('.wb-no').count()) { await page.locator('.wb-no').first().click(); await wait(page, 300); } } };
     const openMenu = async () => { await recover(); await use(page, 'wb-craft'); await page.waitForSelector('.wb-c[data-craft="cut"]'); };
-    const pick = async (id) => { await tap(`.wb-c[data-craft="${id}"]`); await page.waitForSelector('#hg-attempt:not([hidden])', { timeout: 5000 }); await page.waitForSelector(`#hg-minigame:not([hidden]) .cc-panel`, { timeout: 15000 }); };
+    const pick = async (id) => { await tap(`.wb-c[data-craft="${id}"]`); await page.waitForSelector('#hg-attempt:not([hidden])', { timeout: 5000 }); await page.waitForSelector(`.wb-full .cc-panel`, { timeout: 15000 }); };
     const gradeCard = (n = 1) => page.waitForFunction((n) => document.querySelectorAll('.cc-grade').length >= 1 && true, n, { timeout: 60000 });
     const noScroll = async (what) => assert.equal(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth), 0, `${what}: no sideways scroll`);
     try {
@@ -120,8 +121,12 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
       await sub('Cut by hand: a clean grade with the good cutter, XP lands in Crafting', async () => {
         const before = await state(page);
         await pick('cut');
-        const m = await page.evaluate(() => ({ eyebrow: document.getElementById('hg-minigame-eyebrow').textContent, chips: [...document.querySelectorAll('.cc-chip')].map((c) => c.textContent), note: document.querySelector('.wb-preview').textContent }));
-        assert.match(m.eyebrow, /CUT/); assert.ok(m.chips.some((c) => /good \(15 wide\)/.test(c)), m.chips.join('|')); assert.ok(m.chips.some((c) => /feed up to 300/.test(c)));
+        const m = await page.evaluate(() => ({ eyebrow: document.querySelector('.wb-feyebrow').textContent, chips: [...document.querySelectorAll('.cc-chip')].map((c) => c.textContent), note: document.querySelector('.wb-preview').textContent }));
+        assert.match(m.eyebrow, /CUT/); assert.ok(m.chips.some((c) => /Good cutter: wide line/.test(c)), m.chips.join('|')); assert.ok(m.chips.some((c) => /Speed 0: normal feed/.test(c)));
+        assert.ok(!m.chips.some((c) => /[x\/=]\s*\d|\d\s*\/\s*\d/.test(c)), 'no formulas in the chips');
+        assert.equal(await page.locator('.wb-full').count(), 1, 'a full-screen game');
+        assert.deepEqual(await page.evaluate(() => { const r = document.querySelector('.wb-full').getBoundingClientRect(); return [r.width, r.height]; }), [profile.viewport.width, profile.viewport.height], 'it owns the whole screen');
+        assert.doesNotMatch(await page.locator('.cc-panel').innerText(), /\d+\s*\/\s*\d+/, 'no raw 96 / 300 numbers');
         assert.match(m.note, /roll:/);
         await noScroll('cut');
         await shot('1-cut-start');
@@ -130,12 +135,12 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
         const sBefore = await page.evaluate(() => { const s = document.querySelector('.cc-panel[data-game=cut]').__state; return { good: s.good, torn: s.torn, covered: s.coveredCount, down: s.down }; });
         assert.ok(sBefore.down && sBefore.good > 40 && sBefore.torn <= 2, JSON.stringify(sBefore));
         // carry on from where we are
-        const r = await canvasRect(page, 'cut');
-        const rest = mid.pts.slice(Math.floor(mid.pts.length * 0.4));
-        for (const p of rest) { await hand.move(p); await wait(page, 60); if (await page.locator('.cc-grade').count()) break; }
+        const lw = await page.evaluate(() => document.querySelector('.cc-panel[data-game=cut]').__view());
+        if (PROOF) { const { writeFile } = await import('node:fs/promises'); await writeFile(`${PROOF}/line-width-${name}.txt`, `${name} ${profile.viewport.width}x${profile.viewport.height}: zoom ${lw.zoom}, ${lw.pxPerUnit.toFixed(3)} px per board unit. Line width on screen at a Steady roll: worn ${(9 * lw.pxPerUnit).toFixed(1)} px, shop ${(12 * lw.pxPerUnit).toFixed(1)} px, good ${(15 * lw.pxPerUnit).toFixed(1)} px.\n`); }
+        if (phone) assert.equal(lw.zoom, 1.6, 'phone zooms the sheet 1.6x');
+        for (const p of mid.pts.slice(mid.at)) { await hand.move(await mid.px(...p)); await wait(page, 60); if (await page.locator('.cc-grade').count()) break; }
         await hand.up().catch(() => {});
         await gradeCard();
-        void r;
         const card = await page.evaluate(() => ({ grade: Number(document.querySelector('.cc-grade').dataset.grade), pass: document.querySelector('.cc-grade').dataset.pass, text: document.querySelector('.cc-grade').innerText }));
         assert.equal(card.pass, '1'); assert.ok(card.grade >= 85, `a steady hand cuts clean: ${card.text}`);
         await shot('3-cut-result');
@@ -145,7 +150,7 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
         assert.match(fin, /Cut \d+/); assert.match(fin, /scrap: 3 used/); assert.match(fin, /Crafting XP/);
         await shot('4-cut-recipe-result');
         await tap('.cc-final .cc-go');
-        await page.waitForSelector('#hg-minigame', { state: 'hidden' });
+        await page.waitForSelector('.wb-full', { state: 'detached' });
         const after = await state(page);
         assert.ok(after.progress.xp.crafting > before.progress.xp.crafting || after.progress.levels.crafting > before.progress.levels.crafting, 'XP in Crafting');
         assert.match(after.said, /Cut: you did it/);
@@ -154,7 +159,8 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
       await sub('Screw by hand: the torque bar wakes on the last turn, stop in the green; a stripped head is backed out', async () => {
         await openMenu(); await pick('screw');
         const chips = await page.evaluate(() => [...document.querySelectorAll('.cc-chip')].map((c) => c.textContent));
-        assert.ok(chips.some((c) => /4 turns before points/.test(c)), chips.join('|'));
+        assert.ok(chips.some((c) => /normal turns/.test(c)), chips.join('|'));
+        assert.doesNotMatch(await page.locator('.cc-panel').innerText(), /\d+\.\d\d\s*\/\s*\d/, 'no raw turn counts');
         await noScroll('screw');
         await shot('5-screw-start');
         // first bolt: strip it on purpose
@@ -177,16 +183,15 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
         await shot('8-screw-result');
         await tap('.cc-grade .cc-go'); await page.waitForSelector('.cc-final');
         assert.match(await page.locator('.cc-final').innerText(), /Screw 85/);
-        await tap('.cc-final .cc-go'); await page.waitForSelector('#hg-minigame', { state: 'hidden' });
+        await tap('.cc-final .cc-go'); await page.waitForSelector('.wb-full', { state: 'detached' });
       });
 
       await sub('bolt plate: a rough Cut is redone on a fresh sheet and spoils; the result card shows the chain', async () => {
         await openMenu(); await pick('bolt-plate');
         assert.equal(await page.locator('.cc-step').count(), 2);
         // a lazy cut: press, a straight line, Done
-        const r = await canvasRect(page, 'cut');
         const st = await page.evaluate(() => document.querySelector('.cc-panel[data-game=cut]').__state.start);
-        const p0 = { x: r.x + (st.x * r.w) / 1000, y: r.y + (st.y * r.w) / 1000 };
+        const p0 = await (await handCutPx(page))(st.x, st.y);
         await hand.down(p0); for (let i = 1; i <= 12; i++) { await hand.move({ x: p0.x + i * 10, y: p0.y + 4 }); await wait(page, 40); } await hand.up();
         await go(page, '.cc-done');
         await gradeCard();
@@ -208,7 +213,7 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
         const fin = await page.locator('.cc-final').innerText();
         assert.match(fin, /Cut \d+ \(try 2\)/); assert.match(fin, /Screw 100/); assert.match(fin, /Spoils: 1/); assert.match(fin, /scrap: 5 used \(4\.4 exact\)/);
         await shot('10-recipe-result');
-        await tap('.cc-final .cc-go'); await page.waitForSelector('#hg-minigame', { state: 'hidden' });
+        await tap('.cc-final .cc-go'); await page.waitForSelector('.wb-full', { state: 'detached' });
         assert.match((await state(page)).said, /Bolt plate: you did it/);
       });
 
@@ -217,7 +222,7 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
         await handCut(page, hand);
         await gradeCard(); await tap('.cc-grade .cc-go');
         await page.waitForSelector('.cc-panel[data-game=screw]');
-        await tap('.wb-leave'); await page.waitForSelector('#hg-minigame', { state: 'hidden' });
+        await tap('.wb-leave'); await page.waitForSelector('.wb-full', { state: 'detached' });
         await openMenu();
         const part = await page.locator('.wb-part').innerText();
         assert.match(part, /Bolt plate: Cut \d+, next Screw/);
@@ -228,7 +233,7 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
         await handScrew(page, hand, { toTurns: 3.93 });
         await gradeCard(); await tap('.cc-grade .cc-go'); await page.waitForSelector('.cc-final');
         assert.match(await page.locator('.cc-final').innerText(), /Cut \d+ · Screw 100/);
-        await tap('.cc-final .cc-go'); await page.waitForSelector('#hg-minigame', { state: 'hidden' });
+        await tap('.cc-final .cc-go'); await page.waitForSelector('.wb-full', { state: 'detached' });
         await openMenu(); assert.equal(await page.locator('.wb-part').count(), 0, 'the part is gone once the craft is done');
         await tap('.wb-no');
       });

@@ -34,7 +34,7 @@ export async function playRecipe(root, { state, unit = 'scrap', onProgress = () 
     }));
     const exact = r2(s.recipe.materials * s.materialFactor * (1 + 0.1 * s.spoils));
     spoil.dataset.spoils = String(s.spoils);
-    spoil.textContent = `Spoils: ${s.spoils}${s.spoils ? ` (+${s.spoils * 10}% material)` : ''} · ${unit}: ${exact} of ${s.recipe.materials}${s.materialFactor < 1 ? ` (x ${s.materialFactor} Material)` : ''} · ${MAX_REDOS} redos a game, a third fail ruins it`;
+    spoil.textContent = `${s.spoils ? `${s.spoils} spoiled (+${s.spoils * 10}% scrap)` : 'Nothing spoiled yet'} · scrap so far ${exact}${s.materialFactor < 1 ? ' (your Material points help)' : ''} · two redos a game, a third fail ruins it`;
   };
 
   while (!s.done) {

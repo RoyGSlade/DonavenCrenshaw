@@ -18,6 +18,7 @@ import { gymGame, trainRun, gymLoadout, gymSetup } from '../minigames/gym.js';
 import { checkChance, checkBonusText } from '../character.js';
 import { tierInfo } from '../minigames/setup.js';
 import { ROLL_SKILLS } from '../data.js';
+import { openFullScreen } from './fullScreen.js';
 import { renderHud, renderBoard, renderGymPanel, renderConfirm, renderSparPicker, renderWhere, renderCraftMenu, h } from './ui.js';
 
 const SKILL_NAME = Object.fromEntries(ROLL_SKILLS.map((s) => [s.id, s.name]));
@@ -93,22 +94,32 @@ export function createWorkbench({ store, bus, onfoot, dialogueBox, sheet, hud, t
     await wait(reducedMotion() ? 500 : 1700);
     return playStart(station, start, { who, what, open, best, lock, titleText, context, tool });
   }
+  /** Games that own the whole screen (the house rule). Others still use the side sheet until their lanes move over: add the id here. */
+  const FULL_SCREEN = new Set(['cut', 'screw', 'bolt-plate']);
   async function playStart(station, start, { who, what, open, best, lock, titleText, word, context, tool, resume } = {}) {
     sheet.stage.replaceChildren();
-    const note = h('p', { class: 'rp-help wb-preview', text: start.preview ? `${start.preview.line} ${start.preview.nextLine}` : '' });
-    const stage = h('div', { class: 'wb-stage' });
-    const leaveBtn = h('button', { type: 'button', class: 'wb-leave', text: 'Leave this game' });
-    sheet.stage.append(note, stage, leaveBtn);
-    showSheet(true, { word: word || `${station.word} · ${tierInfo(start.tier).label.toUpperCase()} ROLL`, titleText: titleText || station.title });
-    sheet.root.classList.toggle('is-fit', station.id === 'haggle');
+    const noteText = start.preview ? `${start.preview.line} ${start.preview.nextLine}` : '';
+    const wordText = word || `${station.word} · ${tierInfo(start.tier).label.toUpperCase()} ROLL`, title = titleText || station.title;
+    let stage, fs = null, leaveBtn = null;
+    const left = new Promise((resolve) => { leave = () => resolve(null); });
+    if (FULL_SCREEN.has(station.id)) {
+      fs = openFullScreen({ word: wordText, title, note: noteText, onLeave: () => leave?.() });
+      stage = fs.stage;
+    } else {
+      const note = h('p', { class: 'rp-help wb-preview', text: noteText });
+      stage = h('div', { class: 'wb-stage' });
+      leaveBtn = h('button', { type: 'button', class: 'wb-leave', text: 'Leave this game' });
+      leaveBtn.addEventListener('click', () => leave?.());
+      sheet.stage.append(note, stage, leaveBtn);
+      showSheet(true, { word: wordText, titleText: title });
+      sheet.root.classList.toggle('is-fit', station.id === 'haggle');
+    }
     hold(true);
-    const left = new Promise((resolve) => { leave = () => resolve(null); leaveBtn.addEventListener('click', leave); });
     let result;
-    try { result = await Promise.race([playGame(stage, station.id, { seed: nextSeed(), setup: start.setup, title: titleText || station.title, who: who || station.who, what: what || station.what, open: open ?? station.open, best: best ?? station.best, lock: lock ?? station.lock, context, tool, resume, sound: () => {}, reducedMotion }), left]); }
+    try { result = await Promise.race([playGame(stage, station.id, { seed: nextSeed(), setup: start.setup, title, who: who || station.who, what: what || station.what, open: open ?? station.open, best: best ?? station.best, lock: lock ?? station.lock, context, tool, resume, sound: () => {}, reducedMotion }), left]); }
     catch (error) { console.warn('Stardust workbench: the game could not run', error); result = null; }
     leave = null;
-    sheet.stage.replaceChildren();
-    showSheet(false);
+    if (fs) fs.close(); else { sheet.stage.replaceChildren(); showSheet(false); }
     hold(false);
     return result;
   }
