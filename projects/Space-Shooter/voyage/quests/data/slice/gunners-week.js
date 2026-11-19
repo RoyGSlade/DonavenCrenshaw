@@ -277,6 +277,10 @@ export default {
             "dc": 12,
             "pass": "end-steady",
             "fail": "end-spray"
+          },
+          "minigame": {
+            "kind": "repair",
+            "title": "Coolant line"
           }
         },
         {

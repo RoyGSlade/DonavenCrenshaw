@@ -33,8 +33,12 @@ export function planIntro(scene, seconds) {
   return { key, fly, flyDur, ready: seconds, total: flyDur + seconds };
 }
 
-function kicker(scene) {
-  if (scene?.questRace) return questRaceMode()?.kind === 'circuit' ? 'PRACTICE CIRCUIT · THE HANGAR' : 'QUEST RACE · OFF THE BOOKS';
+/** The small line above the track name on the intro card. Exported for tests. */
+export function raceKicker(scene, mode = questRaceMode()) {
+  if (scene?.questRace) {
+    if (mode?.paid) return Number.isFinite(mode.pay?.finish) ? `PAID RACE · PAYS ${mode.pay.finish}` : 'PAID RACE';
+    return mode?.kind === 'circuit' ? 'PRACTICE CIRCUIT · THE HANGAR' : 'QUEST RACE · OFF THE BOOKS';
+  }
   if (scene?.weekly) return `WEEKLY TIME TRIAL · WEEK ${scene.weekly.week}`;
   if (state.run?.kind === 'custom') return 'CUSTOM TRACK';
   if (Number.isInteger(scene?.level)) return `CIRCUIT ${String(scene.level).padStart(2, '0')} / 05`;
@@ -79,7 +83,7 @@ export function updateRaceIntro() {
   els.card.classList.toggle('is-flying', flying);
   document.body.classList.toggle('fx-intro-fly', flying);
   els.skip.hidden = !flying;
-  els.kicker.textContent = kicker(scene);
+  els.kicker.textContent = raceKicker(scene);
   els.title.textContent = scene.levelInfo?.title || (state.mode === 'arena' ? 'The Arena' : '');
   els.sub.textContent = scene.levelInfo?.landmark || '';
   els.card.querySelector('.fx-intro-card').hidden = !els.title.textContent;

@@ -100,11 +100,12 @@ const expectEnd = (w, { outcome, result, money, rep, flags = [], notFlags = [] }
 };
 const H = Object.fromEntries(SCENE_HOOKS.map((h) => [h.id, h]));
 
-test('hooks are well formed and the data files are untouched', () => {
+test('hooks are well formed, and the real data carries the same blocks the dry run proposed', () => {
   assert.deepEqual(SCENE_HOOKS.map((h) => h.id), ['scene5-coolant', 'scene3-airlock', 'scene4-haggle']);
   for (const h of SCENE_HOOKS) { const { quest, choice } = applyHook(Q[h.scene], h); assert.deepEqual(hookIssues(choice, quest.nodes), []); assert.ok(choice.check, 'the choice keeps its d20 check'); }
   assert.equal(JSON.stringify(SLICE_LIST), BEFORE, 'applying a hook never changes the real quest data');
-  assert.ok(!JSON.stringify(SLICE_LIST).includes('"minigame"'), 'no minigame block exists in the real data yet');
+  // The scene-minigames branch pasted the blocks into the data (tests/stardust-scenemini.test.mjs pins all five).
+  for (const h of SCENE_HOOKS) assert.deepEqual(Q[h.scene].nodes[h.node].choices.find((c) => c.label === h.label).minigame, h.minigame, `${h.id} is in the real data`);
   // The validator lines would catch these.
   assert.match(hookIssues({ minigame: { kind: 'repair' } })[0], /needs a check/);
   assert.match(hookIssues({ check: { skill: 'social', pass: 'a', fail: 'b' }, minigame: { kind: 'repair' } })[0], /should be repair/);
