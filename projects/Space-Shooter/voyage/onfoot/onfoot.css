@@ -125,3 +125,16 @@
 .of-mark.is-icon{padding:3px;gap:0;opacity:.82}
 @media (prefers-reduced-motion:reduce){.of-mark > span{transition:opacity .12s linear}}
 .of-prompt.is-below::after{bottom:auto;top:-7px;transform:translateX(-50%) rotate(225deg)}
+
+/* live stealth (a map with a `stealth` block): the gait and who-is-watching readout */
+.of-stealth{position:absolute;left:50%;transform:translateX(-50%);top:62px;z-index:4;max-width:min(330px,calc(100% - 24px));padding:6px 9px 7px;border-left:3px solid #ffd166;background:#0d1826d9;color:#eaf4f5;pointer-events:none;font:600 11px Consolas,monospace}
+.of-st-row{display:flex;align-items:center;gap:7px}
+.of-st-title{letter-spacing:.16em;color:#b5c8d5}
+.of-st-gait,.of-st-state{padding:1px 7px;border-radius:9px;font:800 10px Consolas,monospace;letter-spacing:.08em;background:#17324a;color:#cfe8f0}
+.of-st-gait[data-gait=sneak]{background:#1c4a44;color:#9ff3e6}
+.of-st-gait[data-gait=run]{background:#5a2d1c;color:#ffb98a}
+.of-st-state[data-state=hidden]{background:#1c3a24;color:#a8f0a8}
+.of-st-state[data-state=seen],.of-st-state[data-state=suspicious]{background:#5a4412;color:#ffe27a}
+.of-st-state[data-state=alarm]{background:#6a1d18;color:#ff9a90}
+.of-st-help{margin:5px 0 0;font:500 10.5px/1.35 Inter,"Segoe UI",sans-serif;color:#9fb4c4}
+@media (max-width:620px){.of-stealth{top:128px;max-width:calc(100% - 16px)}.of-st-help{display:none}}

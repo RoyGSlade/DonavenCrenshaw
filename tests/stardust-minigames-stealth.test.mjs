@@ -126,8 +126,8 @@ test('stars by hottest heat (under 30: 3, under 60: 2) and XP 3 + stars', () => 
 test('the picker words match the game: quiet, range, decay', () => {
   for (let n = 1; n <= 9; n++) {
     const q = setupStealth({ points: { quiet: n }, level: 9 }), r = setupStealth({ points: { range: n }, level: 9 }), d = setupStealth({ points: { decay: n }, level: 9 });
-    assert.equal(CATEGORIES.stealth.cats[0].words(n), `a heard step adds ${Math.round(12 * q.noiseFactor * 10) / 10} heat`);
-    assert.equal(CATEGORIES.stealth.cats[1].words(n), `guard view cones ${Math.round(4 * r.rangeFactor * 10) / 10} cells long`);
-    assert.equal(CATEGORIES.stealth.cats[2].words(n), `cools ${d.decay} heat on a quiet beat`);
+    assert.ok(CATEGORIES.stealth.cats[0].words(n).startsWith(`a heard step adds ${Math.round(12 * q.noiseFactor * 10) / 10} heat; live: `));
+    assert.ok(CATEGORIES.stealth.cats[1].words(n).startsWith(`guard view cones ${Math.round(4 * r.rangeFactor * 10) / 10} cells long; live: `));
+    assert.ok(CATEGORIES.stealth.cats[2].words(n).startsWith(`cools ${d.decay} heat on a quiet beat; live: `));
   }
 });

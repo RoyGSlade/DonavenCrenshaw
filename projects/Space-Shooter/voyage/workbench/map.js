@@ -4,14 +4,15 @@
 import def from './workbench.json' with { type: 'json' };
 import annex from './annex.json' with { type: 'json' };
 import { registerMap } from '../maps/index.js';
+import { YARD_DEF } from './yard.js';
 
 export const WORKBENCH_ID = def.id;
 export const WORKBENCH_DEF = def;
 export const ANNEX_ID = annex.id;
 export const ANNEX_DEF = annex;
 let registered = null;
-/** Register the room and its annex (once) and return the workbench's compiled map. */
+/** Register the room, its annex and the patrol yard (once) and return the workbench's compiled map. */
 export function registerWorkbench() {
-  if (!registered) { registered = registerMap(def); registerMap(annex); }
+  if (!registered) { registerMap(YARD_DEF); registered = registerMap(def); registerMap(annex); }
   return registered;
 }

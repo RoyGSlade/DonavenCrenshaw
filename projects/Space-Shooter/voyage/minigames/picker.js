@@ -5,6 +5,7 @@
 // The numbers are the same functions the minigames use (setup.js), so the
 // card and the game cannot disagree. Shooting has no minigame: its three
 // categories are listed with no numbers yet.
+import { STEALTH } from '../onfoot/rules/stealth.js';
 import { POINT_MAX, REPAIR_BASE, setupRepair, setupHack, setupPersuade, setupIntimidate, setupPilot, setupPerihelion, setupShooting } from './setup.js';
 
 const f1 = (n) => (Math.round(n * 10) / 10).toString();
@@ -23,10 +24,10 @@ export const CATEGORIES = Object.freeze({
     { id: 'handling', name: 'Handling', words: (n) => `drift power ${f1(setupPilot({ points: { handling: n }, level: 9 }).drift)} in a landing` },
     { id: 'boost', name: 'Boost', words: (n) => { const b = setupPilot({ points: { boost: n }, level: 9 }); return `${b.fuel} s of thrust, ${b.brakes} emergency brake${b.brakes === 1 ? '' : 's'} per landing`; } },
     { id: 'landing', name: 'Landing', words: (n) => `safe touchdown speed ${setupPilot({ points: { landing: n }, level: 9 }).safe}` } ] },
-  stealth: { built: true, cats: [
-    { id: 'quiet', name: 'Quiet movement', words: (n) => `a heard step adds ${f1(12 * (1 - 0.07 * n))} heat` },
-    { id: 'range', name: 'Detection range', words: (n) => `guard view cones ${f1(4 * (1 - 0.06 * n))} cells long` },
-    { id: 'decay', name: 'Heat decay', words: (n) => `cools ${8 + 2 * n} heat on a quiet beat` } ] },
+  stealth: { built: true, note: 'Live stealth on foot never rolls the d20: it is pure play, like shooting. Your points set how far your steps carry, how long and wide guard cones reach, and how fast a guard\'s alert fades.', cats: [
+    { id: 'quiet', name: 'Quiet movement', words: (n) => `a heard step adds ${f1(12 * (1 - 0.07 * n))} heat; live: running carries ${f1(STEALTH.noise.run * (1 - 0.07 * n))} tiles, walking ${f1(STEALTH.noise.walk * (1 - 0.07 * n))}` },
+    { id: 'range', name: 'Detection range', words: (n) => `guard view cones ${f1(4 * (1 - 0.06 * n))} cells long; live: ${f1(STEALTH.coneTiles * (1 - 0.06 * n))} tiles long, a little narrower` },
+    { id: 'decay', name: 'Heat decay', words: (n) => `cools ${8 + 2 * n} heat on a quiet beat; live: a guard's alert meter drains ${f1(1 + (2 * n) / 8)} times as fast` } ] },
   hacking: { built: true, cats: [
     { id: 'time', name: 'Time', words: (n) => `${plus(2 * n, ' s')} on every firewall` },
     { id: 'size', name: 'Puzzle size', words: (n) => { const s = setupHack({ points: { size: n }, level: 9 }); return `mirrors start up to ${s.spread} steps off, ${Math.floor(n / 2)} fewer decoy${Math.floor(n / 2) === 1 ? '' : 's'}, ${Math.floor(n / 3)} fewer path mirror${Math.floor(n / 3) === 1 ? '' : 's'} (never under 1)`; } },

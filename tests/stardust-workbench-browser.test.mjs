@@ -136,7 +136,7 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
       await bootRoom(page, server.origin);
       await sub('the room loads: overview, no sideways scroll, a live chip, the flag stays off', async () => {
         const m = await page.evaluate(() => ({ map: __stardust.onfoot.world.map.id, doors: __stardust.onfoot.world.map.doors.length, sw: document.documentElement.scrollWidth, iw: innerWidth, hud: document.getElementById('wb-hud').textContent, newGame: null, npcs: __stardust.onfoot.world.map.npcs.map((n) => n.id).sort(), name: document.querySelector('.vy-wordmark').textContent }));
-        assert.equal(m.map, 'workbench'); assert.equal(m.doors, 0); assert.equal(m.sw, m.iw, 'the page is exactly as wide as the screen');
+        assert.equal(m.map, 'workbench'); assert.equal(m.doors, 1, 'one door: into the patrol yard'); assert.equal(m.sw, m.iw, 'the page is exactly as wide as the screen');
         assert.match(m.hud, /SCANNED[\s\S]*100 credits/); assert.deepEqual(m.npcs, ['nessa', 'pip', 'tull']); assert.match(m.name, /WORKBENCH/i);
         assert.equal((await state(page)).dc, 12);
         await shot('1-overview');
