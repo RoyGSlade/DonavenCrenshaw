@@ -27,7 +27,7 @@
       <form id="mg-controls" class="mg-controls" aria-label="Setup">
         <h2>Set it up</h2>
         <p>The game rolls a d20 and spends skill points. Set them here and see what the minigame becomes.</p>
-        <label>Minigame <select id="mg-mini"><option value="repair">Repair: pipes</option><option value="hack">Hacking: bypass ring</option><option value="haggle">Social: haggle</option><option value="persuade">Social: persuade</option><option value="craft">Crafting: heat and shape</option><option value="nav">Navigation: plot the lane</option><option value="stealth">Stealth: shadow slip</option></select></label>
+        <label>Minigame <select id="mg-mini"><option value="repair">Repair: pipes</option><option value="hack">Hacking: bypass ring</option><option value="haggle">Social: haggle</option><option value="persuade">Social: persuade</option><option value="intimidate">Social: intimidate</option><option value="craft">Crafting: heat and shape</option><option value="nav">Navigation: plot the lane</option><option value="stealth">Stealth: shadow slip</option><option value="pilot">Piloting: touchdown</option></select></label>
         <label>d20 roll <output id="o-roll"></output><input id="roll" type="range" min="1" max="20" value="12"></label>
         <label>Skill level <output id="o-level"></output><input id="level" type="range" min="1" max="9" value="3"></label>
         <label>Difficulty (dc) <output id="o-dc"></output><input id="dc" type="range" min="6" max="20" value="12"></label>
@@ -37,6 +37,10 @@
         <label id="l-quality">Quality points <output id="o-quality"></output><input id="quality" type="range" min="0" max="9" value="0"></label>
         <label id="l-haggle">Haggle points <output id="o-haggle"></output><input id="haggle" type="range" min="0" max="9" value="0"></label>
         <label id="l-persuade">Persuade points <output id="o-persuade"></output><input id="persuade" type="range" min="0" max="9" value="0"></label>
+        <label id="l-intimidate">Intimidate points <output id="o-intimidate"></output><input id="intimidate" type="range" min="0" max="9" value="0"></label>
+        <label id="l-handling">Handling points <output id="o-handling"></output><input id="handling" type="range" min="0" max="9" value="0"></label>
+        <label id="l-boost">Boost points <output id="o-boost"></output><input id="boost" type="range" min="0" max="9" value="0"></label>
+        <label id="l-landing">Landing points <output id="o-landing"></output><input id="landing" type="range" min="0" max="9" value="0"></label>
         <label id="l-speed">Speed points <output id="o-speed"></output><input id="speed" type="range" min="0" max="9" value="0"></label>
         <label id="l-material">Material points <output id="o-material"></output><input id="material" type="range" min="0" max="9" value="0"></label>
         <label id="l-fuel">Fuel points <output id="o-fuel"></output><input id="fuel" type="range" min="0" max="9" value="0"></label>

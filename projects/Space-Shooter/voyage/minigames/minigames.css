@@ -182,3 +182,33 @@
 .pc-card.is-miss{border-color:#8c6a3c}.pc-card.is-miss small{color:#ffad72}
 .pc-card.is-hurt{border-color:#ff6b5a;background:#3a1a16}.pc-card.is-hurt small{color:#ff8a70}
 @media (min-width:760px){.pc-hand{grid-template-columns:repeat(4,1fr)}}
+
+/* Social: intimidate, push your luck */
+.it-have{margin:4px 0;font:700 16px Consolas,monospace;color:#eaf4f5}
+.it-mood{margin:2px 0 8px;font-size:14px;color:#ffad72;min-height:1.4em}
+.it-saves{margin:0 0 8px}
+.it-ladder{list-style:none;margin:0 0 12px;padding:0;display:grid;gap:4px}
+.it-rung{display:grid;grid-template-columns:44px 1fr auto;align-items:center;gap:10px;min-height:44px;padding:0 12px;border:1px solid var(--line);border-radius:6px;background:#0a1624;font:13px Consolas,monospace;color:#b5c8d5}
+.it-rung b{font-size:18px;color:#eaf4f5}
+.it-rung small{color:var(--orange)}
+.it-rung.is-reached{background:#12363a;border-color:var(--cyan)}
+.it-rung.is-reached span{color:#81e6df}
+.it-rung.is-next{border:2px solid #ffad72;background:#2a1f16}
+.it-rung.is-goal:not(.is-reached):not(.is-next){border-style:dashed;border-color:#9fe870}
+.it-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.it-ladder{margin-top:12px}
+.it-row button{min-height:56px;font-size:16px}
+
+/* Piloting: touchdown */
+.pl-hud{display:flex;flex-wrap:wrap;gap:4px 16px;font:12px Consolas,monospace;color:#b5c8d5;margin:0 0 4px}
+.pl-hud p{margin:0}
+.pl-speed b{font-size:18px}.pl-speed b.is-ok{color:#9fe870}.pl-speed b.is-warn{color:#ffad72}.pl-speed b.is-bad{color:#ff6b5a}
+.pl-view{display:block;width:100%;aspect-ratio:100/80;margin:8px 0;border-radius:6px;border:1px solid var(--line);touch-action:none}
+.pl-sky{fill:#09131f}.pl-ground{fill:#1c2a36}
+.pl-pad{fill:#3b7fa0}.pl-pad.is-over{fill:#9fe870}
+.pl-line{stroke:#3b7fa055;stroke-width:.4;stroke-dasharray:1.5 1.5}
+.pl-hull{fill:#eaf4f5}.pl-leg{fill:#8fa6b7}.pl-flame{fill:#ffad72;display:none}
+.pl-controls{display:grid;grid-template-columns:1fr 1.4fr 1fr;gap:8px;touch-action:none;user-select:none;-webkit-user-select:none}
+.pl-btn{min-height:64px;font-size:18px;touch-action:none}
+.pl-btn.is-held{background:#2e6b6b;border-color:var(--cyan)}
+.pl-brake{grid-column:1 / -1;min-height:48px}

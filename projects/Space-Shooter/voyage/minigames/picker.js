@@ -5,7 +5,7 @@
 // The numbers are the same functions the minigames use (setup.js), so the
 // card and the game cannot disagree. Shooting has no minigame: its three
 // categories are listed with no numbers yet.
-import { POINT_MAX, REPAIR_BASE, setupRepair, setupPersuade } from './setup.js';
+import { POINT_MAX, REPAIR_BASE, setupRepair, setupPersuade, setupIntimidate, setupPilot } from './setup.js';
 
 const f1 = (n) => (Math.round(n * 10) / 10).toString();
 const plus = (n, unit) => `${n > 0 ? '+' : ''}${f1(n)}${unit}`;
@@ -19,10 +19,10 @@ export const CATEGORIES = Object.freeze({
     { id: 'reload', name: 'Faster reload', words: () => 'numbers not set yet' },
     { id: 'ammo', name: 'Bigger ammo capacity', words: () => 'numbers not set yet' },
     { id: 'spray', name: 'Narrower spray pattern', words: () => 'numbers not set yet' } ] },
-  piloting: { built: false, cats: [
-    { id: 'handling', name: 'Handling', words: (n) => `drift nudge ${plus(6 * n, '%')} in a landing` },
-    { id: 'boost', name: 'Boost', words: (n) => `${Math.floor(n / 3)} emergency brake${Math.floor(n / 3) === 1 ? '' : 's'} per landing` },
-    { id: 'landing', name: 'Landing', words: (n) => `safe touchdown speed ${f1(3 * (1 + 0.05 * n))}` } ] },
+  piloting: { built: true, cats: [
+    { id: 'handling', name: 'Handling', words: (n) => `drift power ${f1(setupPilot({ points: { handling: n }, level: 9 }).drift)} in a landing` },
+    { id: 'boost', name: 'Boost', words: (n) => { const b = setupPilot({ points: { boost: n }, level: 9 }); return `${b.fuel} s of thrust, ${b.brakes} emergency brake${b.brakes === 1 ? '' : 's'} per landing`; } },
+    { id: 'landing', name: 'Landing', words: (n) => `safe touchdown speed ${setupPilot({ points: { landing: n }, level: 9 }).safe}` } ] },
   stealth: { built: true, cats: [
     { id: 'quiet', name: 'Quiet movement', words: (n) => `a heard step adds ${f1(12 * (1 - 0.07 * n))} heat` },
     { id: 'range', name: 'Detection range', words: (n) => `guard view cones ${f1(4 * (1 - 0.06 * n))} cells long` },
@@ -41,7 +41,7 @@ export const CATEGORIES = Object.freeze({
     { id: 'material', name: 'Material use', words: (n) => `${f1(4 * n)}% less scrap, the fraction saved across crafts` } ] },
   social: { built: false, cats: [
     { id: 'persuade', name: 'Persuade', words: (n) => { const u = setupPersuade({ points: { persuade: n }, level: 9 }); return `trust needed ${u.goal} at a steady roll, you notice ${u.tells} thing${u.tells === 1 ? '' : 's'} about them`; } },
-    { id: 'intimidate', name: 'Intimidate', words: (n) => `Snap point ${f1(4 * n)}% later, Break zone ${plus(2 * n, '%')} wider` },
+    { id: 'intimidate', name: 'Intimidate', words: (n) => { const u = setupIntimidate({ points: { intimidate: n }, level: 9 }); return `snap risk on the first push ${u.chances[0]}%, the sixth ${u.chances[5]}%, ${u.saves} save${u.saves === 1 ? '' : 's'}`; } },
     { id: 'haggle', name: 'Haggle', words: (n) => `${plus(1.5 * n, '%')} better final price, comfort band ${plus(0.4 * n, '%')} wider` } ] },
   navigation: { built: false, cats: [
     { id: 'time', name: 'Travel time', words: (n) => `lanes cost ${f1(4 * n)}% less time` },

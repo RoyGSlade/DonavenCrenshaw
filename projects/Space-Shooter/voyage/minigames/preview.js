@@ -4,7 +4,7 @@
 //   ?newgame=1&mini=hack&roll=9&dc=12&level=6&lock=2&time=1&size=2&retries=3&auto=1
 import { runtimeConfig } from '../../runtime-config.js';
 import { newGameFlag } from '../flag.js';
-import { tierOf, tierInfo, setupRepair, setupHaggle, setupCraft, CRAFT_CATEGORIES, setupNav, NAV_CATEGORIES, setupStealth, STEALTH_CATEGORIES, setupPersuade, REPAIR_CATEGORIES, HACK_CATEGORIES, SOCIAL_CATEGORIES } from './setup.js';
+import { tierOf, tierInfo, setupRepair, setupHaggle, setupCraft, CRAFT_CATEGORIES, setupNav, NAV_CATEGORIES, setupStealth, STEALTH_CATEGORIES, setupPersuade, setupIntimidate, setupPilot, PILOT_CATEGORIES, REPAIR_CATEGORIES, HACK_CATEGORIES, SOCIAL_CATEGORIES } from './setup.js';
 import { playRepair } from './repairView.js';
 import { createSetupHack, hackSetup } from './hack.js';
 import { playSetupHack } from './hackView.js';
@@ -12,6 +12,10 @@ import { createHaggle } from './haggle.js';
 import { playHaggle } from './haggleView.js';
 import { createPersuade } from './persuade.js';
 import { playPersuade } from './persuadeView.js';
+import { createIntimidate } from './intimidate.js';
+import { playIntimidate } from './intimidateView.js';
+import { createPilot } from './pilot.js';
+import { playPilot } from './pilotView.js';
 import { createCraft } from './craft.js';
 import { playCraft } from './craftView.js';
 import { createNav } from './nav.js';
@@ -27,8 +31,8 @@ else boot();
 function boot() {
   $('mg-page').hidden = false;
   const params = new URLSearchParams(location.search);
-  const ids = ['roll', 'level', 'dc', 'lock', 'time', 'size', 'quality', 'retries', 'haggle', 'persuade', 'speed', 'material', 'fuel', 'warning', 'quiet', 'range', 'decay'];
-  if (['repair', 'hack', 'haggle', 'persuade', 'craft', 'nav', 'stealth'].includes(params.get('mini'))) $('mg-mini').value = params.get('mini');
+  const ids = ['roll', 'level', 'dc', 'lock', 'time', 'size', 'quality', 'retries', 'haggle', 'persuade', 'intimidate', 'handling', 'boost', 'landing', 'speed', 'material', 'fuel', 'warning', 'quiet', 'range', 'decay'];
+  if (['repair', 'hack', 'haggle', 'persuade', 'intimidate', 'pilot', 'craft', 'nav', 'stealth'].includes(params.get('mini'))) $('mg-mini').value = params.get('mini');
   for (const id of ids) { const v = params.get(id); if (v != null && /^\d+$/.test(v)) $(id).value = v; }
   const mini = () => $('mg-mini').value;
   const read = () => Object.fromEntries(ids.map((id) => [id, Number($(id).value)]));
@@ -36,7 +40,11 @@ function boot() {
     const v = read();
     const attempt = { total: v.roll + v.level, dc: v.dc, natural: v.roll === 20 };
     const tier = tierOf(attempt);
-    const setup = mini() === 'persuade'
+    const setup = mini() === 'pilot'
+      ? setupPilot({ tier, level: v.level, points: Object.fromEntries(PILOT_CATEGORIES.map((c) => [c, v[c] ?? 0])) })
+      : mini() === 'intimidate'
+      ? setupIntimidate({ tier, level: v.level, points: Object.fromEntries(SOCIAL_CATEGORIES.map((c) => [c, v[c] ?? 0])) })
+      : mini() === 'persuade'
       ? setupPersuade({ tier, level: v.level, points: Object.fromEntries(SOCIAL_CATEGORIES.map((c) => [c, v[c] ?? 0])) })
       : mini() === 'stealth'
       ? setupStealth({ tier, level: v.level, points: Object.fromEntries(STEALTH_CATEGORIES.map((c) => [c, v[c] ?? 0])) })
@@ -54,10 +62,14 @@ function boot() {
   const show = () => {
     const { v, attempt, tier, setup } = compute();
     for (const id of ids) $(`o-${id}`).textContent = $(id).value;
-    const hack = mini() === 'hack', hag = mini() === 'haggle', rep = mini() === 'repair', cr = mini() === 'craft', nv = mini() === 'nav', sl = mini() === 'stealth', pe = mini() === 'persuade';
-    $('l-lock').hidden = !hack; $('l-retries').hidden = !hack; $('l-quality').hidden = !rep; $('l-time').hidden = hag || cr || sl || pe; $('l-size').hidden = hag || cr || nv || sl || pe; $('l-persuade').hidden = !pe; $('l-quiet').hidden = !sl; $('l-range').hidden = !sl; $('l-decay').hidden = !sl; $('l-fuel').hidden = !nv; $('l-warning').hidden = !nv; $('l-haggle').hidden = !hag; $('l-speed').hidden = !cr; $('l-material').hidden = !cr; $('l-quality').hidden = !(rep || cr);
+    const hack = mini() === 'hack', hag = mini() === 'haggle', rep = mini() === 'repair', cr = mini() === 'craft', nv = mini() === 'nav', sl = mini() === 'stealth', pe = mini() === 'persuade', it = mini() === 'intimidate', pl = mini() === 'pilot';
+    $('l-lock').hidden = !hack; $('l-retries').hidden = !hack; $('l-quality').hidden = !rep; $('l-time').hidden = hag || cr || sl || pe || it || pl; $('l-size').hidden = hag || cr || nv || sl || pe || it || pl; $('l-handling').hidden = !pl; $('l-boost').hidden = !pl; $('l-landing').hidden = !pl; $('l-persuade').hidden = !pe; $('l-intimidate').hidden = !it; $('l-quiet').hidden = !sl; $('l-range').hidden = !sl; $('l-decay').hidden = !sl; $('l-fuel').hidden = !nv; $('l-warning').hidden = !nv; $('l-haggle').hidden = !hag; $('l-speed').hidden = !cr; $('l-material').hidden = !cr; $('l-quality').hidden = !(rep || cr);
     const spent = Object.values(setup.points).reduce((a, b) => a + b, 0);
-    const what = pe
+    const what = pl
+      ? `Fall <b>${setup.fall}</b> s · safe speed <b>${setup.safe}</b> · drift power <b>${Math.round(setup.drift * 10) / 10}</b> · wind <b>${Math.round(setup.wind * 10) / 10}</b> · pad <b>${Math.round(setup.pad * 10) / 10}</b> wide · fuel <b>${setup.fuel}</b> s · <b>${setup.brakes}</b> brake${setup.brakes === 1 ? '' : 's'}`
+      : it
+      ? `Risk on the first push <b>${setup.chances[0]}%</b>, the sixth <b>${setup.chances[5]}%</b> · <b>${setup.saves}</b> save${setup.saves === 1 ? '' : 's'} · ${setup.readsOdds ? 'you read the exact risk' : 'you only read a word for the risk'}`
+      : pe
       ? `Trust needed <b>${setup.goal}</b> · patience <b>${setup.patience}</b> · you notice <b>${setup.tells}</b> thing${setup.tells === 1 ? '' : 's'} about them`
       : sl
       ? `<b>${setup.guards}</b> guards · shift <b>${setup.beats}</b> beats · a heard step <b>+${Math.round(12 * setup.noiseFactor)}</b> heat · cones about <b>${Math.round(4 * setup.rangeFactor)}</b> cells · cools <b>${setup.decay}</b> a quiet beat`
@@ -81,7 +93,11 @@ function boot() {
     stage.replaceChildren();
     if (innerWidth < 760) stage.scrollIntoView({ block: 'start' });
     const { setup, v } = compute();
-    const result = mini() === 'persuade'
+    const result = mini() === 'pilot'
+      ? await playPilot(stage, { state: createPilot({ seed, setup }), where: 'the hangar pad', reducedMotion })
+      : mini() === 'intimidate'
+      ? await playIntimidate(stage, { state: createIntimidate({ seed, setup }), who: 'The loan clerk', what: 'drop the fee', reducedMotion })
+      : mini() === 'persuade'
       ? await playPersuade(stage, { state: createPersuade({ seed, setup }), who: 'The dockmaster', what: 'let you through', reducedMotion })
       : mini() === 'stealth'
       ? await playStealth(stage, { state: createStealth({ seed, setup }), title: 'Cargo hold', reducedMotion })

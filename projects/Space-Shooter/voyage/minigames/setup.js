@@ -132,6 +132,59 @@ export function setupPersuade({ tier = 0, points = {}, level = POINT_MAX } = {})
   };
 }
 
+// --- Social: intimidate, push your luck (PLAN.md section 2.6) ----------------------
+// Each Push raises what you have won (3, 6, 10, 15, 21, 28 after 1 to 6 pushes) and risks a snap
+// (they lose their temper and you win nothing). Stand takes what you have; you need 10 to win,
+// 15 for a second star, 21 for a third.
+// Base snap chance on push 1 to 6: 8, 14, 22, 32, 44, 58 percent.
+// Tier: chances +6, +3, 0, -3, -6 points for tiers -2..+2; at Shaky and Rough you cannot read the
+// exact chance, only a word for it.
+// Points (intimidate): each point takes 1 point off every snap chance (never under 2 percent); every 4 points
+// give one save (a snap is shrugged off once: you lose that push but keep what you won).
+export const INTIMIDATE_BASE = Object.freeze({ chances: Object.freeze([8, 14, 22, 32, 44, 58]), wins: Object.freeze([3, 6, 10, 15, 21, 28]), goal: 10, stars: Object.freeze([10, 15, 21]), perPoint: 1, floor: 2, pointsPerSave: 4 });
+export function setupIntimidate({ tier = 0, points = {}, level = POINT_MAX } = {}) {
+  const p = cleanPoints(points, SOCIAL_CATEGORIES, level);
+  const t = Math.max(-2, Math.min(2, Math.trunc(tier) || 0));
+  const b = INTIMIDATE_BASE;
+  const off = [6, 3, 0, -3, -6][t + 2];
+  return {
+    chances: b.chances.map((c) => Math.max(b.floor, c + off - b.perPoint * p.intimidate)),
+    wins: b.wins.slice(), goal: b.goal, stars: b.stars.slice(),
+    saves: Math.floor(p.intimidate / b.pointsPerSave),
+    readsOdds: t >= 0,
+    tier: t, points: p, label: tierInfo(t).label,
+  };
+}
+
+// --- Piloting: touchdown (PLAN.md section 2.7) -------------------------------------
+// Categories: handling, boost, landing.
+//   handling  drift power +6% per point
+//   boost     +0.5 s of thrust fuel per point, and one emergency brake per 3 points
+//   landing   safe touchdown speed +5% per point
+// Base: free fall from the top takes 12 s, safe touchdown speed 3.0, drift power 4.0, wind 2.5,
+// thrust fuel 10 s (thrust pushes 2.2 x gravity), pad 20 wide (of 100), no brakes (each brake cancels 60% of the fall speed).
+// Tier: wind x(1 - 0.15 x tier); fall time x the shared tier clock (more time = gentler fall);
+// pad x0.90, 0.95, 1.00, 1.10, 1.20 for tiers -2..+2.
+export const PILOT_CATEGORIES = Object.freeze(['handling', 'boost', 'landing']);
+export const PILOT_BASE = Object.freeze({ fall: 12, safe: 3.0, drift: 4.0, wind: 2.5, fuel: 10, pad: 20, thrust: 2.2, handlingPerPoint: 0.06, fuelPerPoint: 0.5, pointsPerBrake: 3, safePerPoint: 0.05, brakeCancel: 0.6 });
+export function setupPilot({ tier = 0, points = {}, level = POINT_MAX } = {}) {
+  const p = cleanPoints(points, PILOT_CATEGORIES, level);
+  const t = Math.max(-2, Math.min(2, Math.trunc(tier) || 0));
+  const b = PILOT_BASE;
+  const r4 = (x) => Math.round(+x.toFixed(6) * 10000) / 10000;
+  return {
+    fall: r4(b.fall * tierInfo(t).time),
+    safe: r4(b.safe * (1 + b.safePerPoint * p.landing)),
+    drift: r4(b.drift * (1 + b.handlingPerPoint * p.handling)),
+    wind: r4(b.wind * (1 - 0.15 * t)),
+    fuel: r4(b.fuel + b.fuelPerPoint * p.boost),
+    pad: r4(b.pad * [0.9, 0.95, 1, 1.1, 1.2][t + 2]),
+    brakes: Math.floor(p.boost / b.pointsPerBrake),
+    thrust: b.thrust, brakeCancel: b.brakeCancel,
+    tier: t, points: p, label: tierInfo(t).label,
+  };
+}
+
 // --- Crafting: forge strikes (PLAN.md section 2.5) --------------------------------
 // Categories: quality, speed, material.
 //   quality   +4 quality per point                    (0..9 -> +0..+36)
