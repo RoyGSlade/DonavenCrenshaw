@@ -54,7 +54,7 @@ function boot() {
     $('l-lock').hidden = !hack; $('l-retries').hidden = !hack; $('l-quality').hidden = !rep; $('l-time').hidden = hag || cr || sl; $('l-size').hidden = hag || cr || nv || sl; $('l-quiet').hidden = !sl; $('l-range').hidden = !sl; $('l-decay').hidden = !sl; $('l-fuel').hidden = !nv; $('l-warning').hidden = !nv; $('l-haggle').hidden = !hag; $('l-speed').hidden = !cr; $('l-material').hidden = !cr; $('l-quality').hidden = !(rep || cr);
     const spent = Object.values(setup.points).reduce((a, b) => a + b, 0);
     const what = sl
-      ? `<b>${setup.guards}</b> guards · shift <b>${setup.beats}</b> beats · heard step +<b>${Math.round(12 * setup.noiseFactor * 10) / 10}</b> · cone <b>${Math.round(4 * setup.rangeFactor * 100) / 100}</b> cells · cools <b>${setup.decay}</b> a quiet beat`
+      ? `<b>${setup.guards}</b> guards · shift <b>${setup.beats}</b> beats · a heard step <b>+${Math.round(12 * setup.noiseFactor)}</b> heat · cones about <b>${Math.round(4 * setup.rangeFactor)}</b> cells · cools <b>${setup.decay}</b> a quiet beat`
       : nv
       ? `Map <b>${setup.size} x ${setup.size}</b> · <b>${setup.hazards}</b> hazards · warning <b>${setup.reveal}</b> ahead · time x<b>${setup.timeFactor}</b> · fuel x<b>${setup.fuelFactor}</b> · time budget x<b>${setup.budgetFactor}</b>`
       : cr

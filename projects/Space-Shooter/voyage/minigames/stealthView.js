@@ -19,12 +19,12 @@ export function playStealth(root, { state, title = 'Cargo hold', sound = () => {
     grid.append(b); return b;
   });
   const sw = (cls, text) => h('li', {}, h('i', { class: `nv-sw ${cls}` }), h('span', { text }));
-  const key = h('ul', { class: 'nv-key', 'aria-label': 'Key' }, sw('st-now', 'watched if you end this beat there'), sw('st-later', 'watched the beat after'), sw('st-cover', 'cover: hides you'),
-    h('li', {}, h('b', { text: '●' }), h('span', { text: 'guard (arrow = way it walks)' })), h('li', {}, h('b', { text: '▲' }), h('span', { text: 'you' })), h('li', {}, h('b', { text: 'E' }), h('span', { text: 'exit' })));
+  const key = h('ul', { class: 'nv-key', 'aria-label': 'Key' }, sw('st-now', 'watched if you end this beat there'), sw('st-later', 'dashed: watched the beat after'), sw('st-cover', 'cover: hides you'), sw('st-wall', 'wall'),
+    h('li', {}, h('i', { class: 'nv-sw st-guard' }), h('span', { text: 'guard (arrow = way it walks)' })), h('li', {}, h('b', { text: '▲' }), h('span', { text: 'you' })), h('li', {}, h('b', { text: 'E' }), h('span', { text: 'exit' })));
   const status = h('p', { class: 'rp-status', role: 'status', 'aria-live': 'polite', text: 'Each tap spends a beat: step to a neighbouring cell, or wait. Stay out of the lit cones.' });
   const waitBtn = h('button', { type: 'button', class: 'nv-back', text: 'Wait a beat' });
   waitBtn.addEventListener('click', () => doAct(s.pos));
-  const facts = h('p', { class: 'rp-par', text: `${s.guards.length} guard${s.guards.length === 1 ? '' : 's'} · cones ${Math.round(STEALTH_BASE.cone * s.rangeFactor * 10) / 10} cells · heard step +${Math.round(STEALTH_BASE.heard * s.quiet * 10) / 10} · cools ${s.decay} a quiet beat` });
+  const facts = h('p', { class: 'rp-par', text: `${s.guards.length} guard${s.guards.length === 1 ? '' : 's'} · cones reach about ${Math.round(STEALTH_BASE.cone * s.rangeFactor)} cells · a heard step costs +${Math.round(STEALTH_BASE.heard * s.quiet)} heat · cools ${s.decay} a quiet beat` });
   const panel = h('section', { class: 'rp-panel nv-panel st-panel', role: 'group', 'aria-label': `Stealth: ${title}` },
     h('p', { class: 'rp-eyebrow', text: `SLIP PAST · ${title.toUpperCase()} · ${s.guards.length} GUARD${s.guards.length === 1 ? '' : 'S'}` }), heatBar, beatBar, grid, key, status,
     h('div', { class: 'rp-foot' }, waitBtn, facts),
@@ -46,8 +46,9 @@ export function playStealth(root, { state, title = 'Cargo hold', sound = () => {
       b.style.setProperty('--vis', String(vis || vis2 * 0.6));
       b.classList.toggle('is-head', i === s.pos); b.classList.toggle('is-next', !s.done && near.has(i));
       const em = b.querySelector('em');
-      em.textContent = gd ? '●' : i === s.pos ? '▲' : i === s.exit ? 'E' : s.cells[i] === CELL.cover ? '▣' : s.cells[i] === CELL.wall ? '' : '';
-      b.querySelector('small').textContent = gd ? ARROW[`${gd.dir[0]},${gd.dir[1]}`] || '' : '';
+      b.classList.toggle('is-guard', !!gd);
+      em.textContent = gd ? (ARROW[`${gd.dir[0]},${gd.dir[1]}`] || '●') : i === s.pos ? '▲' : i === s.exit ? 'E' : s.cells[i] === CELL.cover ? '▣' : s.cells[i] === CELL.wall ? '' : '';
+      b.querySelector('small').textContent = '';
       b.disabled = s.done || s.cells[i] === CELL.wall || !(near.has(i) || i === s.pos);
       b.setAttribute('aria-label', `Row ${Math.floor(i / n) + 1}, column ${(i % n) + 1}: ${s.cells[i]}${gd ? ', guard' : ''}${vis > 0 ? `, watched next beat (${Math.round(vis * 100)}%)` : ''}${i === s.pos ? ', you' : ''}${i === s.exit ? ', exit' : ''}`);
     });
