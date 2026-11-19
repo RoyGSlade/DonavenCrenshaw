@@ -5,7 +5,7 @@
 // The numbers are the same functions the minigames use (setup.js), so the
 // card and the game cannot disagree. Shooting has no minigame: its three
 // categories are listed with no numbers yet.
-import { POINT_MAX, REPAIR_BASE, setupRepair } from './setup.js';
+import { POINT_MAX, REPAIR_BASE, setupRepair, setupPersuade } from './setup.js';
 
 const f1 = (n) => (Math.round(n * 10) / 10).toString();
 const plus = (n, unit) => `${n > 0 ? '+' : ''}${f1(n)}${unit}`;
@@ -40,7 +40,7 @@ export const CATEGORIES = Object.freeze({
     { id: 'speed', name: 'Speed', words: (n) => `builds ${f1(5 * n)}% faster, ${5 - Math.floor(n / 3)} shaping steps` },
     { id: 'material', name: 'Material use', words: (n) => `${f1(4 * n)}% less scrap, the fraction saved across crafts` } ] },
   social: { built: false, cats: [
-    { id: 'persuade', name: 'Persuade', words: (n) => `Open zone ${plus(5 * n, '%')} wider` },
+    { id: 'persuade', name: 'Persuade', words: (n) => { const u = setupPersuade({ points: { persuade: n }, level: 9 }); return `trust needed ${u.goal} at a steady roll, you notice ${u.tells} thing${u.tells === 1 ? '' : 's'} about them`; } },
     { id: 'intimidate', name: 'Intimidate', words: (n) => `Snap point ${f1(4 * n)}% later, Break zone ${plus(2 * n, '%')} wider` },
     { id: 'haggle', name: 'Haggle', words: (n) => `${plus(1.5 * n, '%')} better final price, comfort band ${plus(0.4 * n, '%')} wider` } ] },
   navigation: { built: false, cats: [

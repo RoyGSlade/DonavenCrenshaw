@@ -165,3 +165,20 @@
 .st-cell.is-guard small{display:none}
 .st-cell.is-head{box-shadow:inset 0 0 0 2px #eaf4f5}
 .st-now.nv-sw{background:#8a4a40}.st-later.nv-sw{background:transparent;border:2px dashed #ffad72}.st-wall.nv-sw{background:repeating-linear-gradient(45deg,#4a535d 0 3px,#2a3038 3px 6px);border-color:#8a96a3}.st-guard.nv-sw{background:radial-gradient(circle at 35% 30%,#fffbe0,#ffe14d 55%,#ffb300);border-radius:50%;border-color:#fff}.st-cover.nv-sw{background:#14304a}
+
+/* Social: persuade, read the room */
+.pc-lead{margin:6px 0 4px;font:12px Consolas,monospace;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.pc-tells{list-style:none;margin:0 0 10px;padding:0;display:grid;gap:4px}
+.pc-tells li{padding:8px 10px;border-left:3px solid var(--cyan);background:#0a1624;border-radius:4px;font-size:14px}
+.pc-tells li.is-none{border-left-color:var(--line);color:var(--muted)}
+.pc-hand{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}
+.pc-card{display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-height:92px;padding:10px;text-align:left;border-radius:8px;border:1px solid var(--line);background:#102335;color:#eaf4f5}
+.pc-card b{font:700 11px Consolas,monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--cyan)}
+.pc-card span{font-size:14px;line-height:1.3}
+.pc-card small{margin-top:auto;font:700 11px Consolas,monospace;min-height:13px}
+.pc-card:disabled{opacity:1}
+.pc-card.is-played{background:#0a1624;color:#8fa6b7}
+.pc-card.is-landed{border-color:var(--cyan);background:#12363a;color:#eaf4f5}.pc-card.is-landed small{color:#81e6df}
+.pc-card.is-miss{border-color:#8c6a3c}.pc-card.is-miss small{color:#ffad72}
+.pc-card.is-hurt{border-color:#ff6b5a;background:#3a1a16}.pc-card.is-hurt small{color:#ff8a70}
+@media (min-width:760px){.pc-hand{grid-template-columns:repeat(4,1fr)}}

@@ -112,6 +112,26 @@ export function setupHaggle({ tier = 0, points = {}, level = POINT_MAX } = {}) {
   };
 }
 
+// --- Social: persuade, read the room (PLAN.md section 2.6) -------------------------
+// They care about 3 of 5 values and dislike 1. You pick argument cards from a hand; a card on
+// something they care about lands (its worth + a streak bonus), a miss costs patience.
+// Base: trust needed 22, patience 3, tells shown 1.
+// Tier: tells [0,1,1,2,2]; patience +1 at +1 and +2, -1 at -2 (never under 2); trust needed
+//   [+2,+1,0,-1,-3] for tiers -2..+2.
+// Points (persuade): trust needed -1 per point (never under 10); one more tell per 3 points.
+export const PERSUADE_BASE = Object.freeze({ goal: 22, goalMin: 10, patience: 3, tells: 1, goalPerPoint: 1, pointsPerTell: 3, maxTells: 4 });
+export function setupPersuade({ tier = 0, points = {}, level = POINT_MAX } = {}) {
+  const p = cleanPoints(points, SOCIAL_CATEGORIES, level);
+  const t = Math.max(-2, Math.min(2, Math.trunc(tier) || 0));
+  const b = PERSUADE_BASE;
+  return {
+    goal: Math.max(b.goalMin, b.goal + [2, 1, 0, -1, -3][t + 2] - b.goalPerPoint * p.persuade),
+    patience: Math.max(2, b.patience + (t >= 1 ? 1 : 0) - (t <= -2 ? 1 : 0)),
+    tells: Math.min(b.maxTells, b.tells + [-1, 0, 0, 1, 1][t + 2] + Math.floor(p.persuade / b.pointsPerTell)),
+    tier: t, points: p, label: tierInfo(t).label,
+  };
+}
+
 // --- Crafting: forge strikes (PLAN.md section 2.5) --------------------------------
 // Categories: quality, speed, material.
 //   quality   +4 quality per point                    (0..9 -> +0..+36)
