@@ -118,3 +118,15 @@ test('a perfect-timing player wins a great deal at every tier and seed; skill ma
 test('the picker words match the game: haggle points', () => {
   assert.equal(CATEGORIES.social.cats[2].words(5), '+7.5% better final price, comfort band +2% wider');
 });
+
+test('the result says why the price moved: base, bonus from haggle points', () => {
+  const s = g(1, { points: { haggle: 9 }, level: 9 });
+  const [lo, hi] = bandPrices(s); assert.ok(waitFor(s, (p) => p >= lo && p <= hi)); const asked = priceAt(s); ask(s);
+  assert.equal(s.result.base, asked);
+  assert.equal(s.result.bonus, s.result.price - asked);
+  assert.ok(s.result.bonus > 0);
+  const w = g(2); for (let i = 0; i < 3; i++) { waitFor(w, (p) => p >= 35); ask(w); }
+  assert.deepEqual([w.result.base, w.result.bonus], [10, 0]);
+  const n = g(4, { points: { haggle: 4 }, level: 9 }); takeOffer(n);
+  assert.deepEqual([n.result.base, n.result.price, n.result.bonus], [20, 21, 1]);
+});

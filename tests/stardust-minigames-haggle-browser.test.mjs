@@ -64,6 +64,8 @@ test('haggle in the browser', { skip }, async () => {
       await page.evaluate(() => clearInterval(window.__bot));
       const r = await page.evaluate(() => document.querySelector('.hg-panel').__state.result);
       assert.equal(r.how, 'sweet'); assert.equal(r.xp, 4);
+      assert.ok(r.bonus >= 1);
+      assert.match(await page.locator('.hg-panel .rp-status').innerText(), new RegExp(`Deal at ${r.base}, \\+${r.bonus} from your haggle points: ${r.price} credits`));
       await page.waitForTimeout(250); await shot(page, `haggle-${name}-4-great-deal`);
       await page.click('.rp-result button');
 

@@ -63,7 +63,7 @@ export function playHaggle(root, { state, who = 'Captain Tull', what = 'your sha
     cancelAnimationFrame(raf); paint(); removeEventListener('keydown', kd);
     const r = s.result;
     askBtn.hidden = true; takeBtn.hidden = true;
-    status.textContent = r.outcome === 'walked' ? `${who} walks. You get ${r.price}.` : `Deal at ${r.price}.`;
+    status.textContent = r.outcome === 'walked' ? `${who} walks. You get ${r.price}.` : r.bonus > 0 ? `Deal at ${r.base}, +${r.bonus} from your haggle points: ${r.price} credits.` : `Deal at ${r.price}.`;
     const ok = r.outcome !== 'walked';
     const go = h('button', { type: 'button', class: 'primary', text: ok ? 'Continue' : 'Step back' });
     const card = h('div', { class: `rp-result ${r.outcome === 'walked' ? 'is-bad' : 'is-ok'}`, role: 'status', 'data-outcome': r.outcome },

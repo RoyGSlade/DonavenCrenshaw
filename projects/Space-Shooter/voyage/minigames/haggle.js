@@ -56,7 +56,7 @@ export function ask(s) {
     const price = Math.max(asked, s.offer);
     const [lo] = bandPrices(s);
     s.history.push({ asked, outcome: 'deal', price });
-    finish(s, Math.min(s.cap, Math.round(price * (1 + s.priceBonus))), asked >= lo ? 'sweet' : 'low-ask');
+    finish(s, Math.min(s.cap, Math.round(price * (1 + s.priceBonus))), asked >= lo ? 'sweet' : 'low-ask', price);
     return 'deal';
   }
   s.patience--;
@@ -65,14 +65,14 @@ export function ask(s) {
   s.offer = Math.max(s.offer, counter);
   s.events.push({ type: 'counter', asked, offer: s.offer });
   if (s.patience <= 0) { finish(s, Math.round(s.open * 0.5), 'walked'); return 'walk'; }
-  if (s.asks >= s.rounds) { finish(s, Math.round(s.offer * (1 + s.priceBonus)), 'final'); return 'close'; }
+  if (s.asks >= s.rounds) { finish(s, Math.round(s.offer * (1 + s.priceBonus)), 'final', s.offer); return 'close'; }
   return 'counter';
 }
 
 /** Close now at their current offer. */
 export function takeOffer(s) {
   if (s.done) return null;
-  finish(s, Math.min(s.cap, Math.round(s.offer * (1 + s.priceBonus))), 'took');
+  finish(s, Math.min(s.cap, Math.round(s.offer * (1 + s.priceBonus))), 'took', s.offer);
   return 'close';
 }
 
@@ -84,10 +84,10 @@ export function outcomeOf(price, how, { open, best }) {
 /** Placeholder XP: 3, +1 for a closing inside the comfort band. None when they walk. */
 export const haggleXp = (r) => (r?.outcome === OUTCOMES.walked ? 0 : 3 + (r?.how === 'sweet' ? 1 : 0));
 
-function finish(s, price, how) {
+function finish(s, price, how, base = price) {
   s.done = true;
   const outcome = outcomeOf(price, how, s);
-  s.result = { price, how, outcome, asks: s.asks, patienceLeft: s.patience, offer: s.offer, success: outcome === OUTCOMES.well, xp: 0 };
+  s.result = { price, base, bonus: price - base, how, outcome, asks: s.asks, patienceLeft: s.patience, offer: s.offer, success: outcome === OUTCOMES.well, xp: 0 };
   s.result.xp = haggleXp(s.result);
   s.events.push({ type: 'done', ...s.result });
 }

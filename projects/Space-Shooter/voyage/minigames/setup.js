@@ -111,3 +111,29 @@ export function setupHaggle({ tier = 0, points = {}, level = POINT_MAX } = {}) {
     tier: t, points: p, label: tierInfo(t).label,
   };
 }
+
+// --- Crafting: forge strikes (PLAN.md section 2.5) --------------------------------
+// Categories: quality, speed, material.
+//   quality   +4 quality per point                    (0..9 -> +0..+36)
+//   speed     build time 5% shorter per point (0..-45%) and fewer strikes:
+//             0-2 points 5, 3-5: 4, 6-8: 3, 9: 2
+//   material  4% less material per point (0..-36%), never under 1 of an item
+// Base: strike zone 22% of the gauge, needle 1.1 gauges a second. Tier: zone x(1 + 0.15 x tier),
+// needle x(1 - 0.06 x tier), strikes -1 at +2 and +1 at -2. Never under 2 strikes.
+export const CRAFT_CATEGORIES = Object.freeze(['quality', 'speed', 'material']);
+export const CRAFT_BASE = Object.freeze({ zone: 0.22, speed: 1.1, strikes: 5, qualityPerPoint: 4, buildPerPoint: 0.05, materialPerPoint: 0.04, pointsPerStrike: 3 });
+export function setupCraft({ tier = 0, points = {}, level = POINT_MAX } = {}) {
+  const p = cleanPoints(points, CRAFT_CATEGORIES, level);
+  const t = Math.max(-2, Math.min(2, Math.trunc(tier) || 0));
+  const b = CRAFT_BASE;
+  const r4 = (x) => Math.round(+x.toFixed(6) * 10000) / 10000;
+  return {
+    zone: r4(b.zone * (1 + 0.15 * t)),
+    speed: r4(b.speed * (1 - 0.06 * t)),
+    strikes: Math.max(2, b.strikes - Math.floor(p.speed / b.pointsPerStrike) - (t === 2 ? 1 : 0) + (t === -2 ? 1 : 0)),
+    qualityBonus: b.qualityPerPoint * p.quality,
+    buildFactor: r4(1 - b.buildPerPoint * p.speed),
+    materialFactor: r4(1 - b.materialPerPoint * p.material),
+    tier: t, points: p, label: tierInfo(t).label,
+  };
+}

@@ -105,3 +105,11 @@
 .hg-price{position:absolute;top:-30px;transform:translateX(-50%);font:700 15px Consolas,monospace;color:#eaf4f5}
 .hg-scale{display:flex;justify-content:space-between;font:11px Consolas,monospace;color:var(--muted);margin-bottom:14px}
 .hg-take{width:100%;margin-top:8px;min-height:44px}
+
+/* Crafting */
+.cf-pips{display:flex;gap:6px;margin:0 0 14px}
+.cf-pips span{width:30px;height:8px;border-radius:2px;background:#2a4152}
+.cf-pips span.now{background:#eaf4f5}.cf-pips span.good{background:#9fe870}.cf-pips span.bad{background:#ff6b5a}
+.cf-track{margin-top:16px}
+.cf-zone{position:absolute;top:0;bottom:0;background:#ffad7255;border-left:2px solid var(--orange);border-right:2px solid var(--orange)}
+.cf-track.is-flash-good{border-color:#9fe870}.cf-track.is-flash-bad{border-color:#ff6b5a}
