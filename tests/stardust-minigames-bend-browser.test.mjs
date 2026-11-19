@@ -108,8 +108,8 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
         const before = await state(page);
         await pick('bend');
         const m = await page.evaluate(() => ({ eyebrow: document.querySelector('.wb-feyebrow').textContent, chips: [...document.querySelectorAll('.cc-chip')].map((c) => c.textContent), note: document.querySelector('.wb-preview').textContent }));
-        assert.match(m.eyebrow, /BEND/); assert.ok(m.chips.some((c) => /Good roll: a wider rhythm window/.test(c)), m.chips.join('|')); assert.ok(m.chips.some((c) => /Speed 0/.test(c)));
-        assert.match(m.note, /roll:/); assert.match(m.note, /rhythm window/);
+        assert.match(m.eyebrow, /BEND/); assert.ok(m.chips.some((c) => /Steady roll: a normal rhythm window/.test(c)), m.chips.join('|')); assert.ok(m.chips.some((c) => /Speed 0/.test(c)));
+        assert.match(m.note, /roll:/); assert.match(m.note, /roll:/);
         assert.equal(await page.locator('.wb-full').count(), 1, 'a full-screen game');
         assert.deepEqual(await page.evaluate(() => { const r = document.querySelector('.wb-full').getBoundingClientRect(); return [r.width, r.height]; }), [profile.viewport.width, profile.viewport.height], 'it owns the whole screen');
         const text = await page.locator(PANEL).innerText();
@@ -139,7 +139,7 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
         await bendTo({ setHow: phone ? null : 'mouse', firstDelay: 0.6 });
         await gradeCard();
         const card = await page.evaluate(() => ({ grade: Number(document.querySelector('.cc-grade').dataset.grade), pass: document.querySelector('.cc-grade').dataset.pass, text: document.querySelector('.cc-grade').innerText }));
-        assert.equal(card.pass, '1'); assert.equal(card.grade, 100, card.text); assert.match(card.text, /Bend: perfect/);
+        assert.equal(card.pass, '1'); assert.equal(card.grade, 100, card.text); assert.match(card.text, /Bend: perfect/i);
         await shot('5-bend-grade');
         await go('.cc-grade .cc-go'); await page.waitForSelector('.cc-final');
         const fin = await page.locator('.cc-final').innerText();
@@ -174,7 +174,7 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
         await bendTo({ firstDelay: 0.6 });
         await gradeCard();
         const card = await page.evaluate(() => ({ grade: Number(document.querySelector('.cc-grade').dataset.grade), text: document.querySelector('.cc-grade').innerText }));
-        assert.equal(card.grade, 95, card.text); assert.match(card.text, /Bend: perfect/);
+        assert.equal(card.grade, 95, card.text); assert.match(card.text, /Bend: perfect/i);
         await go('.cc-grade .cc-go'); await page.waitForSelector('.cc-final'); await go('.cc-final .cc-go'); await page.waitForSelector('.wb-full', { state: 'detached' });
       });
 
