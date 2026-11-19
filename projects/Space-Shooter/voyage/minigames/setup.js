@@ -324,9 +324,9 @@ export function setupStealth({ tier = 0, points = {}, level = POINT_MAX } = {}) 
 export const SHOOTING_CATEGORIES = Object.freeze(['reload', 'ammo', 'spray']);
 export const SHOOTING_BASE = Object.freeze({ reload: 1.8, reloadPerPoint: 0.14, magazine: 6, spread: 3.2, spreadPerPoint: 0.22, kick: 1.6, kickPerPoint: 0.12, heatMax: 4, heatDecay: 2.5, fireGap: 0.22 });
 export const SHOOTING_LESSONS = Object.freeze([
-  Object.freeze({ id: 1, name: 'Basic', unlockLevel: 1, targets: 10, time: 30, par: 11, speed: 1, size: 1, bull: 0.32, hitXp: 2, bullXp: 1, bullEvery: 3 }),
-  Object.freeze({ id: 2, name: 'Standard', unlockLevel: 4, targets: 12, time: 28, par: 14, speed: 1.25, size: 0.85, bull: 0.28, hitXp: 3, bullXp: 2, bullEvery: 2 }),
-  Object.freeze({ id: 3, name: 'Expert', unlockLevel: 7, targets: 14, time: 26, par: 17, speed: 1.5, size: 0.7, bull: 0.24, hitXp: 4, bullXp: 3, bullEvery: 2 }),
+  Object.freeze({ id: 1, name: 'Basic', unlockLevel: 1, targets: 10, time: 30, par: 9, speed: 1, size: 1, bull: 0.26, hitXp: 2, bullXp: 1, bullEvery: 3 }),
+  Object.freeze({ id: 2, name: 'Standard', unlockLevel: 4, targets: 12, time: 28, par: 11, speed: 1.25, size: 0.9, bull: 0.22, hitXp: 3, bullXp: 2, bullEvery: 2 }),
+  Object.freeze({ id: 3, name: 'Expert', unlockLevel: 7, targets: 14, time: 26, par: 13, speed: 1.5, size: 0.8, bull: 0.18, hitXp: 4, bullXp: 3, bullEvery: 2 }),
 ]);
 export const shootingLesson = (n) => SHOOTING_LESSONS[Math.max(1, Math.min(SHOOTING_LESSONS.length, Math.trunc(n) || 1)) - 1];
 export function setupShooting({ points = {}, level = POINT_MAX, lesson = 1 } = {}) {

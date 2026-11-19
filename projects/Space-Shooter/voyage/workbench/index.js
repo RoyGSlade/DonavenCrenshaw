@@ -14,9 +14,9 @@ import { TALKS, nextAfterCheck } from './talks.js';
 import { sparSetup, sparXp, sparSaid } from './spar.js';
 import { branchOf } from '../minigames/sceneHook.js';
 import { gymGame, trainRun, gymLoadout, gymSetup } from '../minigames/gym.js';
-import { trainingOf, gallerySetup, settleGallery, answerPage, leftThisHour } from '../minigames/trainer.js';
+import { trainingOf, gallerySetup, settleGallery, answerPage, galleryLeft } from '../minigames/trainer.js';
 import { nextPage, shuffledOrder } from '../minigames/books.js';
-import { createGallery } from '../minigames/gallery.js';
+import { createGallery, rangeHeight } from '../minigames/gallery.js';
 import { playGallery } from '../minigames/galleryView.js';
 import { renderTrainer } from '../minigames/trainerView.js';
 import { checkChance, checkBonusText } from '../character.js';
@@ -178,7 +178,7 @@ export function createWorkbench({ store, bus, onfoot, dialogueBox, sheet, hud, t
   function answer(position) {
     const page = bookCur.page;
     if (!page || bookCur.answered) return;
-    const r = answerPage({ pageId: page.id, order: bookCur.order, position, credits: state.credits, log: state.gymLog, learned: state.learned, now: Date.now() });
+    const r = answerPage({ pageId: page.id, order: bookCur.order, position, credits: state.credits, log: state.gymLog, learned: state.learned });
     if (!r.ok) { commit({ ...state, said: r.said }, { silent: true }); return; }
     bookCur = { ...bookCur, answered: { position, right: r.right, said: r.said, reread: r.reread } };
     const next = earnXp({ ...state, credits: r.credits, gymLog: r.log, learned: r.learned }, page.skill, r.paid).state;
@@ -188,19 +188,16 @@ export function createWorkbench({ store, bus, onfoot, dialogueBox, sheet, hud, t
     const skill = 'shooting';
     const { level, points } = gymLoadout(state.progress, skill);
     const setup = gallerySetup({ level, points, lesson: gymLesson });
-    const left = leftThisHour(state.gymLog, skill, Date.now());
+    const left = galleryLeft(state.gymLog, Date.now());
+    const height = rangeHeight((innerWidth || 1) / Math.max(200, (innerHeight || 600) - 150)); // a tall phone gets a tall range
     closePanel();
-    sheet.stage.replaceChildren();
-    const stage = h('div', { class: 'wb-stage' });
-    const leaveBtn = h('button', { type: 'button', class: 'wb-leave', text: 'Leave this game' });
-    sheet.stage.append(stage, leaveBtn);
-    showSheet(true, { word: 'SHOOTING GALLERY', titleText: 'Gym: shooting gallery' });
     hold(true);
-    const left$ = new Promise((resolve) => { leave = () => resolve(null); leaveBtn.addEventListener('click', leave); });
+    hud.hidden = true;
     let result = null;
-    try { result = await Promise.race([playGallery(stage, { state: createGallery({ seed: nextSeed(), lesson: setup.lesson, setup }), xpLeft: left, sound: () => {}, reducedMotion }), left$]); }
+    try { result = await playGallery(document.body, { state: createGallery({ seed: nextSeed(), lesson: setup.lesson, setup, height }), xpLeft: left, sound: () => {}, reducedMotion }); }
     catch (error) { console.warn('Stardust workbench: the gallery could not run', error); }
-    leave = null; sheet.stage.replaceChildren(); showSheet(false); hold(false);
+    hud.hidden = false;
+    hold(false);
     if (result) {
       const r = settleGallery({ credits: state.credits, log: state.gymLog, now: Date.now(), result });
       const next = earnXp({ ...state, credits: r.credits, gymLog: r.log }, skill, r.paid).state;

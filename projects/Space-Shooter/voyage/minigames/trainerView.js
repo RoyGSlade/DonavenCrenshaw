@@ -6,7 +6,8 @@ import { xpToNext } from './progress.js';
 import { unspent } from './picker.js';
 import { renderPicker } from './extrasView.js';
 import { GYM } from './gym.js';
-import { RAIL, SKILL_COLOURS, trainingOf, lessonsFor, gallerySetup, canStart, leftThisHour, gymGamesFor } from './trainer.js';
+import { RAIL, SKILL_COLOURS, trainingOf, lessonsFor, gallerySetup, canStart, leftThisHour, galleryLeft, GALLERY_CAP_XP, gymGamesFor } from './trainer.js';
+import { spreadWord } from './gallery.js';
 import { renderBook } from './booksView.js';
 import { SHOOTING_BASE } from './setup.js';
 
@@ -23,7 +24,7 @@ function loadoutStrip(setup) {
   return h('div', { class: 'tr-kit', role: 'list', 'aria-label': 'Your shooting kit' },
     h('div', { class: 'tr-kit-item', role: 'listitem', 'data-path': 'reload' }, h('span', { text: 'Reload' }), h('i', { class: 'tr-bar' }, h('u', { style: `width:${Math.round((100 * setup.reloadSeconds) / SHOOTING_BASE.reload)}%` })), h('b', { text: `${setup.reloadSeconds} s` })),
     h('div', { class: 'tr-kit-item', role: 'listitem', 'data-path': 'ammo' }, h('span', { text: 'Magazine' }), h('i', { class: 'tr-pips' }, ...Array.from({ length: maxMag }, (_, i) => h('u', { class: i < setup.magazine ? 'on' : '' }))), h('b', { text: `${setup.magazine} rounds` })),
-    h('div', { class: 'tr-kit-item', role: 'listitem', 'data-path': 'spray' }, h('span', { text: 'Spread' }), h('i', { class: 'tr-ring' }, h('u', { style: `--r:${Math.max(0.12, setup.spread / bloomTop).toFixed(3)}` })), h('b', { text: `${setup.spread} at rest` })));
+    h('div', { class: 'tr-kit-item', role: 'listitem', 'data-path': 'spray' }, h('span', { text: 'Spread' }), h('i', { class: 'tr-ring' }, h('u', { style: `--r:${Math.max(0.12, setup.spread / bloomTop).toFixed(3)}` })), h('b', { text: `${spreadWord(setup.spread)} at rest` })));
 }
 
 /**
@@ -34,7 +35,7 @@ export function renderTrainer(root, ctx, handlers) {
   const { state, selected, now, lesson = 1, book = { page: null, order: [], answered: null } } = ctx;
   const skill = selected, colour = SKILL_COLOURS[skill], level = state.progress.levels[skill], into = state.progress.xp[skill], need = xpToNext(level);
   const kind = trainingOf(skill);
-  const left = leftThisHour(state.gymLog, skill, now);
+  const left = kind === 'gallery' ? galleryLeft(state.gymLog, now) : leftThisHour(state.gymLog, skill, now);
   const pts = unspent(skill, state.progress.points[skill], level);
   const points = state.progress.points[skill] || {};
 
@@ -55,7 +56,7 @@ export function renderTrainer(root, ctx, handlers) {
       h('i', { class: 'ex-bar tr-xp' }, h('u', { style: `width:${Number.isFinite(need) ? Math.round((100 * into) / need) : 100}%` })),
       h('p', { class: 'tr-kind', text: `${KIND_WORD[kind]} · training pays XP, never skill points` })));
 
-  const wallet = h('p', { class: 'tr-wallet', id: 'gm-wallet', role: 'status', text: `${state.credits} credits · the gym still pays ${left} of ${GYM.capXp} ${NAME[skill]} XP this hour` });
+  const wallet = h('p', { class: 'tr-wallet', id: 'gm-wallet', role: 'status', text: kind === 'book' ? `${state.credits} credits · pages are free` : `${state.credits} credits · the gym still pays ${left} of ${kind === 'gallery' ? GALLERY_CAP_XP : GYM.capXp} ${NAME[skill]} XP this hour` });
 
   const train = h('div', { class: 'tr-train', 'data-kind': kind });
   if (kind === 'gallery') {
@@ -75,9 +76,8 @@ export function renderTrainer(root, ctx, handlers) {
       button(`Start the round (${GYM.cost} credits)`, handlers.onStart, { class: 'primary ui-btn tr-start', disabled: !can.ok, title: can.reason }));
     if (!can.ok) train.append(h('p', { class: 'bk-note is-warn', text: can.reason }));
   } else if (kind === 'book') {
-    const can = canStart(skill, { credits: state.credits, log: state.gymLog, now });
-    renderBook(train, { skill, page: book.page, order: book.order, answered: book.answered, level, learnedMap: state.learned, learned: book.page ? Boolean(state.learned?.[book.page.id]) : false, canAnswer: book.page && state.learned?.[book.page.id] ? { ok: true, reason: '' } : can }, { onAnswer: handlers.onAnswer, onNext: handlers.onNext });
-    train.append(h('p', { class: 'rp-help tr-fee', text: `A new page costs ${GYM.cost} credits when you answer it. Pages you have learned are free to read and pay nothing.` }));
+    renderBook(train, { skill, page: book.page, order: book.order, answered: book.answered, level, learnedMap: state.learned, learned: book.page ? Boolean(state.learned?.[book.page.id]) : false, canAnswer: { ok: true, reason: '' } }, { onAnswer: handlers.onAnswer, onNext: handlers.onNext });
+    train.append(h('p', { class: 'rp-help tr-fee', text: 'Pages are free. Each pays its XP once, the first time you answer it right.' }));
   } else {
     if (kind === 'coming') {
       train.append(h('div', { class: 'tr-coming', 'data-slot': 'perihelion' },

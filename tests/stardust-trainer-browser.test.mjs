@@ -64,6 +64,10 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
       const before = await state(page);
       await tap('.tr-start');
       await page.waitForSelector('.ga-panel .ga-begin');
+      const box = await page.evaluate(() => { const r = document.querySelector('.ga-canvas').getBoundingClientRect(), p = document.querySelector('.ga-panel').getBoundingClientRect(); return { cw: r.width, ch: r.height, pw: p.width, ph: p.height, leave: Boolean(document.querySelector('.ga-leave')), tall: document.querySelector('.ga-panel').__state.h, tgt: document.querySelector('.ga-panel').__state.targets.map((t) => t.r) }; });
+      assert.equal(box.pw, profile.viewport.width, 'the range owns the screen'); assert.equal(box.ph, profile.viewport.height); assert.ok(box.leave);
+      assert.ok(box.cw >= profile.viewport.width * 0.9 || box.ch >= profile.viewport.height * 0.5, `the range fills the screen (${box.cw} x ${box.ch})`);
+      const smallest = Math.min(...box.tgt) * (box.cw / 160) * 2; if (phone) assert.ok(Math.min(...box.tgt) * (box.cw / 160) * 2 >= 44 * 0.7, `phone targets are big enough (${smallest} px across)`);
       await shot('t2-gallery-intro');
       await tap('.ga-begin');
       let mid = false;
@@ -88,6 +92,7 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
       await page.waitForSelector('.tr-root');
       const after = await state(page);
       assert.equal(after.credits, before.credits - 10, 'the entry fee');
+      assert.equal(await page.locator('.ga-panel').count(), 0, 'the range is gone');
       assert.ok(after.progress.xp.shooting > before.progress.xp.shooting || after.progress.levels.shooting > before.progress.levels.shooting, 'XP paid');
       assert.deepEqual(after.progress.points.shooting, before.progress.points.shooting, 'no skill point is ever paid');
       await shot('t5-trainer-after-gallery');
@@ -112,11 +117,13 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
           await page.waitForSelector('.bk-choice:not([disabled])');
         }
         const s2 = await state(page);
+        assert.equal(await page.locator('.tr-wallet').innerText().then((t) => /this hour/.test(t)), false, 'no hour line on a book skill');
         const pageId = await page.evaluate(() => document.querySelector('.bk-book h3.bk-title').textContent);
         await tap('.bk-choice[data-right="1"]');
         await page.waitForSelector('.bk-out.is-right');
         const s3 = await state(page);
         assert.ok(s3.progress.xp[skill] > s2.progress.xp[skill] || s3.progress.levels[skill] > s2.progress.levels[skill], `${skill} XP paid for ${pageId}`);
+        assert.equal(s3.credits, s2.credits, 'pages are free');
         assert.equal(Object.keys(s3.learned).length, Object.keys(s2.learned).length + 1, 'the page is marked learned');
         assert.deepEqual(s3.progress.points[skill] || {}, s2.progress.points[skill] || {}, 'no skill point');
         await shot(`t8-book-${skill}-right`);
@@ -127,6 +134,12 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
       await page.waitForSelector('.tr-coming');
       assert.match(await page.locator('.tr-coming').innerText(), /COMING/);
       await shot('t9-navigation-coming');
+      if (!phone) for (const w of [1440, 1024]) {
+        await page.setViewportSize({ width: w, height: 800 }); await page.waitForTimeout(300);
+        const clip = await page.evaluate(() => [...document.querySelectorAll('.tr-skill')].map((b) => { const t = b.querySelector('b'); return [t.textContent, t.scrollWidth - t.clientWidth, b.scrollWidth - b.clientWidth]; }).filter(([, a, c]) => a > 0 || c > 0));
+        assert.deepEqual(clip, [], `no clipped skill name at ${w}`);
+        await shot(`t10-rail-${w}`);
+      }
       await page.locator('.wb-pane .gm-row button', { hasText: 'Close' })[phone ? 'tap' : 'click']();
       await page.waitForSelector('#hg-minigame', { state: 'hidden' });
       assert.deepEqual(errors.filter((e) => !/favicon|ERR_FAILED|net::/.test(e)), []);

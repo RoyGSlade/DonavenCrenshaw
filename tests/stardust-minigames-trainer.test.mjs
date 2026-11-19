@@ -1,12 +1,12 @@
 // The trainer (Donaven 2026-11-19): the shooting gallery, the three books, and how training pays XP (never skill points). Pure.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createGallery, stepGallery, shoot, reload, targetAt, hittable, canShoot, bloomOf, bloomMax, scoreLines, RANGE, LANES } from '../projects/Space-Shooter/voyage/minigames/gallery.js';
+import { createGallery, stepGallery, shoot, reload, targetAt, hittable, canShoot, bloomOf, bloomMax, scoreLines, RANGE, LANES, rangeHeight, spreadWord } from '../projects/Space-Shooter/voyage/minigames/gallery.js';
 import { setupShooting, SHOOTING_LESSONS, SHOOTING_BASE } from '../projects/Space-Shooter/voyage/minigames/setup.js';
 import { describeSkill, CATEGORIES } from '../projects/Space-Shooter/voyage/minigames/picker.js';
 import { PAGES, BOOK_SKILLS, pagesOf, unlockedPages, nextPage, shuffledOrder, isRight, rereadWords, pageWords, pageXp, lineParts } from '../projects/Space-Shooter/voyage/minigames/books.js';
 import { FACTS, FACT_IDS, factHolds } from '../projects/Space-Shooter/voyage/minigames/bookFacts.js';
-import { answerPage, settleGallery, trainingOf, gallerySetup, lessonsFor, canStart, TRAINING, RAIL } from '../projects/Space-Shooter/voyage/minigames/trainer.js';
+import { answerPage, settleGallery, trainingOf, gallerySetup, lessonsFor, canStart, galleryLeft, GALLERY_CAP_XP, TRAINING, RAIL } from '../projects/Space-Shooter/voyage/minigames/trainer.js';
 import { GYM } from '../projects/Space-Shooter/voyage/minigames/gym.js';
 import { cleanState, freshState } from '../projects/Space-Shooter/voyage/workbench/state.js';
 
@@ -79,7 +79,7 @@ test('gallery: the bloom grows with each shot, settles, and spray points shrink 
 });
 test('gallery: score lines (targets, bullseyes, accuracy, time) add to the XP and match the lesson', () => {
   const L = SHOOTING_LESSONS;
-  assert.deepEqual(L.map((l) => [l.targets, l.time, l.par]), [[10, 30, 11], [12, 28, 14], [14, 26, 17]]);
+  assert.deepEqual(L.map((l) => [l.targets, l.time, l.par]), [[10, 30, 9], [12, 28, 11], [14, 26, 13]]);
   const good = play(1, 1, setupShooting({ points: { spray: 9 }, level: 9 }), { gap: 0.6 });
   assert.equal(good.result.how, 'cleared'); assert.deepEqual(good.result.lines.map((l) => l.id), ['targets', 'bullseye', 'accuracy', 'time']);
   assert.equal(good.result.xp, good.result.lines.reduce((a, l) => a + l.xp, 0)); assert.equal(good.result.lines[0].xp, 2); assert.equal(good.result.lines[3].xp, 2, 'under par');
@@ -154,39 +154,47 @@ test('books: the choices are shuffled each time, never the written order or the 
 
 // ---- paying -------------------------------------------------------------------------------------------------------------
 const pg = PAGES.find((p) => p.id === 'repair-tee'); const ord = [1, 0, 3, 2]; const rightPos = ord.indexOf(pg.answer), wrongPos = (rightPos + 1) % 4;
-test('paying: a right page pays its XP once, costs the fee, and is then learned and pays nothing', () => {
-  const a = answerPage({ pageId: pg.id, order: ord, position: rightPos, credits: 50, now: 1000 });
-  assert.deepEqual([a.ok, a.right, a.paid, a.credits], [true, true, 2, 40]); assert.equal(a.learned[pg.id], true); assert.match(a.said, /\+2 repair XP/);
-  assert.equal(a.log.repair[0].xp, 2);
-  const b = answerPage({ pageId: pg.id, order: ord, position: rightPos, credits: a.credits, learned: a.learned, log: a.log, now: 2000 });
-  assert.deepEqual([b.right, b.paid, b.credits], [true, 0, 40]); assert.match(b.said, /pays no more XP/);
+test('paying: a right page pays its XP once, is free, and is then learned and pays nothing', () => {
+  const a = answerPage({ pageId: pg.id, order: ord, position: rightPos, credits: 50 });
+  assert.deepEqual([a.ok, a.right, a.paid, a.credits], [true, true, 2, 50]); assert.equal(a.learned[pg.id], true); assert.match(a.said, /\+2 repair XP/); assert.deepEqual(a.log, {});
+  const b = answerPage({ pageId: pg.id, order: ord, position: rightPos, credits: a.credits, learned: a.learned });
+  assert.deepEqual([b.right, b.paid, b.credits], [true, 0, 50]); assert.match(b.said, /pays no more XP/);
   assert.equal(pageXp(pg), 2); assert.deepEqual([1, 3, 6].map((l) => pageXp({ level: l })), [2, 3, 4]);
 });
-test('paying: a wrong answer pays nothing, says which line to reread, and the page stays unlearned', () => {
-  const w = answerPage({ pageId: pg.id, order: ord, position: wrongPos, credits: 50, now: 1000 });
-  assert.deepEqual([w.ok, w.right, w.paid, w.credits, w.learned[pg.id]], [true, false, 0, 40, undefined]); assert.match(w.said, /Reread lines 2 and 3/); assert.deepEqual(w.reread, [2, 3]); assert.deepEqual(w.log, {});
-  const learned = { [pg.id]: true }; const free = answerPage({ pageId: pg.id, order: ord, position: wrongPos, credits: 50, learned, now: 1 });
-  assert.equal(free.credits, 50, 'a learned page is free');
-});
-test('paying: the hour\'s cap and the fee still apply; inputs are never changed', () => {
-  const log = { repair: [{ at: 900, xp: 6 }] }, frozen = JSON.stringify(log);
-  const capped = answerPage({ pageId: pg.id, order: ord, position: rightPos, credits: 50, log, now: 1000 });
-  assert.deepEqual([capped.ok, capped.paid, capped.credits], [false, 0, 50]); assert.match(capped.said, /all it will for repair this hour/); assert.equal(JSON.stringify(log), frozen); assert.equal(capped.learned[pg.id], undefined, 'it stays in the pile');
-  const poor = answerPage({ pageId: pg.id, order: ord, position: rightPos, credits: 9, now: 1 }); assert.equal(poor.ok, false); assert.match(poor.said, /costs 10 credits and you have 9/);
-  const part = answerPage({ pageId: 'repair-lost', order: [0, 1, 2, 3], position: 2, credits: 50, log: { repair: [{ at: 990, xp: 5 }] }, now: 1000 }); assert.equal(part.paid, 1); assert.match(part.said, /hour's limit/);
+test('paying: a wrong answer pays nothing, costs nothing, says which line to reread, and the page stays unlearned', () => {
+  const w = answerPage({ pageId: pg.id, order: ord, position: wrongPos, credits: 50 });
+  assert.deepEqual([w.ok, w.right, w.paid, w.credits, w.learned[pg.id]], [true, false, 0, 50, undefined]); assert.match(w.said, /Reread lines 2 and 3/); assert.deepEqual(w.reread, [2, 3]);
+  const learned = { [pg.id]: true }; assert.equal(answerPage({ pageId: pg.id, order: ord, position: wrongPos, credits: 50, learned }).credits, 50);
   assert.equal(answerPage({ pageId: 'zzz', order: [], position: 0, credits: 5 }).ok, false);
-  assert.equal(GYM.cost, 10); assert.equal(GYM.capXp, 6, 'the gym\'s own numbers are unchanged');
+});
+test('paying: pages are exempt from the hour cap and the fee; no pages are "capped"; inputs are never changed', () => {
+  const log = { repair: [{ at: 900, xp: 6 }] }, frozen = JSON.stringify(log);
+  const r = answerPage({ pageId: pg.id, order: ord, position: rightPos, credits: 0, log });
+  assert.deepEqual([r.ok, r.paid, r.credits], [true, 2, 0]); assert.equal(JSON.stringify(log), frozen); assert.equal(JSON.stringify(r.log), frozen, 'the replay gym\'s hour log is untouched');
+  let learned = {}, total = 0; for (const p of PAGES.filter((x) => x.skill === 'repair')) { const q = answerPage({ pageId: p.id, order: [0, 1, 2, 3], position: p.answer, credits: 0, learned }); learned = q.learned; total += q.paid; }
+  assert.equal(total, 3 * 2 + 3 * 3 + 3 * 4, 'a whole book pays 27 XP in one sitting');
+  assert.equal(GYM.cost, 10); assert.equal(GYM.capXp, 6, 'the replay gym keeps its own numbers');
 });
 test('paying: no page, round or replay ever pays a skill point', () => {
   const src = (n) => JSON.stringify(n);
   for (const r of [answerPage({ pageId: pg.id, order: ord, position: rightPos, credits: 50 }), settleGallery({ credits: 50, result: { xp: 5 } })]) assert.ok(!('points' in r) && !/point/.test(src(Object.keys(r))));
 });
-test('paying: a gallery round costs the fee, pays up to the hour\'s cap, and a round with no XP still costs', () => {
-  const a = settleGallery({ credits: 50, now: 5, result: { xp: 4 } }); assert.deepEqual([a.ok, a.paid, a.credits, a.said], [true, 4, 40, '+4 shooting XP.']);
-  const b = settleGallery({ credits: 50, now: 6, log: a.log, result: { xp: 9 } }); assert.deepEqual([b.paid, b.credits], [2, 40]); assert.match(b.said, /hour's limit/);
+test('paying: a gallery round costs the fee and pays up to 30 XP an hour; a round with no XP still costs', () => {
+  assert.equal(GALLERY_CAP_XP, 30);
+  const a = settleGallery({ credits: 50, now: 5, result: { xp: 7 } }); assert.deepEqual([a.ok, a.paid, a.credits, a.said], [true, 7, 40, '+7 shooting XP.']);
+  let log = a.log, credits = a.credits, got = a.paid; for (let i = 0; i < 3; i++) { const r = settleGallery({ credits: 500, now: 6 + i, log, result: { xp: 9 } }); log = r.log; got += r.paid; credits = r.credits; }
+  assert.equal(got, 30, 'about three good rounds then the limit'); assert.equal(galleryLeft(log, 10), 0);
+  const capped = settleGallery({ credits: 50, now: 11, log, result: { xp: 3 } }); assert.equal(capped.ok, false); assert.match(capped.said, /all it will for shooting this hour/);
+  assert.equal(galleryLeft(log, 5 + GYM.windowMs + 100), 30, 'the hour rolls');
   const z = settleGallery({ credits: 50, now: 5, result: { xp: 0 } }); assert.deepEqual([z.paid, z.credits], [0, 40]); assert.match(z.said, /took 10 credits/);
-  const capped = settleGallery({ credits: 50, now: 7, log: b.log, result: { xp: 3 } }); assert.equal(capped.ok, false);
   assert.equal(settleGallery({ credits: 3, result: { xp: 3 } }).ok, false);
+});
+test('hud words: spread is tight, medium or wide, and the range is as tall as the screen asks', () => {
+  assert.deepEqual([1.22, 2.4, 3.2, 4.6, 5, 9.6].map(spreadWord), ['tight', 'tight', 'medium', 'medium', 'wide', 'wide']);
+  assert.equal(spreadWord(setupShooting({}).spread), 'medium'); assert.equal(spreadWord(setupShooting({ points: { spray: 9 }, level: 9 }).spread), 'tight');
+  assert.deepEqual([1.8, 1.6, 0.9, 0.46].map(rangeHeight), [100, 100, 178, 260]);
+  const tall = createGallery({ seed: 1, height: 170 }); assert.equal(tall.h, 170); assert.ok(tall.targets.every((t) => t.y > 20 && t.y < 170));
+  assert.equal(createGallery({ seed: 1 }).h, 100);
 });
 test('the trainer shows each skill its own training, with navigation left as a coming slot', () => {
   assert.deepEqual(RAIL.slice().sort(), Object.keys(TRAINING).sort());
@@ -195,7 +203,7 @@ test('the trainer shows each skill its own training, with navigation left as a c
   assert.deepEqual(lessonsFor(1).map((l) => l.open), [true, false, false]); assert.deepEqual(lessonsFor(7).map((l) => l.open), [true, true, true]);
   assert.equal(gallerySetup({ level: 1, lesson: 3 }).lesson, 1, 'a lesson the level has not opened is not served');
   assert.equal(gallerySetup({ level: 7, lesson: 3, points: { ammo: 2 } }).magazine, 8);
-  assert.equal(canStart('repair', { credits: 10 }).ok, true);
+  assert.equal(canStart('repair', { credits: 10 }).ok, true); assert.equal(canStart('shooting', { credits: 9 }).ok, false);
 });
 test('the workbench state keeps learned pages, drops unknown ones, and a fresh state has none', () => {
   assert.deepEqual(freshState().learned, {}); assert.deepEqual(cleanState({ learned: { 'repair-tee': true, nope: true, 'hacking-grade': 1 } }).learned, { 'repair-tee': true });

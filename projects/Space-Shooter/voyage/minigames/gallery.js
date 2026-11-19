@@ -17,10 +17,14 @@ import { setupShooting, shootingLesson } from './setup.js';
 export const RANGE = Object.freeze({ w: 160, h: 100 });
 /** The three depths: rail height, target radius and base speed (units a second). Nearer is bigger and faster. */
 export const LANES = Object.freeze([
-  Object.freeze({ id: 'far', y: 30, r: 5, v: 18 }),
-  Object.freeze({ id: 'mid', y: 54, r: 7, v: 30 }),
-  Object.freeze({ id: 'near', y: 79, r: 9.5, v: 44 }),
+  Object.freeze({ id: 'far', y: 0.3, r: 8.5, v: 18 }),
+  Object.freeze({ id: 'mid', y: 0.54, r: 10.5, v: 30 }),
+  Object.freeze({ id: 'near', y: 0.79, r: 13, v: 44 }),
 ]);
+/** The range is always 160 wide; its height follows the screen (a tall phone gets a tall range), 100 to 260. Rail heights are shares of it. */
+export const rangeHeight = (aspect = 1.6) => Math.max(100, Math.min(260, Math.round(RANGE.w / (aspect || 1.6))));
+/** Plain words for the crosshair bloom, from the radius (the HUD never shows a raw number). */
+export const spreadWord = (bloom) => (bloom <= 2.4 ? 'tight' : bloom <= 4.6 ? 'medium' : 'wide');
 export const RINGS = Object.freeze({ inner: 0.62 }); // the inner ring's share of the radius; the bullseye share comes from the lesson
 export const POP = Object.freeze({ rise: 0.2, hittable: 0.7 }); // a pop-up rises in 0.2 s and can be hit from 70% up
 export const FLIP_SECONDS = 0.35;
@@ -53,7 +57,8 @@ export const hittable = (tg, t) => !tg.hit && targetAt(tg, t).up >= POP.hittable
  * A range: { seed, lesson (1..3), setup (setup.js setupShooting) }.
  * State: lesson, setup, targets, t, left, ammo, reloading (seconds left, 0 when not), cooldown, heat, shots, hits, rings, done, result, events.
  */
-export function createGallery({ seed = 1, lesson = 1, setup = null } = {}) {
+export function createGallery({ seed = 1, lesson = 1, setup = null, height = RANGE.h } = {}) {
+  const H = Math.max(100, Math.min(260, Math.trunc(height) || RANGE.h));
   const l = shootingLesson(lesson);
   const s = setup || setupShooting({ lesson: l.id });
   let rng = hashSeed('gallery', seed, l.id);
@@ -63,7 +68,7 @@ export function createGallery({ seed = 1, lesson = 1, setup = null } = {}) {
   for (let i = 0; i < l.targets; i++) {
     const lane = LANES[(i * 2 + Math.floor(rand() * 3)) % 3];
     const r = r2(lane.r * l.size);
-    const base = { id: i, lane: lane.id, y: lane.y, r, bullR: r2(r * l.bull), innerR: r2(r * RINGS.inner), hit: false, ring: null, flip: 0 };
+    const base = { id: i, lane: lane.id, y: Math.round(lane.y * H * 10) / 10, r, bullR: r2(r * l.bull), innerR: r2(r * RINGS.inner), hit: false, ring: null, flip: 0 };
     if (i >= l.targets - nPop) {
       targets.push({ ...base, kind: 'popup', x0: r2(24 + rand() * (RANGE.w - 48)), up: r2(1.5 / l.speed), down: r2(1.0 + rand() * 0.8), offset: r2(rand() * 3) });
     } else {
@@ -73,7 +78,7 @@ export function createGallery({ seed = 1, lesson = 1, setup = null } = {}) {
     }
   }
   return {
-    seed, lesson: l.id, setup: s, targets, t: 0, total: l.time, left: l.time,
+    seed, lesson: l.id, setup: s, h: H, targets, t: 0, total: l.time, left: l.time,
     ammo: s.magazine, reloading: 0, cooldown: 0, heat: 0, shots: 0, hits: 0, rings: { bull: 0, inner: 0, outer: 0 }, empty: 0, reloads: 0,
     rng, done: false, result: null, events: [],
   };
