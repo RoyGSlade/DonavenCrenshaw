@@ -4,6 +4,9 @@ import { runtimeConfig } from '../../runtime-config.js';
 import { newGameFlag } from '../flag.js';
 import { newProgress, addXp, scanSnapshot, reprint } from './progress.js';
 import { renderRisk, renderSkills, renderPicker } from './extrasView.js';
+import { dayNumber, createBench, submit } from './bench.js';
+import { renderBench, playBench, renderGym } from './extras2View.js';
+import { trainRun, newGymLog } from './gym.js';
 
 const flag = newGameFlag({ config: runtimeConfig, search: location.search });
 const $ = (id) => document.getElementById(id);
@@ -39,7 +42,22 @@ function boot() {
     play('Scan: save here', () => { snap = scanSnapshot(progress); logEl.textContent = 'Scanned. Everything so far is safe.'; }, 'primary'),
     play('Die: reprint from the scan', () => { progress = reprint(progress, snap); logEl.textContent = 'Reprinted from your last scan. Progress since then is gone.'; }),
     logEl);
-  root.append(colRisk, colSkills, colPick, colPlay);
+  // The bench board: today's board for everyone; a crew with a few names already on it.
+  const day = Number(params.get('day')) || dayNumber(Date.now());
+  const bench = createBench(day), me = 'You';
+  [['Mae', 1, 31], ['Tull', 4, 27], ['Ode', 7, 44]].forEach(([n, over, t]) => submit(bench, { name: n, success: true, moves: bench.par + over, time: t }));
+  const colBench = doc('section', 'ex-col'), benchBox = doc('div', '');
+  colBench.append(Object.assign(document.createElement('h2'), { textContent: 'Bench board' }), benchBox, doc('div', 'bn-stage'));
+  const benchStage = colBench.lastChild;
+  const drawBench = () => renderBench(benchBox, { bench, name: me, onPlay: async () => { benchStage.replaceChildren(); const r = await playBench(benchStage, day, () => matchMedia('(prefers-reduced-motion: reduce)').matches); submit(bench, { name: me, success: r.success, moves: r.moves, time: r.time }); drawBench(); } });
+  // The holodeck gym.
+  let wallet = Number(params.get('credits') ?? 60), gymLog = newGymLog();
+  const colGym = doc('section', 'ex-col'), gymBox = doc('div', '');
+  colGym.append(Object.assign(document.createElement('h2'), { textContent: 'Holodeck gym' }), gymBox);
+  const drawGym = () => renderGym(gymBox, { wallet, log: gymLog, now: Date.now(), level: 5, onResult: (id, result) => { const r = trainRun(id, { credits: wallet, log: gymLog, now: Date.now(), result }); wallet = r.credits; gymLog = r.log; logEl.textContent = r.said; drawGym(); } });
+  window.__bench = { bench, get wallet() { return wallet; }, get gymLog() { return gymLog; } };
+  root.append(colRisk, colSkills, colPick, colPlay, colBench, colGym);
+  drawBench(); drawGym();
   function draw() {
     renderRisk(riskBox, { progress, snap });
     renderSkills(skillBox, { progress, selected }, (id) => { selected = id; draw(); });

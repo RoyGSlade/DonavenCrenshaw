@@ -8,16 +8,16 @@ const h = (tag, attrs = {}, ...kids) => { const el = document.createElement(tag)
 const NS = 'http://www.w3.org/2000/svg';
 const sv = (tag, attrs = {}, ...kids) => { const el = document.createElementNS(NS, tag); for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v); el.append(...kids); return el; };
 const WORDS = { landed: 'TOUCHDOWN', crashed: 'CRASHED: TOO FAST', missed: 'MISSED THE PAD' };
-const GROUND = 70;                                  // screen y of the ground line (the view is 100 wide, 80 high)
-const sy = (y) => GROUND - (y / 100) * (GROUND - 6); // altitude 100 -> near the top
+const GROUND = 56;                                  // screen y of the ground line (the view is 100 wide, 64 high)
+const sy = (y) => GROUND - (y / 100) * (GROUND - 5); // altitude 100 -> near the top
 
 export function playPilot(root, { state, where = 'the hangar pad', sound = () => {}, reducedMotion = () => false } = {}) {
   const s = state;
   const padEl = sv('rect', { class: 'pl-pad', x: s.padX - s.pad / 2, y: GROUND - 1.2, width: s.pad, height: 2.4, rx: 0.8 });
   const flame = sv('path', { class: 'pl-flame', d: 'M-1.6 3.4 L0 8.5 L1.6 3.4 Z' });
   const ship = sv('g', { class: 'pl-ship' }, flame, sv('path', { class: 'pl-hull', d: 'M0 -4.2 L2.6 3.4 L-2.6 3.4 Z' }), sv('rect', { class: 'pl-leg', x: -3.3, y: 3.4, width: 6.6, height: 0.9, rx: 0.4 }));
-  const svg = sv('svg', { class: 'pl-view', viewBox: '0 0 100 80', role: 'img', 'aria-label': 'Side view of the ship above the pad', preserveAspectRatio: 'xMidYMid meet' },
-    sv('rect', { class: 'pl-sky', x: 0, y: 0, width: 100, height: 80 }), sv('rect', { class: 'pl-ground', x: 0, y: GROUND, width: 100, height: 80 - GROUND }), padEl,
+  const svg = sv('svg', { class: 'pl-view', viewBox: '0 0 100 64', role: 'img', 'aria-label': 'Side view of the ship above the pad', preserveAspectRatio: 'xMidYMid meet' },
+    sv('rect', { class: 'pl-sky', x: 0, y: 0, width: 100, height: 64 }), sv('rect', { class: 'pl-ground', x: 0, y: GROUND, width: 100, height: 64 - GROUND }), padEl,
     sv('line', { class: 'pl-line', x1: s.padX, x2: s.padX, y1: GROUND - 1.2, y2: 6 }), ship);
   const speedEl = h('b', { text: '' }), fuelBar = h('div', { class: 'nv-bar is-fuel pl-fuel' }, h('span', { text: 'Fuel' }), h('i', {}, h('u')), h('b', { text: '' }));
   const hud = h('div', { class: 'pl-hud' }, h('p', { class: 'pl-speed' }, h('span', { text: 'Speed ' }), speedEl, h('small', { text: ` (safe: ${Math.round(s.safe * 10) / 10})` })),

@@ -58,6 +58,9 @@ test('piloting (touchdown) in the browser', { skip }, async () => {
       await page.click('#mg-go'); await page.waitForSelector('.pl-panel');
       const m = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, iw: innerWidth, btn: document.querySelector('.pl-thrust').getBoundingClientRect().height, svg: document.querySelector('.pl-view').getBoundingClientRect().width }));
       assert.ok(m.sw <= m.iw, 'no sideways scroll'); assert.ok(m.btn >= 44); assert.ok(m.svg >= 300);
+      const fit = await page.evaluate(() => [...document.querySelectorAll('.pl-btn')].map((b) => { const r = b.getBoundingClientRect(); return { t: b.textContent, bottom: r.bottom, top: r.top, ih: innerHeight, w: r.width }; }));
+      assert.equal(fit.length, 4);
+      for (const b of fit) { assert.ok(b.top >= 0 && b.bottom <= b.ih, `${b.t} is on screen (${b.top}..${b.bottom} of ${b.ih})`); assert.ok(b.w >= 44, `${b.t} wide enough`); }
       await fly(page, 'ace');
       await page.waitForTimeout(3500); await shot(page, `pilot-${name}-2-falling`);
       await page.waitForSelector('.rp-result', { timeout: 20000 });

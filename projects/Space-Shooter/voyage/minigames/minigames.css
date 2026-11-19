@@ -203,12 +203,34 @@
 .pl-hud{display:flex;flex-wrap:wrap;gap:4px 16px;font:12px Consolas,monospace;color:#b5c8d5;margin:0 0 4px}
 .pl-hud p{margin:0}
 .pl-speed b{font-size:18px}.pl-speed b.is-ok{color:#9fe870}.pl-speed b.is-warn{color:#ffad72}.pl-speed b.is-bad{color:#ff6b5a}
-.pl-view{display:block;width:100%;aspect-ratio:100/80;margin:8px 0;border-radius:6px;border:1px solid var(--line);touch-action:none}
+.pl-view{display:block;width:100%;aspect-ratio:100/64;margin:8px 0;border-radius:6px;border:1px solid var(--line);touch-action:none}
 .pl-sky{fill:#09131f}.pl-ground{fill:#1c2a36}
 .pl-pad{fill:#3b7fa0}.pl-pad.is-over{fill:#9fe870}
 .pl-line{stroke:#3b7fa055;stroke-width:.4;stroke-dasharray:1.5 1.5}
 .pl-hull{fill:#eaf4f5}.pl-leg{fill:#8fa6b7}.pl-flame{fill:#ffad72;display:none}
-.pl-controls{display:grid;grid-template-columns:1fr 1.4fr 1fr;gap:8px;touch-action:none;user-select:none;-webkit-user-select:none}
+.pl-controls{display:grid;grid-template-columns:1fr 1.5fr 1fr 1.2fr;gap:8px;touch-action:none;user-select:none;-webkit-user-select:none}
 .pl-btn{min-height:64px;font-size:18px;touch-action:none}
 .pl-btn.is-held{background:#2e6b6b;border-color:var(--cyan)}
-.pl-brake{grid-column:1 / -1;min-height:48px}
+.pl-brake{font-size:14px}
+.pl-controls:has(.pl-brake[hidden]){grid-template-columns:1fr 1.5fr 1fr}
+
+/* A tap on a phone leaves the hover state on: a primary button must stay a primary button. */
+button.primary:hover:not(:disabled),button.primary:active:not(:disabled){background:#a5f0ea;border-color:#a5f0ea;color:#082126}
+button.primary:disabled{background:#3b5a5c;border-color:#3b5a5c;color:#b5c8d5;opacity:1}
+
+/* Bench board and holodeck gym */
+.bn-day,.bn-stand,.bn-best{margin:6px 0;font-size:14px}
+.bn-stand{color:var(--cyan)}
+.bn-list{list-style:none;margin:8px 0;padding:0;display:grid;gap:4px;counter-reset:bn}
+.bn-list li{counter-increment:bn;display:grid;grid-template-columns:28px 1fr auto;align-items:center;gap:8px;min-height:44px;padding:0 10px;border:1px solid var(--line);border-radius:6px;background:#0a1624;font:13px Consolas,monospace}
+.bn-list li::before{content:counter(bn);color:var(--orange);font-weight:700}
+.bn-list li.is-you{border-color:var(--cyan);background:#12363a}
+.bn-play{min-height:48px;width:100%}
+.gm-list{list-style:none;margin:8px 0;padding:0;display:grid;gap:8px}
+.gm-card{display:grid;gap:4px;padding:10px;border:1px solid var(--line);border-radius:8px;background:#0a1624;font-size:13px}
+.gm-skill{color:var(--muted);font:11px Consolas,monospace;text-transform:uppercase}
+.gm-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.gm-row button,.gm-train{min-height:44px;display:inline-flex;align-items:center;padding:0 12px;border:1px solid var(--cyan);border-radius:4px;background:var(--cyan);color:#082126;font:600 12px Inter,sans-serif}
+.gm-row button{background:#132232;color:var(--text);border-color:var(--line)}
+.gm-train.is-off{opacity:.45;pointer-events:none}
+a.gm-train,a.gm-train:hover,a.gm-train:visited{color:#082126}
