@@ -3,6 +3,7 @@
 // or the arrow keys) to rotate. Below the field: the portal catch (a marker sweeps a bar; press Catch while it is in the lit window) and
 // Fire. Each firewall has its own clock; out of time resets the board on the same seed and spends a retry. DOM + inline SVG, no art files.
 // Resolves with the rules' result: { success, how, firewalls, broken, retriesUsed, security, context, terminal | port | section, world, xp }.
+import { clockWord, stageWord, retryWord } from './hudWords.js';
 import { createMirrorHack, stepMirrors, holdMirror, releaseMirror, rotateStep, select, catchPortal, fire, preview, marker, projectileAt, mirrorEnds, FIELD, MIRROR, STEP_RAD, CONSEQUENCES } from './mirrors.js';
 
 const NS = 'http://www.w3.org/2000/svg';
@@ -146,9 +147,9 @@ export function playMirrors(root, { state = null, seed = 1, setup = null, contex
     clockFill.style.width = `${(100 * left) / s.total}%`;
     clock.classList.toggle('is-low', left < 6);
     clock.setAttribute('aria-valuenow', String(Math.round((100 * left) / s.total)));
-    clockText.textContent = `${left.toFixed(1)} s`;
-    stageText.textContent = `Firewall ${Math.min(s.stage + 1, s.stages)} of ${s.stages}`;
-    pips.replaceChildren(...Array.from({ length: s.setup.retries }, (_, i) => h('span', { class: i < s.retriesLeft ? 'on' : '' })), h('em', { text: s.setup.retries ? ` ${s.retriesLeft} ${s.retriesLeft === 1 ? 'retry' : 'retries'} left` : 'no retries' }));
+    clockText.textContent = clockWord(left, s.total);
+    stageText.textContent = stageWord(s.stage, s.stages);
+    pips.replaceChildren(...Array.from({ length: s.setup.retries }, (_, i) => h('span', { class: i < s.retriesLeft ? 'on' : '' })), h('em', { text: ` ${retryWord(s.retriesLeft, s.setup.retries)}` }));
     mark.style.left = `${100 * marker(s)}%`;
     const open = s.portal.open;
     panel.classList.toggle('portal-open', open); panel.classList.toggle('portal-cool', s.portal.cooldown > 0);
