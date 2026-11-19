@@ -1354,7 +1354,9 @@ function render(now) {
     ctx.translate(ox, oy);
     ctx.scale(unit, unit);
   }
-  drawTerrain(ctx, arena, display, { rockImage, reducedMotion: reducedMotion.matches, backdrop: LAUNCH.on ? launchKit.art.backdrop(arena.mapId) : null });
+  // On the turned phone arena the map labels are counter-turned so they read upright, and sized up to ~9 px.
+  const labelFit = phone ? { labelRotation: -Math.PI / 2, labelScale: Math.max(1, 9 / (0.32 * unit)) } : {};
+  drawTerrain(ctx, arena, display, { rockImage, reducedMotion: reducedMotion.matches, backdrop: LAUNCH.on ? launchKit.art.backdrop(arena.mapId) : null, ...labelFit });
   if (display) {
     const phase = ventPhase(RULES.roundSeconds - display.remaining);
     $("arena-tip").textContent = arena.mapId === "stormworks"

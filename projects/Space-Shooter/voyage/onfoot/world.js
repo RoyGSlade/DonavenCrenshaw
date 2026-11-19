@@ -585,6 +585,7 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     if (mode === 'walk') {
       stepWalk(dt);
       cam = smoothCamera(cameraFor(map, walker.x, walker.y, view.w, view.h, zoom), dt);
+      cam = speakerClear(cam, dt);
     } else {
       const p = fight.player;
       cam = smoothCamera(cameraFor(map, p.x + Math.cos(p.angle) * 50, p.y + Math.sin(p.angle) * 50, view.w, view.h, zoom), dt);
@@ -599,6 +600,30 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
       fx = fx.filter(f => f.life > 0);
     }
     draw(shaken(cam, dt));
+  }
+
+  // Phone layout: the dialogue box sits across the top of the screen, and the
+  // speaker can be standing right under it. While a line is up, slide the view
+  // so the speaker's head clears the box's bottom edge (eased, and back to
+  // normal when the box closes). Desktop and narration lines never shift.
+  let speakerShift = 0; // CSS px the view is slid down
+  function speakerClear(cam, dt) {
+    let want = 0;
+    const box = document.querySelector('.ui-dialogue:not([hidden])');
+    const speaker = box?.querySelector('.ui-dlg-portrait')?.dataset.speaker;
+    const n = speaker && speaker !== 'narrator' && matchMedia('(max-width:700px)').matches ? npcs.find(x => x.id === speaker && !hidden.has(x.id)) : null;
+    if (n) {
+      const cr = canvas.getBoundingClientRect();
+      const boxBottom = box.getBoundingClientRect().bottom - cr.top;
+      const sc = castLook(n.id).scale || 1;
+      const head = (n.y - cam.y) * cam.zoom - 34 * sc * cam.zoom;
+      const feet = (n.y - cam.y) * cam.zoom + 22 * sc * cam.zoom;
+      want = Math.max(0, boxBottom + 8 - head);
+      want = Math.min(want, Math.max(0, view.h - 150 - feet)); // never push them under the controls
+    }
+    speakerShift = reducedMotion() ? want : speakerShift + (want - speakerShift) * (1 - Math.exp(-dt * 9));
+    if (Math.abs(speakerShift) < 0.5) { speakerShift = want === 0 ? 0 : speakerShift; return cam; }
+    return { ...cam, y: cam.y - speakerShift / cam.zoom };
   }
 
   // The camera eases after its target (snaps on a new map), and shakes on hits unless motion is reduced.

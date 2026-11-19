@@ -107,7 +107,7 @@
     {"art":"pipe-run-leaking","at":[6,11.25],"size":[3,0.75],"block":true,"tag":"holo-valve","name":"holo-valve","states":{"fixed":{"art":"pipe-run-intact","at":[6,11.5],"size":[3,0.5]}},"interact":{"kind":"repair","id":"valve","label":"The stuck foam valve"}}
   ],
   "npcs": [
-    {"id":"nessa","at":[9,1],"face":"down","wander":0.2},
+    {"id":"nessa","at":[10,2],"face":"down","wander":0.2},
     {"id":"pip","at":[15,5],"face":"right","wander":0,"tag":"pip-gym","states":{"under":{"hidden":true}}}
   ],
   "doors": [
