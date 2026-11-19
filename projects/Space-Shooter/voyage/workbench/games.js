@@ -13,6 +13,7 @@ import { createIntimidate } from '../minigames/intimidate.js'; import { playInti
 import { createPilot } from '../minigames/pilot.js'; import { playPilot } from '../minigames/pilotView.js';
 import { playNavField } from '../minigames/perihelionEntry.js';
 import { createRecipe, RECIPES } from '../minigames/craftChain.js'; import { playRecipe } from '../minigames/recipeView.js';
+import { createBribe } from '../talk/bribe.js'; import { playBribe } from '../talk/bribeView.js';
 
 let craftBank = 0; // scrap the last craft rounded up, carried into the next one (the game's own rule)
 export const resetCraftBank = () => { craftBank = 0; clearPart(); };
@@ -45,10 +46,11 @@ export async function playGame(stage, id, o = {}) {
     case 'perihelion': return playNavField(stage, { seed, setup, title: title || 'Plot a burn', sound, reducedMotion });
     case 'nav': return playNav(stage, { state: createNav({ seed, setup }), title: title || 'Lane run', reducedMotion });
     case 'stealth': return playStealth(stage, { state: createStealth({ seed, setup }), title: title || 'Cargo hold', reducedMotion });
-    case 'persuade': return playPersuade(stage, { state: createPersuade({ seed, setup }), who: who || 'the dock clerk', what: what || 'let you through', reducedMotion });
+    case 'persuade': return playPersuade(stage, { state: createPersuade({ seed, setup, opening: o.opening }), who: who || 'the dock clerk', what: what || 'let you through', reducedMotion });
     case 'intimidate': return playIntimidate(stage, { state: createIntimidate({ seed, setup }), who: who || 'the Cinder Reaver', what: what || 'stand down', reducedMotion });
     case 'pilot': return playPilot(stage, { state: createPilot({ seed, setup }), where: 'the hangar pad', reducedMotion });
     case 'practice': return playRing(stage, { state: createPracticeHack({ seed }), title: 'Practice lock', sound, reducedMotion });
+    case 'bribe': return playBribe(stage, { state: createBribe({ seed, min: o.range?.min ?? 10, max: o.range?.max ?? 40, setup }), who: who || 'the trader', what: what || 'what you want', gift: o.gift || null, sound, reducedMotion });
     default: throw new Error(`No mini-game ${id}`);
   }
 }

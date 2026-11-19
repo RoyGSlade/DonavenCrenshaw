@@ -17,7 +17,7 @@ const button = (text, onClick, { primary = false, ...attrs } = {}) => { const b 
 export function renderHud(root, state) {
   const u = unscanned(state.progress, state.snap);
   root.dataset.tone = u.safe ? 'safe' : u.points > 0 ? 'high' : 'low';
-  root.replaceChildren(h('b', { text: u.safe ? 'SCANNED' : 'UNSCANNED' }), h('span', { text: riskLine(u) }), h('i', { text: `${state.credits} credits · check ${state.dc}` }));
+  root.replaceChildren(h('b', { text: u.safe ? 'SCANNED' : 'UNSCANNED' }), h('span', { text: riskLine(u) }), h('i', { text: `${state.credits} credits · check ${state.dc} · ${state.items?.['good-cutter'] ? 'good cutter: 15 wide' : 'worn cutter: 9 wide'}` }));
   return u;
 }
 

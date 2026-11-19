@@ -15,7 +15,7 @@ export function playPersuade(root, { state, who = 'The dockmaster', what = 'let 
   const pips = h('div', { class: 'hg-pips', 'aria-label': 'Their patience' });
   const status = h('p', { class: 'rp-status', role: 'status', 'aria-live': 'polite', text: `You want ${who.replace(/^The /, 'the ')} to ${what}. Pick the argument they care about.` });
   const cards = s.hand.map((c) => {
-    const b = h('button', { type: 'button', class: 'pc-card ui-card', 'data-id': c.id, 'data-value': c.value }, h('b', { text: VALUE_NAMES[c.value] }), h('span', { text: c.text }), h('small', { text: '' }));
+    const b = h('button', { type: 'button', class: `pc-card ui-card${c.named ? ' is-named' : ''}`, 'data-id': c.id, 'data-value': c.value }, h('b', { text: VALUE_NAMES[c.value] }), h('span', { text: c.text }), c.named ? h('em', { class: 'pc-named', text: 'You know this about them' }) : null, h('small', { text: '' }));
     b.addEventListener('click', () => doPlay(c.id));
     return b;
   });

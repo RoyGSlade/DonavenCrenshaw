@@ -486,7 +486,7 @@ function boot(session = { mode: 'local' }) {
   if (workbench) {
     chip.textContent = 'Workbench test room: nothing here touches a real captain';
     workbenchRoom = mountWorkbench({
-      store, bus, onfoot, dialogueBox, toast, reducedMotion: still, sound: (id) => onfoot.sound(id),
+      store, bus, onfoot, dialogueBox, toast, audio, reducedMotion: still, sound: (id) => onfoot.sound(id),
       sheet: { root: $('hg-minigame'), eyebrow: $('hg-minigame-eyebrow'), title: $('hg-minigame-title'), stage: $('hg-minigame-stage') },
       onBusy: (on) => { if (on) overlays.add('workbench'); else overlays.delete('workbench'); holdFloor(); tracker?.render(); },
       seed: Number.parseInt(params.get('seed'), 10) || null,

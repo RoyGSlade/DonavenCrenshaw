@@ -29,12 +29,14 @@ const HAND = 8; // 5 cards on cares, 2 on the dislike, 1 neutral
 const STREAK_CAP = 3;
 
 /** setup: from setupPersuade ({ goal, patience, tells }). */
-export function createPersuade({ seed = 1, setup = {} } = {}) {
+export function createPersuade({ seed = 1, setup = {}, opening = null } = {}) {
   let rng = hashSeed('persuade', seed);
   const rand = () => { const [v, next] = rngStep(rng); rng = next; return v; };
   const shuffle = (a) => { const o = a.slice(); for (let i = o.length - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); [o[i], o[j]] = [o[j], o[i]]; } return o; };
   const vals = shuffle(VALUES);
-  const cares = vals.slice(0, 3), dislike = vals[3], neutral = vals[4];
+  // A person sheet (social lane) fixes who cares about what; the seeded shuffles above and below still run, so nothing else moves.
+  const fixed = opening?.cares?.length === 3 && opening.dislike;
+  const cares = fixed ? opening.cares.slice() : vals.slice(0, 3), dislike = fixed ? opening.dislike : vals[3], neutral = fixed ? VALUES.find((v) => !cares.includes(v) && v !== dislike) : vals[4];
   // Tells are revealed in a seeded order over the three cares and the dislike.
   const order = shuffle([...cares.map((v) => ({ value: v, kind: 'care' })), { value: dislike, kind: 'dislike' }]);
   const tells = (setup.tells ?? 1);
@@ -46,9 +48,17 @@ export function createPersuade({ seed = 1, setup = {} } = {}) {
     const n = used[value] = (used[value] || 0) + 1;
     return { id, value, text: CARD_TEXT[value][lines[value][n - 1]], worth: 3 + Math.floor(rand() * 3) };
   });
+  // Head starts from facts you know: their tells are shown from the start, and one card on that care becomes a named card worth 5.
+  const known = (opening?.tells || []).map((t) => order.find((o) => o.value === t.value && o.kind === t.kind)).filter(Boolean);
+  const shown = [...new Set([...known, ...order.slice(0, Math.max(0, Math.min(4, tells)))])].slice(0, 4);
+  const usedNamed = new Set();
+  for (const n of opening?.named || []) {
+    const card = hand.filter((c) => c.value === n.value && !usedNamed.has(c.id)).sort((a, b) => a.worth - b.worth)[0];
+    if (card) { card.text = n.text; card.worth = Math.max(card.worth, 5); card.named = true; usedNamed.add(card.id); }
+  }
   return {
-    cares, dislike, neutral, order, shown: order.slice(0, Math.max(0, Math.min(4, tells))),
-    hand, played: [], trust: 0, goal: setup.goal ?? 18, patience: setup.patience ?? 3, patienceMax: setup.patience ?? 3, streak: 0,
+    cares, dislike, neutral, order, shown,
+    hand, played: [], trust: Math.max(0, opening?.startTrust || 0), goal: setup.goal ?? 18, patience: setup.patience ?? 3, patienceMax: setup.patience ?? 3, streak: 0,
     done: false, result: null, events: [],
   };
 }
