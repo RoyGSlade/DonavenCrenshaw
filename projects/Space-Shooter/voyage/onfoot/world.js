@@ -18,6 +18,7 @@ import { sprite, playerFrames, preload, onArtLoaded, captainSprite, playerArt } 
 import { fitCanvas, viewZoom, cameraFor } from './viewport.js';
 import { createInput } from './input.js';
 import { createEl } from './dom.js';
+import { createStealthLayer } from './stealthLayer.js'; // live stealth: only for a map with a `stealth` block (the workbench yard)
 import { TUTORIAL_EVENTS } from './events.js';
 import { createSfx } from './sfx.js';
 // r3 basics: the one interact system (marks, prompt, objective marker) lives in datapad/.
@@ -72,6 +73,7 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
   let target = null, arrivedAt = 0, walkedSent = false;
   let camera = null, shake = 0, hitstop = 0, stepDist = 0, objective = null;
   let inRings = new Set();
+  let stealth = null, caughtT = 0; // live stealth layer for maps that have a `stealth` block
   const dust = [];
   let fight = null, fightDone = null, fx = [];
   const hidden = new Set();
@@ -128,8 +130,28 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     placeName.textContent = map.name;
     placeName.classList.remove('show'); void placeName.offsetWidth; placeName.classList.add('show');
     el.dataset.map = map.id;
+    stealth?.destroy();
+    stealth = map.def?.stealth ? createStealthLayer({ map, root: el, setup: hooks.stealthSetup?.() || null, reducedMotion, touch: input.touch, onEvent: stealthEvent }) : null;
+    caughtT = 0;
     hooks.entered?.(map, api);
     emit(TUTORIAL_EVENTS.entered, { map: map.id });
+  }
+
+  /** Live stealth: what the guards just did (an inspect, an alarm, a takedown, a catch). The page hears it too. */
+  function stealthEvent(e) {
+    hooks.stealthEvent?.(e, api);
+    if (e.type === 'alarm') sound('jam');
+    else if (e.type === 'takedown') sound('kill');
+    else if (e.type === 'inspect' || e.type === 'body-found') sound('turn');
+    else if (e.type === 'caught') { caughtT = 1.2; sound('hurt'); }
+  }
+  /** Back to the start of the yard: the guards and the counts reset, you go back to the way in. */
+  function stealthRestart() {
+    if (!stealth) return;
+    stealth.reset();
+    const s = map.spawns[map.def.stealth.restart || 'default'] || map.spawns.default;
+    walker.x = s.x; walker.y = s.y; walker.angle = s.angle; walker.vx = walker.vy = 0;
+    caughtT = 0;
   }
 
   function go(id, spawnName) {
@@ -178,21 +200,27 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
 
   // ---- walking ----
   function stepWalk(dt) {
-    const mv = (busy || paused) ? { x: 0, y: 0 } : input.move();
-    stepWalker(walker, mv, map, dt);
+    let mv = (busy || paused || caughtT > 0) ? { x: 0, y: 0 } : input.move();
+    let walkOpts = {};
+    if (stealth) { const m = stealth.moveOf(mv, input.gait?.(mv)); mv = m.mv; walkOpts = m.opts; } // your gait sets the speed
+    stepWalker(walker, mv, map, dt, walkOpts);
     if (!walkedSent && walker.walked > map.tile * 3) { walkedSent = true; emit(TUTORIAL_EVENTS.moved, {}); }
     // Footsteps: a soft tick and a puff of dust on exteriors.
     if (walker.moving) {
       stepDist += Math.hypot(walker.vx, walker.vy) * dt;
-      if (stepDist > 38) { stepDist = 0; sound('step'); if (map.kind === 'exterior' && !reducedMotion()) dust.push({ x: walker.x - Math.cos(walker.angle) * 10, y: walker.y - Math.sin(walker.angle) * 10, life: 0.5 }); }
+      if (stepDist > 38) { stepDist = 0; if (stealth?.gait !== 'sneak') sound('step'); if (map.kind === 'exterior' && !reducedMotion()) dust.push({ x: walker.x - Math.cos(walker.angle) * 10, y: walker.y - Math.sin(walker.angle) * 10, life: 0.5 }); }
     }
     checkRings();
+    if (stealth && !busy && !paused) {
+      if (caughtT > 0) { caughtT -= dt; if (caughtT <= 0) stealthRestart(); } else stealth.step(dt, walker);
+    }
     for (const n of npcs) {
       if (hidden.has(n.id)) continue;
       stepNpc(n, t, dt, map, following.has(n.id) ? walker : null);
     }
     // Npc interact points follow the npc.
     const extra = npcs.filter(n => !hidden.has(n.id)).map(n => ({ kind: 'npc', id: n.id, label: castLook(n.id).name, x: n.x, y: n.y, reach: map.tile * 1.9 })); // reach: across a desk or a counter
+    if (stealth && !busy && !paused && caughtT <= 0) extra.push(...stealth.interacts(walker)); // a guard you can take from behind
     const base = { ...map, interacts: map.interacts.filter(i => i.kind !== 'npc') };
     target = busy || paused ? null : pickTarget(walker, base, extra); // nothing to use while the floor is held
     showPrompt(target);
@@ -238,6 +266,7 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
   }
 
   function use(it) {
+    if (it.kind === 'takedown') { stealth?.takedown(it.id, walker); return; }
     if (it.kind === 'door') {
       const d = map.doors.find(x => x.id === it.id);
       const gate = doorGate(d);
@@ -266,6 +295,7 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     const gate = d ? doorGate(d) : hooks.gate?.(it, map) || null;
     const station = stationOf(it);
     const info = station ? hooks.stationInfo?.(station) : null;
+    if (it.kind === 'takedown') return { text: 'Silent takedown', gate: null, locked: false };
     if (it.kind === 'npc') return { text: `${VERBS.npc} ${it.label || castLook(it.id).name}`, gate, locked: false };
     if (gate) return { text: `${short(it.label)}: ${gate.hack ? `locked (${gate.pick ? 'pick' : 'hack'}, level ${gate.hack})` : gate.reason}`, gate, locked: !gate.hack };
     if (info?.locked) return { text: `${info.name}: not open yet`, gate: null, locked: true };
@@ -285,7 +315,7 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     prompt.hidden = false;
     prompt.dataset.kind = it.kind;
     prompt.setAttribute('aria-label', `${input.touch ? 'Tap' : 'Press E'}: ${text}`);
-    input.prompt(it.kind === 'npc' ? 'Talk' : gate?.hack ? 'Hack' : gate || locked ? 'Locked' : it.kind === 'door' ? 'Go' : 'Use', iconId);
+    input.prompt(it.kind === 'takedown' ? 'Takedown' : it.kind === 'npc' ? 'Talk' : gate?.hack ? 'Hack' : gate || locked ? 'Locked' : it.kind === 'door' ? 'Go' : 'Use', iconId);
   }
 
   // ---- marks: everything usable, from across the room (datapad/marks.js) ----
@@ -457,10 +487,12 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     // Everything usable, marked on the floor; the objective in gold with a bobbing chevron.
     const marked = mode === 'walk' && !paused ? markItems(cam) : null;
     if (marked) { marks.drawGround(ctx, marked.items, t); if (marked.aim) drawObjective(marked.aim); }
+    if (stealth && mode === 'walk') stealth.drawFloor(ctx, t); // cones on the floor, your noise ring
     const bodies = [];
     if (mode === 'walk') {
       for (const n of npcs) if (!hidden.has(n.id)) bodies.push({ y: n.y, draw: () => drawNpc(n) });
       bodies.push({ y: walker.y, draw: () => drawPlayer(walker.x, walker.y, walker.angle, walker.moving, walker.stride, 0) });
+      if (stealth) bodies.push(...stealth.guardBodies(ctx, t));
     } else {
       for (const e of fight.enemies) if (e.alive) bodies.push({ y: e.y, draw: () => drawEnemy(e) });
       const p = fight.player;
@@ -468,11 +500,13 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     }
     bodies.sort((a, b) => a.y - b.y);
     for (const b of bodies) b.draw();
+    if (stealth && mode === 'walk') stealth.drawOver(ctx, t); // meters, ?, !
     if (fight) drawFightFx();
     for (const d of dust) { ctx.fillStyle = `rgba(160,170,180,${d.life * 0.5})`; ctx.beginPath(); ctx.arc(d.x, d.y, 4 + (0.5 - d.life) * 14, 0, Math.PI * 2); ctx.fill(); }
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     if (layer.overlay) layer.overlay(ctx, cam, view, t, mode === 'walk' ? walker : fight?.player); // r3-look hook: a look map's own lights, the captain's light and vignette
     else if (vignette) ctx.drawImage(vignette, 0, 0, canvas.width, canvas.height);
+    if (stealth && mode === 'walk') stealth.drawFog(ctx, cam, view); // fog of war on top of the lights
     if (marked) {
       // The prompt in reach is a box the chips step around too.
       const avoid = prompt.hidden ? safe.avoid : [...(safe.avoid || []), prompt.getBoundingClientRect()];
@@ -695,7 +729,10 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     /** The objective's aim this frame (tests): { x, y, label, through?, door?, station?, npc? } or null. */
     objectiveAim: () => objectiveAim(),
     get marks() { return marks; },
-    destroy() { cancelAnimationFrame(raf); ro.disconnect(); input.destroy(); offArt(); marks.destroy(); el.remove(); },
+    /** Live stealth on this map ({ sim, stats(), reset() ...}) or null: the page and tests reach the guards here. */
+    get stealth() { return stealth; },
+    restartStealth: () => stealthRestart(),
+    destroy() { stealth?.destroy(); cancelAnimationFrame(raf); ro.disconnect(); input.destroy(); offArt(); marks.destroy(); el.remove(); },
     el, canvas,
   };
 

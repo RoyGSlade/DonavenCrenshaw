@@ -22,7 +22,7 @@ export function createInput(root, { mode = 'walk', canvas = null, touch = isTouc
   const onKeyDown = (e) => {
     if (!enabled || e.target.closest?.('input, textarea, select')) return;
     const code = e.code;
-    const used = MOVE_KEYS[code] || ['KeyE', 'Enter', 'Space', 'ShiftLeft', 'ShiftRight', 'KeyF'].includes(code);
+    const used = MOVE_KEYS[code] || ['KeyE', 'Enter', 'Space', 'ShiftLeft', 'ShiftRight', 'KeyF', 'ControlLeft', 'ControlRight'].includes(code);
     if (!used) return;
     e.preventDefault();
     if (!keys.has(code)) {
@@ -115,6 +115,13 @@ export function createInput(root, { mode = 'walk', canvas = null, touch = isTouc
       if (sticks.right?.active) return Math.hypot(sticks.right.x, sticks.right.y) > 0.55;
       for (const code of keys) if (AIM_KEYS[code]) return true;
       return mouse.down || keys.has('KeyF');
+    },
+    /** Live stealth: how you move. Ctrl sneaks, Shift runs, otherwise walk; on a phone the stick's strength picks it (gentle sneaks, full runs). */
+    gait(mv = null) {
+      if (sticks.left?.active) { const m = Math.hypot(sticks.left.x, sticks.left.y); return m < 0.5 ? 'sneak' : m > 0.92 ? 'run' : 'walk'; }
+      if (keys.has('ControlLeft') || keys.has('ControlRight')) return 'sneak';
+      if (keys.has('ShiftLeft') || keys.has('ShiftRight')) return 'run';
+      return 'walk';
     },
     held: (code) => keys.has(code),
     /** True once per press of an action button. */

@@ -12,6 +12,7 @@ import { STATIONS, stationOfProp, rollStation, startStation, settleStation, prev
 import { playGame, resetCraftBank } from './games.js';
 import { TALKS, nextAfterCheck } from './talks.js';
 import { sparSetup, sparXp, sparSaid } from './spar.js';
+import { yardXp, yardSaid } from './yard.js';
 import { branchOf } from '../minigames/sceneHook.js';
 import { gymGame, trainRun, gymLoadout, gymSetup } from '../minigames/gym.js';
 import { checkChance, checkBonusText } from '../character.js';
@@ -28,6 +29,7 @@ const OTHERS = {
   gym: { name: 'Gym trainer', prompt: 'Gym trainer: spend points, then train' },
   spar: { name: 'Sparring rack', prompt: 'Sparring ring: fight a marauder' },
   reset: { name: 'Reset cart', prompt: 'Reset cart: a fresh test state' },
+  'yard-goal': { name: 'Vault console', prompt: 'Vault console: open it to finish the run' },
 };
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -183,6 +185,21 @@ export function createWorkbench({ store, bus, onfoot, dialogueBox, sheet, hud, t
     }));
   }
 
+  // ---- the patrol yard (live stealth) -------------------------------------------------------------------------------------
+  const SAID = { inspect: 'A guard spotted you for a moment and goes to look.', alarm: 'Alarm! Every guard is looking for you.', takedown: 'Silent takedown.', 'body-found': 'A guard found a body.', 'stand-down': 'The guards stand down.', caught: 'Caught. Back to the door.' };
+  function stealthEvent(e) { if (SAID[e.type]) toast(SAID[e.type]); }
+  /** The vault console: the run is won. Real Stealth XP by how quietly you did it, then the yard resets. */
+  function reachGoal() {
+    const layer = onfoot.world?.stealth;
+    if (!layer) return;
+    const run = { outcome: 'goal', ...layer.stats() };
+    const xp = yardXp(run);
+    const earned = earnXp(state, 'stealth', xp);
+    const level = earned.gained ? ` Stealth is now level ${earned.state.progress.levels.stealth}.` : '';
+    commit({ ...earned.state, said: `${yardSaid(run, xp)}${level}` });
+    onfoot.world.restartStealth();
+  }
+
   async function openStation(id) {
     if (api.openPanel) return;
     const key = String(id).replace(/^wb-/, '');
@@ -196,6 +213,7 @@ export function createWorkbench({ store, bus, onfoot, dialogueBox, sheet, hud, t
       case 'gym': openGym(); break;
       case 'spar': openSpar(); break;
       case 'reset': confirmReset(); break;
+      case 'yard-goal': reachGoal(); return;
       default: return;
     }
     // A panel keeps the interact busy until it is closed (the floor holds still meanwhile); a scan has no panel and is done.
@@ -247,7 +265,7 @@ export function createWorkbench({ store, bus, onfoot, dialogueBox, sheet, hud, t
     return null;
   }
 
-  Object.assign(api, { openStation, stationInfo, talk, commit, closePanel, fresh: () => commit(freshState(), { silent: true }), loadout: (skill) => loadoutOf(state, skill) });
+  Object.assign(api, { openStation, stationInfo, talk, stealthEvent, stealthSetup: () => loadoutOf(state, 'stealth'), commit, closePanel, fresh: () => commit(freshState(), { silent: true }), loadout: (skill) => loadoutOf(state, skill) });
   // Getters must be defined, not assigned (Object.assign would copy their first value).
   Object.defineProperties(api, {
     state: { get: () => state, set: (next) => commit(next, { silent: true }), enumerable: true },

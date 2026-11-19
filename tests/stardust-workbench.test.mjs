@@ -15,6 +15,7 @@ import { tierOf } from '../projects/Space-Shooter/voyage/minigames/setup.js';
 import { unscanned } from '../projects/Space-Shooter/voyage/minigames/progress.js';
 import { newGameFlag } from '../projects/Space-Shooter/voyage/flag.js';
 import { WORKBENCH_DEF, WORKBENCH_ID } from '../projects/Space-Shooter/voyage/workbench/map.js';
+import { YARD_DEF } from '../projects/Space-Shooter/voyage/workbench/yard.js';
 import { wantsWorkbench } from '../projects/Space-Shooter/voyage/workbench/entry.js';
 import * as S from '../projects/Space-Shooter/voyage/workbench/state.js';
 import { STATIONS, stationOfProp, rollStation, startStation, settleStation, specOf, GAME_IDS, loadoutOf, previewLine } from '../projects/Space-Shooter/voyage/workbench/stations.js';
@@ -29,11 +30,11 @@ const roll = (n) => (n - 1) / 20 + 0.001; // an rng() value that makes the d20 l
 // ---- the room ------------------------------------------------------------------------------------------------------
 test('map: compiles, passes procgen rules, spawns and npcs stand on open floor', () => {
   assert.equal(WORKBENCH_ID, 'workbench');
-  assert.deepEqual(checkMaps({ w: WORKBENCH_DEF }).problems, []);
+  assert.deepEqual(checkMaps({ w: WORKBENCH_DEF, y: YARD_DEF }).problems, []);
   assert.equal(validateMap(WORKBENCH_DEF).ok, true);
   for (const s of Object.values(MAP.spawns)) assert.ok(walkable(MAP, s.x, s.y, 12));
   assert.deepEqual(MAP.npcs.map((n) => n.id).sort(), ['nessa', 'pip', 'tull']);
-  assert.equal(MAP.doors.length, 0, 'a closed room: no door leads in or out');
+  assert.deepEqual(MAP.doors.map((d) => d.to), ['workbench-yard'], 'a closed room: its one door leads to the patrol yard annex and nowhere else');
 });
 
 test('map: every art it names is art the Duchess rooms or the look kit already use; it wears the Duchess freighter look', () => {

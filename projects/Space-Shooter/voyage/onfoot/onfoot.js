@@ -251,6 +251,9 @@ export function createOnFoot({ root, store = null, bus = null, hooks = {}, mapId
       // r3 basics: open job offers here (a giver in person, a board's postings), for the "job here" mark.
       offers: (here) => hooks.offers?.(here) || 0,
       entered: (map) => hooks.entered?.(map),
+      // live stealth (a map with a `stealth` block): the character's stealth points, and what the guards did.
+      stealthSetup: () => hooks.stealthSetup?.() || null,
+      stealthEvent: (e, w) => hooks.stealthEvent?.(e, w),
       // launch maps: the save's flags switch things in the map (rules/states.js).
       flags: () => save()?.flags || {},
       // Away from home, the ship's ramp opens onto the place it is docked at.
