@@ -1,9 +1,33 @@
 import { MAPS, displayObstacles, ventPhase } from "./maps.js";
 
 const circle = (c, x, y, r) => { c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); };
-const label = (c, text, x, y, color = "#96b3bc") => {
+// Map labels. The new game's phone layout draws the arena turned on its side;
+// `labels.rot` undoes that turn around each label's own anchor so the text reads
+// upright, and `labels.scale` keeps it readable at the smaller phone scale. The
+// turned layout also draws labels last (over the cover, on a dark plate) and
+// puts a pickup's label under it on the screen. Today's Dogfight passes nothing,
+// so a label draws exactly as before.
+let labels = { rot: 0, scale: 1, queue: null };
+// `at` (turned layout only): [x, y, screenDown] anchors the label there instead, screenDown world units below it on screen.
+const label = (c, text, x, y, color = "#96b3bc", plate = null, at = null) => {
+  const turned = labels.rot || labels.scale !== 1;
+  if (turned) { labels.queue.push({ m: c.getTransform(), text, x, y, color, plate, at }); return; }
+  if (plate) { c.fillStyle = plate; c.fillRect(x - 1.75, y - 0.4, 3.5, 0.6); }
   c.fillStyle = color; c.font = "0.32px monospace"; c.textAlign = "center"; c.fillText(text, x, y);
 };
+function flushLabels(c) {
+  for (const l of labels.queue || []) {
+    c.save(); c.setTransform(l.m);
+    const [x, y, down] = l.at || [l.x, l.y, 0];
+    c.translate(x, y); c.rotate(labels.rot); c.translate(0, down);
+    c.scale(labels.scale, labels.scale);
+    const w = l.text.length * 0.2 + 0.4;
+    c.fillStyle = l.plate || "#0a1018d8"; c.fillRect(-w / 2, -0.36, w, 0.5);
+    c.fillStyle = l.color; c.font = "0.32px monospace"; c.textAlign = "center"; c.fillText(l.text, 0, 0);
+    c.restore();
+  }
+  labels.queue = null;
+}
 function poly(c, points) {
   c.beginPath(); points.forEach(([x, y], i) => i ? c.lineTo(x, y) : c.moveTo(x, y)); c.closePath();
 }
@@ -11,7 +35,8 @@ function poly(c, points) {
 /** Same renderer powers the live arena and map-picker thumbnails. World units only. */
 // `backdrop` (the new game's dogfight only): a loaded image drawn under the cover
 // in place of the flat wash, grid and stars. Absent, nothing changes.
-export function drawTerrain(c, arena, state, { rockImage, reducedMotion = false, thumbnail = false, backdrop = null } = {}) {
+export function drawTerrain(c, arena, state, { rockImage, reducedMotion = false, thumbnail = false, backdrop = null, labelRotation = 0, labelScale = 1 } = {}) {
+  labels = { rot: labelRotation, scale: labelScale, queue: [] };
   const map = MAPS[arena.mapId], elapsed = state ? 180 - state.remaining : 0;
   const motion = reducedMotion ? 0 : elapsed;
   c.save();
@@ -78,8 +103,7 @@ export function drawTerrain(c, arena, state, { rockImage, reducedMotion = false,
       c.beginPath(); c.moveTo(20, vent.y); c.lineTo(20, vent.y + vent.height); c.stroke();
     }
     if (!thumbnail) {
-      c.fillStyle = "#15140fef"; c.fillRect(18.25, vent.y + vent.height / 2 - 0.4, 3.5, 0.6);
-      label(c, phase === "live" ? "LIVE / DANGER" : phase === "warning" ? "!! CHARGING !!" : "VENT / SAFE", 20, vent.y + vent.height / 2, phase === "safe" ? "#dac5a5" : "#fff2d0");
+      label(c, phase === "live" ? "LIVE / DANGER" : phase === "warning" ? "!! CHARGING !!" : "VENT / SAFE", 20, vent.y + vent.height / 2, phase === "safe" ? "#dac5a5" : "#fff2d0", "#15140fef");
     }
   }
   for (let i = 0; i < arena.gates.length; i++) {
@@ -109,7 +133,7 @@ export function drawTerrain(c, arena, state, { rockImage, reducedMotion = false,
       c.fillStyle = o.hp < o.maxHp ? "#ff7059" : "#ffc778";
       poly(c, [[0, -0.4], [0.37, 0.3], [-0.37, 0.3]]); c.fill();
       c.fillStyle = "#492411"; c.fillRect(-0.035, -0.18, 0.07, 0.23);
-      if (!thumbnail) label(c, "FUEL", 0, r + 0.55, "#ffd5a0");
+      if (!thumbnail) label(c, "FUEL", 0, r + 0.55, "#ffd5a0", null, [0, 0, r + 0.55]);
     } else if (o.type === "core") {
       c.strokeStyle = "#ebc0ff"; c.lineWidth = 0.18; circle(c, 0, 0, r); c.stroke();
       c.fillStyle = "#060510"; c.fill(); circle(c, 0, 0, 1.9); c.strokeStyle = "#f095ec55"; c.lineWidth = 0.03; c.stroke();
@@ -137,5 +161,5 @@ export function drawTerrain(c, arena, state, { rockImage, reducedMotion = false,
       c.fillStyle = color; poly(c, [[x + direction * 0.7, 12], [x - direction * 0.5, 11.55], [x - direction * 0.5, 12.45]]); c.fill();
     }
   }
-  c.restore(); c.strokeStyle = `${map.color}66`; c.lineWidth = 0.04; c.strokeRect(0, 0, 40, 24);
+  flushLabels(c); c.restore(); c.strokeStyle = `${map.color}66`; c.lineWidth = 0.04; c.strokeRect(0, 0, 40, 24);
 }
