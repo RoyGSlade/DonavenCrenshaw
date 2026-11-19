@@ -15,6 +15,7 @@ const PHONE = { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isM
 const skip = process.env.STARDUST_BROWSER_TEST !== '1' && 'set STARDUST_BROWSER_TEST=1';
 const only = process.env.ONLY ? process.env.ONLY.split('|') : null;
 const wait = (page, ms) => page.waitForTimeout(ms);
+let LIFT = 0; // touch: the blade rides 48 px above the fingertip, so the bot's finger goes 48 px below the line
 
 async function bootRoom(page, origin) {
   await page.addInitScript(() => { try { localStorage.setItem('stardust.voyage.controls.v1', '1'); } catch {} });
@@ -51,12 +52,12 @@ const canvasRect = async (page, game) => {
   return page.evaluate((g) => { const r = document.querySelector(`.cc-panel[data-game=${g}] canvas`).getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; }, game);
 };
 
-const handCutPx = async (page) => async (x, y) => { const v = await page.evaluate(() => { const p = document.querySelector('.cc-panel[data-game=cut]'), r = p.querySelector('canvas').getBoundingClientRect(), w = p.__view(); return { l: r.left, t: r.top, k: w.pxPerUnit, cx: w.cx, cy: w.cy }; }); return { x: v.l + (x - v.cx) * v.k, y: v.t + (y - v.cy) * v.k }; };
+const handCutPx = async (page) => async (x, y) => { const v = await page.evaluate(() => { const p = document.querySelector('.cc-panel[data-game=cut]'), r = p.querySelector('canvas').getBoundingClientRect(), w = p.__view(); return { l: r.left, t: r.top, k: w.pxPerUnit, cx: w.cx, cy: w.cy }; }); return { x: v.l + (x - v.cx) * v.k, y: v.t + (y - v.cy) * v.k + LIFT }; };
 /** Cut by hand: press on START, follow the outline at about 180 units a second. `until` (0..1) stops and returns early (to shoot mid-drag). */
 async function handCut(page, input, { delay = 60, until = null, release = true, probe = null } = {}) {
   const sel = '.cc-panel[data-game=cut]';
   const s = await page.evaluate((sel) => { const st = document.querySelector(sel).__state; return { start: st.start, targets: st.targets.map((p) => [p.x, p.y]) }; }, sel);
-  const px = async (x, y) => { const v = await page.evaluate((sel) => { const p = document.querySelector(sel), r = p.querySelector('canvas').getBoundingClientRect(), w = p.__view(); return { l: r.left, t: r.top, k: w.pxPerUnit, cx: w.cx, cy: w.cy }; }, sel); return { x: v.l + (x - v.cx) * v.k, y: v.t + (y - v.cy) * v.k }; };
+  const px = async (x, y) => { const v = await page.evaluate((sel) => { const p = document.querySelector(sel), r = p.querySelector('canvas').getBoundingClientRect(), w = p.__view(); return { l: r.left, t: r.top, k: w.pxPerUnit, cx: w.cx, cy: w.cy }; }, sel); return { x: v.l + (x - v.cx) * v.k, y: v.t + (y - v.cy) * v.k + LIFT }; };
   const pts = [[s.start.x, s.start.y], ...s.targets.slice(1), [s.start.x, s.start.y]];
   await input.down(await px(...pts[0]));
   const stop = until == null ? pts.length : Math.floor(pts.length * until);
@@ -85,6 +86,7 @@ const go = async (page, sel) => { await page.locator(sel).first().scrollIntoView
 for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
   const phone = name === 'phone';
   test(`cut and screw in the workbench, ${name}`, { skip, timeout: 590000 }, async (t) => {
+    LIFT = phone ? 48 : 0;
     const { chromium } = await loadPlaywright();
     const server = await startServer();
     const browser = await chromium.launch({ headless: true });

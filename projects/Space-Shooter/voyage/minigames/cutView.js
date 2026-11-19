@@ -69,23 +69,28 @@ export function playCut(root, { state, what = 'plate', reducedMotion = () => fal
   panel.__view = () => ({ zoom: Z, pxPerUnit: canvas.getBoundingClientRect().width / visW(), cx: camera.x, cy: camera.y });
   const sparks = [];
   let shake = 0, tornFlash = 0, endAt = 0, smooth = 0, heads = false;
-  const toBoard = (e) => { const r = canvas.getBoundingClientRect(); return { x: camera.x + ((e.clientX - r.left) * visW()) / r.width, y: camera.y + ((e.clientY - r.top) * visH()) / r.height }; };
+  // On touch the blade rides 48 px above the fingertip (so the finger does not cover the line) and the cut is sampled from the blade.
+  const LIFT_PX = 48;
+  let touchMode = false, finger = null;
+  const toBoard = (e, lift = 0) => { const r = canvas.getBoundingClientRect(); return { x: camera.x + ((e.clientX - r.left) * visW()) / r.width, y: camera.y + ((e.clientY - lift - r.top) * visH()) / r.height }; };
+  const fingerBoard = () => { if (!finger) return null; const r = canvas.getBoundingClientRect(); return { x: camera.x + ((finger.x - r.left) * visW()) / r.width, y: camera.y + ((finger.y - r.top) * visH()) / r.height }; };
   const tOf = (e) => e.timeStamp / 1000;
   let finish; const promise = new Promise((res) => { finish = res; }); promise.state = s;
 
   canvas.addEventListener('pointerdown', (e) => {
     if (s.done) return; e.preventDefault();
-    const p = toBoard(e), touch = e.pointerType === 'touch';
+    const touch = e.pointerType === 'touch'; touchMode = touch; finger = touch ? { x: e.clientX, y: e.clientY } : null;
+    const p = toBoard(e, touch ? LIFT_PX : 0);
     if (cutDown(s, p.x, p.y, tOf(e), { radius: touch ? START_R * 3 : START_R })) { canvas.setPointerCapture?.(e.pointerId); status.textContent = s.strokes.length > 1 ? 'Carrying on.' : 'Drag round the outline.'; }
-    else { status.textContent = s.started ? 'Press close to where you stopped to carry on.' : 'Press on the START mark.'; tornFlash = 0.3; }
+    else { status.textContent = touch ? 'Touch just below the START mark: the blade rides above your finger.' : s.started ? 'Press close to where you stopped to carry on.' : 'Press on the START mark.'; tornFlash = 0.3; }
   });
   canvas.addEventListener('pointermove', (e) => {
     if (s.done || !s.down) return; e.preventDefault();
     const list = e.getCoalescedEvents ? e.getCoalescedEvents() : null;
-    for (const ev of list && list.length ? list : [e]) { const p = toBoard(ev); cutMove(s, p.x, p.y, tOf(ev)); follow(); if (s.done) break; }
+    for (const ev of list && list.length ? list : [e]) { if (touchMode) finger = { x: ev.clientX, y: ev.clientY }; const p = toBoard(ev, touchMode ? LIFT_PX : 0); cutMove(s, p.x, p.y, tOf(ev)); follow(); if (s.done) break; }
     heads = true;
   });
-  const up = (e) => { if (s.down) { cutUp(s); canvas.releasePointerCapture?.(e.pointerId); } };
+  const up = (e) => { finger = null; if (s.down) { cutUp(s); canvas.releasePointerCapture?.(e.pointerId); } };
   canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', up);
   canvas.addEventListener('contextmenu', (e) => e.preventDefault());
   done.addEventListener('click', () => { if (!s.done) cutFinish(s, 'done'); });
@@ -130,6 +135,12 @@ export function playCut(root, { state, what = 'plate', reducedMotion = () => fal
       if (ok) { g.translate(0, -5 * k); g.shadowColor = 'rgba(0,0,0,.55)'; g.shadowBlur = 24 * k; g.shadowOffsetY = 10 * k; path(g); g.fillStyle = `rgba(205,218,228,${0.35 + 0.35 * k})`; g.fill(); }
       else { g.fillStyle = 'rgba(190,40,30,.16)'; g.fill(); g.clip(); g.strokeStyle = 'rgba(190,40,30,.5)'; g.lineWidth = 3; for (let x = -BOARD.h; x < BOARD.w; x += 22) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x + BOARD.h, BOARD.h); g.stroke(); } }
       g.restore();
+    }
+    // touch: the fingertip and a guide up to the blade
+    const fb = touchMode && s.down ? fingerBoard() : null;
+    if (fb && s.last) {
+      g.save(); g.setLineDash([5, 5]); g.strokeStyle = 'rgba(255,255,255,.75)'; g.lineWidth = 2; g.beginPath(); g.moveTo(fb.x, fb.y); g.lineTo(s.last.x, s.last.y); g.stroke(); g.setLineDash([]);
+      g.beginPath(); g.arc(fb.x, fb.y, 13, 0, 7); g.fillStyle = 'rgba(255,255,255,.18)'; g.fill(); g.strokeStyle = 'rgba(255,255,255,.8)'; g.stroke(); g.restore();
     }
     // the cutting wheel and its sparks
     if (s.down && s.last) {
