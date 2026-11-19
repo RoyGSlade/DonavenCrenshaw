@@ -24,3 +24,6 @@
 /* In a station sheet the sheet is the frame. */
 .hg-sheet .rp-panel.mg-skin.ui-panel{border:0;border-image:none;padding:0;max-width:none;margin:0}
 .hg-sheet .rp-panel.mg-skin .rp-eyebrow.ui-nameplate{display:none} /* the sheet's own head says it */
+
+/* A short minigame (the haggle) sizes its sheet to its content on a wide screen; phones keep the bottom sheet. */
+@media (min-width:701px){.hg-sheet.is-fit{bottom:auto;height:auto;max-height:calc(100vh - 88px)}}

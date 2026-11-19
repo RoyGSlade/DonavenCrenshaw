@@ -49,6 +49,9 @@ test('skinned minigames beside the dialogue box and tracker', { skip }, async ()
         assert.ok(m.dlg.bottom <= m.sheet.top + 2 || m.dlg.right <= m.sheet.left + 2, 'the dialogue box and the sheet do not overlap');
         assert.match(m.speaker, /Tull|Reaver|Captain|Reck|Nessa/i);
         assert.match(m.choice, /d20 14 vs \d+/);
+        if (game !== 'hack') assert.equal(await page.locator('#sk-dialogue .ui-dlg-portrait img').count(), 1, 'Tull shows his face, not an initial');
+        if (game === 'haggle' && name === 'desktop') assert.ok(m.sheet.h < m.ih - 250, `the haggle sheet fits its content (${m.sheet.h} of ${m.ih})`);
+        if (game === 'repair') assert.equal(await page.evaluate(() => getComputedStyle(document.querySelector('.rp-valve .rp-wheel-rim')).stroke), 'rgb(255, 107, 90)', 'the valve wheel is red while dry');
         await shot(page, `skin-${game}-${name}-1-open`);
 
         // Play it to a result by the same bots the browser tests use, then the scene's next line shows.
@@ -65,10 +68,11 @@ test('skinned minigames beside the dialogue box and tracker', { skip }, async ()
             await tap('.hk-btn');
           }
         } else {
-          await page.evaluate(async () => { const m = await import('/projects/Space-Shooter/voyage/minigames/haggle.js'); const s = document.querySelector('.hg-panel').__state; const [lo, hi] = m.bandPrices(s); s.phase = 0; s.t = 0; for (let t = 0; t < 4; t += 0.005) { if (m.priceAt(s, m.needleAt(s, t)) >= lo && m.priceAt(s, m.needleAt(s, t)) <= hi) { s.t = t; break; } } });
+          await page.evaluate(async () => { const m = await import('/projects/Space-Shooter/voyage/minigames/haggle.js'); const s = document.querySelector('.hg-panel').__state; const [lo, hi] = m.bandPrices(s); const v = s.speed; s.phase = 0; s.t = 0; for (let t = 0; t < 4; t += 0.005) { const p = m.priceAt(s, m.needleAt(s, t)); if (p >= lo && p <= hi) { s.phase = (t * v) % 2; s.t = 0; s.speed = 0; break; } } });
           await shot(page, `skin-${game}-${name}-2-mid`);
           await page.evaluate(() => { const b = document.querySelector('.hk-btn'); b.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true })); });
         }
+        if (game === 'repair') { await page.waitForSelector('.rp-valve.is-on'); await page.waitForTimeout(700); assert.equal(await page.evaluate(() => getComputedStyle(document.querySelector('.rp-valve .rp-wheel-rim')).stroke), 'rgb(129, 230, 223)', 'cyan once sealed'); }
         await page.waitForSelector('.rp-result', { timeout: 15000 });
         await page.waitForTimeout(250); await shot(page, `skin-${game}-${name}-3-result`);
         assert.match(await page.locator('.rp-result').getAttribute('class'), /ui-card/);

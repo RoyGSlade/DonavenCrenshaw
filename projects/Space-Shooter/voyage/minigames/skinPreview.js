@@ -46,6 +46,7 @@ function boot() {
   const start = startHook(choice, attempt, character);
   const seed = Number(params.get('seed')) || 5;
   document.documentElement.dataset.game = game;
+  $('sk-sheet').classList.toggle('is-fit', game === 'haggle'); // the game's sheet helper does the same for kind haggle
   document.body.classList.add('hg-sheet-open'); document.body.dataset.sheetSide = 'right';
   const kindWord = { repair: 'REPAIR', hack: 'BYPASS', haggle: 'HAGGLE' }[game];
   $('sk-eyebrow').textContent = `${kindWord} · ${tierInfo(start.tier).label.toUpperCase()} ROLL`;

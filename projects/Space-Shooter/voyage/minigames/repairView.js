@@ -20,7 +20,12 @@ function pieceSvg(mask, role) {
   if (mask & W) g.append(arm(0, 50));
   g.append(svg('circle', { cx: 50, cy: 50, r: role === 'pump' || role === 'valve' ? 22 : 9, class: 'rp-hub' }));
   if (role === 'pump') g.append(svg('path', { d: 'M40 50h20M52 42l8 8-8 8', class: 'rp-glyph' }));
-  if (role === 'valve') g.append(svg('path', { d: 'M38 38l24 24M62 38L38 62', class: 'rp-glyph' }));
+  if (role === 'valve') { // a hand wheel: rim and three spokes, coloured by CSS (red while dry, cyan once sealed)
+    const wheel = svg('g', { class: 'rp-wheel' }, svg('circle', { cx: 50, cy: 50, r: 21, class: 'rp-wheel-rim' }));
+    for (const a of [0, 60, 120]) wheel.append(svg('line', { x1: 50, y1: 50 - 21, x2: 50, y2: 50 + 21, class: 'rp-wheel-spoke', transform: `rotate(${a} 50 50)` }));
+    wheel.append(svg('circle', { cx: 50, cy: 50, r: 5, class: 'rp-wheel-nut' }));
+    g.append(wheel);
+  }
   if (role === 'blank') { g.append(svg('rect', { x: 26, y: 26, width: 48, height: 48, rx: 8, class: 'rp-socket' })); }
   return svg('svg', { viewBox: '0 0 100 100', 'aria-hidden': 'true', focusable: 'false' }, g);
 }

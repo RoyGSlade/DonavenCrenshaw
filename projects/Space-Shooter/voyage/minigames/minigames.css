@@ -36,9 +36,16 @@
 .rp-tile.is-on .rp-hub{fill:var(--cyan)}
 .rp-pump .rp-hub{fill:#3b7fa0}
 .rp-pump.is-on .rp-hub{fill:#9fe870}
-.rp-valve .rp-hub{fill:#a4533f}
-.rp-valve.is-on{border-color:#6a9c52;background:#142a1c}
-.rp-valve.is-on .rp-hub{fill:#9fe870}
+.rp-valve .rp-hub{fill:#2a1512;stroke:#ff6b5a;stroke-width:3}
+.rp-wheel{transform-origin:50px 50px;transition:transform .5s ease-out}
+.rp-wheel-rim,.rp-wheel-spoke{fill:none;stroke:#ff6b5a;stroke-width:5;stroke-linecap:round}
+.rp-wheel-nut{fill:#ff6b5a}
+.rp-valve.is-on{border-color:#81e6df;background:#0c2530}
+.rp-valve.is-on .rp-hub{fill:#0c2530;stroke:#81e6df}
+.rp-valve.is-on .rp-wheel{transform:rotate(90deg)}
+.rp-valve.is-on .rp-wheel-rim,.rp-valve.is-on .rp-wheel-spoke{stroke:#81e6df}
+.rp-valve.is-on .rp-wheel-nut{fill:#81e6df}
+.is-still .rp-wheel{transition:none}
 .rp-blank{opacity:.55}
 .rp-tile.is-hint{outline:3px solid var(--orange);outline-offset:-3px}
 .rp-board.is-done .rp-tile{opacity:.9}
