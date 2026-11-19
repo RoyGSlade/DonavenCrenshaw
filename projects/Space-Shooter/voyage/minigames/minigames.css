@@ -11,7 +11,7 @@
 .mg-readout b{color:var(--cyan)}
 .mg-stage{min-height:420px}
 .mg-closed{margin-top:12vh}
-@media(max-width:760px){.mg-dev{grid-template-columns:1fr}}
+@media(max-width:760px){.mg-dev{grid-template-columns:minmax(0,1fr)}}
 
 .rp-panel{max-width:560px;margin:0 auto}
 .rp-panel:not(.ui-panel){border:1px solid var(--line);border-top:2px solid var(--cyan);background:#0d1826ee;border-radius:6px;padding:16px}
@@ -324,3 +324,80 @@ a.gm-train,a.gm-train:hover,a.gm-train:visited{color:#082126}
 .is-still .mh-panel.is-reset .mh-field,.mh-panel.is-still.is-reset .mh-field{animation:none}
 @keyframes mh-shake{20%{transform:translateX(-4px)}60%{transform:translateX(4px)}}
 @media(max-width:520px){.mh-actions{grid-template-columns:1fr 1fr;}.mh-actions .mh-catch{grid-column:1/3;order:3}.mh-actions .mh-fire{grid-column:1/3;order:4}}
+
+/* Perihelion (navigation v2): canvas map, a one-row HUD and a pinned button row. Navigation's colour is the hangar cyan. */
+.pr-panel{max-width:min(1040px,100%)}
+.pr-top{display:flex;align-items:center;gap:10px;margin:0 0 6px}
+.pr-title{flex:1;min-width:0;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font:700 11px Consolas,monospace;letter-spacing:.14em;color:var(--ui-amber,#ffad72)}
+.pr-turn{font:700 11px Consolas,monospace;letter-spacing:.08em;color:var(--ui-cyan,#81e6df);text-transform:uppercase;white-space:nowrap}
+.pr-help-btn{min-width:32px;min-height:32px;width:32px;height:32px;padding:0;border-radius:50%;font:700 14px Inter,sans-serif;background:#0b1724;border:1px solid #3f5566;color:var(--ui-text,#eaf4f5)}
+.pr-hud{display:grid;grid-template-columns:1.25fr 1fr auto;gap:10px;align-items:center;margin:0 0 6px}
+.pr-meter{display:flex;align-items:center;gap:6px;font:10px Consolas,monospace;color:#b5c8d5;min-width:0}
+.pr-meter>span{flex:none}
+.pr-meter i{position:relative;display:block;flex:1;min-width:0;height:16px;background:#1b2d3d;border-radius:4px;overflow:hidden}
+.pr-meter u,.pr-meter s,.pr-meter em{position:absolute;top:0;bottom:0;display:block;text-decoration:none}
+.pr-meter u{left:0;background:var(--ui-cyan,#81e6df);transition:width .12s}
+.pr-meter.is-fuel u{background:linear-gradient(90deg,#ffad72,#ffd2a8)}
+.pr-meter s{background:repeating-linear-gradient(135deg,#ffffffcc 0 3px,#ff6b5acc 3px 6px)}
+.pr-meter em{border:1px dashed #81e6df;border-radius:2px;box-sizing:border-box}
+.pr-meter.is-heat u{background:linear-gradient(90deg,#81e6df,#ffad72 75%,#ff6b5a)}
+.pr-meter.is-heat s{background:#ffffff66}.pr-meter.is-heat s.is-cool{background:#81e6df88}
+.pr-meter b{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:700 11px Consolas,monospace;color:#fff;text-shadow:0 0 3px #000,0 0 3px #000}
+.pr-meter.is-low b,.pr-meter.is-hot b{color:#ffb4a8}
+.pr-pips{display:flex;gap:4px}.pr-pips i{width:14px;height:12px;border-radius:2px;background:#1b2d3d;border:1px solid #3f5566}
+.pr-pips i.on{background:var(--ui-cyan,#81e6df);border-color:var(--ui-cyan,#81e6df);box-shadow:0 0 6px #81e6df88}
+.pr-wrap{display:block;width:100%;line-height:0}
+.pr-stage{position:relative;margin:0 auto;max-width:100%;border:1px solid #3f5566;border-top:2px solid var(--ui-cyan,#81e6df);border-radius:3px;overflow:hidden;background:#070d17;line-height:0}
+.pr-canvas{display:block;touch-action:none;cursor:crosshair;user-select:none;-webkit-user-select:none}
+.pr-panel[data-phase=burn] .pr-canvas{cursor:pointer}
+.pr-brief{position:absolute;left:8px;right:8px;top:8px;padding:8px 10px;border:1px solid #3f5566;border-left:3px solid var(--ui-amber,#ffad72);border-radius:3px;background:#0b1724e8;font:12px/1.45 Inter,"Segoe UI",sans-serif;color:var(--ui-text,#eaf4f5);pointer-events:none;opacity:0;transform:translateY(-6px);transition:opacity .2s,transform .2s}
+.pr-brief p{margin:0}
+.pr-brief.is-open{opacity:1;transform:none}
+.pr-status{margin:6px 0;min-height:38px;font-size:13px;line-height:1.35}
+.pr-foot{position:sticky;bottom:0;z-index:3;display:flex;gap:8px;align-items:stretch;padding:6px 0 2px;background:linear-gradient(#070d1700,#070d17f2 28%)}
+.pr-foot .pr-burn,.pr-foot .pr-mark{flex:1 1 0;min-width:0;overflow:hidden;text-overflow:ellipsis;min-height:56px;font-size:13px;letter-spacing:.04em;white-space:nowrap}
+.pr-foot .pr-coast,.pr-foot .pr-quit{flex:0 0 auto;min-height:56px}
+.pr-foot .pr-quit{min-width:0;padding:0 10px}
+.pr-panel .pr-mark.ui-btn{border:2px solid #3f5566;border-image:none;background:#16222d;color:#6f8394;text-shadow:none;border-radius:30px;font:800 15px Consolas,monospace;letter-spacing:.14em;touch-action:manipulation}
+.pr-panel .pr-mark.ui-btn.is-live{border-color:#d6ffe6;background:#7ff0a8;color:#04140c;box-shadow:0 0 22px #7ff0a8aa;animation:pr-pulse .5s ease-in-out infinite alternate}
+.pr-mark[hidden]{display:none}
+@keyframes pr-pulse{to{box-shadow:0 0 34px #7ff0a8}}
+.pr-fine{margin:6px 0;font:11px Consolas,monospace;color:#9db3c2}
+.pr-fine summary{cursor:pointer;min-height:32px;display:flex;align-items:center}
+.pr-fine label{display:grid;grid-template-columns:52px 1fr;gap:10px;align-items:center;margin:6px 0}
+.pr-fine input{width:100%}
+.pr-tip{margin:6px 0 0}
+@media (prefers-reduced-motion:reduce){.pr-panel .pr-mark.ui-btn.is-live{animation:none}.pr-brief{transition:none}}
+@media (max-width:640px){
+  .pr-panel.ui-panel{border-width:12px 10px 14px 10px;border-image-width:12px 10px 14px 10px;padding:0}
+  .pr-fine,.pr-tip{display:none}
+  .pr-status{min-height:34px;font-size:12px;margin:4px 0}
+  /* In the workbench the sheet becomes the whole screen for this game, and its preview line and Leave button give way to the pinned row. */
+  .hg-sheet:has(.pr-panel){top:52px;height:calc(100dvh - 52px);border-width:12px 10px 10px 10px;border-image-width:12px 10px 10px 10px}
+  .hg-sheet:has(.pr-panel) .hg-sheet-head{display:none}
+  .hg-sheet:has(.pr-panel) .wb-preview,.hg-sheet:has(.pr-panel) .wb-leave{display:none}
+}
+@media (max-width:640px){.pr-foot .pr-coast.ui-btn,.pr-foot .pr-quit.ui-btn{padding:0 2px;min-width:68px}.pr-foot .pr-burn{font-size:12px;letter-spacing:.02em}}
+/* Perihelion on a desktop: a full-screen overlay like the trainer's gallery. HUD across the top, the map as large as fits, BURN / Coast / Quit bottom right, Leave in the corner. */
+.pr-behind{max-width:420px;margin:0 auto;padding:14px;color:#9db3c2;font:12px Consolas,monospace}
+.rp-panel.pr-full{background:radial-gradient(120% 90% at 50% 0%,#0d1b2b,#04080e);position:fixed;inset:0;z-index:60;display:flex;flex-direction:column;gap:6px;max-width:none;margin:0;padding:12px 24px 12px;color:#eaf4f5;overflow:hidden;border:0}
+.pr-full .pr-top,.pr-full .pr-hud,.pr-full .pr-status{width:100%;max-width:1500px;margin-left:auto;margin-right:auto}
+.pr-full .pr-title{font-size:13px}
+.pr-full .pr-leave{min-height:44px;min-width:88px;margin:0}
+.pr-full .pr-hud{gap:24px;grid-template-columns:2fr 1.4fr auto}
+.pr-full .pr-meter{font-size:12px}.pr-full .pr-meter i{height:20px}.pr-full .pr-meter b{font-size:13px}
+.pr-full .pr-wrap{flex:1 1 0;min-height:0;display:grid;place-items:center;width:100%}
+.pr-full .pr-stage[hidden]{display:none}
+.pr-full .pr-status{margin:0;min-height:22px;text-align:left}
+.pr-full .pr-foot{position:static;justify-content:flex-end;max-width:1500px;width:100%;margin:0 auto;padding:0;background:none}
+.pr-full .pr-foot .pr-burn,.pr-full .pr-foot .pr-mark{flex:0 0 auto;min-width:260px}
+.pr-full .pr-fine,.pr-full .pr-tip{display:none}
+.pr-full .rp-result{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(560px,92vw);z-index:5}
+.pr-intro{max-width:560px;margin:auto;padding:26px 30px;border:1px solid #3f5566;border-top:3px solid var(--ui-amber,#ffad72);border-radius:6px;background:#0b1724f0;font:15px/1.55 Inter,"Segoe UI",sans-serif;color:var(--ui-text,#eaf4f5);line-height:1.55}
+.pr-intro[hidden]{display:none}
+.pr-intro p{margin:0 0 10px}
+.pr-intro-title{font:700 20px Inter,sans-serif;color:var(--ui-amber,#ffad72)}
+.pr-intro-kit{color:var(--ui-cyan,#81e6df)}
+.pr-intro .pr-begin{margin-top:8px;min-height:52px;min-width:180px}
+@media (max-width:899px){.pr-leave{display:none}}
+.pr-full:has(.pr-intro:not([hidden])) .pr-foot,.pr-full:has(.pr-intro:not([hidden])) .pr-status{visibility:hidden}

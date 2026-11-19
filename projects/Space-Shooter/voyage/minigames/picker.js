@@ -5,7 +5,7 @@
 // The numbers are the same functions the minigames use (setup.js), so the
 // card and the game cannot disagree. Shooting has no minigame: its three
 // categories are listed with no numbers yet.
-import { POINT_MAX, REPAIR_BASE, setupRepair, setupHack, setupPersuade, setupIntimidate, setupPilot, setupShooting } from './setup.js';
+import { POINT_MAX, REPAIR_BASE, setupRepair, setupHack, setupPersuade, setupIntimidate, setupPilot, setupPerihelion, setupShooting } from './setup.js';
 
 const f1 = (n) => (Math.round(n * 10) / 10).toString();
 const plus = (n, unit) => `${n > 0 ? '+' : ''}${f1(n)}${unit}`;
@@ -43,10 +43,10 @@ export const CATEGORIES = Object.freeze({
     { id: 'persuade', name: 'Persuade', words: (n) => { const u = setupPersuade({ points: { persuade: n }, level: 9 }); return `trust needed ${u.goal} at a steady roll, you notice ${u.tells} thing${u.tells === 1 ? '' : 's'} about them`; } },
     { id: 'intimidate', name: 'Intimidate', words: (n) => { const u = setupIntimidate({ points: { intimidate: n }, level: 9 }); return `snap risk on the first push ${u.chances[0]}%, the sixth ${u.chances[5]}%, ${u.saves} save${u.saves === 1 ? '' : 's'}`; } },
     { id: 'haggle', name: 'Haggle', words: (n) => `${plus(1.5 * n, '%')} better final price, comfort band ${plus(0.4 * n, '%')} wider` } ] },
-  navigation: { built: false, cats: [
-    { id: 'time', name: 'Travel time', words: (n) => `lanes cost ${f1(4 * n)}% less time` },
-    { id: 'fuel', name: 'Fuel use', words: (n) => `lanes cost ${f1(4 * n)}% less fuel` },
-    { id: 'warning', name: 'Hazard warning', words: (n) => `hazards show ${n >= 9 ? 4 : n >= 6 ? 3 : n >= 3 ? 2 : 1} cell${n >= 3 ? 's' : ''} ahead` } ] },
+  navigation: { built: true, cats: [
+    { id: 'time', name: 'Travel time', words: (n) => { const w = setupPerihelion({ points: { time: n }, level: 9 }); return `the engine fires ${f1(w.window)} s of each burn${n >= 3 ? `, ${Math.floor(n / 3)} spare turn${n >= 6 ? 's' : ''}` : ''}`; } },
+    { id: 'fuel', name: 'Fuel use', words: (n) => `burns and trims cost ${f1(4 * n)}% less fuel` },
+    { id: 'warning', name: 'Hazard warning', words: (n) => { const w = setupPerihelion({ points: { warning: n }, level: 9 }); return `the arc shows ${Math.round(w.arc * 100)}% of the burn, shards flagged ${f1(w.warn)} s ahead${w.scan ? ', fog scanned' : ''}`; } } ] },
 });
 export const CATEGORY_SKILLS = Object.freeze(Object.keys(CATEGORIES));
 

@@ -109,7 +109,7 @@ export function createWorkbench({ store, bus, onfoot, dialogueBox, sheet, hud, t
     hold(true);
     const left = new Promise((resolve) => { leave = () => resolve(null); leaveBtn.addEventListener('click', leave); });
     let result;
-    try { result = await Promise.race([playGame(stage, station.id, { seed: nextSeed(), setup: start.setup, title: titleText || station.title, who: who || station.who, what: what || station.what, open: open ?? station.open, best: best ?? station.best, lock: lock ?? station.lock, context, sound: () => {}, reducedMotion }), left]); }
+    try { result = await Promise.race([playGame(stage, station.game || station.id, { seed: nextSeed(), setup: start.setup, title: titleText || station.title, who: who || station.who, what: what || station.what, open: open ?? station.open, best: best ?? station.best, lock: lock ?? station.lock, context, sound: () => {}, reducedMotion }), left]); }
     catch (error) { console.warn('Stardust workbench: the game could not run', error); result = null; }
     leave = null;
     sheet.stage.replaceChildren();

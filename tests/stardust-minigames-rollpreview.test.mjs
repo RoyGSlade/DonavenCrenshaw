@@ -29,7 +29,7 @@ test('every game changes at every tier but Steady, and says so; Steady says noth
     for (const m of [12, 6, -3, -9]) assert.ok(rollPreview(g, at(m), { level: 3 }).phrases.length >= 1, `${g} margin ${m}`);
     assert.deepEqual(rollPreview(g, at(2), { level: 3 }).phrases, []);
   }
-  assert.equal(Object.keys(SPECS).length, 9);
+  assert.equal(Object.keys(SPECS).length, 10, 'the nine games plus Perihelion');
 });
 
 test('the numbers in the line are the real setup numbers, with the player\'s points', () => {

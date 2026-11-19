@@ -11,6 +11,7 @@ import { createStealth } from '../minigames/stealth.js'; import { playStealth } 
 import { createPersuade } from '../minigames/persuade.js'; import { playPersuade } from '../minigames/persuadeView.js';
 import { createIntimidate } from '../minigames/intimidate.js'; import { playIntimidate } from '../minigames/intimidateView.js';
 import { createPilot } from '../minigames/pilot.js'; import { playPilot } from '../minigames/pilotView.js';
+import { playNavField } from '../minigames/perihelionEntry.js';
 
 let craftBank = 0; // scrap the last craft rounded up, carried into the next one (the game's own rule)
 export const resetCraftBank = () => { craftBank = 0; };
@@ -26,6 +27,7 @@ export async function playGame(stage, id, o = {}) {
     case 'hack': return playMirrors(stage, { seed, setup, context: o.context || 'foot', title: title || 'Bench terminal', sound, reducedMotion });
     case 'haggle': return playHaggle(stage, { state: createHaggle({ seed, open: o.open ?? 20, best: o.best ?? 30, setup }), who: who || 'the trader', what: what || 'the price', sound, reducedMotion });
     case 'craft': { const r = await playCraft(stage, { state: createCraft({ seed, recipe: { materials: 4, build: 30 }, setup, bank: craftBank }), what: 'fitting', unit: 'scrap', reducedMotion }); if (Number.isFinite(r?.bank)) craftBank = r.bank; return r; }
+    case 'perihelion': return playNavField(stage, { seed, setup, title: title || 'Plot a burn', sound, reducedMotion });
     case 'nav': return playNav(stage, { state: createNav({ seed, setup }), title: title || 'Lane run', reducedMotion });
     case 'stealth': return playStealth(stage, { state: createStealth({ seed, setup }), title: title || 'Cargo hold', reducedMotion });
     case 'persuade': return playPersuade(stage, { state: createPersuade({ seed, setup }), who: who || 'the dock clerk', what: what || 'let you through', reducedMotion });

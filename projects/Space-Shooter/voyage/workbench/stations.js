@@ -3,7 +3,7 @@
 // scene hooks and the gym use), and a finished game pays real XP into the skill (state.js earnXp). DOM lives in games.js.
 import { check } from '../character.js';
 import { ROLL_SKILLS } from '../data.js';
-import { tierOf, tierInfo, setupHack } from '../minigames/setup.js';
+import { tierOf, tierInfo, setupHack, setupPerihelion } from '../minigames/setup.js';
 import { GYM_GAMES, gymGame } from '../minigames/gym.js';
 import { rollPreview } from '../minigames/rollPreview.js';
 import { cleanSkillPoints } from '../minigames/picker.js';
@@ -16,7 +16,7 @@ export const STATIONS = Object.freeze([
   { id: 'repair', name: 'Repair bench', skill: 'repair', stat: 'wis', tag: 'repair', word: 'REPAIR', title: 'Coolant line' },
   { id: 'hack', name: 'Hacking bench', skill: 'hacking', stat: 'wis', tag: 'hack', word: 'HACK', title: 'Bench terminal', lock: 2 },
   { id: 'craft', name: 'Crafting bench', skill: 'crafting', stat: 'dex', tag: 'craft', word: 'CRAFT', title: 'Fitting' },
-  { id: 'nav', name: 'Navigation table', skill: 'navigation', stat: 'wis', tag: 'scan', word: 'NAVIGATE', title: 'Lane run' },
+  { id: 'nav', name: 'Navigation table', skill: 'navigation', stat: 'wis', tag: 'scan', word: 'NAVIGATE', title: 'Plot a burn', game: 'perihelion' },
   { id: 'pilot', name: 'Flight console', skill: 'piloting', stat: 'dex', tag: 'nav', word: 'TOUCHDOWN', title: 'Hangar pad' },
   { id: 'stealth', name: 'Shadow lane', skill: 'stealth', stat: 'dex', tag: 'sneak', word: 'SLIP PAST', title: 'Cargo hold' },
   { id: 'persuade', name: 'Parley desk', skill: 'social', stat: 'cha', tag: 'talk', word: 'PERSUADE', title: 'Dock clerk', who: 'the dock clerk', what: 'let you through' },
@@ -48,8 +48,9 @@ export function startStation(state, station, attempt) {
   const { level, points } = loadoutOf(state, station.skill);
   const tier = tierOf(attempt);
   const game = gymGame(station.id);
-  const setup = station.id === 'hack' ? setupHack({ tier, level, points, lock: station.lock }) : game.setup({ tier, level, points });
-  const preview = rollPreview(station.id, attempt, { level, points });
+  // A station may play a newer game than the gym's (navigation: Perihelion); the gym keeps the old one until Donaven picks.
+  const setup = station.id === 'hack' ? setupHack({ tier, level, points, lock: station.lock }) : station.game === 'perihelion' ? setupPerihelion({ tier, level, points }) : game.setup({ tier, level, points });
+  const preview = rollPreview(station.game || station.id, attempt, { level, points });
   return { station, tier, label: tierInfo(tier).label, setup, level, points, preview };
 }
 
