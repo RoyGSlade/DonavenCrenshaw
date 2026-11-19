@@ -1,8 +1,9 @@
-// The repair board on screen: a grid of pipe pieces you tap to turn, a clock,
-// and a result card. Plain DOM + inline SVG (no canvas, no art files), so a tap
+// The repair board on screen: a grid of pipe pieces you tap to turn, coolant that
+// flows out of the pump and pours from any open end, a pool along the bottom that
+// fills with the spill (no clock: the pool is the timer), and a result card. Plain DOM + inline SVG (no canvas, no art files), so a tap
 // is a real button press: it works by touch and by keyboard (arrows move, Enter
 // or Space turns). Resolves with the rules' result.
-import { createRepair, rotateTile, stepRepair, shapeOf, N, E, S, W, nextHint } from './repair.js';
+import { createRepair, rotateTile, stepRepair, shapeOf, N, E, S, W, nextHint, leaks } from './repair.js';
 
 const NS = 'http://www.w3.org/2000/svg';
 const svg = (tag, attrs = {}, ...kids) => { const el = document.createElementNS(NS, tag); for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v); el.append(...kids); return el; };
@@ -13,11 +14,13 @@ const SHAPE_WORDS = { straight: 'straight pipe', corner: 'bent pipe', tee: 'T pi
 // and the whole piece is rotated by CSS, so a turn animates. Base mask = the piece's mask at creation.
 function pieceSvg(mask, role) {
   const g = svg('g');
-  const arm = (x, y) => svg('line', { x1: 50, y1: 50, x2: x, y2: y, class: 'rp-arm' });
-  if (mask & N) g.append(arm(50, 0));
-  if (mask & E) g.append(arm(100, 50));
-  if (mask & S) g.append(arm(50, 100));
-  if (mask & W) g.append(arm(0, 50));
+  const arms = [];
+  if (mask & N) arms.push([50, 0]);
+  if (mask & E) arms.push([100, 50]);
+  if (mask & S) arms.push([50, 100]);
+  if (mask & W) arms.push([0, 50]);
+  const layer = (cls) => arms.forEach(([x, y]) => g.append(svg('line', { x1: 50, y1: 50, x2: x, y2: y, class: cls })));
+  layer('rp-arm'); layer('rp-water'); layer('rp-flow');
   g.append(svg('circle', { cx: 50, cy: 50, r: role === 'pump' || role === 'valve' ? 22 : 9, class: 'rp-hub' }));
   if (role === 'pump') g.append(svg('path', { d: 'M40 50h20M52 42l8 8-8 8', class: 'rp-glyph' }));
   if (role === 'valve') { // a hand wheel: rim and three spokes, coloured by CSS (red while dry, cyan once sealed)
@@ -31,17 +34,20 @@ function pieceSvg(mask, role) {
 }
 
 /**
- * root: where the panel goes. opts: { seed, setup: { size, seconds, qualityBonus, label, tier }, reducedMotion, sound, title }.
- * Returns a promise (with .state) resolving to the result: { success, how, moves, par, time, quality, stars, size, xp }.
+ * root: where the panel goes. opts: { seed, setup: { size, capacity, flow, qualityBonus, label, tier }, reducedMotion, sound, title }.
+ * Returns a promise (with .state) resolving to the result: { success, how ('sealed' or 'flooded'), moves, par, time, spilled, quality, stars, size, xp }.
  */
 export function playRepair(root, { seed = 1, setup = {}, title = 'Coolant line', reducedMotion = () => false, sound = () => {} } = {}) {
-  const state = createRepair({ seed, size: setup.size, seconds: setup.seconds, qualityBonus: setup.qualityBonus });
+  const state = createRepair({ seed, size: setup.size, capacity: setup.capacity, flow: setup.flow, qualityBonus: setup.qualityBonus });
   const n = state.size;
-  const clock = h('div', { class: 'rp-clock', role: 'timer', 'aria-label': 'Time left' }, h('i'));
   const moves = h('span', { class: 'rp-moves', text: '0 turns' });
-  const timeText = h('span', { class: 'rp-time', text: `${state.seconds}s` });
-  const status = h('p', { class: 'rp-status', role: 'status', 'aria-live': 'polite', text: 'Turn the pipes until coolant reaches the valve.' });
+  const poolText = h('span', { class: 'rp-time', text: 'Pool 0%' });
+  const status = h('p', { class: 'rp-status', role: 'status', 'aria-live': 'polite', text: 'Close every open end and bring the coolant to the valve.' });
   const board = h('div', { class: 'rp-board', role: 'grid', 'aria-label': 'Pipe board', style: `--n:${n}` });
+  const streams = h('div', { class: 'rp-streams', 'aria-hidden': 'true' });
+  const poolFill = h('i', { class: 'rp-pool-fill' });
+  const pool = h('div', { class: 'rp-pool', role: 'progressbar', 'aria-label': 'Spill pool', 'aria-valuemin': '0', 'aria-valuemax': '100', 'aria-valuenow': '0' }, poolFill);
+  const stage = h('div', { class: 'rp-stage' }, board, streams, pool);
   const turns = state.tiles.map(() => 0); // quarter turns applied, for the CSS rotation
   const cells = state.tiles.map((t, i) => {
     const solvedLook = t.role === 'pump' ? E : t.role === 'valve' ? W : t.mask;
@@ -58,14 +64,35 @@ export function playRepair(root, { seed = 1, setup = {}, title = 'Coolant line',
   const hintBtn = h('button', { type: 'button', class: 'rp-hint ui-btn', text: 'Hint' });
   const panel = h('section', { class: 'rp-panel mg-skin ui-panel', role: 'group', 'aria-label': `Repair: ${title}`, 'data-size': n, 'data-tier': setup.tier ?? 0 },
     h('p', { class: 'rp-eyebrow ui-nameplate', text: `REPAIR · ${title.toUpperCase()} · ${n} x ${n}${setup.label ? ` · ${setup.label.toUpperCase()}` : ''}` }),
-    h('div', { class: 'rp-hud' }, moves, timeText), clock, board, status,
+    h('div', { class: 'rp-hud' }, moves, poolText), stage, status,
     h('div', { class: 'rp-foot' }, hintBtn, h('span', { class: 'rp-par', text: `Par ${state.par} turns` })),
-    h('p', { class: 'rp-help', text: 'Tap a piece to turn it. Arrows move, Enter or Space turns.' }));
+    h('p', { class: 'rp-help', text: 'Every end of every pipe the coolant reaches must meet another pipe, or it leaks. Tap a piece to turn it. Arrows move, Enter or Space turns.' }));
   panel.__state = state;
   root.append(panel);
   let raf = 0, last = 0, finish, hintAt = null;
   const promise = new Promise((r) => { finish = r; });
   promise.state = state;
+
+  const mouths = new Map(); // "i:dir" -> element (an open end; a stream once the coolant reaches it)
+  const DIRNAME = { [N]: 'n', [E]: 'e', [S]: 's', [W]: 'w' };
+  function paintOpen() {
+    const pouring = new Set(leaks(state).map((o) => `${o.i}:${o.dir}`));
+    const want = new Set(state.done && state.result?.success ? [] : state.open.map((o) => `${o.i}:${o.dir}`));
+    for (const [k, el] of mouths) if (!want.has(k)) { el.remove(); mouths.delete(k); }
+    const stageH = pool.offsetTop;
+    for (const o of state.done && state.result?.success ? [] : state.open) {
+      const k = `${o.i}:${o.dir}`;
+      let el = mouths.get(k);
+      if (!el) { el = h('span', { class: `rp-mouth d-${DIRNAME[o.dir]}` }); streams.append(el); mouths.set(k, el); }
+      const b = cells[o.i].btn;
+      const cx = b.offsetLeft + b.offsetWidth / 2, cy = b.offsetTop + b.offsetHeight / 2;
+      const x = o.dir === E ? b.offsetLeft + b.offsetWidth : o.dir === W ? b.offsetLeft : cx;
+      const y = o.dir === S ? b.offsetTop + b.offsetHeight : o.dir === N ? b.offsetTop : cy;
+      el.style.left = `${x}px`; el.style.top = `${y}px`;
+      el.style.setProperty('--fall', `${Math.max(0, stageH - y)}px`);
+      el.classList.toggle('is-pouring', pouring.has(k));
+    }
+  }
 
   function paint() {
     const on = new Set(state.powered);
@@ -73,15 +100,26 @@ export function playRepair(root, { seed = 1, setup = {}, title = 'Coolant line',
       const c = cells[i];
       const quarter = turns[i] * 90;
       c.inner.style.transform = `rotate(${quarter}deg)`;
-      c.btn.classList.toggle('is-on', on.has(i));
+      c.btn.classList.toggle('is-on', on.has(i) && t.wet >= 1);
+      c.btn.classList.toggle('is-filling', t.wet > 0 && t.wet < 1);
+      c.btn.style.setProperty('--wet', t.wet.toFixed(2));
       c.btn.classList.toggle('is-hint', hintAt === i);
       c.btn.setAttribute('aria-label', label(i));
     });
     moves.textContent = `${state.moves} turn${state.moves === 1 ? '' : 's'}`;
-    const left = Math.max(0, state.seconds - state.t);
-    timeText.textContent = `${Math.ceil(left)}s`;
-    clock.firstChild.style.width = `${(100 * left) / state.seconds}%`;
-    clock.classList.toggle('is-low', left < 8);
+    const pct = Math.round((100 * state.pool) / state.capacity);
+    poolText.textContent = `Pool ${pct}%`;
+    poolFill.style.height = `${(100 * state.pool) / state.capacity}%`;
+    pool.setAttribute('aria-valuenow', String(pct));
+    pool.classList.toggle('is-high', pct >= 60);
+    paintOpen();
+  }
+
+  function say() {
+    const k = state.open.length;
+    status.textContent = state.solved ? 'Sealed. The coolant holds.'
+      : k ? `${k} open end${k === 1 ? '' : 's'} on the wet pipe. Turn pieces until every end meets another.`
+      : 'Nothing leaks, but the coolant is not reaching the valve yet.';
   }
 
   function turnTile(i) {
@@ -90,7 +128,7 @@ export function playRepair(root, { seed = 1, setup = {}, title = 'Coolant line',
     turns[i]++;
     if (hintAt === i) hintAt = null;
     sound('power');
-    status.textContent = state.solved ? 'Sealed. The coolant holds.' : `${state.powered.length - 1} piece${state.powered.length === 2 ? '' : 's'} carrying coolant.`;
+    say();
     paint();
     if (state.done) end();
   }
@@ -114,15 +152,28 @@ export function playRepair(root, { seed = 1, setup = {}, title = 'Coolant line',
     if (state.done) end();
   }
   function end() {
-    cancelAnimationFrame(raf); paint();
-    const r = state.result;
+    cancelAnimationFrame(raf);
     board.classList.add('is-done');
     cells.forEach((c) => { c.btn.disabled = true; });
-    status.textContent = r.success ? 'Sealed. The coolant holds.' : 'Out of time. The line floods.';
-    const stars = '★'.repeat(r.stars) + '☆'.repeat(3 - r.stars);
+    const r = state.result;
+    if (r.success) cells[state.dst].btn.classList.add('is-sealed');
+    // Let the coolant finish its run to the valve (or the pool finish rising) before the card.
+    let wait = r.success ? 1.6 : 0.4; last = performance.now();
+    const settle = (now) => {
+      const dt = Math.min(0.05, (now - last) / 1000 || 0); last = now;
+      stepRepair(state, dt); paint(); wait -= dt;
+      if (wait > 0 && (!r.success || state.powered.some((i) => state.tiles[i].wet < 1))) { raf = requestAnimationFrame(settle); return; }
+      show(r);
+    };
+    raf = requestAnimationFrame((t) => { last = t; settle(t); });
+  }
+  function show(r) {
+    paint();
+    status.textContent = r.success ? 'Sealed. The coolant holds.' : 'The pool is full. The line floods.';
+    const stars = '\u2605'.repeat(r.stars) + '\u2606'.repeat(3 - r.stars);
     const card = h('div', { class: `rp-result ui-card ${r.success ? 'is-ok' : 'is-bad'}`, role: 'status' },
       h('b', { class: 'rp-stars', text: r.success ? stars : 'FLOODED' }),
-      h('span', { text: r.success ? `Quality ${r.quality} · ${r.moves} turns (par ${r.par}) · ${r.time}s · +${r.xp} Repair XP` : `${r.moves} turns, no seal. No XP.` }));
+      h('span', { text: r.success ? `Quality ${r.quality} \u00b7 ${r.moves} turns (par ${r.par}) \u00b7 ${r.spilled} spilled of ${state.capacity} \u00b7 +${r.xp} Repair XP` : `${r.moves} turns, no seal. No XP.` }));
     const go = h('button', { type: 'button', class: 'primary ui-btn', text: r.success ? 'Continue' : 'Step back' });
     go.addEventListener('click', () => { panel.remove(); finish(r); });
     card.append(go);

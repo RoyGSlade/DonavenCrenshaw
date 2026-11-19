@@ -47,34 +47,49 @@ export function cleanPoints(points, categories, level = POINT_MAX) {
   return out;
 }
 
-// --- Repair: pipe routing (PLAN.md section 2) -------------------------------------
-// Categories: time, size, quality.
-//   time     +3 s per point                       (0..9 -> +0..+27 s)
+// --- Repair v2: closed pipe network, no clock (Donaven 2026-11-18) -----------------
+// The coolant flows from the pump and pours out of every open end it reaches; the spill fills a pool
+// along the bottom of the board; a full pool floods the line. Categories: time, size, quality.
+//   time     +6 pool depth per point (0..9 -> +0..+54): a deeper pool floods later (a point = 6 seconds of one open end)
 //   size     one fewer row and column per 3 points (0-2: 0, 3-5: -1, 6-8: -2, 9: -3)
 //   quality  +4 quality points per point           (0..9 -> +0..+36)
-// Base 5 x 5 board, 50 s. Tier: time x, size +/-1 board step, nothing else.
+// Base 5 x 5 board, pool depth 120 (one open end fills it in 120 s at flow 1; three open ends in 40 s).
+// Tier: pool depth x (0.70 .. 1.30), flow per open end +0.1 per step rougher (1.2 .. 0.8), size +/-1 board step.
 // The board is never smaller than 3 x 3 or larger than 6 x 6.
-export const REPAIR_BASE = Object.freeze({ size: 5, seconds: 50, minSize: 3, maxSize: 6, secondsPerPoint: 3, pointsPerStep: 3, qualityPerPoint: 4 });
+export const REPAIR_BASE = Object.freeze({ size: 5, capacity: 120, minSize: 3, maxSize: 6, capacityPerPoint: 6, pointsPerStep: 3, qualityPerPoint: 4, flowPerTier: 0.1 });
 export const REPAIR_CATEGORIES = Object.freeze(['time', 'size', 'quality']);
 
 export function setupRepair({ tier = 0, points = {}, level = POINT_MAX } = {}) {
   const p = cleanPoints(points, REPAIR_CATEGORIES, level);
   const t = tierInfo(tier);
   const b = REPAIR_BASE;
+  const k = Math.max(-2, Math.min(2, Math.trunc(tier) || 0));
   const size = Math.max(b.minSize, Math.min(b.maxSize, b.size - Math.floor(p.size / b.pointsPerStep) + t.size));
-  const seconds = Math.round(+((b.seconds + b.secondsPerPoint * p.time) * t.time).toFixed(6));
-  return { size, seconds, qualityBonus: b.qualityPerPoint * p.quality, tier: Math.max(-2, Math.min(2, Math.trunc(tier) || 0)), points: p, label: t.label };
+  const capacity = Math.round(+((b.capacity + b.capacityPerPoint * p.time) * t.time).toFixed(6));
+  const flow = Math.round((1 - b.flowPerTier * k) * 100) / 100;
+  return { size, capacity, flow, qualityBonus: b.qualityPerPoint * p.quality, tier: k, points: p, label: t.label };
+}
+
+/** How long the pool lasts with one leak open, in plain words, to the nearest half minute ("about 2\u00bd minutes"). */
+export function poolLasts({ capacity, flow = 1 } = {}) {
+  const halves = Math.round((capacity / (flow || 1)) / 30);
+  if (halves < 1) return 'under half a minute';
+  const whole = Math.floor(halves / 2), half = halves % 2;
+  const n = whole ? `${whole}${half ? '\u00bd' : ''}` : '\u00bd';
+  return `about ${n} minute${whole > 1 || (whole === 1 && half) ? 's' : ''}`;
 }
 
 // --- Hacking: the existing bypass ring (onfoot/rules/hack.js) ---------------------
 // Categories: time, size, retries.
 //   time     +1.5 s per point   (0..9 -> +0..+13.5 s)
-//   size     one fewer tumbler per 2 points (0-1: 0, 2-3: -1, 4-5: -2, 6-7: -3, 8-9: -4)
+//   size     every point widens the lit window 5% (0..9 -> x1..x1.45); every 2nd point also removes a tumbler
+//            (0-1: 0, 2-3: -1, 4-5: -2, 6-7: -3, 8-9: -4), never under 2, so points past the floor still widen the window
 //   retries  one more allowed miss per 2 points (0..9 -> +0..+4)
 // Base: the lock level's own numbers. Tier: time x, size +/-1 tumbler, spare miss +1/-1.
 // Never fewer than 2 tumblers; never fewer than 0 allowed misses; never under 1.8 s per tumbler.
 export const HACK_CATEGORIES = Object.freeze(['time', 'size', 'retries']);
 export const HACK_SECONDS_PER_TUMBLER = 1.8;
+export const HACK_WINDOW_PER_POINT = 0.05;
 export function setupHack({ tier = 0, points = {}, level = POINT_MAX, lock = { time: 16, tumblers: 3, misses: 2 } } = {}) {
   const p = cleanPoints(points, HACK_CATEGORIES, level);
   const t = tierInfo(tier);
@@ -82,7 +97,7 @@ export function setupHack({ tier = 0, points = {}, level = POINT_MAX, lock = { t
   // Floor: a perfect run of a Rough level-4 lock used 98% of its clock, so no hack gets under 1.8 s per tumbler.
   const time = Math.max(tumblers * HACK_SECONDS_PER_TUMBLER, Math.round(+((lock.time + 1.5 * p.time) * t.time).toFixed(6) * 10) / 10);
   return {
-    time: Math.round(time * 10) / 10, tumblers,
+    time: Math.round(time * 10) / 10, tumblers, window: Math.round((1 + HACK_WINDOW_PER_POINT * p.size) * 100) / 100,
     misses: Math.max(0, lock.misses + Math.floor(p.retries / 2) + t.extra),
     tier: Math.max(-2, Math.min(2, Math.trunc(tier) || 0)), points: p, label: t.label,
   };

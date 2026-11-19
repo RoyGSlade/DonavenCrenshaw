@@ -6,7 +6,7 @@ import { hashSeed } from '../quests/rng.js';
 import { createRepair } from './repair.js';
 
 export const DAY_MS = 86400000;
-export const BENCH_SETUP = Object.freeze({ size: 5, seconds: 50, qualityBonus: 0 });
+export const BENCH_SETUP = Object.freeze({ size: 5, capacity: 120, flow: 1, qualityBonus: 0 });
 
 /** The game day number for a time in milliseconds (UTC days since 1970-01-01). */
 export const dayNumber = (ms) => Math.floor(ms / DAY_MS);

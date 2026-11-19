@@ -28,7 +28,7 @@ export function createSetupHack({ seed = 1, lock = 1, setup = null } = {}) {
   const s = setup || hackSetup({ lock });
   let rng = hashSeed('hack', seed, base.level);
   const rand = () => { const [v, next] = rngStep(rng); rng = next; return v; };
-  const tumblers = Array.from({ length: s.tumblers }, (_, i) => ({ at: wrap(rand() * TAU + i * 1.7), width: base.window * (1 - i * 0.05), set: false }));
+  const tumblers = Array.from({ length: s.tumblers }, (_, i) => ({ at: wrap(rand() * TAU + i * 1.7), width: base.window * (s.window || 1) * (1 - i * 0.05), set: false }));
   return {
     t: 0, difficulty: base.level, time: Math.max(6, s.time), misses: 0, allowed: s.misses,
     cursor: wrap(tumblers[0].at + Math.PI), dir: 1, tumblers, index: 0, done: false, result: null, events: [], setup: s,
