@@ -29,6 +29,8 @@ import { hudArt } from '../ui/assets.js';
 // launch maps: things that switch in play (doors, the goo, the reactor) are map data (rules/states.js).
 import { hasStates, resolveStates, applyStates, stateSignature } from './rules/states.js';
 import { compileMap } from './rules/mapdata.js';
+import { createDoorSystem } from './doors/system.js'; // launch doors: doors built into the walls and two-door entries
+import { drawWallDoors } from './doors/paint.js';
 import { markerPoint } from '../slice/places.js';
 import { placeName as roomName } from '../slice/places.js';
 
@@ -71,7 +73,7 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
   promptKey.hidden = input.touch;
   let target = null, arrivedAt = 0, walkedSent = false;
   let camera = null, shake = 0, hitstop = 0, stepDist = 0, objective = null;
-  let inRings = new Set();
+  let inRings = new Set(), lastDoorSound = -1;
   const dust = [];
   let fight = null, fightDone = null, fx = [];
   const hidden = new Set();
@@ -98,9 +100,11 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     npcs = map.npcs.map(n => keep.get(n.id) || { ...n, home: { ...n.home }, vx: 0, vy: 0, moving: false });
     for (const n of keep.values()) if (n.follow && !npcs.includes(n)) npcs.push(n);
     layerDirty = true;
+    doorsys.load(map, { keep: true }); // launch doors hook
     emit('map:state', { map: map.id, states: { ...(map.def.stateOf || {}) } });
     return true;
   }
+  const doorsys = createDoorSystem(); // launch doors hook: wall doors (map.def.wallDoors) and vestibule entries (map.def.entries); nothing happens in a map without them
   const doorBodies = () => [walker, ...npcs.filter(n => !hidden.has(n.id))];
   const doorShown = d => {
     if (doorLocked(d)) return 'locked';
@@ -114,6 +118,7 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     baseMap = enterMap(id); // a generic place (the cantina) is dressed fresh on every visit
     map = withStates(baseMap); // launch maps: in the states the save's flags (and scripts) say
     preload(map);
+    doorsys.load(map, { arrive: spawnName }); // launch doors hook: arriving in a vestibule starts with both doors shut
     const s = map.spawns[spawnName] || map.spawns.default;
     const keep = walker;
     walker = createWalker(s);
@@ -130,6 +135,13 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     el.dataset.map = map.id;
     hooks.entered?.(map, api);
     emit(TUTORIAL_EVENTS.entered, { map: map.id });
+  }
+
+  /** launch doors hook: the map change inside a vestibule (both doors are shut): a quick dim under the cycle lights. */
+  function transit(id, spawnName) {
+    if (reducedMotion()) { setMap(id, spawnName); return; }
+    fade.classList.add('on');
+    setTimeout(() => { setMap(id, spawnName); fade.classList.remove('on'); }, 160);
   }
 
   function go(id, spawnName) {
@@ -156,7 +168,7 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     layerScale = want;
     layerDirty = false;
   }
-  const findDoorDef = d => map.def.doors?.find(x => x.id === d.id);
+  const findDoorDef = d => map.def.doors?.find(x => x.id === d.id) || map.def.wallDoors?.find(x => x.id === d.id); // launch doors hook: wall doors gate the same way
   // A door's gate: null when open, else { reason, hack?: level, key } (puzzle locks here; skill and hack gates from the page).
   const doorGate = d => {
     const def = findDoorDef(d) || {};
@@ -179,7 +191,8 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
   // ---- walking ----
   function stepWalk(dt) {
     const mv = (busy || paused) ? { x: 0, y: 0 } : input.move();
-    stepWalker(walker, mv, map, dt);
+    const wmap = doorsys.walkMap(map); // launch doors hook: a shut wall door is a wall
+    stepWalker(walker, mv, wmap, dt);
     if (!walkedSent && walker.walked > map.tile * 3) { walkedSent = true; emit(TUTORIAL_EVENTS.moved, {}); }
     // Footsteps: a soft tick and a puff of dust on exteriors.
     if (walker.moving) {
@@ -189,14 +202,22 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     checkRings();
     for (const n of npcs) {
       if (hidden.has(n.id)) continue;
-      stepNpc(n, t, dt, map, following.has(n.id) ? walker : null);
+      stepNpc(n, t, dt, wmap, following.has(n.id) ? walker : null);
     }
     // Npc interact points follow the npc.
     const extra = npcs.filter(n => !hidden.has(n.id)).map(n => ({ kind: 'npc', id: n.id, label: castLook(n.id).name, x: n.x, y: n.y, reach: map.tile * 1.9 })); // reach: across a desk or a counter
+    extra.push(...doorsys.gated(walker, doorLocked)); // launch doors hook: a locked wall door can be tried with E
     const base = { ...map, interacts: map.interacts.filter(i => i.kind !== 'npc') };
     target = busy || paused ? null : pickTarget(walker, base, extra); // nothing to use while the floor is held
     showPrompt(target);
     if (busy || paused) return;
+    // launch doors hook: panels, the vestibule sequence (the swap happens with both doors shut)
+    if (!busy && !paused) {
+      const r = doorsys.step(dt, { walker, bodies: doorBodies(), locked: doorLocked, still: reducedMotion() });
+      if (r.sounds.includes('open') && t - lastDoorSound > 0.25) { lastDoorSound = t; sound('door'); }
+      const swap = r.events.find(e => e.type === 'swap');
+      if (swap) { transit(swap.to, swap.arrive); return; }
+    }
     // Doors: walk into one (after a moment in a new room) or press Use.
     const useIt = input.take('interact');
     for (const d of map.doors) {
@@ -238,8 +259,8 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
   }
 
   function use(it) {
-    if (it.kind === 'door') {
-      const d = map.doors.find(x => x.id === it.id);
+    if (it.kind === 'door' || it.kind === 'wdoor') {
+      const d = it.kind === 'wdoor' ? doorsys.get(it.id) : map.doors.find(x => x.id === it.id);
       const gate = doorGate(d);
       if (gate?.hack) {
         const key = `hack:${map.id}:${d.id}`;
@@ -248,6 +269,7 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
         return;
       }
       if (gate) { hooks.locked?.({ ...d, gate }, api); return; }
+      if (it.kind === 'wdoor') return; // launch doors hook: unlocked, it opens on approach
       const redirect = hooks.doorTo?.(d, map);
       go(redirect?.to || it.to, redirect?.arrive || it.arrive);
       return;
@@ -262,7 +284,7 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
   }
 
   function promptLabel(it) {
-    const d = it.kind === 'door' ? map.doors.find(x => x.id === it.id) : null;
+    const d = it.kind === 'door' ? map.doors.find(x => x.id === it.id) : it.kind === 'wdoor' ? doorsys.get(it.id) : null;
     const gate = d ? doorGate(d) : hooks.gate?.(it, map) || null;
     const station = stationOf(it);
     const info = station ? hooks.stationInfo?.(station) : null;
@@ -453,6 +475,7 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     const sw = Math.min(layer.canvas.width - sx, cam.vw * s), sh = Math.min(layer.canvas.height - sy, cam.vh * s);
     if (sw > 0 && sh > 0) ctx.drawImage(layer.canvas, sx, sy, sw, sh, dx, dy, (sw / s) * cam.zoom * dpr, (sh / s) * cam.zoom * dpr);
     } // r3-look hook end
+    drawWallDoors(ctx, doorsys, cam, view, layer.look || null, doorLocked); // launch doors hook: the panels, frames and cycle lights
     ctx.setTransform(cam.zoom * dpr, 0, 0, cam.zoom * dpr, -cam.x * cam.zoom * dpr, -cam.y * cam.zoom * dpr);
     // Everything usable, marked on the floor; the objective in gold with a bobbing chevron.
     const marked = mode === 'walk' && !paused ? markItems(cam) : null;
@@ -650,6 +673,7 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     get fightState() { return fight; },
     get target() { return target; },
     go,
+    doors: doorsys, // launch doors: panel amounts and entry phases (tests and the proof)
     fight: startFight,
     unlock(id) { opened.add(id); layerDirty = true; sound('unlock'); },
     /** The story's objective ({ text, station, npc? } or null): a marker in the world and a line on screen. */

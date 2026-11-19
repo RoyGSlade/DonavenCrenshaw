@@ -1,0 +1,309 @@
+{
+ "id": "workbench-annex",
+ "name": "Workbench annex (test room)",
+ "kind": "interior",
+ "tile": 48,
+ "floor": "deck",
+ "ambient": "ship-hum",
+ "grid": [
+  "        #..#        ",
+  "        #..#        ",
+  "        #..#        ",
+  "        #..#        ",
+  "#########..#########",
+  "#.....#.......#....#",
+  "#.....#.......#....#",
+  "#.....#.......#....#",
+  "#..................#",
+  "#..................#",
+  "#.....#.......#....#",
+  "#.....#.......#....#",
+  "#.....#.......#....#",
+  "####################"
+ ],
+ "look": {
+  "set": "freighter",
+  "accents": {
+   "holo": "#2fe0c0",
+   "warm": "#ffb867"
+  },
+  "decals": [
+   {
+    "art": "station-mat-cyan",
+    "at": [
+     9,
+     0.9
+    ],
+    "size": [
+     2,
+     1.6
+    ],
+    "alpha": 0.9
+   },
+   {
+    "kind": "hazard",
+    "at": [
+     9,
+     4.0
+    ],
+    "size": [
+     2,
+     0.2
+    ]
+   },
+   {
+    "kind": "hazard",
+    "at": [
+     9,
+     1
+    ],
+    "size": [
+     2,
+     0.2
+    ]
+   },
+   {
+    "kind": "text",
+    "at": [
+     10,
+     1.7
+    ],
+    "text": "BENCH",
+    "size": 0.22,
+    "color": "holo",
+    "alpha": 0.7
+   },
+   {
+    "kind": "text",
+    "at": [
+     3.5,
+     12.4
+    ],
+    "text": "SLIDING DOORWAY",
+    "size": 0.24,
+    "color": "warm",
+    "alpha": 0.5
+   },
+   {
+    "kind": "text",
+    "at": [
+     16.5,
+     12.4
+    ],
+    "text": "SWING DOOR (LOCKED)",
+    "size": 0.2,
+    "color": "warm",
+    "alpha": 0.5
+   }
+  ],
+  "lights": [
+   {
+    "kind": "lamp",
+    "at": [
+     10,
+     2
+    ],
+    "r": 3.0,
+    "color": "holo",
+    "strength": 0.34
+   },
+   {
+    "kind": "lamp",
+    "at": [
+     3.5,
+     7
+    ],
+    "r": 4.0,
+    "color": "warm",
+    "strength": 0.3
+   },
+   {
+    "kind": "lamp",
+    "at": [
+     10,
+     9
+    ],
+    "r": 4.5,
+    "color": "cool",
+    "strength": 0.3
+   },
+   {
+    "kind": "lamp",
+    "at": [
+     16.5,
+     7
+    ],
+    "r": 4.0,
+    "color": "warm",
+    "strength": 0.3
+   },
+   {
+    "kind": "lamp",
+    "at": [
+     3.5,
+     11
+    ],
+    "r": 3.5,
+    "color": "warm",
+    "strength": 0.26
+   },
+   {
+    "kind": "lamp",
+    "at": [
+     16.5,
+     11
+    ],
+    "r": 3.5,
+    "color": "cool",
+    "strength": 0.26
+   }
+  ],
+  "mounts": [],
+  "clutter": []
+ },
+ "props": [
+  {
+   "art": "cargo-crate",
+   "at": [
+    2,
+    6
+   ],
+   "size": [
+    1,
+    1
+   ]
+  },
+  {
+   "art": "cargo-crate",
+   "at": [
+    3,
+    6
+   ],
+   "size": [
+    1,
+    1
+   ]
+  },
+  {
+   "art": "cargo-crate",
+   "at": [
+    16,
+    11
+   ],
+   "size": [
+    1,
+    1
+   ]
+  },
+  {
+   "art": "cargo-crate",
+   "at": [
+    17,
+    6
+   ],
+   "size": [
+    1,
+    1
+   ]
+  }
+ ],
+ "npcs": [],
+ "wallDoors": [
+  {
+   "id": "bench-room",
+   "at": [
+    9,
+    4
+   ],
+   "size": [
+    2,
+    1
+   ],
+   "style": "slide",
+   "label": "Annex entry",
+   "color": "holo",
+   "entry": "bench"
+  },
+  {
+   "id": "bench-far",
+   "at": [
+    9,
+    0
+   ],
+   "size": [
+    2,
+    1
+   ],
+   "style": "slide",
+   "color": "holo",
+   "far": true,
+   "entry": "bench"
+  },
+  {
+   "id": "cargo-door",
+   "at": [
+    6,
+    8
+   ],
+   "size": [
+    1,
+    2
+   ],
+   "style": "slide",
+   "label": "Cargo doorway",
+   "color": "warm"
+  },
+  {
+   "id": "store-door",
+   "at": [
+    14,
+    8
+   ],
+   "size": [
+    1,
+    2
+   ],
+   "style": "swing",
+   "label": "Store door",
+   "color": "warm",
+   "lock": {
+    "hack": 1
+   }
+  }
+ ],
+ "entries": [
+  {
+   "id": "bench",
+   "room": "bench-room",
+   "far": "bench-far",
+   "zone": {
+    "at": [
+     9,
+     1
+    ],
+    "size": [
+     2,
+     3
+    ]
+   },
+   "spawn": "from-bench",
+   "to": "workbench",
+   "arrive": "from-annex",
+   "color": "holo"
+  }
+ ],
+ "doors": [],
+ "spawns": {
+  "default": [
+   10,
+   6,
+   "down"
+  ],
+  "from-bench": [
+   9,
+   1,
+   "down"
+  ]
+ },
+ "zones": []
+}
