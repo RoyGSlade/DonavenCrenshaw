@@ -55,7 +55,8 @@ export const canKeep = (plan, skill, cat) => (asked(plan, skill, cat) > 0 ? { ok
 export const spentTotal = (c) => Object.values(c?.points || {}).reduce((a, row) => a + Object.values(row || {}).reduce((x, n) => x + n, 0), 0);
 
 /** "Want points back? Take a nap at your bunk and pick which ones: 10 credits a point." (free in the tutorial) */
-export function napLine(tutorial) {
+export function napLine(tutorial, { hub = false } = {}) {
+  if (hub) return NAP.hub; // the Guild bank holds the points: say so here too, not only at the bunk
   const cost = tutorial && RESPEC.freeInTutorial ? NAP.padFree : `${RESPEC.feePerPoint} credits a point`;
   return fillText(NAP.padLine, { cost });
 }

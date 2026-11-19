@@ -80,7 +80,7 @@ test('the skills menu: rail, ring, notches, pending and lock in, risk, keyboard,
     await shot(page, `skillsmenu-${name}-1-repair-selected`);
 
     // Real numbers: the same words the mini-game's setup gives.
-    assert.match(await page.locator('.sk-cat[data-cat-index="0"] [data-now]').innerText(), /\+3 s on every repair \(53 s\)|\(53 s\)/);
+    assert.match(await page.locator('.sk-cat[data-cat-index="0"] [data-now]').innerText(), /deeper pool: \+6 s before a leak floods the line \(126 s\)/);
     assert.match(await page.locator('.sk-cat[data-cat-index="1"] [data-now]').innerText(), /5 x 5 board|\d x \d board/);
 
     // Re-tint: pick Piloting and the whole page changes colour.
@@ -97,9 +97,14 @@ test('the skills menu: rail, ring, notches, pending and lock in, risk, keyboard,
     assert.equal(await notch(2, 0).getAttribute('data-state'), 'pending');
     assert.equal(await notch(2, 0).evaluate((n) => n.classList.contains('is-fresh')), true, 'the pulse is running');
     await page.waitForTimeout(160);
+    assert.equal(await page.locator('[data-chip]').innerText(), '1 pending, lock them in');
     await shot(page, `skillsmenu-${name}-2-notch-pulsing`);
+    const nb = await notch(2, 3).evaluate((n) => { const r = n.getBoundingClientRect(), c = n.closest('.sk-cat').getBoundingClientRect(); return { h: r.height, w: r.width, card: c.width }; });
+    assert.ok(nb.h >= 36, `a notch is a big target: ${JSON.stringify(nb)}`);
+    const track = await page.locator('.sk-cat[data-cat-index="2"] .sk-track').evaluate((n) => n.getBoundingClientRect().width);
+    assert.ok(track >= (phone ? 150 : nb.card * 0.8), `the track spans the card: ${track} of ${nb.card}`);
     await notch(2, 1).click();
-    assert.equal(await page.locator('[data-chip]').innerText(), 'All points spent');
+    assert.equal(await page.locator('[data-chip]').innerText(), '2 pending, lock them in');
     assert.equal(await page.locator('[data-lock]').innerText(), 'Lock in 2 points');
     assert.deepEqual((await readSave(page)).character.points.repair, { time: 1, size: 1 }, 'pending is not saved');
     assert.match(await page.locator('.sk-cat[data-cat-index="2"] [data-now]').innerText(), /\+8 quality/);
@@ -126,7 +131,7 @@ test('the skills menu: rail, ring, notches, pending and lock in, risk, keyboard,
     await page.waitForFunction((key) => JSON.parse(localStorage.getItem(key)).character.points.repair.quality === 1, SAVE_KEY);
     assert.equal(await notch(2, 0).getAttribute('data-state'), 'locked');
     assert.equal(await page.locator('[data-lock]').isHidden(), true);
-    assert.equal(await page.locator('[data-chip]').innerText(), '1 point to spend');
+    assert.equal(await page.locator('[data-chip]').innerText(), '1 point to spend', 'locked: the pending words are gone');
     assert.match(await page.locator('[data-bunk-line]').innerText(), /nap at your bunk.*10 credits a point/);
     await page.waitForTimeout(500);
     await shot(page, `skillsmenu-${name}-4-after-lock-in`);
@@ -187,6 +192,17 @@ test('the skills menu: rail, ring, notches, pending and lock in, risk, keyboard,
       host.remove();
       return out;
     });
+    // With the Hub on, the bunk line says the nap cannot take points back yet.
+    const hubLine = await page.evaluate(async () => {
+      const { createSkillsPage } = await import('/projects/Space-Shooter/voyage/skills/skillsPage.js');
+      const { createSkillSave } = await import('/projects/Space-Shooter/voyage/skillSave.js');
+      const real = createSkillSave({ store: window.__stardust.store, economy: { on: false } });
+      const fake = { get hub() { return true; }, view: () => real.view(), spend: (...a) => real.spend(...a), scan: () => real.scan() };
+      const host = document.createElement('div'); document.body.append(host);
+      createSkillsPage({ root: host, store: window.__stardust.store, skillSave: fake }).render();
+      const line = host.querySelector('[data-bunk-line]').textContent; host.remove(); return line;
+    });
+    assert.match(hubLine, /Guild bank/);
     assert.ok(fb.svg >= 8 && fb.img === 0 && !/has-notch-art|has-ring-art|has-card-art/.test(fb.art), JSON.stringify(fb));
     assert.deepEqual(errors, [], 'no page errors');
     await context.close();

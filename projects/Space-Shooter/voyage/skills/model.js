@@ -177,6 +177,7 @@ export function catRows({ skill, level, locked = {}, pending = {} }) {
 export function heroView(progress, pending, skill) {
   const level = levelOf(progress, skill);
   const left = leftOf(progress, pending, skill);
+  const pend = pendingCount(pending, skill);
   const need = level >= LEVEL_MAX ? null : xpToNext(level, progress?.curve);
   const into = Math.max(0, Number(progress?.xp?.[skill]) || 0);
   return {
@@ -185,7 +186,8 @@ export function heroView(progress, pending, skill) {
     xp: need === null ? 0 : into, xpNeed: need, nextLevel: need === null ? null : level + 1,
     pct: need === null ? 100 : Math.max(0, Math.min(100, Math.round(into / need * 100))),
     xpLine: need === null ? 'Top level. Nothing left to earn here.' : `${into} / ${need} XP to level ${level + 1}`,
-    left, chip: left > 0 ? plural(left, 'point') + ' to spend' : 'All points spent',
+    left, pendingCount: pend,
+    chip: pend > 0 ? `${pend} pending, lock them in` : left > 0 ? plural(left, 'point') + ' to spend' : 'All points spent',
   };
 }
 

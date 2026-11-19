@@ -260,13 +260,13 @@ export function createSkillsPage({ root, store, toast = () => {}, skillSave = nu
     title.textContent = ui.name; tagline.textContent = ui.tagline;
     xpFill.style.width = `${h.pct}%`;
     xpText.textContent = h.xpLine;
-    chip.textContent = h.chip; chip.classList.toggle('is-live', h.left > 0);
+    chip.textContent = h.chip; chip.classList.toggle('is-live', h.left > 0 && h.pendingCount === 0); chip.classList.toggle('is-pending', h.pendingCount > 0);
     const np = M.pendingCount(state.pending, id);
     lockIn.hidden = undo.hidden = np === 0;
     lockIn.textContent = state.busy ? 'Locking in…' : `Lock in ${plural(np, 'point')}`;
     lockIn.disabled = state.busy;
     note.textContent = state.note;
-    bunk.replaceChildren(el('span', { class: 'sk-bunk-mark', 'aria-hidden': 'true', text: '☾' }), el('span', { text: napLine(tutorialOn(save)) }));
+    bunk.replaceChildren(el('span', { class: 'sk-bunk-mark', 'aria-hidden': 'true', text: '☾' }), el('span', { text: napLine(tutorialOn(save), { hub: Boolean(sk.hub) }) }));
 
     const rows = M.catRows({ skill: id, level: progress.levels[id], locked: M.lockedOf(progress, id), pending: state.pending[id] || {} });
     cats.forEach((cc, ci) => {

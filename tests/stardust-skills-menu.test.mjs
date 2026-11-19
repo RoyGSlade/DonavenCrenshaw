@@ -72,11 +72,29 @@ test('every effect line equals the mini-game setup, for every skill, category an
   for (let n = 0; n <= 9; n++) {
     const size = S.setupRepair({ points: { size: n } }).size;
     assert.match(words('repair', 'size', n), new RegExp(`${size} x ${size} board`, 'i'));
-    assert.match(words('repair', 'time', n), new RegExp(`\\(${S.setupRepair({ points: { time: n } }).seconds} s\\)`, 'i'));
+    assert.match(words('repair', 'time', n), new RegExp(`\\(${S.setupRepair({ points: { time: n } }).capacity} s\\)`, 'i'));
     assert.match(words('piloting', 'handling', n), new RegExp(`drift power ${(Math.round(S.setupPilot({ points: { handling: n }, level: 9 }).drift * 10) / 10)}`, 'i'));
     assert.match(words('piloting', 'landing', n), new RegExp(`touchdown speed ${S.setupPilot({ points: { landing: n }, level: 9 }).safe}`, 'i'));
     assert.match(words('social', 'persuade', n), new RegExp(`trust needed ${S.setupPersuade({ points: { persuade: n }, level: 9 }).goal}`, 'i'));
     assert.match(words('social', 'intimidate', n), new RegExp(`first push ${S.setupIntimidate({ points: { intimidate: n }, level: 9 }).chances[0]}%`, 'i'));
+  }
+  // The rest of the skills against their setups' own fields (repair v2 is merged: no clock, a pool).
+  const f1 = (x) => String(Math.round(x * 10) / 10);
+  for (let n = 0; n <= 9; n++) {
+    const one = (setup, skill, cat) => setup({ points: { [cat]: n }, level: 9 });
+    assert.match(words('hacking', 'time', n), new RegExp(`${n ? '\\+' : ''}${f1(one(S.setupHack, 'hacking', 'time').time - 16)} s on every hack`, 'i'));
+    assert.match(words('hacking', 'size', n), new RegExp(`${Math.floor(n / 2)} fewer tumbler`, 'i'));
+    assert.equal(one(S.setupHack, 'hacking', 'size').tumblers, Math.max(2, 3 - Math.floor(n / 2)), 'the setup floors a basic lock at 2 tumblers (so size points past 2 show "fewer" the lock cannot give)');
+    assert.match(words('hacking', 'retries', n), new RegExp(`${n >= 2 ? '\\+' : ''}${one(S.setupHack, 'hacking', 'retries').misses - 2} spare miss`, 'i'));
+    assert.match(words('navigation', 'time', n), new RegExp(`cost ${f1(Math.round((1 - one(S.setupNav, 'navigation', 'time').timeFactor) * 100))}% less time`, 'i'));
+    assert.match(words('navigation', 'fuel', n), new RegExp(`cost ${f1(Math.round((1 - one(S.setupNav, 'navigation', 'fuel').fuelFactor) * 100))}% less fuel`, 'i'));
+    assert.match(words('navigation', 'warning', n), new RegExp(`show ${one(S.setupNav, 'navigation', 'warning').reveal} cell`, 'i'));
+    assert.match(words('stealth', 'quiet', n), new RegExp(`adds ${f1(12 * one(S.setupStealth, 'stealth', 'quiet').noiseFactor)} heat`, 'i'));
+    assert.match(words('stealth', 'range', n), new RegExp(`cones ${f1(4 * one(S.setupStealth, 'stealth', 'range').rangeFactor)} cells`, 'i'));
+    assert.match(words('stealth', 'decay', n), new RegExp(`cools ${one(S.setupStealth, 'stealth', 'decay').decay} heat`, 'i'));
+    assert.match(words('crafting', 'quality', n), new RegExp(`${n ? '\\+' : ''}${one(S.setupCraft, 'crafting', 'quality').qualityBonus} quality`, 'i'));
+    assert.match(words('crafting', 'speed', n), new RegExp(`${one(S.setupCraft, 'crafting', 'speed').strikes} shaping steps`, 'i'));
+    assert.match(words('social', 'haggle', n), new RegExp(`${n ? '\\+' : ''}${f1(one(S.setupHaggle, 'social', 'haggle').priceBonus * 100)}% better final price`, 'i'));
   }
   assert.match(words('shooting', 'reload', 3), /numbers not set yet/i);
 });
@@ -177,7 +195,9 @@ test('level ring, XP bar and the points chip say real numbers', () => {
   assert.equal(v.nextLevel, 5);
   assert.equal(v.pct, Math.round(7 / v.xpNeed * 100));
   assert.equal(v.chip, '2 points to spend');
-  assert.equal(M.heroView(p, { shooting: { reload: 2 } }, 'shooting').chip, 'All points spent');
+  assert.equal(M.heroView(p, { shooting: { reload: 2 } }, 'shooting').chip, '2 pending, lock them in', 'pending is said, not "all spent"');
+  assert.equal(M.heroView(p, { repair: { quality: 1 } }, 'repair').chip, '1 pending, lock them in');
+  assert.equal(M.heroView({ ...p, levels: { ...p.levels, repair: 2 } }, {}, 'repair').chip, 'All points spent', 'once locked and nothing is free');
   assert.equal(M.heroView(p, {}, 'stealth').chip, '1 point to spend');
   const top = M.heroView({ ...p, levels: { ...p.levels, repair: 9 }, xp: { ...p.xp, repair: 0 } }, {}, 'repair');
   assert.equal(top.nextLevel, null);
@@ -283,6 +303,8 @@ test('the page line about the bunk uses the same price', () => {
   assert.match(Nap.napLine(false), /10 credits a point/);
   assert.match(Nap.napLine(true), /free/i);
   assert.match(Nap.napLine(false), /nap/i);
+  assert.equal(Nap.napLine(false, { hub: true }), BASICS_DATA.nap.hub, 'with the Hub on the line says the nap cannot take points back yet');
+  assert.match(Nap.napLine(true, { hub: true }), /Guild bank/);
 });
 
 // ---- the old tree is gone from the new game; today's game is untouched ---------------------

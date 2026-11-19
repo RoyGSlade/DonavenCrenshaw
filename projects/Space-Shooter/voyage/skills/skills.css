@@ -58,9 +58,10 @@
 .sk-xp-bar{flex:1 1 140px;max-width:420px;height:10px;border-radius:6px;background:rgba(143,163,184,.16);overflow:hidden}
 .sk-xp-fill{height:100%;background:var(--sk);border-radius:6px;transition:width .5s ease,background .3s ease}
 .sk-xp-text{font:500 12px "JetBrains Mono",Consolas,monospace;color:var(--soft)}
-.sk-hero-side{position:relative;display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex:none;width:190px}
-.sk-chip{padding:9px 15px;border-radius:999px;font:700 14px "JetBrains Mono",Consolas,monospace;background:rgba(143,163,184,.12);color:var(--soft)}
+.sk-hero-side{position:relative;display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex:none;width:210px}
+.sk-chip{white-space:nowrap;padding:9px 14px;border-radius:999px;font:700 13px "JetBrains Mono",Consolas,monospace;background:rgba(143,163,184,.12);color:var(--soft)}
 .sk-chip.is-live{background:var(--gold);color:#1A1203;box-shadow:0 0 26px rgba(255,208,138,.45);animation:sk-glow 1.8s ease-in-out infinite}
+.sk-chip.is-pending{background:transparent;border:2px solid var(--sk);color:var(--ink);box-shadow:0 0 18px var(--sk-glow);animation:sk-glow 1.4s ease-in-out infinite}
 .sk-lock-row{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
 .sk-lock-row[hidden],.sk-lock[hidden],.sk-undo[hidden]{display:none}
 .sk-note{margin:0;min-height:1.2em;font-size:12.5px;line-height:1.4;color:var(--gold);text-align:right}
@@ -83,7 +84,8 @@
 .sk-cat-count{white-space:nowrap;font:700 12px "JetBrains Mono",Consolas,monospace;color:var(--sk);transition:color .3s ease}
 .sk-cat-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;grid-template-areas:"track track track" "minus . plus";gap:10px 8px;align-items:center}
 .sk-track{grid-area:track;display:grid;grid-template-columns:repeat(9,minmax(0,1fr));gap:3px}
-.has-notch-art .sk-track{gap:1px}
+.has-notch-art .sk-track{gap:0}
+.has-card-art .sk-cat{padding-left:14px;padding-right:14px}
 .sk-minus{grid-area:minus;width:48px;padding:0;font-size:20px}
 .sk-plus{grid-area:plus;justify-self:stretch;grid-column:2/4;background:var(--sk);border-color:var(--sk);color:#08111D;transition:background .3s ease,border-color .3s ease,transform .12s}
 .sk-minus.is-off{color:#5D6F82}
@@ -103,10 +105,10 @@
 .sk-notch[data-state=pending]{background:transparent;border:2px solid var(--sk);box-shadow:0 0 12px var(--sk-glow),inset 0 0 8px var(--sk-glow);animation:sk-glow 1.4s ease-in-out infinite}
 .sk-notch.is-fresh{animation:sk-pulse .6s ease-out}
 /* With the FLUX notch: the octagon dish, filled ones tinted to the skill, pending one with a lit ring in the dish. */
-.has-notch-art .sk-notch{position:relative;height:30px;border:0;border-radius:0;background:var(--art-notch-empty) center/contain no-repeat;box-shadow:none;animation:none}
-.has-notch-art .sk-notch[data-state=locked]{background:var(--art-notch-filled) center/contain no-repeat,var(--sk);background-blend-mode:luminosity;-webkit-mask:var(--art-notch-filled) center/contain no-repeat;mask:var(--art-notch-filled) center/contain no-repeat;filter:drop-shadow(0 0 6px var(--sk-glow))}
-.has-notch-art .sk-notch[data-state=pending]{border:0;background:var(--art-notch-empty) center/contain no-repeat;box-shadow:none}
-.has-notch-art .sk-notch[data-state=pending]::after{content:'';position:absolute;inset:26%;border-radius:50%;border:2px solid var(--sk);box-shadow:0 0 10px var(--sk),inset 0 0 6px var(--sk);animation:sk-glow 1.2s ease-in-out infinite}
+.has-notch-art .sk-notch{position:relative;height:42px;border:0;border-radius:0;background:var(--art-notch-empty) center/100% 76% no-repeat;box-shadow:none;animation:none}
+.has-notch-art .sk-notch[data-state=locked]{background:var(--art-notch-filled) center/100% 76% no-repeat,var(--sk);background-blend-mode:luminosity,normal;-webkit-mask:var(--art-notch-filled) center/100% 76% no-repeat;mask:var(--art-notch-filled) center/100% 76% no-repeat;filter:drop-shadow(0 0 6px var(--sk-glow))}
+.has-notch-art .sk-notch[data-state=pending]{border:0;background:var(--art-notch-empty) center/100% 76% no-repeat;box-shadow:none}
+.has-notch-art .sk-notch[data-state=pending]::after{content:'';position:absolute;inset:30% 22%;border-radius:50%;border:2px solid var(--sk);box-shadow:0 0 10px var(--sk),inset 0 0 6px var(--sk);animation:sk-glow 1.2s ease-in-out infinite}
 .has-notch-art .sk-notch.is-fresh{animation:sk-pulse .6s ease-out}
 .sk-page.is-still *,.sk-page.is-still *::before{animation:none!important;transition:none!important}
 
@@ -185,8 +187,8 @@
   .sk-next{font-size:12px}.sk-next::before{content:'Next: '}
   .sk-cat-row{display:flex;gap:8px}
   .sk-track{flex:1;gap:4px}
-  .sk-notch{height:20px;border-radius:4px}
-  .has-notch-art .sk-notch{height:24px}
+  .sk-notch{height:40px;border-radius:5px}
+  .has-notch-art .sk-notch{height:40px}
   .sk-minus,.sk-plus{width:44px;height:44px;min-height:44px;padding:0;font-size:20px;flex:none;grid-column:auto}
   .sk-plus .sk-long{display:none}.sk-plus .sk-short{display:inline;font-weight:700}
   .sk-side{flex-direction:row;gap:10px}
