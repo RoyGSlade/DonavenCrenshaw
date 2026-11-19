@@ -4,7 +4,7 @@
 // works if all three ends connect; (2) the pool is the timer and its rate tracks the open ends.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { tierOf, setupRepair, REPAIR_BASE } from '../projects/Space-Shooter/voyage/minigames/setup.js';
+import { tierOf, setupRepair, poolLasts, REPAIR_BASE } from '../projects/Space-Shooter/voyage/minigames/setup.js';
 import { createRepair, rotateTile, stepRepair, recompute, poweredSet, openEnds, leaks, parTurns, qualityOf, starsOf, xpFor, turn, nextHint, shapeOf, N, E, S, W } from '../projects/Space-Shooter/voyage/minigames/repair.js';
 import { hashSeed } from '../projects/Space-Shooter/voyage/quests/rng.js';
 
@@ -323,4 +323,15 @@ test('every point visibly changes something: pool depth, board size and quality,
   assert.ok(smallN < bigN, 'a smaller board has less pipe to fix');
   const q0 = play(lvl({ time: 9 })), q9 = play({ ...lvl({ time: 9 }), qualityBonus: 36 });
   assert.ok(q9.quality > q0.quality + 20, `quality points show in the patch (${q9.quality} vs ${q0.quality})`);
+});
+
+test('the setup readout says how long the pool lasts with one leak open, to the nearest half minute', () => {
+  assert.equal(poolLasts({ capacity: 120, flow: 1 }), 'about 2 minutes');
+  assert.equal(poolLasts({ capacity: 152, flow: 1 }), 'about 2\u00bd minutes');
+  assert.equal(poolLasts({ capacity: 156, flow: 0.8 }), 'about 3\u00bd minutes');
+  assert.equal(poolLasts({ capacity: 84, flow: 1.2 }), 'about 1 minute');
+  assert.equal(poolLasts({ capacity: 90, flow: 1 }), 'about 1\u00bd minutes');
+  assert.equal(poolLasts({ capacity: 40, flow: 1 }), 'about 1 minute'.replace('1 minute', '\u00bd minute'));
+  assert.equal(poolLasts({ capacity: 5, flow: 1 }), 'under half a minute');
+  assert.equal(poolLasts(setupRepair({ tier: 0 })), 'about 2 minutes');
 });
