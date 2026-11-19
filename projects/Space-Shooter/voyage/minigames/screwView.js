@@ -3,6 +3,7 @@
 // bar wakes and shakes as you near the green. Let go in the green. Canvas 500 x 500 board units; resolves with the pure result.
 import { screwDown, screwMove, screwUp, screwGiveUp, SIZE, torque, inLastTurn, inGreen, gradeOf, greenFrom } from './screw.js';
 import { h, ensureStyle, loop, lcg, fitCanvas } from './craftChainView.js';
+import { gradeWord } from './craftChain.js';
 
 const K = 1.5;
 const TAU = Math.PI * 2;
@@ -34,10 +35,14 @@ export function playScrew(root, { state, what = 'bolt', reducedMotion = () => fa
   const torqueNote = h('span', { class: 'cc-tnote', text: 'Torque wakes on the last turn' });
   const torqueBox = h('div', { class: 'cc-torquebox' }, h('div', { class: 'cc-thead' }, h('span', { text: 'Torque' }), torqueNote), bar,
     h('div', { class: 'cc-tscale' }, h('span', { text: 'loose' }), h('span', { text: 'snug' }), h('span', { text: 'over' })));
-  const depthFill = h('i'), depthEl = h('em', { text: 'start' }), slipsEl = h('em', { text: '0' }), stripEl = h('em', { text: '0' }), liveEl = h('em', { class: 'cc-live', text: '100' });
+  const pipRow = (n, cls) => Array.from({ length: n }, () => h('i', { class: cls }));
+  const depthFill = h('i'), depthEl = h('em', { text: 'start' }), slipsEl = h('em', { text: 'none' }), stripEl = h('em', { text: 'none' }), liveEl = h('em', { class: 'cc-live', text: 'perfect' });
+  const slipPips = pipRow(6, 'cc-pip'), stripPips = pipRow(3, 'cc-pip'), gradeFill = h('i');
   const hud = h('div', { class: 'cc-hud cc-hud4' },
-    h('div', { class: 'cc-stat cc-depthstat' }, h('span', { text: 'Bolt depth' }), h('div', { class: 'cc-meter cc-depth', role: 'img', 'aria-label': 'How far the bolt is in' }, depthFill), depthEl), h('div', { class: 'cc-stat' }, h('span', { text: 'Slips' }), slipsEl),
-    h('div', { class: 'cc-stat' }, h('span', { text: 'Stripped' }), stripEl), h('div', { class: 'cc-stat' }, h('span', { text: 'Grade so far' }), liveEl));
+    h('div', { class: 'cc-stat cc-depthstat' }, h('span', { text: 'Bolt depth' }), h('div', { class: 'cc-meter cc-depth', role: 'img', 'aria-label': 'How far the bolt is in' }, depthFill), depthEl),
+    h('div', { class: 'cc-stat' }, h('span', { text: 'Slips' }), h('span', { class: 'cc-pips', role: 'img', 'aria-label': 'Slips so far' }, ...slipPips), slipsEl),
+    h('div', { class: 'cc-stat' }, h('span', { text: 'Stripped' }), h('span', { class: 'cc-pips', role: 'img', 'aria-label': 'Stripped heads so far' }, ...stripPips), stripEl),
+    h('div', { class: 'cc-stat' }, h('span', { text: 'How it is going' }), h('div', { class: 'cc-meter cc-gradebar', role: 'img', 'aria-label': 'How clean the bolt is so far' }, gradeFill), liveEl));
   const status = h('p', { class: 'rp-status cc-status', role: 'status', 'aria-live': 'polite', text: `Press in the ring and circle clockwise to drive the ${what}. Let go when the torque is in the green.` });
   const giveUp = h('button', { type: 'button', class: 'ui-btn cc-done', text: 'Give up this bolt' });
   const panel = h('section', { class: 'rp-panel cc-panel mg-skin ui-panel', role: 'group', 'aria-label': `Screw: drive the ${what}`, 'data-game': 'screw' },
@@ -121,7 +126,10 @@ export function playScrew(root, { state, what = 'bolt', reducedMotion = () => fa
     const dp = s.status === 'stripped' ? 1 : Math.min(1, s.turns / s.T);
     depthFill.style.width = `${100 * dp}%`;
     depthEl.textContent = s.status === 'stripped' ? 'stripped' : dp < 0.05 ? 'start' : dp < 0.5 ? 'going in' : inGreen(s) ? 'home: let go' : inLastTurn(s) ? 'nearly home' : 'halfway';
-    slipsEl.textContent = String(s.slips); stripEl.textContent = String(s.stripped); liveEl.textContent = String(gradeOf(s));
+    const said = (n) => (n <= 0 ? 'none' : n === 1 ? 'one' : n === 2 ? 'two' : n === 3 ? 'three' : 'many');
+    slipsEl.textContent = said(s.slips); stripEl.textContent = said(s.stripped);
+    slipPips.forEach((p, i) => { p.className = `cc-pip${i < s.slips ? ' on' : ''}`; }); stripPips.forEach((p, i) => { p.className = `cc-pip${i < s.stripped ? ' on' : ''}`; });
+    const gr = gradeOf(s); gradeFill.style.width = `${gr}%`; gradeFill.dataset.low = gr < 70 ? '1' : '0'; liveEl.textContent = gradeWord(gr);
     giveUp.disabled = s.done;
     if (s.done && !endAt) { endAt = performance.now(); status.textContent = s.result.success ? 'Snug.' : s.result.how === 'gave-up' ? 'Given up.' : 'Too rough.'; }
   }

@@ -35,3 +35,16 @@
   .asm-pip{width:12px;height:12px}
   .asm-actions .asm-turn{min-height:64px;height:64px}
 }
+
+/* round 2: the bolt phase swaps the turn buttons for one line; while Screw runs the HUD is one slim row (time and parts) */
+.asm-boltline{margin:0;flex:1;font:600 15px/1.4 Inter,sans-serif;color:#cfe3ec;text-align:center}
+.asm-boltline[hidden],.asm-turn[hidden],.asm-keys[hidden]{display:none}
+.asm-panel.is-screwing .asm-hud{grid-template-columns:1fr 1fr!important;gap:6px}
+.asm-panel.is-screwing .asm-hud>.asm-stat:nth-child(n+3){display:none}
+.asm-panel.is-screwing .asm-stat{min-height:0;padding:4px 8px}
+.asm-panel.is-screwing .asm-stat em{font-size:12px}
+@media (max-width:700px){.asm-boltline{font-size:14px}}
+
+/* while Screw runs the assembly HUD is one slim line: just the clock bar and the part pips */
+.asm-panel.is-screwing .asm-stat>span:first-child,.asm-panel.is-screwing .asm-stat>em{display:none}
+.asm-panel.is-screwing .asm-stat{padding:6px 8px}

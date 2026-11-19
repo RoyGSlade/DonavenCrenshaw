@@ -66,21 +66,25 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
     const noScroll = async (what) => assert.equal(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth), 0, `${what}: no sideways scroll`);
     /** Page pixels of a board point. */
     const px = (b) => page.evaluate(({ x, y }) => { const v = document.querySelector('.asm-panel').__view(); return { x: v.left + x * v.k, y: v.top + y * v.k }; }, b);
-    const lift = phone ? 40 : 0, boltLift = phone ? 30 : 0;
-    /** Drag a loose part by a cell's middle and let go with its middle at (cx, cy) in board units (real mouse or finger, in steps). */
-    async function dragPart(id, cx, cy, { letGo = true, steps = 14 } = {}) {
-      const g = await page.evaluate(({ id }) => { const s = document.querySelector('.asm-panel').__state, p = s.pieces.find((q) => q.id === id); return import(`/projects/Space-Shooter/voyage/minigames/assembly.js`).then((A) => { const z = A.pieceSize(s, p), c = A.pieceCells(p)[0], cell = s.layout.cell; return { mid: { x: p.x + z.w / 2, y: p.y + z.h / 2 }, grab: { x: p.x + (c[0] + 0.5) * cell, y: p.y + (c[1] + 0.5) * cell } }; }); }, { id });
-      const from = await px(g.grab);
-      // the piece's middle sits (mid - grab) from the finger, and a finger lifts it by `lift` board units... of screen: 40 board units
-      const to = await px({ x: cx - (g.mid.x - g.grab.x), y: cy - (g.mid.y - g.grab.y) + lift });
+    /** Where a loose part's first cell is on the board right now (tray size), after bringing the part into view in the tray. */
+    const trayCell = (id) => page.evaluate(({ id }) => import('/projects/Space-Shooter/voyage/minigames/assembly.js').then((A) => {
+      const s = document.querySelector('.asm-panel').__state, p = s.pieces.find((q) => q.id === id), T = A.areasOf(s).tray;
+      if (s.layout.scrolls) { const z = A.pieceSize(s, p); const over = p.x + z.w - (T.x + T.w - 10), under = T.x + 10 - p.x; if (over > 0) A.scrollTray(s, over); else if (under > 0) A.scrollTray(s, -under); }
+      const c = A.pieceCells(p)[0], cell = A.cellOf(s, p);
+      return { x: p.x + (c[0] + 0.5) * cell, y: p.y + (c[1] + 0.5) * cell };
+    }), { id });
+    const viewLift = () => page.evaluate(() => document.querySelector('.asm-panel').__view().lift);
+    /** Drag a loose part from the tray and let go with its middle at (cx, cy) in board units (real mouse or finger, in steps). The part rides `lift` above a finger. */
+    async function dragPart(id, cx, cy, { letGo = true, steps = 16 } = {}) {
+      const from = await px(await trayCell(id)), lift = await viewLift();
+      const to = await px({ x: cx, y: cy + lift });
       await hand.down(from); await wait(page, 40);
       for (let i = 1; i <= steps; i++) { await hand.move({ x: from.x + ((to.x - from.x) * i) / steps, y: from.y + ((to.y - from.y) * i) / steps }); await wait(page, 12); }
       if (letGo) { await wait(page, 60); await hand.up(); }
       return to;
     }
     const selectPart = async (id) => {
-      const g = await page.evaluate((id) => { const s = document.querySelector('.asm-panel').__state, p = s.pieces.find((q) => q.id === id); return import('/projects/Space-Shooter/voyage/minigames/assembly.js').then((A) => { const c = A.pieceCells(p)[0], cell = s.layout.cell; return { x: p.x + (c[0] + 0.5) * cell, y: p.y + (c[1] + 0.5) * cell }; }); }, id);
-      const at = await px(g); await hand.down(at); await wait(page, 60); await hand.up(); await wait(page, 100);
+      const at = await px(await trayCell(id)); await hand.down(at); await wait(page, 60); await hand.up(); await wait(page, 100);
       assert.equal((await S(page)).selected, id);
     };
     const socketMid = (k) => page.evaluate(({ k }) => { const s = document.querySelector('.asm-panel').__state, q = s.sockets[k]; return { x: q.x + (q.w * s.layout.cell) / 2, y: q.y + (q.h * s.layout.cell) / 2 }; }, { k });
@@ -129,14 +133,15 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
         assert.ok(geo.hudBottom <= geo.canvasTop + 1 && geo.canvasBottom <= geo.actTop + 1, `HUD, board, buttons do not overlap ${JSON.stringify(geo)}`);
         if (phone) { assert.ok(geo.vh - geo.actBottom < 24, `the turn buttons are pinned to the bottom ${JSON.stringify(geo)}`); assert.ok(geo.btnH >= 56 && geo.btnW >= 120, `thumb-sized buttons ${JSON.stringify(geo)}`); assert.ok(geo.canvasW >= 300, `the board uses the width ${geo.canvasW}`); }
         else assert.ok(geo.canvasW >= 700, `the board is big on a desktop ${geo.canvasW}`);
+        const cellPx = await page.evaluate(() => { const v = document.querySelector('.asm-panel').__view(), s = document.querySelector('.asm-panel').__state; return { socket: s.layout.cell * v.k, tray: s.layout.trayCell * v.k }; });
+        assert.ok(cellPx.socket >= (phone ? 48 : 60), `the open socket is drawn with big cells (${cellPx.socket} px)`); assert.ok(cellPx.tray >= (phone ? 24 : 20), `tray cells ${cellPx.tray}`);
         await shot('1-start');
       });
 
       await t.test('a part picked and turned (the thumb buttons, Q and E, the wheel)', async () => {
         const k = await fitTurn(page);
         // pick it by tapping the piece in the tray
-        const g = await page.evaluate(() => { const s = document.querySelector('.asm-panel').__state; const p = s.pieces.find((q) => q.id === s.sockets[0].part); return import('/projects/Space-Shooter/voyage/minigames/assembly.js').then((A) => { const c = A.pieceCells(p)[0], cell = s.layout.cell; return { x: p.x + (c[0] + 0.5) * cell, y: p.y + (c[1] + 0.5) * cell }; }); });
-        const at = await px(g);
+        const at = await px(await trayCell(k.id));
         await hand.down(at); await wait(page, 60); await hand.up(); await wait(page, 120);
         assert.equal((await S(page)).selected, k.id, 'a tap picks the part up');
         assert.equal(await page.locator('.asm-turn[data-turn=right]').isDisabled(), false);
@@ -150,6 +155,14 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
           await page.keyboard.press('q'); assert.equal(await rot(k.id), rot0, 'Q turns left');
           await page.mouse.move(at.x, at.y); await page.mouse.wheel(0, 120); await wait(page, 60); assert.equal(await rot(k.id), (rot0 + 1) % 4, 'the wheel turns it');
           await page.mouse.wheel(0, -120); await wait(page, 60); assert.equal(await rot(k.id), rot0);
+        }
+        if (phone) {
+          const s0 = (await page.evaluate(() => document.querySelector('.asm-panel').__state.trayScroll));
+          const from = await px(await trayCell(k.id)); await hand.down(from); for (let i = 1; i <= 8; i++) { await hand.move({ x: from.x - i * 18, y: from.y + 2 }); await wait(page, 12); } await hand.up(); await wait(page, 100);
+          const s1 = await page.evaluate(() => document.querySelector('.asm-panel').__state.trayScroll);
+          assert.ok(s1 > s0, `a sideways swipe scrolls the tray (${s0} to ${s1})`);
+          assert.equal((await S(page)).phase, 'fit'); assert.equal(await page.evaluate(() => document.querySelector('.asm-panel').__state.held), null, 'a swipe does not pick a part up');
+          await shot('2b-tray-scrolled'); await page.evaluate(() => { document.querySelector('.asm-panel').__state.trayScroll = 0; });
         }
         await shot('2-part-picked-turned');
       });
@@ -196,12 +209,16 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
         assert.match(await page.locator('.asm-panel .rp-status').innerText(), /bolts/);
         assert.match(await page.locator('.asm-hud').innerText(), /none snug yet/);
         assert.match(await page.locator('.asm-hud').innerText(), /bolt the first part/);
+        assert.equal(await page.locator('.asm-turn:visible').count(), 0, 'the turn buttons are hidden while bolting');
+        assert.match(await page.locator('.asm-boltline').innerText(), /Drag each bolt onto a glowing ring/);
+        const strip = await page.evaluate(() => import('/projects/Space-Shooter/voyage/minigames/assembly.js').then((A) => { const s = document.querySelector('.asm-panel').__state; return { h: A.areasOf(s).tray.h, bolts: s.bolts.length }; }));
+        assert.ok(strip.h <= 200, `the bolt tray is a slim strip (${strip.h})`);
       });
 
       await t.test('a bolt dragged to its hole, then the real Screw game in the same overlay', async () => {
         const dragBolt = async (id, { letGo = true } = {}) => {
           const g = await page.evaluate((id) => { const b = document.querySelector('.asm-panel').__state.bolts.find((o) => o.id === id); return { x: b.x, y: b.y, hx: b.hx, hy: b.hy }; }, id);
-          const from = await px({ x: g.x, y: g.y }), to = await px({ x: g.hx, y: g.hy + boltLift });
+          const from = await px({ x: g.x, y: g.y }), to = await px({ x: g.hx, y: g.hy + (await page.evaluate(() => document.querySelector('.asm-panel').__view().boltLift)) });
           await hand.down(from); await wait(page, 40);
           for (let i = 1; i <= 12; i++) { await hand.move({ x: from.x + ((to.x - from.x) * i) / 12, y: from.y + ((to.y - from.y) * i) / 12 }); await wait(page, 12); }
           if (letGo) { await wait(page, 50); await hand.up(); }
@@ -215,7 +232,7 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
         const second = (await S(page)).bolts[1].id;
         const g2 = await page.evaluate((id) => { const b = document.querySelector('.asm-panel').__state.bolts.find((o) => o.id === id); return { x: b.x, y: b.y }; }, second);
         const a = await px(g2); await hand.down(a); await hand.move({ x: a.x - 3, y: a.y - 60 }); await wait(page, 40); await hand.up(); await wait(page, 100);
-        assert.equal((await S(page)).bolts.find((b) => b.id === second).seated, false); assert.match(await page.locator('.asm-panel .rp-status').innerText(), /Not on a hole/);
+        assert.equal((await S(page)).bolts.find((b) => b.id === second).seated, false); assert.match(await page.locator('.asm-panel .rp-status').innerText(), /Not on a ring/);
         await shot('5b-bolt-set-loose', 100);
         // tap the loose bolt: Screw opens in the same overlay with the clock HUD still on top
         const at = await page.evaluate((id) => { const b = document.querySelector('.asm-panel').__state.bolts.find((o) => o.id === id); return { x: b.x, y: b.y }; }, first);
@@ -226,6 +243,9 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
         assert.equal(await page.locator('.asm-canvas').isVisible(), false);
         assert.doesNotMatch(await page.locator('.asm-screwhost').innerText(), /\d+\s*\/\s*\d+/, 'no raw numbers in the close-up');
         await noScroll('screw close-up');
+        assert.doesNotMatch(await page.locator('.asm-panel').innerText(), /\d/, 'no digits anywhere in the panel while Screw runs');
+        assert.equal(await page.locator('.asm-stat:visible').count(), 2, 'the assembly HUD collapses to one slim row (time and parts)');
+        assert.equal(await page.locator('.cc-pips:visible').count(), 2, 'slips and stripped are pips');
         await screwBy({ to: 2.2, lift: false });
         await shot('6-screw-in-progress');
         await screwBy({ lift: true });

@@ -51,19 +51,32 @@ export const outlineById = (id) => OUTLINES.find((o) => o.id === id) || null;
 export const fitsSocket = (outline, rot, socketOutline) => keyOf(turnCells(outline.cells, rot)) === keyOf(socketOutline.cells);
 
 // ---- the board ------------------------------------------------------------------------------------------------------------------
-/** Board units, the same on every screen. Wide: 1000 x 620 (housing left, tray right). Tall (phones): 620 x 1000 (housing top, tray under it). */
+/**
+ * Board units, the same on every screen. Wide: 1000 x 620 (the open socket large on the left, the tray on the right). Tall (phones): 620 x 860
+ * (the open socket large on top, the tray as one row under it that scrolls sideways). `cell` is the size of a cell while a part is held or in
+ * its socket; `trayCell` is its size lying in the tray (a part grows to `cell` when you pick it up). While a part is being bolted the tray
+ * shrinks to a slim strip for the bolts and the housing takes the room. Only the open socket is drawn: the other bays are icons in a strip.
+ */
+const mk = (o) => Object.freeze({ ...o, fit: Object.freeze({ housing: Object.freeze(o.fit.housing), tray: Object.freeze(o.fit.tray) }), bolt: Object.freeze({ housing: Object.freeze(o.bolt.housing), tray: Object.freeze(o.bolt.tray) }) });
 export const LAYOUTS = Object.freeze({
-  wide: Object.freeze({ kind: 'wide', W: 1000, H: 620, cell: 40, housing: { x: 20, y: 20, w: 560, h: 580, cols: 3, rows: 2 }, tray: { x: 600, y: 20, w: 380, h: 580, cols: 3, rows: 3 } }),
-  tall: Object.freeze({ kind: 'tall', W: 620, H: 1000, cell: 48, housing: { x: 20, y: 20, w: 580, h: 500, cols: 3, rows: 2 }, tray: { x: 20, y: 540, w: 580, h: 440, cols: 3, rows: 3 } }),
+  wide: mk({ kind: 'wide', W: 1000, H: 620, cell: 100, trayCell: 40, scrolls: false,
+    fit: { housing: { x: 20, y: 20, w: 580, h: 580 }, tray: { x: 620, y: 20, w: 360, h: 580, cols: 3, rows: 3 } },
+    bolt: { housing: { x: 20, y: 20, w: 580, h: 580 }, tray: { x: 620, y: 220, w: 360, h: 180, cols: 4, rows: 1 } } }),
+  tall: mk({ kind: 'tall', W: 620, H: 860, cell: 136, trayCell: 64, scrolls: true,
+    fit: { housing: { x: 20, y: 20, w: 580, h: 540 }, tray: { x: 20, y: 580, w: 580, h: 260, cols: 0, rows: 1 } },
+    bolt: { housing: { x: 20, y: 20, w: 580, h: 700 }, tray: { x: 20, y: 740, w: 580, h: 100, cols: 4, rows: 1 } } }),
 });
 export const layoutOf = (kind) => LAYOUTS[kind] || LAYOUTS.wide;
+export const HEADER = 64; // the housing's top strip (the unit's name and the bay icons)
+/** The housing and tray rectangles for what the player is doing now. */
+export const areasOf = (s) => (s.phase === 'bolt' ? s.layout.bolt : s.layout.fit);
 const slot = (area, i) => { const cw = area.w / area.cols, ch = area.h / area.rows, c = i % area.cols, r = Math.floor(i / area.cols); return { x: area.x + c * cw, y: area.y + r * ch, w: cw, h: ch }; };
 const centred = (box, w, h) => ({ x: Math.round(box.x + (box.w - w) / 2), y: Math.round(box.y + (box.h - h) / 2) });
 
 function lcg(seed) { let x = (seed >>> 0) || 1; return () => { x = (Math.imul(x, 1664525) + 1013904223) >>> 0; return x / 4294967296; }; }
 function shuffle(list, r) { const a = list.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 
-const PALETTE = Object.freeze(['#6fd4c9', '#ffb067', '#b9a4ff', '#9fe870', '#ff8f8f', '#7fb8ff', '#ffd166', '#e59cff']);
+const TINTS = Object.freeze(['#5fd0c6', '#ffb067', '#b9a4ff', '#9fe870', '#ff8f8f', '#7fb8ff', '#ffd166', '#e59cff']);
 
 /** Bolts split over the parts: the first parts take the remainder (10 over 4: 3, 3, 2, 2). Never fewer than one a part. */
 export const boltsPerPart = (total, parts) => Array.from({ length: parts }, (_, i) => Math.max(1, Math.floor(total / parts) + (i < total % parts ? 1 : 0)));
@@ -78,12 +91,18 @@ export function holeCells(cells, n) {
   }
   return pick;
 }
+/** Turn cells and the points (hole cells) that ride on them together, the same way, so the holes stay on their part. */
+export function turnWith(cells, pts, quarters) {
+  let c = cells, p = pts;
+  for (let i = 0; i < ((quarters % 4) + 4) % 4; i++) { c = c.map(([x, y]) => [-y, x]); p = p.map(([x, y]) => [-y, x]); }
+  const mx = Math.min(...c.map((q) => q[0])), my = Math.min(...c.map((q) => q[1]));
+  return { cells: c.map(([x, y]) => [x - mx, y - my]).sort((a, b) => a[1] - b[1] || a[0] - b[0]), pts: p.map(([x, y]) => [x - mx, y - my]) };
+}
 
 // ---- the game -------------------------------------------------------------------------------------------------------------------
 /**
- * `setup` is setupAssembly(...) (setup.js). `layout` is 'wide' or 'tall'. `system` names the unit that stays broken when the clock runs out.
- * State is plain JSON (apart from nothing): sockets (one per part, shown one at a time), pieces (parts and decoys), the bolts of the
- * part being fitted, the clock.
+ * `setup` is setupAssembly(...) (setup.js): it carries the drop radii of the player's input (mouse or touch), so the rule the tests check is
+ * the rule the player feels. `layout` is 'wide' or 'tall'. `system` names the unit that stays broken when the clock runs out.
  */
 export function createAssembly({ seed = 1, setup = setupAssembly(), layout = 'wide', system = DEFAULT_SYSTEM } = {}) {
   const r = lcg(seed * 2654435761 + 7);
@@ -98,19 +117,17 @@ export function createAssembly({ seed = 1, setup = setupAssembly(), layout = 'wi
   for (const id of chosen) { if (decoyIds.length >= setup.decoys) break; if (!partIds.includes(id) && !decoyIds.includes(id)) decoyIds.push(id); }
   const perPart = boltsPerPart(setup.bolts, n);
   const sockets = partIds.map((id, i) => {
-    const o = outlineById(id), sl = slot(L.housing, i), sz = sizeOf(o.cells);
-    const pos = centred(sl, sz.w * L.cell, sz.h * L.cell);
-    return { id: `s${i}`, index: i, outline: id, cells: o.cells.map((c) => c.slice()), x: pos.x, y: pos.y, w: sz.w, h: sz.h, bolts: perPart[i], holes: holeCells(o.cells, perPart[i]).map((c) => c.slice()), part: `p${i}`, done: false };
+    const o = outlineById(id), sz = sizeOf(o.cells);
+    return { id: `s${i}`, index: i, outline: id, cells: o.cells.map((c) => c.slice()), x: 0, y: 0, w: sz.w, h: sz.h, bolts: perPart[i], holes: holeCells(o.cells, perPart[i]).map((c) => c.slice()), part: `p${i}`, done: false };
   });
   const pieces = [];
-  partIds.forEach((id, i) => pieces.push({ id: `p${i}`, outline: id, role: 'part', socket: `s${i}`, rot: 0, x: 0, y: 0, placed: false, color: PALETTE[i % PALETTE.length] }));
-  decoyIds.forEach((id, i) => pieces.push({ id: `d${i}`, outline: id, role: 'decoy', socket: null, rot: 0, x: 0, y: 0, placed: false, color: PALETTE[(n + i) % PALETTE.length] }));
+  partIds.forEach((id, i) => pieces.push({ id: `p${i}`, outline: id, role: 'part', socket: `s${i}`, rot: 0, x: 0, y: 0, placed: false, big: false, tint: TINTS[i % TINTS.length], holes: sockets[i].holes.map((c) => c.slice()) }));
+  decoyIds.forEach((id, i) => pieces.push({ id: `d${i}`, outline: id, role: 'decoy', socket: null, rot: 0, x: 0, y: 0, placed: false, big: false, tint: TINTS[(n + i) % TINTS.length], holes: holeCells(outlineById(id).cells, 2).map((c) => c.slice()) }));
   const order = shuffle(pieces.map((p) => p.id), r);
   pieces.forEach((p) => { p.home = order.indexOf(p.id); p.rot = Math.floor(r() * 4); });
-  // the first piece of the tray never starts already turned right for the first socket (the player always has something to do)
   const s = {
     seed, setup, system: SYSTEMS[system] ? system : DEFAULT_SYSTEM, layoutKind: L.kind, layout: L, snap: setup.snap ?? ASSEMBLY_BASE.snap, boltSnap: setup.boltSnap ?? ASSEMBLY_BASE.boltSnap,
-    clock: setup.clock, t: 0, sockets, pieces, active: 0, phase: 'fit', selected: null, held: null,
+    clock: setup.clock, t: 0, sockets, pieces, active: 0, phase: 'fit', selected: null, held: null, trayScroll: 0,
     bolts: null, wrongFits: 0, wrongTurns: 0, stripped: 0, turns: 0, events: [], done: false, result: null,
   };
   place(s);
@@ -123,29 +140,46 @@ export const outlineOfPiece = (p) => outlineById(p.outline);
 export const timeLeft = (s) => Math.max(0, s.clock - s.t);
 export const clockShare = (s) => timeLeft(s) / s.clock;
 export const pieceCells = (p) => turnCells(outlineOfPiece(p).cells, p.rot);
-export const pieceSize = (s, p) => { const z = sizeOf(pieceCells(p)); return { w: z.w * s.layout.cell, h: z.h * s.layout.cell }; };
+/** The part's hole cells in the part's current turn (they ride on the part). */
+export const pieceHoles = (p) => turnWith(outlineOfPiece(p).cells.map((c) => c.slice()), p.holes, p.rot).pts;
+/** The size of one cell of this part now: full size when held or in its socket, tray size when lying in the tray. */
+export const cellOf = (s, p) => (p.big || p.placed ? s.layout.cell : s.layout.trayCell);
+export const pieceSize = (s, p) => { const z = sizeOf(pieceCells(p)), c = cellOf(s, p); return { w: z.w * c, h: z.h * c }; };
 const centreOf = (s, p) => { const z = pieceSize(s, p); return { x: p.x + z.w / 2, y: p.y + z.h / 2 }; };
 /** The tray pieces still to pick from. */
 export const trayPieces = (s) => s.pieces.filter((p) => !p.placed);
 
-/** Put every loose piece in its tray slot and every socket in its housing slot (also after a phone turns round). */
+/** How far the tray row can scroll (phones only: the tray is one row that scrolls sideways). */
+export const trayMax = (s) => {
+  if (!s.layout.scrolls || s.phase === 'bolt') return 0;
+  const n = trayPieces(s).length, t = areasOf(s).tray, step = 3 * s.layout.trayCell + 24;
+  return Math.max(0, n * step + 24 - t.w);
+};
+/** Scroll the tray row by dx board units (clamped). */
+export function scrollTray(s, dx) { s.trayScroll = Math.max(0, Math.min(trayMax(s), s.trayScroll + dx)); place(s); return s.trayScroll; }
+
+/** Put every loose piece in its tray slot and every socket in the housing (also after a phone turns round or the phase changes). */
 function place(s) {
-  const L = s.layout;
-  s.sockets.forEach((k, i) => { const sl = slot(L.housing, i), pos = centred(sl, k.w * L.cell, k.h * L.cell); k.x = pos.x; k.y = pos.y; });
-  const loose = s.pieces.filter((p) => !p.placed);
-  loose.forEach((p, i) => home(s, p, i));
+  const A = areasOf(s), L = s.layout;
+  const hb = { x: A.housing.x, y: A.housing.y + HEADER, w: A.housing.w, h: A.housing.h - HEADER };
+  s.sockets.forEach((k) => { const pos = centred(hb, k.w * L.cell, k.h * L.cell); k.x = pos.x; k.y = pos.y; });
+  s.trayScroll = Math.max(0, Math.min(trayMax(s), s.trayScroll));
+  const loose = s.pieces.filter((p) => !p.placed).sort((a, b) => a.home - b.home);
+  loose.forEach((p, i) => { if (p.floating) return; home(s, p, i); });
   s.pieces.filter((p) => p.placed).forEach((p) => { const k = s.sockets.find((q) => q.id === p.socket); p.x = k.x; p.y = k.y; });
 }
-function home(s, p, index = null) {
-  const L = s.layout, loose = s.pieces.filter((q) => !q.placed).sort((a, b) => a.home - b.home);
-  const i = index ?? loose.indexOf(p);
-  const sl = slot(L.tray, i), z = pieceSize(s, p), pos = centred(sl, z.w, z.h);
-  p.x = pos.x; p.y = pos.y; p.homeX = pos.x; p.homeY = pos.y;
+function home(s, p, i) {
+  const L = s.layout, A = areasOf(s).tray;
+  p.big = false;
+  const z = pieceSize(s, p);
+  if (L.scrolls) { const step = 3 * L.trayCell + 24, box = { x: A.x + 12 + i * step - s.trayScroll, y: A.y, w: step - 24, h: A.h }; const pos = centred(box, z.w, z.h); p.x = pos.x; p.y = pos.y; }
+  else { const sl = slot(A, i), pos = centred(sl, z.w, z.h); p.x = pos.x; p.y = pos.y; }
+  p.homeX = p.x; p.homeY = p.y;
 }
 /** Switch between the wide and the tall board (a phone turned round). Loose pieces go home; placed ones stay in their sockets. */
 export function relayout(s, kind) {
   if (s.layoutKind === kind) return s;
-  s.layoutKind = kind; s.layout = layoutOf(kind); s.held = null; place(s); layBolts(s);
+  s.layoutKind = kind; s.layout = layoutOf(kind); s.held = null; s.pieces.forEach((p) => { p.floating = false; }); s.trayScroll = 0; place(s); layBolts(s);
   return s;
 }
 
@@ -170,13 +204,20 @@ export function turn(s, dir = 1, id = s.selected) {
   const c = centreOf(s, p);
   p.rot = (p.rot + (dir >= 0 ? 1 : 3)) % 4; s.turns++;
   const z = pieceSize(s, p); p.x = c.x - z.w / 2; p.y = c.y - z.h / 2;
-  if (!p.floating) { p.homeX = p.x; p.homeY = p.y; } // a tray piece keeps its place when turned in the tray
+  if (!p.floating) place(s); // a tray piece keeps its slot when turned in the tray (its box changes shape, so it is centred again)
   push(s, 'turned', { id: p.id, rot: p.rot });
   return true;
 }
 
 /** Pick a part up (it leaves its slot while held). */
-export function grab(s, id) { const p = pieceOf(s, id); if (!p || p.placed || s.done || s.phase !== 'fit') return false; s.selected = id; s.held = id; p.floating = true; return true; }
+export function grab(s, id) {
+  const p = pieceOf(s, id);
+  if (!p || p.placed || s.done || s.phase !== 'fit') return false;
+  const c = centreOf(s, p);
+  s.selected = id; s.held = id; p.floating = true; p.big = true; // a part grows to full size in the hand
+  const z = pieceSize(s, p); p.x = c.x - z.w / 2; p.y = c.y - z.h / 2;
+  return true;
+}
 /** Move a held part so its middle is at (cx, cy). */
 export function carry(s, cx, cy) { const p = s.held ? pieceOf(s, s.held) : null; if (!p) return false; const z = pieceSize(s, p); p.x = cx - z.w / 2; p.y = cy - z.h / 2; return true; }
 
@@ -198,7 +239,7 @@ export function drop(s, id = s.held) {
   let out;
   if (d <= s.snap) {
     if (fitsSocket(outlineOfPiece(p), p.rot, outlineById(k.outline))) {
-      p.placed = true; p.x = k.x; p.y = k.y; p.socket = k.id; s.selected = null;
+      p.placed = true; p.big = true; p.x = k.x; p.y = k.y; p.socket = k.id; s.selected = null;
       push(s, 'snapped', { id: p.id, socket: k.id });
       openBolts(s);
       return 'snapped';
@@ -208,8 +249,7 @@ export function drop(s, id = s.held) {
     else { s.wrongFits++; out = 'wrong'; push(s, 'wrong', { id: p.id, wrongFits: s.wrongFits }); }
   } else out = d <= reach ? 'close' : 'miss';
   if (out === 'close' || out === 'miss') push(s, 'bounce', { id: p.id, why: out });
-  p.x = p.homeX; p.y = p.homeY;
-  place(s);
+  p.big = false; place(s);
   return out;
 }
 
@@ -218,9 +258,9 @@ export function drop(s, id = s.held) {
 function layBolts(s) {
   if (!s.bolts) return;
   const k = socketOf(s);
+  const T = areasOf(s).tray, n = s.bolts.length, step = Math.min(120, T.w / Math.max(1, n));
   s.bolts.forEach((b, i) => {
-    const sl = slot(s.layout.tray, i);
-    b.homeX = sl.x + sl.w / 2; b.homeY = sl.y + sl.h / 2;
+    b.homeX = T.x + T.w / 2 + (i - (n - 1) / 2) * step; b.homeY = T.y + T.h / 2;
     if (!b.seated) { b.x = b.homeX; b.y = b.homeY; }
     const c = k.holes[i]; b.hx = k.x + (c[0] + 0.5) * s.layout.cell; b.hy = k.y + (c[1] + 0.5) * s.layout.cell;
     if (b.seated) { b.x = b.hx; b.y = b.hy; }
@@ -230,7 +270,7 @@ function openBolts(s) {
   const k = socketOf(s);
   s.phase = 'bolt'; s.held = null;
   s.bolts = k.holes.map((_, i) => ({ id: `b${i}`, seated: false, tight: false, tries: 0 }));
-  layBolts(s);
+  place(s); layBolts(s);
 }
 export const boltOf = (s, id) => s.bolts?.find((b) => b.id === id) || null;
 export const boltsTight = (s) => (s.bolts ? s.bolts.filter((b) => b.tight).length : 0);

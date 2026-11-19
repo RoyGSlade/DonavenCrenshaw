@@ -148,20 +148,50 @@ test('500 seeds, every roll: exactly one piece fits each socket, in exactly one 
   }
 });
 
-test('the tray: mirror twins are the first decoys, everything lies inside the board, the same seed is the same tray', () => {
+test('the tray: mirror twins are the first decoys, the sockets sit in the housing, the tray pieces fit their slots, the same seed is the same tray', () => {
   for (let seed = 1; seed <= 60; seed++) for (const layout of ['wide', 'tall']) {
-    const s = A.createAssembly({ seed, setup: setupAssembly({}), layout }), L = s.layout;
+    const s = A.createAssembly({ seed, setup: setupAssembly({}), layout }), L = s.layout, ar = A.areasOf(s);
     const decoys = s.pieces.filter((p) => p.role === 'decoy'), partIds = s.pieces.filter((p) => p.role === 'part').map((p) => p.outline);
     assert.equal(decoys.filter((d) => partIds.includes(A.outlineById(d.outline).twin)).length, 3, 'with 4 parts all three decoys are mirror twins');
-    for (const p of s.pieces) { const z = A.pieceSize(s, p); assert.ok(p.x >= 0 && p.y >= 0 && p.x + z.w <= L.W && p.y + z.h <= L.H, `${p.id} on the board`); }
-    for (const k of s.sockets) assert.ok(k.x >= L.housing.x && k.y >= L.housing.y && k.x + k.w * L.cell <= L.housing.x + L.housing.w && k.y + k.h * L.cell <= L.housing.y + L.housing.h);
+    for (const p of s.pieces) { const z = A.pieceSize(s, p); assert.ok(z.w <= 3 * L.trayCell && z.h <= 3 * L.trayCell, 'a part in the tray is at tray size'); if (!L.scrolls) assert.ok(p.x >= ar.tray.x && p.y >= ar.tray.y && p.x + z.w <= ar.tray.x + ar.tray.w && p.y + z.h <= ar.tray.y + ar.tray.h, `${p.id} lies in its tray slot`); }
+    for (const k of s.sockets) assert.ok(k.x >= ar.housing.x && k.y >= ar.housing.y + A.HEADER && k.x + k.w * L.cell <= ar.housing.x + ar.housing.w && k.y + k.h * L.cell <= ar.housing.y + ar.housing.h, 'the open socket fits the housing');
+    for (const k of s.sockets) assert.ok(Math.abs(k.x + (k.w * L.cell) / 2 - (ar.housing.x + ar.housing.w / 2)) <= 1 && Math.abs(k.y + (k.h * L.cell) / 2 - (ar.housing.y + A.HEADER + (ar.housing.h - A.HEADER) / 2)) <= 1, 'every socket opens in the middle of the housing: one large socket at a time');
+    assert.ok(L.cell >= 100, 'cells are large');
     const again = A.createAssembly({ seed, setup: setupAssembly({}), layout });
     assert.deepEqual(again.pieces, s.pieces); assert.deepEqual(again.sockets, s.sockets);
   }
   const a = A.createAssembly({ seed: 1, setup: setupAssembly({}) }), b = A.createAssembly({ seed: 2, setup: setupAssembly({}) });
   assert.notDeepEqual(a.sockets.map((k) => k.outline), b.sockets.map((k) => k.outline));
-  // a part never starts as its own mirror twin, and twins of parts never become parts
   for (let seed = 1; seed <= 100; seed++) { const s = A.createAssembly({ seed, setup: setupAssembly({ tier: -2 }) }); const ids = s.sockets.map((k) => k.outline); assert.ok(ids.every((id) => !ids.includes(A.outlineById(id).twin))); }
+});
+test('on a phone a 390 px board draws the open socket with cells of 48 px or more; parts in the tray are bigger than 20 px a cell too', () => {
+  const L = A.LAYOUTS.tall, scale = 390 / L.W;
+  assert.ok(L.cell * scale >= 48, `socket cells ${L.cell * scale} px`); assert.ok(L.trayCell * scale >= 38, `tray cells ${L.trayCell * scale} px`);
+  assert.ok(A.LAYOUTS.wide.cell * (1440 / 1000) >= 48 || A.LAYOUTS.wide.cell * (900 / 620) >= 48);
+});
+test('parts carry their bolt holes: the holes sit on the part cells, in every turn, before it is fitted', () => {
+  for (let seed = 1; seed <= 30; seed++) {
+    const s = A.createAssembly({ seed, setup: setupAssembly({}) });
+    for (const p of s.pieces) for (let rot = 0; rot < 4; rot++) {
+      p.rot = rot; const cells = A.pieceCells(p).map((c) => c.join()), holes = A.pieceHoles(p);
+      assert.ok(holes.length >= 2 && holes.every((h) => cells.includes(h.join())), `${p.id} turn ${rot}: every hole is on a cell`);
+    }
+    for (const p of s.pieces.filter((q) => q.role === 'part')) assert.equal(p.holes.length, s.sockets.find((k) => k.part === p.id).bolts, 'a part shows as many holes as it will take bolts');
+  }
+});
+test('picking a part up grows it to full size about its own middle; letting go in the air puts it back at tray size', () => {
+  const s = A.createAssembly({ seed: 3, setup: setupAssembly({}), layout: 'tall' }); const p = s.pieces[0];
+  const z0 = A.pieceSize(s, p), c0 = [p.x + z0.w / 2, p.y + z0.h / 2];
+  A.grab(s, p.id); const z1 = A.pieceSize(s, p);
+  assert.equal(z1.w / z0.w, s.layout.cell / s.layout.trayCell); assert.ok(Math.abs(p.x + z1.w / 2 - c0[0]) < 0.6 && Math.abs(p.y + z1.h / 2 - c0[1]) < 0.6);
+  assert.equal(A.drop(s), 'miss'); assert.deepEqual(A.pieceSize(s, p), z0);
+});
+test('the tray on a phone scrolls sideways and clamps; no scrolling on a wide board', () => {
+  const s = A.createAssembly({ seed: 3, setup: setupAssembly({}), layout: 'tall' });
+  const max = A.trayMax(s); assert.ok(max > 0, 'seven parts do not fit one screen width');
+  const p = s.pieces.find((q) => q.home === 0), x0 = p.x;
+  A.scrollTray(s, 100); assert.equal(Math.round(x0 - p.x), 100); A.scrollTray(s, 99999); assert.equal(s.trayScroll, max); A.scrollTray(s, -99999); assert.equal(s.trayScroll, 0);
+  assert.equal(A.trayMax(A.createAssembly({ seed: 3, setup: setupAssembly({}), layout: 'wide' })), 0);
 });
 
 // ---- the roll and the points ----------------------------------------------------------------------------------------------------
@@ -191,14 +221,28 @@ test('every Repair point changes something, on the weakest base (Steady, nothing
   assert.equal(setupAssembly({ level: 3, points: { time: 9 } }).clock, 110 + 6 * 3, 'points never pass the level');
 });
 
-test('a Rough roll has 5 parts, so the bolts never drop under one a part (the floor)', () => {
-  assert.deepEqual([0, 1, 2, 3, 4, 5, 6].map((n) => setupAssembly({ tier: -2, level: 9, points: { size: n } }).bolts), [10, 9, 8, 7, 6, 5, 5]);
+test('a Rough roll has 5 parts, so the bolts floor at 5 and the size points that cannot cut a bolt take a decoy off instead', () => {
+  const at = (n) => setupAssembly({ tier: -2, level: 9, points: { size: n } });
+  assert.deepEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => at(n).bolts), [10, 9, 8, 7, 6, 5, 5, 5, 5, 5]);
+  assert.deepEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => at(n).decoys), [3, 3, 3, 3, 3, 3, 2, 1, 0, 0]);
+  for (let n = 1; n <= 8; n++) { const a = at(n - 1), b = at(n); assert.ok(b.bolts < a.bolts || b.decoys < a.decoys, `Rough: Puzzle size point ${n} still changes something`); }
+  // the same on every roll: no size point is wasted until the tray is empty and the bolts are at their floor
+  for (const tier of TIERS) {
+    const u = (n) => setupAssembly({ tier, level: 9, points: { size: n } });
+    for (let n = 1; n <= 9; n++) { const floor = u(9); const moreToGive = u(n - 1).bolts > floor.bolts || u(n - 1).decoys > floor.decoys; if (moreToGive) assert.ok(u(n).bolts < u(n - 1).bolts || u(n).decoys < u(n - 1).decoys, `tier ${tier} point ${n}`); }
+  }
   assert.deepEqual(A.boltsPerPart(10, 4), [3, 3, 2, 2]); assert.deepEqual(A.boltsPerPart(4, 4), [1, 1, 1, 1]); assert.deepEqual(A.boltsPerPart(10, 3), [4, 3, 3]);
   for (let seed = 1; seed <= 40; seed++) for (const tier of TIERS) for (const size of [0, 3, 6, 9]) {
     const setup = setupAssembly({ tier, level: 9, points: { size } }), s = A.createAssembly({ seed, setup });
     assert.equal(s.sockets.reduce((a, k) => a + k.bolts, 0), setup.bolts);
     assert.ok(s.sockets.every((k) => k.bolts >= 1 && k.holes.length === k.bolts && new Set(k.holes.map((c) => c.join())).size === k.bolts));
   }
+});
+test('the drop radii are part of the setup, by input: the rule the tests check is the rule the player feels', () => {
+  assert.deepEqual([setupAssembly({}).snap, setupAssembly({}).boltSnap, setupAssembly({}).input], [24, 14, 'mouse']);
+  assert.deepEqual([setupAssembly({ input: 'touch' }).snap, setupAssembly({ input: 'touch' }).boltSnap], [40, 30]);
+  assert.equal(setupAssembly({ input: 'pen' }).input, 'mouse', 'an unknown input is a mouse');
+  const s = A.createAssembly({ seed: 3, setup: setupAssembly({ input: 'touch' }) }); assert.deepEqual([s.snap, s.boltSnap], [40, 30]);
 });
 
 // ---- fitting, snapping, bouncing ----------------------------------------------------------------------------------------------
@@ -211,16 +255,18 @@ function fitFirst(s, { turned = true, offset = 0 } = {}) {
 }
 test('a part turned right and dropped within the snap radius snaps in; the bolt step opens', () => {
   const s = A.createAssembly({ seed: 3, setup: setupAssembly({}) });
-  const r = fitFirst(s, { offset: 11 });
+  const r = fitFirst(s, { offset: 23 });
   assert.equal(r.result, 'snapped'); assert.equal(s.phase, 'bolt'); assert.equal(r.p.placed, true); assert.deepEqual([r.p.x, r.p.y], [r.k.x, r.k.y]);
   assert.equal(s.bolts.length, r.k.bolts); assert.ok(s.events.some((e) => e.type === 'snapped'));
   assert.equal(s.wrongFits, 0);
 });
-test('outside the snap radius nothing snaps (12 units), and the part goes back to the tray', () => {
+test('outside the snap radius nothing snaps (24 units for a mouse, 40 for a finger), and the part goes back to the tray', () => {
   const s = A.createAssembly({ seed: 3, setup: setupAssembly({}) });
-  const r = fitFirst(s, { offset: 13 });
+  const r = fitFirst(s, { offset: 25 });
   assert.equal(r.result, 'close'); assert.equal(s.phase, 'fit'); assert.equal(r.p.placed, false); assert.equal(s.wrongFits, 0); assert.deepEqual([r.p.x, r.p.y], [r.p.homeX, r.p.homeY]);
-  const far = fitFirst(A.createAssembly({ seed: 3, setup: setupAssembly({}) }), { offset: 400 });
+  const t = A.createAssembly({ seed: 3, setup: setupAssembly({ input: 'touch' }) });
+  assert.equal(fitFirst(t, { offset: 39 }).result, 'snapped', 'a finger gets 40');
+  const far = fitFirst(A.createAssembly({ seed: 3, setup: setupAssembly({}) }), { offset: 600 });
   assert.equal(far.result, 'miss');
 });
 test('the right part turned the wrong way bounces with no penalty; a wrong part bounces and counts as a wrong fit', () => {
@@ -247,15 +293,15 @@ test('turning keeps a part about its own middle, in either direction, and four t
 });
 
 // ---- the bolts and the next socket --------------------------------------------------------------------------------------------------
-test('bolts: each goes to a hole (6 units), a stripped one comes out, and the next socket shows only after the last bolt is snug', () => {
+test('bolts: each goes to a hole (14 units for a mouse), a stripped one comes out, and the next socket shows only after the last bolt is snug', () => {
   const s = A.createAssembly({ seed: 4, setup: setupAssembly({}) });
   assert.equal(A.socketOf(s).index, 0);
   fitFirst(s);
   const k = A.socketOf(s);
   const b = s.bolts[0];
-  A.grabBolt(s, b.id); A.carryBolt(s, b.hx + 7, b.hy);
+  A.grabBolt(s, b.id); A.carryBolt(s, b.hx + 15, b.hy);
   assert.equal(A.dropBolt(s), 'miss'); assert.equal(b.seated, false);
-  A.grabBolt(s, b.id); A.carryBolt(s, b.hx + 5, b.hy + 3);
+  A.grabBolt(s, b.id); A.carryBolt(s, b.hx + 9, b.hy + 9);
   assert.equal(A.dropBolt(s), 'seated'); assert.equal(b.seated, true);
   assert.equal(A.screwed(s, b.id, { success: false, grade: 40 }), 'stripped'); assert.equal(b.seated, false); assert.equal(s.stripped, 1);
   for (const o of s.bolts) {
@@ -321,7 +367,8 @@ test('a phone turned round: the layout switches, placed parts stay in their sock
   A.relayout(s, 'tall'); assert.equal(s.layout.kind, 'tall');
   const k = s.sockets[0], p = A.pieceOf(s, k.part);
   assert.deepEqual([p.x, p.y], [k.x, k.y]);
-  for (const b of s.bolts) assert.ok(b.homeX >= s.layout.tray.x && b.homeX <= s.layout.tray.x + s.layout.tray.w);
+  const T = A.areasOf(s).tray; for (const b of s.bolts) assert.ok(b.homeX >= T.x && b.homeX <= T.x + T.w && b.homeY >= T.y && b.homeY <= T.y + T.h, 'the bolts wait in the slim strip');
+  assert.ok(T.h <= 200, 'the bolt strip is slim');
 });
 
 // ---- the bots at human speed ---------------------------------------------------------------------------------------------------------

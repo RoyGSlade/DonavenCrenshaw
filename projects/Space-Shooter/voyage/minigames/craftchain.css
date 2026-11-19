@@ -79,3 +79,9 @@
   .wb-full .cc-spoil{font-size:10px}
 }
 .wb-full .cc-recipe>.rp-eyebrow{display:none}
+
+/* round 2: Screw shows slips and stripped heads as pips and the grade as a bar with a word, never a raw number */
+.cc-pips{display:flex;gap:4px;min-height:12px;align-items:center}
+.cc-pip{display:inline-block;width:11px;height:11px;border-radius:3px;border:1px solid #3f5566;background:#0b1724}
+.cc-pip.on{background:#ff6b5a;border-color:#ff6b5a;box-shadow:0 0 6px #ff6b5a66}
+.cc-gradebar i{background:#9fe870}.cc-gradebar i[data-low="1"]{background:#ff6b5a}
