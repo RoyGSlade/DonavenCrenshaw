@@ -71,6 +71,27 @@ export function setupRepair({ tier = 0, points = {}, level = POINT_MAX } = {}) {
   return { size, capacity, flow, qualityBonus: b.qualityPerPoint * p.quality, tier: k, points: p, label: t.label };
 }
 
+// --- Assembly repair (v2/PLAN.md section 5; Donaven 2026-11-19: "a stack of parts match complex shapes then a screwing bolt") --------------
+// Rebuild a broken unit piece by piece: fit each part to its shaped socket, bolt it down with the real Screw game, next socket.
+// Same three categories as the coolant line (time, size, quality), so a Repair point is spent once and works in both games:
+//   time     +6 seconds on the clock per point            (0..9 -> 110 up to 164)
+//   size     points 1..6: one bolt fewer each (10 down to 4, never fewer than one a part); points 7..9: one decoy fewer each (3 down to 0)
+//   quality  +4 quality per point                         (the built Repair rule)
+// Base: 4 parts, 3 decoys in the tray, 10 bolts in all, 110 s. Roll: clock x the shared tier scale (0.70..1.30); parts 3 at Smooth, 5 at Rough.
+export const ASSEMBLY_BASE = Object.freeze({ clock: 110, parts: 4, decoys: 3, bolts: 10, timePerPoint: 6, boltPoints: 6, qualityPerPoint: 4, snap: 12, boltSnap: 6 });
+export function setupAssembly({ tier = 0, points = {}, level = POINT_MAX } = {}) {
+  const p = cleanPoints(points, REPAIR_CATEGORIES, level);
+  const k = Math.max(-2, Math.min(2, Math.trunc(tier) || 0));
+  const t = tierInfo(k), b = ASSEMBLY_BASE;
+  const parts = b.parts + t.size;
+  const bolts = Math.max(parts, b.bolts - Math.min(p.size, b.boltPoints));
+  const decoys = Math.max(0, b.decoys - Math.max(0, p.size - b.boltPoints));
+  return {
+    kind: 'assembly', clock: Math.round(+((b.clock + b.timePerPoint * p.time) * t.time).toFixed(6)), parts, decoys, bolts, snap: b.snap, boltSnap: b.boltSnap,
+    qualityBonus: b.qualityPerPoint * p.quality, tier: k, points: p, label: t.label,
+  };
+}
+
 /** How long until the water reaches the valve with one leak open, in plain words, to the nearest half minute ("about 2\u00bd minutes"). */
 export function poolLasts({ capacity, flow = 1 } = {}) {
   const halves = Math.round((capacity / (flow || 1)) / 30);

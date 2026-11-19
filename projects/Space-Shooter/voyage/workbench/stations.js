@@ -3,7 +3,7 @@
 // scene hooks and the gym use), and a finished game pays real XP into the skill (state.js earnXp). DOM lives in games.js.
 import { check } from '../character.js';
 import { ROLL_SKILLS } from '../data.js';
-import { tierOf, tierInfo, setupHack, setupPerihelion, setupCut, setupScrew } from '../minigames/setup.js';
+import { tierOf, tierInfo, setupHack, setupPerihelion, setupCut, setupScrew, setupAssembly } from '../minigames/setup.js';
 import { GYM_GAMES, gymGame } from '../minigames/gym.js';
 import { rollPreview } from '../minigames/rollPreview.js';
 import { cleanSkillPoints } from '../minigames/picker.js';
@@ -44,7 +44,7 @@ export function loadoutOf(state, skill) {
  * Everything the page needs to open a station's game after the d20: the tier, the setup (level and points applied) and the
  * preview line ("Smooth roll: 15 s more...") with how far the next tier is. `attempt` is the check's attempt (total, dc, natural).
  */
-const CHAIN_SETUP = Object.freeze({ cut: (o) => setupCut(o), screw: (o) => setupScrew(o), 'bolt-plate': (o) => setupCut(o) });
+const CHAIN_SETUP = Object.freeze({ cut: (o) => setupCut(o), screw: (o) => setupScrew(o), 'bolt-plate': (o) => setupCut(o), assembly: (o) => setupAssembly(o) });
 export function startStation(state, station, attempt, { tool = 'shop' } = {}) {
   const { level, points } = loadoutOf(state, station.skill);
   const tier = tierOf(attempt);
@@ -63,6 +63,7 @@ export function startStation(state, station, attempt, { tool = 'shop' } = {}) {
 export function worldLine(station, result) {
   if (!result || result.success) return null;
   if (station.id === 'repair' && result.broken) return result.valveShut ? `Valve shut: the flooding stopped and ${result.systemName} is offline. The line is still broken.` : `The line stays broken and keeps flooding (${result.systemName}).`;
+  if (station.id === 'assembly') return `The ${result.systemName || 'unit'} stays broken. Try again at the bench for one scrap (a spoiled gasket), or take the other way.`;
   if (station.id === 'hack' && result.world?.line) return result.world.line;
   return null;
 }
