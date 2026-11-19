@@ -203,11 +203,11 @@ test('stations: all nine start a game at the rolled tier with level and points a
     assert.ok(/roll:/.test(previewLine(hi)), previewLine(hi));
     assert.equal(hi.level, lv);
   }
-  // points shown in the setup: one Repair point in time gives 3 more seconds than none
+  // points shown in the setup: each Repair point in time gives 6 more capacity than none (repair v2: the pool is the timer)
   const repair = STATIONS[0];
   const none = startStation(s, repair, { total: 12, dc: 12 }).setup;
   const withPts = startStation(S.setPoints(s, 'repair', { time: 3 }), repair, { total: 12, dc: 12 }).setup;
-  assert.equal(withPts.seconds - none.seconds, 9);
+  assert.equal(withPts.capacity - none.capacity, 18);
   assert.deepEqual(loadoutOf(S.setPoints(s, 'repair', { time: 3 }), 'repair').points.time, 3);
 });
 
