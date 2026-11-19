@@ -15,7 +15,18 @@ const h = (tag, attrs = {}, ...kids) => {
   return el;
 };
 
+// The overlay's stylesheet travels with it: loaded once, wherever the helper is used (the workbench room or a scene's mini-game).
+function ensureStyles() {
+  if (typeof document === 'undefined' || document.querySelector('link[data-wb-fullscreen]')) return;
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.href = new URL('./fullScreen.css', import.meta.url).href;
+  link.dataset.wbFullscreen = '';
+  document.head.append(link);
+}
+
 export function openFullScreen({ word = '', title = '', note = '', onLeave = () => {}, bare = false, noLeave = false } = {}) {
+  ensureStyles();
   const leave = h('button', { type: 'button', class: 'wb-leave wb-fleave ui-btn', text: 'Leave this game' });
   leave.addEventListener('click', () => onLeave());
   if (noLeave) leave.hidden = true; // a scene's mini-game ends on its own result card; a scene must never be left half-played

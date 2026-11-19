@@ -80,7 +80,7 @@ test('the skills menu: rail, ring, notches, pending and lock in, risk, keyboard,
     await shot(page, `skillsmenu-${name}-1-repair-selected`);
 
     // Real numbers: the same words the mini-game's setup gives.
-    assert.match(await page.locator('.sk-cat[data-cat-index="0"] [data-now]').innerText(), /deeper pool: \+6 s before a leak floods the line \(126 s\)/);
+    assert.match(await page.locator('.sk-cat[data-cat-index="0"] [data-now]').innerText(), /slower-rising water: \+6 s before it reaches the valve \(126 s( of one leak)?\)/i);
     assert.match(await page.locator('.sk-cat[data-cat-index="1"] [data-now]').innerText(), /5 x 5 board|\d x \d board/);
 
     // Re-tint: pick Piloting and the whole page changes colour.

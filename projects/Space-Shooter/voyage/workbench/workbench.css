@@ -19,17 +19,7 @@
 
 .wb-craftrow,.wb-part{display:grid;gap:4px;justify-items:start}.wb-craftrow .rp-help,.wb-part .rp-help{margin:0}
 
-/* The shared full-screen game overlay (fullScreen.js). */
-.wb-full{position:fixed;inset:0;z-index:60;display:flex;flex-direction:column;gap:6px;padding:max(8px,env(safe-area-inset-top)) 12px max(8px,env(safe-area-inset-bottom));background:radial-gradient(120% 90% at 50% 0%,#0d1b2b,#04080e);color:#eaf4f5;overflow:hidden}
 .wb-full-open .wb-hud{display:none}
-.wb-ftop{display:flex;justify-content:space-between;align-items:center;gap:10px;max-width:1100px;width:100%;margin:0 auto}
-.wb-fhead{min-width:0}
-.wb-feyebrow{margin:0;font:700 11px Consolas,monospace;letter-spacing:.16em;color:#ffad72}
-.wb-ftitle{margin:0;font:700 18px Inter,sans-serif}
-.wb-fleave{margin:0;min-height:44px;min-width:88px}
-.wb-fnote{margin:0 auto;max-width:1100px;width:100%;font-size:12px}
-.wb-fstage{flex:1 1 0;min-height:0;display:flex;flex-direction:column;max-width:1100px;width:100%;margin:0 auto}
-@media (max-width:700px){.wb-fnote{display:none}.wb-ftitle{font-size:15px}}
 /* The conversation (social lane): the game's own dialogue kit (portrait frame, metal box, kit buttons). Dialogue choices are what you say,
    with a small tag after. Amber words are things you can raise. */
 body .tk-panel.ui-dialogue{z-index:30;cursor:default;width:min(820px,96vw);max-height:calc(100dvh - 28px);overflow-y:auto;overflow-x:hidden;bottom:14px;top:auto;left:50%;right:auto;transform:translateX(-50%);align-items:start;scrollbar-width:thin}
@@ -78,19 +68,3 @@ body .tk-panel[hidden]{display:none}
 @media (max-width:700px){.tk-panel{bottom:0;left:0;transform:none;width:100vw;max-height:88dvh;border-radius:12px 12px 0 0;padding:10px 12px 14px;font-size:14px}.tk-text{font-size:15px}.tk-line.is-you{margin-left:8px}}
 .tk-line.is-earlier{opacity:.78;border-left-color:#3b5a70}
 @media (max-width:700px){body .tk-panel.ui-dialogue{top:auto;bottom:6px;left:50%;width:98vw;max-height:84dvh;grid-template-columns:56px minmax(0,1fr)}.tk-pips i{width:7px;height:7px}.tk-pips{gap:2px}.tk-bondname{font-size:8px}}
-
-/* Every station's game on the shared full-screen helper (integration lane). The game panel fills the stage; boards stay readable at their own
-   aspect and centre; long panels scroll inside the stage rather than the page. Games that draw their own top bar (gallery, Perihelion) are
-   mounted bare: their panel is the whole screen, so the fixed positioning they use alone is dropped here. */
-.wb-fstage>.rp-panel{flex:1 1 0;min-height:0;max-width:960px;width:100%;margin:0 auto;display:flex;flex-direction:column;gap:8px;overflow:auto;overscroll-behavior:contain;background:#0b141fcc;border-radius:10px}
-.wb-fstage>.rp-panel>.rp-eyebrow{margin:0}
-.wb-fstage>.rp-panel>.rp-help:not(.rp-status){display:none}
-.wb-full-bare .wb-fstage{max-width:none;padding:0}
-.wb-full-bare .wb-fstage>.rp-panel.ga-full,.wb-full-bare .wb-fstage>.rp-panel.pr-full{position:relative;inset:auto;z-index:auto;max-width:none;overflow:hidden;background:none;border-radius:0}
-.wb-full-bare{padding:0}
-/* Panels with no board to stretch (locks, haggle, persuade, intimidate) sit centred at their own height instead of leaving an empty frame. */
-.wb-fstage>.rp-panel:is(.hk-panel,.hg-panel,.pc-panel,.it-panel,.mh-panel,.pl-panel,.st-panel,.cf-panel){flex:0 1 auto;margin:auto}
-/* Perihelion hides its own Leave on a phone (it has Quit); on the shared full-screen helper every game keeps a Leave. */
-.wb-full .pr-leave{display:inline-flex}
-/* A tall game inside the full-screen stage scrolls inside its panel; its parts keep their height rather than squashing into each other. */
-.wb-fstage>.rp-panel:not(.cc-panel):not(.pr-full):not(.ga-full)>*{flex-shrink:0}

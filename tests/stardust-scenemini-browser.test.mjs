@@ -183,7 +183,7 @@ test('the opening mini-games in the real game: hack (scene 3), haggle (scene 4),
           return { sw: document.documentElement.scrollWidth, iw: innerWidth, ih: innerHeight, sheet: r('.wb-full'), sheetBehind: !document.getElementById('hg-minigame').hidden, small: [...document.querySelectorAll('.wb-full .ui-btn, .wb-full .rp-tile')].filter((b) => b.offsetParent && b.getBoundingClientRect().height < 44 && b.getBoundingClientRect().width < 44).length, atRun: JSON.stringify(Object.values(window.__stardust.store.get().quests.active)[0]?.minigame || null) };
         });
         assert.ok(m.sw <= m.iw && m.iw === profile.viewport.width, `no sideways scroll, and the page is as wide as the phone (${m.sw} of ${m.iw})`);
-        assert.ok(m.sheet && m.sheet.width === m.iw && m.sheet.height === m.ih, 'the game owns the whole screen'); assert.equal(m.sheetBehind, false, 'the side sheet is not showing behind it');
+        assert.ok(m.sheet && m.sheet.width === m.iw && m.sheet.height === m.ih, 'the game owns the whole screen ' + JSON.stringify([m.sheet, m.iw, m.ih])); assert.equal(m.sheetBehind, false, 'the side sheet is not showing behind it');
         assert.equal(m.small, 0, 'every tap target is 44px');
         assert.notEqual(m.atRun, 'null', 'the saved run holds the pending mini-game');
         if (sizeName === 'desktop') {
