@@ -8,11 +8,11 @@ const at = (margin, natural = false) => ({ total: 12 + margin, dc: 12, natural }
 
 test('exact lines: repair and pilot at each tier', () => {
   const L = (g, m, o) => rollPreview(g, at(m), o).line;
-  assert.equal(L('repair', 12), 'Smooth roll: 15 s more to work, a smaller board (4 x 4).');
-  assert.equal(L('repair', 6), 'Good roll: 8 s more to work.');
+  assert.equal(L('repair', 12), 'Smooth roll: a deeper pool (36 s more), slower leaks, a smaller board (4 x 4).');
+  assert.equal(L('repair', 6), 'Good roll: a deeper pool (18 s more), slower leaks.');
   assert.equal(L('repair', 2), 'Steady roll: nothing changes.');
-  assert.equal(L('repair', -3), 'Shaky roll: 7 s less to work.');
-  assert.equal(L('repair', -9), 'Rough roll: 15 s less to work, a bigger board (6 x 6).');
+  assert.equal(L('repair', -3), 'Shaky roll: a shallower pool (18 s less), faster leaks.');
+  assert.equal(L('repair', -9), 'Rough roll: a shallower pool (36 s less), faster leaks, a bigger board (6 x 6).');
   assert.equal(L('pilot', 12), 'Smooth roll: 3.6 s more of fall time, wind 30% weaker, pad 20% wider.');
   assert.equal(L('intimidate', -9), 'Rough roll: snap risk 6 points higher, you only read a word for the risk.');
   assert.equal(L('stealth', 12), 'Smooth roll: 1 fewer guard, 8 more beats before the shift change.');
@@ -36,7 +36,7 @@ test('the numbers in the line are the real setup numbers, with the player\'s poi
   const pts = { time: 4, size: 3 }, lv = 7;
   const a = setupRepair({ tier: 0, level: lv, points: pts }), b = setupRepair({ tier: 2, level: lv, points: pts });
   const p = rollPreview('repair', at(12), { level: lv, points: pts });
-  assert.equal(p.line, `Smooth roll: ${b.seconds - a.seconds} s more to work${b.size < a.size ? `, a smaller board (${b.size} x ${b.size})` : ''}.`);
+  assert.equal(p.line, `Smooth roll: a deeper pool (${b.capacity - a.capacity} s more), slower leaks${b.size < a.size ? `, a smaller board (${b.size} x ${b.size})` : ''}.`);
 });
 
 test('the gap to the next tier is exact: that many more reaches it, one fewer does not', () => {

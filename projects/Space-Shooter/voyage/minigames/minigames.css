@@ -32,19 +32,36 @@
 .rp-glyph{fill:none;stroke:#eaf4f5;stroke-width:5;stroke-linecap:round;stroke-linejoin:round}
 .rp-socket{fill:none;stroke:#1d3142;stroke-width:3;stroke-dasharray:6 6}
 .rp-tile.is-on{border-color:#2e6b6b;background:#0c2530}
-.rp-tile.is-on .rp-arm{stroke:var(--cyan)}
-.rp-tile.is-on .rp-hub{fill:var(--cyan)}
+.rp-water,.rp-flow{fill:none;stroke-linecap:butt}
+.rp-water{stroke:#2fb6d6;stroke-width:9;opacity:var(--wet,0)}
+.rp-flow{stroke:#d8fbff;stroke-width:3;stroke-dasharray:5 11;opacity:0}
+.rp-tile.is-on .rp-flow{opacity:.85;animation:rp-run .7s linear infinite}
+.rp-tile.is-on .rp-water{stroke:#34c4e6}
+.is-still .rp-tile.is-on .rp-flow{animation:none}
+@keyframes rp-run{to{stroke-dashoffset:-16}}
+.rp-tile.is-on .rp-hub,.rp-tile.is-filling .rp-hub{fill:#34c4e6}
+.rp-stage{position:relative}
+.rp-streams{position:absolute;inset:0;pointer-events:none;z-index:2}
+.rp-mouth{position:absolute;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;border:2px solid #ff6b5a;background:#2a1512;box-sizing:border-box}
+.rp-mouth.is-pouring{border-color:#34c4e6;background:#7fe3f5}
+.rp-mouth.is-pouring::after{content:"";position:absolute;left:50%;top:50%;width:6px;height:var(--fall,40px);margin-left:-3px;border-radius:3px;background:repeating-linear-gradient(180deg,#4fd3ee 0 9px,#9fe9f7 9px 14px);background-size:100% 14px;opacity:.92;animation:rp-pour .45s linear infinite}
+.is-still .rp-mouth.is-pouring::after{animation:none}
+@keyframes rp-pour{to{background-position:0 14px}}
+.rp-pool{position:relative;height:76px;margin-top:6px;border:1px solid #3f5566;border-radius:3px;background:#07111c;overflow:hidden}
+.rp-pool-fill{position:absolute;left:0;right:0;bottom:0;height:0;background:linear-gradient(180deg,#5fd8f0,#1f8fb0);box-shadow:0 -2px 0 #b8f1fb inset;transition:height .12s linear}
+.rp-pool.is-high .rp-pool-fill{background:linear-gradient(180deg,#8fdcc0,#d1744a)}
+@media(max-width:520px){.rp-pool{height:64px}}
 .rp-pump .rp-hub{fill:#3b7fa0}
 .rp-pump.is-on .rp-hub{fill:#9fe870}
 .rp-valve .rp-hub{fill:#2a1512;stroke:#ff6b5a;stroke-width:3}
 .rp-wheel{transform-origin:50px 50px;transition:transform .5s ease-out}
 .rp-wheel-rim,.rp-wheel-spoke{fill:none;stroke:#ff6b5a;stroke-width:5;stroke-linecap:round}
 .rp-wheel-nut{fill:#ff6b5a}
-.rp-valve.is-on{border-color:#81e6df;background:#0c2530}
-.rp-valve.is-on .rp-hub{fill:#0c2530;stroke:#81e6df}
-.rp-valve.is-on .rp-wheel{transform:rotate(90deg)}
-.rp-valve.is-on .rp-wheel-rim,.rp-valve.is-on .rp-wheel-spoke{stroke:#81e6df}
-.rp-valve.is-on .rp-wheel-nut{fill:#81e6df}
+.rp-valve.is-sealed{border-color:#81e6df;background:#0c2530}
+.rp-valve.is-sealed .rp-hub{fill:#0c2530;stroke:#81e6df}
+.rp-valve.is-sealed .rp-wheel{transform:rotate(90deg)}
+.rp-valve.is-sealed .rp-wheel-rim,.rp-valve.is-sealed .rp-wheel-spoke{stroke:#81e6df}
+.rp-valve.is-sealed .rp-wheel-nut{fill:#81e6df}
 .is-still .rp-wheel{transition:none}
 .rp-blank{opacity:.55}
 .rp-tile.is-hint{outline:3px solid var(--orange);outline-offset:-3px}
@@ -249,3 +266,4 @@ a.gm-train,a.gm-train:hover,a.gm-train:visited{color:#082126}
 .gm-h{margin:14px 0 6px;font:12px Consolas,monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--cyan)}
 @media(max-width:700px){.ex-gym{grid-column:auto}}
 .gm-pick{margin-top:14px}
+.rp-valve.is-on:not(.is-sealed) .rp-hub{fill:#2a1512}

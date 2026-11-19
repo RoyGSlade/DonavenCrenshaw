@@ -16,7 +16,7 @@ export function renderBench(root, { bench, name, onPlay }) {
   const play = h('button', { type: 'button', class: 'primary bn-play', text: "Play today's board" });
   play.addEventListener('click', () => onPlay());
   root.replaceChildren(
-    h('p', { class: 'bn-day', text: `Bench board for day ${bench.day}: a 5 x 5 board, 50 seconds, par ${bench.par} turns. Same board for everyone.` }),
+    h('p', { class: 'bn-day', text: `Bench board for day ${bench.day}: a 5 x 5 board, a 120 s pool, par ${bench.par} turns. Same board for everyone.` }),
     h('p', { class: 'bn-stand', role: 'status', text: standing(bench, name) }),
     best ? h('p', { class: 'bn-best', text: `Crew best: ${best.name} with ${best.moves} turns.` }) : h('p', { class: 'bn-best', text: 'Nobody has sealed it yet.' }),
     list, play);

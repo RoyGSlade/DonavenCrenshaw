@@ -116,7 +116,7 @@ test('skinned minigames beside the dialogue box and tracker', { skip }, async ()
           });
           await page.waitForTimeout(2200); await mid();
         }
-        if (game === 'repair') { await page.waitForSelector('.rp-valve.is-on'); await page.waitForTimeout(700); assert.equal(await page.evaluate(() => getComputedStyle(document.querySelector('.rp-valve .rp-wheel-rim')).stroke), 'rgb(129, 230, 223)', 'cyan once sealed'); }
+        if (game === 'repair') { await page.waitForSelector('.rp-valve.is-sealed'); await page.waitForTimeout(700); assert.equal(await page.evaluate(() => getComputedStyle(document.querySelector('.rp-valve .rp-wheel-rim')).stroke), 'rgb(129, 230, 223)', 'cyan once sealed'); }
         await page.waitForSelector('.rp-result', { timeout: 40000 });
         await page.waitForTimeout(250); await shot(page, `skin-${game}-${name}-3-result`);
         assert.match(await page.locator('.rp-result').getAttribute('class'), /ui-card/);
