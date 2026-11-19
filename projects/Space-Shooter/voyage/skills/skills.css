@@ -1,0 +1,197 @@
+/* The datapad's Skills page (skills-menu lane, 2026-11-18). Built from the approved design
+   (Main.dc.html 1440 and Phone.dc.html 390). Colour comes from one variable, --sk, set per skill
+   in skillsPage.js, so picking a skill re-tints the page with a transition. Layout follows the
+   page's own width (container queries), so it works in the pad at any size. */
+.dp-page-skills:not([hidden]){padding:0;overflow:hidden}
+.sk-wrap{container-type:inline-size;container-name:sk;position:absolute;inset:0;overflow:auto;scrollbar-width:thin;overscroll-behavior:contain}
+.sk-page{overflow:hidden;--sk:#5EE6E6;--sk-soft:rgba(94,230,230,.18);--sk-glow:rgba(94,230,230,.35);--sk-line:rgba(94,230,230,.55);--sk-hue:0deg;--ink:#E8F1F8;--mute:#8FA3B8;--soft:#B7C6D6;--gold:#FFD08A;
+  position:relative;min-height:100%;box-sizing:border-box;padding:12px 24px 16px;display:grid;grid-template-columns:260px minmax(0,1fr) 270px;grid-template-areas:"total total total" "rail main side";gap:14px 22px;align-content:start;color:var(--ink);font-family:Inter,"Segoe UI",system-ui,sans-serif;
+  background-image:linear-gradient(rgba(127,227,227,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(127,227,227,.045) 1px,transparent 1px);background-size:48px 48px}
+.sk-page *{box-sizing:border-box}
+.sk-page button{font-family:inherit}
+.sk-halo{position:absolute;left:30%;top:-220px;width:760px;height:760px;border-radius:50%;background:var(--sk);filter:blur(120px);opacity:.2;transition:background .4s ease;pointer-events:none}
+.sk-total{grid-area:total;position:relative;justify-self:end;font:700 13px "JetBrains Mono",Consolas,monospace;color:var(--gold)}
+.sk-rail{grid-area:rail;position:relative;display:flex;flex-direction:column;gap:8px}
+.sk-eyebrow{font:700 12px "JetBrains Mono",Consolas,monospace;letter-spacing:.22em;color:var(--mute);padding:0 4px 2px}
+.sk-tile{position:relative;display:flex;align-items:center;gap:12px;width:100%;min-height:58px;padding:8px 12px;border-radius:14px;border:1px solid rgba(143,163,184,.16);background:rgba(12,20,34,.72);color:inherit;text-align:left;cursor:pointer;
+  transition:transform .18s ease,background .25s ease,border-color .25s ease,box-shadow .25s ease}
+.sk-tile:hover{transform:translateX(4px)}
+.sk-tile:focus-visible,.sk-notch:focus-visible,.sk-btn:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.sk-tile[aria-pressed=true]{border-color:var(--c);background:var(--c-soft);box-shadow:0 0 0 1px var(--c-line),0 10px 30px var(--c-glow);transform:translateX(6px)}
+.sk-icon{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;flex:none;background:var(--c-icon);transition:background .25s ease}
+.sk-tile[aria-pressed=true] .sk-icon{background:var(--c)}
+.sk-icon[data-kind="art"],.sk-icon[data-kind=lit],.sk-icon[data-kind=dim]{background:none!important}
+.sk-emblem{display:block;object-fit:contain;max-width:100%}
+.sk-tile-body{display:flex;flex-direction:column;gap:6px;flex:1;min-width:0}
+.sk-tile-top{display:flex;align-items:baseline;justify-content:space-between;gap:6px}
+.sk-tile-name{font:600 15px "Space Grotesk",Inter,sans-serif;color:#F2F7FB}
+.sk-tile-short{display:none;font:600 11px Inter,sans-serif;color:var(--soft)}
+.sk-lv{font:700 12px "JetBrains Mono",Consolas,monospace;color:var(--soft)}
+.sk-segs{display:grid;grid-template-columns:repeat(9,minmax(0,1fr));gap:3px}
+.sk-seg{height:5px;border-radius:3px;background:rgba(143,163,184,.18)}
+.sk-seg.on{background:var(--c);opacity:.75}
+.sk-tile[aria-pressed=true] .sk-seg.on{opacity:1}
+.sk-badge{min-width:30px;height:24px;padding:0 6px;border-radius:12px;display:flex;align-items:center;justify-content:center;font:700 12px "JetBrains Mono",Consolas,monospace;color:#1A1203;background:var(--gold);animation:sk-glow 1.8s ease-in-out infinite}
+.sk-badge[hidden]{display:none}
+
+.sk-main{grid-area:main;position:relative;min-width:0;display:flex;flex-direction:column;gap:14px}
+.sk-hero{position:relative;display:flex;align-items:center;gap:24px;padding:16px 22px;border-radius:20px;border:1px solid var(--sk-line);background:rgba(12,20,34,.84);overflow:hidden;transition:border-color .3s ease}
+.sk-sweep{position:absolute;top:0;bottom:0;width:120px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.06),transparent);animation:sk-sweep 4.5s ease-in-out infinite;pointer-events:none}
+.sk-ring{position:relative;width:160px;height:160px;flex:none}
+.sk-ring-art{position:absolute;inset:0;background:var(--art-ring) center/contain no-repeat;display:none}
+.has-ring-art .sk-ring-art{display:block}
+.sk-ring-svg{position:absolute;inset:0;width:100%;height:100%}
+.sk-ring-svg path{transition:stroke .4s ease}
+.has-ring-art .sk-ring-svg path.on{filter:drop-shadow(0 0 4px var(--sk))}
+.sk-ring-centre{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.sk-hero-emblem{animation:sk-float 3.2s ease-in-out infinite;display:grid;place-items:center}
+.has-ring-art .sk-hero-emblem{position:absolute;top:30px}
+.sk-hero-level{font:700 30px "Space Grotesk",Inter,sans-serif;line-height:1;text-shadow:0 2px 6px #000}
+.has-ring-art .sk-hero-level{margin-top:36px;font-size:26px}
+.sk-of9{font:500 10px "JetBrains Mono",Consolas,monospace;letter-spacing:.2em;color:var(--mute)}
+.has-ring-art .sk-of9{display:none}
+.sk-hero-body{position:relative;display:flex;flex-direction:column;gap:10px;flex:1;min-width:0}
+.sk-hero-eyebrow{font:700 12px "JetBrains Mono",Consolas,monospace;letter-spacing:.24em;color:var(--sk);transition:color .3s ease}
+.sk-title{margin:0;font:700 42px "Space Grotesk",Inter,sans-serif;letter-spacing:-.01em;line-height:1}
+.sk-tagline{margin:0;font-size:15px;line-height:1.5;color:var(--soft);max-width:520px}
+.sk-xp{display:flex;align-items:center;gap:12px;margin-top:2px;flex-wrap:wrap}
+.sk-xp-bar{flex:1 1 140px;max-width:420px;height:10px;border-radius:6px;background:rgba(143,163,184,.16);overflow:hidden}
+.sk-xp-fill{height:100%;background:var(--sk);border-radius:6px;transition:width .5s ease,background .3s ease}
+.sk-xp-text{font:500 12px "JetBrains Mono",Consolas,monospace;color:var(--soft)}
+.sk-hero-side{position:relative;display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex:none;width:190px}
+.sk-chip{padding:9px 15px;border-radius:999px;font:700 14px "JetBrains Mono",Consolas,monospace;background:rgba(143,163,184,.12);color:var(--soft)}
+.sk-chip.is-live{background:var(--gold);color:#1A1203;box-shadow:0 0 26px rgba(255,208,138,.45);animation:sk-glow 1.8s ease-in-out infinite}
+.sk-lock-row{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.sk-lock-row[hidden],.sk-lock[hidden],.sk-undo[hidden]{display:none}
+.sk-note{margin:0;min-height:1.2em;font-size:12.5px;line-height:1.4;color:var(--gold);text-align:right}
+.sk-hint{margin:0;font-size:12.5px;color:var(--mute);text-align:right;line-height:1.4}
+.sk-bunk{display:flex;gap:8px;align-items:flex-start;margin:0;padding:9px 11px;border:1px dashed rgba(143,163,184,.4);border-radius:10px;color:var(--mute);font-size:12px;line-height:1.4;text-align:left}
+.sk-bunk-mark{color:#9fe870;font-size:15px;line-height:1}
+
+.sk-btn{min-height:44px;padding:0 16px;border-radius:12px;border:1px solid rgba(143,163,184,.3);background:rgba(16,26,42,.9);color:var(--ink);font:600 14px Inter,sans-serif;cursor:pointer;transition:background .2s ease,border-color .2s ease,transform .12s ease,opacity .2s}
+.sk-btn:hover{transform:translateY(-1px)}.sk-btn:active{transform:translateY(1px)}
+.sk-lock{border-color:var(--gold);background:var(--gold);color:#1A1203;box-shadow:0 0 20px rgba(255,208,138,.4)}
+.sk-lock:disabled{opacity:.6}
+.sk-undo{background:transparent}
+
+.sk-paths{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.sk-cat{position:relative;display:flex;flex-direction:column;gap:12px;padding:18px;border-radius:18px;border:1px solid rgba(143,163,184,.2);background:rgba(12,20,34,.84);isolation:isolate}
+.has-card-art .sk-cat{border:0;padding:20px 18px 18px}
+.has-card-art .sk-cat::before{content:'';position:absolute;inset:0;z-index:-1;border:14px solid transparent;border-image:var(--art-card) 65 fill/14px stretch;filter:brightness(.65) hue-rotate(var(--sk-hue));transition:filter .4s ease;pointer-events:none}
+.sk-cat-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.sk-cat-name{margin:0;font:600 17px "Space Grotesk",Inter,sans-serif}
+.sk-cat-count{white-space:nowrap;font:700 12px "JetBrains Mono",Consolas,monospace;color:var(--sk);transition:color .3s ease}
+.sk-cat-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;grid-template-areas:"track track track" "minus . plus";gap:10px 8px;align-items:center}
+.sk-track{grid-area:track;display:grid;grid-template-columns:repeat(9,minmax(0,1fr));gap:3px}
+.has-notch-art .sk-track{gap:1px}
+.sk-minus{grid-area:minus;width:48px;padding:0;font-size:20px}
+.sk-plus{grid-area:plus;justify-self:stretch;grid-column:2/4;background:var(--sk);border-color:var(--sk);color:#08111D;transition:background .3s ease,border-color .3s ease,transform .12s}
+.sk-minus.is-off{color:#5D6F82}
+.sk-plus.is-off{background:rgba(143,163,184,.08);border-color:rgba(143,163,184,.25);color:var(--mute)}
+.sk-short{display:none}
+.sk-cat-text{display:flex;flex-direction:column;gap:5px;flex:1}
+.sk-label{font:500 10.5px "JetBrains Mono",Consolas,monospace;letter-spacing:.2em;color:var(--mute)}
+.sk-label-next{margin-top:6px}
+.sk-now{font-size:15px;font-weight:600;line-height:1.35;color:#F2F7FB}
+.sk-next{font-size:14px;line-height:1.4;color:var(--mute);transition:color .3s ease}
+.sk-next.is-free{color:var(--sk)}
+
+/* The notches. Without the kit: the design's tall bars (empty / pending outline / locked fill). */
+.sk-notch{min-height:0;min-width:0;height:44px;padding:0;border-radius:8px;cursor:pointer;background:rgba(143,163,184,.08);border:1px solid rgba(143,163,184,.28);transition:background .25s ease,border-color .25s ease,transform .15s ease,box-shadow .25s ease}
+.sk-notch:hover{transform:translateY(-2px)}
+.sk-notch[data-state=locked]{background:var(--sk);border-color:var(--sk);box-shadow:0 0 14px var(--sk-glow)}
+.sk-notch[data-state=pending]{background:transparent;border:2px solid var(--sk);box-shadow:0 0 12px var(--sk-glow),inset 0 0 8px var(--sk-glow);animation:sk-glow 1.4s ease-in-out infinite}
+.sk-notch.is-fresh{animation:sk-pulse .6s ease-out}
+/* With the FLUX notch: the octagon dish, filled ones tinted to the skill, pending one with a lit ring in the dish. */
+.has-notch-art .sk-notch{position:relative;height:30px;border:0;border-radius:0;background:var(--art-notch-empty) center/contain no-repeat;box-shadow:none;animation:none}
+.has-notch-art .sk-notch[data-state=locked]{background:var(--art-notch-filled) center/contain no-repeat,var(--sk);background-blend-mode:luminosity;-webkit-mask:var(--art-notch-filled) center/contain no-repeat;mask:var(--art-notch-filled) center/contain no-repeat;filter:drop-shadow(0 0 6px var(--sk-glow))}
+.has-notch-art .sk-notch[data-state=pending]{border:0;background:var(--art-notch-empty) center/contain no-repeat;box-shadow:none}
+.has-notch-art .sk-notch[data-state=pending]::after{content:'';position:absolute;inset:26%;border-radius:50%;border:2px solid var(--sk);box-shadow:0 0 10px var(--sk),inset 0 0 6px var(--sk);animation:sk-glow 1.2s ease-in-out infinite}
+.has-notch-art .sk-notch.is-fresh{animation:sk-pulse .6s ease-out}
+.sk-page.is-still *,.sk-page.is-still *::before{animation:none!important;transition:none!important}
+
+.sk-side{grid-area:side;position:relative;display:flex;flex-direction:column;gap:14px}
+.sk-risk,.sk-trainbox{padding:18px;border-radius:18px;display:flex;flex-direction:column;gap:10px}
+.sk-risk{border:1px solid rgba(255,138,101,.45);background:rgba(40,16,14,.55)}
+.sk-risk.is-safe{border-color:rgba(61,220,151,.4);background:rgba(12,34,26,.5)}
+.sk-risk-title{font:700 12px "JetBrains Mono",Consolas,monospace;letter-spacing:.22em;color:#FF9A7A}
+.sk-risk.is-safe .sk-risk-title{color:#3DDC97}
+.sk-risk-line{font-size:16px;line-height:1.45;font-weight:600}
+.sk-risk-bar{height:8px;border-radius:6px;background:rgba(255,154,122,.16);overflow:hidden}
+.sk-risk-fill{height:100%;background:#FF9A7A;animation:sk-glow 2.4s ease-in-out infinite;transition:width .5s ease}
+.sk-risk-help{font-size:12.5px;color:#C9A69B;line-height:1.45}
+.sk-scan,.sk-train{white-space:nowrap;padding:0 8px;font-size:13px}
+.sk-scan{border-color:#FF9A7A;background:rgba(255,154,122,.14);color:#FFE4DA}
+.sk-trainbox{border:1px solid var(--sk-line);background:rgba(12,20,34,.84);transition:border-color .3s ease}
+.sk-train-title{font:700 12px "JetBrains Mono",Consolas,monospace;letter-spacing:.22em;color:var(--sk);transition:color .3s ease}
+.sk-train-game{font:600 19px "Space Grotesk",Inter,sans-serif}
+.sk-train-line{font-size:13.5px;color:var(--soft);line-height:1.5}
+.sk-train{border-color:var(--sk);background:var(--sk-soft);color:#F2F7FB}
+.sk-train.is-off{opacity:.5}
+.sk-train-help{font-size:12px;color:var(--mute)}
+
+@keyframes sk-pulse{0%{transform:scale(1);box-shadow:0 0 0 0 rgba(255,255,255,.55)}45%{transform:scale(1.35)}100%{transform:scale(1);box-shadow:0 0 0 14px rgba(255,255,255,0)}}
+@keyframes sk-glow{0%,100%{opacity:.55}50%{opacity:1}}
+@keyframes sk-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+@keyframes sk-sweep{0%{transform:translateX(-120%)}100%{transform:translateX(220%)}}
+
+/* Medium pad: rail beside the page, risk and training under it in a row. */
+@container sk (max-width:1120px){
+  .sk-page{grid-template-columns:230px minmax(0,1fr);grid-template-areas:"total total" "rail main" "rail side"}
+  .sk-side{flex-direction:row}.sk-side>*{flex:1}
+  .sk-hero-side{width:180px}
+}
+/* Phone: the 4 x 2 emblem grid, a compact hero, each path a row with - notches +, the footer with scan and train. */
+@container sk (max-width:760px){
+  .sk-page{display:flex;flex-direction:column;gap:10px;padding:12px 12px 14px;background-size:36px 36px}
+  .sk-total{align-self:flex-end}
+  .sk-eyebrow{display:none}
+  .sk-rail{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+  .sk-tile{flex-direction:column;justify-content:center;gap:3px;height:64px;min-height:64px;padding:0;border-radius:14px}
+  .sk-tile:hover,.sk-tile[aria-pressed=true]{transform:none}
+  .sk-tile[aria-pressed=true]{background:var(--c)}
+  .sk-tile[aria-pressed=true] .sk-tile-short{color:#0A1220}
+  .sk-tile-body{flex:none;gap:0;align-items:center}
+  .sk-tile-name,.sk-lv,.sk-segs{display:none}
+  .sk-tile-short{display:block}
+  .sk-icon{width:26px;height:26px;border-radius:8px;background:none!important}
+  .sk-tile[aria-pressed=true] .sk-emblem-line{stroke:#0A1220}
+  .sk-badge{position:absolute;top:-6px;right:-4px;min-width:20px;height:20px;padding:0 4px;font-size:11px}
+  .sk-main{gap:10px}
+  .sk-hero{gap:12px;padding:14px;border-radius:18px;flex-wrap:wrap}
+  .sk-ring{width:92px;height:92px}
+  .has-ring-art .sk-hero-emblem{top:17px}.has-ring-art .sk-hero-emblem .sk-emblem{width:48px;height:48px}
+  .has-ring-art .sk-hero-level{margin-top:22px;font-size:17px}
+  .sk-hero-level{font-size:20px}.sk-of9{display:none}
+  .sk-hero-emblem .sk-emblem-line{width:26px;height:26px}
+  .sk-hero-body{gap:5px}
+  .sk-hero-eyebrow{font-size:11px;letter-spacing:.2em}
+  .sk-title{font-size:30px}
+  .sk-tagline,.sk-hint{display:none}
+  .sk-xp{gap:4px}.sk-xp-bar{flex:1 1 100%;height:8px}.sk-xp-text{font-size:11px}
+  .sk-hero-side{flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:space-between;width:100%;gap:8px}
+  .sk-chip{padding:5px 10px;font-size:11px}
+  .sk-note{text-align:left;flex-basis:100%;order:5}
+  .sk-bunk{font-size:11.5px}
+  .sk-btn{min-height:44px}
+  .sk-paths{grid-template-columns:1fr;gap:10px}
+  .sk-cat{padding:12px 14px;gap:8px;border-radius:16px}
+  .has-card-art .sk-cat{padding:16px 18px}
+  .has-card-art .sk-cat::before{border-width:12px;border-image-width:12px}
+  .sk-cat-name{font-size:17px}.sk-cat-count{font-size:12px}
+  .sk-cat-text{gap:3px;flex:none}
+  .sk-label{display:none}
+  .sk-now{font-size:14px}
+  .sk-next{font-size:12px}.sk-next::before{content:'Next: '}
+  .sk-cat-row{display:flex;gap:8px}
+  .sk-track{flex:1;gap:4px}
+  .sk-notch{height:20px;border-radius:4px}
+  .has-notch-art .sk-notch{height:24px}
+  .sk-minus,.sk-plus{width:44px;height:44px;min-height:44px;padding:0;font-size:20px;flex:none;grid-column:auto}
+  .sk-plus .sk-long{display:none}.sk-plus .sk-short{display:inline;font-weight:700}
+  .sk-side{flex-direction:row;gap:10px}
+  .sk-risk,.sk-trainbox{padding:0;border:0;background:none;flex:1;gap:0}
+  .sk-risk>:not(.sk-scan),.sk-trainbox>:not(.sk-train){display:none}
+  .sk-scan,.sk-train{width:100%;font-size:13px}
+  .sk-scan .sk-long,.sk-train .sk-long{display:none}.sk-scan .sk-short,.sk-train .sk-short{display:inline}
+}
