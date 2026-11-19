@@ -91,11 +91,12 @@ export function renderSparPicker(root, { count, onCount, onStart, onClose }) {
     h('div', { class: 'gm-row' }, button('Start the fight', onStart, { class: 'primary wb-start', primary: true }), button('Not now', onClose)));
 }
 
-/** The crafting bench's menu: the chain's games and recipe, the older heat-and-shape game, the cutter's grade, and a part left in hand. */
+/** The crafting bench's menu: the chain's games (Cut, Screw, Bend) and recipe, the older heat-and-shape game, the cutter's grade, and a part left in hand. */
 export function renderCraftMenu(root, { part = null, partWords = '', tool = 'shop', onPick, onTool, onClose }) {
   const items = [
     ['cut', 'Cut a plate', 'Cut: drag the blade round the outline. One game, about 20 seconds.'],
     ['screw', 'Drive a bolt', 'Screw: circle the bolt head, stop in the green. One game, about 15 seconds.'],
+    ['bend', 'Bend a bracket', 'Bend: press A and D in the beat, stop on the ghost line, set it. Two bends, about 25 seconds.'],
     ['bolt-plate', 'Bolt plate', 'Cut the plate, then bolt it down. Two games, one roll, a part kept between them.'],
     ['heat', 'Old: heat and shape', 'The older game: heat the stock, then tap the tools in order.'],
   ];

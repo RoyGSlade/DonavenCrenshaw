@@ -2,7 +2,7 @@
 // roll effect in plain words, straight from the setup so the words cannot disagree with the game), the grade card and a
 // requestAnimationFrame loop. DOM only; no rules here.
 import { KIND_NAME, PASS, CLEAN, PERFECT, gradeWord } from './craftChain.js';
-import { CUT_BASE, SCREW_BASE } from './setup.js';
+import { CUT_BASE, SCREW_BASE, BEND_BASE } from './setup.js';
 
 export const h = (tag, attrs = {}, ...kids) => {
   const el = document.createElement(tag);
@@ -23,6 +23,7 @@ const TOOL_WORDS = Object.freeze({ worn: 'thin line', shop: 'normal line', good:
 export const toolWords = (tool) => `${tool[0].toUpperCase()}${tool.slice(1)} cutter: ${TOOL_WORDS[tool] || 'normal line'}`;
 const CUT_ROLL = Object.freeze({ '-2': 'a much narrower line', '-1': 'a narrower line', '0': 'a normal line', '1': 'a wider line and a dotted guide to follow', '2': 'a much wider line and a dotted guide to follow' });
 const SCREW_ROLL = Object.freeze({ '-2': 'more turns and a narrow snug zone', '-1': 'a few more turns and a narrower snug zone', '0': 'normal turns and a normal snug zone', '1': 'fewer turns and a wider snug zone', '2': 'much fewer turns and a wide snug zone' });
+const BEND_ROLL = Object.freeze({ '-2': 'a much narrower rhythm window and a tight stop zone', '-1': 'a narrower rhythm window and a tighter stop zone', '0': 'a normal rhythm window and stop zone', '1': 'a wider rhythm window and stop zone', '2': 'a much wider rhythm window and stop zone' });
 
 /**
  * The effect chips for one game at this craft's roll, in plain words: what the roll did and what each of the three paths did.
@@ -38,6 +39,10 @@ export function effectChips(kind, setup) {
   } else if (kind === 'screw') {
     out.push({ id: 'roll', text: `${setup.label} roll: ${SCREW_ROLL[String(setup.tier)]}` });
     out.push({ id: 'speed', text: sp ? `Speed ${sp}: the bolt goes in ${Math.round(SCREW_BASE.threadPerPoint * sp * 100)}% faster, so fewer turns` : 'Speed 0: normal thread' });
+  }
+  else if (kind === 'bend') {
+    out.push({ id: 'roll', text: `${setup.label} roll: ${BEND_ROLL[String(setup.tier)]}` });
+    out.push({ id: 'speed', text: sp ? `Speed ${sp}: a rushed press strains the bar ${Math.round(BEND_BASE.rushPerPoint * sp / BEND_BASE.rush * 100)}% less` : 'Speed 0: a rushed press strains the bar fully' });
   }
   out.push({ id: 'quality', text: q ? `Quality ${q}: +${setup.qualityBonus} on the item` : 'Quality 0: no bonus' });
   out.push({ id: 'material', text: ma ? `Material ${ma}: ${Math.round((1 - setup.materialFactor) * 100)}% less scrap, carried across crafts` : 'Material 0: normal scrap use' });

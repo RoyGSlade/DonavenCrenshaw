@@ -293,6 +293,21 @@ export function setupScrew({ tier = 0, points = {}, level = POINT_MAX } = {}) {
   };
 }
 
+// --- Crafting chain: Bend (v2/PLAN.md section 4.2 and 4.3) ------------------------------------------
+//   Bend   good press 0.18 to 0.45 s after the last one = +2 degrees; a rushed press strains the bar 25 (Speed: -2 a point, 7 at nine);
+//          strain falls 10 a second, kinks at 100. Stop within 3 degrees (that is the 70 that passes: 10 grade a degree).
+//   The roll (tier t): the rhythm window x (1 + 0.15 t) about its middle; stop within 3 + 0.5 t degrees.
+export const BEND_BASE = Object.freeze({ lo: 0.18, hi: 0.45, tierWindow: 0.15, stop: 3, tierStop: 0.5, press: 2, rush: 25, rushPerPoint: 2, fall: 10, over: 10, minAngle: 30, maxAngle: 120, qualityPerPoint: 4, buildPerPoint: 0.05, materialPerPoint: 0.04 });
+export function setupBend({ tier = 0, points = {}, level = POINT_MAX, bends = 1 } = {}) {
+  const p = cleanPoints(points, CRAFT_CATEGORIES, level), t = clampTier(tier), b = BEND_BASE;
+  const mid = (b.lo + b.hi) / 2, half = ((b.hi - b.lo) / 2) * (1 + b.tierWindow * t);
+  return {
+    kind: 'bend', lo: r4c(mid - half), hi: r4c(mid + half), stop: r4c(b.stop + b.tierStop * t), press: b.press, rush: b.rush - b.rushPerPoint * p.speed, fall: b.fall, over: b.over,
+    minAngle: b.minAngle, maxAngle: b.maxAngle, bends: Math.max(1, Math.min(3, Math.trunc(bends) || 1)),
+    ...craftBits(b, p), tier: t, points: p, label: tierInfo(t).label,
+  };
+}
+
 // --- Navigation: plot the lane (PLAN.md section 2.3) ------------------------------
 // Categories: time (travel time), fuel (fuel use), warning (hazard warning).
 //   time     every lane costs 4% less travel time per point        (0..9 -> x1 .. x0.64, exact, never rounded)
