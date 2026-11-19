@@ -90,7 +90,7 @@ test('picker numbers ARE the minigames numbers: repair and hacking', () => {
     const lock = { time: 16, tumblers: 9, misses: 2 };
     const h = setupHack({ points: { size: n }, lock });
     const hr = setupHack({ points: { retries: n }, lock });
-    assert.equal(CATEGORIES.hacking.cats[1].words(n), `${9 - h.tumblers} fewer tumbler${9 - h.tumblers === 1 ? '' : 's'} (never under 2)`);
+    assert.equal(CATEGORIES.hacking.cats[1].words(n), `${9 - h.tumblers} fewer tumbler${9 - h.tumblers === 1 ? '' : 's'} (never under 2), lit window ${n ? '+' : ''}${Math.round((h.window - 1) * 100)}% wider`);
     assert.equal(CATEGORIES.hacking.cats[2].words(n), `${hr.misses - 2 ? '+' : ''}${hr.misses - 2} spare miss${hr.misses - 2 === 1 ? '' : 'es'}`);
     const ht = setupHack({ points: { time: n } }).time;
     assert.equal(CATEGORIES.hacking.cats[0].words(n), `${n ? '+' : ''}${Math.round((ht - 16) * 10) / 10} s on every hack`);

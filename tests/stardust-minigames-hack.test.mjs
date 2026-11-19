@@ -104,3 +104,18 @@ test('the practice dummy lock never trips: no clock, any number of misses, opens
   assert.equal(hackXp(s.result, 1) > 0, true, 'the rules would pay; the view pays 0 for a practice lock');
   assert.deepEqual([2, 3, 5, 9].map((n) => createPracticeHack({ seed: 1, tumblers: n }).tumblers.length), [2, 3, 5, 5]);
 });
+
+test('every Puzzle size point changes something on a basic lock: odd points widen the lit window, even points also drop a tumbler until the floor of 2', () => {
+  const at = (n) => hackSetup({ tier: 0, lock: 1, level: 9, points: { size: n } });
+  let prev = at(0);
+  for (let n = 1; n <= 9; n++) {
+    const cur = at(n);
+    assert.ok(cur.window > prev.window || cur.tumblers < prev.tumblers, `point ${n} changed nothing`);
+    assert.ok(cur.window > prev.window, `point ${n} must widen the window`);
+    const w = (x) => createSetupHack({ seed: 4, lock: 1, setup: x }).tumblers[0].width;
+    assert.ok(w(cur) > w(prev), `point ${n}: the first tumbler's lit window is not wider in the game`);
+    prev = cur;
+  }
+  assert.deepEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => at(n).tumblers), [3, 3, 2, 2, 2, 2, 2, 2, 2, 2]);
+  assert.deepEqual([0, 1, 2, 9].map((n) => at(n).window), [1, 1.05, 1.1, 1.45]);
+});
