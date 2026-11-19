@@ -62,12 +62,14 @@ const walkTo = async (page, room) => {
       const { MAP_DEFS } = await import('/projects/Space-Shooter/voyage/maps/index.js');
       const w = window.__stardust.onfoot.world;
       if (w.map.id === room) return null;
-      const d = w.map.doors.find((x) => x.id === doorToward(w.map.id, [room], MAP_DEFS));
-      w.place(d.x + d.w / 2, d.y + d.h / 2);
-      return d.id;
+      const id = doorToward(w.map.id, [room], MAP_DEFS);
+      const e = w.doors.entries.find((x) => x.room === id); // launch doors: a link door is a two-door entry; step into its vestibule
+      const d = w.map.doors.find((x) => x.id === id);
+      if (e) w.place(e.zone.x + e.zone.w / 2, e.zone.y + e.zone.h / 2); else w.place(d.x + d.w / 2, d.y + d.h / 2);
+      return id;
     }, room);
     if (!door) return;
-    await settle(page, 1300);
+    await settle(page, 3200);
   }
 };
 // Write the earlier scenes as played (good paths, mini-games stubbed to a win) so the page opens on the scene under test.

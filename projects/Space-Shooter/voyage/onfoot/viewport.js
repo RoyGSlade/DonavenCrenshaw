@@ -42,10 +42,14 @@ export function cameraFor(map, x, y, w, h, zoom) {
 function lookCamera(map, lc, x, y, w, h, zoom) {
   const T = map.tile, m = (lc.margin ?? 0.5) * T, top = lc.top ?? 0;
   const ratio = zoom / viewZoom(w, h, map.kind);
-  const fit = Math.min(w / (map.w + m * 2), (h - top) / (map.h + m * 2));
+  // launch doors hook: a room with vestibule stubs (map.def.roomBox, tiles [x0, y0, x1, y1]) is framed by the room alone, so
+  // adding entries never shrinks a room's approved view; the view widens only while you stand out in a stub.
+  const rb = map.def?.roomBox, bx0 = rb ? rb[0] * T : 0, by0 = rb ? rb[1] * T : 0, bx1 = rb ? rb[2] * T : map.w, by1 = rb ? rb[3] * T : map.h;
+  const fit = Math.min(w / (bx1 - bx0 + m * 2), (h - top) / (by1 - by0 + m * 2));
   // maxTilePx (optional): a small room is not blown up past the art's own size; it sits centred in its hull.
   const z = Math.min(fit * T >= (lc.minTilePx ?? 40) ? fit : (lc.tilePx ?? 46) / T, (lc.maxTilePx ?? Infinity) / T) * Math.min(1, ratio);
   const vw = w / z, vh = h / z, topW = top / z;
   const span = (lo, hi, v, p) => (hi - lo <= v ? (lo + hi - v) / 2 : Math.max(lo, Math.min(hi - v, p - v / 2)));
-  return { x: span(-m, map.w + m, vw, x), y: span(-m - topW, map.h + m, vh, y), zoom: z, vw, vh };
+  const out = rb ? 1.6 * T : 0;
+  return { x: span(Math.min(bx0 - m, x - out), Math.max(bx1 + m, x + out), vw, x), y: span(Math.min(by0 - m - topW, y - out), Math.max(by1 + m, y + out), vh, y), zoom: z, vw, vh };
 }

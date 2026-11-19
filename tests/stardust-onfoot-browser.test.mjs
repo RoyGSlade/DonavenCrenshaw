@@ -209,10 +209,11 @@ test('on foot: walk, talk, mine, shoot, lockbox, fly to a giver (1440), then the
   assert.ok(events.includes('tutorial:shot'), 'cleared the range');
 
   // Puzzle: through Edna's back-room door, then her lockbox.
-  const door = await page.evaluate(() => { const d = document.querySelector('.of-world').__world.map.doors.find(x => x.id === 'backroom'); return { x: d.x + d.w / 2, y: d.y + d.h / 2 }; });
-  await walkTo(page, door.x - 60, door.y);
-  await walkTo(page, door.x + 10, door.y, { near: 6, tries: 30 });
-  await page.waitForFunction(() => document.querySelector('.of-world').__world.map.id === 'edna-den', null, { timeout: 5000 });
+  // Doors are built into the walls now (launch doors lane): a link between rooms is a two-door entry. Step into its vestibule and
+  // the outer door closes, the map changes with both doors shut and the next door opens (walked for real in stardust-doors-browser).
+  const enter = (id) => page.evaluate((id) => { const w = document.querySelector('.of-world').__world; const z = w.doors.entries.find(x => x.room === id).zone; w.place(z.x + z.w / 2, z.y + z.h / 2); }, id);
+  await enter('backroom');
+  await page.waitForFunction(() => document.querySelector('.of-world').__world.map.id === 'edna-den', null, { timeout: 9000 });
   await sleep(500);
   await walkToInteract(page, 'puzzle', 'lockbox');
   await page.keyboard.press('KeyE');
@@ -220,12 +221,11 @@ test('on foot: walk, talk, mine, shoot, lockbox, fly to a giver (1440), then the
   assert.ok((await log(page)).includes('tutorial:solved'));
 
   // Fly: back to the hangar, the launch hatch, Dustfall, then meet Garrity.
-  const out = await page.evaluate(() => { const d = document.querySelector('.of-world').__world.map.doors.find(x => x.id === 'out'); return { x: d.x + d.w / 2, y: d.y + d.h / 2 }; });
-  await walkTo(page, out.x - 40, out.y);
-  await walkTo(page, out.x + 10, out.y, { near: 6, tries: 30 });
-  await page.waitForFunction(() => document.querySelector('.of-world').__world.map.id === 'hangar', null, { timeout: 5000 });
+  await sleep(600);
+  await enter('out');
+  await page.waitForFunction(() => document.querySelector('.of-world').__world.map.id === 'hangar', null, { timeout: 9000 });
   await sleep(400);
-  await walkToInteract(page, 'station', 'hatch', [[13.5 * 48, 8.5 * 48], [2 * 48, 8.5 * 48]]); // round the ship, not through it (the hatch opens the helm here; the hangar page opens its launch panel)
+  await walkToInteract(page, 'station', 'hatch', [[17.5 * 48, 12.5 * 48], [6 * 48, 12.5 * 48]]); // round the ship, not through it (the hatch opens the helm here; the hangar page opens its launch panel)
   await page.keyboard.press('KeyE');
   await page.locator('.of-helm [data-target="dustfall"]').click();
   await flyHop(page);

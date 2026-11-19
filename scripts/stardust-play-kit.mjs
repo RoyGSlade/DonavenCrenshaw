@@ -74,6 +74,16 @@ export async function walkToInteract(page, kind, id, via = []) {
 
 /** Walks through a door (by id) on the current map. */
 export async function walkThroughDoor(page, doorId, toMap) {
+  // launch doors: a link between rooms may be a two-door entry (a door in the wall, a short vestibule). Walk up to it, in through it
+  // and let it cycle: the outer door closes, the map changes with both doors shut, the next door opens.
+  const entry = await page.evaluate((id) => { const w = document.querySelector('.of-world').__world; const e = w.doors?.entries.find((x) => x.room === id); if (!e) return null; const d = w.doors.get(id), T = w.map.tile; const o = { n: [0, -1], s: [0, 1], w: [-1, 0], e: [1, 0] }[e.side]; return { ax: d.x + d.w / 2 - (o[0] ? o[0] * 1.5 * T : 0), ay: d.y + d.h / 2 - (o[1] ? o[1] * 1.5 * T : 0), zx: e.zone.x + e.zone.w / 2, zy: e.zone.y + e.zone.h / 2, side: e.side, dx: d.x + d.w / 2, dy: d.y + d.h / 2 }; }, doorId);
+  if (entry) {
+    await walkTo(page, entry.ax, entry.ay, { near: 20, tries: 90 });
+    await walkTo(page, entry.zx, entry.zy, { near: 10, tries: 60 });
+    if (toMap) await onMap(page, toMap);
+    await sleep(1200); // the next door opens after a beat
+    return;
+  }
   const d = await page.evaluate((id) => { const d = document.querySelector('.of-world').__world.map.doors.find((x) => x.id === id); return d ? { x: d.x + d.w / 2, y: d.y + d.h / 2, w: d.w, h: d.h } : null; }, doorId);
   assert.ok(d, `door ${doorId}`);
   const side = await world(page);
