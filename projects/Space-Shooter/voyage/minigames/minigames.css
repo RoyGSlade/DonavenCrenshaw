@@ -1,0 +1,55 @@
+/* Minigame panels (dev preview). Same tokens as voyage.css. No images: shapes only. */
+.mg-page{max-width:1100px;margin:0 auto;padding:0 clamp(16px,3vw,36px) 48px}
+.mg-dev{display:grid;grid-template-columns:minmax(260px,340px) 1fr;gap:24px;align-items:start}
+.mg-controls{border:1px solid var(--line);border-top:2px solid var(--orange);background:#0d1826ee;border-radius:6px;padding:16px}
+.mg-controls h2{margin:0 0 4px;font-size:18px}
+.mg-controls p{margin:6px 0;color:var(--muted);font-size:12px;line-height:1.5}
+.mg-controls label{display:grid;grid-template-columns:1fr 56px;gap:4px 10px;align-items:center;margin:10px 0;font:11px Consolas,monospace;letter-spacing:.06em;color:#b5c8d5}
+.mg-controls label input[type=range]{grid-column:1/3;width:100%}
+.mg-controls label output{text-align:right;color:var(--cyan)}
+.mg-readout{margin:12px 0;padding:10px;border:1px solid var(--line);border-radius:4px;background:#0a1624;font:12px Consolas,monospace;line-height:1.7;color:var(--text)}
+.mg-readout b{color:var(--cyan)}
+.mg-stage{min-height:420px}
+.mg-closed{margin-top:12vh}
+@media(max-width:760px){.mg-dev{grid-template-columns:1fr}}
+
+.rp-panel{border:1px solid var(--line);border-top:2px solid var(--cyan);background:#0d1826ee;border-radius:6px;padding:16px;max-width:560px;margin:0 auto}
+.rp-eyebrow{font:10px Consolas,monospace;letter-spacing:.14em;color:var(--cyan);margin:0 0 10px}
+.rp-hud{display:flex;justify-content:space-between;font:12px Consolas,monospace;color:#b5c8d5;margin-bottom:6px}
+.rp-clock{height:5px;background:#1b2d3d;border-radius:3px;overflow:hidden;margin-bottom:12px}
+.rp-clock i{display:block;height:100%;width:100%;background:var(--cyan)}
+.rp-clock.is-low i{background:#ff6b5a}
+.rp-board{display:grid;grid-template-columns:repeat(var(--n),1fr);gap:4px;touch-action:manipulation}
+.rp-tile{position:relative;aspect-ratio:1;padding:0;min-height:44px;border:1px solid var(--line);border-radius:6px;background:#0a1624;overflow:hidden}
+.rp-tile:hover:not(:disabled){background:#10202f}
+.rp-tile[aria-disabled=true]{cursor:default}
+.rp-spin{display:block;width:100%;height:100%;transition:transform .16s ease-out}
+.is-still .rp-spin{transition:none}
+.rp-spin svg{display:block;width:100%;height:100%}
+.rp-arm{stroke:#2f4a5e;stroke-width:15;stroke-linecap:butt}
+.rp-hub{fill:#2f4a5e}
+.rp-glyph{fill:none;stroke:#eaf4f5;stroke-width:5;stroke-linecap:round;stroke-linejoin:round}
+.rp-socket{fill:none;stroke:#1d3142;stroke-width:3;stroke-dasharray:6 6}
+.rp-tile.is-on{border-color:#2e6b6b;background:#0c2530}
+.rp-tile.is-on .rp-arm{stroke:var(--cyan)}
+.rp-tile.is-on .rp-hub{fill:var(--cyan)}
+.rp-pump .rp-hub{fill:#3b7fa0}
+.rp-pump.is-on .rp-hub{fill:#9fe870}
+.rp-valve .rp-hub{fill:#a4533f}
+.rp-valve.is-on{border-color:#6a9c52;background:#142a1c}
+.rp-valve.is-on .rp-hub{fill:#9fe870}
+.rp-blank{opacity:.55}
+.rp-tile.is-hint{outline:3px solid var(--orange);outline-offset:-3px}
+.rp-board.is-done .rp-tile{opacity:.9}
+.rp-status{margin:12px 0 4px;min-height:1.4em;color:var(--text);font-size:14px}
+.rp-foot{display:flex;justify-content:space-between;align-items:center;margin-top:6px;color:var(--muted);font:11px Consolas,monospace}
+.rp-help{color:var(--muted);font-size:12px;margin:8px 0 0}
+.rp-result{margin-top:12px;display:grid;gap:8px;padding:12px;border:1px solid var(--line);border-radius:6px;background:#0a1624}
+.rp-result.is-ok{border-color:#4d7d3a}.rp-result.is-bad{border-color:#8c4a3c}
+.rp-stars{font-size:26px;letter-spacing:.2em;color:#9fe870}
+.rp-result.is-bad .rp-stars{color:#ff6b5a;font:700 16px Consolas,monospace}
+.rp-result span{font-size:13px;color:#b5c8d5}
+
+.mg-controls select{grid-column:1/3;font:12px Consolas,monospace;background:#0a1624;color:var(--text);border:1px solid var(--line);border-radius:4px;padding:8px}
+.mg-stage{scroll-margin-top:56px}
+.rp-result button{justify-self:start;min-width:140px}
