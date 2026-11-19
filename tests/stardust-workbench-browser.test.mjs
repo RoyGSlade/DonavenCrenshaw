@@ -47,7 +47,18 @@ const sheetShut = (page) => page.waitForSelector('#hg-minigame', { state: 'hidde
 // Each game's bot: plays to the result card by tapping what a player taps (the skin test's bots).
 const BOTS = {
   repair: async (page, tap) => { for (let i = 0; i < 80 && !(await page.locator('.rp-result').count()); i++) { const idx = await page.evaluate(async () => (await import('/projects/Space-Shooter/voyage/minigames/repair.js')).nextHint(document.querySelector('.rp-panel').__state)); if (idx == null) break; await tap(`.rp-tile[data-i="${idx}"]`); } },
-  hack: async (page, tap) => { for (let i = 0; i < 6; i++) { if (await page.locator('.rp-result').count()) break; await page.evaluate(() => { const s = document.querySelector('.hk-panel').__state; if (!s.done) { s.cursor = s.tumblers[s.index].at; s.dir = 0; } }); await tap('.hk-btn'); } },
+  // Hacking v2 (mirrors, a portal, firewalls): per firewall put the mirrors in place through the state, catch the portal in its window, fire.
+  hack: async (page, tap) => {
+    for (let stage = 0; stage < 6 && !(await page.locator('.rp-result').count()); stage++) {
+      await page.evaluate(() => { const s = document.querySelector('.mh-panel').__state; s.angles = s.layout.solved.map((v, i) => v ?? s.layout.start[i]); });
+      await page.evaluate(() => new Promise((res) => { import('/projects/Space-Shooter/voyage/minigames/mirrors.js').then((mod) => { const tick = () => { const s = document.querySelector('.mh-panel').__state; if (mod.inWindow(s) && s.portal.cooldown === 0) { document.querySelector('.mh-catch').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true })); res(true); } else requestAnimationFrame(tick); }; tick(); }); }));
+      await page.waitForSelector('.mh-fire:not([disabled])');
+      await tap('.mh-fire');
+      await page.waitForFunction((k) => { const s = document.querySelector('.mh-panel')?.__state; return !s || s.stage > k || s.done; }, stage, { timeout: 12000 });
+    }
+  },
+  // The practice lock is still the old ring.
+  practice: async (page, tap) => { for (let i = 0; i < 6; i++) { if (await page.locator('.rp-result').count()) break; await page.evaluate(() => { const s = document.querySelector('.hk-panel').__state; if (!s.done) { s.cursor = s.tumblers[s.index].at; s.dir = 0; } }); await tap('.hk-btn'); } },
   haggle: async (page) => {
     await page.evaluate(async () => { const m = await import('/projects/Space-Shooter/voyage/minigames/haggle.js'); const s = document.querySelector('.hg-panel').__state; const [lo, hi] = m.bandPrices(s); const v = s.speed; s.phase = 0; s.t = 0; for (let t = 0; t < 4; t += 0.005) { const p = m.priceAt(s, m.needleAt(s, t)); if (p >= lo && p <= hi) { s.phase = (t * v) % 2; s.t = 0; s.speed = 0; break; } } });
     await page.evaluate(() => document.querySelector('.hk-btn').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true })));
@@ -127,6 +138,7 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
         for (const [id, skill] of NINE) {
           const before = await state(page);
           await use(page, `wb-${id}`);
+          if (id === 'hack') { await page.waitForSelector('.wb-w[data-where="foot"]'); if (before) await shot('2a-hack-where'); await tapper(page, phone)('.wb-w[data-where="foot"]'); }
           await page.waitForSelector('#hg-attempt:not([hidden])', { timeout: 5000 });
           await page.waitForFunction(() => /Made it|Not this time|Natural/.test(document.getElementById('hg-attempt').innerText), null, { timeout: 5000 });
           const tray = await page.locator('#hg-attempt').innerText();
@@ -137,8 +149,10 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
           assert.equal(m.sw, m.iw, `${id}: no sideways scroll`);
           assert.match(m.note, /roll:/, `${id}: preview line`); assert.match(m.eyebrow, /STEADY ROLL/);
           if (id === 'repair') await shot('3-station-game');
+          if (id === 'hack') await shot('3b-hack-station-game');
           await playToEnd(page, id, phone);
           if (id === 'repair') await shot('4-station-result');
+          if (id === 'hack') await shot('4b-hack-station-result');
           await closeCard(page, phone);
           await sheetShut(page);
           const after = await state(page);
@@ -156,9 +170,49 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
         await sheetOpen(page);
         assert.match(await page.locator('.wb-preview').textContent(), /no clock/i);
         await shot('5-practice-lock');
-        await playToEnd(page, 'hack', phone);
+        await playToEnd(page, 'practice', phone);
         await closeCard(page, phone); await sheetShut(page);
         assert.deepEqual((await state(page)).progress, before.progress);
+      });
+
+      await sub('a lost coolant line stays broken; shutting the valve takes the system offline (the station says so)', async () => {
+        const before = await state(page);
+        await use(page, 'wb-repair');
+        await sheetOpen(page);
+        // a few turns, then put the water just short of the valve and let a leak finish it
+        await page.evaluate(() => { const s = document.querySelector('.rp-panel').__state; s.pool = s.capacity * 0.97; });
+        await page.waitForSelector('.rp-result.is-bad', { timeout: 30000 });
+        assert.equal(await page.evaluate(() => { const r = document.querySelector('.rp-panel').__state.result; return [r.broken, r.flooding, r.system].join(); }), 'true,true,engine-cooling');
+        assert.match(await page.locator('.rp-result').innerText(), /stays broken[\s\S]*Engine cooling goes offline/);
+        await shot('4c-repair-lost');
+        await tapper(page, phone)('.rp-shut');
+        assert.equal(await page.evaluate(() => document.querySelector('.rp-panel').__state.result.offline), 'engine-cooling');
+        await page.waitForTimeout(300); await shot('4d-repair-valve-shut');
+        await closeCard(page, phone); await sheetShut(page);
+        const after = await state(page);
+        assert.match(after.said, /Valve shut[\s\S]*Engine cooling is offline[\s\S]*still broken/);
+        assert.equal(after.progress.xp.repair, before.progress.xp.repair, 'no XP for a lost line');
+      });
+
+      await sub('failing every hacking retry answers by place: a ship closes its port, combat changes the section, on foot the terminal locks', async () => {
+        for (const [where, word, key] of [['ship', /closed its ports/, 'port'], ['combat', /target a new section/, 'section'], ['foot', /terminal is locked/, 'terminal']]) {
+          const before = await state(page);
+          await use(page, 'wb-hack');
+          await page.waitForSelector(`.wb-w[data-where="${where}"]`);
+          await tapper(page, phone)(`.wb-w[data-where="${where}"]`);
+          await sheetOpen(page);
+          assert.equal(await page.evaluate(() => document.querySelector('.mh-panel').__state.context), where);
+          for (let k = 0; k < 12 && !(await page.locator('.rp-result').count()); k++) { await page.evaluate(() => { const s = document.querySelector('.mh-panel').__state; if (!s.done) s.left = 0.02; }); await page.waitForTimeout(120); }
+          await page.waitForSelector('.rp-result.is-bad');
+          const r = await page.evaluate(() => JSON.parse(JSON.stringify(document.querySelector('.mh-panel').__state.result)));
+          assert.equal(r.security, 'alerted'); assert.ok(r[key]);
+          assert.match(await page.locator('.rp-result').innerText(), word);
+          if (where !== 'foot') await shot(`4e-hack-failed-${where}`);
+          await closeCard(page, phone); await sheetShut(page);
+          const after = await state(page);
+          assert.match(after.said, /Security is alerted/); assert.match(after.said, word);
+          assert.equal(after.progress.xp.hacking, before.progress.xp.hacking, 'no XP for a lockout');
+        }
       });
 
       await sub('gym trainer: spend a point, train for credits, the XP is a quarter', async () => {

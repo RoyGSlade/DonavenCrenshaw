@@ -74,6 +74,15 @@ export function renderConfirm(root, state, { question, yes, onYes, onNo, showRis
     h('div', { class: 'gm-row' }, button(yes, onYes, { primary: true, class: 'wb-yes primary' }), button('Not now', onNo, { class: 'wb-no' })));
 }
 
+/** The hacking bench's place picker: a failed hack answers by where you were. */
+export function renderWhere(root, { onPick, onClose }) {
+  const rows = [['foot', 'On foot, at a terminal', 'A failed hack locks the terminal: find a new one.'], ['ship', "A ship's port", 'A failed hack closes the port: find another way in.'], ['combat', 'Ship to ship combat', 'A failed hack seals that section: target a new one.']];
+  root.replaceChildren(
+    h('p', { class: 'bn-day', text: 'Pick where this hack happens. Win and nothing changes. Lose every retry and security is alerted, then the place answers:' }),
+    ...rows.map(([id, name, what]) => h('div', { class: 'gm-row wb-where' }, button(name, () => onPick(id), { class: id === 'foot' ? 'primary wb-w' : 'wb-w', 'data-where': id, primary: id === 'foot' }), h('span', { class: 'rp-help', text: what }))),
+    h('div', { class: 'gm-row' }, button('Not now', onClose)));
+}
+
 /** The sparring picker: how many marauders, then start. */
 export function renderSparPicker(root, { count, onCount, onStart, onClose }) {
   root.replaceChildren(

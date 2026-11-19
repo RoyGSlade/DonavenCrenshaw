@@ -3,9 +3,8 @@
 // scene hooks and the gym use), and a finished game pays real XP into the skill (state.js earnXp). DOM lives in games.js.
 import { check } from '../character.js';
 import { ROLL_SKILLS } from '../data.js';
-import { tierOf, tierInfo } from '../minigames/setup.js';
+import { tierOf, tierInfo, setupHack } from '../minigames/setup.js';
 import { GYM_GAMES, gymGame } from '../minigames/gym.js';
-import { hackSetup } from '../minigames/hack.js';
 import { rollPreview } from '../minigames/rollPreview.js';
 import { cleanSkillPoints } from '../minigames/picker.js';
 import { characterOf, earnXp } from './state.js';
@@ -15,7 +14,7 @@ const SKILL_NAME = Object.fromEntries(ROLL_SKILLS.map((s) => [s.id, s.name]));
 /** The nine stations, in room order. `prop` is the interact id in workbench.json; `check` is what the d20 rolls. */
 export const STATIONS = Object.freeze([
   { id: 'repair', name: 'Repair bench', skill: 'repair', stat: 'wis', tag: 'repair', word: 'REPAIR', title: 'Coolant line' },
-  { id: 'hack', name: 'Hacking bench', skill: 'hacking', stat: 'wis', tag: 'hack', word: 'BYPASS', title: 'Bench lock', lock: 2 },
+  { id: 'hack', name: 'Hacking bench', skill: 'hacking', stat: 'wis', tag: 'hack', word: 'HACK', title: 'Bench terminal', lock: 2 },
   { id: 'craft', name: 'Crafting bench', skill: 'crafting', stat: 'dex', tag: 'craft', word: 'CRAFT', title: 'Fitting' },
   { id: 'nav', name: 'Navigation table', skill: 'navigation', stat: 'wis', tag: 'scan', word: 'NAVIGATE', title: 'Lane run' },
   { id: 'pilot', name: 'Flight console', skill: 'piloting', stat: 'dex', tag: 'nav', word: 'TOUCHDOWN', title: 'Hangar pad' },
@@ -49,9 +48,21 @@ export function startStation(state, station, attempt) {
   const { level, points } = loadoutOf(state, station.skill);
   const tier = tierOf(attempt);
   const game = gymGame(station.id);
-  const setup = station.id === 'hack' ? hackSetup({ tier, level, points, lock: station.lock }) : game.setup({ tier, level, points });
+  const setup = station.id === 'hack' ? setupHack({ tier, level, points, lock: station.lock }) : game.setup({ tier, level, points });
   const preview = rollPreview(station.id, attempt, { level, points });
   return { station, tier, label: tierInfo(tier).label, setup, level, points, preview };
+}
+
+/**
+ * What a lost game did to the world, in plain words (null when nothing happened). Repair: a lost line stays broken; shutting the
+ * valve stops the flood and takes the system offline. Hacking: security is alerted, and by where you were the terminal locks,
+ * a port closes, or you must target a new section.
+ */
+export function worldLine(station, result) {
+  if (!result || result.success) return null;
+  if (station.id === 'repair' && result.broken) return result.valveShut ? `Valve shut: the flooding stopped and ${result.systemName} is offline. The line is still broken.` : `The line stays broken and keeps flooding (${result.systemName}).`;
+  if (station.id === 'hack' && result.world?.line) return result.world.line;
+  return null;
 }
 
 /** A plain-words line for the dice tray's preview slot. */
@@ -75,6 +86,8 @@ export function settleStation(state, station, result) {
   parts.push(earned.xp ? `+${earned.xp} ${name} XP.` : 'No XP this time.');
   if (earned.gained) parts.push(`${name} is now level ${next.progress.levels[station.skill]}.`);
   if (credits) parts.push(`+${credits} credits.`);
+  const world = worldLine(station, result);
+  if (world) parts.push(world);
   return { state: { ...next, said: parts.join(' ') }, xp: earned.xp, gained: earned.gained, credits, said: parts.join(' ') };
 }
 

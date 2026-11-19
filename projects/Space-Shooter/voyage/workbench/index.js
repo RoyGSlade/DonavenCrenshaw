@@ -17,7 +17,7 @@ import { gymGame, trainRun, gymLoadout, gymSetup } from '../minigames/gym.js';
 import { checkChance, checkBonusText } from '../character.js';
 import { tierInfo } from '../minigames/setup.js';
 import { ROLL_SKILLS } from '../data.js';
-import { renderHud, renderBoard, renderGymPanel, renderConfirm, renderSparPicker, h } from './ui.js';
+import { renderHud, renderBoard, renderGymPanel, renderConfirm, renderSparPicker, renderWhere, h } from './ui.js';
 
 const SKILL_NAME = Object.fromEntries(ROLL_SKILLS.map((s) => [s.id, s.name]));
 const OTHERS = {
@@ -83,16 +83,16 @@ export function createWorkbench({ store, bus, onfoot, dialogueBox, sheet, hud, t
   const closePanel = () => api.openPanel?.close();
 
   /** The d20 tray shows the roll with the preview line, then the sheet opens the game. Resolves with the game's result (or null when left). */
-  async function rollAndPlay(station, { who, what, open, best, lock, titleText } = {}) {
+  async function rollAndPlay(station, { who, what, open, best, lock, titleText, context } = {}) {
     const attemptState = state;
     const attempt = rollStation(attemptState, station, api.rng);
     const start = startStation(attemptState, station, attempt);
     bus.emit('roll:attempt', { ...attempt, who: 'You', label: `${SKILL_NAME[station.skill]} attempt · ${station.id}`, preview: previewLine(start) });
     sound('talk');
     await wait(reducedMotion() ? 500 : 1700);
-    return playStart(station, start, { who, what, open, best, lock, titleText });
+    return playStart(station, start, { who, what, open, best, lock, titleText, context });
   }
-  async function playStart(station, start, { who, what, open, best, lock, titleText, word } = {}) {
+  async function playStart(station, start, { who, what, open, best, lock, titleText, word, context } = {}) {
     sheet.stage.replaceChildren();
     const note = h('p', { class: 'rp-help wb-preview', text: start.preview ? `${start.preview.line} ${start.preview.nextLine}` : '' });
     const stage = h('div', { class: 'wb-stage' });
@@ -103,7 +103,7 @@ export function createWorkbench({ store, bus, onfoot, dialogueBox, sheet, hud, t
     hold(true);
     const left = new Promise((resolve) => { leave = () => resolve(null); leaveBtn.addEventListener('click', leave); });
     let result;
-    try { result = await Promise.race([playGame(stage, station.id, { seed: nextSeed(), setup: start.setup, title: titleText || station.title, who: who || station.who, what: what || station.what, open: open ?? station.open, best: best ?? station.best, lock: lock ?? station.lock, sound: () => {}, reducedMotion }), left]); }
+    try { result = await Promise.race([playGame(stage, station.id, { seed: nextSeed(), setup: start.setup, title: titleText || station.title, who: who || station.who, what: what || station.what, open: open ?? station.open, best: best ?? station.best, lock: lock ?? station.lock, context, sound: () => {}, reducedMotion }), left]); }
     catch (error) { console.warn('Stardust workbench: the game could not run', error); result = null; }
     leave = null;
     sheet.stage.replaceChildren();
@@ -113,8 +113,14 @@ export function createWorkbench({ store, bus, onfoot, dialogueBox, sheet, hud, t
   }
 
   // ---- stations -----------------------------------------------------------------------------------------------------
+  /** The hacking bench asks where this hack is, because a failure answers by place (terminal locks, port closes, section changes). */
+  const chooseWhere = () => new Promise((resolve) => {
+    openPanel('HACKING BENCH', 'Where is this hack?', (pane) => renderWhere(pane, { onPick: (w) => { closePanel(); resolve(w); }, onClose: () => { closePanel(); resolve(null); } }));
+  });
   async function useStation(station) {
-    const result = await rollAndPlay(station);
+    let context;
+    if (station.id === 'hack') { context = await chooseWhere(); if (!context) return; }
+    const result = await rollAndPlay(station, { context });
     if (!result) { toast('You left the game. No XP.'); return; }
     commit(settleStation(state, station, result).state);
   }
