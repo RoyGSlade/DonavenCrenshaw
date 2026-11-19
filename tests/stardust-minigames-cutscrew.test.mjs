@@ -377,8 +377,8 @@ test('the bench: Cut, Screw and the recipe start at the roll and the character\'
   }
 });
 
-test('the chain\'s previews change at every tier but Steady, and the nine games keep their own list', () => {
-  assert.deepEqual(Object.keys(CHAIN_SPECS), ['cut', 'screw', 'bolt-plate']); assert.equal(Object.keys(SPECS).length, 9);
+test('the chain\'s previews change at every tier but Steady, and the other games keep their own list (nine plus Perihelion)', () => {
+  assert.deepEqual(Object.keys(CHAIN_SPECS), ['cut', 'screw', 'bolt-plate']); assert.equal(Object.keys(SPECS).length, 10);
   const at = (m) => ({ total: 10 + m, dc: 10 });
   for (const g of Object.keys(CHAIN_SPECS)) {
     for (const m of [12, 6, -3, -9]) assert.ok(rollPreview(g, at(m), { level: 3 }).phrases.length >= 1, `${g} margin ${m}`);
