@@ -13,7 +13,7 @@ export function playSetupHack(root, { state, title = 'Lock', sound = () => {}, r
   const btn = h('button', { type: 'button', class: 'hk-btn primary', text: 'Splice' });
   const facts = h('p', { class: 'rp-par', text: `${s.label || 'Steady'} · ${state.tumblers.length} tumblers · ${state.time}s · ${state.allowed} spare ${state.allowed === 1 ? 'miss' : 'misses'}` });
   const panel = h('section', { class: 'rp-panel hk-panel', role: 'group', 'aria-label': `Hack: ${title}` },
-    h('p', { class: 'rp-eyebrow', text: `BYPASS · ${title.toUpperCase()} · LEVEL ${state.difficulty}` }), canvas, btn, status, facts,
+    h('p', { class: 'rp-eyebrow', text: `BYPASS · ${title.toUpperCase()} · LOCK GRADE ${state.difficulty} OF 4` }), canvas, btn, status, facts,
     h('p', { class: 'rp-help', text: 'Space, Enter or tap. Each tumbler sets faster and the sweep turns back. Too many misses trips the trace.' }));
   panel.__state = state;
   root.append(panel);

@@ -51,7 +51,7 @@ function boot() {
     if (innerWidth < 760) stage.scrollIntoView({ block: 'start' });
     const { setup, v } = compute();
     const result = mini() === 'hack'
-      ? await playSetupHack(stage, { state: createSetupHack({ seed, lock: v.lock, setup }), title: `Lock ${v.lock}`, reducedMotion })
+      ? await playSetupHack(stage, { state: createSetupHack({ seed, lock: v.lock, setup }), title: 'Door lock', reducedMotion })
       : await playRepair(stage, { seed, setup, reducedMotion });
     window.__minigame = { ...window.__minigame, last: result };
     seed++;
