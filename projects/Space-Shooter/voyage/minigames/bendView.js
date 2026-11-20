@@ -7,7 +7,7 @@ import { bendPress, bendSet, bendGiveUp, bendTick, targetOf, nextKey, word, qual
 import { h, ensureStyle, loop, lcg } from './craftChainView.js';
 
 const BW = 800, BH = 520, K = 1.5, TAU = Math.PI * 2;
-const P = { x: 300, y: 380 }, L = 300, RING = { x: 690, y: 125, r: 66 };
+const P = { x: 300, y: 380 }, L = 300, RING = { x: 650, y: 125, r: 66 };
 const rad = (d) => (d * Math.PI) / 180;
 const now = () => performance.now() / 1000;
 
