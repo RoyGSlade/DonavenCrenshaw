@@ -123,8 +123,8 @@
     {"art":"mop-bucket-full","at":[15,5],"size":[0.8,0.8],"block":"low"},
     {"art":"mop-bucket-empty","at":[15,6],"size":[0.8,0.8],"block":"low"},
     {"art":"power-conduit-panel-open","at":[16,9],"size":[1,1],"block":true,"name":"holo-panel","interact":{"kind":"console","id":"holo-panel","task":"lever","label":"Power panel: holodeck lever"}},
-    {"art":"pipe-run-leaking","at":[6,15.25],"size":[3,0.75],"block":true,"tag":"holo-valve","name":"holo-valve","states":{"fixed":{"art":"pipe-run-intact","at":[6,15.5],"size":[3,0.5]}},"interact":{"kind":"repair","id":"valve","task":"valve","label":"Foam valve: stuck open"}},
-    {"art":"hose-coil","at":[1,10],"size":[1,1],"block":"low","name":"holo-hose","tag":"holo-hose","interact":{"kind":"repair","id":"hose","task":"hose","label":"Coolant hose: leaking"}}
+    {"art":"pipe-run-leaking","at":[6,15.25],"size":[3,0.75],"block":true,"tag":"holo-valve","name":"holo-valve","states":{"fixed":{"art":"pipe-run-intact","at":[6,15.5],"size":[3,0.5],"interact":{"kind":"repair","id":"valve","task":"valve","label":"Foam valve: tight"}}},"interact":{"kind":"repair","id":"valve","task":"valve","label":"Foam valve: stuck open"}},
+    {"art":"hose-coil","at":[1,10],"size":[1,1],"block":"low","name":"holo-hose","tag":"holo-hose","states":{"sealed":{"interact":{"kind":"repair","id":"hose","task":"hose","label":"Coolant hose: patched"}}},"interact":{"kind":"repair","id":"hose","task":"hose","label":"Coolant hose: leaking"}}
   ],
   "npcs": [
     {"id":"nessa","at":[10,6],"face":"down","wander":0.2},
