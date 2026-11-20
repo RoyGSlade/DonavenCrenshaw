@@ -27,7 +27,7 @@ export const BOUNCE_IN = 0.8;    // after a wall scrape you sit this share of th
 export const BOUNCE_BACK = 0.4;  // and are thrown back inside at this share of the sideways speed you hit it with
 export const GRACE = 1.0;        // after any scrape the wall cannot start a new warning for this long (seconds)
 export const WALL_CAP = 40;      // the walls alone can cost at most this much hull in a run; past it they only nudge you back in (a parked ship in a sweeping corridor is not a wreck)
-export const XB = 80, YB0 = -44, YB1 = 140; // the board's edges: the ship cannot drift off the screen (the base's beacon field turns it back, with no scrape)
+export const XB = 120, YB0 = -44, YB1 = 150; // the edges of the beacon field: past them the base turns you back, with no scrape (the camera follows you, so you never fly off the screen)
 export const PATH_EVERY = 0.1;   // the flight line is sampled this often (seconds)
 
 const clamp = (x, a, b) => Math.max(a, Math.min(b, x));

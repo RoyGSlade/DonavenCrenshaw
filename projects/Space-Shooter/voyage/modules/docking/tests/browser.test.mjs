@@ -228,9 +228,10 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
         await open('seed=7');
         const s0 = await snap(page);
         if (phone) {
-          fingers.aim = { x: s0.view.x + 70, y: s0.view.y }; await sendTouches(); await wait(page, 100); fingers.pad = true; await sendTouches(); await wait(page, 700);   // one finger down, then the other, as a hand does
+          const A = Math.atan2(s0.view.t + s0.view.h / 2 - s0.view.y, s0.view.l + s0.view.w / 2 - s0.view.x);   // toward the middle of the board, so the finger stays on it
+          await hand(s0, A, false); await wait(page, 100); await hand(s0, A, true); await wait(page, 700);   // one finger down, then the other, as a hand does
           const s1 = await snap(page);
-          assert.equal(s1.thrusting, true, 'the pad burns'); assert.ok(Math.cos(s1.h) > 0.5, `the nose swung toward the finger (${s1.h})`); assert.ok(s1.vx > 0.5, 'and the ship went that way');
+          assert.equal(s1.thrusting, true, 'the pad burns'); assert.ok(Math.cos(s1.h - A) > 0.9, `the nose swung toward the finger (${s1.h} vs ${A})`); assert.ok(s1.vx * Math.cos(A) + s1.vy * Math.sin(A) > 0.5, 'and the ship went that way');
           await letGo();
         } else {
           await page.keyboard.down('KeyD'); await wait(page, 700);

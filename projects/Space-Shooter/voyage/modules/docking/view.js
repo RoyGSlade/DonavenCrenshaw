@@ -20,8 +20,8 @@ const TAU = Math.PI * 2, TEAL = '#38d6cc', AMBER = '#ffad72', GREEN = '#8cf29a',
 const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
 const lcg = (seed) => { let a = seed >>> 0; return () => { a = (Math.imul(a, 1664525) + 1013904223) >>> 0; return a / 4294967296; }; };
 const hashStr = (str) => { let x = 2166136261; for (const c of String(str)) { x ^= c.charCodeAt(0); x = Math.imul(x, 16777619) >>> 0; } return x >>> 0; };
-// the world the board always shows: x -85..85, y -48..142 (the base's top to the ship's start), centred in whatever box it gets
-const WW = 170, WH = 190, CY = 47;
+// the world the board always shows: x -85..85, y -52..152 (the base's top to the ship's start), centred in whatever box it gets
+const WW = 170, WH = 204, CY = 50;
 const ART = (name) => new URL(`./art/${name}`, import.meta.url).href;
 const WORD_TONE = { 'find the corridor': 'warn', clamped: 'ok', 'lined up': 'ok', 'in the corridor': '', 'too fast': 'bad', 'ease off': 'warn', 'drifting wide': 'bad', scrape: 'bad', 'waved off': 'bad' };
 
@@ -97,7 +97,8 @@ export function mountDocking(stage, { state, base, ship, sound = () => {}, reduc
 
   // ---- the board ------------------------------------------------------------------------------------------------------------------------
   const ctx2 = canvas.getContext('2d');
-  let cw = 0, ch = 0, dpr = 1, sc = 1, ox = 0, oy = 0, stars = null;
+  let cw = 0, ch = 0, dpr = 1, sc = 1, ox = 0, oy = 0, stars = null, camX = null;
+  const camTarget = (f) => clamp((s.x + f.B.x) / 2, -55, 55);   // the camera keeps you and the berth on the board: on a narrow phone the base slides across as the lane sweeps
   const view = () => ({ sc, ox, oy, w: cw, h: ch, shipX: ox + s.x * sc, shipY: oy + s.y * sc });
   root.__view = view;
   const resize = () => {
@@ -106,7 +107,7 @@ export function mountDocking(stage, { state, base, ship, sound = () => {}, reduc
     dpr = Math.min(2, globalThis.devicePixelRatio || 1);
     if (w === cw && hh === ch && canvas.width === Math.round(w * dpr)) return;
     cw = w; ch = hh; canvas.width = Math.round(w * dpr); canvas.height = Math.round(hh * dpr);
-    sc = Math.min(cw / WW, ch / WH); ox = cw / 2; oy = ch / 2 - CY * sc; stars = null;
+    sc = Math.min(cw / WW, ch / WH); ox = cw / 2 - (camX ?? 0) * sc; oy = ch / 2 - CY * sc; stars = null;
   };
   const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(resize) : null; ro?.observe(board);
   requestAnimationFrame(resize); resize();
@@ -280,10 +281,13 @@ export function mountDocking(stage, { state, base, ship, sound = () => {}, reduc
     if (!stars) stars = makeStars();
     const g = ctx2;
     g.setTransform(1, 0, 0, 1, 0, 0);
-    g.drawImage(stars, 0, 0, canvas.width, canvas.height);
+    const par = (((-(camX ?? 0) * sc * 0.25 * dpr) % canvas.width) + canvas.width) % canvas.width;
+    g.drawImage(stars, par, 0, canvas.width, canvas.height); g.drawImage(stars, par - canvas.width, 0, canvas.width, canvas.height);
     const sx = !calm() && shake > 0.2 ? (rnd() - 0.5) * shake : 0, sy = !calm() && shake > 0.2 ? (rnd() - 0.5) * shake : 0;
     g.setTransform(dpr * sc, 0, 0, dpr * sc, dpr * (ox + sx), dpr * (oy + sy));
     const f = frameOf(s, vt);
+    const want = camTarget(f); camX = camX == null ? want : camX + (want - camX) * Math.min(1, dt * 2.4); ox = cw / 2 - camX * sc;
+    g.setTransform(dpr * sc, 0, 0, dpr * sc, dpr * (ox + sx), dpr * (oy + sy));
     drawBase(g, f, vt); drawLane(g, f, vt);
     // the wake
     for (let i = 0; i < trail.length; i++) { const p = trail[i]; g.globalAlpha = (i / trail.length) * 0.28; g.fillStyle = '#9fe8e2'; g.beginPath(); g.arc(p[0], p[1], 0.6, 0, TAU); g.fill(); }

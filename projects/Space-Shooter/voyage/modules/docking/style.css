@@ -5,7 +5,7 @@
 .m-docking .dk-eyebrow{margin:0;font:700 11px Consolas,monospace;letter-spacing:.14em;color:var(--dk-amber)}
 .m-docking .dk-hud{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}
 .m-docking .dk-lane{grid-column:span 3}.m-docking .dk-lights{grid-column:span 3}
-.m-docking .dk-closing{grid-column:span 3}.m-docking .dk-hullstat{grid-column:span 2}.m-docking .dk-warnstat{grid-column:span 1}
+.m-docking .dk-closing,.m-docking .dk-hullstat,.m-docking .dk-warnstat{grid-column:span 2}
 .m-docking .dk-stat{display:grid;gap:3px;align-content:start;padding:5px 8px;border:1px solid #2f4a5c;border-radius:5px;background:linear-gradient(#0d1b2a,#08111b);min-width:0}
 .m-docking .dk-stat span{font:10px Consolas,monospace;letter-spacing:.12em;color:#8fa6b7;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .m-docking .dk-stat em{font:700 14px Consolas,monospace;color:#eaf4f5;font-style:normal;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
