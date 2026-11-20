@@ -10,6 +10,7 @@ import { renderRisk, renderSkills, renderPicker } from './extrasView.js';
 import { dayNumber, createBench, submit } from './bench.js';
 import { renderBench, playBench, renderGym } from './extras2View.js';
 import { trainRun, newGymLog } from './gym.js';
+import { ready } from '../modules/registry.js';
 import { createVoyageStore } from '../store.js';
 import { createSkillSave, scan as scanChar } from '../skillSave.js';
 import { economy } from '../account.js';
@@ -40,6 +41,7 @@ async function setupSave(params) {
 }
 
 async function boot() {
+  await ready(); // the gym's games and the picker lines come from the module registry
   const params = new URLSearchParams(location.search);
   const saved = params.get('save') === '1' ? await setupSave(params) : null; // the page opens once the save (and the hub, if on) has answered
   $('mg-page').hidden = false;

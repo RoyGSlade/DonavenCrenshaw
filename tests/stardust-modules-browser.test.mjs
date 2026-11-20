@@ -82,6 +82,7 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
       await shot('shelf');
       await tap('.wb-shelf-play[data-module="_sample-game"]');
       await page.waitForSelector('.wb-full .m-_sample-game');
+      await page.waitForFunction(() => getComputedStyle(document.querySelector('.wb-full')).position === 'fixed'); // the overlay's stylesheet loads with it
       const box = await page.evaluate(() => { const r = document.querySelector('.wb-full').getBoundingClientRect(); return [Math.round(r.width), Math.round(r.height), innerWidth, innerHeight, document.documentElement.scrollWidth]; });
       assert.deepEqual(box.slice(0, 4), [box[2], box[3], box[2], box[3]], 'full screen');
       assert.ok(box[4] <= box[2], 'no sideways scroll');
