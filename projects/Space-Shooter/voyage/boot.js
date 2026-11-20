@@ -67,6 +67,7 @@ import { wantsSlice, startSlice, startRoom, createSliceDirector } from './slice/
 import { waitingOn } from './slice/rules.js';
 // Opening track A: the crew's ledger, the seal, roles and the fallback talk (slice/presenceRun.js, seal.js, role.js, fallbackLines.js).
 import { createPresenceRun } from './slice/presenceRun.js';
+import { sealReason, sealed, WHY } from './slice/seal.js';
 import { createStatuses, clock } from './status.js';
 // The workbench room: a dev-only test room (?newgame=1&start=workbench), its own files in ./workbench/.
 import { wantsWorkbench } from './workbench/entry.js';
@@ -472,6 +473,7 @@ function boot(session = { mode: 'local' }) {
     hooks: {
       statuses,
       presence: presence?.hooks || null,
+      sealed: (d) => (slicing ? sealReason(store.get(), d) : null),
       openStation: (id) => (workbenchRoom && String(id).startsWith('wb-') ? workbenchRoom.openStation(id) : new Promise((resolve) => {
         if (!place.openStation(id, { via: 'walk' })) { resolve(); return; }
         const off = place.subscribe((e) => { if (e.type === 'close') { off(); resolve(); } });
@@ -648,6 +650,21 @@ function boot(session = { mode: 'local' }) {
   crew.render();
   ready.then(() => crew.refresh());
 
+  // Opening track A, outcome 2: the links back to the classic game are shut while the opening runs; a click says why.
+  function sealClassicLinks() {
+    const back = $('vy-back');
+    const mark = () => { const on = sealed(store.get()); back.toggleAttribute('data-sealed', on); if (on) back.setAttribute('aria-disabled', 'true'); else back.removeAttribute('aria-disabled'); };
+    mark();
+    store.subscribe(mark);
+    addEventListener('click', (e) => {
+      const a = e.target instanceof Element ? e.target.closest('a[href*="activity=classic"]') : null;
+      if (!a || !sealed(store.get())) return;
+      e.preventDefault();
+      e.stopPropagation();
+      toast(WHY.classic);
+    }, true);
+  }
+
   // --- Where to start ---
   const step = currentStep(store.get())?.id || null;
   if (link.quest) {
@@ -660,6 +677,7 @@ function boot(session = { mode: 'local' }) {
   // Launch slice: the opening picks its scene up (a reload lands back in the beat) or starts the next one.
   if (slicing) {
     slice = createSliceDirector({ store, jobs, toast, world: () => onfoot?.world || null, fightIn: (setup) => onfoot.fight(setup), presence });
+    sealClassicLinks();
     ready.then(() => {
       // A signed-in account whose own save is an older hangar game replaces the fresh one: leave the Duchess for the hangar.
       if (!store.get().flags?.['slice-started']) { onfoot.world.go('hangar', 'default'); return; }

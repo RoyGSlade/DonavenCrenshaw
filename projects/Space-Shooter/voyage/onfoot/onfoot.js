@@ -80,7 +80,11 @@ export function createOnFoot({ root, store = null, bus = null, hooks = {}, mapId
   //   lock: { hack: n }          a lock you can bypass with the hack minigame (open to anyone)
   //   lock: { pick: n }          a lock you can pick (needs the Lockpick skill: access door.locked)
   // Reasons are whole sentences ending in a full stop.
-  const gate = (def) => gateFor(def, { character: captain(), save: store ? save() : null });
+  // Opening track A: while the opening runs, hooks.sealed({ kind, id, to, map }) says why a door or the helm is shut (slice/seal.js).
+  const gate = (def, map) => {
+    const why = hooks.sealed?.({ kind: def.to ? 'door' : def.kind, id: def.id, to: def.to || null, map: (map || world?.map)?.id || null });
+    return why ? { reason: why } : gateFor(def, { character: captain(), save: store ? save() : null });
+  };
 
   async function hack(target) {
     const r = await playHack(root, { title: target.label || 'Lock', difficulty: target.level || 1, seed: Date.now() % 100000, mods: { ...mods('hack'), ...mods('lock') }, pick: Boolean(target.pick), sound, reducedMotion });

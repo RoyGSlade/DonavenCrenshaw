@@ -182,3 +182,11 @@ body:has(.of-board) .dp-bag,body:has(.of-board) .dp-tracker,body:has(.of-board) 
 body:has(.of-board) .of-toast,body:has(.of-board) .vy-toast{display:none}
 .of-board-note:hover,.of-board-note:focus,.of-board-note:active{background:linear-gradient(135deg,#f3e8c6,#e0d0a2) !important;color:inherit;border:0 !important;outline:0;box-shadow:1px 3px 4px #0008 !important}
 .of-board-note:focus-visible{outline:2px solid #ffb23a;outline-offset:2px}
+/* Opening track A: a status is a word and a draining bar (the HUD rule), and the classic links are shut while the opening runs. */
+.hg-status{display:flex;flex-direction:column;gap:5px;border-radius:12px;padding:6px 12px}
+.hg-st{display:flex;align-items:center;gap:8px}
+.hg-st b{font:800 12px Inter,"Segoe UI",sans-serif;letter-spacing:.06em}
+.hg-st-bar{display:block;width:84px;height:7px;border-radius:4px;background:#04080e;border:1px solid #ffb23a66;overflow:hidden}
+.hg-st-bar i{display:block;height:100%;background:linear-gradient(90deg,#b97a16,#ffc455);transition:width .5s linear}
+.hg-st[data-status=steady] .hg-st-bar{border-color:#7ee0a166}.hg-st[data-status=steady] .hg-st-bar i{background:linear-gradient(90deg,#2f9a63,#7ee0a1)}
+#vy-back[data-sealed]{opacity:.4;cursor:not-allowed}
