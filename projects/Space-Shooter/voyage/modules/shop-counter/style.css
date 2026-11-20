@@ -82,7 +82,7 @@
 /* the keeper */
 .m-shop-counter .sc-mid-top{flex:none}
 .m-shop-counter .sc-who{position:relative;flex:1;min-height:0;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:10px}
-.m-shop-counter .sc-keeper{position:relative;flex:none;width:min(100%,clamp(170px,46vh,400px));display:flex;flex-direction:column;align-items:center}
+.m-shop-counter .sc-keeper{position:relative;flex:none;width:min(100%,clamp(150px,min(42vh,calc(100vh - 450px)),400px));display:flex;flex-direction:column;align-items:center}
 .m-shop-counter .sc-alcove{position:relative;width:100%;aspect-ratio:1/1;overflow:hidden;border-radius:50% 50% 4px 4px/42% 42% 4px 4px;border:2px solid #4a6275;
   background:radial-gradient(70% 60% at 50% 35%,#2a4256,#0e1a25 75%);filter:drop-shadow(0 0 18px #81e6df22);transition:border-color .35s,filter .35s}
 .m-shop-counter .sc-face{position:absolute;left:4%;right:4%;top:7%;bottom:0;width:92%;height:93%;object-fit:contain;object-position:50% 100%;opacity:0;transition:opacity .35s;pointer-events:none;transform-origin:50% 100%;animation:sc-breathe 5s ease-in-out infinite}
@@ -93,7 +93,7 @@
 .m-shop-counter .sc-keeper-name{position:absolute;left:50%;bottom:8px;transform:translateX(-50%);font:700 11px Consolas,"DejaVu Sans Mono",monospace;letter-spacing:.14em;text-transform:uppercase;color:#ffd9b0;background:#0b1724cc;border:1px solid #4a6275;padding:1px 10px;border-radius:2px;white-space:nowrap}
 
 /* what the keeper says */
-.m-shop-counter .sc-say{position:relative;width:100%;max-width:440px;padding:10px 14px 11px;border-radius:14px;background:#f2ead7;color:var(--ink);filter:drop-shadow(0 6px 10px #0009);font-size:15px;line-height:1.4;display:flex;flex-direction:column;gap:2px;min-height:44px}
+.m-shop-counter .sc-say{position:relative;z-index:2;width:100%;max-width:440px;padding:10px 14px 11px;border-radius:14px;background:#f2ead7;color:var(--ink);filter:drop-shadow(0 6px 10px #0009);font-size:15px;line-height:1.4;display:flex;flex-direction:column;gap:2px;min-height:44px}
 .m-shop-counter .sc-say::after{content:"";position:absolute;left:50%;bottom:-9px;margin-left:-9px;border:9px solid transparent;border-top-color:#f2ead7;border-bottom:0}
 .m-shop-counter .sc-say.is-empty{visibility:hidden}
 .m-shop-counter .sc-say-who{font:800 10px Consolas,"DejaVu Sans Mono",monospace;letter-spacing:.14em;text-transform:uppercase;color:#8a4a1a}
@@ -266,7 +266,7 @@
   .m-shop-counter .sc-chalk-head,.m-shop-counter .sc-chalk-wanted{display:inline}
   .m-shop-counter .sc-chalk-wanted{margin-left:4px}.m-shop-counter .sc-want{font-size:11.5px;padding:0 6px;display:inline-block;margin-right:4px}
   .m-shop-counter .sc-ledge{display:none}
-  .m-shop-counter .sc-scroller{display:block;flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;align-content:start;padding-bottom:10px;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+  .m-shop-counter .sc-scroller{display:block;flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;align-content:start;padding-bottom:10px;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;-webkit-mask-image:linear-gradient(#000 calc(100% - 26px),transparent);mask-image:linear-gradient(#000 calc(100% - 26px),transparent)}
   .m-shop-counter .sc-unit{overflow:visible;padding:4px 4px 6px;min-height:0}
   .m-shop-counter .sc-unit-l,.m-shop-counter .sc-unit-r{grid-column:auto;grid-row:auto}
   .m-shop-counter .sc-unit-r{display:none}
@@ -302,3 +302,21 @@
   .m-shop-counter .sc-shut-say{flex-direction:column;text-align:center;padding:14px}
 }
 @media (max-height:620px){.m-shop-counter{--ic:46px}}
+
+/* phone held sideways: the same stack, squeezed: a one-row counter and a small keeper strip */
+@media (min-width:701px) and (max-height:520px){
+  .m-shop-counter{--ic:40px}
+  .m-shop-counter .sc-head{min-height:38px;padding:4px 64px 0 12px}
+  .m-shop-counter .sc-sign{font-size:13px;border-width:10px 12px 10px 20px}
+  .m-shop-counter .sc-keeper{width:60px}
+  .m-shop-counter .sc-keeper-name{display:none}
+  .m-shop-counter .sc-say{min-height:50px;padding:4px 12px;font-size:13px}
+  .m-shop-counter .sc-who{gap:10px}
+  .m-shop-counter .sc-counter{grid-template-columns:auto minmax(0,1fr) auto auto;grid-template-areas:"purse pile till act";padding:6px 12px 8px;align-items:center;gap:8px}
+  .m-shop-counter .sc-c-mid{min-height:48px;padding:2px 8px}
+  .m-shop-counter .sc-pile{min-height:46px}
+  .m-shop-counter .sc-pile-hint,.m-shop-counter .sc-chip-name{display:none}
+  .m-shop-counter .sc-stackbox{height:36px}.m-shop-counter .sc-pcopy{width:36px;height:36px}
+  .m-shop-counter .sc-till .sc-digits{font-size:18px}.m-shop-counter .sc-till-top{min-height:10px;font-size:10px}
+  .m-shop-counter .sc-tray{max-height:62vh}
+}
