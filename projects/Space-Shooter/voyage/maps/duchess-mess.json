@@ -79,6 +79,7 @@
     ]
   },
   "props": [
+    {"art":"crew-board","at":[9,1],"size":[3,0.7],"block":false,"flat":true,"alpha":0,"name":"crew-board","interact":{"kind":"console","id":"crew-board","label":"The crew board"}},
     {"art":"coffee-urn","at":[1,1],"size":[1,1],"block":true,"name":"coffee-machine","interact":{"kind":"console","id":"coffee","label":"The coffee machine"}},
     {"art":"galley-stove-on","at":[2,1],"size":[1,1],"block":true},
     {"art":"galley-cooler","at":[3,1],"size":[1,1],"block":true},

@@ -65,6 +65,7 @@ import { OFFERS_DATA } from './quests/data/offers.js';
 // Launch slice: the opening on the Tin Duchess (slice/director.js).
 import { wantsSlice, startSlice, startRoom, createSliceDirector } from './slice/director.js';
 import { waitingOn } from './slice/rules.js';
+import { createStatuses, clock } from './status.js';
 // The workbench room: a dev-only test room (?newgame=1&start=workbench), its own files in ./workbench/.
 import { wantsWorkbench } from './workbench/entry.js';
 import { mountWorkbench } from './workbench/mount.js';
@@ -459,10 +460,12 @@ function boot(session = { mode: 'local' }) {
 
 
   // The walkable floor. Walking up to a station and pressing E opens it in place.
+  const statuses = createStatuses();
   onfoot = createOnFoot({
     root: floor, store, bus, mapId: link.map || (workbench ? WORKBENCH_ID : slicing ? startRoom(store.get()) : 'hangar'), spawn: link.map ? link.spawn : 'default',
     reducedMotion: still,
     hooks: {
+      statuses,
       openStation: (id) => (workbenchRoom && String(id).startsWith('wb-') ? workbenchRoom.openStation(id) : new Promise((resolve) => {
         if (!place.openStation(id, { via: 'walk' })) { resolve(); return; }
         const off = place.subscribe((e) => { if (e.type === 'close') { off(); resolve(); } });
@@ -509,7 +512,19 @@ function boot(session = { mode: 'local' }) {
   // Something else owns the screen: a station panel, the licence or intro, a minigame or talk, a flight, a fight.
   const screenBusy = () => sheetOpen || Boolean(place.current) || overlays.has('intro') || overlays.has('licence') || overlays.has('nap') || overlays.has('pause') || flying
     || onfoot.world.mode !== 'walk' || Boolean(floor.querySelector('.of-panel, .of-overlay, .of-talk')) || !$('hg-licence').hidden;
+  // Playtest 1: a status (Wired) shows as a small chip on the floor while it lasts.
+  const statusChip = document.createElement('p');
+  statusChip.className = 'hg-status';
+  statusChip.setAttribute('role', 'status');
+  statusChip.hidden = true;
+  floor.append(statusChip);
+  setInterval(() => {
+    const on = statuses.active();
+    statusChip.hidden = !on.length;
+    if (on.length) statusChip.textContent = on.map((x) => `${x.name} · ${clock(x.left)}`).join('  ');
+  }, 500);
   pad = createDatapad({
+    useItem: (id) => (id === 'coffee' ? onfoot.drinkCoffee(true) : false),
     root: document.body, store, bus, toast, touch, skillSave: createSkillSave({ store, economy }),
     world: () => onfoot?.world || null,
     tutorialOn, reducedMotion: still, stationInfo,
@@ -631,5 +646,5 @@ function boot(session = { mode: 'local' }) {
 
   // For tests and poking around in the console (no secrets: the save is the player's own).
   setTimeout(maybeControls, 600);
-  window.__stardust = { store, story, onfoot, place, jobs, licence, bus, pad, tracker, controls, pause, jobTalk, jobCard, crew, slice, workbench: workbenchRoom };
+  window.__stardust = { statuses, store, story, onfoot, place, jobs, licence, bus, pad, tracker, controls, pause, jobTalk, jobCard, crew, slice, workbench: workbenchRoom };
 }

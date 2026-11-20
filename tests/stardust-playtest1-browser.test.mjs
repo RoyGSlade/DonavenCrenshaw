@@ -77,26 +77,32 @@ for (const [size, profile] of SIZES) {
       s = await state(page);
       assert.equal(s.dlgOpen, false, `the captain's box is gone after the answer (still showing: ${s.text.slice(0, 40)})`);
       assert.equal(s.held, false, 'the player is free');
-      // Now the coffee machine: its box opens, a tap closes it (the old stuck box sat over its button), the player moves.
+      // Now the coffee machine: its menu opens, holds the player, nothing covers its buttons, and Leave frees the player.
       await page.evaluate(() => window.__stardust.onfoot.world.place(72, 109));
       await settle(page, 400);
       await page.keyboard.press('KeyE'); await settle(page, 500);
       s = await state(page);
-      assert.equal(s.ofTalk, true, 'the coffee machine talks');
-      assert.equal(s.held, true, 'held while it talks');
-      // No HUD icon (the bag, the datapad, the tracker) may cover the box's button: at its centre, the button is the top element.
+      assert.equal(await page.locator('.of-coffee').count(), 1, 'the coffee machine opens its menu');
+      assert.equal(s.held, true, 'held while the menu is up');
       const top = (sel) => page.evaluate((sel) => { const n = document.querySelector(sel); const r = n.getBoundingClientRect(); const e = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2); return n === e || n.contains(e) ? null : `${e?.tagName}#${e?.id}.${e?.className}`; }, sel);
-      assert.equal(await top('.of-talk .primary'), null, 'the talk box\'s Next button is the top element at its centre');
-      // And the box itself takes a tap anywhere (a safety net).
-      const cover = await page.evaluate(() => { const n = document.querySelector('.of-talk'); const r = n.getBoundingClientRect(); const e = document.elementFromPoint(r.x + 24, r.y + 14); return n.contains(e) ? null : `${e?.tagName}#${e?.id}.${e?.className}`; });
-      assert.equal(cover, null, 'nothing covers the talk box');
-      if (PROOF) await page.screenshot({ path: `${PROOF}/blocker1-coffee-box-${size}.png` });
-      await page.locator('.of-talk').click({ position: { x: 20, y: 10 } });
+      assert.equal(await top('.of-coffee [data-coffee=leave]'), null, 'no HUD icon covers the menu\'s buttons');
+      await page.locator('.of-coffee [data-coffee=leave]').click();
       await settle(page, 500);
       s = await state(page);
-      assert.equal(s.ofTalk, false); assert.equal(s.held, false, 'the player is free again');
-      const { a, b } = await walkRight(page);
+      assert.equal(await page.locator('.of-coffee').count(), 0); assert.equal(s.held, false, 'the player is free again');
+      let { a, b } = await walkRight(page);
       assert.ok(b.x > a.x + 20, `the player moves (${a.x} -> ${b.x})`);
+      // A stand-in talk box (Next / Done): the Next button is the top element at its centre (the phone's bag must not sit over it), and a tap anywhere closes it.
+      await page.evaluate(() => { window.__stardust.onfoot.say([{ who: 'captain', name: 'You', text: 'Lights blink. Numbers scroll. Nothing here needs you yet.' }, { who: 'captain', name: 'You', text: 'Still nothing.' }]); });
+      await page.waitForSelector('.of-talk');
+      assert.equal(await top('.of-talk .primary'), null, 'the talk box\'s Next button is the top element at its centre');
+      const cover = await page.evaluate(() => { const n = document.querySelector('.of-talk'); const r = n.getBoundingClientRect(); const e = document.elementFromPoint(r.x + 24, r.y + 14); return n.contains(e) ? null : `${e?.tagName}#${e?.id}.${e?.className}`; });
+      assert.equal(cover, null, 'nothing covers the talk box');
+      if (PROOF) await page.screenshot({ path: `${PROOF}/blocker1-talk-box-${size}.png` });
+      await page.locator('.of-talk').click({ position: { x: 20, y: 10 } });
+      await page.locator('.of-talk').click({ position: { x: 20, y: 10 } });
+      await settle(page, 400);
+      assert.equal(await page.locator('.of-talk').count(), 0);
       assert.equal((await state(page)).dlgOpen, false, 'no dialogue box left behind');
       // Same with "Later": the box goes, the player moves, the marker stays on the captain.
       assert.deepEqual(errors, []);

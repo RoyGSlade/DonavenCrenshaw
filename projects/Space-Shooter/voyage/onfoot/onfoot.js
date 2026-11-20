@@ -39,6 +39,9 @@ import { visualTier } from '../upgrades.js';
 import { effect } from '../character.js';
 import { createEl } from './dom.js';
 import { economy } from '../account.js';
+import { COFFEE_WORDS } from '../status.js';
+import { playBoard } from './boardView.js';
+import { noteFlag } from '../slice/board.js';
 
 // The tutorial's hop targets, in the order the legs open them.
 export const TARGETS_IN_ORDER = Object.freeze(SECTOR_MAP.places.map(p => p.id));
@@ -217,6 +220,30 @@ export function createOnFoot({ root, store = null, bus = null, hooks = {}, mapId
     }).then(id => (id ? flyTo(id) : null));
   }
 
+  /** Playtest 1: a cup of coffee now (Wired) or in the pack. */
+  function drinkCoffee(fromPack = false) {
+    if (fromPack) {
+      if (!(save()?.items?.coffee > 0)) return false;
+      store.update((s) => ({ ...s, items: { ...s.items, coffee: Math.max(0, (s.items.coffee || 0) - 1) } }));
+    }
+    hooks.statuses?.add('wired');
+    toast(COFFEE_WORDS.drink);
+    return true;
+  }
+  function coffee() {
+    return new Promise((resolve) => {
+      const panel = createEl('section', { class: 'of-panel of-helm of-coffee', role: 'dialog', 'aria-label': COFFEE_WORDS.menuTitle },
+        createEl('p', { class: 'of-eyebrow', text: COFFEE_WORDS.menuTitle.toUpperCase() }));
+      const close = (fn) => { panel.remove(); fn?.(); resolve(); };
+      const opt = (label, id, fn) => { const b = createEl('button', { type: 'button', class: 'of-course', dataset: { coffee: id } }, createEl('b', { text: label })); b.addEventListener('click', () => close(fn)); panel.append(b); };
+      opt(COFFEE_WORDS.drinkLabel, 'drink', () => drinkCoffee(false));
+      if (store) opt(COFFEE_WORDS.takeLabel, 'take', () => { store.grant({ items: { coffee: 1 } }); toast(COFFEE_WORDS.take); });
+      opt(COFFEE_WORDS.leaveLabel, 'leave', null);
+      root.append(panel);
+      panel.querySelector('button')?.focus({ preventScroll: true });
+    });
+  }
+
   async function interact(target) {
     if (hooks.allow && hooks.allow(target) === false) return null;
     const shut = target.kind === 'hack' && target.door ? null : gate(target);
@@ -235,7 +262,7 @@ export function createOnFoot({ root, store = null, bus = null, hooks = {}, mapId
       case 'range': return practice();
       case 'ship': return target.id === 'helm' ? helm() : null;
       case 'repair': return hooks.repair ? hooks.repair({ id: target.id, label: target.label, timeScale: Math.max(0.2, 1 - mods('repair').time) }) : talkBox.show(STAND_IN.repair);
-      case 'console': return talkBox.show(STAND_IN[target.id] || STAND_IN.console.map(l => ({ ...l, name: target.label })));
+      case 'console': if (target.id === 'crew-board') return playBoard(root, { flags: () => save()?.flags || {}, onFound: (n) => store?.grant({ flags: { [noteFlag(n.id)]: 1 } }) }); if (target.id === 'coffee' && hooks.statuses) return coffee(); return talkBox.show(STAND_IN[target.id] || STAND_IN.console.map(l => ({ ...l, name: target.label })));
       default: return null;
     }
   }
@@ -244,6 +271,7 @@ export function createOnFoot({ root, store = null, bus = null, hooks = {}, mapId
     root, mapId, spawn, emit, shipArt, reducedMotion, unlocked, sound,
     hooks: {
       interact,
+      speedMult: () => hooks.statuses?.speedMult() || 1,
       locked: (door) => { toast(`${door.label}: ${door.gate?.reason || 'Locked.'}`); sound('jam'); },
       gate,
       // r3 basics: a station's name and whether it is open, for the marks and the prompt.
@@ -274,7 +302,7 @@ export function createOnFoot({ root, store = null, bus = null, hooks = {}, mapId
   }
 
   return {
-    world, emit, talk, mine, puzzle, hack, practice, fight, flyTo, helm, toast, sound, gate, mods,
+    world, emit, talk, say: (lines) => talkBox.show(lines), drinkCoffee, mine, puzzle, hack, practice, fight, flyTo, helm, toast, sound, gate, mods,
     get docked() { return docked; },
     /** Put the ship somewhere without flying (a reload, a Studio link, a test). */
     dockAt(id) { if (PLACES[id]) docked = id; },
