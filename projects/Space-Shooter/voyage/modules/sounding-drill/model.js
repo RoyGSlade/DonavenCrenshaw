@@ -64,6 +64,7 @@ export function rulesFor({ tier = 0, points = {}, quick = false, board = { w: 10
     shellShown: p.inspection >= 4,
     afterglow: 0.05 * p.trace,
     veins: info.veins,
+    crackPad: Math.max(2.5, BASE.crackPad - t * 1.5),   // a better roll forgives a graze (Rough 7, Steady 4, Good and Smooth 2.5)
   };
 }
 
@@ -482,7 +483,7 @@ export function step(g, dt, input = {}) {
     }
     // finds are solid: touching one cracks it
     for (let i = 0; i < R.finds.length; i++) {
-      const f = R.finds[i], lim = f.r + BASE.crackPad, d = Math.hypot(nx - f.x, ny - f.y);
+      const f = R.finds[i], lim = f.r + rules.crackPad, d = Math.hypot(nx - f.x, ny - f.y);
       if (d < lim) {
         if (g.crackCool <= 0 && f.cracks < BASE.shatter) {
           f.cracks++; g.crackCool = BASE.crackCool;

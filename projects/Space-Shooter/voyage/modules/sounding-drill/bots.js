@@ -124,11 +124,11 @@ export function perfectBot(g, o = {}) {
 
 // --- wobbly --------------------------------------------------------------------------------------------------------
 export function wobblyBot(g, o = {}) {
-  const P = { sigma: 22, lag: 0.32, memT: 2.6, listenEvery: 200, corrT: 0.45, estSigma: 13, ringD: 26, look: 46, lapse: 0.25, lapseK: 14, ...o };
+  const P = { sigma: 18, lag: 0.32, memT: 2.6, listenEvery: 200, corrT: 0.45, estSigma: 13, ringD: 26, look: 46, lapse: 0.25, lapseK: 14, ...o };
   const rnd = roller({ rng: hashSeed('sounding-drill', 'bot', 'wobbly', g.seed, o.salt || 0) });
   const gauss = mkGauss(rnd);
   const R = g.rock, main = R.finds[0];
-  let wp = null, nx = 0, ny = 0, mem = null, memAt = -1e9, lastSeen = -1e9, swept = 0, lastTh = null, dir = 0, sinceListen = 0, listenLeft = 0, cooling = false, lastB = null;
+  let lapsed = false, wp = null, nx = 0, ny = 0, mem = null, memAt = -1e9, lastSeen = -1e9, swept = 0, lastTh = null, dir = 0, sinceListen = 0, listenLeft = 0, cooling = false, lastB = null;
   const hist = [];
   return {
     think(gg, dt) {
@@ -142,9 +142,14 @@ export function wobblyBot(g, o = {}) {
       lastB = { x: b.x, y: b.y };
       // what it can see: only what is lit right now
       if (findLight(g, main) > 0.3) {
-        if (g.t - lastSeen > 0.6 || !mem) { const k = rnd.next() < P.lapse ? P.lapseK : 1; mem = { x: main.x + gauss() * P.estSigma * k, y: main.y + gauss() * P.estSigma * k, r: main.r }; }
-        else { const k2 = Math.hypot(lg.x - main.x, lg.y - main.y) < 230 ? 0.2 : 0.02; mem.x += (main.x + gauss() * P.estSigma * 0.4 - mem.x) * k2; mem.y += (main.y + gauss() * P.estSigma * 0.4 - mem.y) * k2; }
-        lastSeen = g.t; memAt = g.t;
+        // the glint is on screen: it is exactly where it is (give or take the eye)
+        if (!mem) mem = { x: main.x, y: main.y, r: main.r };
+        mem.x += (main.x + gauss() * P.estSigma * 0.4 - mem.x) * 0.35; mem.y += (main.y + gauss() * P.estSigma * 0.4 - mem.y) * 0.35;
+        lastSeen = g.t; memAt = g.t; lapsed = false;
+      } else if (mem && !lapsed) {
+        // it has faded: now it is only remembered, and sometimes the memory is wrong
+        lapsed = true;
+        if (rnd.next() < P.lapse) { mem.x += gauss() * P.estSigma * P.lapseK; mem.y += gauss() * P.estSigma * P.lapseK; }
       }
       if (mem && g.t - memAt > P.memT) { mem = null; sinceListen = P.listenEvery; }
       if (lg.heat > 80) cooling = true;
