@@ -4,7 +4,7 @@
 //   const handsOn = createHandsOn({ root, store, toast, world, sound, reducedMotion, character, onBusy })
 //   handsOn.begin(v, pick, node)   the director calls it for a scene node with `handsOn`: the beat is now on, the player does it
 //   handsOn.use(target)            the world's `task` hook: a prop with interact.task was used. Returns a promise while a game runs.
-// Every game opens on the shared full-screen helper (workbench/fullScreen.js) and ends back in the room: no cut, no dialogue box.
+// Every game opens on the shared full-screen helper and ends back in the room: no cut, no dialogue box.
 // Leaving a game midway changes nothing and costs nothing; the thing stays there to try again.
 import { openFullScreen } from '../workbench/fullScreen.js';
 import { startHook } from '../minigames/sceneHook.js';
