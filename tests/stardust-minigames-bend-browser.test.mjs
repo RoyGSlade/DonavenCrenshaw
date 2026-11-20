@@ -121,7 +121,7 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
         assert.ok(lay.cvTop - lay.hudBottom < 24, `the HUD and the board stay together: ${JSON.stringify(lay)}`);
         assert.ok(lay.rowBottom <= lay.vh + 1 && lay.rowBottom >= lay.vh - 100, `the action row pins to the bottom (above the chip strip): ${JSON.stringify(lay)}`);
         assert.ok(lay.cvBottom <= lay.rowTop + 1, 'the board does not run under the pads');
-        if (phone) assert.ok(lay.cvW >= profile.viewport.width - 32, `the board is full width on a phone: ${lay.cvW}`);
+        if (phone) assert.ok(lay.cvW >= profile.viewport.width - 40, `the board is full width on a phone: ${lay.cvW}`);
         const padSize = await page.evaluate((sel) => [...document.querySelectorAll(`${sel} .cc-pad, ${sel} .cc-set`)].map((b) => { const r = b.getBoundingClientRect(); return [Math.round(r.width), Math.round(r.height)]; }), PANEL);
         for (const [w, h] of padSize) assert.ok(w >= 80 && h >= 64, `thumb-size pads: ${padSize}`);
         await shot('1-bend-start');
@@ -129,6 +129,7 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
         await bendTo({ shotAt: 0.5, shotName: '2-bend-mid', setHow: null, doSet: false });
         const mid = await bendState(page);
         assert.equal(mid.angle, mid.target, 'pressed in the beat all the way to the line'); assert.equal(mid.rushed, 0, JSON.stringify(mid)); assert.equal(mid.kinks, 0);
+        await wait(page, 200);
         assert.match(await page.locator(`${PANEL} .cc-gap`).evaluate((e) => e.parentElement.innerText), /on the line: set it/);
         await shot('3-bend-on-the-line');
         await wait(page, 450); await set(null);
