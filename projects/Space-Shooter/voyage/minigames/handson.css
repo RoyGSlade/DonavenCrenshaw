@@ -75,7 +75,7 @@ body.ho-open .wb-full .ui-btn:active:not(:disabled){transform:translateY(1px) sc
 .ho-cleanword{font:700 14px Consolas,monospace;color:#eaf4f5;font-style:normal}
 
 /* ---- the foam valve ---- */
-.ho-flowcanvas{display:block;width:100%;height:auto;max-height:100%;border:2px solid #0b121a;border-radius:8px;box-shadow:0 6px 18px #0008;aspect-ratio:640/400}
+.ho-flowcanvas{display:block;border:2px solid #0b121a;border-radius:8px;box-shadow:0 6px 18px #0008;max-width:100%;max-height:100%;touch-action:none}
 .ho-flowwrap{overflow:hidden}
 .ho-wheels{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 .ho-wheel{display:grid;justify-items:center;gap:2px;padding:8px 4px 10px;border:1px solid #2a4152;border-radius:10px;background:#0a1624;touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none;outline:none;text-align:center}

@@ -226,6 +226,15 @@ for (const [size, profile, path] of [['desktop', DESK, 'good'], ['phone', PHONE,
         assert.equal(await page.locator('.rp-tile').count(), 0, 'the valve is its own game, not the pipe grid');
         assert.equal(await page.locator('.ho-wheel').count(), 3, 'three wheels');
         await noDigits('valve');
+        {
+          // house rule 5: the valve scene fills the height between the HUD and the wheels (no gap over 48 px) and takes real screen
+          const g = await page.evaluate(() => { const c = document.querySelector('.ho-flowcanvas').getBoundingClientRect(), hud = document.querySelector('.ho-flowhud').getBoundingClientRect(), wh = document.querySelector('.ho-wheels').getBoundingClientRect(); return { h: c.height, top: c.top - hud.bottom, bottom: wh.top - c.bottom, tall: c.height > c.width }; });
+          if (phone) {
+            assert.ok(g.tall, 'a tall tank scene on a phone');
+            assert.ok(g.h / VH >= 0.45, `the valve scene takes ${(g.h / VH).toFixed(2)} of the screen height`);
+            assert.ok(g.top <= 48 && g.bottom <= 48, `no gap over 48 px (above ${g.top.toFixed(0)}, below ${g.bottom.toFixed(0)})`);
+          } else assert.ok(g.h / VH >= 0.35, `the valve scene takes ${(g.h / VH).toFixed(2)} of the screen height`);
+        }
         await shot('valve-game');
         const spin = async (id, turns) => { // circle a wheel with the pointer: positive clockwise (shuts), negative the other way (opens)
           const c = await page.evaluate((id) => { const r = document.querySelector(`.ho-wheel[data-valve="${id}"] .ho-wheel-rim`).getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2, r: r.width / 2 + 4 }; }, id);
