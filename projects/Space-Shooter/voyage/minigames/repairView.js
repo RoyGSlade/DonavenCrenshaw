@@ -40,7 +40,7 @@ function pieceSvg(mask, role) {
  * Returns a promise (with .state) resolving to the result: { success, how ('sealed', 'flooded' or 'valve-shut'), broken, flooding, offline, system,
  * moves, par, time, spilled, quality, stars, size, xp }.
  */
-export function playRepair(root, { seed = 1, setup = {}, system, title = 'Coolant line', reducedMotion = () => false, sound = () => {} } = {}) {
+export function playRepair(root, { seed = 1, setup = {}, system, title = 'Coolant line', flavor = null, reducedMotion = () => false, sound = () => {} } = {}) {
   const state = createRepair({ seed, size: setup.size, capacity: setup.capacity, flow: setup.flow, qualityBonus: setup.qualityBonus, system });
   const n = state.size;
   const moves = h('span', { class: 'rp-moves', text: '0 turns' });
@@ -65,7 +65,7 @@ export function playRepair(root, { seed = 1, setup = {}, system, title = 'Coolan
   cells.forEach((c) => board.append(c.btn));
   const label = (i) => `Row ${Math.floor(i / n) + 1}, column ${(i % n) + 1}: ${SHAPE_WORDS[state.tiles[i].role === 'pump' || state.tiles[i].role === 'valve' ? state.tiles[i].role : shapeOf(state.tiles[i].mask)]}${state.tiles[i].fixed ? '' : '. Turn.'}`;
   const hintBtn = h('button', { type: 'button', class: 'rp-hint ui-btn', text: 'Hint' });
-  const panel = h('section', { class: 'rp-panel mg-skin ui-panel', role: 'group', 'aria-label': `Repair: ${title}`, 'data-size': n, 'data-tier': setup.tier ?? 0 },
+  const panel = h('section', { class: 'rp-panel mg-skin ui-panel', role: 'group', 'aria-label': `Repair: ${title}`, 'data-size': n, 'data-tier': setup.tier ?? 0, ...(flavor ? { 'data-flavor': flavor } : {}) },
     h('p', { class: 'rp-eyebrow ui-nameplate', text: `REPAIR · ${title.toUpperCase()} · ${n} x ${n}${setup.label ? ` · ${setup.label.toUpperCase()}` : ''}` }),
     h('div', { class: 'rp-hud' }, moves, poolText), stage, status,
     h('div', { class: 'rp-foot' }, hintBtn, h('span', { class: 'rp-par', text: `Par ${state.par} turns` })),

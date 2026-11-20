@@ -36,7 +36,7 @@ export function startRoom(save) {
  * store, jobs (voyage/jobs.js), toast(text). world(): the on-foot world. fightIn(setup): the live shooter in the current
  * room (onfoot.fight). Returns { beat, fight, entered, advance, boot, pendingRoom }.
  */
-export function createSliceDirector({ store, jobs, toast = () => {}, world, fightIn }) {
+export function createSliceDirector({ store, jobs, toast = () => {}, world, fightIn, handsOn = null }) {
   let pending = null; // a beat waiting for the player to walk into its room: { room, node, play }
   let cutting = null; // a fade in progress: { room, resolve }
   const here = () => world()?.map?.id || null;
@@ -57,8 +57,11 @@ export function createSliceDirector({ store, jobs, toast = () => {}, world, figh
   }
 
   /** A dialogue beat of a scene: play it here, fade to its room, or wait for the player to walk to it. */
-  function beat(v, play) {
+  function beat(v, play, pick) {
     const quest = QUESTS[v.quest?.id];
+    // A hands-on node (scene 1's valve, hose, mop and lever) shows no dialogue: the player does it in the room (slice/handsOnPlay.js).
+    const node = quest?.nodes?.[v.node];
+    if (node?.handsOn && handsOn && pick) play = () => handsOn.begin(v, pick, node);
     const room = roomOf(quest, v.node);
     if (!room || here() === room) { pending = null; play(); return; }
     if (arriveMode(quest, v.node) === 'cut') { pending = null; cutTo(room).then(() => setTimeout(play, 350)); return; }
@@ -107,5 +110,5 @@ export function createSliceDirector({ store, jobs, toast = () => {}, world, figh
     if (jobs.playing) jobs.resume(); else advance();
   }
 
-  return { beat, endCard, fight, entered, advance, afterCard, boot, get pendingRoom() { return pending?.room || null; } };
+  return { beat, endCard, fight, entered, advance, afterCard, boot, handsOn, get pendingRoom() { return pending?.room || null; } };
 }
