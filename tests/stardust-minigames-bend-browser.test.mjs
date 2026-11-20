@@ -130,10 +130,11 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
             .map((e) => { const r = e.getBoundingClientRect(); return { c: e.className.toString().split(' ')[0], top: Math.round(r.top), bottom: Math.round(r.bottom) }; }).sort((x, y) => x.top - y.top);
           const gaps = []; for (let i = 1; i < rows.length; i++) gaps.push({ between: `${rows[i - 1].c} > ${rows[i].c}`, px: rows[i].top - rows[i - 1].bottom });
           const chips = document.querySelector('.wb-full .cc-chips'), cv = document.querySelector('.cc-panel[data-game=bend] canvas').getBoundingClientRect(), row = document.querySelector('.cc-panel[data-game=bend] .cc-bendrow').getBoundingClientRect();
-          return { rows, gaps, maxGap: Math.max(0, ...gaps.map((g) => g.px)), below: innerHeight - rows[rows.length - 1].bottom, chipsClipped: chips.scrollWidth - chips.clientWidth, cvW: cv.width, cvH: cv.height, cvBottom: cv.bottom, rowTop: row.top, vw: innerWidth, sw: document.documentElement.scrollWidth };
+          return { rows, gaps, maxGap: Math.max(0, ...gaps.map((g) => g.px)), below: innerHeight - rows[rows.length - 1].bottom, chipsClipped: chips.scrollWidth - chips.clientWidth, cvW: cv.width, cvH: cv.height, cvBottom: cv.bottom, rowTop: row.top, vw: innerWidth, sw: document.documentElement.scrollWidth, panelW: document.querySelector(sel).getBoundingClientRect().width, stageW: document.querySelector('.wb-full .cc-stage').getBoundingClientRect().width };
         });
         assert.ok(lay.maxGap <= 48, `no gap over 48 px inside the play block: ${JSON.stringify(lay.gaps)}`);
         assert.ok(lay.sw <= lay.vw, `the page does not scroll sideways: ${lay.sw} > ${lay.vw}`);
+        assert.ok(lay.panelW >= lay.stageW - 2, `the panel fills the stage width (no shrink-to-fit auto margin): ${lay.panelW} of ${lay.stageW}`);
         assert.ok(lay.chipsClipped <= 0, `the chips wrap and none is cut off: ${lay.chipsClipped}`);
         assert.ok(lay.below <= 24, `the last block sits at the bottom of the screen: ${lay.below}`);
         assert.ok(lay.cvBottom <= lay.rowTop + 1, 'the board does not run under the pads');

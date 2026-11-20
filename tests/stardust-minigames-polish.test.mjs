@@ -27,16 +27,16 @@ test('Polish setup: the pull and the dimple limit by roll, the shine rate by Spe
   assert.deepEqual([POLISH_BASE.pullMin, POLISH_BASE.pullMax, POLISH_BASE.limit, POLISH_BASE.rate], [40, 140, 130, 60]);
   for (const t of TIERS) {
     const u = setupPolish({ tier: t, level: 9 });
-    assert.equal(u.pullMin, r4(40 * (1 - 0.1 * t)), `pull low at ${t}`); assert.equal(u.pullMax, r4(140 * (1 - 0.1 * t)), `pull high at ${t}`); assert.equal(u.limit, 130 + 8 * t, `limit at ${t}`);
+    assert.equal(u.pullMin, r4(40 * (1 - 0.05 * t)), `pull low at ${t}`); assert.equal(u.pullMax, r4(140 * (1 - 0.05 * t)), `pull high at ${t}`); assert.equal(u.limit, 130 + 4 * t, `limit at ${t}`);
   }
-  assert.equal(setupPolish({ tier: 2 }).limit, 146); assert.equal(setupPolish({ tier: -2 }).limit, 114);
+  assert.equal(setupPolish({ tier: 2 }).limit, 138); assert.equal(setupPolish({ tier: -2 }).limit, 122); assert.equal(setupPolish({ tier: -2 }).pullMax, 154, 'Rough: pull x1.1'); assert.equal(setupPolish({ tier: 2 }).pullMax, 126, 'Smooth: pull x0.9');
   for (let p = 0; p <= 9; p++) {
     assert.equal(setupPolish({ points: { speed: p }, level: 9 }).rate, r4(60 * (1 + 0.05 * p)), `shine rate at ${p} points`);
     assert.equal(setupPolish({ points: { quality: p }, level: 9 }).qualityBonus, 4 * p);
     assert.equal(setupPolish({ points: { material: p }, level: 9 }).materialFactor, r4(1 - 0.04 * p));
     assert.equal(setupPolish({ points: { speed: p }, level: 9 }).buildFactor, r4(1 - 0.05 * p));
   }
-  assert.equal(setupPolish({ points: { speed: 9 }, level: 9 }).rate, 87, 'nine points: 60 up to 87');
+  assert.equal(setupPolish({ points: { speed: 9 }, level: 9 }).rate, 87, 'nine points: 60 up to 87'); assert.equal(setupPolish({ points: { speed: 9 }, level: 9 }).baseRate, 60, 'the base rate stays 60 for the heat');
   assert.equal(setupPolish({ points: { speed: 9 }, level: 3 }).rate, r4(60 * 1.15), 'points never pass the level');
 });
 
@@ -56,7 +56,7 @@ test('the pull: 40 to 140 units a second to the left, a new strength every 1.5 t
   assert.ok(s.segs.every((g) => g.v >= 40 && g.v <= 140), 'every strength is 40 to 140'); assert.ok(new Set(s.segs.map((g) => Math.round(g.v))).size > 20, 'it changes');
   assert.deepEqual(game({}, 5).segs, s.segs); assert.notDeepEqual(game({}, 6).segs, s.segs);
   for (let t = 0; t < 120; t += 0.37) { const v = P.pullAt(s, t); assert.ok(v >= 40 - 1e-9 && v <= 140 + 1e-9, `pull at ${t}: ${v}`); }
-  for (const tier of TIERS) { const u = game({ tier }, 5); for (let t = 0; t < 60; t += 0.7) assert.ok(Math.abs(P.pullAt(u, t) - P.pullAt(s, t) * (1 - 0.1 * tier)) < 1e-6, `scaled at ${tier}`); }
+  for (const tier of TIERS) { const u = game({ tier }, 5); for (let t = 0; t < 60; t += 0.7) assert.ok(Math.abs(P.pullAt(u, t) - P.pullAt(s, t) * (1 - 0.05 * tier)) < 1e-6, `scaled at ${tier}`); }
   assert.equal(P.pullAt(s, 0), s.segs[0].v); assert.ok(Math.abs(P.pullAt(s, s.segs[0].to + 1.2) - s.segs[1].v) < 1e-9, 'eased in 1.2 s'); const mid = P.pullAt(s, s.segs[0].to + 0.6); assert.ok(Math.abs(mid - (s.segs[0].v + s.segs[1].v) / 2) < 1e-9, 'halfway at 0.6 s');
 });
 
@@ -80,7 +80,11 @@ test('cells under the wheel gain shine at 60 a second (87 at nine Speed points):
   assert.equal(P.coveredBy(s, { x: 150 + 54, y: 150 }).filter((c) => c === c18).length, 1, 'inside at 54'); assert.equal(P.coveredBy(s, { x: 150 + 54.5, y: 150 }).filter((c) => c === c18).length, 0, 'outside past 54');
   holdAt(s, c18.x, c18.y, 0.5); assert.ok(Math.abs(c18.shine - 30) < 0.5, `half a second: ${c18.shine}`);
   assert.ok(s.cells.filter((x) => x !== c18).every((x) => x.shine === 0), 'nothing else moved'); void c19;
-  const f = game({ points: { speed: 9 } }, 5); holdAt(f, f.cells[18].x, f.cells[18].y, 1); assert.ok(Math.abs(f.cells[18].shine - 87) < 1, 'nine points: 87 a second');
+  const f = game({ points: { speed: 9 } }, 5); holdAt(f, f.cells[18].x, f.cells[18].y, 0.5); assert.ok(Math.abs(f.cells[18].shine - 43.5) < 0.5, 'nine points: 87 a second below polished');
+  // above polished the heat builds at the base 60: Speed points never shrink the margin before a dimple
+  const g = game({ points: { speed: 9 } }, 5), c = g.cells[18]; c.shine = 80; c.state = 'polished'; g.polished = 1; holdAt(g, c.x, c.y, 0.5); assert.ok(Math.abs(c.shine - 110) < 0.5, `from 80 at the base rate: ${c.shine}`);
+  const b = game({}, 5), d = b.cells[18]; d.shine = 80; d.state = 'polished'; b.polished = 1; holdAt(b, d.x, d.y, 0.5); assert.ok(Math.abs(d.shine - 110) < 0.5);
+  const dim = game({ points: { speed: 9 } }, 5); holdAt(dim, dim.cells[18].x, dim.cells[18].y, 0.8 + 60 / 60 + 0.05); assert.equal(dim.cells[18].state, 'dimpled', 'a dimple from 70 takes the same 1.0 s at nine points as at none');
 });
 
 test('polished at 70: the cell counts once; the plate counts polished cells', () => {
@@ -90,8 +94,8 @@ test('polished at 70: the cell counts once; the plate counts polished cells', ()
   holdAt(s, 150, 150, 0.3); assert.equal(s.polished, 1, 'grinding on does not count it twice');
 });
 
-test('dimpled at 130 (146 at Smooth, 114 at Rough): the cell stays dimpled, no longer counts, and costs 10', () => {
-  for (const [tier, limit] of [[0, 130], [2, 146], [-2, 114]]) {
+test('dimpled at 130 (138 at Smooth, 122 at Rough): the cell stays dimpled, no longer counts, and costs 10', () => {
+  for (const [tier, limit] of [[0, 130], [2, 138], [-2, 122]]) {
     const s = game({ tier }, 5), c = s.cells.find((x) => Math.hypot(x.x - 150, x.y - 150) < 1);
     holdAt(s, 150, 150, (limit - 1) / 60); assert.equal(c.state, 'polished', `just under the limit at ${tier}`);
     holdAt(s, 150, 150, 0.05); assert.equal(c.state, 'dimpled', `dimpled at ${limit}`); assert.equal(s.dimples, 1); assert.equal(s.polished, 0, 'a dimpled cell is not polished');
@@ -126,7 +130,7 @@ test('the words: keep going, nearly done, and the heat of the cell under the whe
   const h = game({}, 5); h.wheel.x = 150; h.wheel.y = 150; assert.equal(P.heatWord(h), 'cool');
   holdAt(h, 150, 150, 0.5); assert.equal(P.heatWord(h), 'grinding'); holdAt(h, 150, 150, 0.9); assert.equal(P.heatWord(h), 'polished here: move on');
   holdAt(h, 150, 150, 0.55); const c = P.coveredBy(h)[0]; assert.ok(c.shine >= 105 && c.shine < 130, `${c.shine}`); assert.equal(P.heatWord(h), 'too hot!'); assert.equal(P.hotCell(h), c);
-  const t = game({ tier: 2 }, 5); t.wheel.x = 150; t.wheel.y = 150; holdAt(t, 150, 150, 1.5); assert.equal(P.hotCell(t), null, 'Smooth: 90 is not yet hot (limit 146, hot from 101)');
+  const t = game({ tier: 2 }, 5); t.wheel.x = 150; t.wheel.y = 150; holdAt(t, 150, 150, 1.5); assert.equal(P.hotCell(t), null, 'Smooth: 90 is not yet hot (limit 138, hot from 93)');
   assert.ok(['light pull', 'steady pull', 'strong pull'].includes(P.pullWord(h)));
   assert.equal(P.motionWord(-60), 'with the pull: fast and light'); assert.equal(P.motionWord(60), 'against the pull: slow, grinds hard'); assert.equal(P.motionWord(0), 'on the spot: grinds hard, watch the heat'); assert.equal(P.motionWord(15), 'on the spot: grinds hard, watch the heat');
   for (const w of [P.plateWord(h), P.heatWord(h), P.pullWord(h), P.motionWord(-60), P.motionWord(60), P.motionWord(0)]) assert.doesNotMatch(w, /\d/);
@@ -146,7 +150,7 @@ test('the chain: a Polish recipe runs through the shared rules (pass, redo and s
 test('the point picker, the roll preview and the bench say what Polish does', () => {
   assert.match(CATEGORIES.crafting.cats[1].words(3), /Polish: shine 15% faster/);
   const smooth = rollPreview('polish', { total: 25, dc: 10 }, { level: 9 }), rough = rollPreview('polish', { total: 1, dc: 10 }, { level: 9 });
-  assert.match(smooth.line, /pulled 20% less/); assert.match(smooth.line, /takes longer to dimple/); assert.match(rough.line, /pulled 20% more/); assert.match(rough.line, /less time to dimple/);
+  assert.match(smooth.line, /pulled 10% less/); assert.match(smooth.line, /takes longer to dimple/); assert.match(rough.line, /pulled 10% more/); assert.match(rough.line, /less time to dimple/);
   assert.equal(rollPreview('polish', { total: 12, dc: 10 }, { level: 9 }).phrases.length, 0); assert.ok(Object.keys(CHAIN_SPECS).includes('polish'));
   const state = freshState(), st = { ...stationById('craft'), id: 'polish', label: 'polish' }, start = startStation(state, st, { total: 15, dc: 10, natural: false });
   assert.equal(start.setup.kind, 'polish'); assert.match(start.preview.line, /Good roll/);
@@ -210,9 +214,11 @@ test('slow-handed bot (late to see the pull, jittery thumb, a hand that misjudge
   const runs = TIERS.map((t) => sweep((i) => hand(setupPolish({ tier: t, level: 9 }), i, h), 200)), byTier = runs.map((r) => r.rate); TIERS.forEach((t, i) => { TABLE[`slow t${t}`] = byTier[i]; TABLE[`slow seconds t${t}`] = runs[i].seconds; });
   assert.ok(runs[2].seconds <= 45, `a wobbly hand at Steady: ${runs[2].seconds} s`);
   for (let i = 1; i < byTier.length; i++) { assert.ok(byTier[i] >= byTier[i - 1] - 0.04, `roll: ${byTier}`); assert.ok(byTier[i] - byTier[i - 1] < 0.5, `no cliff in the roll: ${byTier}`); }
-  assert.ok(byTier[4] > byTier[0] + 0.5, `Smooth beats Rough: ${byTier}`);
-  // Speed points shine faster, so the plate is quicker but the window to dimple is shorter (60 shine of headroom is 1.0 s at 60 a second, 0.69 s at 87): a hand that is late and shaky does not gain accuracy from them. Recorded, not asserted.
-  [0, 3, 6, 9].forEach((p) => { TABLE[`slow steady speed${p}`] = at(0, { speed: p }); });
+  assert.ok(byTier[4] > byTier[0] + 0.4, `Smooth beats Rough: ${byTier}`);
+  // Speed points must never make the game worse: they quicken the shine only up to polished, the heat toward a dimple builds at the base rate.
+  const curve = [0, 3, 6, 9].map((p) => at(0, { speed: p })); [0, 3, 6, 9].forEach((p, i) => { TABLE[`slow steady speed${p}`] = curve[i]; });
+  assert.ok(curve[3] >= curve[0], `nine Speed points are at least as good as none for the wobbly hand: ${curve}`);
+  for (let i = 1; i < curve.length; i++) assert.ok(curve[i] >= curve[i - 1] - 0.03, `Speed points never make it worse: ${curve}`);
 });
 
 test.after(() => { if (process.env.POLISH_TABLE) console.log(JSON.stringify(TABLE, null, 1)); });

@@ -323,12 +323,13 @@ export function setupFlatten({ tier = 0, points = {}, level = POINT_MAX } = {}) 
 
 // --- Crafting chain: Polish (v2/PLAN.md section 4.2 and 4.3) -----------------------------------------
 //   Polish  40 cells, polished at 70 shine, dimpled at 130; the wheel is pulled left 40 to 140 units a second; shine 60 a second.
-//   The roll (tier t): pull x (1 - 0.10 t); dimple limit 130 + 8 t.  One Speed point: shine 5% faster (60 up to 87).
-export const POLISH_BASE = Object.freeze({ pullMin: 40, pullMax: 140, tierPull: 0.10, limit: 130, tierLimit: 8, rate: 60, ratePerPoint: 0.05, qualityPerPoint: 4, buildPerPoint: 0.05, materialPerPoint: 0.04 });
+//   The roll (tier t): pull x (1 - 0.05 t); dimple limit 130 + 4 t (the plan said 0.10 and 8; halved by Erik 2026-11-19 after the bot sweep: Rough was nearly unwinnable).
+//   One Speed point: shine 5% faster (60 up to 87), but only while a tile is below polished: from 70 up the heat toward a dimple builds at the base 60, so Speed never shrinks the margin.
+export const POLISH_BASE = Object.freeze({ pullMin: 40, pullMax: 140, tierPull: 0.05, limit: 130, tierLimit: 4, rate: 60, ratePerPoint: 0.05, qualityPerPoint: 4, buildPerPoint: 0.05, materialPerPoint: 0.04 });
 export function setupPolish({ tier = 0, points = {}, level = POINT_MAX } = {}) {
   const p = cleanPoints(points, CRAFT_CATEGORIES, level), t = clampTier(tier), b = POLISH_BASE, f = 1 - b.tierPull * t;
   return {
-    kind: 'polish', pullMin: r4c(b.pullMin * f), pullMax: r4c(b.pullMax * f), pullFactor: r4c(f), limit: b.limit + b.tierLimit * t, rate: r4c(b.rate * (1 + b.ratePerPoint * p.speed)),
+    kind: 'polish', pullMin: r4c(b.pullMin * f), pullMax: r4c(b.pullMax * f), pullFactor: r4c(f), limit: b.limit + b.tierLimit * t, rate: r4c(b.rate * (1 + b.ratePerPoint * p.speed)), baseRate: b.rate,
     ...craftBits(b, p), tier: t, points: p, label: tierInfo(t).label,
   };
 }

@@ -3,7 +3,7 @@
 //
 //   The wheel moves at up to 220 units a second (WASD, a mouse drag, or a thumb drag: all become one input vector, length at most 1).
 //   The wheel is PULLED left all the time, 40 to 140 units a second, a new strength every 1.5 to 3 s: you fight it by steering.
-//   Cells under the wheel gain shine (60 a second, a Speed point 5% faster: 87 at nine). 70 is polished.
+//   Cells under the wheel gain shine (60 a second, a Speed point 5% faster: 87 at nine, but only while the cell is below polished). 70 is polished.
 //   Keep grinding a polished cell and at 130 it DIMPLES (it stays dimpled and no longer counts).
 //   The plate finishes by itself at 36 polished cells, or when you say Done (Space, or the Done pad). Three dimples ruin it.
 //   Grade = polished share x 100 - 10 per dimple. (At the automatic finish that is 90 at best: the plan's own numbers.)
@@ -19,7 +19,7 @@ function lcg(seed) { let x = (seed >>> 0) || 1; return () => { x = (Math.imul(x,
 export function createPolish({ seed = 1, setup = {}, portrait = false } = {}) {
   const cols = portrait ? 5 : 8, rows = portrait ? 8 : 5;
   const s = {
-    seed, setup, cols, rows, W: cols * CELL, H: rows * CELL, pullMin: setup.pullMin ?? 40, pullMax: setup.pullMax ?? 140, limit: setup.limit ?? 130, rate: setup.rate ?? 60,
+    seed, setup, cols, rows, W: cols * CELL, H: rows * CELL, pullMin: setup.pullMin ?? 40, pullMax: setup.pullMax ?? 140, limit: setup.limit ?? 130, rate: setup.rate ?? 60, baseRate: setup.baseRate ?? setup.rate ?? 60,
     cells: Array.from({ length: cols * rows }, (_, i) => ({ i, col: i % cols, row: Math.floor(i / cols), x: (i % cols) * CELL + CELL / 2, y: Math.floor(i / cols) * CELL + CELL / 2, shine: 0, state: 'dull' })),
     wheel: { x: cols * CELL / 2, y: rows * CELL / 2 }, t: 0, segs: [], dimples: 0, polished: 0, ground: 0, events: [], done: false, result: null,
   };
@@ -55,7 +55,7 @@ export function polishStep(s, dt, input = { x: 0, y: 0 }) {
   s.t += dt;
   for (const c of coveredBy(s)) {
     if (c.state === 'dimpled') continue;
-    c.shine += s.rate * dt;
+    c.shine += (c.shine < POLISHED ? s.rate : s.baseRate) * dt; // Speed points only quicken the shine up to polished; the heat toward a dimple builds at the base rate
     if (c.state === 'dull' && c.shine >= POLISHED) { c.state = 'polished'; s.polished++; s.events.push({ type: 'polished', cell: c.i }); }
     if (c.shine >= s.limit) {
       c.state = 'dimpled'; s.dimples++; s.polished--; s.events.push({ type: 'dimple', cell: c.i });
