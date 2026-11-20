@@ -17,6 +17,7 @@
 //     stationInfo(id)       { name, locked } for a hangar station id (the interact marks and prompt)
 //     offerTalk(who, map)   a promise when a quest giver talks jobs here (offers in the world), else null
 //     offers({ map, npc?, station? }) open job offers here (the "job here" mark)
+//     task(target)          a prop with `interact.task` (scene 1's valve, hose, cart, mop, goo, lever): the slice's hands-on beats play it
 //     repair(job)           a crew repair point was used: { id: 'guns'|'engine'|'hull', label, timeScale } (timeScale
 //                           = 1 minus Mechanic's repair.time); without it a stand-in line plays
 // Skill levels come only from data.js through character.js (ROUND2-CONTRACT section 9): no table here.
@@ -269,6 +270,7 @@ export function createOnFoot({ root, store = null, bus = null, hooks = {}, mapId
     const screen = hooks.statuses || target.id !== 'coffee' ? objects.screenFor(target) : null;
     if (screen) return screen();
     if (shut?.hack) return hack({ ...target, level: shut.hack, pick: shut.pick });
+    if (target.task && hooks.task) return hooks.task(target); // a scene's hands-on thing (slice/handsOnPlay.js)
     switch (target.kind) {
       case 'hack': return hack(target);
       case 'npc': return talk(target.id, { map: world.map.id });

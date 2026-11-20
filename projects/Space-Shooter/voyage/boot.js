@@ -71,6 +71,7 @@ import { sealReason, sealed, WHY } from './slice/seal.js';
 import { roleOf } from './slice/role.js';
 import { fallbackLine } from './slice/fallbackLines.js';
 import { createStatuses, clock } from './status.js';
+import { createHandsOn } from './slice/handsOnPlay.js';
 // The workbench room: a dev-only test room (?newgame=1&start=workbench), its own files in ./workbench/.
 import { wantsWorkbench } from './workbench/entry.js';
 import { mountWorkbench } from './workbench/mount.js';
@@ -415,7 +416,7 @@ function boot(session = { mode: 'local' }) {
     // launch slice: a beat plays in its room, an on-foot fight runs on the Duchess's floor, a closed result card starts the next scene.
   };
   const playBeat = presenter.dialogue;
-  presenter.dialogue = (v, pick) => (slice ? slice.beat(v, () => playBeat(v, pick)) : playBeat(v, pick));
+  presenter.dialogue = (v, pick) => (slice ? slice.beat(v, () => playBeat(v, pick), pick) : playBeat(v, pick));
   presenter.foot = (part, done) => (slice ? slice.fight(part, done) : done(null));
   presenter.exit = () => slice?.afterCard();
   // The opening's hooked choices (scenes 3, 4, 5): the d20 set the tier, the minigame sheet plays it, the result goes back to the engine.
@@ -495,6 +496,8 @@ function boot(session = { mode: 'local' }) {
       // During the tutorial, a lesson waits for its turn (the director pays for each one once).
       allow: (target) => allowLesson(target),
       entered: (map) => { clearToast(); slice?.entered(map); setBed(map.ambient, map.id); place?.closeStation({ restoreFocus: false }); place?.place(); setPlaceName(placeNameFor(map)); },
+      // Scene 1's hands-on things (valve, hose, cart, mop, goo, lever) in the holodeck gym: slice/handsOnPlay.js.
+      task: (target) => slice?.handsOn?.use(target) || null,
       flying: (on) => { flying = on; holdFloor(); place?.place(); if (on) setPlaceName('The Drift'); else if (onfoot?.world?.map) setPlaceName(placeNameFor(onfoot.world.map)); },
       stationInfo: (id) => (workbenchRoom && String(id).startsWith('wb-') ? workbenchRoom.stationInfo(id) : stationInfo(id)),
       // Live stealth (the workbench's patrol yard): the test character's stealth points, and the guards' events as toasts.
@@ -691,7 +694,11 @@ function boot(session = { mode: 'local' }) {
   // A job in progress waits on the tracker and the datapad (Continue); nothing pops up.
   // Launch slice: the opening picks its scene up (a reload lands back in the beat) or starts the next one.
   if (slicing) {
-    slice = createSliceDirector({ store, jobs, toast, world: () => onfoot?.world || null, fightIn: (setup) => onfoot.fight(setup), presence, busy: () => jobTalk.busy || jobCard.open || screenBusy() });
+    const handsOn = createHandsOn({
+      root: floor, store, toast, world: () => onfoot?.world || null, sound: (id) => onfoot.sound(id), reducedMotion: still, character: () => store.get().character,
+      onBusy: (on) => { if (on) overlays.add('handson'); else overlays.delete('handson'); holdFloor(); tracker?.render(); },
+    });
+    slice = createSliceDirector({ store, jobs, toast, world: () => onfoot?.world || null, fightIn: (setup) => onfoot.fight(setup), presence, busy: () => jobTalk.busy || jobCard.open || screenBusy(), handsOn });
     setInterval(() => slice.watch(), 250);
     sealClassicLinks();
     ready.then(() => {

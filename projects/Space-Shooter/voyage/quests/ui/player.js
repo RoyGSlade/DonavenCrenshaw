@@ -44,7 +44,7 @@ export const button = (label, onclick, props = {}) => el('button', { type: 'butt
 
 // ---- reward lines -----------------------------------------------------------
 /** The reward events worth showing a player (story flags other than Knock fragments stay quiet). */
-export const shownEvents = events => events.filter(e => (e.type !== 'flag' || (e.id.startsWith('fragment-') && e.value)) && e.amount !== 0);
+export const shownEvents = events => events.filter(e => (e.type !== 'flag' || (e.id.startsWith('fragment-') && e.value)) && e.amount !== 0 && e.type !== 'skill-xp'); // skill XP is display-only until something grants it: a card must not promise it
 
 export function eventText(e) {
   const sign = n => (n > 0 ? `+${n}` : String(n));

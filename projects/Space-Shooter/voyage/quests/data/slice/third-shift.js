@@ -51,6 +51,50 @@ export default {
       ]
     },
     {
+      "id": "valve",
+      "text": "Tighten the foam valve",
+      "where": "duchess-holodeck",
+      "at": {
+        "prop": "holo-valve"
+      },
+      "nodes": [
+        "work-valve"
+      ]
+    },
+    {
+      "id": "hose",
+      "text": "Patch the coolant hose",
+      "where": "duchess-holodeck",
+      "at": {
+        "prop": "holo-hose"
+      },
+      "nodes": [
+        "work-hose"
+      ]
+    },
+    {
+      "id": "mop",
+      "text": "Mop up the goo",
+      "where": "duchess-holodeck",
+      "at": {
+        "zone": "supply-closet"
+      },
+      "nodes": [
+        "work-mop"
+      ]
+    },
+    {
+      "id": "lever",
+      "text": "Reset the holodeck with Pip",
+      "where": "duchess-holodeck",
+      "at": {
+        "prop": "holo-panel"
+      },
+      "nodes": [
+        "work-lever"
+      ]
+    },
+    {
       "id": "finish",
       "text": "Finish the shift",
       "where": "duchess-holodeck",
@@ -310,8 +354,14 @@ export default {
             "pass": "end-source-fixed",
             "fail": "end-projector-fried"
           }
+        },
+        {
+          "label": "Work the room with your own hands: valve, hose, mop, lever.",
+          "to": "work-valve",
+          "hands": true
         }
-      ]
+      ],
+      "handsOn": "start"
     },
     "end-clean": {
       "type": "end",
@@ -435,6 +485,100 @@ export default {
       "emotion": "menacing",
       "direction": "Crisp and cold over the intercom, ending on a very dry joke.",
       "text": "Janitor, the projector is dead and Tull is sulking. Also, a toll problem is coming up the lane, and it is not the kind we can mop."
+    },
+    "work-valve": {
+      "type": "dialogue",
+      "room": "duchess-holodeck",
+      "handsOn": "valve",
+      "speaker": null,
+      "text": "The foam valve is stuck open and the tank behind it is filling the room. Tighten it before the tank runs over.",
+      "choices": [
+        {
+          "label": "The valve holds. The foam stops.",
+          "to": "work-hose",
+          "set": {
+            "valve": true
+          }
+        },
+        {
+          "label": "The line is lost. The floor floods.",
+          "to": "work-hose"
+        }
+      ]
+    },
+    "work-hose": {
+      "type": "dialogue",
+      "room": "duchess-holodeck",
+      "handsOn": "hose",
+      "speaker": null,
+      "text": "A coolant hose on the wall has a pinhole. Close every open end.",
+      "choices": [
+        {
+          "label": "The hose holds.",
+          "to": "work-mop",
+          "set": {
+            "hose": true
+          }
+        },
+        {
+          "label": "The hose is lost. Coolant sprays the floor.",
+          "to": "work-mop"
+        }
+      ]
+    },
+    "work-mop": {
+      "type": "dialogue",
+      "room": "duchess-holodeck",
+      "handsOn": "mop",
+      "speaker": null,
+      "text": "The floor is still under goo. Get a mop and wipe it up.",
+      "choices": [
+        {
+          "label": "The floor is clean.",
+          "to": "work-lever"
+        }
+      ]
+    },
+    "work-lever": {
+      "type": "dialogue",
+      "room": "duchess-holodeck",
+      "handsOn": "lever",
+      "speaker": null,
+      "text": "The holodeck program needs a power reset: the lever on the panel, off, wait for the hum, on.",
+      "choices": [
+        {
+          "label": "The holodeck resets.",
+          "to": "work-end"
+        },
+        {
+          "label": "The surge fries the projector.",
+          "to": "end-projector-fried"
+        }
+      ]
+    },
+    "work-end": {
+      "type": "branch",
+      "room": "duchess-holodeck",
+      "cases": [
+        {
+          "when": {
+            "local": {
+              "valve": true
+            }
+          },
+          "to": "end-source-fixed"
+        },
+        {
+          "when": {
+            "local": {
+              "valve": false,
+              "hose": false
+            }
+          },
+          "to": "end-slimed"
+        }
+      ],
+      "else": "end-clean"
     }
   }
 };

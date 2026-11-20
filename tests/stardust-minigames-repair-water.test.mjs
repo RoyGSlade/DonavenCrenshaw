@@ -90,7 +90,7 @@ test('the water reaching the valve loses the line: it stays broken, the result n
   const w = createRepair({ seed: 5, size: 5, capacity: 20, system: 'weapon-cooling' });
   run(w, 600); assert.equal(w.result.system, 'weapon-cooling'); assert.equal(w.result.systemName, 'Weapon cooling');
   assert.equal(createRepair({ seed: 5, size: 5, system: 'no-such' }).system, 'engine-cooling');
-  assert.deepEqual(Object.keys(SYSTEMS), ['engine-cooling', 'weapon-cooling', 'reactor-loop', 'life-support']);
+  assert.deepEqual(Object.keys(SYSTEMS), ['engine-cooling', 'weapon-cooling', 'reactor-loop', 'life-support', 'wellness-foam']);
 });
 
 test('a pure level loss: with no piece locked wrong, a full pool is lost by the level alone (cause level)', () => {

@@ -38,7 +38,7 @@ const EAR_MAX = 4;
 export const FILL_SPEED = 4.5, DRAIN_SPEED = 12;
 
 /** The systems a coolant line can protect: id -> name. A lost line takes its system offline when the valve is shut. */
-export const SYSTEMS = Object.freeze({ 'engine-cooling': 'Engine cooling', 'weapon-cooling': 'Weapon cooling', 'reactor-loop': 'Reactor loop', 'life-support': 'Life support' });
+export const SYSTEMS = Object.freeze({ 'engine-cooling': 'Engine cooling', 'weapon-cooling': 'Weapon cooling', 'reactor-loop': 'Reactor loop', 'life-support': 'Life support', 'wellness-foam': 'Wellness foam' });
 export const DEFAULT_SYSTEM = 'engine-cooling';
 
 export function createRepair({ seed = 1, size = 5, capacity = 120, flow = 1, qualityBonus = 0, system = DEFAULT_SYSTEM } = {}) {

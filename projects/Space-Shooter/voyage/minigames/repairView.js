@@ -40,11 +40,13 @@ function pieceSvg(mask, role) {
  * Returns a promise (with .state) resolving to the result: { success, how ('sealed', 'flooded' or 'valve-shut'), broken, flooding, offline, system,
  * moves, par, time, spilled, quality, stars, size, xp }.
  */
-export function playRepair(root, { seed = 1, setup = {}, system, title = 'Coolant line', reducedMotion = () => false, sound = () => {} } = {}) {
+export function playRepair(root, { seed = 1, setup = {}, system, title = 'Coolant line', flavor = null, showXp = true, reducedMotion = () => false, sound = () => {} } = {}) {
   const state = createRepair({ seed, size: setup.size, capacity: setup.capacity, flow: setup.flow, qualityBonus: setup.qualityBonus, system });
   const n = state.size;
   const moves = h('span', { class: 'rp-moves', text: '0 turns' });
-  const poolText = h('span', { class: 'rp-time', text: 'Water 0%' });
+  const poolText = h('span', { class: 'rp-time', text: 'Water: dry' });
+  // No digits on screen (house rule): the water is a word, and it is drawn rising.
+  const waterWord = (pct) => (pct < 4 ? 'dry' : pct < 35 ? 'low' : pct < 65 ? 'rising' : pct < 90 ? 'high' : 'at the valve!');
   const status = h('p', { class: 'rp-status', role: 'status', 'aria-live': 'polite', text: 'Close every open end and bring the coolant to the valve.' });
   const board = h('div', { class: 'rp-board', role: 'grid', 'aria-label': 'Pipe board', style: `--n:${n}` });
   const streams = h('div', { class: 'rp-streams', 'aria-hidden': 'true' });
@@ -65,10 +67,10 @@ export function playRepair(root, { seed = 1, setup = {}, system, title = 'Coolan
   cells.forEach((c) => board.append(c.btn));
   const label = (i) => `Row ${Math.floor(i / n) + 1}, column ${(i % n) + 1}: ${SHAPE_WORDS[state.tiles[i].role === 'pump' || state.tiles[i].role === 'valve' ? state.tiles[i].role : shapeOf(state.tiles[i].mask)]}${state.tiles[i].fixed ? '' : '. Turn.'}`;
   const hintBtn = h('button', { type: 'button', class: 'rp-hint ui-btn', text: 'Hint' });
-  const panel = h('section', { class: 'rp-panel mg-skin ui-panel', role: 'group', 'aria-label': `Repair: ${title}`, 'data-size': n, 'data-tier': setup.tier ?? 0 },
-    h('p', { class: 'rp-eyebrow ui-nameplate', text: `REPAIR · ${title.toUpperCase()} · ${n} x ${n}${setup.label ? ` · ${setup.label.toUpperCase()}` : ''}` }),
-    h('div', { class: 'rp-hud' }, moves, poolText), stage, status,
-    h('div', { class: 'rp-foot' }, hintBtn, h('span', { class: 'rp-par', text: `Par ${state.par} turns` })),
+  const panel = h('section', { class: 'rp-panel mg-skin ui-panel', role: 'group', 'aria-label': `Repair: ${title}`, 'data-size': n, 'data-tier': setup.tier ?? 0, ...(flavor ? { 'data-flavor': flavor } : {}) },
+    h('p', { class: 'rp-eyebrow ui-nameplate', text: `REPAIR · ${title.toUpperCase()}${setup.label ? ` · ${setup.label.toUpperCase()}` : ''}` }),
+    h('div', { class: 'rp-hud' }, poolText), stage, status,
+    h('div', { class: 'rp-foot' }, hintBtn),
     h('p', { class: 'rp-help', text: 'Every end of every pipe the coolant reaches must meet another pipe, or it leaks. Leaks fill the board with water from the bottom. A piece under water cannot turn. If the water reaches the valve, the line is lost. Tap a piece to turn it. Arrows move, Enter or Space turns.' }));
   panel.__state = state;
   root.append(panel);
@@ -130,7 +132,7 @@ export function playRepair(root, { seed = 1, setup = {}, system, title = 'Coolan
     });
     moves.textContent = `${state.moves} turn${state.moves === 1 ? '' : 's'}`;
     const pct = Math.round((100 * state.pool) / state.capacity);
-    poolText.textContent = `Water ${pct}% to the valve`;
+    poolText.textContent = `Water: ${waterWord(pct)}`;
     sea.setAttribute('aria-valuenow', String(pct));
     sea.classList.toggle('is-high', pct >= 60);
     paintSea();
@@ -196,8 +198,8 @@ export function playRepair(root, { seed = 1, setup = {}, system, title = 'Coolan
     const stars = '\u2605'.repeat(r.stars) + '\u2606'.repeat(3 - r.stars);
     const card = h('div', { class: `rp-result ui-card ${r.success ? 'is-ok' : 'is-bad'}`, role: 'status' },
       h('b', { class: 'rp-stars', text: r.success ? stars : 'LINE LOST' }),
-      h('span', { text: r.success ? `Quality ${r.quality} \u00b7 ${r.moves} turns (par ${r.par}) \u00b7 ${r.spilled} spilled of ${state.capacity} \u00b7 +${r.xp} Repair XP`
-        : `${r.moves} turns, no seal, no XP. The line stays broken and the flooding goes on. Shut the valve to stop it: ${r.systemName} goes offline.` }));
+      h('span', { text: r.success ? `${r.quality >= 90 ? 'A clean' : r.quality >= 65 ? 'A solid' : 'A rough'} patch \u00b7 ${r.spilled / state.capacity < 0.1 ? 'barely a drop spilled' : r.spilled / state.capacity < 0.4 ? 'some spilled' : 'a lot spilled'}${showXp && r.xp ? ` \u00b7 +${r.xp} Repair XP` : ''}`
+        : `No seal. The line stays broken and the flooding goes on. Shut the valve to stop it: ${r.systemName} goes offline.` }));
     if (r.success) {
       const go = h('button', { type: 'button', class: 'primary ui-btn', text: 'Continue' });
       go.addEventListener('click', () => { panel.remove(); finish(r); });

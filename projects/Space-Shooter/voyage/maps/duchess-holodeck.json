@@ -25,9 +25,12 @@
     "##################"
   ],
   "tags": {
-    "holo-goo": {"states":["dirty","clean"],"state":"dirty","by":[{"state":"clean","flag":"goo-cleared"}]},
-    "holo-valve": {"states":["leaking","fixed"],"state":"leaking","by":[{"state":"fixed","flag":"goo-source-fixed"}]},
-    "holo-projector": {"states":["on","fried"],"state":"on","by":[{"state":"fried","flag":"holo-projector-fried"}]},
+    "holo-goo": {"states":["dirty","clean"],"state":"dirty","by":[{"state":"clean","flag":"goo-cleared"},{"state":"clean","flag":"s1-mopped"}]},
+    "holo-flood": {"states":["dry","wet"],"state":"dry","by":[{"state":"wet","flag":"s1-mess"},{"state":"dry","flag":"s1-mopped"}]},
+    "holo-hose": {"states":["leaking","sealed"],"state":"leaking","by":[{"state":"sealed","flag":"s1-hose-fixed"}]},
+    "loose-mop": {"states":["there","gone"],"state":"there","by":[{"state":"gone","flag":"s1-mop-held","notFlag":"s1-mop-cart"}]},
+    "holo-valve": {"states":["leaking","fixed"],"state":"leaking","by":[{"state":"fixed","flag":"goo-source-fixed"},{"state":"fixed","flag":"s1-valve-fixed"}]},
+    "holo-projector": {"states":["on","fried","off"],"state":"on","by":[{"state":"fried","flag":"holo-projector-fried"}]},
     "pip-gym": {"states":["under","out"],"state":"under","by":[{"state":"out","flag":"goo-source-fixed"}]}
   },
   "look": {
@@ -35,8 +38,8 @@
     "accents": {"holo":"#2fe0c0","warm":"#ffb867","goo":"#cfe8d8"},
     "doorColors": {"corridor":"holo"},
     "decals": [
-      {"art":"holo-floor-grid","at":[5,8],"size":[4,4],"alpha":0.95,"tag":"holo-projector","states":{"fried":{"alpha":0.3}}},
-      {"art":"holo-floor-grid","at":[9,8],"size":[4,4],"alpha":0.95,"tag":"holo-projector","states":{"fried":{"alpha":0.3}}},
+      {"art":"holo-floor-grid","at":[5,8],"size":[4,4],"alpha":0.95,"tag":"holo-projector","states":{"fried":{"alpha":0.3},"off":{"alpha":0.12}}},
+      {"art":"holo-floor-grid","at":[9,8],"size":[4,4],"alpha":0.95,"tag":"holo-projector","states":{"fried":{"alpha":0.3},"off":{"alpha":0.12}}},
       {"art":"goo-puddle-big","at":[1.2,7.6],"size":[3.4,2.3],"rot":3.14,"tag":"holo-goo","states":{"clean":{"hidden":true}}},
       {"art":"goo-splat-b","at":[5.2,7.8],"size":[2.2,2.2],"rot":1.2,"tag":"holo-goo","states":{"clean":{"hidden":true}}},
       {"art":"goo-splat-a","at":[9.8,9.6],"size":[2.4,2.4],"rot":0.4,"tag":"holo-goo","states":{"clean":{"hidden":true}}},
@@ -51,6 +54,13 @@
       {"art":"goo-splat-b","at":[9.6,13.4],"size":[2.2,2.2],"rot":2.7,"tag":"holo-goo","states":{"clean":{"hidden":true}}},
       {"art":"goo-splat-a","at":[6.4,5.6],"size":[2.0,2.0],"rot":1.0,"tag":"holo-goo","states":{"clean":{"hidden":true}}},
       {"art":"goo-splat-c","at":[3.0,5.6],"size":[1.8,1.8],"rot":3.3,"tag":"holo-goo","states":{"clean":{"hidden":true}}},
+      {"art":"goo-puddle-big","at":[3.2,13.6],"size":[3.2,2.2],"rot":0.9,"when":{"holo-flood":"wet"}},
+      {"art":"goo-puddle-big","at":[11.4,13.2],"size":[3.0,2.0],"rot":2.4,"when":{"holo-flood":"wet"}},
+      {"art":"goo-puddle-big","at":[7.4,6.2],"size":[3.4,2.2],"rot":0.2,"when":{"holo-flood":"wet"}},
+      {"art":"goo-splat-b","at":[12.8,8.2],"size":[2.4,2.4],"rot":3.0,"when":{"holo-flood":"wet"}},
+      {"art":"goo-splat-d","at":[2.4,7.0],"size":[2.2,2.2],"rot":1.4,"when":{"holo-flood":"wet"}},
+      {"art":"goo-splat-a","at":[8.2,11.0],"size":[2.4,2.4],"rot":5.0,"when":{"holo-flood":"wet"}},
+      {"art":"oil-2","at":[1.4,10.6],"size":[2.4,1.6],"alpha":0.8,"tag":"holo-hose","states":{"sealed":{"hidden":true}}},
       {"art":"scorch-1","at":[7.6,8.8],"size":[2.2,2.2],"alpha":0.95,"when":{"holo-projector":"fried"}},
       {"art":"scorch-2","at":[10.4,8.2],"size":[1.8,1.8],"alpha":0.9,"when":{"holo-projector":"fried"}},
       {"art":"breach-scorch-b","at":[3.6,11.6],"size":[1.6,1.6],"alpha":0.8,"when":{"holo-projector":"fried"}},
@@ -67,6 +77,7 @@
       {"kind":"prop","at":[4,12],"size":[1,1],"pool":[5.1,11.9],"r":2.4,"color":"holo","strength":0.26,"when":{"holo-projector":"on"}},
       {"kind":"prop","at":[13,12],"size":[1,1],"pool":[12.9,11.9],"r":2.4,"color":"holo","strength":0.26,"when":{"holo-projector":"on"}},
       {"kind":"field","at":[5,8],"size":[8,4],"pool":[9,10],"r":4.4,"color":"holo","strength":0.2,"when":{"holo-projector":"on"}},
+      {"kind":"field","at":[5,8],"size":[8,4],"pool":[9,10],"r":4.4,"color":"warm","strength":0.14,"when":{"holo-projector":["off","fried"]}},
       {"kind":"prop","at":[1,5],"size":[1.5,1],"pool":[2.0,6.3],"r":2.2,"color":"holo","strength":0.3},
       {"kind":"screen","at":[1.35,5.3],"size":[0.75,0.3],"pool":[2.0,6.4],"r":1.6,"color":"holo","strength":0.18},
       {"kind":"strip","art":"light-strip-warm-v","at":[0.62,12.0],"size":[0.3,1.2],"pool":[1.9,12.6],"r":2.8,"color":"warm","strength":0.26},
@@ -96,7 +107,6 @@
       {"art":"holo-flower-patch","at":[6.4,14.0],"size":[1,1]},
       {"art":"holo-flower-patch","at":[8.6,5.1],"size":[1,1]},
       {"art":"holo-flower-patch","at":[15.4,7.4],"size":[1,1]},
-      {"art":"mop","at":[13.2,6.6],"size":[1,1],"rot":0.3},
       {"art":"pip-under-panel","at":[14.4,8.4],"size":[1.5,1.5],"when":{"pip-gym":"under"}},
       {"kind":"rag","at":[13.4,6.6],"size":0.4}
     ]
@@ -106,13 +116,15 @@
     {"art":"holo-pylon","at":[13,7],"size":[1,1],"block":true},
     {"art":"holo-pylon","at":[4,12],"size":[1,1],"block":true},
     {"art":"holo-pylon","at":[13,12],"size":[1,1],"block":true},
-    {"art":"goo-puddle-big","at":[7,9],"size":[3,2],"block":false,"layer":"floor","flat":true,"z":1,"tag":"holo-goo","states":{"clean":{"hidden":true}},"name":"holo-goo"},
+    {"art":"goo-puddle-big","at":[7,9],"size":[3,2],"block":false,"layer":"floor","flat":true,"z":1,"tag":"holo-goo","states":{"clean":{"hidden":true}},"name":"holo-goo","interact":{"kind":"console","id":"goo","task":"goo","label":"Goo: mop it up"}},
     {"art":"holo-terminal","at":[1,5],"size":[1.5,1],"block":"low","tag":"holo-projector","name":"holo-console","interact":{"kind":"console","id":"holo-console","label":"Gym console: Jungle Wellness 4"}},
-    {"art":"janitor-cart","at":[14,5],"size":[1,2],"block":"low","interact":{"kind":"console","id":"supply-closet","label":"Supply closet: mop, squeegee, absorber"}},
+    {"art":"janitor-cart","at":[14,5],"size":[1,2],"block":"low","interact":{"kind":"console","id":"supply-cart","task":"cart","label":"Supply cart: mops, squeegee, bucket"}},
+    {"art":"mop","at":[12.6,5.3],"size":[1,1],"rot":0.3,"block":false,"tag":"loose-mop","states":{"gone":{"hidden":true}},"name":"loose-mop","interact":{"kind":"console","id":"mop-loose","task":"mop-loose","label":"Mop (leaning on the cart)"}},
     {"art":"mop-bucket-full","at":[15,5],"size":[0.8,0.8],"block":"low"},
     {"art":"mop-bucket-empty","at":[15,6],"size":[0.8,0.8],"block":"low"},
-    {"art":"power-conduit-panel-open","at":[16,9],"size":[1,1],"block":true,"name":"holo-panel"},
-    {"art":"pipe-run-leaking","at":[6,15.25],"size":[3,0.75],"block":true,"tag":"holo-valve","name":"holo-valve","states":{"fixed":{"art":"pipe-run-intact","at":[6,15.5],"size":[3,0.5]}},"interact":{"kind":"repair","id":"valve","label":"The stuck foam valve"}}
+    {"art":"power-conduit-panel-open","at":[16,9],"size":[1,1],"block":true,"name":"holo-panel","interact":{"kind":"console","id":"holo-panel","task":"lever","label":"Power panel: holodeck lever"}},
+    {"art":"pipe-run-leaking","at":[6,15.25],"size":[3,0.75],"block":true,"tag":"holo-valve","name":"holo-valve","states":{"fixed":{"art":"pipe-run-intact","at":[6,15.5],"size":[3,0.5]}},"interact":{"kind":"repair","id":"valve","task":"valve","label":"Foam valve: stuck open"}},
+    {"art":"hose-coil","at":[1,10],"size":[1,1],"block":"low","name":"holo-hose","tag":"holo-hose","interact":{"kind":"repair","id":"hose","task":"hose","label":"Coolant hose: leaking"}}
   ],
   "npcs": [
     {"id":"nessa","at":[10,6],"face":"down","wander":0.2},

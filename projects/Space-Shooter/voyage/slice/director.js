@@ -39,7 +39,7 @@ export function startRoom(save) {
  * room (onfoot.fight). presence (optional, slice/presenceRun.js): the crew ledger; a beat waits for the people it needs to walk in.
  * busy(): a dialogue, card or full screen is up (the auto-resume stays out of its way). Returns { beat, fight, entered, advance, boot, pendingRoom, watch, snooze }.
  */
-export function createSliceDirector({ store, jobs, toast = () => {}, world, fightIn, presence = null, busy = () => false }) {
+export function createSliceDirector({ store, jobs, toast = () => {}, world, fightIn, presence = null, busy = () => false, handsOn = null }) {
   let pending = null; // a beat waiting for the player to walk into its room: { room, node, play }
   let cutting = null; // a fade in progress: { room, resolve }
   let waitingCast = false; // a beat is waiting for people to walk into its room
@@ -62,8 +62,11 @@ export function createSliceDirector({ store, jobs, toast = () => {}, world, figh
   }
 
   /** A dialogue beat of a scene: play it here, fade to its room, or wait for the player to walk to it. */
-  function beat(v, play0) {
+  function beat(v, play0, pick) {
     const quest = QUESTS[v.quest?.id];
+    // A hands-on node (scene 1's valve, hose, mop and lever) shows no dialogue: the player does it in the room (slice/handsOnPlay.js).
+    const node = quest?.nodes?.[v.node];
+    if (node?.handsOn && handsOn && pick) play0 = () => handsOn.begin(v, pick, node); // track C swaps the beat; track A still waits for its cast below
     const room = roomOf(quest, v.node);
     // Opening track A: the people this beat needs walk to its room (through doors, at walking speed); it plays once they are in it.
     beatAt = Date.now();
@@ -149,5 +152,5 @@ export function createSliceDirector({ store, jobs, toast = () => {}, world, figh
     return jobs.resume();
   }
 
-  return { beat, endCard, fight, entered, advance, afterCard, boot, watch, snooze, get pendingRoom() { return pending?.room || null; } };
+  return { beat, endCard, fight, entered, advance, afterCard, boot, watch, snooze, handsOn, get pendingRoom() { return pending?.room || null; } };
 }
