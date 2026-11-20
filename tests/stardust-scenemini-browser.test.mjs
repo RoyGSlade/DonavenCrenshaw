@@ -51,7 +51,7 @@ const toChoice = async (page, frag) => {
     await settle(page, 500);
   }
   const b = page.locator('#hg-dialogue .ui-dlg-choice', { hasText: frag }).first();
-  assert.ok(await b.count(), `no choice "${frag}"`);
+  if (!(await b.count())) { const at = await page.evaluate(() => { const r = Object.values(window.__stardust.store.get().quests.active || {})[0]; return { node: r ? `${r.quest}/${r.node}` : null, map: window.__stardust.onfoot.world.map.id, choices: [...document.querySelectorAll('#hg-dialogue .ui-dlg-choice')].map((x) => x.textContent.trim().slice(0, 40)), dlg: document.querySelector('#hg-dialogue')?.innerText.slice(0, 160), talk: window.__stardust.talkRange?.state?.speaker || null, here: window.__stardust.onfoot.world.npcsHere().map((n) => `${n.id}@${window.__stardust.onfoot.world.tilesTo(n.id)?.toFixed?.(1)}`) }; }); assert.fail(`no choice "${frag}" at ${JSON.stringify(at)}`); }
   return b;
 };
 const pick = async (page, frag) => (await toChoice(page, frag)).click();
@@ -154,7 +154,12 @@ const SCENES = [
       await walkTo(page, 'duchess-bridge'); await readUntilChoices(page);
       await pick(page, 'Pull the arm housing'); await doApproach(page, size); await pickIfThere(page, 'On to the next job.'); await pick(page, 'Scan the lane carefully.'); await doApproach(page, size); await pickIfThere(page, 'Back to the bridge console.');
       await pickIfThere(page, 'Go find Pip'); await settle(page, 500);
-      await walkTo(page, 'duchess-engine'); await readUntilChoices(page, 110); /* opening track A: the beat waits for Tull to walk down to the engine room */
+      await walkTo(page, 'duchess-engine');
+      // opening track A: the beat waits for Tull to walk down to the engine room; wait for Pip's line, and say how long it took
+      const t0 = Date.now();
+      await page.waitForFunction(() => { const d = document.querySelector('#hg-dialogue'); return d && !d.hidden && /Pip/.test(d.querySelector('.ui-dlg-name')?.textContent || ''); }, null, { timeout: 60000 });
+      console.log(`scenemini scene5 waited ${((Date.now() - t0) / 1000).toFixed(1)} s for the crew in the engine room`);
+      await readUntilChoices(page, 40);
     } },
 ];
 
