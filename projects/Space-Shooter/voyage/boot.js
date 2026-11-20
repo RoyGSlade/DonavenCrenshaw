@@ -64,6 +64,7 @@ import { offersAt, openCount } from './quests/offers.js';
 import { OFFERS_DATA } from './quests/data/offers.js';
 // Launch slice: the opening on the Tin Duchess (slice/director.js).
 import { wantsSlice, startSlice, startRoom, createSliceDirector } from './slice/director.js';
+import { waitingOn } from './slice/rules.js';
 // The workbench room: a dev-only test room (?newgame=1&start=workbench), its own files in ./workbench/.
 import { wantsWorkbench } from './workbench/entry.js';
 import { mountWorkbench } from './workbench/mount.js';
@@ -478,7 +479,8 @@ function boot(session = { mode: 'local' }) {
       stealthSetup: () => workbenchRoom?.stealthSetup?.() || null,
       stealthEvent: (e, world) => workbenchRoom?.stealthEvent?.(e, world),
       // Jobs you haven't taken: a giver offers theirs in person (after the tutorial). In the workbench room the three crew talk their test conversations.
-      offerTalk: (who, map) => (workbenchRoom && map.id === WORKBENCH_ID ? workbenchRoom.talk(who) : jobsOpen() && offersAt({ map: map.id, npc: who }, store.get()).length ? jobTalk.offerAt({ map: map.id, npc: who }) : null),
+      // A scene waiting on this person (the captain after a "Later") picks up again when you talk to them.
+      offerTalk: (who, map) => (workbenchRoom && map.id === WORKBENCH_ID ? workbenchRoom.talk(who) : slice && waitingOn(store.get(), who, map.id) ? (jobTalk.busy || jobs.resume(), Promise.resolve()) : jobsOpen() && offersAt({ map: map.id, npc: who }, store.get()).length ? jobTalk.offerAt({ map: map.id, npc: who }) : null),
       // The "job here" mark: open offers at a giver or a board.
       offers: ({ map, npc, station }) => {
         if (!jobsOpen()) return 0;
