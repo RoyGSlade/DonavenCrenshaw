@@ -109,9 +109,20 @@ export function createDialogueBox({ root, bus, audio, reducedMotion = () => fals
     return seq;
   }
 
+  // A box with nothing left to say or ask steps out of the way (a new line or a new question keeps it).
+  function hideSoon(ms = 500) {
+    clearTimeout(idleTimer);
+    idleTimer = setTimeout(() => {
+      if (!choices.hidden) return;
+      if (current) finish(current.seq); // the answer is in: the rest of the reading time is not worth keeping the box up
+      root.hidden = true;
+    }, ms);
+  }
+
   function showChoices(d) {
     // null: the talk is over (story's director and the job talk both send it); clear the buttons.
-    if (!d) { choices.replaceChildren(); choices.hidden = true; next.hidden = false; return; }
+    if (!d) { choices.replaceChildren(); choices.hidden = true; next.hidden = false; if (!current) hideSoon(); return; }
+    clearTimeout(idleTimer);
     const { options = [] } = d;
     root.hidden = false;
     next.hidden = true;
@@ -141,6 +152,7 @@ export function createDialogueBox({ root, bus, audio, reducedMotion = () => fals
       b.addEventListener('click', () => {
         choices.replaceChildren();
         choices.hidden = true;
+        hideSoon(); // the answer is in: if no line follows, the box does not stay stuck on the last one
         bus?.emit('story:choose', { index: o.index });
       });
       return b;

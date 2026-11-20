@@ -30,6 +30,7 @@ export function createTalk(root) {
     const onKey = (e) => { if (['KeyE', 'Enter', 'Space'].includes(e.code)) { e.preventDefault(); e.stopPropagation(); advance(); } };
     function close() { removeEventListener('keydown', onKey, true); audio?.pause(); box.remove(); open = null; finish(); }
     next.addEventListener('click', advance);
+    box.addEventListener('click', (e) => { if (e.target !== next) advance(); }); // a tap anywhere on the box moves on
     render();
     setTimeout(() => addEventListener('keydown', onKey, true), 120);
     next.focus({ preventScroll: true });
