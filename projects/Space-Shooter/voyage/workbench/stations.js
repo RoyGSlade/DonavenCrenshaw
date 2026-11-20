@@ -5,7 +5,7 @@ import { check } from '../character.js';
 import { ROLL_SKILLS } from '../data.js';
 import { tierOf, tierInfo } from '../minigames/setup.js';
 import { GYM_GAMES } from '../minigames/gym.js';
-import { setupOf } from '../modules/registry.js';
+import { ready, setupOf } from '../modules/registry.js';
 import { rollPreview } from '../minigames/rollPreview.js';
 import { cleanSkillPoints } from '../minigames/picker.js';
 import { characterOf, earnXp } from './state.js';
@@ -55,6 +55,9 @@ export function startStation(state, station, attempt, { tool = 'shop' } = {}) {
   return { station, tier, label: tierInfo(tier).label, setup, level, points, preview };
 }
 
+/** startStation for page code: waits for the registry first, so a caller cannot forget `await ready()`. */
+export async function startStationAsync(state, station, attempt, opts) { await ready(); return startStation(state, station, attempt, opts); }
+
 /**
  * What a lost game did to the world, in plain words (null when nothing happened). Repair: a lost line stays broken; shutting the
  * valve stops the flood and takes the system offline. Hacking: security is alerted, and by where you were the terminal locks,
@@ -94,4 +97,5 @@ export function settleStation(state, station, result) {
   return { state: { ...next, said: parts.join(' ') }, xp: earned.xp, gained: earned.gained, credits, said: parts.join(' ') };
 }
 
-export const GAME_IDS = Object.freeze(GYM_GAMES.map((g) => g.id));
+/** The ids of the games the gym trains (from the registry: a module opts in from its manifest). */
+export const gameIds = () => GYM_GAMES.map((g) => g.id);

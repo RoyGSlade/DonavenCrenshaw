@@ -14,7 +14,10 @@ import { ctxFromSave, applyEffects } from '../projects/Space-Shooter/voyage/modu
 import { pickerLines } from '../projects/Space-Shooter/voyage/minigames/picker.js';
 import { rollPreview } from '../projects/Space-Shooter/voyage/minigames/rollPreview.js';
 import { tierOf, tierInfo } from '../projects/Space-Shooter/voyage/minigames/setup.js';
-import { GYM_GAMES } from '../projects/Space-Shooter/voyage/minigames/gym.js';
+import { hookIssues, startHook, branchOf, worldResult, xpEvent, HOOK_KINDS } from '../projects/Space-Shooter/voyage/minigames/sceneHook.js';
+import { CONTEXTS } from '../projects/Space-Shooter/voyage/minigames/mirrors.js';
+import { SYSTEMS } from '../projects/Space-Shooter/voyage/minigames/repair.js';
+import { GYM_GAMES, gymGamesFor, gymSetup, gymGame } from '../projects/Space-Shooter/voyage/minigames/gym.js';
 import { STATIONS } from '../projects/Space-Shooter/voyage/workbench/stations.js';
 import { MAP_DEFS } from '../projects/Space-Shooter/voyage/maps/index.js';
 
@@ -70,6 +73,19 @@ test('modules/index.json is the controller index and is current', () => {
   assert.deepEqual(have, JSON.parse(JSON.stringify(R.indexOf())), 'run node scripts/build-module-index.mjs');
   assert.deepEqual(have.modules.map((m) => m.id), [...MODULE_IDS]);
 });
+test('hook manifests agree with the game rules they replaced (hack contexts, repair systems, haggle outcomes)', () => {
+  const kinds = R.hookKinds();
+  assert.deepEqual(kinds.hack.inputs.context.values, [...CONTEXTS]);
+  assert.deepEqual(kinds.repair.inputs.system.values, Object.keys(SYSTEMS));
+  assert.deepEqual(kinds.haggle.outcomes, ['win', 'mid', 'lose']);
+  for (const [id, h] of Object.entries(kinds)) assert.ok(R.has(id) && h.skill, id);
+  assert.equal(branchOf('haggle', { outcome: 'well' }), 'win');
+  assert.equal(branchOf('haggle', { outcome: 'fair' }), 'mid');
+  assert.equal(branchOf('haggle', { outcome: 'walked' }), 'lose');
+});
+test('the gym games come from manifests: exactly the modules that opted in, in list order', () => {
+  assert.deepEqual(GYM_GAMES.map((g) => g.id), R.list().filter((m) => m.gym).map((m) => m.id));
+});
 test('the shelf lists every registered module', () => {
   assert.deepEqual(shelfRows().map((r) => r.id).sort(), R.list().map((m) => m.id).sort());
   assert.ok(shelfGroups().every((g) => g.rows.length));
@@ -111,6 +127,25 @@ test('add-one mini-game: one folder and one list line, nothing else, and it show
   assert.deepEqual(R.buildCtx('_sample-game', { points: { diagnose: 5, speed: 9 } }).points, { diagnose: 5, mend: 0 });
   const model = await import(pathToFileURL(path.join(dir, '_sample-game/model.js')).href);
   assert.ok(model.triesOf({ points: R.buildCtx('_sample-game', { points: { diagnose: 6 } }).points }) > model.triesOf({}));
+  // 2: it opts into the gym from its own manifest (no edit to gym.js)
+  assert.ok(GYM_GAMES.some((g) => g.id === '_sample-game'), 'the gym lists it');
+  assert.ok(gymGamesFor('repair').some((g) => g.id === '_sample-game'));
+  assert.equal(gymGame('_sample-game').name, 'Sample pads');
+  assert.deepEqual(gymGame('_sample-game').cats, ['diagnose', 'mend']);
+  assert.equal(gymSetup('_sample-game', { level: 3, points: { diagnose: 2 } }).tier, 0, 'a Steady setup');
+  // 3: it is accepted as a scene hook (no edit to sceneHook.js), and its inputs are checked from its manifest
+  const choice = { check: { skill: 'repair', stat: 'wis', tag: 'x', dc: 10, pass: 'a', fail: 'b' }, minigame: { kind: '_sample-game', title: 'Pads', pads: 4 } };
+  assert.deepEqual(hookIssues(choice, {}), []);
+  assert.ok('_sample-game' in HOOK_KINDS && HOOK_KINDS['_sample-game'].skill === 'repair');
+  assert.match(hookIssues({ ...choice, minigame: { kind: '_sample-game', pads: 9 } }).join(), /pads/);
+  assert.match(hookIssues({ ...choice, check: { ...choice.check, skill: 'hacking' } }).join(), /should be repair/);
+  assert.match(hookIssues({ ...choice, minigame: { kind: '_sample-game', mid: 'm' } }).join(), /no mid outcome/);
+  const start = startHook(choice, { total: 20, dc: 10, natural: false }, { levels: { repair: 3 }, points: { repair: { diagnose: 2 } } });
+  assert.deepEqual([start.kind, start.tier, start.setup.level, start.setup.points], ['_sample-game', 2, 3, { diagnose: 2, mend: 0 }]);
+  assert.equal(branchOf('_sample-game', { success: true }), 'win');
+  assert.equal(branchOf('_sample-game', { success: false }), 'lose');
+  assert.deepEqual(worldResult('_sample-game', { success: true, effects: { world: { x: 1 } } }), { x: 1 });
+  assert.equal(xpEvent('_sample-game', { xp: 3 }).skill, 'repair');
   // bound to a console with one data line, { kind: 'module', id }: the ctx comes from the save (DOM play is the browser test's job)
   const c = ctxFromSave(R.manifestOf('_sample-game'), { character: { levels: { repair: 4 }, points: { repair: { diagnose: 6, speed: 9 } } } }, { kind: 'module', id: '_sample-game', seed: 3, tier: 2 });
   assert.deepEqual([c.level, c.seed, c.tier], [4, 3, 2]);

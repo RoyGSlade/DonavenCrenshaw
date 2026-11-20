@@ -10,6 +10,8 @@ import { emptySave } from '../projects/Space-Shooter/voyage/save.js';
 import { createCharacter } from '../projects/Space-Shooter/voyage/character.js';
 import { SLICE_FLAG } from '../projects/Space-Shooter/voyage/slice/rules.js';
 import { worldResult } from '../projects/Space-Shooter/voyage/minigames/sceneHook.js';
+import { ready as modulesReady } from '../projects/Space-Shooter/voyage/modules/registry.js';
+await modulesReady(); // gym games and scene hooks come from the module registry
 
 const Q = Object.fromEntries(SLICE_LIST.map((q) => [q.id, q]));
 const rng = () => 0.5;
@@ -36,10 +38,11 @@ const hooked = (quest, run, save, label) => {
   return act(quest, run, save, { type: 'choose', index: c.index }, { now: 1 });
 };
 
-test('the hooks play the v2 games: playHook uses mirrors (hacking v2) and the water-rise repair', () => {
-  const src = readFileSync(new URL('../projects/Space-Shooter/voyage/minigames/playHook.js', import.meta.url), 'utf8');
-  assert.match(src, /playMirrors/); assert.match(src, /playRepair/);
-  assert.doesNotMatch(src, /hackView|playRing|playSetupHack/, 'the old hack ring is not behind a scene hook');
+test('the hooks play the v2 games: playHook launches through the registry, and the hack and repair modules wrap mirrors (hacking v2) and the water-rise repair', () => {
+  const read = (f) => readFileSync(new URL(`../projects/Space-Shooter/voyage/${f}`, import.meta.url), 'utf8');
+  assert.match(read('minigames/playHook.js'), /modules\/registry\.js/);
+  assert.match(read('modules/hack/index.js'), /playMirrors/); assert.match(read('modules/repair/index.js'), /playRepair/);
+  for (const f of ['minigames/playHook.js', 'modules/hack/index.js']) assert.doesNotMatch(read(f), /hackView|playRing|playSetupHack/, 'the old hack ring is not behind a scene hook');
 });
 
 test('scene 5: a lost coolant line with the valve shut reaches the engine as plain facts and changes nothing else', () => {

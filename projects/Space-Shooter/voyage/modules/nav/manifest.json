@@ -40,5 +40,8 @@
   "art": [],
   "status": "in-game",
   "adapter": true,
-  "contract": 1
+  "contract": 1,
+  "gym": {
+    "name": "Perihelion trainer sectors"
+  }
 }

@@ -4,8 +4,7 @@
 //   root: #hg-minigame (a .hg-sheet), eyebrow / title / stage: its parts.
 //   character(): the captain (levels and points set the setup, the d20 sets the tier).
 // The game owns the whole screen (the shared full-screen helper, the house rule); the side sheet element stays hidden. A scene's game ends on its own result card.
-import { startHook } from './sceneHook.js';
-import { ready } from '../modules/registry.js';
+import { startHookAsync } from './sceneHook.js';
 import { playHook } from './playHook.js';
 import { tierInfo } from './setup.js';
 import { openFullScreen } from '../workbench/fullScreen.js';
@@ -23,8 +22,7 @@ export function createMinigameSheet({ root, eyebrow, title, stage, character = (
   }
   /** Play the hooked choice's minigame; calls done({ branch, xp, skill, result }) once the player closes its result. */
   async function play(spec, done) {
-    await ready(); // startHook takes its setup from the module registry
-    const start = startHook({ minigame: spec.block, check: { pass: 'x', fail: 'y' } }, spec.attempt, character());
+    const start = await startHookAsync({ minigame: spec.block, check: { pass: 'x', fail: 'y' } }, spec.attempt, character());
     show(true, start.kind, `${KIND_WORD[start.kind] || 'GAME'} · ${tierInfo(start.tier).label.toUpperCase()} ROLL`, spec.block.title || spec.block.who || 'Minigame');
     let result;
     try { result = await playHook(fs.stage, { start, seed: spec.seed, sound, reducedMotion }); }

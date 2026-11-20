@@ -42,5 +42,41 @@
   "art": [],
   "status": "in-game",
   "adapter": true,
-  "contract": 1
+  "contract": 1,
+  "gym": {
+    "name": "Mirrors and firewalls"
+  },
+  "hook": {
+    "skill": "hacking",
+    "outcomes": [
+      "win",
+      "lose"
+    ],
+    "inputs": {
+      "lock": {
+        "type": "int",
+        "min": 1,
+        "max": 4,
+        "say": "hack lock is a whole number 1 to 4 (the number of firewalls)"
+      },
+      "context": {
+        "type": "enum",
+        "values": [
+          "foot",
+          "ship",
+          "combat"
+        ]
+      }
+    },
+    "defaults": {
+      "title": "Terminal",
+      "context": "foot"
+    },
+    "worldFields": [
+      "security",
+      "terminal",
+      "port",
+      "section"
+    ]
+  }
 }

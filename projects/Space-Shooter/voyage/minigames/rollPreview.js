@@ -2,7 +2,7 @@
 // "Smooth roll: 15 s more, a smaller board (4 x 4)." and how far the next tier up is: "2 more on the
 // d20 would make it Smooth." It compares the setup at the rolled tier with the setup at a Steady roll
 // (same level and points) using the real setup functions, so the line cannot disagree with the game. Pure.
-import { has, rollSpecOf } from '../modules/registry.js';
+import { has, rollSpecOf, isReady, assertReady } from '../modules/registry.js';
 import { tierOf, tierInfo, setupRepair, setupHack, setupHaggle, setupPersuade, setupIntimidate, setupCraft, setupCut, setupScrew, setupNav, setupPerihelion, setupStealth, setupPilot } from './setup.js';
 
 const r1 = (x) => Math.round(x * 10) / 10;
@@ -49,7 +49,7 @@ export function nextTier(attempt = {}) {
 export function rollPreview(gameId, attempt, { level = 1, points = {} } = {}) {
   // The nine games' lists stay as data (their modules point at them); any other module brings its own `rollSpec`, or the plain time line.
   const spec = SPECS[gameId] || CHAIN_SPECS[gameId] || (has(gameId) ? rollSpecOf(gameId) : null);
-  if (!spec) return null;
+  if (!spec) { assertReady(`the roll preview for ${gameId}`); return null; } // a sync API cannot wait for the registry: it says so instead of answering wrongly
   const tier = tierOf(attempt);
   const base = spec.setup({ tier: 0, level, points }), now = spec.setup({ tier, level, points });
   const phrases = spec.phrases.map((p) => p(base, now)).filter(Boolean);

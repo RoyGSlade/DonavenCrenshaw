@@ -2,6 +2,8 @@
 // objective's way through doors, the data shapes (the nap and the skills page are in stardust-skills-menu.test.mjs).
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { ready as modulesReady } from '../projects/Space-Shooter/voyage/modules/registry.js';
+await modulesReady(); // scene-hook validation reads each game's manifest from the module registry
 
 const V = '../projects/Space-Shooter/voyage';
 const { tutorialTrack, jobTrack, questSteps, deriveSteps, stepStates, trackerLines, currentTrack } = await import(`${V}/datapad/steps.js`);

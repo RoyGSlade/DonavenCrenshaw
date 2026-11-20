@@ -18,7 +18,7 @@ import { WORKBENCH_DEF, WORKBENCH_ID } from '../projects/Space-Shooter/voyage/wo
 import { YARD_DEF } from '../projects/Space-Shooter/voyage/workbench/yard.js';
 import { wantsWorkbench } from '../projects/Space-Shooter/voyage/workbench/entry.js';
 import * as S from '../projects/Space-Shooter/voyage/workbench/state.js';
-import { STATIONS, stationOfProp, rollStation, startStation, settleStation, specOf, GAME_IDS, loadoutOf, previewLine } from '../projects/Space-Shooter/voyage/workbench/stations.js';
+import { STATIONS, stationOfProp, rollStation, startStation, settleStation, specOf, gameIds, loadoutOf, previewLine } from '../projects/Space-Shooter/voyage/workbench/stations.js';
 import { TALKS, TALK_WHO, talkIssues, nextAfterCheck } from '../projects/Space-Shooter/voyage/workbench/talks.js';
 import { sparSetup, sparXp, sparSaid } from '../projects/Space-Shooter/voyage/workbench/spar.js';
 import * as MODS from '../projects/Space-Shooter/voyage/modules/registry.js';
@@ -52,8 +52,8 @@ const EXPECT = ['wb-cut', 'wb-hook', 'wb-repair', 'wb-hack', 'wb-craft', 'wb-nav
 test('map: one station for each game plus lock, board, scan, reprint, gym, spar and reset, each a station interact', () => {
   const ids = MAP.interacts.filter((i) => i.kind === 'station').map((i) => i.id).sort();
   assert.deepEqual(ids, [...EXPECT].sort());
-  assert.deepEqual([...GAME_IDS].sort(), GYM_GAMES.map((g) => g.id).sort());
-  for (const s of STATIONS) { assert.ok(ids.includes(s.prop), s.id); assert.ok(GAME_IDS.includes(s.id), `${s.id} is a gym game`); assert.ok(MODS.has(s.game || s.id), `${s.id} is a registered module`); }
+  assert.deepEqual(gameIds().sort(), GYM_GAMES.map((g) => g.id).sort());
+  for (const s of STATIONS) { assert.ok(ids.includes(s.prop), s.id); assert.ok(gameIds().includes(s.id), `${s.id} is a gym game`); assert.ok(MODS.has(s.game || s.id), `${s.id} is a registered module`); }
 });
 
 // Flood fill on a half-tile grid: every station can be reached to within its interact reach, from the spawn.

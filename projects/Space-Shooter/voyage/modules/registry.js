@@ -13,6 +13,7 @@ const clampTier = (t) => Math.max(-2, Math.min(2, Math.trunc(t) || 0));
 
 let table = new Map(); // id -> { id, manifest, mod }
 let readyPromise = null;
+let loaded = false;
 
 const here = () => new URL('./', import.meta.url);
 async function defaultReadJson(url) {
@@ -54,18 +55,27 @@ export function ready({ ids = MODULE_IDS, base = here(), readJson = defaultReadJ
       next.set(id, { id, manifest, mod });
     }
     table = next;
+    loaded = true;
     return api;
   })();
   readyPromise.catch(() => { readyPromise = null; });
   return readyPromise;
 }
-export function reset() { table = new Map(); readyPromise = null; }
+export function reset() { table = new Map(); readyPromise = null; loaded = false; }
 
-const need = (id) => { const e = table.get(id); if (!e) throw new Error(`No module ${id} (is it in modules/list.js, and did the page await ready()?)`); return e; };
+/** True once `ready()` has finished. */
+export const isReady = () => loaded;
+/** The one clear error a sync API throws when it is called before the registry is loaded. `what` names the caller. */
+export function assertReady(what = 'this') {
+  if (!loaded) throw new Error(`The module registry is not loaded, so ${what} cannot run yet: await ready() from modules/registry.js first (or use the async entry point).`);
+}
+
+const need = (id) => { assertReady(`module ${id}`); const e = table.get(id); if (!e) throw new Error(`No module ${id} (is it in modules/list.js, and did the page await ready()?)`); return e; };
 export const has = (id) => table.has(id);
+
 export const get = (id) => need(id);
 export const manifestOf = (id) => need(id).manifest;
-export const list = () => [...table.values()].map((e) => e.manifest);
+export const list = () => { assertReady('the module list'); return [...table.values()].map((e) => e.manifest); };
 export const byKind = (kind) => list().filter((m) => m.kind === kind);
 export const bySkill = (skill) => list().filter((m) => m.skill === skill);
 
@@ -88,7 +98,7 @@ export function buildCtx(id, given = {}) {
 }
 
 /** Play a module in `stage`. The module's own result passes through untouched (the workbench settles it); see normalizeResult for hosts that follow the contract only. */
-export function play(id, stage, given = {}) { return need(id).mod.play(stage, buildCtx(id, given)); }
+export async function play(id, stage, given = {}) { await ready(); return need(id).mod.play(stage, buildCtx(id, given)); }
 
 /** The contract's result shape from any module result: { done, success, grade, ... } (null, a left game, becomes { done, left }). */
 export function normalizeResult(r) {
@@ -133,8 +143,25 @@ export function rollPreviewOf(id, attempt, { level = 1, points = {} } = {}, { ti
   return { tier, label, phrases, line: phrases.length ? `${label} roll: ${phrases.join(', ')}.` : `${label} roll: nothing changes.` };
 }
 
-/** The controller index: every manifest, in list order (written to modules/index.json by scripts/build-module-index.mjs). */
+/** The gym's games, from manifests: a module opts in with `"gym": { "name": "..." }`. [{ id, skill, name, setup(o), cats }] in list order. */
+export function gymGames() {
+  return list().filter((m) => m.gym).map((m) => ({ id: m.id, skill: m.skill, name: m.gym.name || m.title, setup: (o) => setupOf(m.id, o), cats: pathIds(m) }));
+}
+
+/**
+ * What a scene may ask of a module, from its manifest `hook`: { skill, categories, outcomes, inputs, defaults, branch, worldFields }. A module opts in
+ * with that block. Returns { [id]: hook } for every module that has one.
+ */
+export function hookKinds() {
+  return Object.fromEntries(list().filter((m) => m.hook).map((m) => [m.id, { skill: m.hook.skill || m.skill, categories: pathIds(m), outcomes: m.hook.outcomes || ['win', 'lose'], inputs: m.hook.inputs || {}, defaults: m.hook.defaults || {}, branch: m.hook.branch || null, worldFields: m.hook.worldFields || [] }]));
+}
+
+/** The contract's controller index: every manifest, in list order (written to modules/index.json by scripts/build-module-index.mjs). */
 export const indexOf = () => ({ contract: 1, modules: list() });
 
-const api = { ready, reset, has, get, manifestOf, list, byKind, bySkill, pathIds, pointsFor, buildCtx, play, normalizeResult, setupOf, rollSpecOf, pickerOf, pickerLineOf, rollPreviewOf, indexOf, manifestIssues };
+const api = { ready, reset, isReady, assertReady, gymGames, hookKinds, has, get, manifestOf, list, byKind, bySkill, pathIds, pointsFor, buildCtx, play, normalizeResult, setupOf, rollSpecOf, pickerOf, pickerLineOf, rollPreviewOf, indexOf, manifestIssues };
 export default api;
+
+// In a page, start loading as soon as anything imports the registry, so menus that read it synchronously (the skills page, the gym) are ready by the
+// time a player opens them, without boot.js having to know. Not in node: tests choose when to load.
+if (typeof document !== 'undefined') ready().catch((e) => console.warn('Stardust: the module registry could not load', e));

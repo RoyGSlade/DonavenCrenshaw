@@ -42,5 +42,42 @@
   "art": [],
   "status": "in-game",
   "adapter": true,
-  "contract": 1
+  "contract": 1,
+  "gym": {
+    "name": "Haggle"
+  },
+  "hook": {
+    "skill": "social",
+    "outcomes": [
+      "win",
+      "mid",
+      "lose"
+    ],
+    "inputs": {
+      "open": {
+        "type": "int",
+        "required": true,
+        "say": "haggle needs whole open and best prices, best above open"
+      },
+      "best": {
+        "type": "int",
+        "required": true,
+        "greaterThan": "open",
+        "say": "haggle needs whole open and best prices, best above open"
+      }
+    },
+    "defaults": {
+      "who": "Them",
+      "what": "the deal"
+    },
+    "branch": {
+      "by": "outcome",
+      "win": [
+        "well"
+      ],
+      "mid": [
+        "fair"
+      ]
+    }
+  }
 }

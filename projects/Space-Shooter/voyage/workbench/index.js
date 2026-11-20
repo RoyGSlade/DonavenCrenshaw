@@ -8,7 +8,7 @@
 // onfoot.fight() with the marauder type. State lives in state.js's own storage key; levels are mirrored into the test
 // captain's save so the rest of the page sees them. Nothing here edits quest data, the engine, the player or the maps list.
 import { loadState, saveState, characterOf, earnXp, setPoints, scan, die, reset, nextDc, withCredits, freshState } from './state.js';
-import { STATIONS, stationOfProp, rollStation, startStation, settleStation, previewLine, loadoutOf } from './stations.js';
+import { STATIONS, stationOfProp, rollStation, startStationAsync, settleStation, previewLine, loadoutOf } from './stations.js';
 import { playGame, resetCraftBank, loadPart } from './games.js';
 import { ready as modulesReady } from '../modules/registry.js';
 import { partLine } from '../minigames/craftChain.js';
@@ -35,7 +35,7 @@ import { renderTalk } from '../talk/view.js';
 import { rollPreview } from '../minigames/rollPreview.js';
 import { cutStation } from './cut.js';
 import { shelfGroups } from '../modules/shelf.js';
-import { manifestOf } from '../modules/registry.js';
+import { manifestOf, has as moduleKnown } from '../modules/registry.js';
 import { playModule } from '../modules/host.js';
 import { voiceUrl } from '../story/voice.js';
 
@@ -124,23 +124,25 @@ export function createWorkbench({ store, bus, onfoot, dialogueBox, sheet, hud, t
     await modulesReady(); // setups and previews come from the module registry
     const attemptState = state;
     const attempt = rollStation(attemptState, station, api.rng);
-    const start = startStation(attemptState, station, attempt, { tool });
+    const start = await startStationAsync(attemptState, station, attempt, { tool });
     bus.emit('roll:attempt', { ...attempt, who: 'You', label: `${SKILL_NAME[station.skill]} attempt · ${station.id}`, preview: previewLine(start) });
     sound('talk');
     await wait(reducedMotion() ? 500 : 1700);
     return playStart(station, start, { who, what, open, best, lock, titleText, context, tool });
   }
-  /** Games that own the whole screen (the house rule): every station and mini-game view. The side sheet is for menus and panels only. */
-  const FULL_SCREEN = new Set(['repair', 'hack', 'craft', 'nav', 'pilot', 'stealth', 'persuade', 'intimidate', 'haggle', 'cut', 'screw', 'bolt-plate']);
-  const BARE = new Set(['nav']); // Perihelion draws its own top bar and Leave
+  // Games own the whole screen (the house rule): every module does. The side sheet is for menus and panels only. A module whose manifest says
+  // `"bare": true` draws its own top bar and Leave (Perihelion).
+  const gameOf = (station) => station.game || station.id;
+  const FULL_SCREEN = { has: (id) => moduleKnown(id) };
+  const BARE = { has: (id) => Boolean(moduleKnown(id) && manifestOf(id).bare) };
   async function playStart(station, start, { who, what, open, best, lock, titleText, word, context, tool, resume } = {}) {
     sheet.stage.replaceChildren();
     const noteText = start.preview ? `${start.preview.line} ${start.preview.nextLine}` : '';
     const wordText = word || `${station.word} · ${tierInfo(start.tier).label.toUpperCase()} ROLL`, title = titleText || station.title;
     let stage, fs = null, leaveBtn = null;
     const left = new Promise((resolve) => { leave = () => resolve(null); });
-    if (FULL_SCREEN.has(station.id)) {
-      fs = openFullScreen({ word: wordText, title, note: noteText, onLeave: () => leave?.(), bare: BARE.has(station.id) });
+    if (FULL_SCREEN.has(gameOf(station))) {
+      fs = openFullScreen({ word: wordText, title, note: noteText, onLeave: () => leave?.(), bare: BARE.has(gameOf(station)) });
       stage = fs.stage;
     } else {
       const note = h('p', { class: 'rp-help wb-preview', text: noteText });
@@ -208,11 +210,9 @@ export function createWorkbench({ store, bus, onfoot, dialogueBox, sheet, hud, t
   }
 
   /** The module shelf (modularity): every registered module, played full screen at a Steady roll with the character's own level and points. */
-  async function openShelf() {
+  async function openShelf(said = '') {
     await modulesReady();
-    let said = '';
-    const panel = openPanel('MODULE SHELF', 'Every game and screen', (pane) => renderShelf(pane, shelfGroups(), { said, onPlay: (id) => playShelf(id).then((s) => { said = s; api.openPanel?.draw?.(); }), onClose: closePanel }));
-    return panel;
+    return openPanel('MODULE SHELF', 'Every game and screen', (pane) => renderShelf(pane, shelfGroups(), { said, onPlay: playShelf, onClose: closePanel }));
   }
   async function playShelf(id) {
     const m = manifestOf(id), { level, points } = m.skill && state.progress.levels[m.skill] ? loadoutOf(state, m.skill) : { level: 1, points: {} };
@@ -222,8 +222,7 @@ export function createWorkbench({ store, bus, onfoot, dialogueBox, sheet, hud, t
     try { r = await playModule(id, { seed: nextSeed(), tier: 0, level, points, mode: 'trainer', sound, reducedMotion }, { openStage: (o) => openFullScreen(o) }); }
     catch (error) { console.warn('Stardust workbench: the module could not run', error); r = null; }
     hold(false);
-    openShelf();
-    return !r || r.left ? `${m.title}: you left it.` : `${m.title}: ${r.success ? 'you did it' : 'not this time'}.`;
+    openShelf(!r || r.left ? `${m.title}: you left it.` : `${m.title}: ${r.success ? 'you did it' : 'not this time'}.`);
   }
   const openBoard = () => openPanel('SKILLS BOARD', 'Levels, XP and risk', (pane) => renderBoard(pane, state, {
     onShelf: () => { closePanel(); openShelf(); },
@@ -236,7 +235,8 @@ export function createWorkbench({ store, bus, onfoot, dialogueBox, sheet, hud, t
     const { level, points } = gymLoadout(state.progress, g.skill);
     const setup = gymSetup(id, { level, points });
     closePanel();
-    const station = STATIONS.find((s) => s.id === id);
+    // A module that opted into the gym from its manifest has no bench station: it trains from a station made from its manifest.
+    const station = STATIONS.find((s) => s.id === id) || { id, skill: g.skill, word: g.name.toUpperCase(), title: g.name };
     const start = { station, tier: 0, setup, level, points, preview: null };
     const result = await playStart(station, start, { word: `${station.word} · GYM · STEADY ROLL`, titleText: `Gym: ${g.name}`, lock: id === 'hack' ? 1 : undefined });
     if (result) {

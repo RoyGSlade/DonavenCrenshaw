@@ -42,5 +42,30 @@
   "art": [],
   "status": "in-game",
   "adapter": true,
-  "contract": 1
+  "contract": 1,
+  "gym": {
+    "name": "Coolant pipes"
+  },
+  "hook": {
+    "skill": "repair",
+    "outcomes": [
+      "win",
+      "lose"
+    ],
+    "inputs": {
+      "system": {
+        "type": "enum",
+        "values": [
+          "engine-cooling",
+          "weapon-cooling",
+          "reactor-loop",
+          "life-support"
+        ],
+        "say": "repair system is one of engine-cooling, weapon-cooling, reactor-loop, life-support"
+      }
+    },
+    "defaults": {
+      "title": "Repair"
+    }
+  }
 }
