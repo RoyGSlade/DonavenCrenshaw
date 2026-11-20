@@ -93,7 +93,10 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
     const first = await save();
     assert.equal(first.base, undefined, 'no base before the claim');
     assert.equal(first.flags?.['starbase-claimed'], undefined);
-    assert.equal(await S(() => document.querySelectorAll('h1').length), 1, 'the page has exactly one h1');
+    const h1s = await S(() => [...document.querySelectorAll('h1')].map((h) => h.textContent.trim().slice(0, 30) + (h.closest('[hidden]') ? ' (hidden)' : '')));
+    log('h1s on the page:', JSON.stringify(h1s));
+    const visibleH1 = await S(() => [...document.querySelectorAll('h1')].filter((h) => !h.closest('[hidden]')).length);
+    assert.equal(visibleH1, 1, `exactly one visible h1 ${JSON.stringify(h1s)}`);
     assert.equal(await S(async () => { const { mapDef } = await import('/projects/Space-Shooter/voyage/maps/index.js'); return Boolean(mapDef('starbase-concourse')); }), false, 'no base maps before the claim');
     // The helm does not offer the base yet, and the hop map draws no base.
     await S(() => { window.__stardust.onfoot.helm(); });
@@ -281,6 +284,7 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
     await S(() => { window.__stardust.onfoot.dockAt('starbase'); window.__stardust.onfoot.world.go('starbase-airlock', 'from-dock'); });
     await inMap('starbase-airlock');
     await noSideways('after the reload');
+    assert.equal(await S(() => [...document.querySelectorAll('h1')].filter((h) => !h.closest('[hidden]')).length), 1, 'still exactly one visible h1 inside the base');
     assert.deepEqual(errors, [], 'no page errors');
     log('save bytes at the end', (await S(() => JSON.stringify(window.__stardust.store.get()).length)));
     await browser.close();

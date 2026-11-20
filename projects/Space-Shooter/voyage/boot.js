@@ -159,10 +159,20 @@ function boot(session = { mode: 'local' }) {
   setJanitorPlayer(slicing); // the new game's player is the janitor; today's game and ?start=hangar keep the pilot
   // The star base: once the claim flag is set the save gets its small base block (deterministic from the captain, so it never re-rolls),
   // and its maps are registered. A save without the flag is untouched.
+  let homeLaunch = null;
   const syncBase = () => {
     if (store.get().flags?.['starbase-claimed'] && !store.get().base) store.update(claimBase);
     const b = store.get().base;
-    if (b) registerStarbase(b);
+    if (!b) return;
+    registerStarbase(b);
+    // The launch hatch gets a Home entry (only once the base is yours): one tap to fly there from the hangar.
+    if (!homeLaunch) {
+      homeLaunch = addLaunch({
+        id: 'hop-starbase', label: 'Fly home to your star base', order: 4, blurb: 'Your own berth, a concourse and your own workshop. Dock, then walk in.',
+        available: (save) => (save.base ? { ok: true } : { ok: false, reason: 'You have no base yet.' }),
+        run: () => { place.closeStation({ restoreFocus: false }); return onfoot.flyTo(BASE_ID); },
+      });
+    }
   };
   syncBase();
   store.subscribe(syncBase);
