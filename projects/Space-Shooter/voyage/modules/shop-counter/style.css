@@ -306,7 +306,7 @@
 /* phone held sideways: the same stack, squeezed: a one-row counter and a small keeper strip */
 @media (min-width:701px) and (max-height:520px){
   .m-shop-counter{--ic:40px}
-  .m-shop-counter .sc-head{min-height:38px;padding:4px 64px 0 12px}
+  .m-shop-counter .sc-head{min-height:52px;padding:4px 64px 0 12px}
   .m-shop-counter .sc-sign{font-size:13px;border-width:10px 12px 10px 20px}
   .m-shop-counter .sc-keeper{width:60px}
   .m-shop-counter .sc-keeper-name{display:none}
@@ -320,3 +320,4 @@
   .m-shop-counter .sc-till .sc-digits{font-size:18px}.m-shop-counter .sc-till-top{min-height:10px;font-size:10px}
   .m-shop-counter .sc-tray{max-height:62vh}
 }
+.m-shop-counter .sc-keeper-name:empty{display:none}

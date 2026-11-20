@@ -9,7 +9,7 @@ import * as M from '../model.js';
 const here = path.dirname(fileURLToPath(import.meta.url));
 const FIX = JSON.parse(readFileSync(path.join(here, '..', 'fixtures.json'), 'utf8')).fixtures;
 const clone = (o) => JSON.parse(JSON.stringify(o));
-const ctxOf = (name, patch = {}) => { const c = clone(FIX[name].context); for (const [k, v] of Object.entries(patch)) c[k] = isObj(v) && isObj(c[k]) ? { ...c[k], ...v } : v; return c; };
+const ctxOf = (name, patch = {}) => { const c = clone(FIX[name].context); for (const [k, v] of Object.entries(patch)) c[k] = isObj(v) && isObj(c[k]) && ['save', 'shop'].includes(k) ? { ...c[k], ...v } : v; return c; };
 const isObj = (v) => v && typeof v === 'object' && !Array.isArray(v);
 const make = (name, opts = {}, patch = {}) => M.createCounter({ seed: 7, context: ctxOf(name, patch), ...opts });
 const shelf = (s, id) => M.view(s).shelves.find((x) => x.id === id);
@@ -35,12 +35,20 @@ test('a record in gives the right drawing data', () => {
 });
 
 test('a record line that carries its own text beats the table; a missing line says nothing', () => {
-  const s = make('stall');
+  const s = make('stall', {}, { bought: {} });
   assert.equal(M.view(s).speech.text, "Noodles, tape, nuts and bolts. Not in that order.");
   assert.equal(M.view(s).speech.draft, true);
   const noText = ctxOf('mel'); noText.lines = {};
   const bare = M.createCounter({ seed: 7, context: noText });
   assert.equal(M.view(bare).speech, null, 'a line id with no words is never invented');
+});
+
+test('a regular gets the keeper\'s back line when the record has one, and the open line when it does not', () => {
+  const back = make('stall');
+  assert.equal(M.view(back).speech.text, 'Back for more? The pot remembers you.', 'bought here before');
+  assert.equal(M.view(make('stall', {}, { bought: {}, visits: 2 })).speech.text, 'Back for more? The pot remembers you.', 'or told it is a return visit');
+  assert.match(M.view(make('stall', {}, { bought: {} })).speech.text, /Noodles, tape/);
+  assert.match(M.view(make('mel', {}, { bought: { medkit: 1 } })).speech.text, /Pick something/, 'no back line in the record: the open line');
 });
 
 test('stock: limits less what was bought, unlimited stacks, dusty gaps', () => {
@@ -403,7 +411,7 @@ test('determinism: the same seed gives the same shop and the same drawing, anoth
 });
 
 test('a line given as a list picks one variant by seed, steadily', () => {
-  const ctx = ctxOf('stall');
+  const ctx = ctxOf('stall', { bought: {} });
   ctx.shop.lines.open = [{ text: 'one', emotion: 'warm' }, { text: 'two', emotion: 'warm' }, { text: 'three', emotion: 'warm' }];
   const seen = new Set();
   for (let seed = 1; seed < 30; seed++) {

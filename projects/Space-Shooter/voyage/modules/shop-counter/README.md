@@ -38,7 +38,7 @@ const result = await play(stage, ctx);   // resolves when the player leaves (or 
 | `context.lines` | `{ lineId: { text, emotion, direction } }`: the story's line table, for record lines that carry only an id (Mel's `open` and `buy` do) |
 | `context.names` | `{ id: "Name" }` for rep givers and skills, used in the plain "has to know you first" reasons |
 | `context.save` | `money`, `items`, `rep`, `skills`, `flags`, `stats` (the game's save; `save.character.skills` and `.stats` are read too) |
-| `context.bought` | `{ itemId: n }` bought here before; with `limit` it sets what is left on the shelf |
+| `context.bought` | `{ itemId: n }` bought here before; with `limit` it sets what is left on the shelf. Anything in it (or `context.visits` above 0) makes the keeper greet you with the record's `lines.back`, if it has one |
 
 **Leaving.** The host's Leave calls `stage.leave()` (or dispatches a `stardust:leave` event on the stage), and the promise resolves with `{ left: true, ... }` and everything bought and sold so far. Esc does the same. Pay is final: it changes nothing until pressed, so leaving with a full basket buys nothing.
 

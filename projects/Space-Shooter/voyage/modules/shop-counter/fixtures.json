@@ -722,6 +722,13 @@
               "emotion": "dry",
               "direction": "Muffled, through the shutter.",
               "draft": true
+            },
+            "back": {
+              "line": "dot.shop.back",
+              "text": "Back for more? The pot remembers you.",
+              "emotion": "warm",
+              "direction": "Pleased, wiping her hands.",
+              "draft": true
             }
           },
           "discounts": [

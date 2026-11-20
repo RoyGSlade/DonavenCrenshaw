@@ -122,7 +122,8 @@ export function createCounter({ seed = 1, tier = 0, points = {}, level = 9, quic
     music: typeof shop.music === 'string' ? shop.music : null,
     done: false,
   };
-  s.speech = s.shut ? lineSpeech(s, 'shut') || textSpeech(s, shop.reason) : lineSpeech(s, 'open');
+  const visited = Object.values(s.bought).some((n) => n > 0) || whole(ctx.visits) > 0; // a regular gets the keeper's `back` line when the record has one
+  s.speech = s.shut ? lineSpeech(s, 'shut') || textSpeech(s, shop.reason) : (visited && lineSpeech(s, 'back')) || lineSpeech(s, 'open');
   return s;
 }
 
