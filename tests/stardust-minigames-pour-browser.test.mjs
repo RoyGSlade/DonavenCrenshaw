@@ -112,7 +112,7 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
 
       await sub('the bench menu lists the kitchen entry between Polish and Bolt plate', async () => {
         await openMenu();
-        assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll('.wb-c')].map((b) => b.dataset.craft)), ['cut', 'screw', 'bend', 'flatten', 'polish', 'pour', 'bolt-plate', 'heat']);
+        assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll('.wb-c')].map((b) => b.dataset.craft)), ['cut', 'screw', 'bend', 'flatten', 'polish', 'pour', 'steak', 'bolt-plate', 'heat']);
         assert.match(await page.locator('.wb-c[data-craft="pour"]').innerText(), /Mix a coolant flask/);
         assert.match(await page.locator('.wb-craftrow:has(.wb-c[data-craft="pour"]) .rp-help').innerText(), /Kitchen/);
         await shot('c0-bench-menu');

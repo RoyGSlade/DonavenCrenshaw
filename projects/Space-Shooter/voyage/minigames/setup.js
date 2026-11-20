@@ -348,6 +348,16 @@ export function setupPour({ tier = 0, points = {}, level = POINT_MAX, pours = 3,
   };
 }
 
+// --- Cooking: Order and timing (v2/PLAN.md section 6) ---------------------------------------------
+//   Order  each ingredient names a heat band and a time window; wrong order spoils it (-15), outside the heat band -10, outside the time window -10.
+//   The roll (tier t): every band and window x (1 + 0.15 t) about its middle.
+//   One Speed point: the pan warms 5% faster, but only up to the butter's heat (40); from there the curve is the same, so no window gets shorter.
+export const ORDER_BASE = Object.freeze({ tierBand: 0.15, warmPerPoint: 0.05, qualityPerPoint: 4, buildPerPoint: 0.05, materialPerPoint: 0.04 });
+export function setupOrder({ tier = 0, points = {}, level = POINT_MAX } = {}) {
+  const p = cleanPoints(points, CRAFT_CATEGORIES, level), t = clampTier(tier), b = ORDER_BASE;
+  return { kind: 'order', f: r4c(1 + b.tierBand * t), quick: r4c(b.warmPerPoint * p.speed), ...craftBits(b, p), tier: t, points: p, label: tierInfo(t).label };
+}
+
 // --- Navigation: plot the lane (PLAN.md section 2.3) ------------------------------
 // Categories: time (travel time), fuel (fuel use), warning (hazard warning).
 //   time     every lane costs 4% less travel time per point        (0..9 -> x1 .. x0.64, exact, never rounded)

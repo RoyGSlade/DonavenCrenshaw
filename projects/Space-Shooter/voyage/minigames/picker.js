@@ -38,7 +38,7 @@ export const CATEGORIES = Object.freeze({
     { id: 'quality', name: 'Repair quality', words: (n) => `${plus(REPAIR_BASE.qualityPerPoint * n, '')} quality on every patch` } ] },
   crafting: { built: false, cats: [
     { id: 'quality', name: 'Quality', words: (n) => `${plus(4 * n, '')} quality on every part` },
-    { id: 'speed', name: 'Speed', words: (n) => `builds ${f1(5 * n)}% faster; Cut feed +${f1(5 * n)}%, Screw thread +${f1(5 * n)}% a turn, Bend: a rushed press strains the bar ${2 * n} less, Flatten: the hammer charges ${f1(5 * n)}% faster, Polish: shine ${f1(5 * n)}% faster, Pour: the stream runs ${f1(5 * n)}% faster until it nears the line; the older heat game ${5 - Math.floor(n / 3)} shaping steps` },
+    { id: 'speed', name: 'Speed', words: (n) => `builds ${f1(5 * n)}% faster; Cut feed +${f1(5 * n)}%, Screw thread +${f1(5 * n)}% a turn, Bend: a rushed press strains the bar ${2 * n} less, Flatten: the hammer charges ${f1(5 * n)}% faster, Polish: shine ${f1(5 * n)}% faster, Pour: the stream runs ${f1(5 * n)}% faster until it nears the line, Order: the cold pan warms ${f1(5 * n)}% faster up to the butter's heat; the older heat game ${5 - Math.floor(n / 3)} shaping steps` },
     { id: 'material', name: 'Material use', words: (n) => `${f1(4 * n)}% less scrap, the fraction saved across crafts` } ] },
   social: { built: false, cats: [
     { id: 'persuade', name: 'Persuade', words: (n) => { const u = setupPersuade({ points: { persuade: n }, level: 9 }); return `trust needed ${u.goal} at a steady roll, you notice ${u.tells} thing${u.tells === 1 ? '' : 's'} about them`; } },

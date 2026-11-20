@@ -174,3 +174,23 @@
 .wb-full .cc-pourrow{padding-bottom:max(2px,env(safe-area-inset-bottom))}
 .wb-full .cc-recipe:has(.cc-pourpanel) .cc-chips{flex-wrap:wrap;overflow:visible;padding-bottom:0}
 .wb-full .cc-recipe:has(.cc-pourpanel) .cc-chip{white-space:normal}
+
+/* Order and timing: the pan and its thermometer on the canvas, four gauges (next word, pan, timing, steps) and a row of four ingredient tiles (the same kit button as the other pads) */
+.cc-nextstat[data-state=now] em{color:#9fe870}.cc-nextstat[data-state=early] em{color:#8fd3ff}.cc-nextstat[data-state=late] em{color:#ffc857}.cc-nextstat[data-state=burn] em{color:#ff6b5a}
+.cc-nextstat em.cc-nextword{font-size:15px}
+.cc-panmeter,.cc-timemeter{height:12px;overflow:hidden}.cc-panmeter .cc-zone,.cc-timemeter .cc-zone{top:0;bottom:0;opacity:.75;box-shadow:none}.cc-timemeter i{background:#b9a4ff}
+.cc-panstat em,.cc-timestat em,.cc-stepstat em{font-size:12px}
+.cc-recipeline{font:11px/1.35 Inter,sans-serif!important;color:#9db3c2!important;white-space:normal!important}
+.cc-ordpips i[style]{border-color:#e8f5f8}
+.cc-ordwrap{width:min(100%,880px);aspect-ratio:800/520;margin:0 auto}
+.cc-ordcanvas{cursor:default;touch-action:none}
+.cc-ordrow{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;max-width:760px;width:100%;margin:0 auto}
+.cc-tile{min-height:84px;padding:6px 4px}.cc-tile b{font-size:13px;letter-spacing:.06em}.cc-tile span{font-size:9px;letter-spacing:.08em}
+.cc-swatch{display:block;width:22px;height:14px;border-radius:4px;border:1px solid #0008;margin-bottom:3px}
+.cc-tile.is-in{opacity:.55}
+.wb-full .cc-ordpanel{gap:6px;width:100%;margin-left:0;margin-right:0}
+.wb-full .cc-ordwrap{flex:1 1 0;min-height:120px;width:100%;max-width:none;aspect-ratio:auto;position:relative;display:block;margin:0}
+.wb-full .cc-ordwrap .cc-canvas{position:absolute;inset:0;width:100%;height:100%}
+.wb-full .cc-ordrow{padding-bottom:max(2px,env(safe-area-inset-bottom))}
+.wb-full .cc-recipe:has(.cc-ordpanel) .cc-chips{flex-wrap:wrap;overflow:visible;padding-bottom:0}
+.wb-full .cc-recipe:has(.cc-ordpanel) .cc-chip{white-space:normal}
