@@ -62,17 +62,17 @@
     const ctx = {
       seed: +$('seed').value || 1, tier: +$('tier').value, quick: $('quick').checked, mode: 'field', level: 1, context,
       points: { awareness: +$('awareness').value, inspection: +$('inspection').value, trace: +$('trace').value },
-      sound: (id) => { (window.__sounds ||= []).push(id); }, reducedMotion: () => matchMedia('(prefers-reduced-motion: reduce)').matches,
+      onLeave: (fn) => { window.__leave = fn; }, sound: (id) => { (window.__sounds ||= []).push(id); }, reducedMotion: () => matchMedia('(prefers-reduced-motion: reduce)').matches,
     };
     running = play(stage, ctx);
     window.__running = running;
     const result = await running;
-    running = null; host.classList.remove('open'); document.body.style.overflow = ''; stage.replaceChildren();
+    running = null; window.__leave = null; host.classList.remove('open'); document.body.style.overflow = ''; stage.replaceChildren();
     window.__result = result;
     $('out').textContent = JSON.stringify({ ...result, tunnel: result.tunnel ? { ...result.tunnel, rows: `[${result.tunnel.rows?.length} rows]` } : undefined, resume: result.resume ? '[resume data]' : undefined }, null, 1);
   }
   $('open').addEventListener('click', open);
-  $('leave').addEventListener('click', () => $('stage').dispatchEvent(new CustomEvent('module:leave')));
+  $('leave').addEventListener('click', () => window.__leave?.());
   if (q.get('auto') === '1') open();
 </script>
 </body>

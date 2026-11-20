@@ -111,3 +111,13 @@
 @media (prefers-reduced-motion:reduce){.m-sounding-drill .sd-card,.m-sounding-drill .sd-claw.is-ready,.m-sounding-drill .sd-cell.is-crit{animation:none}}
 
 .m-sounding-drill .sd-claw.is-armed{color:#2a1408;filter:drop-shadow(0 0 10px rgba(255,173,114,.9)) hue-rotate(-155deg) saturate(1.6)}
+
+.m-sounding-drill .sd-cell-body i.is-last{animation:sd-last .6s ease-in-out infinite}
+@keyframes sd-last{50%{opacity:.35}}
+@media (prefers-reduced-motion:reduce){.m-sounding-drill .sd-cell-body i.is-last{animation:none}}
+
+/* a slow scan line over the scope: a faint band that drifts down, so it feels like an instrument */
+.m-sounding-drill .sd-board::after{content:"";position:absolute;inset:0;pointer-events:none;border-radius:6px;opacity:.5;
+  background:linear-gradient(180deg,rgba(129,230,223,0) 0%,rgba(129,230,223,.05) 48%,rgba(129,230,223,.09) 50%,rgba(129,230,223,0) 52%) 0 0/100% 220% repeat-y;animation:sd-scan 9s linear infinite}
+@keyframes sd-scan{from{background-position:0 -110%}to{background-position:0 110%}}
+@media (prefers-reduced-motion:reduce){.m-sounding-drill .sd-board::after{animation:none;opacity:.2}}

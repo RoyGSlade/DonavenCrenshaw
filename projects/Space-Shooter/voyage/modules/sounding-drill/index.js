@@ -1,6 +1,7 @@
 // Sounding drill, contract 1.1: `play(stage, ctx) -> Promise<result>`.
-// The stage is an empty full-screen element opened by the host (it also has the Leave button). To leave, the host sends a
-// `module:leave` event to the stage (or calls the `leave()` that `play` puts on the returned promise); the module then resolves { left: true }.
+// The stage is an empty full-screen element opened by the host (it also has the Leave button). Leave, per contract 1.1: the module
+// registers its handler once at the start with `ctx.onLeave(fn)`; when the player presses Leave the host calls `fn()`, and the module
+// stops its loop and its Web Audio and resolves { done: true, left: true }.
 import { mountGame } from './view.js';
 
 const here = (p) => new URL(p, import.meta.url);
@@ -19,13 +20,11 @@ export function play(stage, ctx = {}) {
   const end = (result) => {
     if (done) return; done = true;
     ctl?.destroy();
-    stage.removeEventListener('module:leave', onLeave);
     ctx.sound?.('music:unduck');
     resolveFn(result);
   };
   const onLeave = () => { if (ctl) ctl.leave(); else end({ done: true, success: false, grade: 0, left: true, effects: {} }); };
-  stage.addEventListener('module:leave', onLeave);
-  promise.leave = onLeave;
+  ctx.onLeave?.(onLeave);
   (async () => {
     const fixtures = await loadFixtures();
     if (done) return;

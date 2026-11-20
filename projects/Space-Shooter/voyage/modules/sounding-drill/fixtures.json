@@ -1,23 +1,252 @@
 {
-  "items": {
-    "ore-iron":      { "name": "Iron ore",       "kind": "ore",    "icon": "art/items/ore-chunk.webp",     "colour": "#d0a070" },
-    "gem-blue":      { "name": "Blue crystal",   "kind": "gem",    "icon": "art/items/crystal-blue.webp",   "colour": "#6fc3ff" },
-    "gem-gold":      { "name": "Gold crystal",   "kind": "gem",    "icon": "art/items/crystal-gold.webp",   "colour": "#ffd35e" },
-    "gem-pink":      { "name": "Pink crystal",   "kind": "gem",    "icon": "art/items/crystal-pink.webp",   "colour": "#ff8ac4" },
-    "gem-purple":    { "name": "Purple crystal", "kind": "gem",    "icon": "art/items/crystal-purple.webp", "colour": "#b58cff" },
-    "gem-red":       { "name": "Red crystal",    "kind": "gem",    "icon": "art/items/crystal-red.webp",    "colour": "#ff6b6b" },
-    "relic-warden":  { "name": "Warden relic",   "kind": "relic",  "icon": "art/items/warden-relic.webp",   "colour": "#ffb36b" },
-    "idol-choir":    { "name": "Choir idol",     "kind": "oddity", "icon": "art/items/choir-idol.webp",     "colour": "#e6a8ff" },
-    "core-data":     { "name": "Data core",      "kind": "oddity", "icon": "art/items/data-core.webp",      "colour": "#7dffd0" }
+ "items": {
+  "ore-iron": {
+   "name": "Iron ore",
+   "kind": "ore",
+   "icon": "art/items/ore-chunk.webp",
+   "colour": "#d0a070"
   },
-  "rocks": [
-    { "size": "medium", "finds": [ { "item": "gem-blue", "kind": "gem", "main": true }, { "item": "ore-iron", "kind": "ore" } ] },
-    { "size": "large",  "finds": [ { "item": "ore-iron", "kind": "ore", "main": true }, { "item": "gem-gold", "kind": "gem" }, { "item": "gem-red", "kind": "gem" } ] },
-    { "size": "medium", "finds": [ { "item": "relic-warden", "kind": "relic", "main": true } ] },
-    { "size": "large",  "finds": [ { "item": "idol-choir", "kind": "oddity", "main": true }, { "item": "gem-pink", "kind": "gem" } ] },
-    { "size": "medium", "finds": [ { "item": "gem-purple", "kind": "gem", "main": true }, { "item": "core-data", "kind": "oddity" } ] },
-    { "size": "small",  "finds": [ { "item": "gem-red", "kind": "gem", "main": true } ] },
-    { "size": "large",  "finds": [ { "item": "core-data", "kind": "oddity", "main": true }, { "item": "ore-iron", "kind": "ore" }, { "item": "gem-blue", "kind": "gem" } ] },
-    { "size": "medium", "finds": [ { "item": "gem-gold", "kind": "gem", "main": true }, { "item": "relic-warden", "kind": "relic" } ] }
-  ]
+  "gem-blue": {
+   "name": "Blue crystal",
+   "kind": "gem",
+   "icon": "art/items/crystal-blue.webp",
+   "colour": "#6fc3ff"
+  },
+  "gem-gold": {
+   "name": "Gold crystal",
+   "kind": "gem",
+   "icon": "art/items/crystal-gold.webp",
+   "colour": "#ffd35e"
+  },
+  "gem-pink": {
+   "name": "Pink crystal",
+   "kind": "gem",
+   "icon": "art/items/crystal-pink.webp",
+   "colour": "#ff8ac4"
+  },
+  "gem-purple": {
+   "name": "Purple crystal",
+   "kind": "gem",
+   "icon": "art/items/crystal-purple.webp",
+   "colour": "#b58cff"
+  },
+  "gem-red": {
+   "name": "Red crystal",
+   "kind": "gem",
+   "icon": "art/items/crystal-red.webp",
+   "colour": "#ff6b6b"
+  },
+  "relic-warden": {
+   "name": "Warden relic",
+   "kind": "relic",
+   "icon": "art/items/warden-relic.webp",
+   "colour": "#ffb36b"
+  },
+  "idol-choir": {
+   "name": "Choir idol",
+   "kind": "oddity",
+   "icon": "art/items/choir-idol.webp",
+   "colour": "#e6a8ff"
+  },
+  "core-data": {
+   "name": "Data core",
+   "kind": "oddity",
+   "icon": "art/items/data-core.webp",
+   "colour": "#7dffd0"
+  },
+  "map-star": {
+   "name": "Star map",
+   "kind": "oddity",
+   "icon": "art/items/star-map.webp",
+   "colour": "#9fd4ff"
+  },
+  "key-gate": {
+   "name": "Gate key",
+   "kind": "relic",
+   "icon": "art/items/gate-key.webp",
+   "colour": "#e8c46a"
+  }
+ },
+ "rocks": [
+  {
+   "size": "large",
+   "finds": [
+    {
+     "item": "gem-blue",
+     "kind": "gem",
+     "main": true
+    },
+    {
+     "item": "ore-iron",
+     "kind": "ore"
+    },
+    {
+     "item": "relic-warden",
+     "kind": "relic"
+    },
+    {
+     "item": "gem-gold",
+     "kind": "gem"
+    }
+   ]
+  },
+  {
+   "size": "large",
+   "finds": [
+    {
+     "item": "ore-iron",
+     "kind": "ore",
+     "main": true
+    },
+    {
+     "item": "gem-gold",
+     "kind": "gem"
+    },
+    {
+     "item": "gem-red",
+     "kind": "gem"
+    },
+    {
+     "item": "idol-choir",
+     "kind": "oddity"
+    }
+   ]
+  },
+  {
+   "size": "medium",
+   "finds": [
+    {
+     "item": "relic-warden",
+     "kind": "relic",
+     "main": true
+    },
+    {
+     "item": "gem-pink",
+     "kind": "gem"
+    },
+    {
+     "item": "core-data",
+     "kind": "oddity"
+    }
+   ]
+  },
+  {
+   "size": "large",
+   "finds": [
+    {
+     "item": "idol-choir",
+     "kind": "oddity",
+     "main": true
+    },
+    {
+     "item": "gem-pink",
+     "kind": "gem"
+    },
+    {
+     "item": "map-star",
+     "kind": "oddity"
+    }
+   ]
+  },
+  {
+   "size": "medium",
+   "finds": [
+    {
+     "item": "gem-purple",
+     "kind": "gem",
+     "main": true
+    },
+    {
+     "item": "core-data",
+     "kind": "oddity"
+    },
+    {
+     "item": "ore-iron",
+     "kind": "ore"
+    }
+   ]
+  },
+  {
+   "size": "small",
+   "finds": [
+    {
+     "item": "gem-red",
+     "kind": "gem",
+     "main": true
+    }
+   ]
+  },
+  {
+   "size": "large",
+   "finds": [
+    {
+     "item": "core-data",
+     "kind": "oddity",
+     "main": true
+    },
+    {
+     "item": "ore-iron",
+     "kind": "ore"
+    },
+    {
+     "item": "gem-blue",
+     "kind": "gem"
+    },
+    {
+     "item": "key-gate",
+     "kind": "relic"
+    }
+   ]
+  },
+  {
+   "size": "medium",
+   "finds": [
+    {
+     "item": "gem-gold",
+     "kind": "gem",
+     "main": true
+    },
+    {
+     "item": "relic-warden",
+     "kind": "relic"
+    },
+    {
+     "item": "map-star",
+     "kind": "oddity"
+    }
+   ]
+  },
+  {
+   "size": "large",
+   "finds": [
+    {
+     "item": "map-star",
+     "kind": "oddity",
+     "main": true
+    },
+    {
+     "item": "gem-purple",
+     "kind": "gem"
+    }
+   ]
+  },
+  {
+   "size": "medium",
+   "finds": [
+    {
+     "item": "key-gate",
+     "kind": "relic",
+     "main": true
+    },
+    {
+     "item": "gem-blue",
+     "kind": "gem"
+    },
+    {
+     "item": "ore-iron",
+     "kind": "ore"
+    }
+   ]
+  }
+ ]
 }

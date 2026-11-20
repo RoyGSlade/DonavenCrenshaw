@@ -1,17 +1,63 @@
 {
   "id": "sounding-drill",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "kind": "minigame",
   "title": "Sounding drill",
   "verb": "Sound the rock",
   "skill": "perception",
   "tabletop": "Perception",
-  "paths": ["awareness", "inspection", "trace"],
-  "where": ["loading bay (a rock you hauled in)", "trainer"],
-  "length_s": [40, 75],
-  "inputs": ["seed", "tier", "points", "quick", "context.rock", "context.items", "context.resume"],
-  "outputs": ["success", "grade", "perfect", "finds", "tunnel", "chargeLeft", "turned", "resume"],
-  "art": ["art/items/ore-chunk.webp", "art/kit/panel.webp"],
+  "paths": [
+    {
+      "id": "awareness",
+      "division": "Awareness",
+      "tabletopSkill": "Perception"
+    },
+    {
+      "id": "inspection",
+      "division": "Inspection",
+      "tabletopSkill": "Perception"
+    },
+    {
+      "id": "trace",
+      "division": "Trace",
+      "tabletopSkill": "Perception"
+    }
+  ],
+  "where": [
+    "loading bay (a rock you hauled in)",
+    "trainer"
+  ],
+  "length_s": [
+    16,
+    45
+  ],
+  "inputs": [
+    "seed",
+    "tier",
+    "points",
+    "quick",
+    "context.rock",
+    "context.items",
+    "context.resume"
+  ],
+  "outputs": [
+    "success",
+    "grade",
+    "perfect",
+    "finds",
+    "tunnel",
+    "chargeLeft",
+    "turned",
+    "resume"
+  ],
+  "art": [
+    "art/items/ore-chunk.webp",
+    "art/kit/panel.webp"
+  ],
   "status": "draft",
-  "contract": 1
+  "contract": "1.1",
+  "quick_length_s": [
+    8,
+    22
+  ]
 }

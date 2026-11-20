@@ -22,17 +22,17 @@ export const tierInfo = (tier) => TIER[String(tierOf(tier))];
 export const BASE = Object.freeze({
   cell: 8,                    // grid cell, board units
   tunnel: 36,                 // tunnel width
-  speed: Object.freeze({ soft: 85, vein: 30, open: 150 }),   // units a second
+  speed: Object.freeze({ soft: 62, vein: 22, open: 105 }),   // units a second
   bite: 60,                   // travel between rings
   reach: 170, reachTime: 0.6, // ring reach and the time it takes to get there
   hold: 1.5, fade: 1.0,       // how long a lit thing stays lit, then fades
-  listenReach: 1.6, listenTime: 1.2, listenCost: 0.04, listenAfter: 0.5, stillRadius: 14,
+  listenReach: 1.6, listenTime: 1.2, listenCost: 0.02, listenAfter: 0.5, stillRadius: 14,
   heat: Object.freeze({ vein: 30, soft: 6, openCool: 12, cool: 25, seizeAt: 100, seizeTime: 2, after: 40 }),
-  charge: 1060, veinCost: 2,  // charge in units of soft tunnel; a vein costs double
+  charge: 1290, veinCost: 2,  // charge in units of soft tunnel; a vein costs double
   coreMin: 28, coreMax: 46, shell: 34, freedAt: 0.70,
   shatter: 3, crackPad: 4, crackCool: 1.3,
   quickCharge: 0.6, maxTurns: 2,
-  sizeScale: Object.freeze({ small: 0.62, medium: 0.82, large: 1.0 }),
+  sizeScale: Object.freeze({ small: 0.7, medium: 1.0, large: 1.0 }),   // the rock fills the board
   gradeMain: 60, gradeClean: 20, gradeOneCrack: 10, gradeBonus: 10,
 });
 
@@ -51,7 +51,7 @@ export function rulesFor({ tier = 0, points = {}, quick = false, board = { w: 10
   const t = tierOf(tier);
   const info = tierInfo(t);
   const p = cleanPoints(points);
-  const sizeK = (board.w + board.h) / 1700;   // a wide board is 1000 x 760
+  const sizeK = (board.w + board.h) / 1700 * (1 + 0.35 * Math.max(0, board.h / board.w - 1));   // a wide board is 1400 x 1050; a tall rock is a longer way in
   const u = board.w / 1000;                   // a narrower (phone) board sees proportionally less far
   return {
     tier: t, label: info.label, points: p, quick: !!quick,
@@ -110,7 +110,7 @@ export function pickRock({ seed = 1, quick = false, rock = null, fixtures = {} }
     finds = [finds.find((f) => f.main)];
     size = 'small';
   }
-  finds = finds.slice(0, 3);
+  finds = finds.slice(0, 4);   // the main find and up to three bonus finds
   return { size, finds };
 }
 
@@ -119,7 +119,7 @@ export function makeRock({ seed = 1, board = { w: 1000, h: 760 }, quick = false,
   const rec = pickRock({ seed, quick, rock, fixtures });
   const itemMap = items || fixtures.items || {};
   const W = board.w, H = board.h, cell = BASE.cell;
-  const gw = Math.ceil(W / cell), gh = Math.ceil(H / cell);
+  const gw = Math.ceil(W / cell), gh = Math.ceil(H / cell), kW = W / 1000;   // everything the rock is made of grows with the board
   const rnd = roller({ rng: hashSeed('sounding-drill', 'rock', seed, Math.round(W), Math.round(H), rec.size, rec.finds.length) });
   const s = BASE.sizeScale[rec.size] ?? 0.82;
   const R = {
@@ -137,16 +137,17 @@ export function makeRock({ seed = 1, board = { w: 1000, h: 760 }, quick = false,
   const sizes = { ore: [38, 46], gem: [28, 36], relic: [36, 44], oddity: [32, 44] };
 
   // The main find first: far side of the rock from the first entry, so the way in is a real trip.
-  const place = (rec1, isMain, tries = 80) => {
+  const place = (rec1, isMain, tries = 240) => {
     const [lo, hi] = sizes[rec1.kind] || [BASE.coreMin, BASE.coreMax];
     const r = Math.round(lo + rnd.next() * (hi - lo));
     let best = null;
     for (let i = 0; i < tries; i++) {
       let x, y;
       if (isMain) {
-        // somewhere across the rock from the first entry: 0.36 to 0.62 of the rock's width away (out of the first ring's reach)
-        const toC = Math.atan2(R.cy - entry0.y, R.cx - entry0.x), a = toC + (rnd.next() - 0.5) * 1.9;
-        const dd = (0.36 + rnd.next() * 0.26) * 2 * Math.sqrt(R.rx * R.ry);
+        // deep in the rock: 0.55 to 0.85 of the way across from the first entry, along a line that runs through the middle
+        const toC = Math.atan2(R.cy - entry0.y, R.cx - entry0.x), a = toC + (rnd.next() - 0.5) * 1.0;
+        let chord = 0; while (chord < 3000 && insideRock(R, entry0.x + Math.cos(a) * (chord + 8) + Math.cos(a) * 12, entry0.y + Math.sin(a) * (chord + 8) + Math.sin(a) * 12)) chord += 8;
+        const dd = (0.55 + rnd.next() * 0.30) * chord;
         x = entry0.x + Math.cos(a) * dd; y = entry0.y + Math.sin(a) * dd;
       } else {
         const a = rnd.next() * 6.28, f = 0.25 + rnd.next() * 0.65;
@@ -155,8 +156,13 @@ export function makeRock({ seed = 1, board = { w: 1000, h: 760 }, quick = false,
       if (!okInside(x, y, margin(r))) continue;
       let good = true;
       for (const o of R.finds) if (Math.hypot(o.x - x, o.y - y) < o.r + r + 2 * BASE.shell + 70) good = false;
-      const de = Math.hypot(entry0.x - x, entry0.y - y), diam = 2 * Math.sqrt(R.rx * R.ry);
-      if (isMain ? (de < 0.36 * diam || de > 0.62 * diam) : de < 170) good = false;
+      const de = Math.hypot(entry0.x - x, entry0.y - y);
+      if (isMain) { if (de < 0.4 * 2 * Math.sqrt(R.rx * R.ry)) good = false; }
+      else {
+        if (de < 170 * kW) good = false;
+        // the first bonus find sits off the straight way to the main find, so "take what you have or go for that glint" is a real choice
+        if (R.finds.length === 1 && dist2seg(x, y, entry0.x, entry0.y, R.finds[0].x, R.finds[0].y).d < 170 * kW) good = false;
+      }
       if (good) { best = { x, y }; break; }
       if (!best) best = { x, y, bad: true };
     }
@@ -176,7 +182,7 @@ export function makeRock({ seed = 1, board = { w: 1000, h: 760 }, quick = false,
   const nHol = 1 + Math.floor(rnd.next() * 2);
   for (let i = 0; i < nHol; i++) {
     for (let tries = 0; tries < 60; tries++) {
-      const rad = 46 + rnd.next() * 36;
+      const rad = (46 + rnd.next() * 36) * (0.8 + 0.2 * kW);
       const a = rnd.next() * 6.28, f = 0.15 + rnd.next() * 0.6;
       const x = R.cx + Math.cos(a) * R.rx * f, y = R.cy + Math.sin(a) * R.ry * f;
       if (!okInside(x, y, rad + 20)) continue;
@@ -200,7 +206,7 @@ export function makeRock({ seed = 1, board = { w: 1000, h: 760 }, quick = false,
       const f = tries < 30 ? fr[i] + (rnd.next() - 0.5) * 0.1 : rnd.next();
       const px = pathA.x + (pathB.x - pathA.x) * f, py = pathA.y + (pathB.y - pathA.y) * f;
       const dir = Math.atan2(pathB.y - pathA.y, pathB.x - pathA.x) + Math.PI / 2 + (rnd.next() - 0.5) * (relax ? 3 : 1.2);
-      const half = (110 + rnd.next() * 90) * Math.max(0.7, s) * (relax === 2 ? 0.6 : 1), w = 44 + rnd.next() * 22;
+      const half = (110 + rnd.next() * 90) * kW * Math.max(0.8, s) * (relax === 2 ? 0.6 : 1), w = 44 + rnd.next() * 22;
       const off = (rnd.next() - 0.5) * (relax ? 260 : 150);
       const cx = px + Math.cos(dir + Math.PI / 2) * off, cy = py + Math.sin(dir + Math.PI / 2) * off;
       const v = { ax: cx - Math.cos(dir) * half, ay: cy - Math.sin(dir) * half, bx: cx + Math.cos(dir) * half, by: cy + Math.sin(dir) * half, w, ph: rnd.next() * 6.28 };
@@ -208,6 +214,12 @@ export function makeRock({ seed = 1, board = { w: 1000, h: 760 }, quick = false,
       if (R.finds.some((o) => dist2seg(o.x, o.y, v.ax, v.ay, v.bx, v.by).d < o.r + BASE.shell + w / 2 + (relax === 2 ? 4 : 14))) continue;
       if (R.hollows.some((o) => dist2seg(o.x, o.y, v.ax, v.ay, v.bx, v.by).d < o.rad + w / 2 + 10)) continue;
       if (dist2seg(entry0.x, entry0.y, v.ax, v.ay, v.bx, v.by).d < w / 2 + (relax ? 30 : 60)) continue;
+      // the first vein always lies across the straight way from the entry to the main find: it is never a clear line
+      if (i === 0 && relax < 2) {
+        let across = false;
+        for (let k = 1; k < 20 && !across; k++) { const t = k / 20; if (dist2seg(entry0.x + (pathB.x - entry0.x) * t, entry0.y + (pathB.y - entry0.y) * t, v.ax, v.ay, v.bx, v.by).d < w / 2 - 6) across = true; }
+        if (!across) continue;
+      }
       made = v;
     }
     if (made) R.veins.push(made);
@@ -284,7 +296,7 @@ export function createGame({ seed = 1, tier = 0, points = {}, quick = false, boa
     t: 0, turned: 0, entryAngle: R.entryAngle0,
     cut: new Uint8Array(n), litAt: new Float32Array(n).fill(-1e9), seen: new Uint8Array(n), conn: new Uint8Array(n),
     bit: { x: 0, y: 0 }, heat: 0, seizeLeft: 0, charge: rules.charge, chargeMax: rules.charge,
-    travel: 0, stillT: 0, crackCool: 0, rings: [], events: [], over: null, connT: 0, cutDirty: true,
+    travel: 0, stillT: 0, listened: false, sinceListen: 0, crackCool: 0, rings: [], events: [], over: null, connT: 0, cutDirty: true,
     entry: { x: 0, y: 0 }, lastInput: { x: 0, y: 0, down: false }, frontKind: K.SOFT, drilling: false, moving: false, dustN: 0,
     attempts: 0,
   };
@@ -307,7 +319,7 @@ function beginAttempt(g) {
   const ix = rim.x + (R.cx - rim.x) * 0.03, iy = rim.y + (R.cy - rim.y) * 0.03;
   g.entry = { x: rim.x, y: rim.y, angle: g.entryAngle };
   g.bit = { x: ix, y: iy };
-  g.heat = 0; g.seizeLeft = 0; g.charge = g.chargeMax; g.travel = 0; g.stillT = 0; g.rings = []; g.over = null; g.attempts += 1;
+  g.heat = 0; g.seizeLeft = 0; g.charge = g.chargeMax; g.travel = 0; g.stillT = 0; g.listened = false; g.sinceListen = 0; g.rings = []; g.over = null; g.attempts += 1;
   g.litAt.fill(-1e9);
   stamp(g, g.bit.x, g.bit.y, true);
   stamp(g, rim.x + (R.cx - rim.x) * 0.012, rim.y + (R.cy - rim.y) * 0.012, true);
@@ -455,13 +467,14 @@ export function step(g, dt, input = {}) {
   const dx = tx - g.bit.x, dy = ty - g.bit.y, L = Math.hypot(dx, dy);
   let cooling = true;
 
+  if (!input.down) g.listened = false;           // a lifted finger re-arms the listen
   if (down && L <= BASE.stillRadius) {
-    // holding still: after half a second, listen
+    // holding still: after half a second, ONE listen per stop (a thumb resting on the glass to think costs one pulse, not a drain)
     g.stillT += dt;
-    if (g.stillT >= BASE.listenAfter && g.charge >= g.chargeMax * BASE.listenCost) {
+    if (!g.listened && g.stillT >= BASE.listenAfter && g.charge >= g.chargeMax * BASE.listenCost) {
       g.charge -= g.chargeMax * BASE.listenCost;
       emit(g, g.bit.x, g.bit.y, rules.reach * BASE.listenReach, BASE.listenTime, 'listen');
-      g.stillT = 0;
+      g.listened = true; g.sinceListen = 0;
     }
   } else g.stillT = 0;
 
@@ -503,7 +516,8 @@ export function step(g, dt, input = {}) {
         g.heat += (g.frontKind === K.VEIN ? H.vein : H.soft) * rules.speedK * dt; cooling = false;
         if (g.frontKind === K.VEIN) g.events.push({ type: 'grind' });
       } else { g.heat = Math.max(0, g.heat - H.openCool * dt); cooling = false; }
-      g.travel += mv;
+      g.travel += mv; g.sinceListen += mv;
+      if (g.listened && g.sinceListen >= BASE.bite) g.listened = false;   // it re-arms once the bit has travelled a bite
       while (g.travel >= BASE.bite) { g.travel -= BASE.bite; emit(g, g.bit.x, g.bit.y, rules.reach, rules.reachTime); }
     }
   }
@@ -535,7 +549,7 @@ export function words(g) {
   for (const f of R.finds) if (findLight(g, f) > 0.25) return 'something here';
   if (g.moving && !g.drilling) return 'open ground';
   if (g.moving) return 'soft going';
-  return g.stillT > 0.15 ? 'listening' : 'press and drag';
+  return g.stillT > 0.15 && !g.listened ? 'listening' : g.listened ? 'listened: now move' : 'press and drag';
 }
 
 /** How far the main find is from free, as a plain word and a 0..1 for a drawn meter. */
@@ -591,4 +605,10 @@ export function turn(g) {
   beginAttempt(g);
   g.events.push({ type: 'turned' });
   return true;
+}
+
+/** 0..1: how far the half-second listen has charged (the view draws it as a ring round the bit). 0 when it cannot fire. */
+export function listenCharge(g) {
+  if (g.over || g.listened || g.seizeLeft > 0 || g.charge < g.chargeMax * BASE.listenCost) return 0;
+  return Math.max(0, Math.min(1, g.stillT / BASE.listenAfter));
 }

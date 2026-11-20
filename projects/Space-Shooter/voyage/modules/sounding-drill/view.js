@@ -1,6 +1,6 @@
 // Sounding drill: the screen. A dark scope drawn on a canvas, with a hangar-kit HUD around it (no digits on the live screen).
 // The model is stepped here from real input; the view only reads it. Everything on the canvas is drawn in code.
-import { createGame, step, claw, drain, turn, resultOf, words, mainProgress, lightOf, findLight, isFreed, BASE, K, F, rimPoint, insideRock } from './model.js';
+import { createGame, step, claw, drain, turn, resultOf, words, mainProgress, listenCharge, lightOf, findLight, isFreed, BASE, K, F, rimPoint, insideRock } from './model.js';
 import { makeSound } from './sound.js';
 
 /** Perception's colour: a pale sonar gold. Not taken by another skill (shooting #FF7A59, crafting #FFB547, navigation #C8E06B). */
@@ -26,8 +26,9 @@ const hash = (n) => { n = Math.imul(n ^ (n >>> 15), 0x2c1b3c6d); n = Math.imul(n
 
 /** Pick a board that fits the play area: wide on a desktop, tall on a phone. */
 export function boardFor(areaW, areaH) {
-  if (areaW >= areaH * 1.05) return { w: 1000, h: Math.round(Math.max(700, Math.min(800, 1000 * areaH / areaW))) };
-  return { w: 720, h: Math.round(Math.max(900, Math.min(1080, 720 * areaH / areaW))) };
+  // The rock is big: a hunt, not a stroll. Wide screens get a wide board, phones a tall one, and the rock is shaped to it.
+  if (areaW >= areaH * 1.05) return { w: 1400, h: Math.round(Math.max(980, Math.min(1120, 1400 * areaH / areaW))) };
+  return { w: 1000, h: Math.round(Math.max(1250, Math.min(1500, 1000 * areaH / areaW))) };
 }
 
 export function mountGame(stage, ctx, { fixtures, items, rock, resume, quick, onDone }) {
@@ -72,7 +73,7 @@ export function mountGame(stage, ctx, { fixtures, items, rock, resume, quick, on
   let board = boardFor(Math.max(200, area.width), Math.max(200, area.height));
   // On a small screen the rock is drawn small, so the bit runs faster in rock units: the same pace under the thumb.
   const estScale = Math.min(area.width / board.w, area.height / board.h) * 1.12;
-  const speedK = Math.max(1, Math.min(1.9, 0.95 / Math.max(0.2, estScale)));
+  const speedK = Math.max(1, Math.min(1.5, 0.95 / Math.max(0.2, estScale)));
   const g = createGame({ seed: ctx.seed ?? 1, tier: ctx.tier ?? 0, points: ctx.points || {}, quick, board, rock, items, fixtures, resume, speedK });
   const R = g.rock;
   const itemOf = (f) => R.itemMap?.[f.item] || {};
@@ -358,6 +359,16 @@ export function mountGame(stage, ctx, { fixtures, items, rock, resume, quick, on
     c.setTransform(1, 0, 0, 1, 0, 0);
     c.strokeStyle = 'rgba(129,230,223,.35)'; c.lineWidth = 2 * dpr; const bl = 18 * dpr, bo = 8 * dpr;
     for (const [x0, y0, dx, dy] of [[bo, bo, 1, 1], [W - bo, bo, -1, 1], [bo, H - bo, 1, -1], [W - bo, H - bo, -1, -1]]) { c.beginPath(); c.moveTo(x0 + dx * bl, y0); c.lineTo(x0, y0); c.lineTo(x0, y0 + dy * bl); c.stroke(); }
+    // the listen charging: a ring fills round the bit over the half second, so it reads as a choice and not a surprise
+    if (phase === 'play') {
+      const lc = listenCharge(g);
+      if (lc > 0.05) {
+        c.setTransform(k, 0, 0, k, -win.x * k + sx, -win.y * k + sy);
+        const bs2 = Math.max(1, 0.85 / scale), rr = 34 * bs2;
+        c.strokeStyle = 'rgba(244,227,161,.22)'; c.lineWidth = 3 / scale; c.beginPath(); c.arc(g.bit.x, g.bit.y, rr, 0, 7); c.stroke();
+        c.strokeStyle = rgba(ringRGB, 0.95); c.lineWidth = 4 / scale; c.lineCap = 'round'; c.beginPath(); c.arc(g.bit.x, g.bit.y, rr, -Math.PI / 2, -Math.PI / 2 + lc * Math.PI * 2); c.stroke();
+      }
+    }
     // flash on a crack
     if (flash > 0.01) { c.setTransform(1, 0, 0, 1, 0, 0); c.fillStyle = `rgba(255,236,200,${flash * 0.16})`; c.fillRect(0, 0, W, H); }
 
@@ -365,10 +376,13 @@ export function mountGame(stage, ctx, { fixtures, items, rock, resume, quick, on
     if (reveal > 0.6) {
       c.setTransform(k, 0, 0, k, -win.x * k, -win.y * k);
       c.font = `700 ${Math.max(10, 11 / scale)}px Inter, "Segoe UI", sans-serif`; c.textAlign = 'center'; c.textBaseline = 'top';
-      R.finds.forEach((f) => {
+      R.finds.forEach((f, fi) => {
+        // a label goes under its find, or above it if another find's label would sit on top of it
+        const crowd = R.finds.some((o, oi) => oi < fi && Math.abs(o.x - f.x) < 150 && Math.abs((o.y + o.r + 12) - (f.y + f.r + 12)) < 24);
+        const ly = crowd ? f.y - f.r - 24 : f.y + f.r + 12;
         const tag = f.cracks >= BASE.shatter ? 'shattered' : isFreed(f) ? 'freed' : f.seen ? 'left behind' : 'never seen';
         c.fillStyle = isFreed(f) ? 'rgba(159,232,112,.95)' : f.cracks >= BASE.shatter ? 'rgba(255,120,100,.95)' : 'rgba(200,215,225,.9)';
-        c.fillText(tag.toUpperCase(), f.x, f.y + f.r + 12);
+        c.fillText(tag.toUpperCase(), f.x, ly);
       });
     }
     // the claw
@@ -466,7 +480,9 @@ export function mountGame(stage, ctx, { fixtures, items, rock, resume, quick, on
   // --- HUD update --------------------------------------------------------------------------------------------------
   const setSegs = (frac) => {
     const on = frac * 10;
-    cellSegs.forEach((s, i) => { const v = Math.max(0, Math.min(1, on - i)); s.style.opacity = String(0.18 + 0.82 * v); s.classList.toggle('on', v > 0.02); });
+    // the cell never looks dead while there is charge: the last pip stays lit, and pulses, until it is truly empty
+    const lastIdx = Math.max(0, Math.ceil(on) - 1);
+    cellSegs.forEach((sg, i) => { let v = Math.max(0, Math.min(1, on - i)); if (frac > 0 && i === lastIdx) v = Math.max(v, 0.7); sg.style.opacity = String(0.18 + 0.82 * v); sg.classList.toggle('on', v > 0.02); sg.classList.toggle('is-last', frac > 0 && frac < 0.1 && i === lastIdx); });
     cell.classList.toggle('is-low', frac < 0.4 && frac >= 0.18); cell.classList.toggle('is-crit', frac < 0.18);
   };
   let lastWord = '';
@@ -549,7 +565,7 @@ export function mountGame(stage, ctx, { fixtures, items, rock, resume, quick, on
   return {
     root, g, view,
     destroy() { destroyed = true; cancelAnimationFrame(raf); ro?.disconnect(); sound.destroy(); root.removeEventListener('keydown', kd); root.removeEventListener('keyup', ku); },
-    leave() { sound.destroy(); finish({ done: true, success: false, grade: 0, left: true, effects: {} }); },
+    leave() { destroyed = true; cancelAnimationFrame(raf); sound.destroy(); finish({ done: true, success: false, grade: 0, left: true, effects: {} }); },
     muteSound: (v) => sound.mute(v),
   };
 }

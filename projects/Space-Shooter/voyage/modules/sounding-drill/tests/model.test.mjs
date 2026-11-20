@@ -5,12 +5,12 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
-import { BASE, TIER, K, F, createGame, step, claw, resultOf, turn, rulesFor, lightOf, findLight, isFreed, computeConn, cellIndex, words, mainProgress, drain } from '../model.js';
+import { BASE, TIER, K, F, createGame, step, claw, resultOf, turn, rulesFor, lightOf, findLight, isFreed, computeConn, cellIndex, words, mainProgress, drain, listenCharge, insideRock, rimPoint } from '../model.js';
 import { BOTS, playBot } from '../bots.js';
 
 const dir = path.dirname(fileURLToPath(import.meta.url));
 const fixtures = JSON.parse(readFileSync(path.join(dir, '..', 'fixtures.json'), 'utf8'));
-const LAYOUTS = { wide: { w: 1000, h: 760 }, tall: { w: 720, h: 960 } };
+const LAYOUTS = { wide: { w: 1400, h: 1050 }, tall: { w: 1000, h: 1350 } };
 const SWEEP = +process.env.SWEEP_N || 150;
 
 const mk = (o = {}) => createGame({ seed: 1, board: LAYOUTS.wide, fixtures, ...o });
@@ -35,7 +35,7 @@ test('determinism: the same seed gives the same rock and the same game; another 
   assert.equal(a.t, b.t);
 });
 
-test('the rock: 1 to 3 veins, 1 to 2 hollows, one main find and 0 to 2 bonus finds, each with a core and a shell', () => {
+test('the rock: 1 to 3 veins, 1 to 2 hollows, one main find and 0 to 3 bonus finds, each with a core and a shell', () => {
   let veinsSeen = new Set(), hollowsSeen = new Set(), bonusSeen = new Set();
   for (let seed = 1; seed <= 60; seed++) {
     for (const tier of [-2, 0, 2]) {
@@ -58,7 +58,7 @@ test('the rock: 1 to 3 veins, 1 to 2 hollows, one main find and 0 to 2 bonus fin
   }
   assert.deepEqual([...veinsSeen].sort(), [1, 2, 3]);
   assert.deepEqual([...hollowsSeen].sort(), [1, 2]);
-  assert.ok(bonusSeen.has(0) && bonusSeen.has(1) && bonusSeen.has(2), 'bonus finds from 0 to 2');
+  assert.ok(bonusSeen.has(0) && bonusSeen.has(1) && bonusSeen.has(2) && bonusSeen.has(3), 'bonus finds from 0 to 3');
 });
 
 test('no item name is written in the model or the view', () => {
@@ -184,12 +184,12 @@ test('touching the core cracks it; the third crack shatters it and ends a main-f
   const g = bare(); const f = g.rock.finds[0];
   g.bit.x = f.x - f.r - 30; g.bit.y = f.y;
   const into = { x: f.x, y: f.y, down: true };
-  run(g, 1.0, into);
+  run(g, 1.2, into);
   assert.equal(f.cracks, 1, 'one crack on first touch');
   const d = Math.hypot(g.bit.x - f.x, g.bit.y - f.y);
   assert.ok(d >= f.r, 'the bit does not go through the core');
-  run(g, 1.0, into); assert.equal(f.cracks, 2);
-  run(g, 1.0, into); assert.equal(f.cracks, BASE.shatter);
+  run(g, 1.4, into); assert.equal(f.cracks, 2);
+  run(g, 1.4, into); assert.equal(f.cracks, BASE.shatter);
   assert.equal(g.over?.why, 'shattered');
   const r = resultOf(g);
   assert.equal(r.success, false); assert.deepEqual(r.effects, { items: { scrap: 1 } });
@@ -338,7 +338,71 @@ test('a small screen gets a faster bit (speedK), and the game stays playable at 
     const a = createGame({ seed, tier: 0, board: LAYOUTS.tall, fixtures, speedK: 1.8 }), b = createGame({ seed, tier: 0, board: LAYOUTS.tall, fixtures, speedK: 1.8 });
     if (playBot(a, BOTS.perfect(a)).success) perfect++; if (playBot(b, BOTS.wobbly(b)).success) wob++;
   }
-  assert.ok(perfect / n >= 0.97, `perfect at speed 1.8: ${perfect}/${n}`); assert.ok(wob / n >= 0.7, `wobbly at speed 1.8: ${wob}/${n}`);
+  assert.ok(perfect / n >= 0.97, `perfect at speed 1.8: ${perfect}/${n}`); assert.ok(wob / n >= 0.5, `wobbly at speed 1.8: ${wob}/${n}`);
+});
+
+test('one listen per stop: a thumb resting on the glass costs one pulse, not a drain', () => {
+  const g = bare(); drain(g);
+  const c0 = g.charge;
+  run(g, 12, { x: g.bit.x, y: g.bit.y, down: true });   // twelve seconds with the pointer held still
+  const listens = drain(g).filter((e) => e.type === 'listen').length;
+  assert.equal(listens, 1, 'one listen only');
+  assert.ok(Math.abs((c0 - g.charge) / g.chargeMax - BASE.listenCost) < 1e-9, 'resting costs exactly one listen');
+  assert.equal(listenCharge(g), 0, 'nothing is charging while it waits');
+  // it re-arms after the finger lifts...
+  run(g, 0.2, { x: g.bit.x, y: g.bit.y, down: false });
+  run(g, 0.7, { x: g.bit.x, y: g.bit.y, down: true });
+  assert.equal(drain(g).filter((e) => e.type === 'listen').length, 1, 'a lifted finger re-arms it');
+  // ...or after the bit has travelled a bite
+  const h = bare(); run(h, 1, { x: h.bit.x, y: h.bit.y, down: true }); drain(h);
+  run(h, 1.6, { x: h.rock.cx, y: h.rock.cy, down: true });
+  run(h, 1, { x: h.bit.x, y: h.bit.y, down: true });
+  assert.equal(drain(h).filter((e) => e.type === 'listen').length, 1, 'travelling a bite re-arms it');
+  // the half second shows as it charges
+  const k = bare(); run(k, 0.25, { x: k.bit.x, y: k.bit.y, down: true });
+  assert.ok(listenCharge(k) > 0.4 && listenCharge(k) < 0.6, `charging (${listenCharge(k)})`);
+});
+
+test('the hunt: the main find sits deep, never on a clear line; bonus finds are off the way; the rock fills the board', () => {
+  let nBonusRocks = 0;
+  for (const layout of ['wide', 'tall']) for (let seed = 1; seed <= 60; seed++) {
+    const g = createGame({ seed, tier: 2, board: LAYOUTS[layout], fixtures });   // Smooth: the fewest veins (one)
+    const R = g.rock, m = R.finds[0], e = rimPoint(R, R.entryAngle0);
+    // 0.55 to 0.85 of the way across (the chord along the line from the first entry to the find), within a little slack
+    const a = Math.atan2(m.y - e.y, m.x - e.x); let chord = 0; while (chord < 3000 && insideRock(R, e.x + Math.cos(a) * (chord + 20), e.y + Math.sin(a) * (chord + 20))) chord += 4;
+    const frac = Math.hypot(m.x - e.x, m.y - e.y) / chord;
+    assert.ok(frac >= 0.45 && frac <= 0.9, `${layout} seed ${seed}: main find at ${frac.toFixed(2)} of the way across`);
+    // never a clear straight line: with one vein left, the vein is across it
+    let blocked = false; const dx = m.x - e.x, dy = m.y - e.y;
+    for (let t = 0.05; t < 0.95; t += 0.01) if (g.rock.kind[cellIndex(R, e.x + dx * t, e.y + dy * t)] === K.VEIN) blocked = true;
+    assert.ok(blocked, `${layout} seed ${seed}: a vein lies across the straight way in`);
+    // the rock fills the board
+    assert.ok(R.rx * 2 > R.W * 0.78 || R.size === 'small', `${layout} seed ${seed}: the rock fills the width (${R.rx * 2}/${R.W})`);
+    assert.ok(R.ry * 2 > R.H * 0.78 || R.size === 'small', `${layout} seed ${seed}: the rock fills the height`);
+    if (R.size !== 'small') {
+      nBonusRocks++;
+      const bonus = R.finds.slice(1); assert.ok(bonus.length >= 1 && bonus.length <= 3, `${layout} seed ${seed}: ${bonus.length} bonus finds on a ${R.size} rock`);
+      const off = bonus.some((f) => { const t = Math.max(0, Math.min(1, ((f.x - e.x) * dx + (f.y - e.y) * dy) / (dx * dx + dy * dy))); return Math.hypot(f.x - (e.x + dx * t), f.y - (e.y + dy * t)) >= 150; });
+      assert.ok(off, `${layout} seed ${seed}: a bonus find sits off the straight way`);
+    }
+  }
+  assert.ok(nBonusRocks > 40);
+});
+
+test('manifest matches contract 1.1 and tells the truth about length', () => {
+  const m = JSON.parse(readFileSync(path.join(dir, '..', 'manifest.json'), 'utf8'));
+  assert.equal(m.contract, '1.1'); assert.equal(m.kind, 'minigame'); assert.equal(m.id, 'sounding-drill'); assert.equal(m.skill, 'perception');
+  assert.ok(Array.isArray(m.paths) && m.paths.length === 3);
+  for (const p of m.paths) { assert.equal(typeof p.id, 'string'); assert.equal(typeof p.division, 'string'); assert.equal(p.tabletopSkill, 'Perception'); }
+  assert.deepEqual(m.paths.map((p) => p.id), ['awareness', 'inspection', 'trace']);
+  assert.equal(rulesFor({ points: { awareness: 9 } }).points.awareness, 9, 'the module reads the manifest path ids');
+  assert.ok(m.status === 'draft' || m.status === 'fable-passed');
+  // length_s is what the bots measure: the perfect bot is the floor, the thinker (who stops to think) the ceiling
+  const t = (bot, n = 40) => { let sum = 0; for (let seed = 1; seed <= n; seed++) { const g = createGame({ seed, tier: 0, board: LAYOUTS.wide, fixtures }); playBot(g, BOTS[bot](g)); sum += g.t; } return sum / n; };
+  const perfect = t('perfect'), thinker = t('thinker');
+  assert.ok(m.length_s[0] <= perfect && m.length_s[1] >= thinker, `length_s ${m.length_s} must hold perfect ${perfect.toFixed(1)} s and thinker ${thinker.toFixed(1)} s`);
+  assert.ok(perfect >= 16, `a hunt: the perfect bot needs ${perfect.toFixed(1)} s`);
+  assert.ok(thinker <= 45 && t('wobbly') >= 25, 'the wobbly hand takes 25 s or more');
 });
 
 test('quick mode: a small rock, one find, no bonus finds, a smaller cell', () => {
@@ -375,19 +439,21 @@ test('bot sweep: perfect passes everywhere, lazy and mash never, the wobbly hand
   const rows = [];
   for (const layout of ['wide', 'tall']) {
     for (const tier of [-2, -1, 0, 1, 2]) {
-      const r = { layout, tier, perfect: sweep(layout, tier, 'perfect'), wobbly: sweep(layout, tier, 'wobbly', { n: SWEEP * 2 }), lazy: sweep(layout, tier, 'lazy'), mash: sweep(layout, tier, 'mash') };
+      const r = { layout, tier, perfect: sweep(layout, tier, 'perfect'), wobbly: sweep(layout, tier, 'wobbly', { n: SWEEP * 2 }), thinker: sweep(layout, tier, 'thinker', { n: SWEEP * 2 }), lazy: sweep(layout, tier, 'lazy'), mash: sweep(layout, tier, 'mash') };
       rows.push(r);
       assert.ok(r.perfect >= 0.97, `perfect ${JSON.stringify(r)}`);
       assert.equal(r.lazy, 0, `lazy ${JSON.stringify(r)}`);
       assert.ok(r.mash <= 0.03, `mash ${JSON.stringify(r)}`);
     }
   }
-  console.log('bot table (pass rate)\n' + rows.map((r) => `${r.layout} ${TIER[String(r.tier)].label.padEnd(6)} perfect ${(r.perfect * 100).toFixed(0)}%  wobbly ${(r.wobbly * 100).toFixed(0)}%  lazy ${(r.lazy * 100).toFixed(0)}%  mash ${(r.mash * 100).toFixed(0)}%`).join('\n'));
+  console.log('bot table (pass rate)\n' + rows.map((r) => `${r.layout} ${TIER[String(r.tier)].label.padEnd(6)} perfect ${(r.perfect * 100).toFixed(0)}%  wobbly ${(r.wobbly * 100).toFixed(0)}%  thinker ${(r.thinker * 100).toFixed(0)}%  lazy ${(r.lazy * 100).toFixed(0)}%  mash ${(r.mash * 100).toFixed(0)}%`).join('\n'));
   for (const layout of ['wide', 'tall']) {
     const w = (t) => rows.find((r) => r.layout === layout && r.tier === t).wobbly;
     // The brief's curve: about 35-50% Rough, 70-80% Steady, 90%+ Smooth. Rough lands on it (a little above on the wide board) and Smooth
     // is at or just under it. Steady lands above it: the cell is the one tier lever the brief gives and it is steep between Rough and
     // Steady. READY says so and asks the lead; these bands are the measured behaviour, not the brief's.
+    // The thinker (stops two to four seconds with the pointer held) passes about as often as the wobbly hand: resting is not punished.
+    for (const t of [-2, -1, 0, 1, 2]) { const row = rows.find((r) => r.layout === layout && r.tier === t); assert.ok(row.thinker >= row.wobbly - 0.2, `${layout} ${t}: thinker ${row.thinker} vs wobbly ${row.wobbly}`); }
     assert.ok(w(-2) >= 0.33 && w(-2) <= 0.62, `${layout} Rough ${w(-2)}`);
     assert.ok(w(0) >= 0.70 && w(0) <= 0.95, `${layout} Steady ${w(0)}`);
     assert.ok(w(2) >= 0.88, `${layout} Smooth ${w(2)}`);

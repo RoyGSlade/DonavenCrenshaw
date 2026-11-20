@@ -124,11 +124,11 @@ export function perfectBot(g, o = {}) {
 
 // --- wobbly --------------------------------------------------------------------------------------------------------
 export function wobblyBot(g, o = {}) {
-  const P = { sigma: 18, lag: 0.32, memT: 2.6, listenEvery: 200, corrT: 0.45, estSigma: 13, ringD: 26, look: 46, lapse: 0.25, lapseK: 14, ...o };
+  const P = { sigma: 18, lag: 0.32, memT: 2.6, listenEvery: 200, corrT: 0.45, estSigma: 13, ringD: 26, look: 46, lapse: 0.25, lapseK: 14, pauseEvery: 400, ...o };
   const rnd = roller({ rng: hashSeed('sounding-drill', 'bot', 'wobbly', g.seed, o.salt || 0) });
   const gauss = mkGauss(rnd);
   const R = g.rock, main = R.finds[0];
-  let lapsed = false, wp = null, nx = 0, ny = 0, mem = null, memAt = -1e9, lastSeen = -1e9, swept = 0, lastTh = null, dir = 0, sinceListen = 0, listenLeft = 0, cooling = false, lastB = null;
+  let pauseLeft = 0, sincePause = 0, lapsed = false, wp = null, nx = 0, ny = 0, mem = null, memAt = -1e9, lastSeen = -1e9, swept = 0, lastTh = null, dir = 0, sinceListen = 0, listenLeft = 0, cooling = false, lastB = null;
   const hist = [];
   return {
     think(gg, dt) {
@@ -138,7 +138,10 @@ export function wobblyBot(g, o = {}) {
       const lg = hist[0];
       const a = Math.exp(-dt / P.corrT), s = Math.sqrt(1 - a * a) * P.sigma;
       nx = a * nx + s * gauss(); ny = a * ny + s * gauss();
-      if (lastB) sinceListen += Math.hypot(b.x - lastB.x, b.y - lastB.y);
+      if (lastB) { const dd = Math.hypot(b.x - lastB.x, b.y - lastB.y); sinceListen += dd; sincePause += dd; }
+      // a person stops to look and think: finger up for a second or two every so often
+      if (pauseLeft > 0) { pauseLeft -= dt; return { x: b.x, y: b.y, down: false }; }
+      if (sincePause > P.pauseEvery * (0.7 + 0.6 * rnd.next())) { sincePause = 0; pauseLeft = 1 + rnd.next() * 1.8; }
       lastB = { x: b.x, y: b.y };
       // what it can see: only what is lit right now
       if (findLight(g, main) > 0.3) {
@@ -207,7 +210,24 @@ export function mashBot(g, o = {}) {
   };
 }
 
-export const BOTS = Object.freeze({ perfect: perfectBot, wobbly: wobblyBot, lazy: lazyBot, mash: mashBot });
+// --- the thinker ---------------------------------------------------------------------------------------------------
+/** Like the wobbly hand, but it stops for two to four seconds between moves with the pointer HELD (a thumb resting on the glass). */
+export function thinkerBot(g, o = {}) {
+  const inner = wobblyBot(g, { pauseEvery: 1e9, ...o });
+  const rnd = roller({ rng: hashSeed('sounding-drill', 'bot', 'thinker', g.seed, o.salt || 0) });
+  let rest = 0, since = 0, last = { x: g.bit.x, y: g.bit.y };
+  return {
+    think(gg, dt) {
+      const b = g.bit;
+      since += Math.hypot(b.x - last.x, b.y - last.y); last = { x: b.x, y: b.y };
+      if (rest > 0) { rest -= dt; return { x: b.x, y: b.y, down: true }; }
+      if (since > 300 * (0.7 + 0.6 * rnd.next())) { since = 0; rest = 2 + rnd.next() * 2; return { x: b.x, y: b.y, down: true }; }
+      return inner.think(gg, dt);
+    },
+  };
+}
+
+export const BOTS = Object.freeze({ perfect: perfectBot, wobbly: wobblyBot, thinker: thinkerBot, lazy: lazyBot, mash: mashBot });
 
 /** Play one attempt to its end. Returns the result and the final game. */
 export function playBot(g, bot, { dt = 1 / 30, maxT = 140 } = {}) {

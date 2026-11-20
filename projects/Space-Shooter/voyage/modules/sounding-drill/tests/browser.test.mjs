@@ -82,7 +82,7 @@ async function drive(page, ptr, phone, { bot = 'perfect', until = () => false, m
 }
 const state = (page) => page.evaluate(() => { const g = document.querySelector('.m-sounding-drill')?.__game; if (!g) return null; const f = g.rock.finds[0]; return { t: g.t, over: g.over?.why || null, charge: g.charge / g.chargeMax, heat: g.heat, bit: { ...g.bit }, share: f.share, cracks: f.cracks, seen: f.seen, turned: g.turned, entry: { x: g.entry.x, y: g.entry.y }, attempts: g.attempts, moving: g.moving, drilling: g.drilling }; });
 
-test('sounding drill in the browser: desktop (mouse and keys) and phone (touch)', { skip, timeout: 560000 }, async () => {
+test('sounding drill in the browser: desktop (mouse and keys) and phone (touch)', { skip, timeout: 880000 }, async () => {
   const { chromium } = await loadPlaywright();
   const server = await serve();
   const browser = await chromium.launch({ headless: true });
@@ -90,6 +90,7 @@ test('sounding drill in the browser: desktop (mouse and keys) and phone (touch)'
     for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
       const phone = name === 'phone';
       const context = await browser.newContext(profile);
+      await context.addInitScript(() => { const A = window.AudioContext || window.webkitAudioContext; if (!A) return; window.__acs = []; const W = class extends A { constructor(...a) { super(...a); window.__acs.push(this); } }; window.AudioContext = W; window.webkitAudioContext = W; });
       const page = await context.newPage();
       const cdp = phone ? await context.newCDPSession(page) : null;
       const ptr = pointerFor(page, phone, cdp);
@@ -151,8 +152,14 @@ test('sounding drill in the browser: desktop (mouse and keys) and phone (touch)'
       const c0 = (await state(page)).charge;
       const stillAt = (await state(page)).bit;
       const sp = await page.evaluate(() => { const root = document.querySelector('.m-sounding-drill'), g = root.__game, v = root.__view, r = v.canvas.getBoundingClientRect(); return [r.left + (g.bit.x - v.win.x) * v.scale, r.top + (g.bit.y - v.win.y) * v.scale]; });
-      await ptr.to(sp[0], sp[1] + lift, true); await page.waitForTimeout(750); await shot('3-listen-pulse'); await ptr.up();
-      assert.ok((await state(page)).charge < c0, 'holding still spends a little of the cell on a wide pulse');
+      await ptr.to(sp[0], sp[1] + lift, true); await page.waitForTimeout(260);
+      assert.ok(await page.evaluate(async () => { const m = await import('./model.js'); const l = m.listenCharge(document.querySelector('.m-sounding-drill').__game); return l > 0.1 && l < 1; }), 'the listen is charging');
+      await shot('3a-listen-charging'); await page.waitForTimeout(500); await shot('3-listen-pulse');
+      const afterOne = (await state(page)).charge;
+      assert.ok(afterOne < c0, 'holding still spends a little of the cell on a wide pulse');
+      await page.waitForTimeout(3000);   // a thumb resting on the glass to think: still only the one listen
+      assert.equal((await state(page)).charge, afterOne, 'resting costs one listen, not a drain');
+      await ptr.up();
       assert.ok(Math.abs((await state(page)).bit.x - stillAt.x) < 30, 'and the bit stays where it is');
       if (!phone) {
         // keys: W A S D steer and Space drills
@@ -280,8 +287,14 @@ test('sounding drill in the browser: desktop (mouse and keys) and phone (touch)'
       assert.equal((await page.evaluate(() => window.__result)).success, true);
       await page.goto(url('auto=1&seed=4'));
       await page.waitForSelector('.m-sounding-drill canvas'); await page.waitForTimeout(300);
+      await ptr.to(geo.bit[0], geo.bit[1], true); await page.waitForTimeout(150); await ptr.up(); await page.waitForTimeout(200);   // a real press makes the audio context
+      assert.ok(await page.evaluate(() => (window.__acs || []).some((a) => a.state !== 'closed')), 'an audio context is live while playing');
+      assert.equal(await page.evaluate(() => typeof window.__leave), 'function', 'the module registered ctx.onLeave(fn)');
       await page.click('#leave'); await page.waitForFunction(() => window.__result);
-      assert.equal((await page.evaluate(() => window.__result)).left, true, 'Leave resolves { left: true }');
+      const left = await page.evaluate(() => window.__result);
+      assert.equal(left.left, true, 'Leave resolves { done: true, left: true }'); assert.equal(left.done, true);
+      await page.waitForFunction(() => (window.__acs || []).every((a) => a.state === 'closed'), null, { timeout: 5000 });
+      assert.equal(await page.evaluate(() => document.querySelectorAll('.m-sounding-drill').length), 0, 'the screen is gone');
       assert.deepEqual(errors, [], `no page errors: ${errors.join(' | ')}`);
       await context.close();
     }
