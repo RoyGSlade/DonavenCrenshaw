@@ -62,7 +62,8 @@
               "engine-cooling",
               "weapon-cooling",
               "reactor-loop",
-              "life-support"
+              "life-support",
+              "wellness-foam"
             ],
             "say": "repair system is one of engine-cooling, weapon-cooling, reactor-loop, life-support"
           }
