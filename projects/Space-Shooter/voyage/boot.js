@@ -737,6 +737,16 @@ function boot(session = { mode: 'local' }) {
     });
   }
 
+  // Playtest chunks: ?newgame=1&chapter=4 starts at scene 4 with scenes 1-3 played (slice/chapterStart.js). Once, then the address drops it.
+  if (slice && params.get('chapter')) {
+    import('./slice/chapterStart.js').then(({ chapterOf, playedTo }) => {
+      const n = chapterOf(params.get('chapter'));
+      const url = new URL(location.href); url.searchParams.delete('chapter');
+      if (n) { try { store.update((s) => playedTo(s, n)); } catch (error) { console.warn('Stardust:', error.message); } }
+      location.replace(url);
+    });
+  }
+
   // For tests and poking around in the console (no secrets: the save is the player's own).
   setTimeout(maybeControls, 600);
   window.__stardust = { sfx, mood, audio, talkRange, presence, statuses, store, story, onfoot, place, jobs, licence, bus, pad, tracker, controls, pause, jobTalk, jobCard, crew, slice, workbench: workbenchRoom };
