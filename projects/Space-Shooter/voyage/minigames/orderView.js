@@ -71,7 +71,7 @@ export function playOrder(root, { state, what = 'steak', reducedMotion = () => f
   const COST = { heat: 'the pan was not in its heat band', time: 'it was outside its window' };
   const geo = () => {
     const tubeW = Math.min(30, W * 0.06), tx = Math.max(18, W * 0.07), ty = H * 0.1, th = H * 0.7;
-    const rx = Math.min(W * 0.3, H * 0.62), ry = rx * 0.4, cx = W * 0.58, cy = H * 0.6;
+    const rx = Math.min(W * 0.27, H * 0.5), ry = rx * 0.4, cx = W * 0.58, cy = H * 0.52;
     return { tubeW, tx, ty, th, rx, ry, cx, cy };
   };
   function handle(ev) {
