@@ -50,6 +50,8 @@ for (const [size, profile] of SIZES) {
       await shot(page, 'hatch-cut', size);
       await page.waitForFunction(() => window.__rec.order.includes('blown'), null, { timeout: 40000 });
       await page.waitForFunction(() => window.__rec.order.includes('reavers'), null, { timeout: 20000 });
+      await page.waitForFunction(() => { const a = window.__stardust.onfoot.world.stage.snapshot().actors.find((x) => x.id === 'r1'); return a && a.x <= 640; }, null, { timeout: 8000 }).catch(() => {});
+      await shot(page, 'reaver-at-hatch', size);
       await settle(page, 700);
       await shot(page, 'reavers-through-hatch', size);
       await page.waitForFunction(() => window.__rec.order.includes('reck-down'), null, { timeout: 30000 });

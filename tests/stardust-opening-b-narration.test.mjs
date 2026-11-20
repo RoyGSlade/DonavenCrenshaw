@@ -47,3 +47,20 @@ test('jobTalk shows a performed direction nowhere, a plain one as a caption that
   assert.equal(said.length, 2, 'the line did not wait for the caption');
   bus.emit('story:choose', { index: 0 }); await p2;
 });
+
+test('in danger there is no Later, and the roll hint has no digits', async () => {
+  const bus = createBus();
+  const asked = [];
+  bus.on('story:choices', (d) => { if (d) asked.push(d.options.map((o) => o.label)); });
+  const jt = createJobTalk({ bus, store: { get: () => ({}) } });
+  const view = { quest: { id: 'visitors' }, node: 'reck-falls', portrait: 'reck', speaker: 'Reck', text: 'x', choices: [{ index: 0, label: 'Duck', locked: false, check: { name: 'Stealth', dc: 8, chance: 0.5, roll: 'd20 + Stealth 1' } }, { index: 1, label: 'Stand', locked: false }] };
+  const p1 = jt.beat(view); await new Promise((r) => setTimeout(r, 20));
+  assert.ok(asked[0].includes('Later'), 'calm: Later is there');
+  bus.emit('story:choose', { index: 1 }); await p1;
+  bus.emit('audio:mood', { mode: 'danger' });
+  const p2 = jt.beat(view); await new Promise((r) => setTimeout(r, 20));
+  assert.ok(!asked.at(-1).includes('Later'), 'danger: no Later');
+  assert.equal(asked.at(-1).length, 2);
+  bus.emit('story:choose', { index: 1 }); await p2;
+  bus.emit('audio:mood', { mode: 'calm' });
+});

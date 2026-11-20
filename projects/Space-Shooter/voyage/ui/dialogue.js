@@ -165,7 +165,7 @@ export function createDialogueBox({ root, bus, audio, reducedMotion = () => fals
         const odds = document.createElement('small');
         odds.className = 'ui-dlg-odds';
         // Opening B: an approach's roll buys help and time; it does not decide the outcome.
-        odds.textContent = o.approach ? `Roll ${o.roll || 'd20'}: sets your help and time` : `Roll ${o.roll || 'd20'} vs ${o.dc}: ${Math.round(o.chance * 100)}%`;
+        odds.textContent = o.approach ? `${o.name || 'Skill'} check: how much help and time you get` : o.plain ? `${o.name || 'Skill'} check: ${o.minigame ? 'the roll sets how hard the game is' : 'the roll decides it'}` : `Roll ${o.roll || 'd20'} vs ${o.dc}: ${Math.round(o.chance * 100)}%`;
         b.append(odds);
       }
       if (o.locked && o.reason) {

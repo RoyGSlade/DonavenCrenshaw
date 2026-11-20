@@ -20,7 +20,7 @@ for (const [size, profile] of SIZES) {
     try {
       await toChoices(page);
       const odds = await page.locator('#hg-dialogue .ui-dlg-choice', { hasText: "cutter's readout" }).locator('.ui-dlg-odds').innerText();
-      assert.match(odds, /sets your help and time/, 'the option says what the roll is for');
+      assert.match(odds, /check: how much help and time you get/, 'the option says what the roll is for');
       assert.doesNotMatch(odds, /\d+%/, 'no pass chance on an approach');
       await page.locator('#hg-dialogue .ui-dlg-choice', { hasText: "cutter's readout" }).click();
       await page.waitForSelector('.op-approach', { timeout: 8000 });

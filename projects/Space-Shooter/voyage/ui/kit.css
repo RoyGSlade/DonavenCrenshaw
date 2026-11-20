@@ -358,3 +358,4 @@
 .ui-dialogue.is-danger .ui-dlg-choices{margin-top:4px;gap:4px}
 .ui-dialogue.is-danger .ui-dlg-choice{min-height:38px;padding:2px 10px}
 @media (max-width:700px){body:not(.hg-sheet-open) .ui-dialogue.is-danger{top:auto;bottom:150px}}
+.ui-dialogue.is-danger .ui-dlg-choice.is-later{display:none}

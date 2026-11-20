@@ -25,6 +25,8 @@ for (const [size, profile] of SIZES) {
           return { done: Object.keys(store.quests.done || {}), quest: run?.quest || null, node: run?.node || null, mode: w.mode, map: w.map.id, retry: Boolean(document.querySelector('.op-retry-btn')), card: card && !card.hidden, approach: document.querySelector('.op-approach')?.dataset.phase || (document.querySelector('.op-approach') ? 'work' : null), sheet: !document.querySelector('#hg-minigame').hidden, pending: S.slice?.pendingRoom || null, choices: [...document.querySelectorAll('#hg-dialogue .ui-dlg-choice')].map((b) => ({ t: b.textContent.replace(/\s+/g, ' ').trim(), kind: b.dataset.kind, dis: b.disabled || b.hasAttribute('data-wait') })), skipping: Boolean(document.querySelector('.of-fade.on')), texts: ['#hg-dialogue', '.op-caption', '#dp-jobcard', '.op-approach'].map((q) => { const n = document.querySelector(q); return n && !n.hidden ? n.innerText : ''; }).join(' | '), danger: Boolean(document.body.dataset.danger), nextShown: [...document.querySelectorAll('.ui-dlg-next')].some((n) => n.offsetParent !== null) };
         });
         if (CAMERA_WORDS.test(st.texts) || /(^|\| )\s*Cut to/i.test(st.texts)) (notes.cameraText ||= []).push(st.texts.slice(0, 160));
+        if (st.danger && st.choices.some((c) => /^Later\b/.test(c.t))) (notes.laterInDanger ||= []).push(`${st.quest}/${st.node}`);
+        if (/Roll d20|d20 \+/.test(st.texts)) (notes.digitsOnChoice ||= []).push(st.texts.slice(0, 120));
         if (st.danger && st.nextShown) (notes.nextInDanger ||= []).push(`${st.quest}/${st.node}`);
         const key = `${st.quest}/${st.node}/${st.mode}/${st.approach}/${st.card}`;
         if (key === lastNode) same++; else { same = 0; lastNode = key; }
@@ -61,6 +63,8 @@ for (const [size, profile] of SIZES) {
       notes.frames = r.frames; notes.cuts = r.cuts; notes.maxChange = r.maxChange; notes.captions = r.captions; notes.errors = errors;
       if (PROOF) fs.writeFileSync(`${PROOF}/playthrough-${size}.json`, JSON.stringify(notes, null, 1));
       assert.equal(notes.cameraText, undefined, `camera language reached the screen: ${JSON.stringify(notes.cameraText)}`);
+      assert.equal(notes.laterInDanger, undefined, `Later showed in danger: ${JSON.stringify(notes.laterInDanger)}`);
+      assert.equal(notes.digitsOnChoice, undefined, `raw roll maths on a choice: ${JSON.stringify(notes.digitsOnChoice)}`);
       assert.equal(notes.nextInDanger, undefined, `a Next box showed in danger: ${JSON.stringify(notes.nextInDanger)}`);
       assert.equal(notes.stuck, null, `stuck: ${JSON.stringify(notes.stuck)}`);
       assert.deepEqual(r.cuts, [], 'no hard cut in six scenes');

@@ -14,6 +14,7 @@ import { offersAt } from '../quests/offers.js';
 import { lineById, fillLine } from '../story/lines.js';
 import { voiceUrl } from '../story/voice.js';
 import { beatMode } from '../slice/narration.js';
+import { isSliceQuest } from '../slice/rules.js';
 
 const W = OFFERS_DATA.words;
 const fill = (text, vars) => String(text).replace(/\{(\w+)\}/g, (_, k) => (vars[k] ?? ''));
@@ -37,6 +38,8 @@ export function pausableTimer(bus, fn, ms) {
  * holds the floor while a talk or a beat is up. name(): the captain's name for {name}.
  */
 export function createJobTalk({ bus, store, take = () => {}, onBusy = () => {}, name = () => '' }) {
+  let danger = false; // while Reavers are aboard there is no "Later": nobody walks off from a boarding
+  bus.on('audio:mood', (d) => { danger = d?.mode === 'danger' || d?.mode === 'combat'; });
   let seq = 0;
   let asking = null; // { token, resolve }
   let busy = 0;
@@ -136,11 +139,11 @@ export function createJobTalk({ bus, store, take = () => {}, onBusy = () => {}, 
         label: c.label,
         locked: c.locked,
         reason: c.locked ? (c.reasons || [])[0] || '' : '',
-        ...(c.check ? { kind: 'attempt', chance: c.check.chance, dc: c.check.dc, roll: c.check.roll, approach: Boolean(v.approach?.[c.index]), ...(v.approach?.[c.index] ? { verb: v.approach[c.index].verb } : {}) } : { kind: 'choice' }),
+        ...(c.check ? { kind: 'attempt', name: c.check.name, plain: isSliceQuest(v.quest?.id), minigame: Boolean(c.minigame), chance: c.check.chance, dc: c.check.dc, roll: c.check.roll, approach: Boolean(v.approach?.[c.index]), ...(v.approach?.[c.index] ? { verb: v.approach[c.index].verb } : {}) } : { kind: 'choice' }),
       }));
       // Only one plain choice (a lone "Go on"): it takes itself once the line has had time to be read (the clock stops while the talk is paused).
       const lone = options.length === 1 && !options[0].locked && options[0].kind === 'choice' ? options[0] : null;
-      const answer = ask([...options, { index: -1, label: W.later, kind: 'later' }]);
+      const answer = ask(danger ? options : [...options, { index: -1, label: W.later, kind: 'later' }]);
       let stopAuto = () => {};
       if (lone && !choicesOnly) {
         const fire = () => { if (asking) { const a = asking; asking = null; bus.emit('story:choices', null); a.resolve(lone.index); } };

@@ -14,7 +14,6 @@ export const BUBBLE = Object.freeze({ maxChars: 70, lineMs: 2600, perChar: 38 })
 /** How long a bubble stays: a floor plus reading time, so a long line is not gone before it is read. */
 export const bubbleMs = (text) => Math.max(BUBBLE.lineMs, 1100 + BUBBLE.perChar * String(text || '').length);
 
-const GUARD_LIFT = 'brightness(2.1) saturate(2.2) contrast(1.1)';
 const TAU = Math.PI * 2;
 
 export function createStage({ reducedMotion = () => false } = {}) {
@@ -179,7 +178,7 @@ export function createStage({ reducedMotion = () => false } = {}) {
     const out = [];
     for (const a of actors.values()) {
       if (a.hidden) continue;
-      out.push({ y: a.y, draw: () => { ctx.save(); if (a.down) ctx.globalAlpha = 0.8; drawBody(ctx, a.x, a.y, a.angle, sprite(a.art), { size: 46 * playerArt().scale * a.scale, lift: GUARD_LIFT, t: t + a.phase, moving: a.moving, stride: (t * 2.2 + a.phase) % 4, hit: a.hit, tint: '#ffad72' }); ctx.restore(); } });
+      out.push({ y: a.y, draw: () => { ctx.save(); if (a.down) ctx.globalAlpha = 0.8; drawBody(ctx, a.x, a.y, a.angle, sprite(a.art), { size: 46 * playerArt().scale * a.scale, lift: null, t: t + a.phase, moving: a.moving, stride: (t * 2.2 + a.phase) % 4, hit: a.hit, tint: '#ffad72' }); ctx.restore(); } });
     }
     return out;
   }
