@@ -10,8 +10,20 @@
 - `index.js`: `play(stage, ctx) -> Promise<result>` (contract 1.1).
 - `model.js`: rules. `rng.js`: copy of the quest rng. `bots.js`: the four bots (used by the tests).
 - `view.js`, `sound.js` (WebAudio synth, no files), `style.css`, `art/` (kit frames and nine item pictures reused from the Driftwake library).
+- `tests/model.test.mjs` (pure, about 25 s) and `tests/browser.test.mjs` (desktop mouse and keys, phone touch).
 - `fixtures.json`: the items and rocks used when the host gives none.
 - `test.html`: the standalone page (panel for seed, tier, points, quick, context; full-screen stage; Leave).
 
 ## Notes for the next builder
 See `LESSONS.md` in the lane folder and the READY report. Every number is a placeholder until a real hand says otherwise; the numbers live in `BASE` at the top of `model.js`.
+
+## Run it
+- Pure tests: `node --test projects/Space-Shooter/voyage/modules/sounding-drill/tests/model.test.mjs` (`SWEEP_N=300` for a bigger bot sweep).
+- Browser test: `STARDUST_BROWSER_TEST=1 PROOF_DIR=<folder> <browser-slot> node --test .../tests/browser.test.mjs` (set `PLAYWRIGHT_MODULE`).
+- By hand: serve the repo root with any static server and open `modules/sounding-drill/test.html?auto=1&seed=3`.
+
+## The result the host gets
+`{ done, success, grade 0..100, perfect, xp, why: 'claw'|'cell'|'shattered', finds: [{ item, kind, freed, cracks, seen, x, y, r, isFreed }], tunnel: { cell, w, h, rows, entry, board }, chargeLeft, turned, canTurn, effects: {} | { items: { scrap: 1 } }, resume }` (or `{ left: true }` if the player left).
+
+## Context the host can give
+`ctx.context.rock = { size, finds: [{ item, kind, main? }] }`, `ctx.context.items = { id: { name, icon, colour } }`, `ctx.context.resume` (a previous result's `resume`). With no rock, one is rolled from `fixtures.json`. `ctx.quick` shrinks it to a small rock with one find. `ctx.points = { awareness, inspection, trace }`.
