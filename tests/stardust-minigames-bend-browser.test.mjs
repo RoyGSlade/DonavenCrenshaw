@@ -119,7 +119,7 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
         // layout: the play block is grouped and centred, only the action row sits at the bottom, and it all fits on the screen
         const lay = await page.evaluate((sel) => { const q = (s) => document.querySelector(`${sel} ${s}`).getBoundingClientRect(); const hud = q('.cc-bendhud'), cv = q('canvas'), row = q('.cc-bendrow'), sc = document.querySelector('.wb-full').getBoundingClientRect(); return { hudBottom: hud.bottom, cvTop: cv.top, cvBottom: cv.bottom, cvW: cv.width, rowTop: row.top, rowBottom: row.bottom, vh: innerHeight, vw: innerWidth, scBottom: sc.bottom }; }, PANEL);
         assert.ok(lay.cvTop - lay.hudBottom < 24, `the HUD and the board stay together: ${JSON.stringify(lay)}`);
-        assert.ok(lay.rowBottom <= lay.vh + 1 && lay.rowBottom >= lay.vh - 40, `the action row pins to the bottom: ${JSON.stringify(lay)}`);
+        assert.ok(lay.rowBottom <= lay.vh + 1 && lay.rowBottom >= lay.vh - 100, `the action row pins to the bottom (above the chip strip): ${JSON.stringify(lay)}`);
         assert.ok(lay.cvBottom <= lay.rowTop + 1, 'the board does not run under the pads');
         if (phone) assert.ok(lay.cvW >= profile.viewport.width - 32, `the board is full width on a phone: ${lay.cvW}`);
         const padSize = await page.evaluate((sel) => [...document.querySelectorAll(`${sel} .cc-pad, ${sel} .cc-set`)].map((b) => { const r = b.getBoundingClientRect(); return [Math.round(r.width), Math.round(r.height)]; }), PANEL);

@@ -89,7 +89,7 @@
 .cc-pips{display:flex;gap:6px;min-height:20px;align-items:center}
 .cc-pips i{width:14px;height:14px;border-radius:50%;border:2px solid #6b7f8c;background:#0b1620}
 .cc-pips i.on{background:#9fe870;border-color:#d8ffd0;box-shadow:0 0 8px #9fe870}.cc-pips i.now{border-color:#81e6df;box-shadow:0 0 6px #81e6df}
-.cc-bendwrap{width:min(100%,880px,calc((100dvh - 330px) * 1.5385));margin:0 auto}
+.cc-bendwrap{width:min(100%,880px,calc((100dvh - 380px) * 1.5385));margin:0 auto}
 .cc-bendcanvas{cursor:default}
 .cc-play{display:grid;gap:8px}
 .cc-bendrow{display:grid;grid-template-columns:1fr .8fr 1fr;gap:10px;align-items:stretch}
@@ -104,7 +104,7 @@
 .wb-full .cc-bendpanel{gap:6px}
 .wb-full .cc-play{flex:1;min-height:0;align-content:center;justify-items:center}
 .wb-full .cc-play>*{width:100%}
-.wb-full .cc-bendwrap{flex:none;width:min(100%,880px,calc((100dvh - 330px) * 1.5385));display:block}
+.wb-full .cc-bendwrap{flex:none;width:min(100%,880px,calc((100dvh - 380px) * 1.5385));display:block}
 .wb-full .cc-bendwrap .cc-canvas{width:100%;height:auto}
 .wb-full .cc-bendrow{padding-bottom:max(6px,env(safe-area-inset-bottom))}
 @media (max-width:700px){
