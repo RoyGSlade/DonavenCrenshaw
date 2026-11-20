@@ -92,7 +92,7 @@ export default {
       "line": "tull.s1.2",
       "emotion": "warm",
       "direction": "Quick and breezy, like he is selling a timeshare.",
-      "text": "Jungle Wellness 4 is a little moist. Mop it. Sign here. Do not ask me about the board.",
+      "text": "The holodeck gym is a little moist. Jungle Wellness 4, the sign says. Mop it. Sign here. Do not ask me about the board.",
       "choices": [
         {
           "label": "Where is this gym?",
