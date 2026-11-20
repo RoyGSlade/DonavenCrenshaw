@@ -83,7 +83,7 @@ test('objects: every console and repair point on the Tin Duchess has a screen or
   for (const id of ['duchess-airlock', 'duchess-bridge', 'duchess-cargo', 'duchess-corridor', 'duchess-engine', 'duchess-holodeck', 'duchess-mess', 'duchess-pad', 'duchess-quarters']) {
     for (const p of MAP_DEFS[id].props || []) {
       const it = p.interact;
-      if (!it || !['console', 'repair'].includes(it.kind) || OTHER_TRACK.has(it.id)) continue;
+      if (!it || !['console', 'repair'].includes(it.kind) || OTHER_TRACK.has(it.id) || it.task) continue; // an interact with a hands-on task is played by slice/handsOn (track C)
       if (!SCREENS[`${it.kind}:${it.id}`] && !STAND_IN[it.id]) missing.push(`${id}/${it.id}`);
     }
   }
