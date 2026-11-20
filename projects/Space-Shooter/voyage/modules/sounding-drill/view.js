@@ -70,7 +70,10 @@ export function mountGame(stage, ctx, { fixtures, items, rock, resume, quick, on
   root.classList.toggle('is-wide', wideNow());
   const area = scope.getBoundingClientRect();
   let board = boardFor(Math.max(200, area.width), Math.max(200, area.height));
-  const g = createGame({ seed: ctx.seed ?? 1, tier: ctx.tier ?? 0, points: ctx.points || {}, quick, board, rock, items, fixtures, resume });
+  // On a small screen the rock is drawn small, so the bit runs faster in rock units: the same pace under the thumb.
+  const estScale = Math.min(area.width / board.w, area.height / board.h) * 1.12;
+  const speedK = Math.max(1, Math.min(1.9, 0.95 / Math.max(0.2, estScale)));
+  const g = createGame({ seed: ctx.seed ?? 1, tier: ctx.tier ?? 0, points: ctx.points || {}, quick, board, rock, items, fixtures, resume, speedK });
   const R = g.rock;
   const itemOf = (f) => R.itemMap?.[f.item] || {};
   // The window onto the board: the rock and a margin, so a small rock fills the screen rather than floating in it.
@@ -159,6 +162,8 @@ export function mountGame(stage, ctx, { fixtures, items, rock, resume, quick, on
   let dustSeed = (g.seed * 2654435761) >>> 0;
   const rnd = () => { dustSeed = (Math.imul(dustSeed, 1664525) + 1013904223) >>> 0; return dustSeed / 4294967296; };
   const dust = [];
+  const burst = (f, n, sp) => { if (reduced) return; const col = hex(f.colour); for (let i = 0; i < n; i++) { const a = rnd() * 6.283, v = sp * (0.4 + rnd()); dust.push({ x: f.x, y: f.y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 0.7 + rnd() * 0.6, age: 0, col, s: 1.6 + rnd() * 2 }); } };
+  const freedBefore = R.finds.map(() => false);
   const crackFx = [];
   let lastDraw = 0, frame = 0, raf = 0, destroyed = false;
   const view = { win, get scale() { return scale; }, g, root, canvas, ptr, kb, toWorld, board };
@@ -169,7 +174,7 @@ export function mountGame(stage, ctx, { fixtures, items, rock, resume, quick, on
       case 'ping': sound.ping(ev.reach / 200); break;
       case 'listen': sound.listen(); listened = true; break;
       case 'tink': sound.tink(ev.kind, ev.d, g.rules.reach); break;
-      case 'found': break;
+      case 'found': burst(R.finds[ev.find], 14, 70); navigator.vibrate?.(12); break;
       case 'grind': sound.grind(); if (!reduced) shake = Math.max(shake, 0.25); break;
       case 'seize': sound.clunk(); shake = 0.8; for (let i = 0; i < 14; i++) dust.push({ x: g.bit.x, y: g.bit.y, vx: (rnd() - 0.5) * 120, vy: -rnd() * 90, life: 0.9 + rnd() * 0.7, age: 0, hot: true, s: 2 + rnd() * 2 }); break;
       case 'crack': sound.crack(); shake = 1; flash = 1; navigator.vibrate?.(35); crackFx.push({ find: ev.find, n: ev.cracks, t: 0 }); break;
@@ -252,7 +257,7 @@ export function mountGame(stage, ctx, { fixtures, items, rock, resume, quick, on
 
     // the tunnel you have cut: a slightly lighter dark
     const td = tunnelL.img.data;
-    for (let i = 0; i < R.gw * R.gh; i++) { const o = i * 4; if (g.cut[i]) { td[o] = 20; td[o + 1] = 34; td[o + 2] = 46; td[o + 3] = 255; } else { td[o + 3] = 0; } }
+    for (let i = 0; i < R.gw * R.gh; i++) { const o = i * 4; if (g.cut[i]) { td[o] = 27; td[o + 1] = 48; td[o + 2] = 64; td[o + 3] = 255; } else { td[o + 3] = 0; } }
     tunnelL.x.putImageData(tunnelL.img, 0, 0);
     c.imageSmoothingEnabled = true; c.drawImage(tunnelL.c, 0, 0, R.W, R.H);
 
@@ -328,7 +333,7 @@ export function mountGame(stage, ctx, { fixtures, items, rock, resume, quick, on
     // dust and sparks
     for (const d of dust) {
       const a = Math.max(0, 1 - d.age / d.life);
-      c.fillStyle = d.hot ? `rgba(255,${150 + Math.floor(a * 80)},90,${a * 0.9})` : `rgba(150,170,185,${a * 0.55})`;
+      c.fillStyle = d.col ? rgba(d.col, a * 0.95) : d.hot ? `rgba(255,${150 + Math.floor(a * 80)},90,${a * 0.9})` : `rgba(150,170,185,${a * 0.55})`;
       c.beginPath(); c.arc(d.x, d.y, d.s / scale * (0.6 + 0.4 * a) * 1.4, 0, 7); c.fill();
     }
 
@@ -505,6 +510,7 @@ export function mountGame(stage, ctx, { fixtures, items, rock, resume, quick, on
       if (!lowSaid && g.charge < g.chargeMax * 0.18) { lowSaid = true; sound.low(); }
     } else sound.drill(false);
     for (const ev of drain(g)) onEvent(ev);
+    R.finds.forEach((f, i) => { const fr = isFreed(f); if (fr && !freedBefore[i] && phase === 'play') { sound.freed(); burst(f, 22, 110); navigator.vibrate?.([20, 30, 20]); flash = Math.max(flash, 0.5); } freedBefore[i] = fr; });
     if (g.over && phase === 'play') {
       sound.drill(false);
       const ok = resultOf(g).success;

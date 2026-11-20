@@ -329,6 +329,18 @@ test('plain words for the HUD, never digits', () => {
   assert.ok(!/\d/.test(mainProgress(g).word));
 });
 
+test('a small screen gets a faster bit (speedK), and the game stays playable at that pace', () => {
+  const dist = (k) => { const g = bare({ speedK: k }); const x0 = g.bit.x, y0 = g.bit.y; run(g, 0.5, { x: g.rock.cx, y: g.rock.cy, down: true }); return Math.hypot(g.bit.x - x0, g.bit.y - y0); };
+  assert.ok(Math.abs(dist(1.8) / dist(1) - 1.8) < 0.08, 'the bit runs 1.8 times faster');
+  assert.equal(rulesFor({ speedK: 99 }).speedK, 2.2); assert.equal(rulesFor({ speedK: 0 }).speedK, 1);
+  let perfect = 0, wob = 0; const n = 30;
+  for (let seed = 1; seed <= n; seed++) {
+    const a = createGame({ seed, tier: 0, board: LAYOUTS.tall, fixtures, speedK: 1.8 }), b = createGame({ seed, tier: 0, board: LAYOUTS.tall, fixtures, speedK: 1.8 });
+    if (playBot(a, BOTS.perfect(a)).success) perfect++; if (playBot(b, BOTS.wobbly(b)).success) wob++;
+  }
+  assert.ok(perfect / n >= 0.97, `perfect at speed 1.8: ${perfect}/${n}`); assert.ok(wob / n >= 0.7, `wobbly at speed 1.8: ${wob}/${n}`);
+});
+
 test('quick mode: a small rock, one find, no bonus finds, a smaller cell', () => {
   for (let seed = 1; seed <= 12; seed++) {
     const q = mk({ seed, quick: true }), n = mk({ seed });

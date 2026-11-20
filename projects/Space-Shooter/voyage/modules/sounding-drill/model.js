@@ -47,7 +47,7 @@ export function cleanPoints(points) {
 }
 
 /** What a roll and the points do to the game (all in one place so tests and the view agree). */
-export function rulesFor({ tier = 0, points = {}, quick = false, board = { w: 1000, h: 760 } } = {}) {
+export function rulesFor({ tier = 0, points = {}, quick = false, board = { w: 1000, h: 760 }, speedK = 1 } = {}) {
   const t = tierOf(tier);
   const info = tierInfo(t);
   const p = cleanPoints(points);
@@ -55,6 +55,7 @@ export function rulesFor({ tier = 0, points = {}, quick = false, board = { w: 10
   const u = board.w / 1000;                   // a narrower (phone) board sees proportionally less far
   return {
     tier: t, label: info.label, points: p, quick: !!quick,
+    speedK: Math.max(0.5, Math.min(2.2, Number(speedK) || 1)),   // the view asks for a faster bit when the rock is drawn small (a phone)
     charge: BASE.charge * info.time * sizeK * (quick ? BASE.quickCharge : 1),
     reach: BASE.reach * u * (1 + 0.1 * t) * (1 + 0.05 * p.awareness),
     reachTime: BASE.reachTime,
@@ -273,8 +274,8 @@ export function makeRock({ seed = 1, board = { w: 1000, h: 760 }, quick = false,
 // The game
 
 /** Start a game. `resume` (a previous result's `resume`) brings back old tunnels, cracks and the turn count. */
-export function createGame({ seed = 1, tier = 0, points = {}, quick = false, board = { w: 1000, h: 760 }, rock = null, items = null, fixtures = {}, resume = null } = {}) {
-  const rules = rulesFor({ tier, points, quick, board });
+export function createGame({ seed = 1, tier = 0, points = {}, quick = false, board = { w: 1000, h: 760 }, rock = null, items = null, fixtures = {}, resume = null, speedK = 1 } = {}) {
+  const rules = rulesFor({ tier, points, quick, board, speedK });
   const R = makeRock({ seed, board, quick, rock, fixtures, items, veins: rules.veins });
   const n = R.gw * R.gh;
   const g = {
@@ -470,7 +471,7 @@ export function step(g, dt, input = {}) {
     const pc = cellIndex(R, g.bit.x + ux * pd, g.bit.y + uy * pd);
     const solidAhead = pc >= 0 && !isOpen(g, pc);
     g.frontKind = probe === K.OUT ? K.SOFT : (solidAhead ? probe : K.HOLLOW);
-    const v = solidAhead ? (probe === K.VEIN ? BASE.speed.vein : BASE.speed.soft) : BASE.speed.open;
+    const v = (solidAhead ? (probe === K.VEIN ? BASE.speed.vein : BASE.speed.soft) : BASE.speed.open) * rules.speedK;
     const s = Math.min(v * dt, L);
     let nx = g.bit.x + ux * s, ny = g.bit.y + uy * s;
     // stay inside the rock; slide along the rim
@@ -498,7 +499,7 @@ export function step(g, dt, input = {}) {
       g.charge -= cost;
       if (cost > 0 || solidAhead) {
         g.drilling = true;
-        g.heat += (g.frontKind === K.VEIN ? H.vein : H.soft) * dt; cooling = false;
+        g.heat += (g.frontKind === K.VEIN ? H.vein : H.soft) * rules.speedK * dt; cooling = false;
         if (g.frontKind === K.VEIN) g.events.push({ type: 'grind' });
       } else { g.heat = Math.max(0, g.heat - H.openCool * dt); cooling = false; }
       g.travel += mv;

@@ -70,6 +70,7 @@ export function makeSound() {
     shatter() { if (!ready()) return; burst(0.6, { freq: 2200, q: 0.6, gain: 0.25, type: 'highpass' }); tone(90, 0.6, { type: 'sawtooth', gain: 0.1, slide: 0.3 }); },
     low() { if (!ready()) return; tone(200, 0.18, { type: 'square', gain: 0.05 }); tone(200, 0.18, { type: 'square', gain: 0.05, delay: 0.24 }); },
     claw() { if (!ready()) return; tone(180, 0.6, { type: 'sawtooth', gain: 0.05, slide: 0.6 }); tone(380, 0.25, { type: 'triangle', gain: 0.09, delay: 0.62, slide: 1.2 }); },
+    freed() { if (!ready()) return; tone(660, 0.18, { type: 'triangle', gain: 0.09 }); tone(990, 0.35, { type: 'triangle', gain: 0.1, delay: 0.12 }); },
     win() { if (!ready()) return; [520, 660, 880].forEach((f, i) => tone(f, 0.4, { type: 'triangle', gain: 0.08, delay: i * 0.11 })); },
     lose() { if (!ready()) return; tone(260, 0.5, { type: 'triangle', gain: 0.08, slide: 0.5 }); },
     destroy() { try { whine?.stop(); } catch { /* already stopped */ } try { ac?.close(); } catch { /* closed */ } ac = null; whine = null; },
