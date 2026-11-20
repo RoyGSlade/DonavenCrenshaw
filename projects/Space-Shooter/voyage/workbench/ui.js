@@ -91,6 +91,18 @@ export function renderSparPicker(root, { count, onCount, onStart, onClose }) {
     h('div', { class: 'gm-row' }, button('Start the fight', onStart, { class: 'primary wb-start', primary: true }), button('Not now', onClose)));
 }
 
+/** The flight console's menu: touchdown on the pad, or docking at the star base (one d20 roll sets either). */
+export function renderFlightMenu(root, { onPick, onClose }) {
+  const items = [
+    ['touchdown', 'Touchdown', 'Bring the ship down on the lit pad slower than the safe speed. About 12 seconds.'],
+    ['docking', 'Dock at the star base', 'Line up in the lit corridor of a turning base, match its sweep, and clamp on. About 15 to 25 seconds.'],
+  ];
+  root.replaceChildren(
+    h('p', { class: 'bn-day', text: 'One d20 roll sets how rough or smooth the flight is.' }),
+    ...items.map(([id, name, what]) => h('div', { class: 'wb-craftrow' }, button(name, () => onPick(id), { class: 'wb-f', 'data-flight': id }), h('span', { class: 'rp-help', text: what }))),
+    h('div', { class: 'gm-row' }, button('Not now', onClose, { class: 'wb-no' })));
+}
+
 /** The crafting bench's menu: the chain's games and recipe, the older heat-and-shape game, the cutter's grade, and a part left in hand. */
 export function renderCraftMenu(root, { part = null, partWords = '', tool = 'shop', onPick, onTool, onClose }) {
   const items = [

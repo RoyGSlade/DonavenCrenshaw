@@ -79,7 +79,7 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
       await bootRoom(page, server.origin);
 
       await sub('repair, hack, pilot, stealth grid, persuade, intimidate, haggle, heat and shape open full screen', async () => {
-        for (const [id, pre] of [['repair'], ['hack', '.wb-w[data-where="foot"]'], ['pilot'], ['stealth'], ['persuade'], ['intimidate'], ['haggle'], ['craft', '.wb-c[data-craft="heat"]']]) {
+        for (const [id, pre] of [['repair'], ['hack', '.wb-w[data-where="foot"]'], ['pilot', '.wb-f[data-flight="touchdown"]'], ['stealth'], ['persuade'], ['intimidate'], ['haggle'], ['craft', '.wb-c[data-craft="heat"]']]) {
           const xp = await xpBefore();
           await use(page, `wb-${id}`);
           if (pre) { await page.waitForSelector(pre); await tap(pre); }

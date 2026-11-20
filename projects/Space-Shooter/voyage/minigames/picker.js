@@ -6,7 +6,7 @@
 // card and the game cannot disagree. Shooting has no minigame: its three
 // categories are listed with no numbers yet.
 import { STEALTH } from '../onfoot/rules/stealth.js';
-import { POINT_MAX, REPAIR_BASE, setupRepair, setupHack, setupPersuade, setupIntimidate, setupPilot, setupPerihelion, setupShooting } from './setup.js';
+import { POINT_MAX, REPAIR_BASE, setupRepair, setupHack, setupPersuade, setupIntimidate, setupPilot, setupDocking, setupPerihelion, setupShooting } from './setup.js';
 
 const f1 = (n) => (Math.round(n * 10) / 10).toString();
 const plus = (n, unit) => `${n > 0 ? '+' : ''}${f1(n)}${unit}`;
@@ -21,9 +21,9 @@ export const CATEGORIES = Object.freeze({
     { id: 'ammo', name: 'Bigger ammo capacity', words: (n) => `${setupShooting({ points: { ammo: n }, level: 9 }).magazine} rounds in a magazine` },
     { id: 'spray', name: 'Narrower spray pattern', words: (n) => { const s = setupShooting({ points: { spray: n }, level: 9 }); return `crosshair bloom ${s.spread} wide at rest, ${s.kick} more with each shot`; } } ] },
   piloting: { built: true, cats: [
-    { id: 'handling', name: 'Handling', words: (n) => `drift power ${f1(setupPilot({ points: { handling: n }, level: 9 }).drift)} in a landing` },
-    { id: 'boost', name: 'Boost', words: (n) => { const b = setupPilot({ points: { boost: n }, level: 9 }); return `${b.fuel} s of thrust, ${b.brakes} emergency brake${b.brakes === 1 ? '' : 's'} per landing`; } },
-    { id: 'landing', name: 'Landing', words: (n) => `safe touchdown speed ${setupPilot({ points: { landing: n }, level: 9 }).safe}` } ] },
+    { id: 'handling', name: 'Handling', words: (n) => `drift power ${f1(setupPilot({ points: { handling: n }, level: 9 }).drift)} in a landing; in a docking the base turns ${f1(100 * (1 - setupDocking({ points: { handling: n }, level: 9 }).sweep / setupDocking({ level: 9 }).sweep))}% slower` },
+    { id: 'boost', name: 'Boost', words: (n) => { const b = setupPilot({ points: { boost: n }, level: 9 }); return `${b.fuel} s of thrust, ${b.brakes} emergency brake${b.brakes === 1 ? '' : 's'} per landing; a docking wall warns you ${f1(setupDocking({ points: { boost: n }, level: 9 }).warn)} s before it scrapes`; } },
+    { id: 'landing', name: 'Landing', words: (n) => `safe touchdown speed ${setupPilot({ points: { landing: n }, level: 9 }).safe}; the docking corridor is ${f1(100 * (setupDocking({ points: { landing: n }, level: 9 }).mouth / setupDocking({ level: 9 }).mouth - 1))}% wider` } ] },
   stealth: { built: true, note: 'Live stealth on foot never rolls the d20: it is pure play, like shooting. Your points set how far your steps carry, how long and wide guard cones reach, and how fast a guard\'s alert fades.', cats: [
     { id: 'quiet', name: 'Quiet movement', words: (n) => `a heard step adds ${f1(12 * (1 - 0.07 * n))} heat; live: running carries ${f1(STEALTH.noise.run * (1 - 0.07 * n))} tiles, walking ${f1(STEALTH.noise.walk * (1 - 0.07 * n))}` },
     { id: 'range', name: 'Detection range', words: (n) => `guard view cones ${f1(4 * (1 - 0.06 * n))} cells long; live: ${f1(STEALTH.coneTiles * (1 - 0.06 * n))} tiles long, a little narrower` },

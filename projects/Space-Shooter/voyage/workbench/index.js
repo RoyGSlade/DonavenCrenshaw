@@ -26,7 +26,7 @@ import { checkChance, checkBonusText } from '../character.js';
 import { tierInfo } from '../minigames/setup.js';
 import { ROLL_SKILLS } from '../data.js';
 import { openFullScreen } from './fullScreen.js';
-import { renderHud, renderBoard, renderConfirm, renderSparPicker, renderWhere, renderCraftMenu, h } from './ui.js';
+import { renderHud, renderBoard, renderConfirm, renderSparPicker, renderWhere, renderCraftMenu, renderFlightMenu, h } from './ui.js';
 import { PEOPLE, personSheet } from '../people/index.js';
 import * as C from '../talk/convo.js';
 import { talkModel } from '../talk/model.js';
@@ -125,7 +125,7 @@ export function createWorkbench({ store, bus, onfoot, dialogueBox, sheet, hud, t
     return playStart(station, start, { who, what, open, best, lock, titleText, context, tool });
   }
   /** Games that own the whole screen (the house rule): every station and mini-game view. The side sheet is for menus and panels only. */
-  const FULL_SCREEN = new Set(['repair', 'hack', 'craft', 'nav', 'pilot', 'stealth', 'persuade', 'intimidate', 'haggle', 'cut', 'screw', 'bolt-plate']);
+  const FULL_SCREEN = new Set(['repair', 'hack', 'craft', 'nav', 'pilot', 'docking', 'stealth', 'persuade', 'intimidate', 'haggle', 'cut', 'screw', 'bolt-plate']);
   const BARE = new Set(['nav']); // Perihelion draws its own top bar and Leave
   async function playStart(station, start, { who, what, open, best, lock, titleText, word, context, tool, resume } = {}) {
     sheet.stage.replaceChildren();
@@ -183,8 +183,22 @@ export function createWorkbench({ store, bus, onfoot, dialogueBox, sheet, hud, t
     if (!result) { toast('You left the game. Your part is kept if a game was done.'); return; }
     commit(settleStation(state, station, result).state);
   }
+  /** The flight console: touchdown on the pad, or docking at the star base. */
+  const chooseFlight = () => new Promise((resolve) => {
+    openPanel('FLIGHT CONSOLE', 'Where are you flying?', (pane) => renderFlightMenu(pane, { onPick: (id) => { closePanel(); resolve(id); }, onClose: () => { closePanel(); resolve(null); } }));
+  });
+  async function useFlight(base) {
+    const pick = await chooseFlight();
+    if (!pick) return;
+    if (pick === 'touchdown') return useStation(base, { direct: true });
+    const station = { ...base, id: 'docking', game: 'docking', word: 'DOCKING', title: 'The star base', label: 'Docking' };
+    const result = await rollAndPlay(station, { titleText: 'The star base' });
+    if (!result) { toast('You left the game. No XP.'); return; }
+    commit(settleStation(state, station, result).state);
+  }
   async function useStation(station, { direct = false } = {}) {
     if (station.id === 'craft' && !direct) return useCraft(station);
+    if (station.id === 'pilot' && !direct) return useFlight(station);
     let context;
     if (station.id === 'hack') { context = await chooseWhere(); if (!context) return; }
     const result = await rollAndPlay(station, { context });

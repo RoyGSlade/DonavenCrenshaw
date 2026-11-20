@@ -21,10 +21,10 @@ test('pilot setup: base, the roll and the exact points', () => {
 
 test('the picker words are the setup numbers', () => {
   for (const n of [0, 1, 3, 9]) {
-    assert.equal(CATEGORIES.piloting.cats[0].words(n), `drift power ${Math.round(setupPilot({ points: { handling: n }, level: 9 }).drift * 10) / 10} in a landing`);
+    assert.match(CATEGORIES.piloting.cats[0].words(n), new RegExp(`^drift power ${Math.round(setupPilot({ points: { handling: n }, level: 9 }).drift * 10) / 10} in a landing`)); // docking adds its own clause after it
     const b = setupPilot({ points: { boost: n }, level: 9 });
-    assert.equal(CATEGORIES.piloting.cats[1].words(n), `${b.fuel} s of thrust, ${b.brakes} emergency brake${b.brakes === 1 ? '' : 's'} per landing`);
-    assert.equal(CATEGORIES.piloting.cats[2].words(n), `safe touchdown speed ${setupPilot({ points: { landing: n }, level: 9 }).safe}`);
+    assert.ok(CATEGORIES.piloting.cats[1].words(n).startsWith(`${b.fuel} s of thrust, ${b.brakes} emergency brake${b.brakes === 1 ? '' : 's'} per landing`));
+    assert.ok(CATEGORIES.piloting.cats[2].words(n).startsWith(`safe touchdown speed ${setupPilot({ points: { landing: n }, level: 9 }).safe}`));
   }
 });
 

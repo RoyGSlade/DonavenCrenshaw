@@ -11,6 +11,7 @@ import { createStealth } from '../minigames/stealth.js'; import { playStealth } 
 import { createPersuade } from '../minigames/persuade.js'; import { playPersuade } from '../minigames/persuadeView.js';
 import { createIntimidate } from '../minigames/intimidate.js'; import { playIntimidate } from '../minigames/intimidateView.js';
 import { createPilot } from '../minigames/pilot.js'; import { playPilot } from '../minigames/pilotView.js';
+import { createDocking } from '../minigames/docking.js'; import { playDocking } from '../minigames/dockingView.js';
 import { playNavField } from '../minigames/perihelionEntry.js';
 import { createRecipe, RECIPES } from '../minigames/craftChain.js'; import { playRecipe } from '../minigames/recipeView.js';
 import { createBribe } from '../talk/bribe.js'; import { playBribe } from '../talk/bribeView.js';
@@ -49,6 +50,7 @@ export async function playGame(stage, id, o = {}) {
     case 'persuade': return playPersuade(stage, { state: createPersuade({ seed, setup, opening: o.opening }), who: who || 'the dock clerk', what: what || 'let you through', reducedMotion });
     case 'intimidate': return playIntimidate(stage, { state: createIntimidate({ seed, setup }), who: who || 'the Cinder Reaver', what: what || 'stand down', reducedMotion });
     case 'pilot': return playPilot(stage, { state: createPilot({ seed, setup }), where: 'the hangar pad', reducedMotion });
+    case 'docking': return playDocking(stage, { state: createDocking({ seed, setup }), where: 'the star base', sound, reducedMotion });
     case 'practice': return playRing(stage, { state: createPracticeHack({ seed }), title: 'Practice lock', sound, reducedMotion });
     case 'bribe': return playBribe(stage, { state: createBribe({ seed, min: o.range?.min ?? 10, max: o.range?.max ?? 40, setup }), who: who || 'the trader', what: what || 'what you want', gift: o.gift || null, sound, reducedMotion });
     default: throw new Error(`No mini-game ${id}`);

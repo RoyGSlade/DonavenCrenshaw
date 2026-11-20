@@ -234,6 +234,31 @@ export function setupPilot({ tier = 0, points = {}, level = POINT_MAX } = {}) {
   };
 }
 
+// --- Piloting: docking at the star base (docking lane, 2026-11-19) ------------------------------------
+// The same three paths as touchdown, each seen in the docking game as one thing:
+//   landing   wider corridor      +4% a point (the lane the lit funnel leaves you)
+//   handling  slower sweep        -4% a point (the base turns more gently, so it is easier to match)
+//   boost     longer warning      +0.12 s a point before a scrape (time to steer back out of the wall)
+// Base: the funnel is 9 either side at the berth and 30 either side at its mouth (units of a 160-wide view), the base turns 0.06
+// rad/s, a wall warns 0.6 s before it scrapes, the safe closing speed is 6, and a run is waved off after 26 s.
+// Tier: corridor x0.80, 0.90, 1.00, 1.12, 1.25 and sweep x1.30, 1.15, 1.00, 0.88, 0.75 for tiers -2..+2. Speed and the other
+// points are only ever easier: nothing here makes a run harder as a point is added.
+export const DOCKING_BASE = Object.freeze({ berth: 4, mouth: 12, sweep: 0.095, warn: 0.6, safe: 8, tmax: 26, corridorPerPoint: 0.04, sweepPerPoint: 0.04, warnPerPoint: 0.12, corridorTier: [0.85, 0.92, 1, 1.1, 1.2], sweepTier: [1.2, 1.1, 1, 0.9, 0.8] });
+export function setupDocking({ tier = 0, points = {}, level = POINT_MAX } = {}) {
+  const p = cleanPoints(points, PILOT_CATEGORIES, level);
+  const t = Math.max(-2, Math.min(2, Math.trunc(tier) || 0));
+  const b = DOCKING_BASE;
+  const r4 = (x) => Math.round(+x.toFixed(6) * 10000) / 10000;
+  const c = b.corridorTier[t + 2] * (1 + b.corridorPerPoint * p.landing);
+  return {
+    berth: r4(b.berth * c), mouth: r4(b.mouth * c),
+    sweep: r4(b.sweep * b.sweepTier[t + 2] * (1 - b.sweepPerPoint * p.handling)),
+    warn: r4(b.warn + b.warnPerPoint * p.boost),
+    safe: b.safe, tmax: b.tmax,
+    tier: t, points: p, label: tierInfo(t).label,
+  };
+}
+
 // --- Crafting: forge strikes (PLAN.md section 2.5) --------------------------------
 // Categories: quality, speed, material.
 //   quality   +4 quality per point                    (0..9 -> +0..+36)

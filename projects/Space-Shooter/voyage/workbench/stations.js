@@ -3,7 +3,7 @@
 // scene hooks and the gym use), and a finished game pays real XP into the skill (state.js earnXp). DOM lives in games.js.
 import { check } from '../character.js';
 import { ROLL_SKILLS } from '../data.js';
-import { tierOf, tierInfo, setupHack, setupPerihelion, setupCut, setupScrew } from '../minigames/setup.js';
+import { tierOf, tierInfo, setupHack, setupPerihelion, setupCut, setupScrew, setupDocking } from '../minigames/setup.js';
 import { GYM_GAMES, gymGame } from '../minigames/gym.js';
 import { rollPreview } from '../minigames/rollPreview.js';
 import { cleanSkillPoints } from '../minigames/picker.js';
@@ -50,7 +50,7 @@ export function startStation(state, station, attempt, { tool = 'shop' } = {}) {
   const tier = tierOf(attempt);
   const chain = CHAIN_SETUP[station.id];
   // A station may play a newer game than the gym's (navigation: Perihelion); the gym keeps the old one until Donaven picks.
-  const setup = chain ? chain({ tier, level, points, tool }) : station.id === 'hack' ? setupHack({ tier, level, points, lock: station.lock }) : station.game === 'perihelion' ? setupPerihelion({ tier, level, points }) : gymGame(station.id).setup({ tier, level, points });
+  const setup = chain ? chain({ tier, level, points, tool }) : station.id === 'hack' ? setupHack({ tier, level, points, lock: station.lock }) : station.game === 'perihelion' ? setupPerihelion({ tier, level, points }) : station.game === 'docking' ? setupDocking({ tier, level, points }) : gymGame(station.id).setup({ tier, level, points });
   const preview = rollPreview(station.game || station.id, attempt, { level, points });
   return { station, tier, label: tierInfo(tier).label, setup, level, points, preview };
 }

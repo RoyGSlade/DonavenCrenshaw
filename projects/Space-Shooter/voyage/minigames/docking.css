@@ -1,0 +1,44 @@
+/* Docking at the star base (docking.js, dockingView.js). The canvas draws the base, the lit corridor and the ship; the HUD is drawn bars and words. */
+.dk-panel{display:flex;flex-direction:column;gap:8px;position:relative}
+.dk-panel>.rp-eyebrow{margin:0}
+.dk-hud{display:grid;grid-template-columns:1.1fr 1.3fr 1fr 1fr;gap:8px}
+.dk-stat{display:grid;gap:3px;padding:6px 8px;border:1px solid #2a4152;border-radius:6px;background:#0a1624;min-width:0}
+.dk-stat span{font:10px Consolas,monospace;letter-spacing:.12em;color:#8fa6b7;text-transform:uppercase}
+.dk-stat em{font:700 14px Consolas,monospace;color:#eaf4f5;font-style:normal;white-space:nowrap}
+.dk-stat[data-tone=ok] em{color:#9fe870}.dk-stat[data-tone=warn] em{color:#ffc857}.dk-stat[data-tone=bad] em{color:#ff8a70}
+.dk-meter{position:relative;height:10px;border-radius:5px;background:#1b2d3d;overflow:visible}
+.dk-meter i{display:block;height:100%;width:0;border-radius:5px;background:#81e6df;transition:background .1s}
+.dk-meter .dk-safe{position:absolute;left:0;top:0;bottom:0;border-radius:5px 0 0 5px;background:#9fe87055;border-right:2px solid #9fe870}
+.dk-meter[data-tone=warn] i{background:#ffc857}.dk-meter[data-tone=bad] i{background:#ff5a45}
+.dk-hull i{background:#9fe870}.dk-hull[data-level=scuffed] i{background:#ffc857}.dk-hull[data-level=damaged] i{background:#ff5a45}
+.dk-warn i{background:#ffc857}.dk-warn[data-tone=bad] i{background:#ff5a45;box-shadow:0 0 10px #ff5a45}
+.dk-wrap{position:relative;border:2px solid #0b121a;border-radius:8px;box-shadow:0 6px 18px #0008;overflow:hidden;background:#05080d;width:min(100%,960px);aspect-ratio:200/150;margin:0 auto}
+.dk-canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:crosshair;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+.dk-row{display:grid;grid-template-columns:1fr;max-width:640px;width:100%;margin:0 auto}
+.dk-pad{-webkit-tap-highlight-color:transparent;min-height:84px;display:grid;place-items:center;align-content:center;gap:0;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;filter:drop-shadow(0 0 4px rgba(129,230,223,.4))}
+.dk-pad b{font:800 28px/1 Inter,sans-serif;letter-spacing:.04em}.dk-pad span{font:700 10px Consolas,monospace;letter-spacing:.14em;text-transform:uppercase;opacity:.7}
+.dk-pad.is-held{transform:translateY(2px) scale(.98);filter:drop-shadow(0 0 16px rgba(255,173,114,.95))}
+/* the kit's hover and pressed pictures stick after a touch and carry their own corners; the pad keeps the plain frame (the press shows as the nudge above) */
+.ui-btn.primary.dk-pad:hover:not(:disabled),.ui-btn.primary.dk-pad:active:not(:disabled){border-image-source:url(../ui/kit/button-primary.webp)}
+.ui-btn.primary.dk-pad:not(.is-held):hover:not(:disabled),.ui-btn.primary.dk-pad:not(.is-held):active:not(:disabled){filter:drop-shadow(0 0 4px rgba(129,230,223,.4))}
+.dk-card{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(440px,calc(100% - 20px));max-height:calc(100% - 16px);overflow:auto;z-index:3;display:grid;gap:8px;padding:14px;background:#07111cf5;text-align:center}
+.dk-card b{font:800 22px/1.1 Inter,sans-serif;letter-spacing:.06em}
+.dk-card[data-ok="1"] b{color:#9fe870}.dk-card[data-ok="0"] b{color:#ff8a70}
+.dk-card .dk-bars{display:grid;gap:6px;text-align:left}
+.dk-card .dk-bars div{display:grid;grid-template-columns:78px 1fr;gap:8px;align-items:center;font:11px Consolas,monospace;color:#9db3c2}
+.dk-card .dk-bars .dk-meter{height:12px}
+.dk-card .dk-line{margin:0;font:13px/1.4 Inter,sans-serif;color:#cfe3ec}
+.dk-panel.is-shake .dk-wrap{animation:dk-shake .28s linear}
+@keyframes dk-shake{0%,100%{transform:translate(0)}20%{transform:translate(-3px,2px)}40%{transform:translate(3px,-2px)}60%{transform:translate(-2px,-2px)}80%{transform:translate(2px,2px)}}
+@media (prefers-reduced-motion:reduce){.dk-panel.is-shake .dk-wrap{animation:none}}
+/* full screen: ONE block with no gap inside it: the gauges, the board (takes every spare pixel of height), the status line and the thrust pad */
+.wb-full .dk-panel{gap:6px;width:100%;margin-left:0;margin-right:0}
+.wb-full .dk-panel>.rp-eyebrow{display:none}
+.wb-full .wb-fstage>.rp-panel.dk-panel{max-width:960px!important;width:100%}
+.wb-full .wb-fstage>.rp-panel.dk-panel>.dk-wrap{flex:1 1 0!important;min-height:120px;width:100%;max-width:none;aspect-ratio:auto;margin:0}
+.wb-full .dk-panel>.dk-hud{order:1}.wb-full .dk-panel>.dk-wrap{order:2}.wb-full .dk-panel>.rp-status{order:8;margin:0}.wb-full .dk-panel>.dk-row{order:9;padding-bottom:max(2px,env(safe-area-inset-bottom))}
+@media (max-width:700px){
+  .dk-hud{grid-template-columns:1fr 1fr;gap:6px}
+  .dk-stat{padding:4px 6px}
+  .dk-pad{min-height:84px}
+}

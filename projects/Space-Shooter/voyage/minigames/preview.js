@@ -4,7 +4,7 @@
 //   ?newgame=1&mini=hack&roll=9&dc=12&level=6&lock=2&time=1&size=2&retries=3&auto=1
 import { runtimeConfig } from '../../runtime-config.js';
 import { newGameFlag } from '../flag.js';
-import { tierOf, tierInfo, setupRepair, setupHack, poolLasts, setupHaggle, setupCraft, CRAFT_CATEGORIES, setupNav, NAV_CATEGORIES, setupPerihelion, PERI_CATEGORIES, setupStealth, STEALTH_CATEGORIES, setupPersuade, setupIntimidate, setupPilot, PILOT_CATEGORIES, REPAIR_CATEGORIES, HACK_CATEGORIES, SOCIAL_CATEGORIES } from './setup.js';
+import { tierOf, tierInfo, setupRepair, setupHack, poolLasts, setupHaggle, setupCraft, CRAFT_CATEGORIES, setupNav, NAV_CATEGORIES, setupPerihelion, PERI_CATEGORIES, setupStealth, STEALTH_CATEGORIES, setupPersuade, setupIntimidate, setupPilot, setupDocking, PILOT_CATEGORIES, REPAIR_CATEGORIES, HACK_CATEGORIES, SOCIAL_CATEGORIES } from './setup.js';
 import { playRepair } from './repairView.js';
 import { createRing } from './hack.js';
 import { playRing } from './hackView.js';
@@ -20,6 +20,8 @@ import { createPracticeHack } from './hack.js';
 import { rollPreview } from './rollPreview.js';
 import { playNavField, playNavTrainer, TRAINER_SECTORS } from './perihelionEntry.js';
 import { createPilot } from './pilot.js';
+import { createDocking } from './docking.js';
+import { playDocking } from './dockingView.js';
 import { playPilot } from './pilotView.js';
 import { createCraft } from './craft.js';
 import { playCraft } from './craftView.js';
@@ -37,7 +39,7 @@ function boot() {
   $('mg-page').hidden = false;
   const params = new URLSearchParams(location.search);
   const ids = ['roll', 'level', 'dc', 'lock', 'time', 'size', 'quality', 'retries', 'haggle', 'persuade', 'intimidate', 'sector', 'handling', 'boost', 'landing', 'speed', 'material', 'fuel', 'warning', 'quiet', 'range', 'decay'];
-  if (['repair', 'hack', 'haggle', 'persuade', 'intimidate', 'pilot', 'practice', 'craft', 'nav', 'perihelion', 'trainer', 'stealth'].includes(params.get('mini'))) $('mg-mini').value = params.get('mini');
+  if (['repair', 'hack', 'haggle', 'persuade', 'intimidate', 'pilot', 'docking', 'practice', 'craft', 'nav', 'perihelion', 'trainer', 'stealth'].includes(params.get('mini'))) $('mg-mini').value = params.get('mini');
   for (const id of ids) { const v = params.get(id); if (v != null && /^\d+$/.test(v)) $(id).value = v; }
   if (Object.keys(CONSEQUENCES).includes(params.get('context'))) $('context').value = params.get('context');
   const mini = () => $('mg-mini').value;
@@ -48,6 +50,8 @@ function boot() {
     const tier = tierOf(attempt);
     const setup = mini() === 'practice'
       ? { points: {}, label: 'Practice', tier: 0 }
+      : mini() === 'docking'
+      ? setupDocking({ tier, level: v.level, points: Object.fromEntries(PILOT_CATEGORIES.map((c) => [c, v[c] ?? 0])) })
       : mini() === 'pilot'
       ? setupPilot({ tier, level: v.level, points: Object.fromEntries(PILOT_CATEGORIES.map((c) => [c, v[c] ?? 0])) })
       : mini() === 'intimidate'
@@ -72,12 +76,14 @@ function boot() {
   const show = () => {
     const { v, attempt, tier, setup } = compute();
     for (const id of ids) $(`o-${id}`).textContent = $(id).value;
-    const hack = mini() === 'hack', hag = mini() === 'haggle', rep = mini() === 'repair', cr = mini() === 'craft', nv = mini() === 'nav' || mini() === 'perihelion' || mini() === 'trainer', pv = mini() === 'perihelion' || mini() === 'trainer', sl = mini() === 'stealth', pe = mini() === 'persuade', it = mini() === 'intimidate', pl = mini() === 'pilot';
+    const hack = mini() === 'hack', hag = mini() === 'haggle', rep = mini() === 'repair', cr = mini() === 'craft', nv = mini() === 'nav' || mini() === 'perihelion' || mini() === 'trainer', pv = mini() === 'perihelion' || mini() === 'trainer', sl = mini() === 'stealth', pe = mini() === 'persuade', it = mini() === 'intimidate', pl = mini() === 'pilot' || mini() === 'docking', dk = mini() === 'docking';
     $('l-lock').hidden = !hack; $('l-context').hidden = !hack; $('l-retries').hidden = !hack; $('l-quality').hidden = !rep; $('l-time').hidden = hag || cr || sl || pe || it || pl; $('l-sector').hidden = mini() !== 'trainer'; $('l-size').hidden = hag || cr || nv || sl || pe || it || pl; $('l-handling').hidden = !pl; $('l-boost').hidden = !pl; $('l-landing').hidden = !pl; $('l-persuade').hidden = !pe; $('l-intimidate').hidden = !it; $('l-quiet').hidden = !sl; $('l-range').hidden = !sl; $('l-decay').hidden = !sl; $('l-fuel').hidden = !nv; $('l-warning').hidden = !nv; $('l-haggle').hidden = !hag; $('l-speed').hidden = !cr; $('l-material').hidden = !cr; $('l-quality').hidden = !(rep || cr);
     if (mini() === 'practice') document.querySelectorAll('#mg-controls label[id^="l-"]').forEach((l) => { l.hidden = true; });
     const spent = Object.values(setup.points).reduce((a, b) => a + b, 0);
     const what = mini() === 'practice'
       ? 'Practice dummy lock: <b>3</b> tumblers · <b>no clock</b> · <b>no trace</b> · <b>no XP</b>. It never trips, so try the ring as long as you like.'
+      : dk
+      ? `Corridor <b>${Math.round(setup.mouth * 10) / 10}</b> wide at the mouth, <b>${Math.round(setup.berth * 10) / 10}</b> at the berth · sweep <b>${Math.round(setup.sweep * 1000) / 1000}</b> rad/s · warning <b>${setup.warn}</b> s before a scrape · safe closing speed <b>${setup.safe}</b>`
       : pl
       ? `Fall <b>${setup.fall}</b> s · safe speed <b>${setup.safe}</b> · drift power <b>${Math.round(setup.drift * 10) / 10}</b> · wind <b>${Math.round(setup.wind * 10) / 10}</b> · pad <b>${Math.round(setup.pad * 10) / 10}</b> wide · fuel <b>${setup.fuel}</b> s · <b>${setup.brakes}</b> brake${setup.brakes === 1 ? '' : 's'}`
       : it
@@ -112,6 +118,8 @@ function boot() {
     const { setup, v } = compute();
     const result = mini() === 'practice'
       ? await playRing(stage, { state: createPracticeHack({ seed }), title: 'Practice dummy', reducedMotion })
+      : mini() === 'docking'
+      ? await playDocking(stage, { state: createDocking({ seed, setup }), where: 'the star base', reducedMotion })
       : mini() === 'pilot'
       ? await playPilot(stage, { state: createPilot({ seed, setup }), where: 'the hangar pad', reducedMotion })
       : mini() === 'intimidate'
