@@ -60,7 +60,7 @@
 .m-sounding-drill .sd-pip{width:9px;height:9px;transform:rotate(45deg);border:1.5px solid #4a6275;background:transparent;transition:background .3s,border-color .3s}
 .m-sounding-drill .sd-pip.is-seen{border-color:var(--c);background:color-mix(in srgb,var(--c) 40%,transparent)}
 .m-sounding-drill .sd-pip.is-free{background:var(--c)}
-.m-sounding-drill .sd-claw{width:100%;min-width:150px}
+.m-sounding-drill .sd-claw{width:100%;min-width:150px;white-space:nowrap}
 .m-sounding-drill .sd-claw.is-ready{animation:sd-ready 1.1s ease-in-out infinite}
 @keyframes sd-ready{50%{filter:drop-shadow(0 0 12px rgba(159,232,112,.95))}}
 
@@ -109,3 +109,5 @@
 .m-sounding-drill .sd-card-btns{display:flex;gap:10px}
 .m-sounding-drill .sd-card-btns .ui-btn{flex:1}
 @media (prefers-reduced-motion:reduce){.m-sounding-drill .sd-card,.m-sounding-drill .sd-claw.is-ready,.m-sounding-drill .sd-cell.is-crit{animation:none}}
+
+.m-sounding-drill .sd-claw.is-armed{color:#2a1408;filter:drop-shadow(0 0 10px rgba(255,173,114,.9)) hue-rotate(-155deg) saturate(1.6)}

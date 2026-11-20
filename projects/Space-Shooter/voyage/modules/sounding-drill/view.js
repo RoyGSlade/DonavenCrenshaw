@@ -185,7 +185,15 @@ export function mountGame(stage, ctx, { fixtures, items, rock, resume, quick, on
   };
 
   // --- finishing ---------------------------------------------------------------------------------------------------
-  const bringClaw = () => { if (phase !== 'play' || g.over) return; claw(g); };
+  // Pressing the claw before the find is free ends the try for good, so the first press only asks: press again to mean it.
+  let armed = 0;
+  const bringClaw = () => {
+    if (phase !== 'play' || g.over) return;
+    if (!isFreed(R.finds[0]) && g.charge > g.chargeMax * 0.22 && !armed) {
+      armed = 2.6; clawBtn.textContent = 'Press again to end'; clawBtn.classList.add('is-armed'); return;
+    }
+    armed = 0; claw(g);
+  };
   clawBtn.addEventListener('click', bringClaw);
 
   let finished = false;
@@ -215,7 +223,7 @@ export function mountGame(stage, ctx, { fixtures, items, rock, resume, quick, on
       if (res.canTurn) {
         const t = el('button', 'ui-btn primary sd-go', { type: 'button' }, 'Turn the rock');
         t.addEventListener('click', () => {
-          turn(g); card.hidden = true; phase = 'play'; root.dataset.phase = 'play'; touched = false; intro.classList.remove('is-gone'); lowSaid = false;
+          turn(g); armed = 0; clawBtn.textContent = 'Bring the claw'; clawBtn.classList.remove('is-armed'); card.hidden = true; phase = 'play'; root.dataset.phase = 'play'; touched = false; intro.classList.remove('is-gone'); lowSaid = false;
           intro.querySelector('span').textContent = 'The rock is turned a quarter round. Your old tunnels and cracks are still there. A fresh cell is in.';
           dust.length = 0;
         });
@@ -487,6 +495,7 @@ export function mountGame(stage, ctx, { fixtures, items, rock, resume, quick, on
     const dt = Math.min(0.1, lastDraw ? (ts - lastDraw) / 1000 : 0.016); lastDraw = ts;
     frame++;
     phaseT += dt;
+    if (armed > 0) { armed -= dt; if (armed <= 0 || isFreed(R.finds[0])) { armed = 0; clawBtn.textContent = 'Bring the claw'; clawBtn.classList.remove('is-armed'); } }
     idleT = (ptr.down || kb.space || kb.dx || kb.dy) ? 0 : idleT + dt;
     if (phase === 'play' && !g.over) {
       acc += dt;

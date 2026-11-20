@@ -70,7 +70,7 @@ async function drive(page, ptr, phone, { bot = 'perfect', until = () => false, m
       return { claw: !!inp.claw, x: px, y: py + lift, down: !!inp.down, share: g.rock.finds[0].share, heat: g.heat, cracks: g.rock.finds[0].cracks, charge: g.charge / g.chargeMax, rings: g.rings.length, lit: g.rock.finds[0].seen };
     }, phone ? 48 : 0);
     if (s.over) break;
-    if (s.claw) { await ptr.up(); await page.click('.sd-claw'); break; }
+    if (s.claw) { await ptr.up(); await page.click('.sd-claw'); await page.waitForTimeout(200); if (await page.evaluate(() => !document.querySelector('.m-sounding-drill').__game.over)) await page.click('.sd-claw'); break; }
     await ptr.to(s.x, s.y, s.down);
     if (onTick) await onTick(s, n);
     if (await until(s, n)) break;
@@ -216,6 +216,9 @@ test('sounding drill in the browser: desktop (mouse and keys) and phone (touch)'
       // end it early: the claw with the find not free is a fail
       const entryBefore = (await state(page)).entry;
       await page.click('.sd-claw');
+      assert.match(await page.locator('.sd-claw').innerText(), /press again/i, 'the first press only asks (an accidental press is not a fail)');
+      assert.equal((await state(page)).over, null);
+      await page.click('.sd-claw');
       await page.waitForSelector('.sd-card', { timeout: 15000 }); await page.waitForTimeout(300);
       await shot('9-fail-card');
       assert.match(await page.locator('.sd-card').innerText(), /scrap/i);
@@ -227,7 +230,7 @@ test('sounding drill in the browser: desktop (mouse and keys) and phone (touch)'
       assert.ok(Math.hypot(turned.entry.x - entryBefore.x, turned.entry.y - entryBefore.y) > 80, 'the entry moved: the next try is not the same try');
       assert.ok(turned.cracks >= 1, 'the crack stays');
       await shot('10-rock-turned');
-      await page.click('.sd-claw'); await page.waitForSelector('.sd-card'); await page.click('.sd-go >> text=/leave it/i');
+      await page.click('.sd-claw'); await page.click('.sd-claw'); await page.waitForSelector('.sd-card'); await page.click('.sd-go >> text=/leave it/i');
       await page.waitForFunction(() => window.__result);
       const bad = await page.evaluate(() => window.__result);
       assert.equal(bad.success, false); assert.deepEqual(bad.effects, { items: { scrap: 1 } }); assert.equal(bad.turned, 1); assert.equal(bad.xp, 0);
