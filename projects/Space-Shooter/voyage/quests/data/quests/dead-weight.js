@@ -47,7 +47,9 @@ export default {
       "nodes": [
         "gang",
         "fight",
-        "haul"
+        "haul",
+        "keep-or-sell",
+        "end-kept"
       ]
     }
   ],
@@ -285,6 +287,17 @@ export default {
           "when": {
             "local": {
               "towed": true
+            },
+            "notFlags": [
+              "starbase-claimed"
+            ]
+          },
+          "to": "keep-or-sell"
+        },
+        {
+          "when": {
+            "local": {
+              "towed": true
             }
           },
           "to": "end-sold"
@@ -299,6 +312,50 @@ export default {
         }
       ],
       "else": "end-scraps"
+    },
+    "keep-or-sell": {
+      "type": "dialogue",
+      "speaker": "Hob Garrity",
+      "portrait": "garrity",
+      "line": "garrity.dead-weight.keep",
+      "emotion": "warm",
+      "direction": "Quiet for once, a hand flat on the hull like it is an old horse.",
+      "text": "She's whole, kid. Cold, but whole. I'll pay real credits, or you could park her somewhere quiet and call her yours. Nobody's ever offered me a choice like that. Don't make it a short one.",
+      "choices": [
+        {
+          "label": "\"Sell her.\"",
+          "to": "end-sold"
+        },
+        {
+          "label": "\"Keep her. She's my base now.\"",
+          "to": "end-kept"
+        }
+      ]
+    },
+    "end-kept": {
+      "type": "end",
+      "result": "success",
+      "outcome": "kept-hulk",
+      "title": "A place of your own",
+      "speaker": "Hob Garrity",
+      "portrait": "garrity",
+      "line": "garrity.dead-weight.kept",
+      "emotion": "proud",
+      "direction": "Gruff and a little wet-eyed, pretending it is the dust.",
+      "text": "Then she's yours. A berth, a bay, a roof that holds air. Go and look at her properly. And kid? The knocking's still in there somewhere. Come back and tell me what it says.",
+      "reward": {
+        "rep": {
+          "garrity": 8
+        },
+        "skillPoints": 1,
+        "flags": {
+          "fragment-3": 1,
+          "starbase-claimed": 1
+        },
+        "unlocks": [
+          "badge:dead-weight"
+        ]
+      }
     },
     "end-engine": {
       "type": "end",

@@ -3,6 +3,7 @@
 // lhc-lanes/stardust/INTERFACES.md section 5.
 import { cleanCharacter, ID } from './character.js';
 import { upgradeRun } from './quests/runUpgrade.js';
+import { cleanBase } from './starbase/base.js';
 import { UPGRADE_IDS, TOP_TIER, MONEY_MAX, REP_MAX, ITEMS, ITEM_STACK_MAX, UNLOCK_KINDS } from './data.js';
 
 export const SAVE_VERSION = 1;
@@ -15,7 +16,7 @@ const UNLOCK = new RegExp(`^(${UNLOCK_KINDS.join('|')}):[a-z0-9][a-z0-9-]{0,31}$
 const ITEM_MAX = new Map(ITEMS.map((i) => [i.id, i.max]));
 // The keys this file owns; any other top-level key is kept as it came (a newer
 // page may have written it).
-const OWN = new Set(['v', 'updatedAt', 'character', 'money', 'rep', 'items', 'upgrades', 'flags', 'account', 'quests']);
+const OWN = new Set(['v', 'updatedAt', 'character', 'money', 'rep', 'items', 'upgrades', 'flags', 'account', 'quests', 'base']);
 
 const int = (v, lo, hi, fallback = 0) => (Number.isFinite(v) ? Math.min(hi, Math.max(lo, Math.trunc(v))) : fallback);
 export const itemMax = (id) => ITEM_MAX.get(id) ?? ITEM_STACK_MAX;
@@ -72,6 +73,9 @@ export function cleanSave(input) {
   out.account.maxRep = cleanCounts(account.maxRep, 0, () => 1);
   out.account.bank = int(account.bank, 0, 9999);
   out.quests = cleanQuests(s.quests);
+  // The star base (starbase/base.js): only written once the base is yours, so a save without one is exactly what it always was.
+  const base = cleanBase(s.base);
+  if (base) out.base = base;
   return out;
 }
 

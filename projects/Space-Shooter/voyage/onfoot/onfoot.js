@@ -17,6 +17,7 @@
 //     stationInfo(id)       { name, locked } for a hangar station id (the interact marks and prompt)
 //     offerTalk(who, map)   a promise when a quest giver talks jobs here (offers in the world), else null
 //     offers({ map, npc?, station? }) open job offers here (the "job here" mark)
+//     home()                the place id of your star base once it is yours (else null): the hop draws it, the helm offers it, Home flies to it
 //     repair(job)           a crew repair point was used: { id: 'guns'|'engine'|'hull', label, timeScale } (timeScale
 //                           = 1 minus Mechanic's repair.time); without it a stand-in line plays
 // Skill levels come only from data.js through character.js (ROUND2-CONTRACT section 9): no table here.
@@ -39,6 +40,8 @@ import { visualTier } from '../upgrades.js';
 import { effect } from '../character.js';
 import { createEl } from './dom.js';
 import { economy } from '../account.js';
+import { dockAtBase } from '../starbase/dock.js';
+import { BASE_ID } from '../starbase/base.js';
 
 // The tutorial's hop targets, in the order the legs open them.
 export const TARGETS_IN_ORDER = Object.freeze(SECTOR_MAP.places.map(p => p.id));
@@ -155,15 +158,18 @@ export function createOnFoot({ root, store = null, bus = null, hooks = {}, mapId
     const place = PLACES[target];
     if (!place) throw new Error(`No place ${target}`);
     if (target === docked) return { arrived: true, place: target, already: true };
+    if (target === BASE_ID && !hooks.home?.()) return { arrived: false, place: target, closed: true }; // not yours yet
     world.pause();
     world.el.hidden = true;
     emit(TUTORIAL_EVENTS.launched, { target });
     hooks.flying?.(true);
+    const homeId = hooks.home?.() || null; // your star base, once it is yours
     const visited = Object.keys(save()?.flags || {}).filter(k => k.startsWith('poi-')).map(k => k.slice(4));
     let r;
     try {
       r = await flyHop(root, {
         to: target, from: docked, shipArt, visited, reducedMotion, sound, scanRange: 1 + fx('scan.range') + (mods('explore').scan || 0),
+        hidden: homeId ? [] : [BASE_ID], home: homeId,
         onPoi: (poi) => {
           emit(TUTORIAL_EVENTS.poi, { id: poi.id });
           if (store) store.grant({ ...(inTutorial() ? {} : poi.reward || {}), flags: { [`poi-${poi.id}`]: 1 } });
@@ -176,10 +182,19 @@ export function createOnFoot({ root, store = null, bus = null, hooks = {}, mapId
       hooks.flying?.(false);
     }
     if (r.arrived) {
-      docked = target;
-      emit(TUTORIAL_EVENTS.exploreArrived, { target });
-      if (target === 'home') world.go('hangar', 'ship-ramp');
-      else if (place.map) world.go(place.map, 'from-dock');
+      // Home was one tap away mid-flight: you docked where you ended up, which may not be where you set out for.
+      const to = r.place || target, arrivedAt = PLACES[to] || place;
+      docked = to;
+      emit(TUTORIAL_EVENTS.exploreArrived, { target: to });
+      if (to === 'home') world.go('hangar', 'ship-ramp');
+      else if (arrivedAt.map) {
+        // The star base: dock first (the docking game's stand-in, starbase/dock.js), then walk in.
+        if (to === BASE_ID) {
+          const dock = await dockAtBase({ save: save() });
+          toast(dock.clean ? 'Docked clean.' : `Docked, with a scrape (${dock.hullLost} hull).`);
+        }
+        world.go(arrivedAt.map, 'from-dock');
+      }
     }
     return r;
   }
@@ -197,6 +212,14 @@ export function createOnFoot({ root, store = null, bus = null, hooks = {}, mapId
         const b = createEl('button', { type: 'button', class: 'of-course', dataset: { target: 'home' } },
           createEl('b', { text: 'Home: your hangar' }), createEl('span', { text: `Chibby's waiting. ${km(PLACES.home)} km` }));
         b.addEventListener('click', () => close('home'));
+        panel.append(b);
+      }
+      // Your star base: one tap, from anywhere (the same Home as on the hop map).
+      const homeId = hooks.home?.() || null;
+      if (homeId && docked !== homeId) {
+        const b = createEl('button', { type: 'button', class: 'of-course of-home', dataset: { target: homeId } },
+          createEl('b', { text: PLACES[homeId].name }), createEl('span', { text: `Home. Your own berth. ${km(PLACES[homeId])} km` }));
+        b.addEventListener('click', () => close(homeId));
         panel.append(b);
       }
       for (const id of TARGETS_IN_ORDER) {

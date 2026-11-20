@@ -13,10 +13,12 @@ export const OFFERS_DATA = {
     "garrity": { "map": "garrity-office", "npc": "garrity", "where": "in his yard office at Dustfall Station" }
   },
   "boards": {
-    "hangar": ["hask", "vey", "garrity"]
+    "hangar": ["hask", "vey", "garrity"],
+    "starbase-concourse": ["hask", "vey", "garrity"]
   },
   "boardNames": {
-    "hangar": "job board in your hangar"
+    "hangar": "job board in your hangar",
+    "starbase-concourse": "job board on your star base"
   },
   "words": {
     "boardSpeaker": "Job board",

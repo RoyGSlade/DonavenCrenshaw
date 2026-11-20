@@ -314,6 +314,7 @@ export const ITEMS = Object.freeze([
   { id: 'ore', name: 'Ore', kind: 'material', max: ITEM_STACK_MAX },
   { id: 'circuit', name: 'Circuit board', kind: 'part', max: 99 },
   { id: 'fuel-cell', name: 'Fuel cell', kind: 'part', max: 99 },
+  { id: 'noodle-bowl', name: 'Noodle bowl', kind: 'consumable', max: 9 },
   { id: 'permit', name: 'Docking permit', kind: 'key', max: 1 },
   { id: 'nav-chip', name: 'Nav chip', kind: 'part', max: 9 },
   { id: 'railgun', name: 'Railgun', kind: 'part', max: 9 },

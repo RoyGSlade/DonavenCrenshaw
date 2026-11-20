@@ -16,7 +16,10 @@ import { SECTOR_MAP } from '../maps/index.js';
 const xy = ({ at, ...rest }) => ({ ...rest, x: at[0], y: at[1] });
 export const SECTOR = Object.freeze({ w: SECTOR_MAP.w, h: SECTOR_MAP.h, name: SECTOR_MAP.name });
 export const STEP = 1 / 60;
-export const PLACES = Object.freeze(Object.fromEntries([SECTOR_MAP.start, ...SECTOR_MAP.places].map(p => [p.id, Object.freeze(xy(p))])));
+// SECTOR_MAP.base is your star base (starbase/): always a place on the map's data, but the page only shows and offers it once the
+// base is yours (hop.js `hidden`, onfoot.js helm). It is not one of `places`: no giver, and not a stop on the tutorial's legs.
+export const BASE_PLACE = SECTOR_MAP.base ? Object.freeze(xy(SECTOR_MAP.base)) : null;
+export const PLACES = Object.freeze(Object.fromEntries([SECTOR_MAP.start, ...SECTOR_MAP.places, ...(SECTOR_MAP.base ? [SECTOR_MAP.base] : [])].map(p => [p.id, Object.freeze(xy(p))])));
 export const GIVER_PLACE = Object.freeze(Object.fromEntries(SECTOR_MAP.places.map(p => [p.giver, p.id])));
 // Points of interest: fly close and slow down (or press scan) to look.
 // reward: core's reward format, paid once per save (flag poi-<id>).

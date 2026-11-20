@@ -1,0 +1,25 @@
+{
+  "_doc": "The star base's design sheet: the Infinite Ages settlement checklist (purpose, who runs it, trade, defence and weakness, three places, three people, current problem, secret, services, hooks) filled in for tier 1, the dock strip. Data only. The maps (starbase/maps.js) and the quests that come later read it; nothing here is player-facing text yet.",
+  "id": "starbase",
+  "tier": 1,
+  "name": "Your star base",
+  "purpose": "A dead hulk you towed home and kept. It is the first place in the Drift that is yours: somewhere to land, fix the ship, eat, trade and take work.",
+  "ruler": { "true": "You. The Relay Guild would say the Guild, because the hulk was drifting in Guild space and nobody filed the claim.", "paper": "A salvage claim in your name, stamped by Garrity's yard." },
+  "trade": ["fuel and repairs", "hot meals", "general goods", "postings from the three givers"],
+  "defence": { "have": "A hull that has survived twenty years of drifting, and one working airlock.", "weakness": "One berth, no turrets, no power plant to speak of. Anyone with a cutter and a grudge could walk in." },
+  "threePlaces": ["the berth and airlock", "the concourse", "your workshop and galley"],
+  "threePeople": [
+    { "who": "the noodle cook (not yet met)", "publicGoal": "keep the pot hot", "privateGoal": "find out who left the stall behind", "vulnerability": "owes a debt to the Ember Syndicate" },
+    { "who": "the store keeper (not yet met)", "publicGoal": "sell you a patch", "privateGoal": "buy the base from you one day", "vulnerability": "cannot refuse a good haggle" },
+    { "who": "the bay mechanic (not yet met)", "publicGoal": "keep your ship in the air", "privateGoal": "read the knocking log drive the hulk came with", "vulnerability": "talks to engines more than people" }
+  ],
+  "currentProblem": "Most of the base is still sealed or cold: only the dock strip has air and light.",
+  "secret": "The hulk's log drive keeps knocking three taps and a pause. It is the same knock as your licence number (Dead Weight, fragment 3).",
+  "services": ["lodging and storage (your rooms)", "repair and installation", "freight and courier (the job board)", "hygiene (the galley)"],
+  "hooks": [
+    { "kind": "mystery", "text": "Something answers the knock from deeper in the hulk." },
+    { "kind": "ticking clock", "text": "A scav gang noticed where you towed it." },
+    { "kind": "interactive", "text": "Fill the empty units: tenants come later, by talk and haggle (tier 2)." }
+  ],
+  "laterRounds": ["tenants by talk and haggle", "rent and docking fees", "the docking ring, berths 2 to 4", "power", "moving the base", "raids", "tiers 2 and 3", "shop signs in FLUX art"]
+}

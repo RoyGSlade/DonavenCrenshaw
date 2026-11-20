@@ -9,6 +9,7 @@
     {"id":"beacon","name":"Beacon Prime","giver":"vey","at":[61.2,33],"size":8,"art":"relay-station","map":"vey-lounge"},
     {"id":"dustfall","name":"Dustfall Station","giver":"garrity","at":[99,81.4],"size":7,"art":"warden","map":"garrity-office"}
   ],
+  "base": {"id":"starbase","name":"Your star base","at":[140,20],"size":7,"art":"relay-station","map":"starbase-airlock","home":true},
   "pois": [
     {"id":"derelict-pod","name":"Derelict pod","at":[38,88],"radius":4,"kind":"derelict","text":"A courier pod, cold for years. Two scrap still bolted inside.","reward":{"items":{"scrap":2}}},
     {"id":"nav-buoy","name":"Guild nav buoy","at":[48,52],"radius":4,"kind":"buoy","text":"The buoy loops a Relay Guild notice: lanes past Beacon Prime are \"under review\". Nobody believes it."},

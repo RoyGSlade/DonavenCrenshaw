@@ -12,7 +12,7 @@
 // toast(text) (optional): the page's reward toast. rng: for the deal rolls.
 // All text goes in with textContent.
 import { el, button } from '../quests/ui/player.js';
-import { shopView, buy, sell, tryDeal, equip, unequip, GEAR, SLOTS, SHOPS } from './shop.js';
+import { shopView, buy, sell, tryDeal, equip, unequip, GEAR, SLOTS, SHOPS, SHOP_IDS } from './shop.js';
 import { ITEMS, rollText } from '../quests/core.js';
 import { economy } from '../account.js';
 
@@ -154,7 +154,7 @@ export function mountShop({ root, shop: shopId, store, speak = null, bus = null,
  * Returns a function that unmounts all three.
  */
 export function registerShops(hangarApi, { speak = null, rng = Math.random } = {}) {
-  const offs = Object.entries(SHOPS).map(([id, shop], i) => hangarApi.mountStation(shop.station, {
+  const offs = SHOP_IDS.map((id) => [id, SHOPS[id]]).map(([id, shop], i) => hangarApi.mountStation(shop.station, {
     id: `shop-${id}`,
     label: id === 'chibby' ? 'Parts' : id === 'edna' ? 'Wares' : 'Gear',
     order: 20 + i,

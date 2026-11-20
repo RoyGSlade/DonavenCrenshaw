@@ -16,8 +16,12 @@ import { SHOPS_DATA } from '../quests/data/shops.js';
 import { grant, spend, missing, check, checkChance, checkBonusText, checkName, ITEMS } from '../quests/core.js';
 import { priceFor } from '../economy.js';
 
-export const SHOPS = SHOPS_DATA.shops;
+// SHOPS is a working copy: the three hangar counters (SHOP_IDS, what the hangar mounts) plus any counter a place registers at run
+// time with addShop (the star base's, starbase/shops.js). SHOPS_DATA itself is never changed.
+export const SHOPS = { ...SHOPS_DATA.shops };
 export const SHOP_IDS = Object.freeze(Object.keys(SHOPS));
+/** Register another counter (same shape as quests/data/shops.js). It is not a hangar station: SHOP_IDS stays the three. */
+export function addShop(id, def) { SHOPS[id] = def; return id; }
 export const GEAR = SHOPS_DATA.gear;
 export const SLOTS = Object.freeze(['armour', 'weapon']);
 

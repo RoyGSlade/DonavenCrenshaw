@@ -138,3 +138,9 @@
 .of-st-state[data-state=alarm]{background:#6a1d18;color:#ff9a90}
 .of-st-help{margin:5px 0 0;font:500 10.5px/1.35 Inter,"Segoe UI",sans-serif;color:#9fb4c4}
 @media (max-width:620px){.of-stealth{top:128px;max-width:calc(100% - 16px)}.of-st-help{display:none}}
+
+/* Home, one tap from anywhere on the hop (explore/hop.js): the plain kit frame, no sticky hover or press picture, no tap highlight. */
+.of-hop-home{position:absolute;right:12px;top:12px;z-index:7;min-width:96px;-webkit-tap-highlight-color:transparent;touch-action:manipulation;border-image:url(../ui/kit/button.webp) 24 38 fill / 12px 19px stretch!important;filter:drop-shadow(0 0 6px #81e6df55)}
+.of-hop-home:hover:not(:disabled),.of-hop-home:active:not(:disabled){border-image-source:url(../ui/kit/button.webp)!important;filter:drop-shadow(0 0 6px #81e6df55)}
+.of-hop-home:active:not(:disabled){transform:scale(.97)}
+.of-hop-home[hidden]{display:none}

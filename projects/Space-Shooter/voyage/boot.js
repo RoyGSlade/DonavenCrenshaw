@@ -68,6 +68,10 @@ import { wantsSlice, startSlice, startRoom, createSliceDirector } from './slice/
 import { wantsWorkbench } from './workbench/entry.js';
 import { mountWorkbench } from './workbench/mount.js';
 import { registerWorkbench, WORKBENCH_ID } from './workbench/map.js';
+// The star base (Dead Weight's "keep the hulk" ending): its maps, units and the claim, in ./starbase/.
+import { createStarbase } from './starbase/units.js';
+import { registerStarbase } from './starbase/index.js';
+import { claimBase, BASE_ID } from './starbase/base.js';
 
 const flag = newGameFlag({ config: runtimeConfig, search: location.search });
 // The tutorial step each on-foot lesson belongs to (contract section 4).
@@ -153,6 +157,20 @@ function boot(session = { mode: 'local' }) {
   const slicing = wantsSlice({ save: store.get(), params, throwaway, newGame: flag.enabled });
   if (slicing) startSlice(store);
   setJanitorPlayer(slicing); // the new game's player is the janitor; today's game and ?start=hangar keep the pilot
+  // The star base: once the claim flag is set the save gets its small base block (deterministic from the captain, so it never re-rolls),
+  // and its maps are registered. A save without the flag is untouched.
+  const syncBase = () => {
+    if (store.get().flags?.['starbase-claimed'] && !store.get().base) store.update(claimBase);
+    const b = store.get().base;
+    if (b) registerStarbase(b);
+  };
+  syncBase();
+  store.subscribe(syncBase);
+  if (!document.querySelector('link[data-starbase]')) {
+    const css = document.createElement('link');
+    css.rel = 'stylesheet'; css.href = new URL('./starbase/starbase.css', import.meta.url).href; css.dataset.starbase = '';
+    document.head.append(css);
+  }
   let slice = null;
 
   const chip = $('vy-sync');
@@ -458,12 +476,19 @@ function boot(session = { mode: 'local' }) {
   }
 
 
+  // The star base's units (a station id `sb-*` walked up to and used): panels on the floor, games full screen.
+  const starbase = createStarbase({
+    root: floor, store, bus, toast, jobs, reducedMotion: still, sound: (id) => onfoot?.sound(id),
+    onBusy: (on) => { if (on) overlays.add('starbase'); else overlays.delete('starbase'); holdFloor(); tracker?.render(); },
+  });
+
   // The walkable floor. Walking up to a station and pressing E opens it in place.
   onfoot = createOnFoot({
     root: floor, store, bus, mapId: link.map || (workbench ? WORKBENCH_ID : slicing ? startRoom(store.get()) : 'hangar'), spawn: link.map ? link.spawn : 'default',
     reducedMotion: still,
     hooks: {
-      openStation: (id) => (workbenchRoom && String(id).startsWith('wb-') ? workbenchRoom.openStation(id) : new Promise((resolve) => {
+      home: () => (store.get().base ? BASE_ID : null),
+      openStation: (id) => (starbase.isUnit(id) ? starbase.openUnit(id) : workbenchRoom && String(id).startsWith('wb-') ? workbenchRoom.openStation(id) : new Promise((resolve) => {
         if (!place.openStation(id, { via: 'walk' })) { resolve(); return; }
         const off = place.subscribe((e) => { if (e.type === 'close') { off(); resolve(); } });
       })),
@@ -473,7 +498,7 @@ function boot(session = { mode: 'local' }) {
       allow: (target) => allowLesson(target),
       entered: (map) => { clearToast(); slice?.entered(map); setBed(map.ambient); place?.closeStation({ restoreFocus: false }); place?.place(); setPlaceName(placeNameFor(map)); },
       flying: (on) => { flying = on; holdFloor(); place?.place(); if (on) setPlaceName('The Drift'); else if (onfoot?.world?.map) setPlaceName(placeNameFor(onfoot.world.map)); },
-      stationInfo: (id) => (workbenchRoom && String(id).startsWith('wb-') ? workbenchRoom.stationInfo(id) : stationInfo(id)),
+      stationInfo: (id) => (starbase.isUnit(id) ? starbase.stationInfo(id) : workbenchRoom && String(id).startsWith('wb-') ? workbenchRoom.stationInfo(id) : stationInfo(id)),
       // Live stealth (the workbench's patrol yard): the test character's stealth points, and the guards' events as toasts.
       stealthSetup: () => workbenchRoom?.stealthSetup?.() || null,
       stealthEvent: (e, world) => workbenchRoom?.stealthEvent?.(e, world),
@@ -482,7 +507,7 @@ function boot(session = { mode: 'local' }) {
       // The "job here" mark: open offers at a giver or a board.
       offers: ({ map, npc, station }) => {
         if (!jobsOpen()) return 0;
-        if (station === 'board') return openCount({ map, board: true }, store.get());
+        if (station === 'board' || station === 'sb-board') return openCount({ map, board: true }, store.get());
         return npc ? openCount({ map, npc }, store.get()) : 0;
       },
     },
@@ -630,5 +655,5 @@ function boot(session = { mode: 'local' }) {
 
   // For tests and poking around in the console (no secrets: the save is the player's own).
   setTimeout(maybeControls, 600);
-  window.__stardust = { store, story, onfoot, place, jobs, licence, bus, pad, tracker, controls, pause, jobTalk, jobCard, crew, slice, workbench: workbenchRoom };
+  window.__stardust = { store, story, onfoot, starbase, place, jobs, licence, bus, pad, tracker, controls, pause, jobTalk, jobCard, crew, slice, workbench: workbenchRoom };
 }

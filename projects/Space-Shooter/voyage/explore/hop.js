@@ -4,7 +4,9 @@
 // slow down beside them (or press E). Arriving resolves the promise; the page
 // (or onfoot.js) emits met:<giver>.
 //
-//   flyHop(root, { to: 'beacon', shipArt, onPoi, visited }) -> Promise<{ arrived, place, giver, seen, pois }>
+//   flyHop(root, { to: 'beacon', shipArt, onPoi, visited, hidden, home }) -> Promise<{ arrived, place, giver, seen, pois }>
+// `hidden`: place ids not drawn (your star base, until it is yours). `home`: a place id; while flying anywhere else a Home button
+// re-lays the course to it with one tap (your star base), from anywhere on the hop map.
 import { createHop, stepHop, steerToward, PLACES, POIS, ROCKS, SECTOR, STEP } from './rules.js';
 import { sprite } from '../onfoot/assets.js';
 import { fitCanvas } from '../onfoot/viewport.js';
@@ -13,16 +15,17 @@ import { createEl } from '../onfoot/dom.js';
 
 const UNIT = 22; // CSS px per Dogfight unit at zoom 1
 
-export function flyHop(root, { to, from = 'home', shipArt = null, onPoi = () => {}, visited = [], reducedMotion = () => false, sound = () => {}, scanRange = 1 } = {}) {
+export function flyHop(root, { to, from = 'home', shipArt = null, onPoi = () => {}, visited = [], reducedMotion = () => false, sound = () => {}, scanRange = 1, hidden = [], home = null } = {}) {
   const hop = createHop({ from, to, visited, scanRange });
   let boostWas = 3, shake = 0;
-  const dest = PLACES[hop.to];
+  let dest = PLACES[hop.to];
   const el = createEl('div', { class: 'of-hop', role: 'region', 'aria-label': `Flying to ${dest.name}` });
   const canvas = createEl('canvas', { class: 'of-canvas', 'aria-label': `Space. Fly to ${dest.name}. Arrows or WASD to steer and thrust, Shift to boost.` });
   const hud = createEl('div', { class: 'of-hop-hud' });
   const toast = createEl('div', { class: 'of-hop-toast', role: 'status', 'aria-live': 'polite' });
   const help = createEl('p', { class: 'of-hud-help' });
   el.append(canvas, hud, toast, help);
+  let homeBtn = null;
   el.__hop = hop;
   root.append(el);
   const input = createInput(el, { mode: 'fly', canvas });
@@ -52,6 +55,25 @@ export function flyHop(root, { to, from = 'home', shipArt = null, onPoi = () => 
 
   function say(text) { toast.textContent = text; toast.classList.add('show'); toastT = 4.5; }
   say(`Course laid in: ${dest.name}. Follow the marker.`);
+
+  // Home, one tap from anywhere on the hop: the course is re-laid to the place the page calls home (your star base).
+  function retarget(id) {
+    const p = PLACES[id];
+    if (!p || hop.arrived || hop.docking > 0) return false;
+    dest = p; hop.to = p.id; hop.giver = p.giver || null;
+    el.setAttribute('aria-label', `Flying to ${p.name}`);
+    canvas.setAttribute('aria-label', `Space. Fly to ${p.name}. Arrows or WASD to steer and thrust, Shift to boost.`);
+    say(`Course laid in: ${p.name}. Follow the marker.`);
+    syncHome();
+    return true;
+  }
+  function syncHome() { if (homeBtn) homeBtn.hidden = dest.id === home; }
+  if (home && PLACES[home] && !hidden.includes(home)) {
+    homeBtn = createEl('button', { type: 'button', class: 'of-hop-home ui-btn', 'data-home': home, 'aria-label': `Home: ${PLACES[home].name}`, text: 'Home' });
+    homeBtn.addEventListener('click', () => retarget(home));
+    el.append(homeBtn);
+    syncHome();
+  }
 
   function inputNow() {
     const st = input.stick();
@@ -140,6 +162,7 @@ export function flyHop(root, { to, from = 'home', shipArt = null, onPoi = () => 
     }
     // Places.
     for (const p of Object.values(PLACES)) {
+      if (hidden.includes(p.id)) continue;
       const img = sprite(p.art);
       const target = p.id === dest.id;
       if (target) { ctx.strokeStyle = '#81e6df'; ctx.globalAlpha = 0.5 + Math.sin(t * 4) * 0.25; ctx.lineWidth = 0.18; ctx.beginPath(); ctx.arc(p.x, p.y, p.size * 0.5 + 2.2, 0, Math.PI * 2); ctx.stroke(); ctx.globalAlpha = 1; }
@@ -164,7 +187,7 @@ export function flyHop(root, { to, from = 'home', shipArt = null, onPoi = () => 
     // Labels in screen space.
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.font = '600 12px Inter, "Segoe UI", sans-serif'; ctx.textAlign = 'center';
-    for (const p of [...Object.values(PLACES), ...POIS]) {
+    for (const p of [...Object.values(PLACES).filter(q => !hidden.includes(q.id)), ...POIS]) {
       const x = (p.x - camX) * k, y = (p.y - camY) * k;
       if (x < -50 || y < -50 || x > w + 50 || y > h + 50) continue;
       const big = p.size || 0;
@@ -195,5 +218,6 @@ export function flyHop(root, { to, from = 'home', shipArt = null, onPoi = () => 
   raf = requestAnimationFrame(now => { last = now; frame(now); });
   done.hop = hop;
   done.abort = () => close(false);
+  done.retarget = retarget;
   return done;
 }

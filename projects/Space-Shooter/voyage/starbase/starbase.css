@@ -1,0 +1,21 @@
+/* The star base's unit panels (starbase/units.js). A panel is the page's .of-panel (the floor holds still under it); a GAME is never a panel,
+   it opens full screen. Buttons are the kit's plain frame (.ui-btn): no tap highlight, no sticky hover or press picture, a press shows as a
+   small transform (house rule, bend lane LESSONS 7). */
+.sb-panel{display:grid;gap:10px;width:min(520px,calc(100% - 24px));max-height:calc(100% - 24px)}
+.sb-title{margin:0;font-size:20px;letter-spacing:-.01em}
+.sb-body{display:grid;gap:10px;min-width:0}
+.sb-note{margin:0;color:#8fa6b7;font-size:13px;line-height:1.5}
+.sb-meal{margin:0;font:700 12px Consolas,monospace;letter-spacing:.06em;color:#9fe870}
+.sb-wallet{margin:0;font:700 14px Consolas,monospace;color:#ffad72}
+.sb-shop{min-width:0}
+.sb-board{min-width:0}
+.sb-btn{-webkit-tap-highlight-color:transparent;touch-action:manipulation;border-image:url(../ui/kit/button.webp) 24 38 fill / 12px 19px stretch;filter:drop-shadow(0 0 5px #81e6df33);justify-self:stretch}
+.sb-btn.primary{border-image:url(../ui/kit/button-primary.webp) 24 34 24 21 fill / 12px 17px 12px 11px stretch}
+.sb-btn:hover:not(:disabled){border-image-source:url(../ui/kit/button.webp);filter:drop-shadow(0 0 5px #81e6df33)}
+.sb-btn.primary:hover:not(:disabled){border-image-source:url(../ui/kit/button-primary.webp)}
+.sb-btn:active:not(:disabled){border-image-source:url(../ui/kit/button.webp);transform:scale(.97);filter:drop-shadow(0 0 5px #81e6df33)}
+.sb-btn.primary:active:not(:disabled){border-image-source:url(../ui/kit/button-primary.webp)}
+.sb-btn:disabled{border-image-source:url(../ui/kit/button-disabled.webp)}
+.sb-panel .sh-item .sh-buy button,.sb-panel .vy-posting button{-webkit-tap-highlight-color:transparent}
+@media (max-width:620px){.sb-panel{padding:12px;gap:8px}.sb-title{font-size:18px}}
+.sb-craftrow{display:grid;gap:4px}.sb-sub{margin:6px 0 0;font:700 11px Consolas,monospace;letter-spacing:.1em;color:#81e6df}.sb-tools{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}

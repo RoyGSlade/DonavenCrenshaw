@@ -85,10 +85,17 @@ export function createJobs({ pane, store, say, toast, dev = false, onCaptain = (
   // like notes. Pick one and take it here; the job then runs in the world.
   let postTarget = null;
   let postTake = (quest) => take(quest);
-  function renderPostings(target = postTarget, onTake = postTake) {
+  let postMap = 'hangar';
+  // map: whose board it is (the hangar's by default; the star base's concourse has its own, quests/data/offers.js boards).
+  function renderPostings(target, onTake, boardMap) {
+    const redraw = target === undefined; // no arguments: the open board redraws itself (same target, handler and board)
+    const map = redraw ? postMap : boardMap || 'hangar';
+    target = redraw ? postTarget : target;
+    onTake = redraw ? postTake : onTake || postTake;
     if (!target) return;
     postTarget = target;
     postTake = onTake;
+    postMap = map;
     const save = store.get();
     if (!save.character) {
       target.replaceChildren(
@@ -100,7 +107,7 @@ export function createJobs({ pane, store, say, toast, dev = false, onCaptain = (
       return;
     }
     const W = OFFERS_DATA.words;
-    const posts = offersAt({ map: 'hangar', board: true }, save);
+    const posts = offersAt({ map, board: true }, save);
     const ship = shipSummary(save);
     seedBox = dev ? el('input', { type: 'number', id: 'vy-seed', min: '1', step: '1', placeholder: 'random', 'aria-label': 'Job seed (test tools)' }) : null;
     const running = player.active ? QUESTS[player.quest?.id || ''] : null;
