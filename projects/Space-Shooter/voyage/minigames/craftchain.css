@@ -117,3 +117,22 @@
   .wb-full .cc-pipstat{display:flex;align-items:center;gap:8px}
   .cc-pad{min-height:84px}
 }
+
+/* Flatten: power gauge with the right band, lean gauge with its limits, dimple pips, one big Swing pad (the same kit button as Bend's pads) */
+.cc-power{height:12px;overflow:hidden}.cc-power i{background:#ffc857}.cc-power[data-state=right] i{background:#9fe870}.cc-power[data-state=hard] i{background:#ff6b5a}
+.cc-power .cc-zone{opacity:.55;top:0;bottom:0}.cc-power .cc-tick{top:0;bottom:0}
+.cc-lean{height:12px;overflow:hidden;background:#1b2d3d}.cc-lean .cc-over{opacity:.85;top:0;bottom:0}.cc-lean .cc-mid{position:absolute;left:50%;top:0;bottom:0;width:2px;margin-left:-1px;background:#9db3c2}
+.cc-lean .cc-needle.cc-leanneedle{top:0;bottom:0;width:6px;margin-left:-3px;background:#fff;border-radius:3px;box-shadow:0 0 8px #fff}
+.cc-lean[data-state=over] .cc-leanneedle{background:#ff6b5a;box-shadow:0 0 10px #ff6b5a}.cc-lean[data-state=ok] .cc-leanneedle{background:#d8ffd0;box-shadow:0 0 8px #9fe870}
+.cc-powerstat em,.cc-leanstat em{font-size:12px}
+.cc-pips i.dent{border-color:#ff8a70;background:#3a1612;border-radius:3px}
+.cc-flatwrap{width:min(100%,880px);aspect-ratio:1000/680;margin:0 auto}
+.cc-flatcanvas{cursor:pointer;touch-action:none}
+.cc-flatrow{display:grid;grid-template-columns:1fr;max-width:640px;width:100%;margin:0 auto}
+.cc-swing{min-height:92px}.cc-swing b{font-size:34px}
+.wb-full .cc-flatpanel{gap:6px}
+.wb-full .cc-flatwrap{flex:1 1 0;min-height:120px;width:100%;max-width:none;aspect-ratio:auto;position:relative;display:block;margin:0}
+.wb-full .cc-flatwrap .cc-canvas{position:absolute;inset:0;width:100%;height:100%}
+.wb-full .cc-flatrow{padding-bottom:max(2px,env(safe-area-inset-bottom))}
+.wb-full .cc-recipe:has(.cc-flatpanel) .cc-chips{flex-wrap:wrap;overflow:visible;padding-bottom:0}
+.wb-full .cc-recipe:has(.cc-flatpanel) .cc-chip{white-space:normal}
