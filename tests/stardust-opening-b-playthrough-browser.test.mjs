@@ -56,12 +56,12 @@ for (const [size, profile] of SIZES) {
           await settle(page, 1500); continue;
         }
         const pick = st.choices.find((c) => !c.dis && c.kind === 'choice') || st.choices.find((c) => !c.dis && c.kind === 'attempt' && !/hack|bluff|haggle|patch the line|read the ledger/i.test(c.t)) || st.choices.find((c) => !c.dis && c.kind === 'attempt');
-        if (!pick && st.quest && !st.card && !st.approach && same > 6 && same % 6 === 1) { notes.resumed = (notes.resumed || 0) + 1; await page.evaluate(() => window.__stardust.jobs.resume()); await settle(page, 1200); continue; } /* the talk ended because the bot walked off: the tracker's Continue picks it up */
         if (pick) { await page.locator('#hg-dialogue .ui-dlg-choice', { hasText: pick.t.split(' Roll')[0].slice(0, 30) }).first().click({ timeout: 2000 }).catch(() => {}); await settle(page, 900); } else await settle(page, 700);
       }
       const r = await frameReport(page);
       notes.frames = r.frames; notes.cuts = r.cuts; notes.maxChange = r.maxChange; notes.captions = r.captions; notes.errors = errors;
       if (PROOF) fs.writeFileSync(`${PROOF}/playthrough-${size}.json`, JSON.stringify(notes, null, 1));
+      assert.equal(notes.resumed, undefined, 'a manual Continue was never needed');
       assert.equal(notes.cameraText, undefined, `camera language reached the screen: ${JSON.stringify(notes.cameraText)}`);
       assert.equal(notes.laterInDanger, undefined, `Later showed in danger: ${JSON.stringify(notes.laterInDanger)}`);
       assert.equal(notes.digitsOnChoice, undefined, `raw roll maths on a choice: ${JSON.stringify(notes.digitsOnChoice)}`);

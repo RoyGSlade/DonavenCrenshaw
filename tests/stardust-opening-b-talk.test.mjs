@@ -107,7 +107,7 @@ test('jobTalk: a beat announces who talks, and walking off answers Later while t
   assert.deepEqual(seen, [['open', 'tull']]);
   assert.equal(jt.busy, true);
   jt.leave();
-  assert.equal(await p, -1, 'walking away is Later');
+  assert.equal(await p, -1, 'a real choice on screen: walking away is Later');
   assert.deepEqual(seen, [['open', 'tull'], ['close', 'tull']]);
   assert.equal(jt.busy, false);
   // A beat can be answered while the player moves: the answer is just an event.
@@ -166,7 +166,7 @@ test('talkRange: walking off pauses with a bark, back resumes, far ends the talk
   for (let i = 0; i < 200 && range.state.active; i++) range.tick();
   assert.equal(range.state.state, 'idle');
   // a passing bark after the talk
-  w.map = { id: 'duchess-mess' }; w.d = { tull: 2 }; w.barks.length = 0; clock = 100000;
+  w.map = { id: 'duchess-mess' }; w.d = { nessa: 2 }; w.barks.length = 0; clock = 100000;
   range.tick();
   assert.equal(w.barks.length, 1, 'a bark in passing');
   range.destroy();
@@ -184,4 +184,36 @@ test('talkRange: no bark while a talk is open or when the page says the screen i
   range.tick();
   assert.equal(w.barks.length, 0, 'in a talk: no ambient bark');
   range.destroy();
+});
+
+test('a talk the player walked off from carries on by itself when they come back (no Continue to press)', () => {
+  const bus = createBus();
+  const w = fakeWorld();
+  let resumed = 0, left = 0;
+  const range = createTalkRange({ bus, world: () => w, leave: () => { left++; }, resume: () => { resumed++; }, canBark: () => true, now: () => 1e6, rand: () => 0.99, tickMs: 100 });
+  bus.emit('talk:open', { speaker: 'tull' });
+  w.d.tull = 2; range.tick();
+  w.d.tull = 7; range.tick();
+  w.d.tull = 11; range.tick();
+  assert.equal(left, 1);
+  range.tick();
+  assert.equal(resumed, 0, 'still far: nothing');
+  w.d.tull = 3; range.tick();
+  assert.equal(resumed, 1, 'back beside them: it carries on');
+  range.tick();
+  assert.equal(resumed, 1, 'once');
+  range.destroy();
+});
+
+test('walking out after a lone "Go on" line carries on (the scene sent you away); a real choice waits', async () => {
+  const bus = createBus();
+  const jt = createJobTalk({ bus, store: { get: () => ({}) } });
+  const lone = { portrait: 'nessa', speaker: 'Nessa', text: 'Go find Pip.', choices: [{ index: 0, label: 'Go find Pip in the engine room.', locked: false }] };
+  const p = jt.beat(lone);
+  await new Promise((r) => setTimeout(r, 20));
+  jt.leave();
+  assert.equal(await p, 0, 'taken: no Continue to press');
+  const p2 = jt.beat(lone);
+  jt.leave();
+  assert.equal(await p2, 0, 'even if they leave before the line is read');
 });

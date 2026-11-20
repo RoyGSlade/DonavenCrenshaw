@@ -554,7 +554,7 @@ function boot(session = { mode: 'local' }) {
     onContinue: () => jobs.resume(),
   });
   // Opening B: how far you walk from whoever is talking pauses or ends the talk; people bark as you pass.
-  const talkRange = createTalkRange({ bus, world: () => onfoot?.world || null, leave: () => jobTalk.leave(), canBark: () => !jobTalk.busy && !jobCard.open && !screenBusy() });
+  const talkRange = createTalkRange({ bus, world: () => onfoot?.world || null, leave: () => jobTalk.leave(), resume: () => { if (!jobTalk.busy) jobs.resume(); }, canBark: () => !jobTalk.busy && !jobCard.open && !screenBusy() });
   const controls = createControlsCard({ root: document.body, touch });
   const pause = createPause({
     root: document.body, touch, settings, controls,

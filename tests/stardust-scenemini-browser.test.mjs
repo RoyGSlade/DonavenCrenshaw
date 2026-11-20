@@ -43,18 +43,35 @@ const readUntilChoices = async (page, max = 40) => {
 };
 // Read on (and take "Go on") until the choice shows; return its button.
 const toChoice = async (page, frag) => {
-  for (let i = 0; i < 6; i++) {
-    await readUntilChoices(page);
+  // Lone "Go on" lines take themselves once read (playtest 1), so wait for the choice we want, taking a Go on when one is up.
+  for (let i = 0; i < 24; i++) {
     if (await page.locator('#hg-dialogue .ui-dlg-choice', { hasText: frag }).count()) break;
     const go = page.locator('#hg-dialogue .ui-dlg-choice', { hasText: 'Go on' }).first();
-    if (!(await go.count())) break;
-    await go.click(); await settle(page, 400);
+    if (await go.count()) await go.click({ timeout: 1500 }).catch(() => {});
+    await settle(page, 500);
   }
   const b = page.locator('#hg-dialogue .ui-dlg-choice', { hasText: frag }).first();
   assert.ok(await b.count(), `no choice "${frag}"`);
   return b;
 };
 const pick = async (page, frag) => (await toChoice(page, frag)).click();
+// A lone "Go on" style choice takes itself once read (playtest 1): take it if it is still there, else it has already moved on.
+const pickIfThere = async (page, frag) => { await readUntilChoices(page).catch(() => {}); const b = page.locator('#hg-dialogue .ui-dlg-choice', { hasText: frag }).first(); if (await b.count()) await b.click({ timeout: 2000 }).catch(() => {}); };
+// Opening B: a rolled choice that is not a minigame is an approach (help and time from the roll; you do the job). Do it as a player would:
+// stand at the target and work it (hold E, or the Hold button on a phone) until the bar is done.
+const doApproach = async (page, size) => {
+  await page.waitForSelector('.op-approach', { timeout: 15000 });
+  await page.evaluate(async () => {
+    const w = window.__stardust.onfoot.world, run = Object.values(window.__stardust.store.get().quests.active)[0];
+    const { APPROACH, targetPoint } = await import('/projects/Space-Shooter/voyage/slice/staging.js');
+    const spec = APPROACH[`${run.quest}/${run.node}/${run.assist.index}`];
+    const t = spec && targetPoint(w.map, spec.where, { npcs: w.npcsHere() });
+    if (t) w.place(t.x + (t.box ? 0 : 30), t.y + (spec.where.npc ? 40 : 46));
+  });
+  if (size === 'phone') { if (await page.locator('.op-ap-hold').count()) await page.locator('.op-ap-hold').dispatchEvent('pointerdown'); } else await page.keyboard.down('KeyE');
+  await page.waitForSelector('.op-approach', { state: 'detached', timeout: 20000 });
+  if (size === 'phone') await page.locator('.op-ap-hold').dispatchEvent('pointerup').catch(() => {}); else await page.keyboard.up('KeyE');
+};
 const walkTo = async (page, room) => {
   for (let hop = 0; hop < 8; hop++) {
     const door = await page.evaluate(async (room) => {
@@ -133,10 +150,10 @@ const SCENES = [
   { id: 'scene4-haggle', before: 3, kind: 'haggle', frag: 'Haggle for a bigger share.', title: /Captain Tull/, eyebrow: /^HAGGLE · [A-Z ]+ ROLL$/,
     to: async (page) => { await walkTo(page, 'duchess-quarters'); await readUntilChoices(page); } },
   { id: 'scene5-repair', before: 4, kind: 'repair', frag: 'Patch the line', title: /Coolant line/, eyebrow: /^REPAIR · [A-Z ]+ ROLL$/,
-    to: async (page) => {
+    to: async (page, size) => {
       await walkTo(page, 'duchess-bridge'); await readUntilChoices(page);
-      await pick(page, 'Pull the arm housing'); await pick(page, 'On to the next job.'); await pick(page, 'Scan the lane carefully.'); await pick(page, 'Back to the bridge console.');
-      await readUntilChoices(page); await pick(page, 'Go find Pip'); await settle(page, 500);
+      await pick(page, 'Pull the arm housing'); await doApproach(page, size); await pickIfThere(page, 'On to the next job.'); await pick(page, 'Scan the lane carefully.'); await doApproach(page, size); await pickIfThere(page, 'Back to the bridge console.');
+      await pickIfThere(page, 'Go find Pip'); await settle(page, 500);
       await walkTo(page, 'duchess-engine'); await readUntilChoices(page);
     } },
 ];
@@ -161,11 +178,11 @@ test('the opening mini-games in the real game: hack (scene 3), haggle (scene 4),
         const mid = async () => { await settle(page, 300); await shot('3-mid'); };
         await boot(page, server.origin);
         await playedBefore(page, sc.before);
-        await sc.to(page);
+        await sc.to(page, sizeName);
         const before = await page.evaluate(() => window.__stardust.store.get());
         // The hooked choice shows its odds; take it.
         const hooked = await toChoice(page, sc.frag);
-        assert.match(await hooked.innerText(), /Roll d20.* vs \d+: \d+%/);
+        assert.match(await hooked.innerText(), /check: the roll sets how hard the game is/);
         await settle(page, 500);
         await shot('1-choice');
         await hooked.click();

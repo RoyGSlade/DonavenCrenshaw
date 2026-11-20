@@ -8,10 +8,11 @@ import { createBarker } from './barks.js';
  * bus: the story bus. world(): the on-foot world (npcsHere, tilesTo, map, bark, stage) or null. leave(): end the talk as "Later".
  * canBark(): true when nothing else owns the screen. now(): ms clock. rand(): rng.
  */
-export function createTalkRange({ bus, world, leave = () => {}, canBark = () => true, now = () => Date.now(), rand = Math.random, tickMs = 100 }) {
+export function createTalkRange({ bus, world, leave = () => {}, resume = () => {}, canBark = () => true, now = () => Date.now(), rand = Math.random, tickMs = 100 }) {
   const state = createTalkState();
   const barker = createBarker({ rand });
   let mapId = null, hasBody = false, speaker = null;
+  let owed = null; // a talk the player walked off from: when they come back to that person it carries on by itself (no Continue to press)
 
   const off = [
     bus.on('talk:open', (d) => {
@@ -19,6 +20,7 @@ export function createTalkRange({ bus, world, leave = () => {}, canBark = () => 
       speaker = d?.speaker || null;
       mapId = w?.map?.id || null;
       hasBody = Boolean(w && speaker && w.tilesTo(speaker) != null);
+      owed = null;
       state.open(speaker);
       w?.stage?.talking(hasBody ? speaker : null);
     }),
@@ -39,10 +41,12 @@ export function createTalkRange({ bus, world, leave = () => {}, canBark = () => 
           w.stage?.talking(null);
           if (w.map?.id === mapId) w.bark(e.speaker, barker.talkLine('end', e.speaker));
           leave();
+          if (e.speaker && hasBody) owed = { speaker: e.speaker, mapId };
         }
       }
       return;
     }
+    if (owed && w.map?.id === owed.mapId && (w.tilesTo(owed.speaker) ?? 99) <= 3.5 && canBark()) { owed = null; resume(); return; }
     if (!canBark()) return;
     const t = now();
     for (const n of w.npcsHere()) {

@@ -66,7 +66,7 @@ export function createBarker({ rand = Math.random, passCooldownMs = 22000, passR
       const lines = PASSING_LINES[id];
       if (!lines || dist == null || dist > passRange) return null;
       if (nowMs - (when.get(id) ?? -Infinity) < passCooldownMs) return null;
-      if (rand() > chance) { when.set(id, nowMs - passCooldownMs * 0.6); return null; } // a miss: try again a little sooner
+      if (rand() > chance) { when.set(id, nowMs - passCooldownMs * 0.9); return null; } // a miss: try again a little sooner
       when.set(id, nowMs);
       return pickFrom(lines, `pass:${id}`);
     },

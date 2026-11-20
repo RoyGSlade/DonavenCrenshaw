@@ -121,6 +121,8 @@ export function createJobTalk({ bus, store, take = () => {}, onBusy = () => {}, 
    * One beat of a job you have taken: the engine's dialogue view (v) in the box.
    * Resolves with the picked choice index, or -1 for "Later" (the job waits).
    */
+  let loneNow = null; // the lone "Go on" of the beat on screen: walking off after the line carries it on instead of putting the scene on hold
+  const loneOf = (v) => { const plain = (v.choices || []).filter((c) => !c.locked); return plain.length === 1 && !plain[0].check ? plain[0].index : null; };
   let walkedOff = false; // the player left mid-line: the beat answers Later as soon as it would ask
   async function beat(v, { choicesOnly = false } = {}) {
     hold(true);
@@ -132,7 +134,7 @@ export function createJobTalk({ bus, store, take = () => {}, onBusy = () => {}, 
       // Stage directions are not dialogue (opening B): a direction the staging performs is not shown; the rest is a small caption that
       // goes by itself, never a box that waits for Next.
       if (v.beat && !choicesOnly && beatMode(v.quest?.id, v.node) === 'caption') bus.emit('talk:caption', { text: v.beat, node: v.node });
-      if (walkedOff) return -1;
+      if (walkedOff) return loneOf(v) ?? -1;
       if (!choicesOnly) { say({ speaker: speaker || 'narrator', name: v.speaker || '', text: v.text }); if (v.line) bus.emit('talk:line', { id: v.line, speaker }); }
       const options = v.choices.map((c) => ({
         index: c.index,
@@ -143,13 +145,14 @@ export function createJobTalk({ bus, store, take = () => {}, onBusy = () => {}, 
       }));
       // Only one plain choice (a lone "Go on"): it takes itself once the line has had time to be read (the clock stops while the talk is paused).
       const lone = options.length === 1 && !options[0].locked && options[0].kind === 'choice' ? options[0] : null;
+      loneNow = loneOf(v);
       const answer = ask(danger ? options : [...options, { index: -1, label: W.later, kind: 'later' }]);
       let stopAuto = () => {};
       if (lone && !choicesOnly) {
         const fire = () => { if (asking) { const a = asking; asking = null; bus.emit('story:choices', null); a.resolve(lone.index); } };
         stopAuto = pausableTimer(bus, fire, autoMs(v.text));
       }
-      try { return await answer; } finally { stopAuto(); }
+      try { return await answer; } finally { stopAuto(); loneNow = null; }
     } finally {
       hold(false);
       bus.emit('talk:close', { speaker });
@@ -157,7 +160,7 @@ export function createJobTalk({ bus, store, take = () => {}, onBusy = () => {}, 
   }
 
   /** The talk ended because the player walked off: it counts as "Later" (the scene waits on this person). */
-  function leave() { walkedOff = true; if (asking) { const a = asking; asking = null; bus.emit('story:choices', null); a.resolve(-1); } }
+  function leave() { walkedOff = true; if (asking) { const a = asking; asking = null; bus.emit('story:choices', null); a.resolve(loneNow ?? -1); } }
 
   return {
     offerAt,

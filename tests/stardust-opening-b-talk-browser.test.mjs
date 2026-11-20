@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { loadPlaywright, startServer, SIZES, skip, boot, state, walk, toLine, freeSpotAt, placeAt, settle, PROOF } from '../scripts/stardust-opening-b-kit.mjs';
 
 for (const [size, profile] of SIZES) {
-  test(`talk (${size}): the player walks while a line is up, walking off pauses it with a bark, stepping back resumes, far ends it`, { skip, timeout: 240000 }, async () => {
+  test(`talk (${size}): the player walks while a line is up, walking off pauses it with a bark, stepping back resumes it`, { skip, timeout: 240000 }, async () => {
     const { chromium } = await loadPlaywright();
     const server = await startServer();
     const browser = await chromium.launch({ headless: true });
@@ -38,17 +38,7 @@ for (const [size, profile] of SIZES) {
       // 3. Step back: it resumes.
       await placeAt(page, near);
       await page.waitForFunction(() => !document.querySelector('#hg-dialogue').classList.contains('is-paused'), null, { timeout: 4000 });
-      // 4. The scene waits: far away for good ends the talk (Later); the box goes and the quest stays on the same node.
-      const nodeBefore = (await state(page)).node;
-      await placeAt(page, far);
-      await settle(page, 600);
-      const farther = await freeSpotAt(page, "tull", 10.8);
-      if (farther) await placeAt(page, farther);
-      await page.waitForFunction(() => document.querySelector('#hg-dialogue').hidden, null, { timeout: 30000 });
-      s = await state(page);
-      assert.equal(s.node, nodeBefore, 'the scene waits on the captain: same node');
-      assert.equal(s.talkingTo, null, 'the talk ring is gone');
-      assert.equal(s.held, false);
+      assert.equal((await state(page)).held, false);
       assert.deepEqual(errors, []);
     } finally { await context.close(); await browser.close(); server.close(); }
   });
@@ -96,10 +86,67 @@ test('talk (desktop): number keys answer, and a bark shows over a person as you 
       const n = w.npcsHere().find((x) => ['tull', 'nessa', 'reck', 'pip'].includes(x.id));
       if (!n) return 'no one here';
       w.place(n.x + 60, n.y);
-      for (let i = 0; i < 40; i++) { await new Promise((r) => setTimeout(r, 100)); if (w.stage.bubbles().length) break; }
+      for (let i = 0; i < 160; i++) { await new Promise((r) => setTimeout(r, 100)); if (w.stage.bubbles().length) break; }
       return w.stage.bubbles();
     });
     assert.ok(Array.isArray(bark) && bark.length >= 1, `a bark showed: ${JSON.stringify(bark)}`);
     assert.deepEqual(errors, []);
   } finally { await context.close(); await browser.close(); server.close(); }
 });
+
+const watchEnds = (page) => page.evaluate(() => { window.__ends = []; window.__stardust.bus.on('talk:end', (d) => window.__ends.push({ speaker: d.speaker, why: d.why, node: Object.values(window.__stardust.store.get().quests.active || {})[0]?.node })); });
+const walkOffFor = async (page, who) => {
+  // Far enough, then wait for the talk to end (far away, or 14 s paused).
+  const far = (await freeSpotAt(page, who, 10.8)) || (await freeSpotAt(page, who, 7.2));
+  await placeAt(page, far);
+  await page.waitForFunction(() => window.__ends.length > 0, null, { timeout: 40000 });
+};
+
+for (const [size, profile] of SIZES) {
+  test(`talk (${size}): (a) walking off from a lone Go on carries the scene on by itself, at the moment the talk ends`, { skip, timeout: 240000 }, async () => {
+    const { chromium } = await loadPlaywright();
+    const server = await startServer();
+    const browser = await chromium.launch({ headless: true });
+    const { context, page, errors } = await boot(browser, server.origin, profile);
+    try {
+      await page.waitForFunction(() => Object.values(window.__stardust.store.get().quests.active || {})[0]?.node === 'brief' && document.querySelectorAll('#hg-dialogue .ui-dlg-choice').length === 2, null, { timeout: 15000 });
+      await watchEnds(page);
+      await placeAt(page, await freeSpotAt(page, 'tull', 2));
+      await settle(page, 400);
+      await walkOffFor(page, 'tull');
+      const ended = await page.evaluate(() => window.__ends[0]);
+      assert.equal(ended.node, 'brief', 'the talk ended while the scene was still on the lone Go on line');
+      // The line's own timer was frozen while paused, so only the walk-off can have moved it on.
+      await page.waitForFunction(() => Object.values(window.__stardust.store.get().quests.active || {})[0]?.node !== 'brief', null, { timeout: 1500 });
+      assert.equal((await state(page)).node, 'brief-2', 'it carried on to the next beat with no Continue');
+      assert.deepEqual(errors, []);
+    } finally { await context.close(); await browser.close(); server.close(); }
+  });
+
+  test(`talk (${size}): (b) walking off from a real choice leaves the scene waiting; coming back resumes the talk with the same choice up`, { skip, timeout: 240000 }, async () => {
+    const { chromium } = await loadPlaywright();
+    const server = await startServer();
+    const browser = await chromium.launch({ headless: true });
+    const { context, page, errors } = await boot(browser, server.origin, profile);
+    try {
+      await toLine(page, 'Sign here');
+      await page.waitForFunction(() => Object.values(window.__stardust.store.get().quests.active || {})[0]?.node === 'brief-2' && document.querySelectorAll('#hg-dialogue .ui-dlg-choice').length >= 3, null, { timeout: 15000 });
+      const before = (await state(page)).choices;
+      await watchEnds(page);
+      await placeAt(page, await freeSpotAt(page, 'tull', 2));
+      await settle(page, 400);
+      await walkOffFor(page, 'tull');
+      await settle(page, 1500);
+      let s = await state(page);
+      assert.equal(s.node, 'brief-2', 'the scene waits on the same beat (a real choice is not taken for you)');
+      assert.equal(s.dlgOpen, false, 'the box went with the speaker');
+      // Come back: it picks up by itself, same choices.
+      await placeAt(page, await freeSpotAt(page, 'tull', 2));
+      await page.waitForFunction(() => !document.querySelector('#hg-dialogue').hidden && document.querySelectorAll('#hg-dialogue .ui-dlg-choice').length >= 3, null, { timeout: 8000 });
+      s = await state(page);
+      assert.equal(s.node, 'brief-2', 'still the same beat');
+      assert.deepEqual(s.choices, before, 'the same choice is still up');
+      assert.deepEqual(errors, []);
+    } finally { await context.close(); await browser.close(); server.close(); }
+  });
+}
