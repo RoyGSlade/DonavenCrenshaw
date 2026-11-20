@@ -1,0 +1,17 @@
+{
+  "id": "shop-counter",
+  "version": "0.1.0",
+  "kind": "screen",
+  "title": "Shop counter",
+  "verb": "Buy and sell",
+  "skill": "commerce",
+  "tabletop": "Commerce",
+  "paths": ["valuation", "barter", "market"],
+  "where": ["hangar shop counters", "star base tier 1 units", "moon store"],
+  "length_s": [30, 180],
+  "inputs": ["seed", "tier", "points", "quick", "play", "context.shopId", "context.shop", "context.keeper", "context.items", "context.lines", "context.names", "context.save", "context.bought"],
+  "outputs": ["success", "grade", "effects.items", "effects.world.moneyDelta", "effects.world.rep", "effects.world.shops", "bought", "sold", "spent", "earned", "haggle"],
+  "art": ["art/keepers/", "art/items/"],
+  "status": "draft",
+  "contract": 1
+}
