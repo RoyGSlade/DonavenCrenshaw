@@ -133,7 +133,8 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
         assert.ok(lay.cvBottom <= lay.rowTop + 1, 'the board does not run under the pads');
         if (phone) assert.ok(lay.cvW >= profile.viewport.width - 40 && lay.cvH >= 300, `the board is full width and tall on a phone: ${lay.cvW} x ${lay.cvH}`);
         // the three pads are the same kit button: same frame, same corners, same size class
-        const skin = await page.evaluate((sel) => [...document.querySelectorAll(`${sel} .cc-pad`)].map((b) => { const c = getComputedStyle(b); return { cls: b.className.split(' ').filter((x) => /^(primary|ui-btn|cc-pad)$/.test(x)).sort().join(' '), radius: c.borderTopLeftRadius, borderImage: c.borderImageSource, bg: c.backgroundImage, bw: c.borderTopWidth, h: Math.round(b.getBoundingClientRect().height) }; }), PANEL);
+        const skin = await page.evaluate((sel) => [...document.querySelectorAll(`${sel} .cc-pad`)].map((b) => { const c = getComputedStyle(b); return { cls: b.className.split(' ').filter((x) => /^(primary|ui-btn|cc-pad)$/.test(x)).sort().join(' '), radius: c.borderTopLeftRadius, borderImage: c.borderImageSource, bg: c.backgroundImage, bw: c.borderTopWidth, tap: c.webkitTapHighlightColor, h: Math.round(b.getBoundingClientRect().height) }; }), PANEL);
+        assert.ok(skin.every((x) => /rgba\(0, 0, 0, 0\)|transparent/.test(x.tap)), `no tap highlight square on a touched pad: ${skin.map((x) => x.tap)}`);
         assert.equal(skin.length, 3); assert.equal(new Set(skin.map((x) => JSON.stringify({ ...x, h: 0 }))).size, 1, `A, D and Set share one skin: ${JSON.stringify(skin)}`);
         assert.equal(new Set(skin.map((x) => x.h)).size, 1, 'and one height');
         const padSize = await page.evaluate((sel) => [...document.querySelectorAll(`${sel} .cc-pad`)].map((b) => { const r = b.getBoundingClientRect(); return [Math.round(r.width), Math.round(r.height)]; }), PANEL);

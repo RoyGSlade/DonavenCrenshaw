@@ -93,7 +93,7 @@
 .cc-bendcanvas{cursor:default}
 .cc-play{display:grid;gap:8px}
 .cc-bendrow{display:grid;grid-template-columns:1fr .8fr 1fr;gap:10px;align-items:stretch}
-.cc-pad{--glow:0;min-height:76px;display:grid;place-items:center;align-content:center;gap:0;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.cc-pad{-webkit-tap-highlight-color:transparent;--glow:0;min-height:76px;display:grid;place-items:center;align-content:center;gap:0;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 .cc-pad b{font:800 30px/1 Inter,sans-serif}.cc-pad span{font:700 10px Consolas,monospace;letter-spacing:.14em;text-transform:uppercase;opacity:.7}
 /* the next key's pad glows in time with the ring's green window (bendView sets --glow each frame); the shape never changes */
 .cc-pad.is-next{filter:drop-shadow(0 0 calc(3px + 16px * var(--glow)) rgba(129,230,223,calc(.35 + .65 * var(--glow))))}
