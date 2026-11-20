@@ -135,7 +135,7 @@ export function mountGame(stage, ctx, { fixtures, items, rock, resume, quick, on
   };
   const BASE_LIFT = 48;
   const onMove = (e) => { if (!ptr.down || e.pointerId !== ptr.id) return; const w = toWorld(e.clientX, e.clientY, ptr.type === 'touch' ? BASE_LIFT : 0); ptr.x = w.x; ptr.y = w.y; };
-  const onUp = (e) => { if (e.pointerId === ptr.id) { ptr.down = false; ptr.id = null; } };
+  const onUp = (e) => { sound.unlock(); if (e.pointerId === ptr.id) { ptr.down = false; ptr.id = null; } };
   canvas.addEventListener('pointerdown', onDown);
   canvas.addEventListener('pointermove', onMove);
   canvas.addEventListener('pointerup', onUp);
@@ -154,6 +154,7 @@ export function mountGame(stage, ctx, { fixtures, items, rock, resume, quick, on
 
   // --- state for drawing -------------------------------------------------------------------------------------------
   let phase = 'play';      // play | claw | reveal | card
+  let idleT = 0, listened = false;
   let phaseT = 0, shake = 0, flash = 0, lowSaid = false, chargeLow = false, bitAngle = -Math.PI / 2;
   let dustSeed = (g.seed * 2654435761) >>> 0;
   const rnd = () => { dustSeed = (Math.imul(dustSeed, 1664525) + 1013904223) >>> 0; return dustSeed / 4294967296; };
@@ -166,7 +167,7 @@ export function mountGame(stage, ctx, { fixtures, items, rock, resume, quick, on
   const onEvent = (ev) => {
     switch (ev.type) {
       case 'ping': sound.ping(ev.reach / 200); break;
-      case 'listen': sound.listen(); break;
+      case 'listen': sound.listen(); listened = true; break;
       case 'tink': sound.tink(ev.kind, ev.d, g.rules.reach); break;
       case 'found': break;
       case 'grind': sound.grind(); if (!reduced) shake = Math.max(shake, 0.25); break;
@@ -457,8 +458,10 @@ export function mountGame(stage, ctx, { fixtures, items, rock, resume, quick, on
     heatFill.style.width = `${hp}%`;
     const hc = heatRGB(g.heat / 100); heatFill.style.background = `linear-gradient(90deg, rgb(150,246,255), rgb(${hc.join(',')}))`;
     heat.classList.toggle('is-hot', g.heat > 72 || g.seizeLeft > 0);
-    const w = words(g);
-    if (w !== lastWord) { lastWord = w; status.textContent = w; status.dataset.tone = /careful|hot|seized|low|vein/.test(w) ? 'warn' : /something/.test(w) ? 'find' : ''; }
+    let w = words(g);
+    // a quiet nudge if they have not found the listen pulse: lifted for a while, rings long gone
+    if (phase === 'play' && touched && !listened && idleT > 4 && !g.over && g.charge > g.chargeMax * 0.2) w = 'hold still on the rock to listen';
+    if (w !== lastWord) { lastWord = w; status.textContent = w; status.dataset.tone = /careful|hot|seized|low|vein|empty/.test(w) ? 'warn' : /something|listen/.test(w) ? 'find' : ''; }
     const pr = mainProgress(g), main = R.finds[0];
     ringFg.setAttribute('stroke-dashoffset', String(207.3 * (1 - pr.share)));
     findWord.textContent = pr.word;
@@ -479,6 +482,7 @@ export function mountGame(stage, ctx, { fixtures, items, rock, resume, quick, on
     const dt = Math.min(0.1, lastDraw ? (ts - lastDraw) / 1000 : 0.016); lastDraw = ts;
     frame++;
     phaseT += dt;
+    idleT = (ptr.down || kb.space || kb.dx || kb.dy) ? 0 : idleT + dt;
     if (phase === 'play' && !g.over) {
       acc += dt;
       while (acc >= 1 / 60) {
