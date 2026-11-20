@@ -20,6 +20,17 @@ const fill = (text, vars) => String(text).replace(/\{(\w+)\}/g, (_, k) => (vars[
 export const autoMs = (text) => Math.min(9000, 2200 + 55 * String(text || '').length);
 const readMs = (text) => Math.min(7000, 900 + 55 * String(text || '').length);
 
+/** A timeout that stops while the talk is paused ('talk:pause' / 'talk:resume' on the bus). Returns cancel(). */
+export function pausableTimer(bus, fn, ms) {
+  let left = ms, started = Date.now(), id = setTimeout(done, ms);
+  function done() { id = 0; offs.forEach((o) => o?.()); fn(); }
+  const offs = [
+    bus.on('talk:pause', () => { if (id) { clearTimeout(id); id = 0; left = Math.max(0, left - (Date.now() - started)); } }),
+    bus.on('talk:resume', () => { if (!id && left > 0) { started = Date.now(); id = setTimeout(done, left); } }),
+  ];
+  return () => { clearTimeout(id); id = 0; left = 0; offs.forEach((o) => o?.()); };
+}
+
 /**
  * bus: the story bus. store. take(quest): start the job (jobs.js). onBusy(on): the page
  * holds the floor while a talk or a beat is up. name(): the captain's name for {name}.
@@ -70,6 +81,7 @@ export function createJobTalk({ bus, store, take = () => {}, onBusy = () => {}, 
     const list = offersAt(here, store.get());
     if (!list.length) return false;
     hold(true);
+    bus.emit('talk:open', { speaker: giver });
     try {
       const greet = [1, 2, 3].map((n) => `${giver}.greet.${n}`).filter((id) => lineById(id));
       const greetId = greet[Math.floor(Math.random() * greet.length)] || null;
@@ -97,6 +109,7 @@ export function createJobTalk({ bus, store, take = () => {}, onBusy = () => {}, 
     } finally {
       if (busy) hold(false);
       bus.emit('story:choices', null);
+      bus.emit('talk:close', { speaker: giver });
     }
   }
 
@@ -104,33 +117,46 @@ export function createJobTalk({ bus, store, take = () => {}, onBusy = () => {}, 
    * One beat of a job you have taken: the engine's dialogue view (v) in the box.
    * Resolves with the picked choice index, or -1 for "Later" (the job waits).
    */
-  async function beat(v) {
+  let walkedOff = false; // the player left mid-line: the beat answers Later as soon as it would ask
+  async function beat(v, { choicesOnly = false } = {}) {
     hold(true);
+    walkedOff = false;
+    const speaker = v.portrait || null;
+    bus.emit('talk:open', { speaker: speaker && speaker !== 'narrator' ? speaker : null });
     try {
-      const speaker = v.portrait || null;
       // The stage direction first, then the spoken line (its voice plays through jobs.js's voice hook).
-      if (v.beat) await say({ speaker: 'narrator', name: '', text: v.beat });
-      say({ speaker: speaker || 'narrator', name: v.speaker || '', text: v.text });
+      if (v.beat && !choicesOnly) await say({ speaker: 'narrator', name: '', text: v.beat });
+      if (walkedOff) return -1;
+      if (!choicesOnly) { say({ speaker: speaker || 'narrator', name: v.speaker || '', text: v.text }); if (v.line) bus.emit('talk:line', { id: v.line, speaker }); }
       const options = v.choices.map((c) => ({
         index: c.index,
         label: c.label,
         locked: c.locked,
         reason: c.locked ? (c.reasons || [])[0] || '' : '',
-        ...(c.check ? { kind: 'attempt', chance: c.check.chance, dc: c.check.dc, roll: c.check.roll } : { kind: 'choice' }),
+        ...(c.check ? { kind: 'attempt', chance: c.check.chance, dc: c.check.dc, roll: c.check.roll, approach: Boolean(v.approach?.[c.index]), ...(v.approach?.[c.index] ? { verb: v.approach[c.index].verb } : {}) } : { kind: 'choice' }),
       }));
-      // Only one plain choice (a lone "Go on"): it takes itself once the line has had time to be read.
+      // Only one plain choice (a lone "Go on"): it takes itself once the line has had time to be read (the clock stops while the talk is paused).
       const lone = options.length === 1 && !options[0].locked && options[0].kind === 'choice' ? options[0] : null;
       const answer = ask([...options, { index: -1, label: W.later, kind: 'later' }]);
-      const auto = lone ? setTimeout(() => { if (asking) { const a = asking; asking = null; bus.emit('story:choices', null); a.resolve(lone.index); } }, autoMs(v.text)) : 0;
-      try { return await answer; } finally { clearTimeout(auto); }
+      let stopAuto = () => {};
+      if (lone && !choicesOnly) {
+        const fire = () => { if (asking) { const a = asking; asking = null; bus.emit('story:choices', null); a.resolve(lone.index); } };
+        stopAuto = pausableTimer(bus, fire, autoMs(v.text));
+      }
+      try { return await answer; } finally { stopAuto(); }
     } finally {
       hold(false);
+      bus.emit('talk:close', { speaker });
     }
   }
+
+  /** The talk ended because the player walked off: it counts as "Later" (the scene waits on this person). */
+  function leave() { walkedOff = true; if (asking) { const a = asking; asking = null; bus.emit('story:choices', null); a.resolve(-1); } }
 
   return {
     offerAt,
     beat,
+    leave,
     say,
     get busy() { return busy > 0; },
     /** Drop any open question (a station opened, a map changed). */

@@ -6,6 +6,7 @@ import { TUNING, bodyNear, bodyInGap, insideRect, rectDistance, stepOpen, passab
 export function createDoorSystem() {
   let map = null, doors = [], byId = new Map(), entries = [];
   const open = new Map(), want = new Map(), est = new Map(), pulse = new Map();
+  const forced = new Map(); // opening B: a staged scene holds a door open or shut (a blown hatch): id -> true | false
   let solidKey = '', solidMap = null;
 
   function load(m, { arrive = null, keep = false } = {}) {
@@ -14,6 +15,7 @@ export function createDoorSystem() {
     ({ doors, byId, entries } = compileDoors(m));
     solidKey = ''; solidMap = null;
     if (same) return;
+    forced.clear();
     open.clear(); want.clear(); est.clear(); pulse.clear();
     for (const d of doors) { open.set(d.id, 0); want.set(d.id, false); }
     for (const e of entries) est.set(e.id, createEntry(Boolean(arrive) && e.spawn === arrive));
@@ -33,7 +35,7 @@ export function createDoorSystem() {
       for (const ev of r.events) if (ev.type === 'swap') events.push({ type: 'swap', to: e.to, arrive: e.arrive, entry: e.id });
     }
     for (const d of doors) {
-      const w = doorWants({ mode: hold.get(d.id) || 'free', near: bodyNear(d, bodies, T), locked: !d.far && locked(d), far: d.far, gap: bodyInGap(d, bodies) });
+      const w = forced.has(d.id) ? forced.get(d.id) : doorWants({ mode: hold.get(d.id) || 'free', near: bodyNear(d, bodies, T), locked: !d.far && locked(d), far: d.far, gap: bodyInGap(d, bodies) });
       if (w !== want.get(d.id)) { want.set(d.id, w); if (open.get(d.id) !== (w ? 1 : 0)) sounds.push(w ? 'open' : 'close'); }
       open.set(d.id, stepOpen(open.get(d.id), w, dt, still));
     }
@@ -65,6 +67,8 @@ export function createDoorSystem() {
   const view = d => ({ id: d.id, open: open.get(d.id) ?? 0, entry: d.entry, far: d.far, pulse: pulse.get(d.id) ?? 0, style: d.style, axis: d.axis });
   return {
     load, step, walkMap, gated,
+    /** Hold a door open (true) or shut (false); null lets it work by itself again. */
+    force(id, on) { if (on == null) forced.delete(id); else forced.set(id, Boolean(on)); },
     get(id) { return byId.get(id) || null; },
     get doors() { return doors; },
     get entries() { return entries; },

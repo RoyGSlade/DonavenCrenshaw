@@ -17,10 +17,12 @@ import { buildStaticLayer, buildVignette, drawBody, drawContained, castSprite, c
 import { sprite, playerFrames, preload, onArtLoaded, captainSprite, playerArt } from './assets.js';
 import { fitCanvas, viewZoom, cameraFor } from './viewport.js';
 import { createInput } from './input.js';
+import { nearestEnemy } from './aim.js';
 import { createEl } from './dom.js';
 import { createStealthLayer } from './stealthLayer.js'; // live stealth: only for a map with a `stealth` block (the workbench yard)
 import { TUTORIAL_EVENTS } from './events.js';
 import { createSfx } from './sfx.js';
+import { createStage } from './stage.js'; // opening B: bubbles over heads, staged scenes
 // r3 basics: the one interact system (marks, prompt, objective marker) lives in datapad/.
 import { createMarks, lookFor } from '../datapad/marks.js';
 import { icon, keyCap, promptIcon } from '../datapad/icons.js';
@@ -55,7 +57,8 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
   prompt.append(promptKey, promptIconBox, promptText);
   const placeName = createEl('div', { class: 'of-place', 'aria-live': 'polite' });
   const hud = createEl('div', { class: 'of-hud' });
-  const fade = createEl('div', { class: 'of-fade' });
+  const fadeCaption = createEl('p', { class: 'of-fade-caption' });
+  const fade = createEl('div', { class: 'of-fade' }, fadeCaption);
   const objectiveLine = createEl('p', { class: 'of-objective', role: 'status', 'aria-live': 'polite', hidden: true });
   const fightHelp = createEl('p', { class: 'of-hud-help' });
   el.append(canvas, hud, fightHelp, objectiveLine, placeName, fade);
@@ -67,6 +70,7 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
   let promptIconId = null;
   prompt.addEventListener('click', () => { if (target && mode === 'walk' && !busy && !paused) use(target); });
   const ctx = canvas.getContext('2d');
+  const stage = createStage({ reducedMotion });
 
   let map = null, walker = null, npcs = [], layer = null, layerScale = 0, layerDirty = true;
   let vignette = null, view = { w: 1, h: 1, dpr: 1 };
@@ -76,6 +80,7 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
   let target = null, arrivedAt = 0, walkedSent = false;
   let camera = null, shake = 0, hitstop = 0, stepDist = 0, objective = null;
   let inRings = new Set(), lastDoorSound = -1;
+  let zoomK = 1;
   let stealth = null, caughtT = 0; // live stealth layer for maps that have a `stealth` block
   const dust = [];
   let fight = null, fightDone = null, fx = [];
@@ -143,6 +148,7 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     placeName.textContent = map.name;
     placeName.classList.remove('show'); void placeName.offsetWidth; placeName.classList.add('show');
     el.dataset.map = map.id;
+    stage.reset(); // opening B: staged things belong to the room they were staged in
     stealth?.destroy();
     stealth = map.def?.stealth ? createStealthLayer({ map, root: el, setup: hooks.stealthSetup?.() || null, reducedMotion, touch: input.touch, onEvent: stealthEvent }) : null;
     caughtT = 0;
@@ -158,12 +164,28 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
   }
 
   /** Live stealth: what the guards just did (an inspect, an alarm, a takedown, a catch). The page hears it too. */
+  const stealthListeners = new Set();
   function stealthEvent(e) {
     hooks.stealthEvent?.(e, api);
+    for (const f of stealthListeners) f(e);
     if (e.type === 'alarm') sound('jam');
     else if (e.type === 'takedown') sound('kill');
     else if (e.type === 'inspect' || e.type === 'body-found') sound('turn');
     else if (e.type === 'caught') { caughtT = 1.2; sound('hurt'); }
+  }
+  /** Opening B: run live stealth in this room for a scene (a room with no stealth block of its own). def: { guards: [...] } as in rules/stealth.js. */
+  function beginStealth(def, { setup = null } = {}) {
+    stealth?.destroy();
+    stealth = createStealthLayer({ map, def, root: el, setup: setup || hooks.stealthSetup?.() || null, reducedMotion, touch: input.touch, onEvent: stealthEvent });
+    caughtT = 0;
+    return stealth;
+  }
+  /** Stop the scene's stealth. Returns where the guards stood: [{ id, x, y, angle, down }]. */
+  function endStealth() {
+    const guards = stealth ? stealth.sim.guards.map((g) => ({ id: g.id, x: g.x, y: g.y, angle: g.angle, down: g.state === 'down' })) : [];
+    stealth?.destroy();
+    stealth = null; caughtT = 0;
+    return guards;
   }
   /** Back to the start of the yard: the guards and the counts reset, you go back to the way in. */
   function stealthRestart() {
@@ -179,6 +201,22 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     if (reducedMotion()) { setMap(id, spawnName); return; }
     fade.classList.add('on');
     setTimeout(() => { setMap(id, spawnName); fade.classList.remove('on'); }, 180);
+  }
+
+  /**
+   * A time skip (opening B): the only fade the opening keeps. Fades through black with one line, puts the player in `room`
+   * (when it is another room), then fades back. Resolves when the screen is clear again.
+   */
+  function skip({ room = null, spawn = 'default', caption = '', holdMs = 1100 } = {}) {
+    return new Promise((resolve) => {
+      const fast = reducedMotion();
+      fadeCaption.textContent = caption;
+      fade.classList.add('on', 'is-skip');
+      setTimeout(() => {
+        if (room && map.id !== room) setMap(room, spawn);
+        setTimeout(() => { fade.classList.remove('on'); setTimeout(() => { fade.classList.remove('is-skip'); fadeCaption.textContent = ''; resolve(); }, fast ? 0 : 650); }, fast ? 0 : holdMs);
+      }, fast ? 0 : 650);
+    });
   }
 
   // The ship on the hangar pad is the player's own ship picture (core's tier art).
@@ -299,6 +337,7 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
   function syncInput() { input.enabled = !(busy || paused); }
 
   function use(it) {
+    if (stage.captured) return; // opening B: an approach is running, the use key works the job
     if (it.kind === 'takedown') { stealth?.takedown(it.id, walker); return; }
     if (it.kind === 'door' || it.kind === 'wdoor') {
       const d = it.kind === 'wdoor' ? doorsys.get(it.id) : map.doors.find(x => x.id === it.id);
@@ -468,7 +507,7 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
   function stepFightMode(dt, cam) {
     if (input.take('dash')) dashWanted = true;
     const px = (fight.player.x - cam.x) * cam.zoom, py = (fight.player.y - cam.y) * cam.zoom;
-    const aim = input.aim(px, py);
+    const aim = input.aim(px, py, nearestEnemy(fight.player, fight.enemies)); // opening B: a fire key aims for the nearest enemy when the pointer is quiet
     stepFight(fight, { move: input.move(), aim, fire: input.firing(), dash: dashWanted }, dt);
     dashWanted = false;
     for (const e of fight.events) {
@@ -496,7 +535,7 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
       ? (fight.ended.outcome === 'win' ? 'Area clear.' : fight.ended.outcome === 'lose' ? 'You go down.' : 'You got out.')
       : `${left} hostile${left === 1 ? '' : 's'} left`;
     hud.replaceChildren(createEl('div', { class: 'of-hud-row' }, createEl('b', { text: `HP ${Math.ceil(p.hp)}` }), bar, createEl('span', { class: 'of-hud-note', text })));
-    fightHelp.textContent = fight.ended ? '' : input.touch ? 'Left stick: move. Right stick: aim and fire. Dash dodges.' : 'WASD move · mouse or arrows aim and fire · Space dashes';
+    fightHelp.textContent = fight.ended ? '' : input.touch ? 'Left stick moves. Right stick, or a tap on the playfield, aims and fires. (Keyboard: WASD, hold F to fire.) Dash dodges.' : 'WASD move · mouse aims, click fires · or hold F to fire at the nearest, arrow keys aim and fire · Space dashes';
   }
 
   // ---- drawing ----
@@ -523,10 +562,12 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     const marked = mode === 'walk' && !paused ? markItems(cam) : null;
     if (marked) { marks.drawGround(ctx, marked.items, t); if (marked.aim) drawObjective(marked.aim); }
     if (stealth && mode === 'walk') stealth.drawFloor(ctx, t); // cones on the floor, your noise ring
+    stage.drawFloor(ctx, t); // opening B: hint ring, scorch, the torch seam, the blown hatch
     const bodies = [];
     if (mode === 'walk') {
       for (const n of npcs) if (!hidden.has(n.id)) bodies.push({ y: n.y, draw: () => drawNpc(n) });
       bodies.push({ y: walker.y, draw: () => drawPlayer(walker.x, walker.y, walker.angle, walker.moving, walker.stride, 0) });
+      bodies.push(...stage.bodies(ctx, t)); // opening B: the Reavers on the stage
       if (stealth) bodies.push(...stealth.guardBodies(ctx, t));
     } else {
       for (const e of fight.enemies) if (e.alive) bodies.push({ y: e.y, draw: () => drawEnemy(e) });
@@ -535,6 +576,7 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     }
     bodies.sort((a, b) => a.y - b.y);
     for (const b of bodies) b.draw();
+    stage.drawOver(ctx); // opening B: sparks, flashes, bullet traces, smoke
     if (stealth && mode === 'walk') stealth.drawOver(ctx, t); // meters, ?, !
     if (fight) drawFightFx();
     for (const d of dust) { ctx.fillStyle = `rgba(160,170,180,${d.life * 0.5})`; ctx.beginPath(); ctx.arc(d.x, d.y, 4 + (0.5 - d.life) * 14, 0, Math.PI * 2); ctx.fill(); }
@@ -542,6 +584,7 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     if (layer.overlay) layer.overlay(ctx, cam, view, t, mode === 'walk' ? walker : fight?.player); // r3-look hook: a look map's own lights, the captain's light and vignette
     else if (vignette) ctx.drawImage(vignette, 0, 0, canvas.width, canvas.height);
     if (stealth && mode === 'walk') stealth.drawFog(ctx, cam, view); // fog of war on top of the lights
+    stage.drawScreen(ctx, cam, view, stageWhere); // opening B: talk ring and bubbles
     if (marked) {
       // The prompt in reach is a box the chips step around too.
       const avoid = prompt.hidden ? safe.avoid : [...(safe.avoid || []), prompt.getBoundingClientRect()];
@@ -638,6 +681,12 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     ctx.globalAlpha = 1;
   }
 
+  /** Where a body is for the stage: an npc by id (with the head height its size needs), or null. */
+  const stageWhere = (id) => { const n = npcs.find(x => x.id === id && !hidden.has(x.id)); return n ? { x: n.x, y: n.y, scale: castLook(n.id).scale || 1 } : stage.actorAt(id); };
+
+  /** The camera the player wants: on them, or on what a staged scene points at. */
+  const camWant = (zoom) => { const at = stage.camTarget || walker; return cameraFor(map, at.x, at.y, view.w, view.h, zoom); };
+
   // ---- loop ----
   function frame(now) {
     raf = requestAnimationFrame(frame);
@@ -645,16 +694,20 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     last = now;
     if (document.hidden) return;
     t += dt;
+    stage.step(dt);
     stateClock += dt;
     if (stateClock > 0.2) { stateClock = 0; refreshStates(); } // launch maps: a flag the story just set switches things
-    const zoom = viewZoom(view.w, view.h, map.kind) * (mode === 'walk' ? 1 : 0.9);
+    // Opening B: the fight's pull-back eases in and out over about half a second, never a snap.
+    zoomK += ((mode === 'walk' ? 1 : 0.9) - zoomK) * (reducedMotion() ? 1 : 1 - Math.exp(-dt * 5));
+    const zoom = viewZoom(view.w, view.h, map.kind) * zoomK;
     let cam;
     for (const d of dust) d.life -= dt;
     while (dust.length && dust[0].life <= 0) dust.shift();
     if (mode === 'walk') {
       stepWalk(dt);
-      cam = smoothCamera(cameraFor(map, walker.x, walker.y, view.w, view.h, zoom), dt);
+      cam = smoothCamera(camWant(zoom), dt);
       cam = speakerClear(cam, dt);
+      shake = Math.max(shake, stage.takeShake());
     } else {
       const p = fight.player;
       cam = smoothCamera(cameraFor(map, p.x + Math.cos(p.angle) * 50, p.y + Math.sin(p.angle) * 50, view.w, view.h, zoom), dt);
@@ -677,6 +730,7 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
   // normal when the box closes). Desktop and narration lines never shift.
   let speakerShift = 0; // CSS px the view is slid down
   function speakerClear(cam, dt) {
+    if (stage.camTarget) return cam;
     let want = 0;
     const box = document.querySelector('.ui-dialogue:not([hidden])');
     const speaker = box?.querySelector('.ui-dlg-portrait')?.dataset.speaker;
@@ -712,6 +766,16 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
 
   const api = {
     get map() { return map; },
+    /** Opening B: the stage (bubbles, the talk ring, staged scenes). */
+    stage,
+    /** A bubble over an npc's head. */
+    bark: (id, text, ms) => stage.bark(id, text, ms),
+    /** Is the use key (E) down right now? An approach works the job while it is held. */
+    holding: () => input.held('KeyE'),
+    /** The people in this room now: [{ id, x, y }] (hidden ones left out). */
+    npcsHere: () => npcs.filter(n => !hidden.has(n.id)).map(n => ({ id: n.id, x: n.x, y: n.y })),
+    /** How far the player is from a person here, in tiles, or null when they are not in this room. */
+    tilesTo(id) { const n = npcs.find(x => x.id === id && !hidden.has(x.id)) || stage.actorAt(id); return n ? Math.hypot(n.x - walker.x, n.y - walker.y) / map.tile : null; },
     /** Where an npc is now ({ x, y } in world px), or null: tests and the page's pointers. */
     npcAt(id) { const n = npcs.find(x => x.id === id && !hidden.has(x.id)); return n ? { x: n.x, y: n.y } : null; },
     get player() { return walker; },
@@ -719,6 +783,7 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     get fightState() { return fight; },
     get target() { return target; },
     go,
+    skip,
     doors: doorsys, // launch doors: panel amounts and entry phases (tests and the proof)
     fight: startFight,
     unlock(id) { opened.add(id); layerDirty = true; sound('unlock'); },
@@ -771,6 +836,9 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     get marks() { return marks; },
     /** Live stealth on this map ({ sim, stats(), reset() ...}) or null: the page and tests reach the guards here. */
     get stealth() { return stealth; },
+    beginStealth, endStealth,
+    /** Opening B: hear what the guards did ({ type: 'alarm' | 'caught' | 'takedown' | 'inspect' ... }). Returns off(). */
+    onStealth(fn) { stealthListeners.add(fn); return () => stealthListeners.delete(fn); },
     restartStealth: () => stealthRestart(),
     destroy() { stealth?.destroy(); cancelAnimationFrame(raf); ro.disconnect(); input.destroy(); offArt(); marks.destroy(); el.remove(); },
     el, canvas,

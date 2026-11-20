@@ -342,3 +342,8 @@
 .hg-sheet[data-open-station=quarters] .hg-sheet-body{flex:0 1 auto}
 @media (max-width:700px){.hg-sheet[data-open-station=quarters]{height:auto;max-height:78vh;bottom:0}}
 .hg-sheet .vy-pane p.vy-why{color:var(--ui-amber)}
+/* Opening B: a paused talk (the player walked off): answers wait, a hint says why. */
+.ui-dialogue.is-paused .ui-dlg-portrait{filter:saturate(.4) brightness(.8)}
+.ui-dialogue.is-paused .ui-dlg-choice[data-wait]{opacity:.5;cursor:default}
+.ui-dlg-hint{margin:8px 0 0;font:700 11px Consolas,monospace;letter-spacing:.08em;color:var(--ui-amber)}
+.ui-dlg-hint[hidden]{display:none}

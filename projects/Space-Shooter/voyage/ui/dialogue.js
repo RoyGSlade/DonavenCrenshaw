@@ -26,9 +26,13 @@ export function createDialogueBox({ root, bus, audio, reducedMotion = () => fals
   next.type = 'button';
   next.className = 'ui-dlg-next';
   next.textContent = 'Next ▸';
+  const hint = document.createElement('p');
+  hint.className = 'ui-dlg-hint';
+  hint.textContent = 'Talk paused. Step closer to carry on.';
+  hint.hidden = true;
   const body = document.createElement('div');
   body.className = 'ui-dlg-body';
-  body.append(name, text, choices, next);
+  body.append(name, text, choices, hint, next);
   root.replaceChildren(portrait, body);
   root.hidden = true;
   root.setAttribute('role', 'dialog');
@@ -39,6 +43,7 @@ export function createDialogueBox({ root, bus, audio, reducedMotion = () => fals
   let typeTimer = 0;
   let idleTimer = 0;
   let lone = null; // the lone plain choice's button, while one is showing
+  let paused = false; // opening B: the player walked off mid-talk; reading clocks stop and answers wait until they step back
   const offs = [];
 
   function setPortrait(speaker, emotion) {
@@ -85,6 +90,26 @@ export function createDialogueBox({ root, bus, audio, reducedMotion = () => fals
     idleTimer = setTimeout(() => { if (!current && choices.hidden) root.hidden = true; }, 2600);
   }
 
+  // The reading clock of a line: it stops while the talk is paused and carries on with what was left.
+  function arm(line, ms) {
+    clearTimeout(line.timer);
+    line.left = ms;
+    if (paused) return;
+    line.due = Date.now() + ms;
+    line.timer = setTimeout(() => finish(line.seq), ms);
+  }
+  function setPaused(on) {
+    if (paused === on) return;
+    paused = on;
+    root.classList.toggle('is-paused', on);
+    hint.hidden = !on;
+    for (const b of choices.querySelectorAll('button:not(.is-later)')) b.toggleAttribute('data-wait', on);
+    if (current) {
+      if (on) { if (current.timer) { clearTimeout(current.timer); current.timer = 0; current.left = Math.max(0, (current.due || 0) - Date.now()); } }
+      else if (current.left != null && !current.timer) arm(current, current.left);
+    }
+  }
+
   /** Show a line. line: { seq?, speaker, name, text, audio?, durationMs? } */
   function show(line) {
     if (current) finish(current.seq);
@@ -105,7 +130,7 @@ export function createDialogueBox({ root, bus, audio, reducedMotion = () => fals
     played.then((how) => {
       if (current !== mine) return;
       if (how === 'ended') finish(seq);
-      else mine.timer = setTimeout(() => finish(seq), duration); // text only: the reading time
+      else arm(mine, duration); // text only: the reading time
     });
     return seq;
   }
@@ -139,7 +164,8 @@ export function createDialogueBox({ root, bus, audio, reducedMotion = () => fals
       if (o.kind === 'attempt' && Number.isFinite(o.chance)) {
         const odds = document.createElement('small');
         odds.className = 'ui-dlg-odds';
-        odds.textContent = `Roll ${o.roll || 'd20'} vs ${o.dc}: ${Math.round(o.chance * 100)}%`;
+        // Opening B: an approach's roll buys help and time; it does not decide the outcome.
+        odds.textContent = o.approach ? `Roll ${o.roll || 'd20'}: sets your help and time` : `Roll ${o.roll || 'd20'} vs ${o.dc}: ${Math.round(o.chance * 100)}%`;
         b.append(odds);
       }
       if (o.locked && o.reason) {
@@ -150,7 +176,9 @@ export function createDialogueBox({ root, bus, audio, reducedMotion = () => fals
       }
       b.disabled = Boolean(o.locked);
       if (o.locked && o.reason) b.title = o.reason;
+      if (paused && o.kind !== 'later') b.setAttribute('data-wait', '');
       b.addEventListener('click', () => {
+        if (paused && o.kind !== 'later') return; // opening B: step back toward them first (Later always works)
         choices.replaceChildren();
         choices.hidden = true;
         hideSoon(); // the answer is in: if no line follows, the box does not stay stuck on the last one
@@ -161,6 +189,7 @@ export function createDialogueBox({ root, bus, audio, reducedMotion = () => fals
     // One plain choice besides "Later" (a lone "Go on"): a tap on the box takes it.
     const plain = options.filter((o) => o.kind !== 'later');
     lone = plain.length === 1 && !plain[0].locked && plain[0].kind === 'choice' ? [...choices.querySelectorAll('button')].find((b) => b.dataset.kind === 'choice') : null;
+    hint.hidden = !paused;
     choices.querySelector('button:not(:disabled)')?.focus({ preventScroll: true });
   }
 
@@ -184,7 +213,21 @@ export function createDialogueBox({ root, bus, audio, reducedMotion = () => fals
     offs.push(bus.on('story:said', (d) => { if (introSeq != null && d?.seq === introSeq) { introSeq = null; audio?.stopLine(); } }));
     offs.push(bus.on('story:choices', (d) => showChoices(d)));
     offs.push(bus.on('story:done', () => hide()));
+    offs.push(bus.on('talk:pause', () => setPaused(true)));
+    offs.push(bus.on('talk:resume', () => setPaused(false)));
+    offs.push(bus.on('talk:close', () => setPaused(false)));
+    offs.push(bus.on('talk:end', () => { setPaused(false); hide(); })); // they walked off for good: the box goes with them
   }
+  // Opening B: 1-9 pick an answer while a talk is open, so a thumb or a hand stays on the walk keys.
+  const onKey = (e) => {
+    if (root.hidden || choices.hidden || paused || e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.target?.closest?.('input, textarea, select')) return;
+    const n = /^Digit([1-9])$/.exec(e.code)?.[1];
+    if (!n) return;
+    const b = [...choices.querySelectorAll('button')][Number(n) - 1];
+    if (b && !b.disabled && !b.hasAttribute('data-wait')) { e.preventDefault(); b.click(); }
+  };
+  addEventListener('keydown', onKey);
 
   return {
     show,
@@ -192,6 +235,6 @@ export function createDialogueBox({ root, bus, audio, reducedMotion = () => fals
     showChoices,
     get current() { return current; },
     get open() { return !root.hidden; },
-    destroy() { offs.forEach((off) => off()); clearInterval(typeTimer); if (current) clearTimeout(current.timer); },
+    destroy() { offs.forEach((off) => off()); removeEventListener('keydown', onKey); clearInterval(typeTimer); if (current) clearTimeout(current.timer); },
   };
 }

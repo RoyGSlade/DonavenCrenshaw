@@ -33,6 +33,8 @@ import { createCrew } from './crew.js';
 import { createJobs } from './jobs.js';
 import { shipTierArt } from './art.js';
 import { ambienceFor, bedIdFor } from './ui/assets.js';
+import { createSfx } from './onfoot/sfx.js';
+import { createMood } from './ui/mood.js';
 import { createHangarAudio } from './ui/audio.js';
 import { createDialogueBox } from './ui/dialogue.js';
 import { createLicence } from './ui/licence.js';
@@ -64,6 +66,10 @@ import { offersAt, openCount } from './quests/offers.js';
 import { OFFERS_DATA } from './quests/data/offers.js';
 // Launch slice: the opening on the Tin Duchess (slice/director.js).
 import { wantsSlice, startSlice, startRoom, createSliceDirector } from './slice/director.js';
+import { createTalkRange } from './slice/talkRange.js';
+import { SWITCHES } from './slice/switches.js';
+import { createApproachRunner } from './slice/approachRun.js';
+import { createStager } from './slice/stager.js';
 import { waitingOn } from './slice/rules.js';
 // The workbench room: a dev-only test room (?newgame=1&start=workbench), its own files in ./workbench/.
 import { wantsWorkbench } from './workbench/entry.js';
@@ -186,6 +192,14 @@ function boot(session = { mode: 'local' }) {
 
   // --- Sound: nothing plays until the player touches the page ---
   const audio = createHangarAudio();
+  // Opening B sound: effects at a level a person hears, the music reacting to danger, voices left as a hook (bus 'voice:line').
+  const sfx = createSfx({ muted: () => audio.settings().muted || !audio.unlocked, volume: () => audio.settings().voice });
+  const mood = createMood({ audio });
+  // The rifle off the deck is a pickup you hear.
+  let hadRifle = Boolean(store.get().flags?.['reck-rifle-taken']);
+  store.subscribe((save) => { const has = Boolean(save.flags?.['reck-rifle-taken']); if (has && !hadRifle) sfx('pickup'); hadRifle = has; });
+  bus.on('audio:mood', (d) => { if (SWITCHES.moodMusic) mood.set(d?.mode); });
+  bus.on('audio:loop', (d) => sfx.loop(d?.id, Boolean(d?.on)));
   const setBed = (ambient, mapId = '') => {
     const amb = ambienceFor(bedIdFor(ambient, mapId));
     if (amb) audio.setAmbience(amb.url, amb.gain);
@@ -388,7 +402,8 @@ function boot(session = { mode: 'local' }) {
   const jobTalk = createJobTalk({
     bus, store,
     take: (quest) => jobs.take(quest),
-    onBusy: (on) => { if (on) overlays.add('jobtalk'); else overlays.delete('jobtalk'); holdFloor(); tracker?.render(); },
+    // Opening B: a talk no longer holds the floor; walking off pauses it (slice/talkRange.js).
+    onBusy: (on) => { if (!SWITCHES.talkRange) { if (on) overlays.add('jobtalk'); else overlays.delete('jobtalk'); holdFloor(); } tracker?.render(); },
     name: () => store.get().character?.name || '',
   });
   const jobCard = createJobCard({
@@ -400,15 +415,20 @@ function boot(session = { mode: 'local' }) {
   let lastRoll = 0;
   const presenter = {
     // A beat waits for the dice of the step before it to land, then plays in the dialogue box.
-    dialogue: (v, pick) => {
+    dialogue: (v, pick, opts) => {
       const wait = Math.max(0, lastRoll + 1400 - Date.now());
-      setTimeout(() => jobTalk.beat(v).then((i) => { if (i >= 0) pick(i); else if (i === -1) toast(OFFERS_WORDS.paused); }), wait);
+      setTimeout(() => jobTalk.beat(v, opts).then((i) => { if (i >= 0) pick(i); else if (i === -1) toast(OFFERS_WORDS.paused); }), wait);
     },
     card: (kind, v) => (slice && kind === 'end' && v ? slice.endCard(v, () => jobCard.show(kind)) : jobCard.show(kind)),
     // launch slice: a beat plays in its room, an on-foot fight runs on the Duchess's floor, a closed result card starts the next scene.
   };
   const playBeat = presenter.dialogue;
-  presenter.dialogue = (v, pick) => (slice ? slice.beat(v, () => playBeat(v, pick)) : playBeat(v, pick));
+  presenter.dialogue = (v, pick) => (slice ? slice.beat(v, (opts) => playBeat(v, pick, opts)) : playBeat(v, pick));
+  // Opening B: a rolled choice becomes something you do (the roll sets help and time); the plain panel and the sandbox keep the old roll.
+  presenter.approachSpecs = (v) => slice?.approachSpecs(v) || {};
+  presenter.wantsApproach = (v, index) => Boolean(slice?.wantsApproach(v, index));
+  presenter.approach = (v, done) => slice.approach(v, done);
+  presenter.assistVerdict = (questId, node, assist) => slice?.assistVerdict(questId, node, assist) || '';
   presenter.foot = (part, done) => (slice ? slice.fight(part, done) : done(null));
   presenter.exit = () => slice?.afterCard();
   // The opening's hooked choices (scenes 3, 4, 5): the d20 set the tier, the minigame sheet plays it, the result goes back to the engine.
@@ -420,11 +440,11 @@ function boot(session = { mode: 'local' }) {
   presenter.minigame = (spec, done) => minigameSheet.play(spec, done);
   const jobs = createJobs({
     pane: panes.jobs, store, toast, dev: flag.dev, presenter,
-    say: (events) => hangar.say(events),
+    say: (events) => { hangar.say(events); if ((events || []).some((e) => (e.type === 'money' || e.type === 'item') && e.amount > 0)) sfx('pickup'); },
     onCaptain: openLicence,
     crew: crew.hooks,
     // A spoken node plays its voice file (the quest player shows the filled text itself).
-    voice: ({ line }) => { const url = voiceUrl(line); if (url) audio.playLine(url); },
+    voice: ({ line, speaker, text }) => { const url = voiceUrl(line); bus.emit('voice:line', { line, speaker, text, url }); if (url) audio.playLine(url); },
     // Every attempt the engine rolled shows on the corner dice.
     rolled: (rolls) => { lastRoll = Date.now(); for (const r of rolls) bus.emit('roll:attempt', { ...r, who: r.who || store.get().character?.name || null }); },
   });
@@ -463,6 +483,7 @@ function boot(session = { mode: 'local' }) {
     root: floor, store, bus, mapId: link.map || (workbench ? WORKBENCH_ID : slicing ? startRoom(store.get()) : 'hangar'), spawn: link.map ? link.spawn : 'default',
     reducedMotion: still,
     hooks: {
+      sound: (id) => sfx(id),
       openStation: (id) => (workbenchRoom && String(id).startsWith('wb-') ? workbenchRoom.openStation(id) : new Promise((resolve) => {
         if (!place.openStation(id, { via: 'walk' })) { resolve(); return; }
         const off = place.subscribe((e) => { if (e.type === 'close') { off(); resolve(); } });
@@ -470,7 +491,11 @@ function boot(session = { mode: 'local' }) {
       isUnlocked: (id) => isUnlocked(store.get(), id),
       tutorial: () => tutorialOn(store.get()),
       // During the tutorial, a lesson waits for its turn (the director pays for each one once).
-      allow: (target) => allowLesson(target),
+      allow: (target) => {
+        // Opening B: while a talk is up, the world stays live but objects wait: answer them or walk off.
+        if (jobTalk.busy && target.kind !== 'door') { toast('Finish the conversation, or walk away from it.'); return false; }
+        return allowLesson(target);
+      },
       entered: (map) => { clearToast(); slice?.entered(map); setBed(map.ambient, map.id); place?.closeStation({ restoreFocus: false }); place?.place(); setPlaceName(placeNameFor(map)); },
       flying: (on) => { flying = on; holdFloor(); place?.place(); if (on) setPlaceName('The Drift'); else if (onfoot?.world?.map) setPlaceName(placeNameFor(onfoot.world.map)); },
       stationInfo: (id) => (workbenchRoom && String(id).startsWith('wb-') ? workbenchRoom.stationInfo(id) : stationInfo(id)),
@@ -526,6 +551,8 @@ function boot(session = { mode: 'local' }) {
     jobBusy: () => jobTalk.busy || jobCard.open,
     onContinue: () => jobs.resume(),
   });
+  // Opening B: how far you walk from whoever is talking pauses or ends the talk; people bark as you pass.
+  const talkRange = createTalkRange({ bus, world: () => onfoot?.world || null, leave: () => jobTalk.leave(), canBark: () => !jobTalk.busy && !jobCard.open && !screenBusy() });
   const controls = createControlsCard({ root: document.body, touch });
   const pause = createPause({
     root: document.body, touch, settings, controls,
@@ -621,7 +648,7 @@ function boot(session = { mode: 'local' }) {
   // A job in progress waits on the tracker and the datapad (Continue); nothing pops up.
   // Launch slice: the opening picks its scene up (a reload lands back in the beat) or starts the next one.
   if (slicing) {
-    slice = createSliceDirector({ store, jobs, toast, world: () => onfoot?.world || null, fightIn: (setup) => onfoot.fight(setup) });
+    slice = createSliceDirector({ store, jobs, toast, world: () => onfoot?.world || null, fightIn: (setup) => onfoot.fight(setup), runner: createApproachRunner({ world: () => onfoot?.world || null, toast, bus }), stager: createStager({ world: () => onfoot?.world || null, bus, toast }) });
     ready.then(() => {
       // A signed-in account whose own save is an older hangar game replaces the fresh one: leave the Duchess for the hangar.
       if (!store.get().flags?.['slice-started']) { onfoot.world.go('hangar', 'default'); return; }
@@ -631,5 +658,5 @@ function boot(session = { mode: 'local' }) {
 
   // For tests and poking around in the console (no secrets: the save is the player's own).
   setTimeout(maybeControls, 600);
-  window.__stardust = { store, story, onfoot, place, jobs, licence, bus, pad, tracker, controls, pause, jobTalk, jobCard, crew, slice, workbench: workbenchRoom };
+  window.__stardust = { sfx, mood, audio, talkRange, store, story, onfoot, place, jobs, licence, bus, pad, tracker, controls, pause, jobTalk, jobCard, crew, slice, workbench: workbenchRoom };
 }

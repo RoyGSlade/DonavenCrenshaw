@@ -81,6 +81,9 @@ export function createJobs({ pane, store, say, toast, dev = false, onCaptain = (
     return true;
   }
 
+  /** Opening B (retry): the scene starts again from its first beat on the save the caller just restored. */
+  function restart(quest) { player.reset(); return take(quest); }
+
   // The job board: postings from givers who are not on this station, pinned up
   // like notes. Pick one and take it here; the job then runs in the world.
   let postTarget = null;
@@ -173,6 +176,7 @@ export function createJobs({ pane, store, say, toast, dev = false, onCaptain = (
     render,
     renderPostings,
     take,
+    restart,
     resume: resumeJob,
     openLinked,
     keydown: (e) => player.keydown(e),
