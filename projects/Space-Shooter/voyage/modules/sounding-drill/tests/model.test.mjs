@@ -11,7 +11,7 @@ import { BOTS, playBot } from '../bots.js';
 const dir = path.dirname(fileURLToPath(import.meta.url));
 const fixtures = JSON.parse(readFileSync(path.join(dir, '..', 'fixtures.json'), 'utf8'));
 const LAYOUTS = { wide: { w: 1000, h: 760 }, tall: { w: 720, h: 960 } };
-const SWEEP = +process.env.SWEEP_N || 60;
+const SWEEP = +process.env.SWEEP_N || 150;
 
 const mk = (o = {}) => createGame({ seed: 1, board: LAYOUTS.wide, fixtures, ...o });
 const run = (g, secs, input, dt = 1 / 30) => { for (let i = 0; i < secs / dt && !g.over; i++) step(g, dt, typeof input === 'function' ? input(g) : input); };
