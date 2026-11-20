@@ -26,7 +26,8 @@ export const BOARD = Object.freeze({
     label: 'The crew board',
     close: 'Back',
     hint: 'Seven names. Look closer.',
-    found: (n, total) => `Notes found: ${n} of ${total}`,
+    // Words, not digits (the HUD rule): "Notes found: two", and a pip for every note.
+    found: (n) => `Notes found: ${['none', 'one', 'two', 'three', 'four', 'five', 'six'][n] || 'many'}`,
   }),
 });
 export const noteFlag = (id) => `board-note-${id}`;

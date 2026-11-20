@@ -47,7 +47,8 @@ for (const [size, profile] of SIZES) {
       await page.locator('.of-board-note').first().click();
       assert.match(await page.locator('.of-board-reading').innerText(), /\w/);
       assert.equal(await page.evaluate(() => Object.keys(window.__stardust.store.get().flags).filter((k) => k.startsWith('board-note-')).length), 1);
-      assert.match(await page.locator('.of-board-count').innerText(), /1 of \d/);
+      assert.match(await page.locator('.of-board-count').innerText(), /Notes found: one/);
+      assert.doesNotMatch(await page.locator('.of-board-count').innerText(), /\d/, 'words, not digits');
       if (PROOF) await page.screenshot({ path: `${PROOF}/board-note-${size}.png` });
       await page.locator('.of-board-back').click();
       await page.waitForTimeout(400);
