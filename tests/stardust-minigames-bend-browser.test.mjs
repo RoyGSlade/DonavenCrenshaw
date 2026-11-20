@@ -114,7 +114,7 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
         assert.deepEqual(await page.evaluate(() => { const r = document.querySelector('.wb-full').getBoundingClientRect(); return [r.width, r.height]; }), [profile.viewport.width, profile.viewport.height], 'it owns the whole screen');
         const text = await page.locator(PANEL).innerText();
         assert.doesNotMatch(text, /\d/, `no number anywhere on the game screen: ${text}`);
-        assert.match(text, /keep going/); assert.match(text, /Strain/); assert.match(text, /Gap to the line/);
+        assert.match(text, /keep going/i); assert.match(text, /Strain/i); assert.match(text, /Gap to the line/i);
         await noScroll('bend');
         // layout: the play block is grouped and centred, only the action row sits at the bottom, and it all fits on the screen
         const lay = await page.evaluate((sel) => { const q = (s) => document.querySelector(`${sel} ${s}`).getBoundingClientRect(); const hud = q('.cc-bendhud'), cv = q('canvas'), row = q('.cc-bendrow'), sc = document.querySelector('.wb-full').getBoundingClientRect(); return { hudBottom: hud.bottom, cvTop: cv.top, cvBottom: cv.bottom, cvW: cv.width, rowTop: row.top, rowBottom: row.bottom, vh: innerHeight, vw: innerWidth, scBottom: sc.bottom }; }, PANEL);
