@@ -7,12 +7,12 @@
 //   Keep grinding a polished cell and at 130 it DIMPLES (it stays dimpled and no longer counts).
 //   The plate finishes by itself at 36 polished cells, or when you say Done (Space, or the Done pad). Three dimples ruin it.
 //   Grade = polished share x 100 - 10 per dimple. (At the automatic finish that is 90 at best: the plan's own numbers.)
-//   My readings: a cell is under the wheel when the wheel's middle is within 60 units of the cell's middle (cells are 100 units; so the
+//   My readings: a cell is under the wheel when the wheel's middle is within 54 units of the cell's middle (cells are 60 units; so the
 //   wheel covers one cell at a cell's middle and up to four at a corner); the wheel stays on the plate; a cell with 25 shine to spare
 //   before its limit is HOT (the view glows it; the word says "too hot!"); the plate is 8 x 5 cells, or 5 x 8 on a portrait screen.
 import { PASS, gradeWord } from './craftChain.js';
 
-export const CELL = 100, REACH = 60, SPEED = 220, POLISHED = 70, DIMPLE_COST = 10, AUTO_AT = 36, RUIN_AT = 3, HOT_SPARE = 25, CELLS = 40;
+export const CELL = 60, REACH = 54, SPEED = 220, POLISHED = 70, DIMPLE_COST = 10, AUTO_AT = 36, RUIN_AT = 3, HOT_SPARE = 25, CELLS = 40;
 
 function lcg(seed) { let x = (seed >>> 0) || 1; return () => { x = (Math.imul(x, 1664525) + 1013904223) >>> 0; return x / 4294967296; }; }
 
@@ -85,6 +85,8 @@ export function heatWord(s) {
   const top = Math.max(0, ...cov.map((c) => c.shine));
   return top >= POLISHED ? 'polished here: move on' : top > 0 ? 'grinding' : 'cool';
 }
+/** What the wheel's sideways motion teaches: with the pull it is fast and light, against it slow and heavy, on the spot it grinds in one place. vx: units a second, right positive. */
+export function motionWord(vx) { return vx < -15 ? 'with the pull: fast and light' : vx > 15 ? 'against the pull: slow, grinds hard' : 'on the spot: grinds hard, watch the heat'; }
 export function pullWord(s, t = s.t) { const p = pullAt(s, t) / s.pullMax; return p < 0.45 ? 'light pull' : p < 0.75 ? 'steady pull' : 'strong pull'; }
 
 export function polishWhy(r) {

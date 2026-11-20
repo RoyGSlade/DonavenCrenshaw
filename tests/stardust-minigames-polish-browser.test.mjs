@@ -110,14 +110,14 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
         if (phone) assert.ok(lay.cvW >= profile.viewport.width - 40 && lay.cvH >= 300, `the board is full width and tall on a phone: ${lay.cvW} x ${lay.cvH}`);
         assert.equal(await page.evaluate((s) => document.querySelector(s).__state.cols, PANEL), phone ? 5 : 8, 'a portrait plate on a phone, a wide one on a desktop');
         await shot('p1-polish-start');
-        // the bot: row by row, back and forth, riding below each row's middle, at the net speed that lands a tile's shine in the safe part of the range
+        // the bot: pass by pass along the lines between rows, back and forth, at the net speed that lands a tile's shine in the safe part of the range
         const st = { row: 0, dir: 1, phase: 'start' }; let shotMid = false, shotPull = false, last = null, guard = 0;
         const t0 = Date.now(); const origin0 = await probe(); await dragStart(origin0.cx, origin0.cy);
         for (let i = 0; i < 6000; i++) {
           const p = await probe(); last = p; if (p.done) break;
           if (Date.now() - t0 > 180000) throw new Error(`the plate was not done in 3 minutes: ${JSON.stringify({ polished: p.polished, dimples: p.dimples, row: st.row })}`);
-          if (st.row >= p.rows) { await dragEnd(); break; }
-          const y = st.row * 100 + 82, dy = y - p.wy, iy = Math.max(-1, Math.min(1, dy / 25)), v = (101 * p.rate) / (70 + 0.35 * (p.limit - 70));
+          const lines = Math.ceil(p.rows / 2); if (st.row >= lines) { await dragEnd(); break; }
+          const y = 2 * st.row + 2 <= p.rows ? (2 * st.row + 1) * 60 : p.rows * 60, dy = y - p.wy, iy = Math.max(-1, Math.min(1, dy / 25)), v = (90 * p.rate) / (70 + 0.35 * (p.limit - 70));
           let ix;
           if (st.phase === 'start') { ix = -1; if (p.wx <= 2 && Math.abs(dy) < 6) st.phase = 'sweep'; }
           else { ix = (st.dir > 0 ? v + p.pull : p.pull - v) / 220; if (st.dir > 0 ? p.wx >= p.W - 2 : p.wx <= 2) { st.row++; st.dir = -st.dir; } }
@@ -151,7 +151,7 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
         const origin0 = await probe(); await dragStart(origin0.cx, origin0.cy);
         for (let i = 0; i < 3000; i++) {
           const p = await probe(); st = p; if (p.done) break;
-          const tx = p.W / 2 + 50, ty = p.H / 2 + 50 * 0, dx = tx - p.wx, dy = ty - p.wy;
+          const tx = Math.floor(p.W / 120) * 60 + 30, ty = Math.floor(p.H / 120) * 60 + 30, dx = tx - p.wx, dy = ty - p.wy;
           const ix = Math.max(-1, Math.min(1, (dx * 3 + p.pull) / 220)), iy = Math.max(-1, Math.min(1, (dy * 3) / 220));
           if (p.hot && !hotShot) { hotShot = true; assert.equal(p.heat, 'too hot!', 'the word warns'); await wait(page, 60); await shot('p4-polish-about-to-dimple'); }
           if (p.dimples >= 1) { if (!dimpleShot) { dimpleShot = true; await wait(page, 150); await shot('p5-polish-dimple'); } break; }

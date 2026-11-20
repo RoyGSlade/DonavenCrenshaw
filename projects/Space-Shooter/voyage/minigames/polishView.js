@@ -4,7 +4,7 @@
 // the farther you pull from where you touched, the faster the wheel goes. The Done pad (Space) finishes the plate.
 // No number is shown: a shine bar with a word, a heat gauge with a word, the pull with a word, and pips for the dimples.
 // Resolves with the pure result. The pure rules are polish.js (polishStep takes a time step and the hand's input).
-import { polishStep, polishFinish, polishGiveUp, pullAt, coveredBy, hotCell, plateWord, heatWord, pullWord, CELL, REACH, SPEED, AUTO_AT, RUIN_AT, POLISHED } from './polish.js';
+import { polishStep, polishFinish, polishGiveUp, pullAt, coveredBy, hotCell, plateWord, heatWord, pullWord, motionWord, CELL, REACH, SPEED, AUTO_AT, RUIN_AT, POLISHED } from './polish.js';
 import { h, ensureStyle, loop, lcg } from './craftChainView.js';
 
 const TAU = Math.PI * 2, STEP = 1 / 60, STICK = 56;
@@ -87,7 +87,7 @@ export function playPolish(root, { state, what = 'plate', reducedMotion = () => 
   // ---- the picture --------------------------------------------------------------------------------------------------------------------
   const rnd = lcg(53);
   const scratch = s.cells.map((c) => Array.from({ length: 9 }, () => ({ x: rnd(), y: rnd(), a: (rnd() - 0.5) * 1.2, l: 0.25 + 0.55 * rnd() })));
-  let sparks = [], pops = [], spin = 0, shake = 0, flash = 0, pulse = 0, lastDimples = 0;
+  let sparks = [], pops = [], spin = 0, shake = 0, flash = 0, pulse = 0, lastDimples = 0, prevX = null, netV = 0, holdMsg = 0, clock = 0;
   const say = (t) => { status.textContent = t; };
 
   function tile(g, c, i, t) {
@@ -147,15 +147,20 @@ export function playPolish(root, { state, what = 'plate', reducedMotion = () => 
     while (acc >= STEP && !s.done) { polishStep(s, STEP, hand()); acc -= STEP; }
     for (const ev of s.events.splice(0)) {
       if (ev.type === 'polished') { const c = s.cells[ev.cell], p = P(c.x, c.y); pops.push({ x: p.x, y: p.y, life: 0.5, hue: '#9fe870' }); }
-      else if (ev.type === 'dimple') { const c = s.cells[ev.cell], p = P(c.x, c.y); pops.push({ x: p.x, y: p.y, life: 0.5, hue: '#ff6b5a' }); shake = 9; flash = 0.6; for (let i = 0; i < 18; i++) { const a = Math.random() * TAU, v = 80 + 220 * Math.random(); sparks.push({ x: p.x, y: p.y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 0.35 + 0.35 * Math.random() }); } say('A tile dimpled and it stays (-10). Ease off the hot tiles; three dimples ruin the plate.'); }
+      else if (ev.type === 'dimple') { const c = s.cells[ev.cell], p = P(c.x, c.y); pops.push({ x: p.x, y: p.y, life: 0.5, hue: '#ff6b5a' }); shake = 9; flash = 0.6; for (let i = 0; i < 18; i++) { const a = Math.random() * TAU, v = 80 + 220 * Math.random(); sparks.push({ x: p.x, y: p.y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 0.35 + 0.35 * Math.random() }); } say('A tile dimpled and it stays (-10). Ease off the hot tiles; three dimples ruin the plate.'); holdMsg = clock + 3; }
       else if (ev.type === 'done') { say(ev.how === 'ruined' ? 'Three dimples: the plate is ruined.' : ev.how === 'gave-up' ? 'Given up.' : ev.how === 'auto' ? 'The plate shines.' : ev.success ? 'Done.' : 'Too rough.'); endAt = performance.now(); }
     }
-    shake = Math.max(0, shake - dt * 40); flash = Math.max(0, flash - dt * 2.2); pulse += dt;
+    shake = Math.max(0, shake - dt * 40); flash = Math.max(0, flash - dt * 2.2); pulse += dt; clock += dt;
+    if (prevX != null && dt > 0) netV += (((s.wheel.x - prevX) / dt) - netV) * Math.min(1, dt * 8); prevX = s.wheel.x;
     for (const p of pops) p.life -= dt; pops = pops.filter((p) => p.life > 0);
     // spin follows the wheel's speed; sparks stream off the BACK of the wheel (to the right), more of them and faster the harder the pull
     const pull = pullAt(s, s.t), pk = pull / s.pullMax, wp = P(s.wheel.x, s.wheel.y), cov = coveredBy(s).length;
     spin += dt * (6 + 10 * pk); 
-    if (!s.done && cov && !reducedMotion()) { const n = Math.round((2 + 8 * pk) * dt * 60 * 0.5 + Math.random()); for (let i = 0; i < n; i++) sparks.push({ x: wp.x + REACH * sc * 0.4, y: wp.y + (Math.random() - 0.5) * REACH * sc, vx: 50 + (80 + 240 * pk) * Math.random(), vy: (Math.random() - 0.5) * 120, life: 0.18 + 0.3 * Math.random() }); }
+    // the sparks teach it: going against the pull (right) is slow and grinds hard (a thick stream), with the pull (left) is fast and light (a few), on the spot a thick stream;
+    // either way they fly off the back of the wheel, farther the harder the pull
+    const slow = clamp01(1 - Math.abs(netV) / 200) ** 1.5, heavy = 0.12 + 0.88 * slow * (0.5 + 0.5 * pk) + (netV > 15 ? 0.25 : 0);
+    if (!s.done && cov && !reducedMotion()) { const n = Math.round(heavy * 7 * dt * 60 * 0.5 + Math.random() * heavy); for (let i = 0; i < n; i++) sparks.push({ x: wp.x + REACH * sc * 0.4, y: wp.y + (Math.random() - 0.5) * REACH * sc, vx: 50 + (80 + 240 * pk) * Math.random() * (0.4 + 0.6 * heavy), vy: (Math.random() - 0.5) * 120, life: 0.15 + 0.35 * heavy * Math.random() }); }
+    if (!s.done && clock > holdMsg && cov) { const w = motionWord(netV); if (status.textContent !== w) status.textContent = w; }
     for (const p of sparks) { p.life -= dt; p.vy += 300 * dt; p.x += p.vx * dt; p.y += p.vy * dt; } sparks = sparks.filter((p) => p.life > 0).slice(-220);
     // the HUD
     plateFill.style.width = `${100 * clamp01(s.polished / AUTO_AT)}%`; plateWord_.textContent = plateWord(s);
