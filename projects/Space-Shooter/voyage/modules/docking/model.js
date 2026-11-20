@@ -23,6 +23,10 @@ export const QUICK_IN = 16;      // a quick run starts this far inside the funne
 export const PASS = 70;
 export const OUTCOMES = Object.freeze({ docked: 'docked', wavedOff: 'waved-off' });
 export const SCRAPE = Object.freeze({ wall: 8, face: 10, fast: 14, both: 16 }); // hull lost (of 100) by kind
+export const BOUNCE_IN = 0.8;    // after a wall scrape you sit this share of the half width in from the centre
+export const BOUNCE_BACK = 0.4;  // and are thrown back inside at this share of the sideways speed you hit it with
+export const GRACE = 1.0;        // after any scrape the wall cannot start a new warning for this long (seconds)
+export const WALL_CAP = 40;      // the walls alone can cost at most this much hull in a run; past it they only nudge you back in (a parked ship in a sweeping corridor is not a wreck)
 export const PATH_EVERY = 0.1;   // the flight line is sampled this often (seconds)
 
 const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
@@ -44,7 +48,7 @@ export function createDocking({ seed = 1, setup = {}, quick = setup.quick ?? fal
     tmax: setup.tmax ?? (quick ? 15 : 26), lights: setup.lights ?? 6, fee: setup.fee ?? 25,
     x: 0, y: 0, vx: 0, vy: 0, h: 0,
     thrusting: false, warnLeft: setup.warn ?? 0.6, outside: false,
-    scrapes: 0, hullLost: 0, flash: 0, dockedAt: null, lightsOut: 0,
+    scrapes: 0, hullLost: 0, wallLost: 0, flash: 0, grace: 0, dockedAt: null, lightsOut: 0,
     path: [], marks: [], pathAt: 0,
     done: false, result: null, events: [],
   };
@@ -81,14 +85,18 @@ export function frameOf(s, t = s.t) {
   return { th, u, n, B, Vb, w, d, l, half: halfAt(s, d), vrel, speed: Math.hypot(vrel.x, vrel.y), closing: -(vrel.x * u.x + vrel.y * u.y), lat: vrel.x * n.x + vrel.y * n.y };
 }
 
+/** The speed that is fine at distance d from the berth: the safe speed at the berth, more the further out you are (so a long fast run in is not scolded). */
+export const safeAt = (s, d) => Math.max(s.safe, 0.5 * Math.max(0, d));
+
 /** The word for how the approach is going: clamped, scrape, drifting wide, too fast, ease off, lined up, or in the corridor. */
 export function dockingWord(s) {
   if (s.done) return s.result?.outcome === OUTCOMES.docked ? 'clamped' : 'waved off';
   if (s.flash > 0) return 'scrape';
   const f = frameOf(s);
   if (Math.abs(f.l) > f.half) return f.d >= DM ? 'find the corridor' : 'drifting wide';
-  if (f.d < 45 && f.speed > s.safe * 1.6) return 'too fast';
-  if (f.d < 45 && f.speed > s.safe) return 'ease off';
+  const ok = safeAt(s, f.d);
+  if (f.d < 60 && f.speed > ok * 1.6) return 'too fast';
+  if (f.d < 60 && f.speed > ok * 1.15) return 'ease off';
   if (Math.abs(f.l) <= f.half * 0.55 && f.d < DM + 10) return 'lined up';
   return 'in the corridor';
 }
@@ -115,7 +123,7 @@ export function stepDocking(s, dt = DOCKING_DT, input = {}) {
   if (s.done) return s;
   s.events = [];
   s.t += dt;
-  s.flash = Math.max(0, s.flash - dt);
+  s.flash = Math.max(0, s.flash - dt); s.grace = Math.max(0, s.grace - dt);
   // the ship swings to its aim, then burns along its heading
   if (Number.isFinite(input.aim)) { const e = wrap(input.aim - s.h), m = TURN * dt; s.h = wrap(s.h + clamp(e, -m, m)); }
   const level = input.thrust === true ? 1 : clamp(Number(input.thrust) || 0, 0, 1);
@@ -143,11 +151,12 @@ export function stepDocking(s, dt = DOCKING_DT, input = {}) {
     const out = Math.abs(f.l) > f.half;
     s.outside = out;
     if (out) {
-      s.warnLeft = Math.max(0, s.warnLeft - dt);
+      if (s.grace <= 0) s.warnLeft = Math.max(0, s.warnLeft - dt);
       if (s.warnLeft <= 0) {
-        scrape(s, SCRAPE.wall, 'wall', f);
+        if (s.wallLost < WALL_CAP) { const cost = Math.min(SCRAPE.wall, WALL_CAP - s.wallLost); s.wallLost += cost; scrape(s, cost, 'wall', f); }
+        // the wall bounces you back inside, and you get a breath (GRACE) before it can warn again: a scrape is a lesson, not a trap
         const sign = f.l < 0 ? -1 : 1;
-        setLat(sign * f.half * 0.8, -sign * 0.4 * Math.abs(f.lat));
+        setLat(sign * f.half * BOUNCE_IN, -sign * BOUNCE_BACK * Math.abs(f.lat));
         s.warnLeft = s.warn;
       }
     } else s.warnLeft = Math.min(s.warn, s.warnLeft + 2 * dt);
@@ -166,7 +175,7 @@ function record(s, f) {
   s.path.push([r1(f.d), r1(f.l)]);
 }
 function scrape(s, hull, kind, f) {
-  s.scrapes++; s.hullLost = Math.min(100, s.hullLost + hull); s.flash = 0.5;
+  s.scrapes++; s.hullLost = Math.min(100, s.hullLost + hull); s.flash = 0.5; s.grace = GRACE;
   s.marks.push([r1(Math.max(0, f.d)), r1(f.l), kind]);
   s.events.push({ type: 'scrape', kind, hull });
 }

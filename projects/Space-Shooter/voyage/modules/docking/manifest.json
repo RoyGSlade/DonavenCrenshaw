@@ -1,0 +1,19 @@
+{
+  "id": "docking",
+  "version": "1.0.0",
+  "kind": "minigame",
+  "title": "Docking",
+  "verb": "Bring her in",
+  "skill": "piloting",
+  "tabletop": "Handling",
+  "paths": ["control", "maneuver", "pursuit"],
+  "pathAliases": { "landing": "control", "handling": "maneuver", "boost": "pursuit" },
+  "where": ["arriving at the star base", "any station with a berth", "trainer"],
+  "length_s": [15, 25],
+  "quick_length_s": [6, 10],
+  "inputs": ["seed", "tier", "points", "level", "quick", "context.base", "context.ship"],
+  "outputs": ["success", "grade", "clean", "hullLost", "timeS", "scrapes", "wavedOff", "berth"],
+  "art": ["art/base-drift-station.webp", "art/ship-courier.webp"],
+  "status": "draft",
+  "contract": 1
+}

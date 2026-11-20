@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Docking · module test page</title>
+<style>
+  :root{color-scheme:dark;--cyan:#81e6df;--amber:#ffad72;--text:#eaf4f5;--muted:#9db3c2}
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;background:radial-gradient(120% 90% at 50% 0%,#0d1b2b,#04080e);color:var(--text);font:14px/1.45 Inter,"Segoe UI",sans-serif}
+  main{max-width:640px;margin:0 auto;padding:18px 14px 40px;display:grid;gap:14px}
+  h1{margin:0;font:800 22px/1.1 Inter,sans-serif}
+  .sub{margin:2px 0 0;color:var(--muted);font-size:13px}
+  form{display:grid;gap:10px;padding:14px;border:1px solid #2f4a5c;border-radius:8px;background:#0b1724cc}
+  label{display:grid;gap:3px;font:11px Consolas,monospace;letter-spacing:.1em;text-transform:uppercase;color:#8fa6b7}
+  input,select{font:14px Inter,sans-serif;color:var(--text);background:#07111c;border:1px solid #3f5566;border-radius:4px;padding:8px;min-height:40px;width:100%}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .check{display:flex;align-items:center;gap:8px;font:13px Inter,sans-serif;text-transform:none;letter-spacing:0;color:var(--text)}.check input{width:auto;min-height:0}
+  button.go{min-height:48px;font:800 15px Inter,sans-serif;letter-spacing:.06em;color:#062226;background:linear-gradient(#7ff0e6,#38c9bf);border:0;border-radius:6px;cursor:pointer}
+  pre{margin:0;padding:10px;max-height:260px;overflow:auto;background:#07111c;border:1px solid #2f4a5c;border-radius:6px;font:11px/1.4 Consolas,monospace;white-space:pre-wrap}
+  /* a host-style full-screen stage: the top bar with a Leave button, and a stage that fills the rest (the same shape as the game's overlay) */
+  .host{position:fixed;inset:0;z-index:60;display:flex;flex-direction:column;gap:6px;padding:max(8px,env(safe-area-inset-top)) 12px max(8px,env(safe-area-inset-bottom));background:radial-gradient(120% 90% at 50% 0%,#0d1b2b,#04080e);overflow:hidden}
+  .host[hidden]{display:none}
+  .host-top{display:flex;align-items:center;justify-content:space-between;gap:10px;max-width:1100px;width:100%;margin:0 auto}
+  .host-top p{margin:0;font:700 11px Consolas,monospace;letter-spacing:.14em;color:var(--amber)}
+  .host-top h2{margin:0;font:800 17px/1.2 Inter,sans-serif}
+  .host-leave{min-height:44px;padding:0 16px;font:700 12px Inter,sans-serif;letter-spacing:.06em;color:var(--text);background:#10202f;border:1px solid #56768a;border-radius:6px;cursor:pointer}
+  .host-stage{flex:1 1 0;min-height:0;display:flex;flex-direction:column;max-width:1100px;width:100%;margin:0 auto}
+</style>
+</head>
+<body>
+<main>
+  <header><h1>Docking</h1><p class="sub">Module test page: set the roll and play it in a host-style full-screen stage.</p></header>
+  <form id="setup" autocomplete="off">
+    <div class="grid2">
+      <label>Seed<input id="seed" type="number" value="1" min="1" step="1"></label>
+      <label>Roll (tier)<select id="tier"><option value="-2">Rough (-2)</option><option value="-1">Shaky (-1)</option><option value="0" selected>Steady (0)</option><option value="1">Good (+1)</option><option value="2">Smooth (+2)</option></select></label>
+    </div>
+    <div class="grid3">
+      <label>Control<input id="p-control" type="number" min="0" max="9" value="0"></label>
+      <label>Maneuver<input id="p-maneuver" type="number" min="0" max="9" value="0"></label>
+      <label>Pursuit<input id="p-pursuit" type="number" min="0" max="9" value="0"></label>
+    </div>
+    <div class="grid2">
+      <label>Base name<input id="base-name" type="text" value="Lantern Base"></label>
+      <label>Berth number<input id="base-berth" type="number" min="1" max="4" value="1"></label>
+    </div>
+    <label>Ships already docked (JSON)<input id="docked" type="text" value='[{"ship":"Brass Heron","berth":2},{"ship":"Kestrel","berth":3}]'></label>
+    <label class="check"><input id="quick" type="checkbox"> Quick mode (start lined up at the mouth)</label>
+    <label class="check"><input id="trainer" type="checkbox"> Trainer mode</label>
+    <button class="go" id="play" type="submit">Bring her in</button>
+  </form>
+  <pre id="out" aria-live="polite">No result yet.</pre>
+</main>
+<section class="host" id="host" role="dialog" aria-label="Docking" hidden>
+  <div class="host-top"><div><p id="host-word">DOCKING</p><h2 id="host-title">Bring her in</h2></div><button type="button" class="host-leave" id="leave">Leave this game</button></div>
+  <div class="host-stage" id="stage"></div>
+</section>
+<script type="module">
+import { play } from './index.js';
+const $ = (id) => document.getElementById(id), q = new URLSearchParams(location.search);
+for (const [k, id] of [['seed', 'seed'], ['tier', 'tier'], ['control', 'p-control'], ['maneuver', 'p-maneuver'], ['pursuit', 'p-pursuit'], ['berth', 'base-berth']]) if (q.has(k)) $(id).value = q.get(k);
+if (q.get('quick') === '1') $('quick').checked = true;
+if (q.get('trainer') === '1') $('trainer').checked = true;
+const sounds = [];
+let leaveNow = null;
+$('leave').addEventListener('click', () => leaveNow?.());
+async function run() {
+  let docked = []; try { docked = JSON.parse($('docked').value || '[]'); } catch {}
+  const points = { control: +$('p-control').value || 0, maneuver: +$('p-maneuver').value || 0, pursuit: +$('p-pursuit').value || 0 };
+  const ctx = {
+    seed: Math.max(1, +$('seed').value || 1), tier: +$('tier').value, points, level: 9, quick: $('quick').checked, mode: $('trainer').checked ? 'trainer' : 'field',
+    context: { base: { id: 'star-base', name: $('base-name').value, berths: 4, berth: +$('base-berth').value || 1, docked }, ship: { name: 'Tin Duchess' } },
+    sound: (id) => { sounds.push(id); window.__sounds = sounds; }, reducedMotion: () => matchMedia('(prefers-reduced-motion: reduce)').matches,
+  };
+  $('host').hidden = false; document.body.style.overflow = 'hidden'; $('stage').replaceChildren();
+  const left = new Promise((r) => { leaveNow = () => r({ done: true, success: false, grade: 0, left: true }); });
+  const result = await Promise.race([play($('stage'), ctx), left]);
+  $('stage').replaceChildren(); $('host').hidden = true; document.body.style.overflow = '';
+  window.__result = result; $('out').textContent = JSON.stringify(result, (k, v) => (k === 'path' ? `[${v.length} points]` : v), 2);
+  return result;
+}
+$('setup').addEventListener('submit', (e) => { e.preventDefault(); run(); });
+window.__run = run;
+if (q.get('auto') === '1') run();
+</script>
+</body>
+</html>

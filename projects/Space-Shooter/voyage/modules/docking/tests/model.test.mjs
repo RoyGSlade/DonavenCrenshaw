@@ -2,7 +2,7 @@
 // DOCK_TABLE=1 prints the pass-rate table the lane reports.   Run: node --test tests/model.test.mjs
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createDocking, stepDocking, frameOf, halfAt, dockingWord, warnFill, wallNear, wallBand, lightsLeft, dockingXp, dockingEffects, DOCKING_DT, RB, DM, SHIP_R, SCRAPE, PASS, OUTCOMES } from '../model.js';
+import { createDocking, stepDocking, frameOf, halfAt, safeAt, WALL_CAP, GRACE, dockingWord, warnFill, wallNear, wallBand, lightsLeft, dockingXp, dockingEffects, DOCKING_DT, RB, DM, SHIP_R, SCRAPE, PASS, OUTCOMES } from '../model.js';
 import { runBot, sweep, makeBot } from '../bot.js';
 import { setupDocking, DOCKING_BASE, PATHS, ALIASES, cleanPoints } from '../setup.js';
 import { endWords, tryWords, gradeWord, endLine, LINES, scrapeWords } from '../words.js';
@@ -157,8 +157,10 @@ test('the words: drifting wide, ease off, in the corridor, lined up, too fast, s
   place(s, DM + 5, STEADY.mouth + 10); assert.equal(dockingWord(s), 'find the corridor');
   place(s, 60, halfAt(STEADY, 60) * 0.8); assert.equal(dockingWord(s), 'in the corridor');
   place(s, 60, 0); assert.equal(dockingWord(s), 'lined up');
-  place(s, 30, 0, { vlane: STEADY.safe * 2 }); assert.equal(dockingWord(s), 'too fast');
-  place(s, 30, 0, { vlane: STEADY.safe * 1.3 }); assert.equal(dockingWord(s), 'ease off');
+  place(s, 30, 0, { vlane: 30 }); assert.equal(dockingWord(s), 'too fast');
+  place(s, 30, 0, { vlane: 20 }); assert.equal(dockingWord(s), 'ease off');
+  place(s, 55, 0, { vlane: 20 }); assert.equal(dockingWord(s), 'lined up', 'a fast run in from far out is not scolded: the safe speed grows with the distance');
+  assert.equal(safeAt(s, 0), STEADY.safe); assert.ok(safeAt(s, 60) > safeAt(s, 20));
   s.flash = 0.3; assert.equal(dockingWord(s), 'scrape');
   for (const w of [endWords({ outcome: 'docked', clean: true, hullLost: 0 }), endWords({ outcome: 'docked', clean: false, hullLost: 8 }), endWords({ outcome: 'waved-off' }), tryWords({ outcome: 'waved-off' }), tryWords({ outcome: 'docked', hullLost: 8 })]) assert.doesNotMatch(w, /\d/, w);
   assert.equal(gradeWord({ outcome: 'docked', grade: 100, clean: true, perfect: true }), 'perfect dock'); assert.equal(gradeWord({ outcome: 'docked', grade: 90, clean: true, perfect: false }), 'clean dock'); assert.equal(gradeWord({ outcome: 'waved-off' }), 'waved off');
@@ -358,4 +360,17 @@ test('quick mode: points still never hurt a wobbly hand', () => {
 test('the module names no base or ship: the model and words carry no world content', async () => {
   const { readFile } = await import('node:fs/promises');
   for (const f of ['../model.js', '../words.js', '../setup.js']) { const src = await readFile(new URL(f, import.meta.url), 'utf8'); assert.doesNotMatch(src, /Lantern|Tin Duchess|Driftborn|Relay Guild|Hollow Choir|Ember Syndicate/i, f); }
+});
+
+test('a scrape is a lesson, not a trap: a breath before the wall can warn again, and the walls alone cost at most a capped share of the hull', () => {
+  const s = createDocking({ seed: 4, setup: STEADY });
+  const out = () => place(s, 40, halfAt(STEADY, 40) + 4);
+  let n = 0; while (!s.scrapes && n++ < 600) { out(); stepDocking(s, DOCKING_DT, { aim: null, thrust: 0 }); }
+  assert.equal(s.scrapes, 1); assert.ok(s.grace > 0, 'grace after the scrape');
+  const w0 = s.warnLeft; for (let i = 0; i < 30; i++) { out(); stepDocking(s, DOCKING_DT, { aim: null, thrust: 0 }); }
+  assert.equal(s.warnLeft, w0, 'the warning does not drain during the grace'); assert.ok(GRACE > 0);
+  // a ship parked in a sweeping corridor for the whole run is bounced and nudged, never wrecked
+  const lazy = runBot('lazy', { seed: 3, setup: STEADY }); assert.ok(lazy.result.hullLost <= WALL_CAP, `hull lost ${lazy.result.hullLost}`); assert.equal(lazy.result.outcome, OUTCOMES.wavedOff);
+  const t = createDocking({ seed: 4, setup: STEADY }); for (let i = 0; i < 60 * 25; i++) { place(t, 40, halfAt(STEADY, 40) + 4); stepDocking(t, DOCKING_DT, { aim: null, thrust: 0 }); if (t.done) break; }
+  assert.equal(t.wallLost, WALL_CAP, 'the walls alone stop at the cap'); assert.equal(t.done, false, 'and the run goes on');
 });

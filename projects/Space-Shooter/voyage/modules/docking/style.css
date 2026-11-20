@@ -1,0 +1,67 @@
+/* Docking: everything is scoped under .m-docking. The board is the screen; the HUD is drawn bars, lamps and plain words. Frames and the
+   thrust pad use the hangar kit pictures copied into art/kit (plain frame, a drop-shadow glow, no box-shadow, no hover or pressed art). */
+.m-docking{--dk-cyan:#81e6df;--dk-amber:#ffad72;--dk-text:#eaf4f5;--dk-muted:#9db3c2;position:relative;display:flex;flex-direction:column;gap:6px;flex:1 1 0;min-height:0;width:100%;height:100%;color:var(--dk-text);font-family:Inter,"Segoe UI",sans-serif;-webkit-tap-highlight-color:transparent}
+.m-docking *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+.m-docking .dk-eyebrow{margin:0;font:700 11px Consolas,monospace;letter-spacing:.14em;color:var(--dk-amber)}
+.m-docking .dk-hud{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}
+.m-docking .dk-lane{grid-column:span 3}.m-docking .dk-lights{grid-column:span 3}
+.m-docking .dk-closing{grid-column:span 3}.m-docking .dk-hullstat{grid-column:span 2}.m-docking .dk-warnstat{grid-column:span 1}
+.m-docking .dk-stat{display:grid;gap:3px;align-content:start;padding:5px 8px;border:1px solid #2f4a5c;border-radius:5px;background:linear-gradient(#0d1b2a,#08111b);min-width:0}
+.m-docking .dk-stat span{font:10px Consolas,monospace;letter-spacing:.12em;color:#8fa6b7;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.m-docking .dk-stat em{font:700 14px Consolas,monospace;color:#eaf4f5;font-style:normal;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.m-docking .dk-stat[data-tone=ok] em{color:#9fe870}.m-docking .dk-stat[data-tone=warn] em{color:#ffc857}.m-docking .dk-stat[data-tone=bad] em{color:#ff8a70}
+.m-docking .dk-meter{position:relative;height:10px;border-radius:5px;background:#1b2d3d;overflow:visible}
+.m-docking .dk-meter i{display:block;height:100%;width:0;border-radius:5px;background:#81e6df;transition:background .1s}
+.m-docking .dk-meter .dk-safe{position:absolute;left:0;top:0;bottom:0;border-radius:5px 0 0 5px;background:#9fe87055;border-right:2px solid #9fe870}
+.m-docking .dk-meter[data-tone=warn] i{background:#ffc857}.m-docking .dk-meter[data-tone=bad] i{background:#ff5a45}
+.m-docking .dk-hull i{background:#9fe870}.m-docking .dk-hull[data-level=scuffed] i{background:#ffc857}.m-docking .dk-hull[data-level=damaged] i{background:#ff5a45}
+.m-docking .dk-warn i{background:#ffc857}.m-docking .dk-warn[data-tone=bad] i{background:#ff5a45;filter:drop-shadow(0 0 5px #ff5a45)}
+.m-docking .dk-lamps{display:flex;gap:7px;align-items:center;height:22px}
+.m-docking .dk-lamps i{flex:0 0 auto;width:16px;height:16px;border-radius:50%;border:2px solid #0a1219;background:#243038;transition:background .15s,filter .15s}
+.m-docking .dk-lamps i.is-on{background:#8cf29a;filter:drop-shadow(0 0 5px #8cf29a)}
+.m-docking .dk-lamps i.is-last{background:#ffc857;filter:drop-shadow(0 0 6px #ffc857);animation:dk-blink .28s steps(2) infinite}
+.m-docking .dk-lamps i.is-out{background:#243038;filter:none}
+.m-docking .dk-lights[data-tone=warn] span{color:#ffc857}.m-docking .dk-lights[data-tone=bad] span{color:#ff8a70}
+@keyframes dk-blink{50%{opacity:.35}}
+/* the board takes every spare pixel of height, in the kit's panel frame */
+.m-docking .dk-board{position:relative;flex:1 1 0;min-height:120px;overflow:hidden;border:solid transparent;border-width:9px 11px 12px 11px;border-image:url(art/kit/panel.webp) 45 51 63 51 fill / 9px 11px 12px 11px stretch;background:#05080d}
+.m-docking .dk-canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:crosshair;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.m-docking .dk-start{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);margin:0;max-width:calc(100% - 24px);padding:6px 12px;border-radius:14px;background:#06101acc;border:1px solid #2f4a5c;font:600 12px/1.35 Inter,sans-serif;color:#cfe3ec;text-align:center;pointer-events:none;animation:dk-pulse 1.6s ease-in-out infinite}
+.m-docking .dk-start.is-gone{display:none}
+@keyframes dk-pulse{50%{border-color:#81e6df;color:#fff}}
+.m-docking .dk-say,.m-docking .dk-tip{margin:0;font:600 14px/1.35 Inter,sans-serif}
+.m-docking .dk-say b{display:inline-block;margin-right:8px;font:700 10px Consolas,monospace;letter-spacing:.14em;color:var(--dk-amber);text-transform:uppercase}
+.m-docking .dk-say span{color:var(--dk-text);font-style:italic}
+.m-docking .dk-tip{font-weight:500;font-size:12px;color:var(--dk-muted);min-height:1.35em}
+.m-docking .dk-row{display:grid;grid-template-columns:1fr;width:100%;max-width:640px;margin:0 auto;padding-bottom:max(2px,env(safe-area-inset-bottom))}
+/* the thrust pad and the card's button: the kit's plain primary frame, glow by drop-shadow */
+.m-docking .dk-pad{font:700 12px Inter,"Segoe UI",sans-serif;letter-spacing:.06em;color:#062226;min-height:80px;padding:0 6px;cursor:pointer;display:grid;place-items:center;align-content:center;gap:0;background:none;border-radius:0;border:solid transparent;border-width:12px 17px 12px 11px;border-image:url(art/kit/button-primary.webp) 24 34 24 21 fill / 12px 17px 12px 11px stretch;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;filter:drop-shadow(0 0 4px rgba(129,230,223,.4));transition:filter .1s,transform .08s}
+.m-docking .dk-pad b{font:800 26px/1 Inter,sans-serif;letter-spacing:.04em}
+.m-docking .dk-pad span{font:700 10px Consolas,monospace;letter-spacing:.14em;text-transform:uppercase;opacity:.7}
+.m-docking .dk-pad.is-held{transform:translateY(2px) scale(.98);filter:drop-shadow(0 0 16px rgba(255,173,114,.95))}
+.m-docking .dk-pad:focus-visible{outline:2px solid rgba(255,173,114,.55);outline-offset:2px;border-radius:6px}
+.m-docking .dk-go{min-height:46px;font-size:14px;margin-top:2px}
+.m-docking .dk-card{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(420px,calc(100% - 16px));max-height:calc(100% - 12px);overflow:auto;z-index:3;display:grid;gap:7px;padding:16px 20px 14px;text-align:center;border:solid transparent;border-width:13px 18px 12px 18px;border-image:url(art/kit/panel-light.webp) 26 37 23 38 fill / 13px 18px 12px 18px stretch;background:none;animation:dk-rise .3s ease-out}
+@keyframes dk-rise{from{opacity:0;transform:translate(-50%,-46%)}}
+.m-docking .dk-title{font:800 22px/1.1 Inter,sans-serif;letter-spacing:.06em}
+.m-docking .dk-card[data-ok="1"] .dk-title{color:#9fe870}.m-docking .dk-card[data-ok="0"] .dk-title{color:#ff8a70}
+.m-docking .dk-flight{justify-self:center;border:1px solid #2f4a5c;border-radius:4px;max-width:100%}
+.m-docking .dk-legend{margin:0;font:11px/1.3 Inter,sans-serif;color:#9db3c2}
+.m-docking .dk-bars{display:grid;gap:6px;text-align:left}
+.m-docking .dk-bars>div{display:grid;grid-template-columns:62px 1fr;gap:8px;align-items:center;font:11px Consolas,monospace;color:#b9ccd8}
+.m-docking .dk-bars .dk-meter{height:12px}
+.m-docking .dk-gradebar i{background:#81e6df}.m-docking .dk-gradebar[data-tone=bad] i{background:#ffad72}
+.m-docking .dk-line{margin:0;font:13px/1.4 Inter,sans-serif;color:#cfe3ec}
+.m-docking.is-shake .dk-board{animation:dk-shake .28s linear}
+@keyframes dk-shake{0%,100%{transform:translate(0)}20%{transform:translate(-3px,2px)}40%{transform:translate(3px,-2px)}60%{transform:translate(-2px,-2px)}80%{transform:translate(2px,2px)}}
+@media (prefers-reduced-motion:reduce){.m-docking.is-shake .dk-board,.m-docking .dk-start,.m-docking .dk-lamps i.is-last,.m-docking .dk-card{animation:none}}
+@media (max-width:700px){
+  .m-docking{gap:5px}
+  .m-docking .dk-stat{padding:4px 6px}
+  .m-docking .dk-stat em{font-size:13px}
+  .m-docking .dk-lamps{gap:5px}.m-docking .dk-lamps i{width:15px;height:15px}
+  .m-docking .dk-eyebrow{font-size:10px}
+  .m-docking .dk-pad{min-height:76px}
+  .m-docking .dk-card{padding:12px 14px 10px}
+}
+@media (max-height:560px){.m-docking .dk-eyebrow,.m-docking .dk-tip{display:none}.m-docking .dk-pad{min-height:58px}}

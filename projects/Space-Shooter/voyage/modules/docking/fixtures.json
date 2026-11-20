@@ -1,0 +1,16 @@
+{
+  "base": {
+    "id": "star-base",
+    "name": "Lantern Base",
+    "faction": "relay-guild",
+    "colour": "#38d6cc",
+    "icon": "drift-station",
+    "berths": 4,
+    "berth": 1,
+    "docked": [
+      { "ship": "Brass Heron", "berth": 2 },
+      { "ship": "Kestrel", "berth": 3 }
+    ]
+  },
+  "ship": { "name": "Tin Duchess", "icon": "ship-courier" }
+}
