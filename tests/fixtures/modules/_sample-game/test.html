@@ -1,0 +1,3 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Sample pads test page</title></head>
+<body><h1>Sample pads</h1><div id="stage" style="min-height:60vh"></div>
+<script type="module">import { play } from './index.js'; const q = new URLSearchParams(location.search); play(document.getElementById('stage'), { seed: Number(q.get('seed')) || 1, tier: Number(q.get('tier')) || 0, points: {}, context: {} }).then((r) => { document.title = `done ${r.success}`; });</script></body></html>

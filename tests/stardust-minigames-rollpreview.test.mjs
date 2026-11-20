@@ -3,6 +3,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { rollPreview, nextTier, SPECS } from '../projects/Space-Shooter/voyage/minigames/rollPreview.js';
 import { tierOf, setupRepair } from '../projects/Space-Shooter/voyage/minigames/setup.js';
+import * as MODS from '../projects/Space-Shooter/voyage/modules/registry.js';
+await MODS.ready();
 
 const at = (margin, natural = false) => ({ total: 12 + margin, dc: 12, natural });
 
@@ -29,7 +31,7 @@ test('every game changes at every tier but Steady, and says so; Steady says noth
     for (const m of [12, 6, -3, -9]) assert.ok(rollPreview(g, at(m), { level: 3 }).phrases.length >= 1, `${g} margin ${m}`);
     assert.deepEqual(rollPreview(g, at(2), { level: 3 }).phrases, []);
   }
-  assert.equal(Object.keys(SPECS).length, 10, 'the nine games plus Perihelion');
+  for (const g of Object.keys(SPECS)) assert.ok(MODS.has(g), `${g} preview belongs to a registered module`);
 });
 
 test('the numbers in the line are the real setup numbers, with the player\'s points', () => {

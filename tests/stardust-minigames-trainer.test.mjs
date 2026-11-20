@@ -12,6 +12,8 @@ import { GYM_GAMES, gymGame, gymSetup } from '../projects/Space-Shooter/voyage/m
 import { TRAINER_SECTORS, setupNavTrainer, trainerSettle } from '../projects/Space-Shooter/voyage/minigames/perihelionEntry.js';
 import { GYM } from '../projects/Space-Shooter/voyage/minigames/gym.js';
 import { cleanState, freshState } from '../projects/Space-Shooter/voyage/workbench/state.js';
+import * as MODS from '../projects/Space-Shooter/voyage/modules/registry.js';
+await MODS.ready();
 
 // ---- shooting setup: every point changes what you can see ---------------------------------------------------------------
 test('shooting setup: each path changes its own number with every point, never the others', () => {
@@ -213,7 +215,7 @@ test('the workbench state keeps learned pages, drops unknown ones, and a fresh s
 });
 
 test('navigation trains on Perihelion: the gym replay is the trainer setup, sectors open in order, stars pay once, free', () => {
-  assert.equal(GYM_GAMES.length, 9, 'still nine gym games'); assert.equal(gymGame('nav').name, 'Perihelion trainer sectors');
+  for (const g of GYM_GAMES) assert.ok(MODS.has(g.id), `gym game ${g.id} is a registered module`); assert.equal(gymGame('nav').name, 'Perihelion trainer sectors');
   assert.deepEqual(gymSetup('nav', { level: 5, points: { time: 2, fuel: 2, warning: 1 } }), setupNavTrainer({ points: { time: 2, fuel: 2, warning: 1 }, level: 5 }));
   assert.equal(gymSetup('nav', { level: 1 }).tier, 0);
   const none = sectorStatus({}); assert.equal(none.length, 5); assert.deepEqual(none.map((x) => x.unlocked), [true, false, false, false, false]);

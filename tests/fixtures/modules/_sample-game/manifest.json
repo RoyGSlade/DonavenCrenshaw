@@ -1,0 +1,19 @@
+{
+  "id": "_sample-game",
+  "version": "1.0.0",
+  "kind": "minigame",
+  "title": "Sample pads",
+  "verb": "Hit the lit pad",
+  "skill": "repair",
+  "where": ["workbench shelf", "bound console"],
+  "length_s": [5, 20],
+  "inputs": ["seed", "tier", "points"],
+  "outputs": ["success", "grade"],
+  "paths": [
+    { "id": "diagnose", "division": "Diagnose", "tabletopSkill": "Mechanical" },
+    { "id": "mend", "division": "Mend", "tabletopSkill": "Mechanical" }
+  ],
+  "art": [],
+  "status": "draft",
+  "contract": 1
+}
