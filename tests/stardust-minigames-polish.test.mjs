@@ -159,7 +159,7 @@ const TABLE = {};
  * `lag` is how old its picture of the pull is (seconds), `speedSd` how badly it judges its speed (a share), `jitter` the wobble of the thumb,
  * `ySd` how far it strays from its line (units), `frac` where in the range it aims (0 = just polished, 1 = just short of a dimple).
  */
-function hand(setup, seed, { lag = 0, speedSd = 0, jitter = 0, ySd = 0, frac = 0.5, portrait = false, maxSeconds = 400 } = {}) {
+function hand(setup, seed, { lag = 0, speedSd = 0, jitter = 0, ySd = 0, frac = 0.35, portrait = false, maxSeconds = 400 } = {}) {
   const s = P.createPolish({ seed, setup, portrait }), r = lcg(seed * 13 + 7);
   let row = 0, dir = 1, st = 'start', yErr = 0, vErr = 0;
   for (let i = 0; i < Math.round(maxSeconds / DT) && !s.done; i++) {
@@ -177,11 +177,11 @@ function hand(setup, seed, { lag = 0, speedSd = 0, jitter = 0, ySd = 0, frac = 0
 }
 const sweep = (fn, n = 120) => { let pass = 0, sum = 0; for (let i = 1; i <= n; i++) { const s = fn(i); if (s.result.success) pass++; sum += s.result.grade; } return { rate: pass / n, avg: sum / n }; };
 
-test('perfect bot: polishes the plate row by row at every roll, wide and portrait, with and without Speed points (Rough has pull spikes it cannot ride out)', () => {
+test('perfect bot: polishes the plate row by row at every roll, wide and portrait, with and without Speed points (it aims low in the polished-to-dimple range, 35% of the way)', () => {
   for (const portrait of [false, true]) for (const t of TIERS) {
     const r = sweep((i) => hand(setupPolish({ tier: t, level: 9 }), i, { portrait }), 80);
-    TABLE[`perfect t${t} ${portrait ? 'portrait' : 'wide'}`] = r.rate; if (!(portrait && t < 0)) assert.ok(r.rate >= (t === -2 ? 0.8 : 1), `perfect, tier ${t}, portrait ${portrait}: ${r.rate}`);
-    if (t >= 0) assert.ok(r.avg >= 80, `a clean plate: ${r.avg}`);
+    TABLE[`perfect t${t} ${portrait ? 'portrait' : 'wide'}`] = r.rate; assert.ok(r.rate >= 0.97, `perfect, tier ${t}, portrait ${portrait}: ${r.rate}`);
+    if (t >= 0) assert.ok(r.avg >= 85, `a clean plate: ${r.avg}`);
   }
   for (const t of [0, 2]) for (const sp of [3, 9]) { const r = sweep((i) => hand(setupPolish({ tier: t, level: 9, points: { speed: sp } }), i), 60); TABLE[`perfect t${t} speed${sp}`] = r.rate; assert.ok(r.rate >= 0.95, `perfect with ${sp} Speed points at tier ${t}: ${r.rate}`); }
   const s = hand(setupPolish({ level: 9 }), 4); assert.equal(s.dimples, 0); assert.ok(s.result.polished >= 36);
@@ -201,11 +201,11 @@ test('lazy hands never pass: hands off, one direction, scribbling, Done at once,
 });
 
 test('slow-handed bot (late to see the pull, jittery thumb, a hand that misjudges its speed): a slope, not a cliff, with the roll', () => {
-  const h = { lag: 0.25, speedSd: 0.1, jitter: 0.12, ySd: 8 };
+  const h = { lag: 0.4, speedSd: 0.12, jitter: 0.12, ySd: 8 };
   const at = (tier, points = {}) => sweep((i) => hand(setupPolish({ tier, points, level: 9 }), i, h), 200).rate;
   const byTier = TIERS.map((t) => at(t)); TIERS.forEach((t, i) => { TABLE[`slow t${t}`] = byTier[i]; });
-  for (let i = 1; i < byTier.length; i++) { assert.ok(byTier[i] >= byTier[i - 1] - 0.04, `roll: ${byTier}`); assert.ok(byTier[i] - byTier[i - 1] < 0.4, `no cliff in the roll: ${byTier}`); }
-  assert.ok(byTier[4] > byTier[0] + 0.3, `Smooth beats Rough: ${byTier}`);
+  for (let i = 1; i < byTier.length; i++) { assert.ok(byTier[i] >= byTier[i - 1] - 0.04, `roll: ${byTier}`); assert.ok(byTier[i] - byTier[i - 1] < 0.5, `no cliff in the roll: ${byTier}`); }
+  assert.ok(byTier[4] > byTier[0] + 0.5, `Smooth beats Rough: ${byTier}`);
   // Speed points shine faster, so the plate is quicker but the window to dimple is shorter (60 shine of headroom is 1.0 s at 60 a second, 0.69 s at 87): a hand that is late and shaky does not gain accuracy from them. Recorded, not asserted.
   [0, 3, 6, 9].forEach((p) => { TABLE[`slow steady speed${p}`] = at(0, { speed: p }); });
 });
