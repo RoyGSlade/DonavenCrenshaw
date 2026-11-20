@@ -164,4 +164,5 @@ body:has(.of-talk) #hg-dialogue{display:none}
 .of-board-reading{margin:0;max-width:min(620px,100%);padding:12px 16px;border:1px solid #2a4152;border-left:3px solid #ffb23a;border-radius:6px;background:#0d1826;color:#eaf4f5;font:15px/1.5 Inter,"Segoe UI",sans-serif;display:grid;gap:2px}
 .of-board-reading b{font:700 11px Consolas,monospace;letter-spacing:.12em;text-transform:uppercase;color:#ffb23a}
 @media (max-width:520px){.of-board{padding-top:64px}.of-board-face{aspect-ratio:auto;min-height:340px}.of-board-plates{width:78%}.of-board-note{width:40px;height:32px}}
-body:has(.of-board) .dp-bag,body:has(.of-board) .dp-tracker{opacity:0;pointer-events:none}
+body:has(.of-board) .dp-bag,body:has(.of-board) .dp-tracker,body:has(.of-board) .dp-pause-btn{opacity:0;pointer-events:none}
+body:has(.of-board) .of-toast{display:none}
