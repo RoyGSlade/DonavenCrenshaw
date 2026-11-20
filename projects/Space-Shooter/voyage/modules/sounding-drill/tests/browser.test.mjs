@@ -126,7 +126,7 @@ test('sounding drill in the browser: desktop (mouse and keys) and phone (touch)'
       assert.ok(Math.max(...hud.topEls) < (await page.evaluate(() => document.querySelector('#leave').getBoundingClientRect().left)) + 1, 'the HUD stays left of Leave');
       assert.ok(hud.canvas.width >= (phone ? 300 : 700) && hud.canvas.height >= (phone ? 400 : 560), `the rock is big (${hud.canvas.width}x${hud.canvas.height})`);
       // gaps between the neighbouring blocks (rule 5): top bar, the scope, the bottom row
-      const gap1 = hud.scope.top - (hud.top.top + hud.top.height), gap2 = phone ? hud.side.top - (hud.scope.top + hud.scope.height) : 0;
+      const gap1 = hud.canvas.top - (hud.top.top + hud.top.height), gap2 = phone ? hud.side.top - (hud.canvas.top + hud.canvas.height) : 0;
       assert.ok(gap1 <= 48 && gap2 <= 48, `no gap over 48px between blocks (${gap1}, ${gap2})`);
       const live = hud.text.replace(/Press on the rock[^]*?claw\./i, '');
       assert.ok(!/\d/.test(live), `no raw numbers on the live HUD: ${JSON.stringify(live)}`);
@@ -164,6 +164,17 @@ test('sounding drill in the browser: desktop (mouse and keys) and phone (touch)'
         assert.equal((await state(page)).bit.x, k1.bit.x, 'steering alone does not drill');
       }
 
+      // ------------------------------------------------------------------ a hard vein: slow, grinding, the bit heats
+      await page.goto(url('auto=1&seed=3&tier=-2'));
+      await page.waitForSelector('.m-sounding-drill canvas'); await page.waitForTimeout(400);
+      const vein = await page.evaluate(() => { const root = document.querySelector('.m-sounding-drill'), g = root.__game, v = root.__view, R = g.rock, r = v.canvas.getBoundingClientRect(); let best = null, bd = 1e9; for (let i = 0; i < R.kind.length; i++) if (R.kind[i] === 2) { const x = (i % R.gw + 0.5) * R.cell, y = (((i / R.gw) | 0) + 0.5) * R.cell, d = Math.hypot(x - g.bit.x, y - g.bit.y); if (d < bd) { bd = d; best = { x, y }; } } const P = (x, y) => [r.left + (x - v.win.x) * v.scale, r.top + (y - v.win.y) * v.scale]; return { from: P(g.bit.x, g.bit.y), to: P(best.x + (R.cx - best.x) * 0.2, best.y + (R.cy - best.y) * 0.2) }; });
+      await ptr.to(vein.from[0], vein.from[1] + lift, true);
+      for (let i = 1; i <= 40; i++) { await ptr.to(vein.from[0] + (vein.to[0] - vein.from[0]) * i / 40, vein.from[1] + (vein.to[1] - vein.from[1]) * i / 40 + lift, true); await page.waitForTimeout(40); }
+      await page.waitForFunction(() => { const g = document.querySelector('.m-sounding-drill').__game; return g.frontKind === 2 && g.drilling && g.heat > 32; }, null, { timeout: 15000 });
+      assert.match(await page.locator('.sd-status').innerText(), /vein|hot/i, 'the words say so');
+      await shot('5-hard-vein-bit-hot'); await ptr.up();
+      const slow = await state(page); assert.ok(slow.heat > 30, 'the bit heated in the vein');
+
       // ------------------------------------------------------------------ a whole pass, played through real input
       await page.goto(url('auto=1&seed=5&tier=0'));
       await page.waitForSelector('.m-sounding-drill canvas'); await page.waitForTimeout(400);
@@ -176,7 +187,6 @@ test('sounding drill in the browser: desktop (mouse and keys) and phone (touch)'
         onTick: async (s) => {
           const ui = await page.evaluate(() => { const g = document.querySelector('.m-sounding-drill').__game; const f = g.rock.finds[0]; return { touched: !!document.querySelector('.sd-intro.is-gone'), lit: (g.t - f.lit) < 0.9 && f.seen, vein: g.frontKind === 2 && g.drilling, rings: g.rings.length, word: document.querySelector('.sd-status').textContent, heat: g.heat }; });
           if (ui.touched && ui.lit && ui.rings && s.share < 0.2) await snap('pulse', '4-pulse-spreading-find-lit');
-          if (ui.vein && ui.heat > 30) { sawHot = true; await snap('hot', '5-hard-vein-bit-hot'); }
           if (s.share > 0.55 && s.share < 0.7) await snap('near', '6-find-nearly-freed');
           if (ui.word.includes('close')) await snap('close', '6b-careful-its-close');
         },

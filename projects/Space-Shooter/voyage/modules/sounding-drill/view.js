@@ -76,14 +76,21 @@ export function mountGame(stage, ctx, { fixtures, items, rock, resume, quick, on
   const g = createGame({ seed: ctx.seed ?? 1, tier: ctx.tier ?? 0, points: ctx.points || {}, quick, board, rock, items, fixtures, resume, speedK });
   const R = g.rock;
   const itemOf = (f) => R.itemMap?.[f.item] || {};
-  // The window onto the board: the rock and a margin, so a small rock fills the screen rather than floating in it.
-  const win = (() => {
+  // The window onto the board: the rock and a margin, widened or heightened to the shape of the screen so the scope has no empty bands.
+  const base = (() => {
     let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
     for (let i = 0; i < 90; i++) { const p = rimPoint(R, i / 90 * Math.PI * 2); x0 = Math.min(x0, p.x); x1 = Math.max(x1, p.x); y0 = Math.min(y0, p.y); y1 = Math.max(y1, p.y); }
     const m = 46;
-    x0 = Math.max(0, x0 - m); y0 = Math.max(0, y0 - m); x1 = Math.min(R.W, x1 + m); y1 = Math.min(R.H, y1 + m);
-    return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+    return { x: x0 - m, y: y0 - m, w: x1 - x0 + 2 * m, h: y1 - y0 + 2 * m };
   })();
+  const win = { ...base };
+  const fitWindow = (aw, ah) => {
+    const ar = aw / Math.max(1, ah), cx = base.x + base.w / 2, cy = base.y + base.h / 2;
+    let w = base.w, h = base.h;
+    if (w / h < ar) w = h * ar; else h = w / ar;
+    win.x = cx - w / 2; win.y = cy - h / 2; win.w = w; win.h = h;
+  };
+  fitWindow(area.width, area.height);
 
   // offscreen layers at grid resolution
   const mkLayer = () => { const c = document.createElement('canvas'); c.width = R.gw; c.height = R.gh; const x = c.getContext('2d'); return { c, x, img: x.createImageData(R.gw, R.gh) }; };
@@ -112,6 +119,7 @@ export function mountGame(stage, ctx, { fixtures, items, rock, resume, quick, on
   let cssW = 0, cssH = 0, scale = 1, dpr = 1;
   const resize = () => {
     const r = scope.getBoundingClientRect();
+    fitWindow(r.width, r.height);
     dpr = Math.min(2.5, globalThis.devicePixelRatio || 1);
     scale = Math.min(r.width / win.w, r.height / win.h);
     cssW = Math.floor(win.w * scale); cssH = Math.floor(win.h * scale);
