@@ -73,7 +73,7 @@ export function mount(stage, state, env) {
 
   // ---- static parts ----
   const chalkFilter = h('span', { class: 'sc-defs', 'aria-hidden': 'true' });
-  chalkFilter.innerHTML = `<svg width="0" height="0" xmlns="${SVG_NS}"><filter id="sc-chalk" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="${state.seed % 97}" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="2.2"/></filter></svg>`;
+  chalkFilter.innerHTML = `<svg width="0" height="0" xmlns="${SVG_NS}"><filter id="sc-chalk" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="${state.seed % 97}" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="1.5"/></filter></svg>`;
   const sign = h('h1', { class: 'sc-sign' });
   const board = h('div', { class: 'sc-board', 'aria-label': 'Chalk board' });
   const say = h('div', { class: 'sc-say', role: 'status', 'aria-live': 'polite' });
@@ -190,8 +190,10 @@ export function mount(stage, state, env) {
     return slot;
   }
 
+  const phoneQuery = window.matchMedia ? window.matchMedia('(max-width:700px),(max-height:520px)') : { matches: false, addEventListener() {}, removeEventListener() {} };
   function paintShelves(v) {
-    const half = Math.ceil(v.shelves.length / 2);
+    // wide: the record split over two shelf units either side of the keeper. phone: one shelf, read in the record's order, two to a plank.
+    const half = phoneQuery.matches ? v.shelves.length : Math.ceil(v.shelves.length / 2);
     const sides = [v.shelves.slice(0, half), v.shelves.slice(half)];
     [unitL, unitR].forEach((unit, i) => {
       unit.replaceChildren();
@@ -201,9 +203,10 @@ export function mount(stage, state, env) {
       for (; rows < 3; rows++) unit.append(h('div', { class: 'sc-plank is-decor', 'aria-hidden': 'true' }, h('span', { class: 'sc-bare' }, h('span', { class: 'sc-dust' }))));
       unit.classList.toggle('is-empty', !list.length);
     });
-    // phone: one scroll column in record order (the units sit side by side in the CSS grid, so keep the order by flowing them as one)
     floor.dataset.count = String(v.shelves.length);
   }
+  const onPhoneChange = () => { if (!destroyed) paint(); };
+  phoneQuery.addEventListener?.('change', onPhoneChange);
 
   function pileNode(b) {
     const stack = [];
@@ -380,7 +383,7 @@ export function mount(stage, state, env) {
   const onKey = (e) => { if (e.key === 'Escape') { e.preventDefault(); env.onLeave?.(); } };
   document.addEventListener('keydown', onKey);
   return {
-    destroy() { destroyed = true; clearTimeout(openTimer); Object.values(tweens).forEach(cancelAnimationFrame); document.removeEventListener('keydown', onKey); root.remove(); },
+    destroy() { destroyed = true; clearTimeout(openTimer); Object.values(tweens).forEach(cancelAnimationFrame); document.removeEventListener('keydown', onKey); phoneQuery.removeEventListener?.('change', onPhoneChange); root.remove(); },
     root,
   };
 }

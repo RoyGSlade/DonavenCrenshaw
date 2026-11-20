@@ -15,7 +15,7 @@ async function open(profile, query = 'fixture=mel') {
   page.on('pageerror', (e) => errors.push(String(e)));
   page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
   await page.goto(`${srv.origin}/test.html?autoplay=1&${query}`);
-  await page.waitForSelector('.m-shop-counter .sc-shutter');
+  await page.waitForSelector('.m-shop-counter .sc-shutter', { state: 'attached' });
   const phone = Boolean(profile.hasTouch);
   const tap = async (sel) => { const l = page.locator(sel).first(); phone ? await l.tap({ timeout: 8000 }) : await l.click({ timeout: 8000 }); };
   const up = async () => { await page.waitForSelector('.sc-room.is-up'); await page.waitForTimeout(1250); };
@@ -32,7 +32,8 @@ for (const [name, profile] of [['desktop', DESKTOP], ['phone', PHONE]]) {
       const vw = innerWidth, vh = innerHeight;
       const r = document.querySelector('.m-shop-counter').getBoundingClientRect();
       const buttons = [...document.querySelectorAll('.m-shop-counter button, #leave')].filter((b) => b.offsetParent !== null || getComputedStyle(b).position === 'fixed');
-      const covered = buttons.filter((b) => { const q = b.getBoundingClientRect(); if (!q.width || q.bottom < 0 || q.top > vh) return false; const cx = q.left + q.width / 2, cy = Math.min(Math.max(q.top + q.height / 2, 1), vh - 1); const e = document.elementFromPoint(cx, cy); return !(e && (b === e || b.contains(e))); }).map((b) => b.className || b.id);
+      const clipped = (b, cx, cy) => { for (let p = b.parentElement; p && p !== document.body; p = p.parentElement) { const o = getComputedStyle(p).overflowY; if (o === 'auto' || o === 'scroll' || o === 'hidden') { const r2 = p.getBoundingClientRect(); if (cx < r2.left || cx > r2.right || cy < r2.top || cy > r2.bottom) return true; } } return false; };
+      const covered = buttons.filter((b) => { const q = b.getBoundingClientRect(); if (!q.width || q.bottom < 0 || q.top > vh) return false; const cx = q.left + q.width / 2, cy = Math.min(Math.max(q.top + q.height / 2, 1), vh - 1); if (clipped(b, cx, cy)) return false; const e = document.elementFromPoint(cx, cy); return !(e && (b === e || b.contains(e))); }).map((b) => b.className || b.id);
       const digitNodes = [];
       const walker = document.createTreeWalker(document.querySelector('.m-shop-counter'), NodeFilter.SHOW_TEXT);
       for (let n = walker.nextNode(); n; n = walker.nextNode()) if (/\d/.test(n.textContent) && !n.parentElement.closest('.sc-price,.sc-digits,.sc-till-top,.sc-chalk-deal,.sc-defs')) digitNodes.push(n.textContent.trim());
