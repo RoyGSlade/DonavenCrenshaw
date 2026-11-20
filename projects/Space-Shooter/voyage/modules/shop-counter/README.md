@@ -26,10 +26,10 @@ const result = await play(stage, ctx);   // resolves when the player leaves (or 
 | --- | --- |
 | `seed` | which way items lean on the shelf, which line variant a keeper uses (when a record gives a list), dust and chalk wobble |
 | `tier` | `+2` the keeper starts happy, `-2` starts annoyed; passed on to the haggle game |
-| `points` | `valuation`, `barter`, `market` (each 0 to 9). `haggle` counts as `barter` (the social alias) |
+| `points` | keyed by the manifest's path ids: `valuation`, `barter`, `market` (each 0 to 9). `haggle` counts as `barter` (the social alias) |
 | `quick` | the short version: no shutter roll, no haggle, no selling tray; just look and buy |
 | `play(id, overrides)` | opens the haggle game. Missing: the haggle control is not shown |
-| `sound(id)` | `shutter`, `lift`, `knock`, `coins`, `till`, `glass`, `broke`, `line:<id>`, `music:<id>`, `music:stop` |
+| `sound(id)` | `shutter`, `lift`, `knock`, `coins`, `till`, `glass`, `broke`, `stamp` (files in `audio/`, ogg and mp3; the host plays them, `test.html` does), then `line:<id>`, `music:<id>`, `music:stop` (listed only) |
 | `reducedMotion()` | cuts the shutter roll, the flying items and the coin slide |
 | `context.shopId` | the id `effects.world.shops[shopId]` is keyed by |
 | `context.shop` | the game's shop record: `name`, `blurb`, `lines`, `discounts`, `stock`, `buys`, `open`, optional `music` |
@@ -62,3 +62,11 @@ Digits show on three things that have numbers written on them in the real world:
 
 ## Files
 `index.js` entry, `model.js` rules, `view.js` drawing, `style.css` (scoped under `.m-shop-counter`), `fixtures.json` (Mel's locker as it stands in the game's data, Edna's back room, and an invented test stall whose lines are drafts), `test.html` (the test page), `tests/`.
+
+## Round 2 notes (after the first Fable review)
+- **Sounds** are in `audio/`, eight effects (ogg and mp3), made in-house by `audio/make-sounds.py` (standard library plus ffmpeg, seeded). The game has no sound effects to reuse (its audio folder holds only hangar ambience and voice), so these are synthesised placeholders; a sound designer can swap files of the same names.
+- **Every action says something or closes the bubble.** Lift reads the blurb, a locked tap plays `locked`, broke plays `broke`, Pay plays `buy`, a sale plays `sell`; put back, opening or closing an offer, and a haggle result with no line in the record close the bubble.
+- **The face follows the line.** The twelve emotions map onto the three portraits (`EMOTION_FACE` in `model.js`): warm, excited, proud, playful, tender are happy; grumpy, worried, menacing are annoyed; neutral, dry, deadpan, sly are flat and leave the face to what you just did (paid: happy, broke: annoyed, anything else: neutral).
+- **The deal stamp** is cleared by Pay. The haggle is still used up for the visit.
+- **Items without a picture** are all drawn the same way: a strapped, tagged parcel (the tag carries the item's initials, the strap its colour) with the item's shape stencilled on the face. A `glyph` field on the item record picks the stencil.
+- **Desktop shelf units** are as tall as the stock they hold; the keeper and the counter take the rest.

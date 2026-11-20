@@ -115,7 +115,7 @@ export function createCounter({ seed = 1, tier = 0, points = {}, level = 9, quic
     visit: { bought: {}, units: {}, sold: {}, rep: {}, spent: 0, earned: 0 },
     basket: {},
     offerId: null,
-    haggle: { used: false, outcome: null, pct: 0, covered: {} },
+    haggle: { used: false, outcome: null, pct: 0, covered: {}, stamped: false },
     mood: t >= 2 ? 'happy' : t <= -2 ? 'annoyed' : 'neutral',
     speech: null,
     shut: shop.open === false,
@@ -124,6 +124,7 @@ export function createCounter({ seed = 1, tier = 0, points = {}, level = 9, quic
   };
   const visited = Object.values(s.bought).some((n) => n > 0) || whole(ctx.visits) > 0; // a regular gets the keeper's `back` line when the record has one
   s.speech = s.shut ? lineSpeech(s, 'shut') || textSpeech(s, shop.reason) : (visited && lineSpeech(s, 'back')) || lineSpeech(s, 'open');
+  if (s.speech?.kind === 'line') s.mood = faceFor(s.speech.emotion, s.mood); // the first face matches the first line
   return s;
 }
 
@@ -145,11 +146,19 @@ const textSpeech = (s, text) => (text ? { kind: 'line', key: 'shut', lineId: nul
 const itemName = (s, id) => s.items[id]?.name || cap1(String(id).replace(/-/g, ' '));
 const iconOf = (s, id) => s.items[id]?.icon || null;
 
-function say(s, ev, speech) {
-  if (!speech) return;
-  s.speech = speech;
-  ev.push({ type: 'say', speech });
-  if (speech.kind === 'line' && speech.lineId) ev.push({ type: 'sound', id: `line:${speech.lineId}` });
+/** The twelve emotions a line can carry, mapped onto the three portraits. The flat ones (neutral, dry, deadpan, sly) leave the face to what you just did. */
+export const EMOTION_FACE = Object.freeze({ neutral: 'neutral', dry: 'neutral', deadpan: 'neutral', sly: 'neutral', warm: 'happy', excited: 'happy', proud: 'happy', playful: 'happy', tender: 'happy', grumpy: 'annoyed', worried: 'annoyed', menacing: 'annoyed' });
+/** The face for a line: a strong emotion decides; a flat one defers to `natural` (what the action means for the keeper). */
+export function faceFor(emotion, natural = 'neutral') {
+  const f = EMOTION_FACE[emotion] || 'neutral';
+  return f !== 'neutral' ? f : natural;
+}
+/** Every action ends here: it plays its own line (or a plain note), or it closes the bubble. The face follows the line, never an older one. */
+function react(s, ev, speech, natural = 'neutral') {
+  s.speech = speech || null;
+  ev.push({ type: 'say', speech: s.speech });
+  if (speech?.kind === 'line' && speech.lineId) ev.push({ type: 'sound', id: `line:${speech.lineId}` });
+  setMood(s, ev, speech?.kind === 'line' ? faceFor(speech.emotion, natural) : natural);
 }
 function setMood(s, ev, mood) {
   if (s.mood !== mood) { s.mood = mood; ev.push({ type: 'mood', mood }); }
@@ -233,12 +242,12 @@ export function lift(s, id) {
   if (block) {
     const why = block === 'gone' ? 'Sold out.' : (s.items[id]?.max === 1 ? 'You have one.' : "You can't carry more.");
     ev.push({ type: 'blocked', id, reason: why });
-    say(s, ev, { kind: 'note', key: 'blocked', who: '', text: why, emotion: 'neutral', direction: '' });
+    react(s, ev, { kind: 'note', key: 'blocked', who: '', text: why, emotion: 'neutral', direction: '' }, 'neutral');
     return ev;
   }
   s.basket[id] = inBasket(s, id) + 1;
   ev.push({ type: 'lift', id }, { type: 'sound', id: 'lift' });
-  say(s, ev, { kind: 'blurb', key: 'blurb', who: itemName(s, id), text: e.blurb || s.items[id]?.blurb || '', emotion: 'neutral', direction: '', item: id });
+  react(s, ev, { kind: 'blurb', key: 'blurb', who: itemName(s, id), text: e.blurb || s.items[id]?.blurb || '', emotion: 'neutral', direction: '', item: id }, 'neutral');
   return ev;
 }
 
@@ -248,6 +257,7 @@ export function putBack(s, id) {
   s.basket[id] -= 1;
   if (s.basket[id] <= 0) delete s.basket[id];
   ev.push({ type: 'putback', id }, { type: 'sound', id: 'knock' });
+  react(s, ev, null, 'neutral');
   return ev;
 }
 
@@ -258,7 +268,7 @@ export function tapLocked(s, id) {
   const why = lockedBy(s, e);
   if (!why.length) return ev;
   ev.push({ type: 'glass', id, reason: why[0] }, { type: 'sound', id: 'glass' });
-  say(s, ev, lineSpeech(s, 'locked') || { kind: 'note', key: 'locked', who: '', text: why[0], emotion: 'neutral', direction: '' });
+  react(s, ev, lineSpeech(s, 'locked') || { kind: 'note', key: 'locked', who: '', text: why[0], emotion: 'neutral', direction: '' }, 'neutral');
   return ev;
 }
 
@@ -269,8 +279,7 @@ export function pay(s) {
   const { total } = totals(s);
   if (total > s.save.money) {
     ev.push({ type: 'broke', need: total, have: s.save.money }, { type: 'sound', id: 'broke' });
-    setMood(s, ev, 'annoyed');
-    say(s, ev, lineSpeech(s, 'broke') || { kind: 'note', key: 'broke', who: '', text: "That's not enough.", emotion: 'neutral', direction: '' });
+    react(s, ev, lineSpeech(s, 'broke') || { kind: 'note', key: 'broke', who: '', text: "That's not enough.", emotion: 'neutral', direction: '' }, 'annoyed');
     return ev;
   }
   const lines = [];
@@ -288,9 +297,9 @@ export function pay(s) {
   s.visit.spent += total;
   s.basket = {};
   s.haggle.covered = {};
+  s.haggle.stamped = false; // the deal is done: the stamp goes with the pile
   ev.push({ type: 'pay', total, lines }, { type: 'sound', id: 'coins' }, { type: 'sound', id: 'till' });
-  setMood(s, ev, 'happy');
-  say(s, ev, lineSpeech(s, 'buy'));
+  react(s, ev, lineSpeech(s, 'buy'), 'happy');
   return ev;
 }
 
@@ -309,10 +318,9 @@ export function applyHaggle(s, result) {
   if (!canHaggle(s) || !isObj(result) || result.left) return ev;
   let outcome = result.outcome;
   if (!(outcome in HAGGLE_OFF)) outcome = result.success ? 'well' : 'walked';
-  s.haggle = { used: true, outcome, pct: HAGGLE_OFF[outcome], covered: { ...s.basket } };
-  ev.push({ type: 'haggle', outcome, pct: s.haggle.pct }, { type: 'sound', id: 'till' });
-  setMood(s, ev, outcome === 'well' ? 'happy' : outcome === 'walked' ? 'annoyed' : 'neutral');
-  say(s, ev, lineSpeech(s, `haggle-${outcome}`));
+  s.haggle = { used: true, outcome, pct: HAGGLE_OFF[outcome], covered: { ...s.basket }, stamped: true };
+  ev.push({ type: 'haggle', outcome, pct: s.haggle.pct }, { type: 'sound', id: 'stamp' });
+  react(s, ev, lineSpeech(s, `haggle-${outcome}`), outcome === 'well' ? 'happy' : outcome === 'walked' ? 'annoyed' : 'neutral'); // no line in the record: the stamp and the face, no bubble
   return ev;
 }
 
@@ -334,11 +342,12 @@ export function offer(s, id) {
   if (s.offerId === id) return cancelOffer(s);
   s.offerId = id;
   ev.push({ type: 'offer', id, price: item.price }, { type: 'sound', id: 'knock' });
+  react(s, ev, null, 'neutral'); // the price is on the tag; an old line must not stay up
   return ev;
 }
 export function cancelOffer(s) {
   const ev = [];
-  if (s.offerId) { ev.push({ type: 'offer-cancel', id: s.offerId }); s.offerId = null; }
+  if (s.offerId) { ev.push({ type: 'offer-cancel', id: s.offerId }); s.offerId = null; react(s, ev, null, 'neutral'); }
   return ev;
 }
 /** The keeper takes one of the offered item and pays what their record says. */
@@ -354,8 +363,7 @@ export function sellOne(s) {
   s.visit.earned += item.price;
   ev.push({ type: 'sell', id: item.id, price: item.price }, { type: 'sound', id: 'coins' });
   if (!s.save.items[item.id]) s.offerId = null;
-  setMood(s, ev, 'happy');
-  say(s, ev, lineSpeech(s, 'sell'));
+  react(s, ev, lineSpeech(s, 'sell'), 'happy');
   return ev;
 }
 
@@ -403,7 +411,7 @@ export function view(s) {
     basket: entries(s.basket).map(([id, n]) => ({ id, name: itemName(s, id), icon: iconOf(s, id), kind: s.items[id]?.kind || 'part', n })),
     canPay: !dead(s) && basketCount(s) > 0,
     short: t.total > s.save.money,
-    haggle: { available: canHaggle(s), used: s.haggle.used, outcome: s.haggle.outcome },
+    haggle: { available: canHaggle(s), used: s.haggle.used, outcome: s.haggle.outcome, stamp: s.haggle.stamped ? s.haggle.outcome : null },
     tray: canSell(s) ? trayOf(s) : [],
     offer: s.offerId ? trayOf(s).find((x) => x.id === s.offerId) || null : null,
     quick: s.quick,

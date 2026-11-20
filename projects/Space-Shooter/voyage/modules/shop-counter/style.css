@@ -23,13 +23,13 @@
   border:solid transparent;border-width:12px 14px 13px 24px;border-image:url(art/ui/nameplate.webp) 26 29 28 52 fill / 12px 14px 13px 24px stretch;padding:2px 14px 2px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 
 /* the floor: shelves either side, the keeper between */
-.m-shop-counter .sc-floor{position:relative;z-index:2;flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) minmax(340px,460px) minmax(0,1fr);gap:18px;padding:4px 20px 0}
+.m-shop-counter .sc-floor{position:relative;z-index:2;flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) minmax(340px,520px) minmax(0,1fr);gap:18px;padding:4px 20px 0;align-items:start}
 .m-shop-counter .sc-scroller{display:contents}
-.m-shop-counter .sc-unit{min-height:0;overflow-y:auto;overflow-x:hidden;padding:8px 10px 14px;scrollbar-width:thin;scrollbar-color:#3f5566 transparent;
-  background:linear-gradient(180deg,#14222e,#0f1b26);border:1px solid #2a3d4d;border-radius:4px 4px 0 0;position:relative}
+.m-shop-counter .sc-unit{min-height:0;max-height:100%;align-self:start;overflow-y:auto;overflow-x:hidden;padding:8px 10px 14px;scrollbar-width:thin;scrollbar-color:#3f5566 transparent;
+  background:linear-gradient(180deg,#14222e,#0f1b26);border:1px solid #2a3d4d;border-radius:4px;position:relative}
 .m-shop-counter .sc-unit::before{content:"";position:absolute;left:0;right:0;top:0;height:2px;background:linear-gradient(90deg,transparent,var(--cy),transparent);opacity:.45}
 .m-shop-counter .sc-unit-l{grid-column:1;grid-row:1}
-.m-shop-counter .sc-mid{grid-column:2;grid-row:1;min-height:0;display:flex;flex-direction:column;gap:12px}
+.m-shop-counter .sc-mid{grid-column:2;grid-row:1;align-self:stretch;height:100%;min-height:0;display:flex;flex-direction:column;gap:12px}
 .m-shop-counter .sc-unit-r{grid-column:3;grid-row:1}
 .m-shop-counter .sc-unit.is-empty{opacity:.35}
 .m-shop-counter .sc-plank{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 4px}
@@ -75,14 +75,10 @@
 .m-shop-counter .sc-gap{position:absolute;left:18%;right:18%;bottom:2px;height:calc(var(--ic) * .5);border:1px dashed #4a5f70;border-radius:6px;background:radial-gradient(ellipse at 50% 100%,#8a9aa633,transparent 70%)}
 .m-shop-counter .sc-dust{position:absolute;inset:0;background:radial-gradient(circle 1.5px at 20% 60%,#c8d2da88 98%,transparent),radial-gradient(circle 1px at 50% 35%,#c8d2da77 98%,transparent),radial-gradient(circle 1.5px at 78% 55%,#c8d2da66 98%,transparent),radial-gradient(circle 1px at 38% 80%,#c8d2da77 98%,transparent);animation:sc-drift 6s ease-in-out infinite}
 
-/* empty planks: the shelves are furniture even when the stock is small */
-.m-shop-counter .sc-plank.is-decor{grid-template-columns:1fr;position:relative;height:calc(var(--stand) + 46px)}
-.m-shop-counter .sc-plank.is-decor::before{content:"";position:absolute;left:-4px;right:-4px;top:calc(8px + var(--stand));height:9px;background:linear-gradient(#5a7080,#34495a 40%,#1f2e3b);border-top:1px solid #7f96a6;opacity:.7}
-.m-shop-counter .sc-bare{position:absolute;left:0;right:0;top:calc(8px + var(--stand) - 14px);height:14px}
 /* the keeper */
 .m-shop-counter .sc-mid-top{flex:none}
 .m-shop-counter .sc-who{position:relative;flex:1;min-height:0;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:10px}
-.m-shop-counter .sc-keeper{position:relative;flex:none;width:min(100%,clamp(150px,min(42vh,calc(100vh - 450px)),400px));display:flex;flex-direction:column;align-items:center}
+.m-shop-counter .sc-keeper{position:relative;flex:none;width:min(100%,clamp(150px,min(46vh,calc(100vh - 430px)),460px));display:flex;flex-direction:column;align-items:center}
 .m-shop-counter .sc-alcove{position:relative;width:100%;aspect-ratio:1/1;overflow:hidden;border-radius:50% 50% 4px 4px/42% 42% 4px 4px;border:2px solid #4a6275;
   background:radial-gradient(70% 60% at 50% 35%,#2a4256,#0e1a25 75%);filter:drop-shadow(0 0 18px #81e6df22);transition:border-color .35s,filter .35s}
 .m-shop-counter .sc-face{position:absolute;left:4%;right:4%;top:7%;bottom:0;width:92%;height:93%;object-fit:contain;object-position:50% 100%;opacity:0;transition:opacity .35s;pointer-events:none;transform-origin:50% 100%;animation:sc-breathe 5s ease-in-out infinite}
@@ -244,7 +240,7 @@
   .m-shop-counter .sc-head{padding:8px 60px 2px 12px;min-height:46px}
   .m-shop-counter .sc-sign{font-size:15px;letter-spacing:.06em}
   .m-shop-counter .sc-floor{display:flex;flex-direction:column;gap:6px;padding:2px 8px 0}
-  .m-shop-counter .sc-mid{flex:none;gap:6px;display:flex;flex-direction:column}
+  .m-shop-counter .sc-mid{flex:none;gap:6px;display:flex;flex-direction:column;height:auto;align-self:auto}
   .m-shop-counter .sc-mid-top{order:2}
   .m-shop-counter .sc-say{order:0}
   .m-shop-counter .sc-tag{min-height:62px}
@@ -267,10 +263,9 @@
   .m-shop-counter .sc-chalk-wanted{margin-left:4px}.m-shop-counter .sc-want{font-size:11.5px;padding:0 6px;display:inline-block;margin-right:4px}
   .m-shop-counter .sc-ledge{display:none}
   .m-shop-counter .sc-scroller{display:block;flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;align-content:start;padding-bottom:10px;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;-webkit-mask-image:linear-gradient(#000 calc(100% - 26px),transparent);mask-image:linear-gradient(#000 calc(100% - 26px),transparent)}
-  .m-shop-counter .sc-unit{overflow:visible;padding:4px 4px 6px;min-height:0}
+  .m-shop-counter .sc-unit{overflow:visible;max-height:none;padding:4px 4px 6px;min-height:0}
   .m-shop-counter .sc-unit-l,.m-shop-counter .sc-unit-r{grid-column:auto;grid-row:auto}
   .m-shop-counter .sc-unit-r{display:none}
-  .m-shop-counter .sc-plank.is-decor{display:none}
   .m-shop-counter .sc-slot{padding:6px 2px 8px}
   .m-shop-counter .sc-tag{margin-top:14px;min-width:min(100%,104px);padding:10px 6px 5px}
   .m-shop-counter .sc-tag-name{font-size:11.5px}
@@ -321,3 +316,7 @@
   .m-shop-counter .sc-tray{max-height:62vh}
 }
 .m-shop-counter .sc-keeper-name:empty{display:none}
+
+/* the keeper looks down at what you have put on the counter */
+.m-shop-counter .sc-room.has-pile .sc-face{top:9.5%}
+.m-shop-counter .sc-face{transition:opacity .35s,top .4s}

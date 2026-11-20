@@ -38,6 +38,7 @@ for (const [size, profile] of [['desktop', DESKTOP], ['phone', PHONE], ['laptop'
   scene('13-paths', 'fixture=edna&points=3,0,4', async (page, shot) => { await settle(page, 1700); await shot(); });
   scene('14-stall-limits', 'fixture=stall', async (page, shot) => { await settle(page, 1700); await tap(page, '.sc-slot[data-id=lucky-bolt]'); await settle(page, 700); await shot(); });
   scene('16-lift-flight', 'fixture=mel', async (page, shot) => { await settle(page, 1700); await tap(page, '.sc-slot[data-id=scan-goggles]'); await page.waitForTimeout(170); await shot('a'); await page.waitForTimeout(150); await shot('b'); await page.waitForTimeout(900); await shot('c'); });
+  scene('17-no-stale-line', 'fixture=mel&haggle=fair', async (page, shot) => { await settle(page, 1700); await tap(page, '.sc-slot[data-id=scatter-pistol]'); await tap(page, '.sc-slot[data-id=bolt-carbine]'); await settle(page, 500); await tap(page, '.sc-pay'); await settle(page, 400); await shot('a'); await tap(page, '.sc-chip[data-id=bolt-carbine]'); await settle(page, 400); await tap(page, '.sc-haggle'); await settle(page, 1100); await shot('b'); await tap(page, '.sc-pay'); await settle(page, 1300); await shot('c'); });
   scene('15-quick', 'fixture=mel&quick=1', async (page, shot) => { await settle(page, 600); await shot(); });
 
   for (const sc of scenes) {

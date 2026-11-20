@@ -305,7 +305,7 @@ test('selling: your goods on the tray, the keeper names the price, Take it moves
   assert.equal(M.view(s).purse.money, 320);
   assert.equal(M.view(s).tray.find((t) => t.id === 'breach-kit'), undefined, 'the last one is gone from the tray');
   assert.equal(M.view(s).offer, null);
-  assert.equal(M.view(s).keeper.mood, 'happy');
+  assert.equal(M.view(s).keeper.mood, 'annoyed', 'Mel\'s sell line is grumpy: the face follows the line');
   assert.match(M.view(s).speech.text, /Back already/);
   const r = M.finish(s);
   assert.deepEqual(r.effects.items, { 'breach-kit': -1 });
@@ -453,4 +453,83 @@ test('nothing about any shop is written in the model or the view', () => {
   const src = readFileSync(path.join(here, '..', 'model.js'), 'utf8') + readFileSync(path.join(here, '..', 'view.js'), 'utf8');
   for (const word of ['Mel', 'Edna', 'Chibby', 'locker', 'medkit', 'flak', 'hask', 'garrity', 'credits']) assert.equal(new RegExp(`\\b${word}\\b`, 'i').test(src) && word !== 'credits', false, word);
   assert.equal(/Math\.random|Date\.now|performance\.now/.test(readFileSync(path.join(here, '..', 'model.js'), 'utf8')), false, 'the model has no clock and no unseeded random');
+});
+
+test('the twelve emotions map onto three faces, and a strong one beats what you just did', () => {
+  const emotions = ['neutral', 'warm', 'excited', 'dry', 'grumpy', 'sly', 'worried', 'proud', 'deadpan', 'playful', 'tender', 'menacing'];
+  for (const e of emotions) assert.ok(M.MOODS.includes(M.EMOTION_FACE[e]), e);
+  assert.deepEqual(Object.keys(M.EMOTION_FACE).sort(), [...emotions].sort(), 'every emotion in the story\'s list has a face');
+  assert.equal(M.faceFor('warm', 'annoyed'), 'happy');
+  assert.equal(M.faceFor('grumpy', 'happy'), 'annoyed');
+  assert.equal(M.faceFor('dry', 'happy'), 'happy', 'a flat line leaves the face to the action');
+  assert.equal(M.faceFor('sly', 'annoyed'), 'annoyed');
+  assert.equal(M.faceFor('nonsense', 'happy'), 'happy');
+  const s = make('edna', { tier: 0 });
+  assert.equal(M.view(s).keeper.mood, 'neutral', 'sly opening line, steady roll');
+});
+
+test('the face matches the line that is up, in the order the reviewer played it', () => {
+  const s = make('mel', { haggleReady: true });
+  M.lift(s, 'scatter-pistol'); M.lift(s, 'bolt-carbine');
+  M.pay(s);                                                   // broke
+  assert.equal(M.view(s).speech.key, 'broke');
+  assert.equal(M.view(s).keeper.mood, 'annoyed');
+  M.putBack(s, 'bolt-carbine');
+  assert.equal(M.view(s).speech, null, 'put back: the old line is gone');
+  M.applyHaggle(s, { outcome: 'fair' });
+  assert.equal(M.view(s).speech, null, 'a haggle result with no line: no bubble');
+  assert.equal(M.view(s).keeper.mood, 'neutral', 'but the face reacts');
+  M.pay(s);                                                   // paid
+  assert.equal(M.view(s).speech.key, 'buy');
+  assert.equal(M.view(s).keeper.mood, 'happy', 'curt approval: a flat line, a paid till');
+  M.lift(s, 'plated-coat');                                   // glass
+  assert.equal(M.view(s).speech.key, 'locked');
+  assert.equal(M.view(s).keeper.mood, 'neutral', 'the locked line is flat and nothing was bought just now: no smile');
+  M.offer(s, 'breach-kit');
+  assert.equal(M.view(s).speech, null, 'opening an offer closes the locked line');
+  M.cancelOffer(s);
+  assert.equal(M.view(s).speech, null);
+});
+
+test('every action leaves no stale line: it plays its own or closes the bubble', () => {
+  const s = make('mel', { haggleReady: true });
+  const acts = [() => M.lift(s, 'medkit'), () => M.lift(s, 'plated-coat'), () => M.putBack(s, 'medkit'), () => M.offer(s, 'mag-boots'), () => M.cancelOffer(s), () => M.offer(s, 'mag-boots'), () => M.sellOne(s), () => M.lift(s, 'mag-boots'), () => M.lift(s, 'medkit'), () => M.pay(s)];
+  let last = null;
+  for (const a of acts) {
+    const ev = a();
+    if (!ev.length) continue;
+    const say = ev.find((e) => e.type === 'say');
+    assert.ok(say, 'an action that did something says something or closes the bubble');
+    assert.deepEqual(M.view(s).speech, say.speech);
+    last = say.speech;
+  }
+  assert.equal(last.key, 'buy');
+});
+
+test('the deal stamp goes when you pay; the haggle stays used', () => {
+  const s = make('mel', { haggleReady: true });
+  M.lift(s, 'scatter-pistol');
+  M.applyHaggle(s, { outcome: 'fair' });
+  assert.equal(M.view(s).haggle.stamp, 'fair');
+  M.pay(s);
+  const v = M.view(s);
+  assert.equal(v.haggle.stamp, null, 'cleared on Pay');
+  assert.equal(v.haggle.used, true, 'one haggle a visit, still');
+  M.lift(s, 'medkit');
+  assert.equal(M.view(s).haggle.available, false);
+  assert.equal(M.view(s).till.total, 35, 'and the next pile is full price');
+});
+
+test('the manifest follows contract 1.1 and every sound the module asks for is a file', async () => {
+  const mani = JSON.parse(readFileSync(path.join(here, '..', 'manifest.json'), 'utf8'));
+  assert.equal(mani.contract, '1.1');
+  assert.equal('tabletop' in mani, false, 'no tabletop field: it lives in paths');
+  assert.deepEqual(mani.paths, [{ id: 'valuation', division: 'Valuation', tabletopSkill: 'Commerce' }, { id: 'barter', division: 'Barter', tabletopSkill: 'Commerce' }, { id: 'market', division: 'Market', tabletopSkill: 'Commerce' }]);
+  assert.deepEqual(mani.paths.map((p) => p.id), M.PATHS, 'ctx.points is keyed by the manifest\'s path ids');
+  const { existsSync } = await import('node:fs');
+  const asked = new Set();
+  const s = make('mel', { haggleReady: true });
+  for (const a of [() => M.lift(s, 'medkit'), () => M.putBack(s, 'medkit'), () => M.lift(s, 'plated-coat'), () => M.lift(s, 'scatter-pistol'), () => M.lift(s, 'bolt-carbine'), () => M.pay(s), () => M.putBack(s, 'bolt-carbine'), () => M.applyHaggle(s, { outcome: 'well' }), () => M.pay(s), () => M.offer(s, 'breach-kit'), () => M.sellOne(s)]) for (const e of a()) if (e.type === 'sound' && !e.id.startsWith('line:')) asked.add(e.id);
+  for (const id of ['shutter', 'knock', ...asked]) for (const ext of ['ogg', 'mp3']) assert.ok(existsSync(path.join(here, '..', 'audio', `${id}.${ext}`)), `audio/${id}.${ext}`);
+  assert.deepEqual([...asked].sort(), ['broke', 'coins', 'glass', 'knock', 'lift', 'stamp', 'till']);
 });

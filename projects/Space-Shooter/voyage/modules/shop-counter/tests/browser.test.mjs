@@ -78,6 +78,9 @@ for (const [name, profile] of [['desktop', DESKTOP], ['phone', PHONE]]) {
     assert.equal(r.effects.world.moneyDelta, -175);
     assert.equal(r.left, true);
     assert.ok((await t.page.evaluate(() => window.__sounds)).includes('coins'));
+    const played = await t.page.evaluate(() => ({ ok: window.__played, bad: window.__soundErrors }));
+    for (const id of ['shutter', 'lift', 'coins', 'till']) assert.ok(played.ok.includes(id), `${id} really played: ${JSON.stringify(played)}`);
+    assert.deepEqual(played.bad, [], 'no sound failed to play');
     assert.deepEqual(t.errors, []);
     await t.context.close();
   });
@@ -194,6 +197,56 @@ for (const [name, profile] of [['desktop', DESKTOP], ['phone', PHONE]]) {
     await t.context.close();
   });
 }
+
+for (const [name, profile] of [['desktop', DESKTOP], ['phone', PHONE]]) {
+  test(`${name}: no stale line, the face follows the line, the stamp goes on Pay`, async () => {
+    const t = await open(profile, 'fixture=mel&haggle=fair');
+    await t.up();
+    await t.tap('.sc-slot[data-id=scatter-pistol]');
+    await t.tap('.sc-slot[data-id=bolt-carbine]');
+    await t.page.waitForTimeout(500);
+    await t.tap('.sc-pay');
+    await t.page.waitForTimeout(500);
+    let v = await t.view();
+    assert.match(v.say, /not enough money/);
+    assert.equal(v.mood, 'annoyed');
+    await t.tap('.sc-chip[data-id=bolt-carbine]');
+    await t.page.waitForTimeout(400);
+    assert.equal(await t.page.locator('.sc-say.is-empty').count(), 1, 'put one back: the broke line is gone');
+    await t.tap('.sc-haggle');
+    await t.page.waitForTimeout(900);
+    assert.equal((await t.page.locator('.sc-stamp').innerText()).toLowerCase(), 'fair deal');
+    assert.equal(await t.page.locator('.sc-say.is-empty').count(), 1, 'a fair deal with no line in the record: the stamp and the face, no bubble');
+    assert.equal((await t.view()).mood, 'neutral');
+    await t.tap('.sc-pay');
+    await t.page.waitForTimeout(1000);
+    v = await t.view();
+    assert.match(v.say, /Don't scratch it/);
+    assert.equal(await t.page.locator('.sc-stamp:not(:empty)').count(), 0, 'the stamp is gone after Pay');
+    await t.tap('.sc-slot[data-id=plated-coat]');
+    await t.page.waitForTimeout(500);
+    v = await t.view();
+    assert.match(v.say, /Not for you/);
+    assert.equal(v.mood, 'neutral', 'the locked line is not said with a smile');
+    if (profile.hasTouch) await t.tap('.sc-sellbtn');
+    await t.tap('.sc-tray-item[data-k="tray:breach-kit"]');
+    await t.page.waitForTimeout(500);
+    assert.equal(await t.page.locator('.sc-say.is-empty').count(), 1, 'opening an offer closes the locked line');
+    await t.context.close();
+  });
+}
+
+test('desktop: the shelf units are as tall as what they hold, the keeper and counter take the rest', async () => {
+  const t = await open(DESKTOP, 'fixture=stall');
+  await t.up();
+  const m = await t.page.evaluate(() => {
+    const floor = document.querySelector('.sc-floor').getBoundingClientRect();
+    return [...document.querySelectorAll('.sc-unit')].map((u) => { const r = u.getBoundingClientRect(); const last = [...u.querySelectorAll('.sc-slot')].pop(); const lr = last ? last.getBoundingClientRect() : r; return { h: Math.round(r.height), floorH: Math.round(floor.height), slackBelowLast: Math.round(r.bottom - lr.bottom) }; });
+  });
+  for (const u of m) assert.ok(u.slackBelowLast <= 40, `no bare boards under the last row: ${JSON.stringify(m)}`);
+  assert.ok(m[1].h < m[1].floorH * 0.6, `the two-item unit is short: ${JSON.stringify(m)}`);
+  await t.context.close();
+});
 
 test('phone: no gap over 48 px between neighbouring blocks, shelves scroll up and down only', async () => {
   const t = await open(PHONE);

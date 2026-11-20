@@ -43,6 +43,7 @@
       <label>Money <input id="money" type="number" min="0" step="1"></label>
       <label class="check"><input id="open" type="checkbox" checked> Shop open</label>
       <label class="check"><input id="quick" type="checkbox"> Quick mode</label>
+      <label class="check"><input id="sfx" type="checkbox" checked> Play sounds</label>
     </div>
   </fieldset>
   <fieldset><legend>Roll and tabletop paths (Commerce)</legend>
@@ -95,6 +96,18 @@ if (q.get('open') === '0') $('open').checked = false;
 if (q.has('money')) $('money').value = q.get('money');
 if (q.has('haggle')) $('haggle').value = q.get('haggle');
 
+// The fake host plays the module's sound ids from audio/<id>.ogg (or .mp3). Voice lines and music are listed only.
+const SFX = new Set(['shutter', 'lift', 'knock', 'coins', 'till', 'glass', 'broke', 'stamp']);
+const probe = document.createElement('audio');
+const ext = probe.canPlayType('audio/ogg; codecs="vorbis"') ? 'ogg' : 'mp3';
+window.__played = []; window.__soundErrors = [];
+function playSfx(id) {
+  if (!SFX.has(id)) return;
+  const a = new Audio(`audio/${id}.${ext}`);
+  a.volume = 0.7;
+  a.play().then(() => window.__played.push(id), (e) => window.__soundErrors.push(`${id}: ${e.name}`));
+}
+
 function picker(ask) {
   return new Promise((resolve) => {
     $('picker-ask').textContent = `They ask ${ask.open}. A great deal is ${ask.best}. Barter ${ask.points?.barter ?? 0}, tier ${ask.tier}.`;
@@ -120,7 +133,7 @@ async function start() {
     seed: Number($('seed').value) || 1, tier: Number($('tier').value) || 0,
     points: { valuation: Number($('p-valuation').value) || 0, barter: Number($('p-barter').value) || 0, market: Number($('p-market').value) || 0 },
     level: Number($('level').value) || 9, quick: $('quick').checked, mode: 'field', context,
-    sound: (id) => { sounds.push(id); $('sounds').textContent = sounds.slice(-40).join('\n'); window.__sounds = sounds; },
+    sound: (id) => { sounds.push(id); $('sounds').textContent = sounds.slice(-40).join('\n'); window.__sounds = sounds; if ($('sfx').checked) playSfx(id); },
     reducedMotion: () => q.get('reduced') === '1',
     ...(mode === 'none' ? {} : { play: async (id, o) => { window.__haggleAsk = { id, ...o }; return mode === 'picker' ? picker(o) : { done: true, outcome: mode, success: mode === 'well' }; } }),
   };

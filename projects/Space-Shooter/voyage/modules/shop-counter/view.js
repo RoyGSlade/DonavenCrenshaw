@@ -46,13 +46,22 @@ function shapeFor(it) {
   for (const [re, shape] of WORDS) if (re.test(it.name || '')) return shape;
   return SHAPES[it.kind] ? it.kind : 'default';
 }
+/** Items with no picture are drawn as one well-made object: a strapped, tagged parcel with the item's shape stencilled on its face. */
 function glyph(it) {
   const { kind, id } = it;
   const hue = M.hashSeed(id) % 360;
-  const gid = `scg-${String(id).replace(/[^a-z0-9]/gi, '')}`;
-  const body = SHAPES[shapeFor({ ...it, kind })].replaceAll('url(#G)', `url(#${gid})`).replaceAll('HI', `hsl(${hue} 75% 82%)`);
+  const uid = String(id).replace(/[^a-z0-9]/gi, '');
+  const stencil = SHAPES[shapeFor({ ...it, kind })].replaceAll('url(#G)', '#e6eff2').replaceAll(/ stroke="#0007" stroke-width="1\.5"/g, '').replaceAll('HI', '#2b3a47');
+  const words = String(it.name || id).split(/[\s-]+/).filter(Boolean);
+  const mark = (words.length > 1 ? words[0][0] + words[1][0] : String(words[0] || '?').slice(0, 2)).toUpperCase();
+  const acc = `hsl(${hue} 68% 56%)`;
   const span = h('span', { class: 'sc-glyph', 'aria-hidden': 'true' });
-  span.innerHTML = `<svg viewBox="0 0 64 64" xmlns="${SVG_NS}"><defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="hsl(${hue} 52% 62%)"/><stop offset="1" stop-color="hsl(${hue} 55% 28%)"/></linearGradient></defs>${body}</svg>`;
+  span.innerHTML = `<svg viewBox="0 0 64 64" xmlns="${SVG_NS}"><defs><linearGradient id="scp-${uid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4a6073"/><stop offset="1" stop-color="#22303c"/></linearGradient></defs>`
+    + `<rect x="5" y="12" width="54" height="44" rx="4" fill="url(#scp-${uid})" stroke="#0a1118" stroke-width="2"/><path d="M7 14.5H57" stroke="#a9bccb" stroke-width="1.2" opacity=".55"/><path d="M5 23H59" stroke="#0a1118" stroke-width="1.5" opacity=".55"/>`
+    + `<g opacity=".92" transform="translate(9 25) scale(.46)">${stencil}</g>`
+    + `<rect x="43" y="12" width="7" height="44" fill="${acc}"/><path d="M43 12V56M50 12V56" stroke="#0a1118" stroke-width="1" opacity=".45"/>`
+    + `<circle cx="10" cy="17" r="1.6" fill="#a9bccb"/><circle cx="54" cy="17" r="1.6" fill="#a9bccb"/><circle cx="10" cy="51" r="1.6" fill="#a9bccb"/><circle cx="54" cy="51" r="1.6" fill="#a9bccb"/>`
+    + `<g transform="rotate(-9 47 42)"><rect x="38" y="35" width="17" height="13" rx="1.6" fill="#efe3c6" stroke="#6a5630" stroke-width="1"/><circle cx="41" cy="38" r="1.1" fill="#2c3a46"/><text x="47.5" y="46" font-size="7.5" font-weight="800" font-family="Consolas,'DejaVu Sans Mono',monospace" text-anchor="middle" fill="#2a1f10">${mark}</text></g></svg>`;
   return span;
 }
 const withBase = (base, p) => (!p ? null : /^(https?:|data:|blob:|\/)/.test(p) ? p : new URL(p, base).href);
@@ -200,7 +209,6 @@ export function mount(stage, state, env) {
       const list = sides[i];
       let rows = 0;
       for (let r = 0; r < list.length; r += 2, rows++) unit.append(h('div', { class: 'sc-plank' }, ...list.slice(r, r + 2).map(slotNode)));
-      for (; rows < 3; rows++) unit.append(h('div', { class: 'sc-plank is-decor', 'aria-hidden': 'true' }, h('span', { class: 'sc-bare' }, h('span', { class: 'sc-dust' }))));
       unit.classList.toggle('is-empty', !list.length);
     });
     floor.dataset.count = String(v.shelves.length);
@@ -223,10 +231,11 @@ export function mount(stage, state, env) {
     purse.classList.toggle('is-short', v.short && v.canPay);
     pile.replaceChildren(...v.basket.map(pileNode));
     pile.classList.toggle('is-empty', !v.basket.length);
+    room.classList.toggle('has-pile', v.basket.length > 0);
     if (!v.basket.length) pile.append(h('span', { class: 'sc-pile-hint', text: 'Pick things up and they sit here' }));
     const words = { well: 'Good deal', fair: 'Fair deal', walked: 'No deal' };
-    stamp.textContent = v.haggle.used ? words[v.haggle.outcome] || '' : '';
-    stamp.dataset.outcome = v.haggle.used ? v.haggle.outcome : '';
+    stamp.textContent = v.haggle.stamp ? words[v.haggle.stamp] || '' : '';
+    stamp.dataset.outcome = v.haggle.stamp || '';
     payBtn.disabled = !v.canPay;
     payBtn.classList.toggle('is-short', v.short && v.canPay);
     haggleBtn.hidden = !v.haggle.available;
@@ -375,7 +384,7 @@ export function mount(stage, state, env) {
   let openTimer = 0;
   if (open0) {
     sound('shutter');
-    requestAnimationFrame(() => requestAnimationFrame(() => { room.classList.add('is-up'); }));
+    setTimeout(() => { room.classList.add('is-up'); }, 60); // a timer, not a frame: a page that is not painting yet must still roll up
     openTimer = setTimeout(() => { room.classList.remove('is-rolling'); say.classList.add('pop'); if (state.speech?.lineId) sound(`line:${state.speech.lineId}`); }, 1100);
   } else if (!state.shut && state.speech?.lineId) sound(`line:${state.speech.lineId}`);
   if (state.shut && state.speech?.lineId) sound(`line:${state.speech.lineId}`);
