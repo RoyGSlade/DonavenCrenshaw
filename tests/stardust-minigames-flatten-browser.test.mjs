@@ -64,7 +64,7 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
     const probe = (mode) => page.evaluate(async ({ mode, FLAT, PANEL }) => {
       const F = await import(FLAT), p = document.querySelector(PANEL), s = p.__state, v = p.__view(), b = F.bubbleOf(s);
       const tn = performance.now() / 1000, tau = tn - s.t0, w = s.charging ? F.wander(s, tau + 0.02) : 0;
-      const steer = Math.max(-1, Math.min(1, mode === 'true' ? -w / F.STEER_GAIN : mode === 'wrong' ? w / F.STEER_GAIN : 0));
+      const steer = Math.max(-1, Math.min(1, mode === 'true' ? -w / F.STEER_GAIN : mode === 'push' ? (w >= 0 ? 1 : -1) : 0));
       const pad = p.querySelector('.cc-swing').getBoundingClientRect(), bp = b ? v.at(b) : null;
       return { charging: s.charging, done: s.done, need: b?.need, band: s.band, power: s.charging ? Math.min(100, (100 * tau) / s.chargeTime) : 0, lean: s.charging ? F.leanOf(s, tn) : 0, steer, bx: bp?.x, by: bp?.y, boardW: v.w, padX: pad.left + pad.width / 2, padY: pad.top + pad.height / 2, padW: pad.width, word: p.querySelector('.cc-powerstat em').textContent, leanWord: p.querySelector('.cc-leanstat em').textContent, glow: Number(p.querySelector('.cc-swing').style.getPropertyValue('--glow')) };
     }, { mode, FLAT, PANEL });
@@ -75,7 +75,7 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
     };
     /**
      * One swing by hand. Press (Space, or a finger on the Swing pad), then loop: read the page, steer (the mouse, or the thumb sliding on the pad),
-     * and let go when the power reaches `at(need)`. `steer` is 'true' (cancel the drift), 'none' or 'wrong' (add to it); `leanAbove` lets go
+     * and let go when the power reaches `at(need)`. `steer` is 'true' (cancel the drift), 'none' or 'push' (shove it the way it already leans); `leanAbove` lets go
      * as soon as the lean passes that size instead. `shotAt` takes a screenshot at that fraction of the way.
      */
     const swing = async ({ at = (n) => n, steer = 'true', leanAbove = null, shotAt = null, shotName = null } = {}) => {
@@ -146,6 +146,7 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
         // aim: tap the first bubble
         const first = (await snap(page)).bubbles[0];
         await pickBubble(first.id);
+        await wait(page, 200);
         assert.match(await page.locator(`${PANEL} .cc-powerstat`).innerText(), /hold swing/i);
         assert.equal(await page.locator(`${PANEL} .cc-swing`).evaluate((e) => e.classList.contains('is-next')), true, 'the Swing pad wakes when a bubble is picked');
         await wait(page, 250); await shot('f2-flatten-aim');
@@ -197,11 +198,11 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
         await openMenu(); await pick();
         const a = (await snap(page)).bubbles[0];
         await pickBubble(a.id);
-        const out = await swing({ steer: 'wrong', leanAbove: 0.45 });
+        const out = await swing({ steer: 'push', leanAbove: 0.45 });
         await wait(page, 150);
         assert.match(out.last.leanWord, /too far|leaning/i);
         const st = await snap(page);
-        assert.ok(st.swings === 1 && ((st.dimples === 1 && st.left === 5) || st.left === 6), `the blow landed beside it: ${JSON.stringify(st)}`);
+        assert.ok(st.swings === 1 && st.dimples === 0 && st.left === 6, `a light blow that leaned too far makes a small new bubble beside it: ${JSON.stringify(st)}`);
         assert.match(await page.locator(`${PANEL} .cc-status`).innerText(), /leaned too far/i);
         await shot('f8-flatten-lean-miss');
         await go(`${PANEL} .cc-giveup`); await gradeCard(); assert.equal(await page.evaluate(() => document.querySelector('.cc-grade').dataset.grade), '0');
