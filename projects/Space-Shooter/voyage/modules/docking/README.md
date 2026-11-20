@@ -16,6 +16,8 @@ Top-down. A big base turns slowly; a lit corridor runs out from a berth on its r
 - **The decision:** lead the corridor or chase it; when to turn and brake (late is fast and risks a scrape, early is safe and the corridor may sweep away); drift back to the middle now, or ride the edge and trust the warning.
 - **Quick mode** (`ctx.quick`): you start already lined up inside the mouth, so it is only the last approach (6 to 10 s).
 - **The first burn starts the run.** Until then the lights wait, so there is time to look.
+- **The camera zooms in as you close.** Far out it keeps a wide view so the sweep reads; the last third zooms in smoothly (in three steps with reduced motion) so the walls feel close, the ship's nose reads and the clamps are an event. Geometry only: the model never moves.
+- **Leave:** the module registers `ctx.onLeave(fn)` at the start. When the host calls `fn()` it stops its loop, keys and every sound (the Web Audio context is closed) and resolves `{ done: true, left: true }`.
 
 ## Hand
 
@@ -24,7 +26,7 @@ Top-down. A big base turns slowly; a lit corridor runs out from a berth on its r
 | Phone | drag a finger on the board (the nose swings to face it) | hold the THRUST pad (a second finger) |
 | Desktop | move the mouse, or WASD / arrows | Space, or the mouse button, or any WASD / arrow key (it aims and burns that way) |
 
-## Paths (Handling's divisions; Stardust's old piloting names are accepted as aliases)
+## Paths (Handling's divisions; the manifest lists them as contract-1.1 path objects, and Stardust's old piloting names are accepted as aliases in the code)
 
 | Path | Alias | One point does |
 | --- | --- | --- |
@@ -38,10 +40,10 @@ The roll (tier -2 Rough to +2 Smooth) widens or narrows the corridor and slows o
 
 | File | What |
 | --- | --- |
-| `manifest.json`, `index.js` | the contract entry: `play(stage, ctx) -> result` |
+| `manifest.json`, `index.js` | the contract (1.1) entry: `play(stage, ctx) -> result`; registers `ctx.onLeave(fn)` once at the start |
 | `model.js`, `setup.js`, `rng.js` | the pure seeded rules, the roll and path scaling, the seeded random (copied from the game) |
 | `bot.js` | the four bots (perfect, wobbly with reaction lag, lazy, mash) and the sweep helper |
-| `words.js` | HUD words, end lines, the dockmaster's four lines (drafts for Donaven) |
+| `words.js` | HUD words, end lines, the dockmaster's four lines (**the module lead's drafts for Donaven, not his words**; marked `draft` in `fixtures.json`) |
 | `view.js`, `style.css`, `audio.js` | the full-screen view, its look, its sounds made in code |
 | `fixtures.json` | the default base and ship records (`ctx.context.base`, `ctx.context.ship`) |
 | `art/` | `base-drift-station.webp` and `ship-courier.webp` (reused from the library), `kit/` (the hangar kit frames the pad and card wear) |
@@ -60,7 +62,7 @@ STARDUST_BROWSER_TEST=1 ~/Desktop/lhc-lanes/stardust/round3/browser-slot.sh ~/ka
 
 ## Context the host gives it
 
-`ctx.context.base = { id, name, faction, colour, icon, berths, berth, docked: [{ ship, berth }] }` and `ctx.context.ship = { name, icon }` (defaults in `fixtures.json`). No base or ship name is written in the model or the view (a test checks). The result carries `effects.world = { hullDelta, docked: { base, berth }, feeDelta? }`; the fee key is present only when waved off.
+`ctx.context.base = { id, name, faction, colour, icon, berths, berth, tugFee?, docked: [{ ship, berth }] }` and `ctx.context.ship = { name, icon }` (defaults in `fixtures.json`). No base or ship name is written in the model or the view (a test checks). The result carries `effects.world = { hullDelta, docked: { base, berth }, feeDelta? }`; the fee key is present only when waved off.
 
 ## Notes for the next builder
 
