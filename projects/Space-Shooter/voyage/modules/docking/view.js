@@ -111,14 +111,16 @@ export function mountDocking(stage, { state, base, ship, sound = () => {}, reduc
   };
   const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(resize) : null; ro?.observe(board);
   requestAnimationFrame(resize); resize();
-  const makeStars = () => {
-    const c = document.createElement('canvas'); c.width = Math.round(cw * dpr); c.height = Math.round(ch * dpr);
-    const g = c.getContext('2d'); g.scale(dpr, dpr);
+  const makeStars = () => {     // two layers: the fixed backdrop (gradient and a faint nebula) and a star tile that wraps sideways with the camera (the parallax shows your speed)
+    const bgC = document.createElement('canvas'); bgC.width = Math.round(cw * dpr); bgC.height = Math.round(ch * dpr);
+    const g = bgC.getContext('2d'); g.scale(dpr, dpr);
     const bg = g.createLinearGradient(0, 0, 0, ch); bg.addColorStop(0, '#0a1626'); bg.addColorStop(1, '#04070c'); g.fillStyle = bg; g.fillRect(0, 0, cw, ch);
     const neb = g.createRadialGradient(cw * 0.25, ch * 0.78, 10, cw * 0.25, ch * 0.78, Math.max(cw, ch) * 0.6); neb.addColorStop(0, 'rgba(56,214,204,.10)'); neb.addColorStop(1, 'rgba(56,214,204,0)'); g.fillStyle = neb; g.fillRect(0, 0, cw, ch);
+    const tile = document.createElement('canvas'); tile.width = Math.round(cw * dpr); tile.height = Math.round(ch * dpr);
+    const k2 = tile.getContext('2d'); k2.scale(dpr, dpr);
     const r = lcg(s.seed * 7 + 11), n = Math.round((cw * ch) / 3200);
-    for (let i = 0; i < n; i++) { const x = r() * cw, y = r() * ch, k = r(); g.fillStyle = k > 0.9 ? '#ffd9b8' : k > 0.8 ? '#bfeaff' : 'rgba(220,235,245,.7)'; g.globalAlpha = 0.25 + 0.6 * r(); g.fillRect(x, y, k > 0.95 ? 2.2 : 1.2, k > 0.95 ? 2.2 : 1.2); }
-    g.globalAlpha = 1; return c;
+    for (let i = 0; i < n; i++) { const x = r() * cw, y = r() * ch, k = r(); k2.fillStyle = k > 0.9 ? '#ffd9b8' : k > 0.8 ? '#bfeaff' : 'rgba(220,235,245,.7)'; k2.globalAlpha = 0.25 + 0.6 * r(); k2.fillRect(x, y, k > 0.95 ? 2.2 : 1.2, k > 0.95 ? 2.2 : 1.2); }
+    return { bg: bgC, tile };
   };
 
   // ---- input -----------------------------------------------------------------------------------------------------------------------
@@ -282,7 +284,8 @@ export function mountDocking(stage, { state, base, ship, sound = () => {}, reduc
     const g = ctx2;
     g.setTransform(1, 0, 0, 1, 0, 0);
     const par = (((-(camX ?? 0) * sc * 0.25 * dpr) % canvas.width) + canvas.width) % canvas.width;
-    g.drawImage(stars, par, 0, canvas.width, canvas.height); g.drawImage(stars, par - canvas.width, 0, canvas.width, canvas.height);
+    g.drawImage(stars.bg, 0, 0, canvas.width, canvas.height);
+    g.drawImage(stars.tile, par, 0, canvas.width, canvas.height); g.drawImage(stars.tile, par - canvas.width, 0, canvas.width, canvas.height);
     const sx = !calm() && shake > 0.2 ? (rnd() - 0.5) * shake : 0, sy = !calm() && shake > 0.2 ? (rnd() - 0.5) * shake : 0;
     g.setTransform(dpr * sc, 0, 0, dpr * sc, dpr * (ox + sx), dpr * (oy + sy));
     const f = frameOf(s, vt);
