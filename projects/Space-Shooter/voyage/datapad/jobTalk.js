@@ -16,6 +16,8 @@ import { voiceUrl } from '../story/voice.js';
 
 const W = OFFERS_DATA.words;
 const fill = (text, vars) => String(text).replace(/\{(\w+)\}/g, (_, k) => (vars[k] ?? ''));
+/** How long a lone "Go on" waits before it takes itself: the reading time plus a beat. */
+export const autoMs = (text) => Math.min(9000, 2200 + 55 * String(text || '').length);
 const readMs = (text) => Math.min(7000, 900 + 55 * String(text || '').length);
 
 /**
@@ -116,7 +118,11 @@ export function createJobTalk({ bus, store, take = () => {}, onBusy = () => {}, 
         reason: c.locked ? (c.reasons || [])[0] || '' : '',
         ...(c.check ? { kind: 'attempt', chance: c.check.chance, dc: c.check.dc, roll: c.check.roll } : { kind: 'choice' }),
       }));
-      return await ask([...options, { index: -1, label: W.later, kind: 'later' }]);
+      // Only one plain choice (a lone "Go on"): it takes itself once the line has had time to be read.
+      const lone = options.length === 1 && !options[0].locked && options[0].kind === 'choice' ? options[0] : null;
+      const answer = ask([...options, { index: -1, label: W.later, kind: 'later' }]);
+      const auto = lone ? setTimeout(() => { if (asking) { const a = asking; asking = null; bus.emit('story:choices', null); a.resolve(lone.index); } }, autoMs(v.text)) : 0;
+      try { return await answer; } finally { clearTimeout(auto); }
     } finally {
       hold(false);
     }

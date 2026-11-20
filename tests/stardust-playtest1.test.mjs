@@ -33,3 +33,9 @@ test('waypoint: after "Later" the captain is still the marked person and waiting
   assert.equal(waitingOn(s, 'tull', 'duchess-mess'), true);
   assert.equal(waitingOn({ ...s, quests: { active: {}, done: {} } }, 'tull', 'duchess-mess'), false, 'no scene, nothing to resume');
 });
+
+test('lone Done / Go on: the wait scales with the line and stays in a sane range', async () => {
+  const { autoMs } = await import('../projects/Space-Shooter/voyage/datapad/jobTalk.js');
+  assert.ok(autoMs('Hi.') >= 2200 && autoMs('Hi.') < autoMs('x'.repeat(120)));
+  assert.equal(autoMs('x'.repeat(5000)), 9000);
+});
