@@ -26,7 +26,7 @@ function makeBench(v) {
   const blk = g.createLinearGradient(0, top, 0, H); blk.addColorStop(0, '#6a7681'); blk.addColorStop(0.15, '#4a555f'); blk.addColorStop(1, '#2b343c');
   g.fillStyle = blk; g.fillRect(0, top, right, H - top);
   g.fillStyle = 'rgba(255,255,255,.18)'; g.fillRect(0, top, right, 3);
-  for (const x of [60, 140, 220]) { const bx = x + dx, by = P.y + dy + 60; g.fillStyle = '#20292f'; g.beginPath(); g.arc(bx, by, 11, 0, TAU); g.fill(); g.fillStyle = '#7d8993'; g.beginPath(); g.arc(bx - 1.5, by - 1.5, 6, 0, TAU); g.fill(); }
+  for (const x of [250, 180, 110]) { const bx = x + dx, by = P.y + dy + 60; g.fillStyle = '#20292f'; g.beginPath(); g.arc(bx, by, 11, 0, TAU); g.fill(); g.fillStyle = '#7d8993'; g.beginPath(); g.arc(bx - 1.5, by - 1.5, 6, 0, TAU); g.fill(); }
   return c;
 }
 
@@ -64,8 +64,10 @@ export function playBend(root, { state, what = 'bracket', reducedMotion = () => 
     const bw = wrap.clientWidth, bh = wrap.clientHeight;
     let v = { W: BW, H: BH, dx: 0, dy: 0 };
     if (wrap.closest('.wb-full') && bw > 40 && bh > 40) {
-      const a = bw / bh, W = a >= BW / BH ? Math.round(BH * a) : BW, H = a >= BW / BH ? BH : Math.min(1500, Math.round(BW / a));
-      v = { W, H, dx: Math.round((W - BW) / 2), dy: H - BH };
+      // the scene's content is x 150..770 (the vice runs off the left edge) and y 40..520: scale it to the box, so a tall phone board
+      // shows the bar big instead of a small scene under a wall. Extra width becomes bench at the sides, extra height wall above.
+      const a = bw / bh, W = Math.round(Math.max(620, 480 * a)), H = Math.min(1500, Math.round(W / a));
+      v = { W, H, dx: Math.round(W / 2 - 460), dy: H - BH };
     }
     if (v.W === view.W && v.H === view.H) return;
     view = v; canvas.width = Math.round(v.W * K); canvas.height = Math.round(v.H * K); bench = makeBench(v);
@@ -200,7 +202,7 @@ export function playBend(root, { state, what = 'bracket', reducedMotion = () => 
     g.fillText(done ? '' : nk ? nk.toUpperCase() : 'A / D', 0, 2);
     g.restore();
     // banner and flash
-    if (bannerT > 0) { g.globalAlpha = Math.min(1, bannerT * 1.6); g.fillStyle = banner === 'SET' ? '#9fe870' : '#ff6b5a'; g.font = '800 54px Inter, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'alphabetic'; g.fillText(banner, BW / 2, 96 + 18 * (1 - bannerT)); g.globalAlpha = 1; }
+    if (bannerT > 0) { g.globalAlpha = Math.min(1, bannerT * 1.6); g.fillStyle = banner === 'SET' ? '#9fe870' : '#ff6b5a'; g.font = '800 54px Inter, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'alphabetic'; g.fillText(banner, view.W / 2 - view.dx, 96 + 18 * (1 - bannerT)); g.globalAlpha = 1; }
     if (flash > 0) { g.globalAlpha = flash * 0.28; g.fillStyle = flashHue; g.fillRect(-view.dx, -view.dy, view.W, view.H); g.globalAlpha = 1; }
     g.restore();
   }

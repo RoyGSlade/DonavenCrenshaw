@@ -166,19 +166,35 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
         assert.match(after.said, /Bend: you did it/);
       });
 
-      await sub('the next pad pulses with the ring: dim while too soon, full in the green window, fading after it', async () => {
+      await sub('the next pad pulses with the ring: the pad the ring names is the brightest, dim while too soon, full in the green window', async () => {
         await openMenu(); await pick('bend');
-        await press('a'); // a real press; then one page task samples the ring clock and the next pad's glow together
+        await press('a', phone ? null : 'mouse'); // a real press (finger, or the real mouse, which then keeps hovering the pad); one page task then samples the ring clock and every pad together
         const samples = await page.evaluate(() => new Promise((resolve) => {
           const p = document.querySelector('.cc-panel[data-game=bend]'), s = p.__state, out = [];
-          const tick = () => { const since = performance.now() / 1000 - s.lastAt; out.push({ since, glow: Number(p.querySelector('.cc-pad-d').style.getPropertyValue('--glow')), next: p.querySelector('.cc-pad-d').classList.contains('is-next'), other: Number(p.querySelector('.cc-pad-a').style.getPropertyValue('--glow')), lo: s.lo, hi: s.hi }); if (since > 1.1) resolve(out); else requestAnimationFrame(tick); };
+          // how bright a pad is drawn: the drop-shadow's alpha times its blur (none = 0); and whether it still wears a box shadow or the kit's hover picture
+          const score = (el) => { const f = getComputedStyle(el).filter; if (!f || f === 'none' || !/drop-shadow/.test(f)) return 0; const alpha = Number((/rgba\(\d+,\s*\d+,\s*\d+,\s*([\d.]+)\)/.exec(f) || [0, 1])[1]), blur = Number((/(\d+(?:\.\d+)?)px\)\s*$/.exec(f) || [0, 1])[1]); return alpha * blur; };
+          const pads = ['a', 'd', 'set'].map((k) => p.querySelector(k === 'set' ? '.cc-set' : `.cc-pad-${k}`));
+          const tick = () => {
+            const since = performance.now() / 1000 - s.lastAt, named = s.lastKey === 'a' ? 'd' : 'a';
+            out.push({ since, named, lo: s.lo, hi: s.hi, scores: { a: score(pads[0]), d: score(pads[1]), set: score(pads[2]) }, glow: Number(p.querySelector(`.cc-pad-${named}`).style.getPropertyValue('--glow')), boxShadow: pads.map((e) => getComputedStyle(e).boxShadow), art: pads.map((e) => getComputedStyle(e).borderImageSource) });
+            if (since > 1.1) resolve(out); else requestAnimationFrame(tick);
+          };
           tick();
         }));
         const { lo, hi } = samples[0];
-        const soon = samples.filter((x) => x.since > 0.05 && x.since < lo * 0.9), inWin = samples.filter((x) => x.since > lo + 0.03 && x.since < hi - 0.03), late = samples.filter((x) => x.since > hi + 0.35);
+        const settled = samples.filter((x) => x.since > 0.05);
+        assert.ok(settled.length > 20, 'sampled a second of frames');
+        for (const x of settled) {
+          const other = x.named === 'a' ? 'd' : 'a';
+          assert.ok(x.scores[x.named] > 0 && x.scores[x.named] > x.scores[other] && x.scores[x.named] > x.scores.set, `the pad the ring names (${x.named}) is the brightest at ${x.since.toFixed(2)} s: ${JSON.stringify(x.scores)}`);
+          assert.ok(x.boxShadow.every((b) => b === 'none'), `no box shadow behind a pad (it shows as a square behind the frame): ${x.boxShadow}`);
+          assert.equal(new Set(x.art).size, 1, `no pad wears the kit's hover or pressed picture (square corners): ${x.art}`);
+        }
+        const soon = settled.filter((x) => x.since < lo * 0.9), inWin = settled.filter((x) => x.since > lo + 0.03 && x.since < hi - 0.03), late = settled.filter((x) => x.since > hi + 0.35);
         assert.ok(soon.length && inWin.length && late.length, `sampled all three phases: ${soon.length}/${inWin.length}/${late.length}`);
         assert.ok(soon.every((x) => x.glow < 0.5), 'dim while too soon'); assert.ok(inWin.every((x) => x.glow >= 0.99), 'full in the green window'); assert.ok(late.every((x) => x.glow < 0.6), 'fading after the window');
-        assert.ok(samples.every((x) => x.next && x.other === 0), 'only the next pad glows (D after A)');
+        const peak = (list) => Math.max(...list.map((x) => x.scores[x.named]));
+        assert.ok(peak(inWin) > peak(soon) * 1.3, 'the window glow is clearly brighter than the too-soon glow');
         await go(`${PANEL} .cc-giveup`); await gradeCard(); await page.locator('.cc-grade .cc-go').click(); await wait(page, 300); await recover();
       });
 

@@ -96,7 +96,10 @@
 .cc-pad{--glow:0;min-height:76px;display:grid;place-items:center;align-content:center;gap:0;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 .cc-pad b{font:800 30px/1 Inter,sans-serif}.cc-pad span{font:700 10px Consolas,monospace;letter-spacing:.14em;text-transform:uppercase;opacity:.7}
 /* the next key's pad glows in time with the ring's green window (bendView sets --glow each frame); the shape never changes */
-.cc-pad.is-next{box-shadow:0 0 calc(4px + 26px * var(--glow)) calc(1px + 3px * var(--glow)) rgba(129,230,223,calc(.2 + .7 * var(--glow)))}
+.cc-pad.is-next{filter:drop-shadow(0 0 calc(3px + 16px * var(--glow)) rgba(129,230,223,calc(.35 + .65 * var(--glow))))}
+/* the kit's hover and pressed pictures stick after a touch and carry their own corners; the pads keep the plain frame and show a press with the nudge below */
+.ui-btn.primary.cc-pad:hover:not(:disabled),.ui-btn.primary.cc-pad:active:not(:disabled){border-image-source:url(../ui/kit/button-primary.webp);filter:none}
+.ui-btn.primary.cc-pad.is-next:hover:not(:disabled),.ui-btn.primary.cc-pad.is-next:active:not(:disabled){filter:drop-shadow(0 0 calc(3px + 16px * var(--glow)) rgba(129,230,223,calc(.35 + .65 * var(--glow))))}
 .cc-pad.is-down{transform:translateY(2px) scale(.98)}
 .cc-pad.is-hush{filter:hue-rotate(160deg)}
 .cc-giverow{justify-content:center}.cc-giverow button{min-height:36px;font-size:12px;opacity:.85}
