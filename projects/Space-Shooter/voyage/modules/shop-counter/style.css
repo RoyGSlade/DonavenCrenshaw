@@ -45,6 +45,7 @@
 .m-shop-counter .sc-slot.is-ok:hover .sc-copy{transform:translateX(var(--dx)) translateY(-5px) rotate(var(--lean))}
 .m-shop-counter .sc-icon,.m-shop-counter .sc-glyph,.m-shop-counter .sc-glyph svg{display:block;width:100%;height:100%;object-fit:contain;pointer-events:none}
 .m-shop-counter .sc-icon,.m-shop-counter .sc-glyph svg{filter:drop-shadow(0 4px 3px #000a)}
+.m-shop-counter .sc-icon{transform:rotate(var(--fit-tilt,0deg)) scale(var(--fit-sc,1));transform-origin:50% 60%}
 .m-shop-counter .sc-slot.is-locked .sc-copy{filter:saturate(.55) brightness(.72)}
 .m-shop-counter .sc-slot.is-blocked .sc-copy{filter:grayscale(.5) brightness(.85)}
 

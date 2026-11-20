@@ -249,6 +249,27 @@ test('desktop: the shelf units are as tall as what they hold, the keeper and cou
 });
 
 for (const [name, profile] of [['desktop', DESKTOP], ['phone', PHONE]]) {
+  test(`${name}: painted icons everywhere in Mel's locker, long ones laid out larger and at an angle, the parcel only where there is no picture`, async () => {
+    let t = await open(profile);
+    await t.up();
+    await t.page.waitForTimeout(500);
+    const m = await t.page.evaluate(() => {
+      const fit = (id) => { const el = document.querySelector(`.sc-slot[data-id=${id}] .sc-icon`); return el ? [Number(el.style.getPropertyValue('--fit-sc')), el.style.getPropertyValue('--fit-tilt')] : null; };
+      return { glyphs: document.querySelectorAll('.m-shop-counter .sc-glyph').length, imgs: document.querySelectorAll('.sc-slot .sc-icon').length, gun: fit('scatter-pistol'), rifle: fit('longshot'), carbine: fit('bolt-carbine'), medkit: fit('medkit'), vest: fit('plated-coat') };
+    });
+    assert.equal(m.glyphs, 0, 'no parcel in Mel\'s locker');
+    assert.ok(m.imgs >= 10);
+    for (const g of [m.gun, m.rifle, m.carbine]) { assert.ok(g[0] > 1.1, `a long gun is laid larger: ${g}`); assert.equal(g[1], '-8deg', 'and at a slight angle'); }
+    assert.equal(m.medkit[0], 1, 'a squarish thing is left alone');
+    assert.equal(m.vest[1], '0deg');
+    await t.context.close();
+    t = await open(profile, 'fixture=stall');
+    await t.up();
+    assert.ok(await t.page.locator('.sc-slot .sc-glyph').count() >= 4, 'the stall has no pictures: the parcel is the fallback');
+    assert.equal(await t.page.locator('.sc-slot .sc-icon').count(), 0);
+    await t.context.close();
+  });
+
   test(`${name}: leaving follows contract 1.1 (ctx.onLeave registration)`, async () => {
     let t = await open(profile);
     await t.up();

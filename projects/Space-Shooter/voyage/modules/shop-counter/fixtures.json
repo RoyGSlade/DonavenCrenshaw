@@ -215,43 +215,50 @@
             "name": "Mag boots",
             "kind": "gear",
             "max": 1,
-            "value": 160
+            "value": 160,
+            "icon": "art/items/mag-boots.webp"
           },
           "breach-kit": {
             "name": "Breach kit",
             "kind": "gear",
             "max": 1,
-            "value": 175
+            "value": 175,
+            "icon": "art/items/breach-kit.webp"
           },
           "scatter-pistol": {
             "name": "Scatter pistol",
             "kind": "gear",
             "max": 1,
-            "value": 215
+            "value": 215,
+            "icon": "art/items/scatter-pistol.webp"
           },
           "bolt-carbine": {
             "name": "Bolt carbine",
             "kind": "gear",
             "max": 1,
-            "value": 330
+            "value": 330,
+            "icon": "art/items/bolt-carbine.webp"
           },
           "plated-coat": {
             "name": "Plated longcoat",
             "kind": "gear",
             "max": 1,
-            "value": 310
+            "value": 310,
+            "icon": "art/items/plated-coat.webp"
           },
           "longshot": {
             "name": "Longshot rifle",
             "kind": "gear",
             "max": 1,
-            "value": 380
+            "value": 380,
+            "icon": "art/items/longshot.webp"
           },
           "hardsuit": {
             "name": "Dustfall hardsuit",
             "kind": "gear",
             "max": 1,
-            "value": 540
+            "value": 540,
+            "icon": "art/items/hardsuit.webp"
           }
         },
         "lines": {
@@ -601,7 +608,8 @@
             "name": "Ghost transponder",
             "kind": "key",
             "max": 1,
-            "value": 270
+            "value": 270,
+            "icon": "art/items/ghost-transponder.webp"
           },
           "railgun": {
             "name": "Railgun",
@@ -614,7 +622,8 @@
             "name": "Scrap",
             "kind": "material",
             "max": 999,
-            "value": 7
+            "value": 7,
+            "icon": "art/items/scrap.webp"
           },
           "ore": {
             "name": "Ore",
@@ -627,7 +636,8 @@
             "name": "Circuit board",
             "kind": "part",
             "max": 99,
-            "value": 50
+            "value": 50,
+            "icon": "art/items/circuit.webp"
           }
         },
         "lines": {

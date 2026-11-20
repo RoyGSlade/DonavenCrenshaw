@@ -64,6 +64,33 @@ function glyph(it) {
     + `<g transform="rotate(-9 47 42)"><rect x="38" y="35" width="17" height="13" rx="1.6" fill="#efe3c6" stroke="#6a5630" stroke-width="1"/><circle cx="41" cy="38" r="1.1" fill="#2c3a46"/><text x="47.5" y="46" font-size="7.5" font-weight="800" font-family="Consolas,'DejaVu Sans Mono',monospace" text-anchor="middle" fill="#2a1f10">${mark}</text></g></svg>`;
   return span;
 }
+
+// A long thing (a rifle) fills less of its square tile than a short one. Measure the picture's real shape once, then lay it out
+// as a shopkeeper would: a touch larger and at a slight angle, so each icon takes about the same room as its neighbours.
+const FITS = new Map();
+function measure(img) {
+  try {
+    const c = document.createElement('canvas');
+    c.width = 64; c.height = 64;
+    const g = c.getContext('2d', { willReadFrequently: true });
+    g.drawImage(img, 0, 0, 64, 64);
+    const d = g.getImageData(0, 0, 64, 64).data;
+    let x0 = 64, x1 = -1, y0 = 64, y1 = -1;
+    for (let y = 0; y < 64; y++) for (let x = 0; x < 64; x++) if (d[(y * 64 + x) * 4 + 3] > 24) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+    if (x1 < 0) return { sc: 1, tilt: 0 };
+    const w = x1 - x0 + 1, hgt = y1 - y0 + 1;
+    const aspect = Math.min(w, hgt) / Math.max(w, hgt);       // 1 is square, 0.4 is a long gun
+    const sc = Math.min(1.4, Math.max(1, Math.sqrt(0.8 / aspect)));
+    const tilt = w > hgt && aspect < 0.62 ? -8 : 0;
+    return { sc: +sc.toFixed(2), tilt };
+  } catch { return { sc: 1, tilt: 0 }; } // a picture the browser will not let us read stays as it is
+}
+function fitIcon(img, src) {
+  const apply = (f) => { img.style.setProperty('--fit-sc', f.sc); img.style.setProperty('--fit-tilt', `${f.tilt}deg`); };
+  if (FITS.has(src)) return apply(FITS.get(src));
+  const run = () => { const f = measure(img); FITS.set(src, f); apply(f); };
+  if (img.complete && img.naturalWidth) run(); else img.addEventListener('load', run, { once: true });
+}
 const withBase = (base, p) => (!p ? null : /^(https?:|data:|blob:|\/)/.test(p) ? p : new URL(p, base).href);
 
 /**
@@ -74,7 +101,13 @@ export function mount(stage, state, env) {
   const { ctx = {}, base } = env;
   const reduced = () => Boolean(ctx.reducedMotion?.());
   const sound = (id) => { try { ctx.sound?.(id); } catch { /* a sound must never break the counter */ } };
-  const icon = (it) => (it.icon ? h('img', { class: 'sc-icon', src: withBase(base, it.icon), alt: '', draggable: 'false' }) : glyph(it));
+  const icon = (it) => {
+    if (!it.icon) return glyph(it);
+    const src = withBase(base, it.icon);
+    const img = h('img', { class: 'sc-icon', src, alt: '', draggable: 'false' });
+    fitIcon(img, src);
+    return img;
+  };
 
   stage.replaceChildren();
   const root = h('div', { class: 'm-shop-counter' });

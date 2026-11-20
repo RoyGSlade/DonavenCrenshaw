@@ -533,3 +533,16 @@ test('the manifest follows contract 1.1 and every sound the module asks for is a
   for (const id of ['shutter', 'knock', ...asked]) for (const ext of ['ogg', 'mp3']) assert.ok(existsSync(path.join(here, '..', 'audio', `${id}.${ext}`)), `audio/${id}.${ext}`);
   assert.deepEqual([...asked].sort(), ['broke', 'coins', 'glass', 'knock', 'lift', 'stamp', 'till']);
 });
+
+test('Mel and Edna: every item has its painted icon, a file that exists; the stall has none and falls back to the parcel', async () => {
+  const { existsSync } = await import('node:fs');
+  for (const name of ['mel', 'edna']) {
+    for (const [id, it] of Object.entries(FIX[name].context.items)) {
+      assert.ok(it.icon, `${name}/${id} has an icon`);
+      assert.ok(existsSync(path.join(here, '..', it.icon)), `${name}/${id}: ${it.icon}`);
+    }
+  }
+  const stall = M.view(make('stall'));
+  assert.ok(stall.shelves.every((x) => x.icon === null), 'no picture in the stall: the view draws the parcel');
+  assert.ok(M.view(make('mel')).shelves.every((x) => x.icon), 'Mel\'s shelf is all pictures');
+});
