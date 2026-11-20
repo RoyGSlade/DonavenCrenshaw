@@ -259,6 +259,8 @@ test('phone: no gap over 48 px between neighbouring blocks, shelves scroll up an
     return { gaps, overflowX: getComputedStyle(sc).overflowX, scrolls: sc.scrollHeight > sc.clientHeight };
   });
   assert.ok(m.gaps.every((g) => g <= 48), `gaps ${m.gaps}`);
+  const w = await t.page.evaluate(() => ({ unit: document.querySelector('.sc-unit-l').getBoundingClientRect().width, floor: document.querySelector('.sc-floor').getBoundingClientRect().width }));
+  assert.ok(w.unit >= w.floor - 20, `the shelf fills the phone's width: ${JSON.stringify(w)}`);
   assert.equal(m.scrolls, true, 'ten items do not fit: the shelves scroll');
   assert.notEqual(m.overflowX, 'scroll');
   await t.page.locator('.sc-scroller').evaluate((el) => { el.scrollTop = el.scrollHeight; });

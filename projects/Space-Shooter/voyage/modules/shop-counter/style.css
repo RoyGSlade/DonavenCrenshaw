@@ -239,7 +239,7 @@
   .m-shop-counter{--ic:58px}
   .m-shop-counter .sc-head{padding:8px 60px 2px 12px;min-height:46px}
   .m-shop-counter .sc-sign{font-size:15px;letter-spacing:.06em}
-  .m-shop-counter .sc-floor{display:flex;flex-direction:column;gap:6px;padding:2px 8px 0}
+  .m-shop-counter .sc-floor{display:flex;flex-direction:column;align-items:stretch;gap:6px;padding:2px 8px 0}
   .m-shop-counter .sc-mid{flex:none;gap:6px;display:flex;flex-direction:column;height:auto;align-self:auto}
   .m-shop-counter .sc-mid-top{order:2}
   .m-shop-counter .sc-say{order:0}
