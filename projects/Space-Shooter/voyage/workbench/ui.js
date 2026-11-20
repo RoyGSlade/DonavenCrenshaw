@@ -22,7 +22,7 @@ export function renderHud(root, state) {
 }
 
 /** The skills board on the wall: the live risk chip, every skill with its level and XP bar, and the test dials. */
-export function renderBoard(root, state, { onDc, onCredits, onClose, selected = null, onSelect = () => {} }) {
+export function renderBoard(root, state, { onDc, onCredits, onClose, onShelf = null, selected = null, onSelect = () => {} }) {
   const riskBox = h('div', { class: 'wb-risk' }), skillBox = h('div', { class: 'wb-skills' });
   renderRisk(riskBox, { progress: state.progress, snap: state.snap });
   renderSkills(skillBox, { progress: state.progress, selected }, onSelect);
@@ -36,6 +36,7 @@ export function renderBoard(root, state, { onDc, onCredits, onClose, selected = 
     h('div', { class: 'gm-row wb-dials' },
       button(`Check difficulty: ${state.dc}`, onDc, { class: 'wb-dc', 'data-dc': state.dc, 'aria-label': `Check difficulty ${state.dc}. Tap to change to ${DCS[(DCS.indexOf(state.dc) + 1) % DCS.length]}.` }),
       button('+50 test credits', onCredits, { class: 'wb-credits' }),
+      onShelf && button('Module shelf', onShelf, { class: 'wb-shelf-open' }),
       button('Close', onClose)));
 }
 
@@ -107,4 +108,16 @@ export function renderCraftMenu(root, { part = null, partWords = '', tool = 'sho
     h('div', { class: 'gm-row wb-tools' }, ...['worn', 'shop', 'good'].map((t) => button(`${t[0].toUpperCase()}${t.slice(1)} cutter: ${({ worn: 'thin', shop: 'normal', good: 'wide' })[t]} line`, () => onTool(t), { class: t === tool ? 'primary wb-t is-on' : 'wb-t', 'data-tool': t, 'aria-pressed': String(t === tool) }))),
     h('p', { class: 'rp-help', text: 'A wider line is easier to stay inside. The good cutter is the one you earn, not the shop one.' }),
     h('div', { class: 'gm-row' }, button('Not now', onClose, { class: 'wb-no' })));
+}
+
+/** The module shelf: every module the registry has, grouped by kind, each with a Play button (modularity: a new module shows here by itself). */
+export function renderShelf(root, groups, { onPlay, onClose, said = '' }) {
+  root.replaceChildren(
+    h('p', { class: 'rp-help wb-said', role: 'status', text: said || 'Every game and screen the registry holds. Play one at a Steady roll: no XP, no risk.' }),
+    ...groups.flatMap((g) => [h('h3', { class: 'gm-h', text: g.word }), h('ul', { class: 'wb-shelf', 'data-kind': g.kind }, ...g.rows.map((r) => {
+      const li = h('li', { class: 'wb-shelf-row', 'data-module': r.id }, h('b', { text: r.title }), h('span', { text: ` ${r.verb}${r.skill ? ` · ${r.skill}` : ''}` }));
+      li.append(button('Play', () => onPlay(r.id), { class: 'wb-shelf-play', 'data-module': r.id, 'aria-label': `Play ${r.title}` }));
+      return li;
+    }))]),
+    h('div', { class: 'gm-row' }, button('Close', onClose)));
 }

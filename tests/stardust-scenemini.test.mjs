@@ -18,6 +18,8 @@ import { SCENE_HOOKS } from '../projects/Space-Shooter/voyage/minigames/sceneHoo
 import { startHook, branchOf } from '../projects/Space-Shooter/voyage/minigames/sceneHook.js';
 import { attemptWords } from '../projects/Space-Shooter/voyage/ui/attemptRoll.js';
 import { eventText } from '../projects/Space-Shooter/voyage/quests/ui/player.js';
+import { ready as modulesReady } from '../projects/Space-Shooter/voyage/modules/registry.js';
+await modulesReady(); // scene-hook validation reads each game's manifest from the module registry
 
 const Q = Object.fromEntries(SLICE_LIST.map((q) => [q.id, q]));
 const rng = () => 0.5;

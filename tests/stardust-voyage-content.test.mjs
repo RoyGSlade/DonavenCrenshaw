@@ -18,6 +18,8 @@ import { SKILLS as SKILL_LIST } from '../projects/Space-Shooter/voyage/data.js';
 import { cleanSave } from '../projects/Space-Shooter/voyage/save.js';
 import { priceFor } from '../projects/Space-Shooter/voyage/economy.js';
 import { shopView, buy, sell, tryDeal, equip, unequip, gearOf, loadout, priceAt, SHOP_IDS, GEAR } from '../projects/Space-Shooter/voyage/shops/shop.js';
+import { ready as modulesReady } from '../projects/Space-Shooter/voyage/modules/registry.js';
+await modulesReady(); // scene-hook validation reads each game's manifest from the module registry
 
 const SKILLS = Object.fromEntries(SKILL_LIST.map((s) => [s.id, s]));
 const root = new URL('../projects/Space-Shooter/voyage/quests/data/', import.meta.url);

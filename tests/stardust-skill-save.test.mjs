@@ -16,6 +16,8 @@ import { GYM_GAMES } from '../projects/Space-Shooter/voyage/minigames/gym.js';
 import { newProgress, addXp, unscanned, riskLine } from '../projects/Space-Shooter/voyage/minigames/progress.js';
 import { applyAccount, createEconomy } from '../projects/Space-Shooter/voyage/account.js';
 import * as SS from '../projects/Space-Shooter/voyage/skillSave.js';
+import * as MODS from '../projects/Space-Shooter/voyage/modules/registry.js';
+await MODS.ready();
 
 const HOUR = 3600 * 1000;
 const captain = (extra = {}) => cleanCharacter({ ...createCharacter({ name: 'Mae', look: { portrait: 'p1', color: '#81e6df' } }, () => 0.5, () => 1), ...extra });
@@ -46,7 +48,7 @@ test('XP curve: nine thresholds from 0, rising; the Hub rules.json table', () =>
 });
 
 test('mini-games: every gym game has a skill the claim table knows, with a per-claim max of 8', () => {
-  assert.deepEqual(Object.keys(SS.GAME_SKILL).sort(), GYM_GAMES.map((g) => g.id).sort());
+  for (const id of Object.keys(SS.GAME_SKILL)) assert.ok(MODS.has(id), `${id} claim is a registered module`);
   for (const g of GYM_GAMES) assert.equal(SS.GAME_SKILL[g.id], g.skill, g.id);
   assert.equal(SS.LIMITS.maxXp, 8);
   assert.equal(SS.LIMITS.xpPerSkillPerHour, 30);

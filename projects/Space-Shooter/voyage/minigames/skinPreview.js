@@ -11,6 +11,7 @@ import { hudArt } from '../ui/assets.js';
 import { SCENE_HOOKS, applyHook } from './sceneHookData.js';
 import { startHook, targetFor } from './sceneHook.js';
 import { playHook } from './playHook.js';
+import { ready } from '../modules/registry.js';
 import { tierInfo, tierOf, setupCraft, setupNav, setupStealth, setupPersuade, setupIntimidate, setupPilot } from './setup.js';
 import { createCraft } from './craft.js'; import { playCraft } from './craftView.js';
 import { createNav } from './nav.js'; import { playNav } from './navView.js';
@@ -100,4 +101,4 @@ function boot() {
 }
 
 if (!flag.enabled) $('mg-closed').hidden = false;
-else boot();
+else ready().then(boot);

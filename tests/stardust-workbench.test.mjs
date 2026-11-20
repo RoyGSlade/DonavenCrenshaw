@@ -18,9 +18,12 @@ import { WORKBENCH_DEF, WORKBENCH_ID } from '../projects/Space-Shooter/voyage/wo
 import { YARD_DEF } from '../projects/Space-Shooter/voyage/workbench/yard.js';
 import { wantsWorkbench } from '../projects/Space-Shooter/voyage/workbench/entry.js';
 import * as S from '../projects/Space-Shooter/voyage/workbench/state.js';
-import { STATIONS, stationOfProp, rollStation, startStation, settleStation, specOf, GAME_IDS, loadoutOf, previewLine } from '../projects/Space-Shooter/voyage/workbench/stations.js';
+import { STATIONS, stationOfProp, rollStation, startStation, settleStation, specOf, gameIds, loadoutOf, previewLine } from '../projects/Space-Shooter/voyage/workbench/stations.js';
 import { TALKS, TALK_WHO, talkIssues, nextAfterCheck } from '../projects/Space-Shooter/voyage/workbench/talks.js';
 import { sparSetup, sparXp, sparSaid } from '../projects/Space-Shooter/voyage/workbench/spar.js';
+import * as MODS from '../projects/Space-Shooter/voyage/modules/registry.js';
+const modulesReady = MODS.ready;
+await modulesReady(); // every game is a module: load the registry once
 
 const VOYAGE = new URL('../projects/Space-Shooter/voyage/', import.meta.url).pathname;
 const MAP = compileMap(WORKBENCH_DEF);
@@ -46,12 +49,11 @@ test('map: every art it names is art the Duchess rooms or the look kit already u
 });
 
 const EXPECT = ['wb-cut', 'wb-hook', 'wb-repair', 'wb-hack', 'wb-craft', 'wb-nav', 'wb-pilot', 'wb-stealth', 'wb-persuade', 'wb-intimidate', 'wb-haggle', 'wb-lock', 'wb-board', 'wb-scan', 'wb-reprint', 'wb-gym', 'wb-spar', 'wb-reset'];
-test('map: one station for each of the nine games plus lock, board, scan, reprint, gym, spar and reset, each a station interact', () => {
+test('map: one station for each game plus lock, board, scan, reprint, gym, spar and reset, each a station interact', () => {
   const ids = MAP.interacts.filter((i) => i.kind === 'station').map((i) => i.id).sort();
   assert.deepEqual(ids, [...EXPECT].sort());
-  assert.equal(STATIONS.length, 9);
-  assert.deepEqual([...GAME_IDS].sort(), STATIONS.map((s) => s.id).sort(), 'the nine games the gym knows are the nine stations');
-  for (const s of STATIONS) assert.ok(ids.includes(s.prop), s.id);
+  assert.deepEqual(gameIds().sort(), GYM_GAMES.map((g) => g.id).sort());
+  for (const s of STATIONS) { assert.ok(ids.includes(s.prop), s.id); assert.ok(gameIds().includes(s.id), `${s.id} is a gym game`); assert.ok(MODS.has(s.game || s.id), `${s.id} is a registered module`); }
 });
 
 // Flood fill on a half-tile grid: every station can be reached to within its interact reach, from the spawn.
@@ -191,7 +193,7 @@ test('stations: the d20 uses the real level (and only the level and points move 
   assert.deepEqual(specOf(repair, 16), { skill: 'repair', stat: 'wis', tag: 'repair', dc: 16 });
 });
 
-test('stations: all nine start a game at the rolled tier with level and points applied, and say what the roll did', () => {
+test('stations: every station starts a game at the rolled tier with level and points applied, and say what the roll did', () => {
   let s = S.freshState();
   for (let i = 0; i < 20; i++) for (const sk of ['repair', 'hacking', 'social', 'crafting', 'navigation', 'stealth', 'piloting']) s = S.earnXp(s, sk, 10).state;
   for (const st of STATIONS) {
@@ -230,8 +232,8 @@ test('stations: a finished game pays real XP, can level the skill up, haggle pay
   assert.equal(stationOfProp('wb-nav').id, 'nav'); assert.equal(stationOfProp('wb-board'), null);
 });
 
-test('stations: the gym trains the same nine games', () => {
-  assert.deepEqual(GYM_GAMES.map((g) => g.id).sort(), STATIONS.map((s) => s.id).sort());
+test('stations: every station\'s game is one the gym trains', () => {
+  for (const s of STATIONS) assert.ok(GYM_GAMES.some((g) => g.id === s.id), s.id);
 });
 
 // ---- the conversations --------------------------------------------------------------------------------------------------

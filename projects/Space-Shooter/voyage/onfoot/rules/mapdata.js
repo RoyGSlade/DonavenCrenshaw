@@ -49,7 +49,7 @@ export const DEFAULT_LEGEND = Object.freeze({
   ':': { tile: 'pad' },
 });
 
-export const INTERACT_KINDS = Object.freeze(['npc', 'station', 'door', 'mine', 'puzzle', 'hack', 'range', 'repair', 'console', 'ship']);
+export const INTERACT_KINDS = Object.freeze(['npc', 'station', 'door', 'mine', 'puzzle', 'hack', 'range', 'repair', 'console', 'ship', 'module']);
 const ID = /^[a-z0-9][a-z0-9-]{0,31}$/;
 
 /** Compiles map data to world px: solid rects, blockers, interact points, doors, spawns. Throws on bad data. */

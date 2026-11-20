@@ -4,11 +4,13 @@ import assert from 'node:assert/strict';
 import { GYM, GYM_GAMES, gymGame, gymSetup, gymXp, canTrain, trainRun, paidThisHour, leftThisHour, newGymLog } from '../projects/Space-Shooter/voyage/minigames/gym.js';
 import { setupRepair, setupPilot, setupPersuade } from '../projects/Space-Shooter/voyage/minigames/setup.js';
 import { CATEGORY_SKILLS } from '../projects/Space-Shooter/voyage/minigames/picker.js';
+import * as MODS from '../projects/Space-Shooter/voyage/modules/registry.js';
+await MODS.ready();
 
 test('the gym offers every minigame, one row each, for a skill the game has', () => {
-  assert.deepEqual(GYM_GAMES.map((g) => g.id), ['repair', 'hack', 'haggle', 'persuade', 'intimidate', 'craft', 'nav', 'stealth', 'pilot']);
-  for (const g of GYM_GAMES) { assert.ok(CATEGORY_SKILLS.includes(g.skill), g.skill); assert.ok(g.name.length > 2); }
-  assert.equal(new Set(GYM_GAMES.map((g) => g.id)).size, 9);
+  // A rule over the registry, not a count: every gym game is a registered module for the same skill, with a name, and ids are unique.
+  for (const g of GYM_GAMES) { assert.ok(CATEGORY_SKILLS.includes(g.skill), g.skill); assert.ok(g.name.length > 2); assert.ok(MODS.has(g.id), `${g.id} is a module`); assert.equal(MODS.manifestOf(g.id).skill, g.skill); }
+  assert.equal(new Set(GYM_GAMES.map((g) => g.id)).size, GYM_GAMES.length);
   assert.equal(gymGame('pilot').skill, 'piloting'); assert.equal(gymGame('nope'), null);
 });
 

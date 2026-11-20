@@ -6,6 +6,7 @@
 // card and the game cannot disagree. Shooting has no minigame: its three
 // categories are listed with no numbers yet.
 import { STEALTH } from '../onfoot/rules/stealth.js';
+import { has as moduleKnown, list as moduleList, pickerLineOf } from '../modules/registry.js';
 import { POINT_MAX, REPAIR_BASE, setupRepair, setupHack, setupPersuade, setupIntimidate, setupPilot, setupPerihelion, setupShooting } from './setup.js';
 
 const f1 = (n) => (Math.round(n * 10) / 10).toString();
@@ -97,3 +98,9 @@ export function describeCategory(skill, points, level, cat) {
   return { id: c.id, name: c.name, points: n, now, next, nextChange, canAdd: canAdd(skill, p, level, cat) };
 }
 export const describeSkill = (skill, points, level) => cats(skill).map((c) => describeCategory(skill, points, level, c.id));
+
+/**
+ * The registry's lines for a skill: one plain line for each module whose manifest names the skill (after `await ready()`).
+ * [{ id, title, line }]. Any module added to modules/list.js shows here with no change to this file.
+ */
+export const pickerLines = (skill) => moduleList().filter((m) => m.skill === skill && moduleKnown(m.id)).map((m) => ({ id: m.id, title: m.title, line: pickerLineOf(m.id) }));

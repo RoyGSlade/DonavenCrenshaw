@@ -68,3 +68,8 @@ body .tk-panel[hidden]{display:none}
 @media (max-width:700px){.tk-panel{bottom:0;left:0;transform:none;width:100vw;max-height:88dvh;border-radius:12px 12px 0 0;padding:10px 12px 14px;font-size:14px}.tk-text{font-size:15px}.tk-line.is-you{margin-left:8px}}
 .tk-line.is-earlier{opacity:.78;border-left-color:#3b5a70}
 @media (max-width:700px){body .tk-panel.ui-dialogue{top:auto;bottom:6px;left:50%;width:98vw;max-height:84dvh;grid-template-columns:56px minmax(0,1fr)}.tk-pips i{width:7px;height:7px}.tk-pips{gap:2px}.tk-bondname{font-size:8px}}
+
+/* The module shelf (modularity): one row per module, the Play button beside the words, wrapping on a phone. */
+.wb-shelf{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.wb-shelf-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 10px}
+.wb-shelf-row>span{flex:1 1 160px;min-width:0}

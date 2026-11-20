@@ -3,8 +3,9 @@
 // scene hooks and the gym use), and a finished game pays real XP into the skill (state.js earnXp). DOM lives in games.js.
 import { check } from '../character.js';
 import { ROLL_SKILLS } from '../data.js';
-import { tierOf, tierInfo, setupHack, setupPerihelion, setupCut, setupScrew } from '../minigames/setup.js';
-import { GYM_GAMES, gymGame } from '../minigames/gym.js';
+import { tierOf, tierInfo } from '../minigames/setup.js';
+import { GYM_GAMES } from '../minigames/gym.js';
+import { ready, setupOf } from '../modules/registry.js';
 import { rollPreview } from '../minigames/rollPreview.js';
 import { cleanSkillPoints } from '../minigames/picker.js';
 import { characterOf, earnXp } from './state.js';
@@ -44,16 +45,18 @@ export function loadoutOf(state, skill) {
  * Everything the page needs to open a station's game after the d20: the tier, the setup (level and points applied) and the
  * preview line ("Smooth roll: 15 s more...") with how far the next tier is. `attempt` is the check's attempt (total, dc, natural).
  */
-const CHAIN_SETUP = Object.freeze({ cut: (o) => setupCut(o), screw: (o) => setupScrew(o), 'bolt-plate': (o) => setupCut(o) });
 export function startStation(state, station, attempt, { tool = 'shop' } = {}) {
   const { level, points } = loadoutOf(state, station.skill);
   const tier = tierOf(attempt);
-  const chain = CHAIN_SETUP[station.id];
-  // A station may play a newer game than the gym's (navigation: Perihelion); the gym keeps the old one until Donaven picks.
-  const setup = chain ? chain({ tier, level, points, tool }) : station.id === 'hack' ? setupHack({ tier, level, points, lock: station.lock }) : station.game === 'perihelion' ? setupPerihelion({ tier, level, points }) : gymGame(station.id).setup({ tier, level, points });
+  // Every game is a module: its own setup(o) turns the tier, level and points into a setup. A station may play a newer game than the gym's
+  // (navigation: Perihelion); the gym keeps the old one until Donaven picks.
+  const setup = setupOf(station.game || station.id, { tier, level, points, tool, lock: station.lock });
   const preview = rollPreview(station.game || station.id, attempt, { level, points });
   return { station, tier, label: tierInfo(tier).label, setup, level, points, preview };
 }
+
+/** startStation for page code: waits for the registry first, so a caller cannot forget `await ready()`. */
+export async function startStationAsync(state, station, attempt, opts) { await ready(); return startStation(state, station, attempt, opts); }
 
 /**
  * What a lost game did to the world, in plain words (null when nothing happened). Repair: a lost line stays broken; shutting the
@@ -94,4 +97,5 @@ export function settleStation(state, station, result) {
   return { state: { ...next, said: parts.join(' ') }, xp: earned.xp, gained: earned.gained, credits, said: parts.join(' ') };
 }
 
-export const GAME_IDS = Object.freeze(GYM_GAMES.map((g) => g.id));
+/** The ids of the games the gym trains (from the registry: a module opts in from its manifest). */
+export const gameIds = () => GYM_GAMES.map((g) => g.id);

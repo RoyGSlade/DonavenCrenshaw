@@ -13,6 +13,9 @@ import { rollPreview, CHAIN_SPECS, SPECS } from '../projects/Space-Shooter/voyag
 import { CATEGORIES } from '../projects/Space-Shooter/voyage/minigames/picker.js';
 import { startStation, settleStation, stationById } from '../projects/Space-Shooter/voyage/workbench/stations.js';
 import { freshState } from '../projects/Space-Shooter/voyage/workbench/state.js';
+import * as MODS from '../projects/Space-Shooter/voyage/modules/registry.js';
+const modulesReady = MODS.ready;
+await modulesReady(); // every game is a module: load the registry once
 
 const r4 = (x) => Math.round(+x.toFixed(6) * 10000) / 10000;
 const TIERS = [-2, -1, 0, 1, 2];
@@ -377,8 +380,8 @@ test('the bench: Cut, Screw and the recipe start at the roll and the character\'
   }
 });
 
-test('the chain\'s previews change at every tier but Steady, and the other games keep their own list (nine plus Perihelion)', () => {
-  assert.deepEqual(Object.keys(CHAIN_SPECS), ['cut', 'screw', 'bolt-plate']); assert.equal(Object.keys(SPECS).length, 10);
+test('the chain\'s previews change at every tier but Steady, and the other games keep their own list', () => {
+  for (const g of [...Object.keys(CHAIN_SPECS), ...Object.keys(SPECS)]) assert.ok(MODS.has(g), `${g} is a registered module`);
   const at = (m) => ({ total: 10 + m, dc: 10 });
   for (const g of Object.keys(CHAIN_SPECS)) {
     for (const m of [12, 6, -3, -9]) assert.ok(rollPreview(g, at(m), { level: 3 }).phrases.length >= 1, `${g} margin ${m}`);

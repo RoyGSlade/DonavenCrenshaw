@@ -4,26 +4,20 @@
 // points count (you train with what you have) but the roll is always Steady, tier 0.
 // Pure: the wallet and the hour log belong to the caller. Numbers are PLACEHOLDERS for the economy tune.
 import { cleanSkillPoints } from './picker.js';
-import { setupNavTrainer, PERI_CATEGORIES } from './perihelionEntry.js';
-import { setupRepair, setupHack, setupHaggle, setupPersuade, setupIntimidate, setupCraft, setupStealth, setupPilot, REPAIR_CATEGORIES, HACK_CATEGORIES, SOCIAL_CATEGORIES, CRAFT_CATEGORIES, STEALTH_CATEGORIES, PILOT_CATEGORIES } from './setup.js';
+import { gymGames } from '../modules/registry.js';
 
 /** Where skill points are spent (design doc: "Spend skill points in the holodeck gym"): spending and training are one place. */
 export const SPEND_AT = 'gym';
 
 export const GYM = Object.freeze({ cost: 10, share: 0.25, capXp: 6, windowMs: 3600000 });
 
-/** The games the gym offers: id, skill, name, the dev-page id, and how to set it up at Steady. */
-export const GYM_GAMES = Object.freeze([
-  { id: 'repair', skill: 'repair', name: 'Coolant pipes', setup: (o) => setupRepair(o), cats: REPAIR_CATEGORIES },
-  { id: 'hack', skill: 'hacking', name: 'Mirrors and firewalls', setup: (o) => setupHack(o), cats: HACK_CATEGORIES },
-  { id: 'haggle', skill: 'social', name: 'Haggle', setup: (o) => setupHaggle(o), cats: SOCIAL_CATEGORIES },
-  { id: 'persuade', skill: 'social', name: 'Persuade', setup: (o) => setupPersuade(o), cats: SOCIAL_CATEGORIES },
-  { id: 'intimidate', skill: 'social', name: 'Intimidate', setup: (o) => setupIntimidate(o), cats: SOCIAL_CATEGORIES },
-  { id: 'craft', skill: 'crafting', name: 'Heat and shape', setup: (o) => setupCraft(o), cats: CRAFT_CATEGORIES },
-  { id: 'nav', skill: 'navigation', name: 'Perihelion trainer sectors', setup: (o) => setupNavTrainer(o), cats: PERI_CATEGORIES },
-  { id: 'stealth', skill: 'stealth', name: 'Shadow slip', setup: (o) => setupStealth(o), cats: STEALTH_CATEGORIES },
-  { id: 'pilot', skill: 'piloting', name: 'Touchdown', setup: (o) => setupPilot(o), cats: PILOT_CATEGORIES },
-]);
+/**
+ * The games the gym offers: id, skill, name, and how to set it up at Steady. Read from the registry: a module opts in with `"gym": { "name": "..." }`
+ * in its manifest.json. A live view (every read asks the registry), so the registry must be loaded first (await ready() from modules/registry.js).
+ */
+export const GYM_GAMES = new Proxy([], {
+  get: (_, k) => { const a = gymGames(); const v = a[k]; return typeof v === 'function' ? v.bind(a) : v; },
+});
 /** The games the gym has for a skill (shooting has none). */
 export const gymGamesFor = (skill) => GYM_GAMES.filter((g) => g.skill === skill);
 /** What you train with: the skill's level and the points you have actually spent in it (never more than the level). */
