@@ -4,6 +4,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { CAMERA_WORDS } from '../projects/Space-Shooter/voyage/slice/narration.js';
+import { isHandsOn, playHandsOn } from '../scripts/stardust-handson-kit.mjs';
 import { loadPlaywright, startServer, SIZES, skip, boot, settle, frameReport, PROOF } from '../scripts/stardust-opening-b-kit.mjs';
 
 for (const [size, profile] of SIZES) {
@@ -33,6 +34,7 @@ for (const [size, profile] of SIZES) {
         if (same > 150) { notes.stuck = { st, key }; await snap('stuck'); break; }
         if (st.quest && !sceneSeen.has(st.quest)) { sceneSeen.add(st.quest); notes.scenes.push({ scene: st.quest, startedAtStep: i }); await settle(page, 600); await snap(`scene-${st.quest}`); }
         if (st.done.length >= 6 && !st.quest) break;
+        if (isHandsOn(st.quest, st.node) && st.mode === 'walk' && !st.sheet) { await playHandsOn(page, { phone: size === 'phone', node: st.node, snap }); notes.handsOn = [...(notes.handsOn || []), st.node]; continue; } /* scene 1 is played in the room: no dialogue box, real pointer input, never quest state */
         if (st.retry) { await page.locator('.op-retry-btn').click(); continue; }
         if (st.mode === 'fight') { await page.evaluate(() => { for (const e of window.__stardust.onfoot.world.fightState.enemies) { e.alive = false; e.hp = 0; } }); await settle(page, 700); continue; }
         if (st.card) { await snap(`card-${st.quest}-${st.node}`); const b = page.locator('#dp-jobcard button.primary').first(); if (await b.count()) await b.click({ timeout: 2000 }).catch(() => {}); await settle(page, 800); continue; }
