@@ -80,7 +80,7 @@
 }
 .wb-full .cc-recipe>.rp-eyebrow{display:none}
 
-/* Bend: strain and gap gauges, the beat ring is on the canvas, two thumb pads and a Set button */
+/* Bend: strain and gap gauges, the beat ring is on the canvas, two thumb pads and a Set button (all three the same kit button) */
 .cc-hud3{grid-template-columns:1fr 1.4fr .8fr}
 .cc-strain i{background:#81e6df}.cc-strain i.is-warm{background:#ffc857}.cc-strain i.is-hot{background:#ff5a45;box-shadow:0 0 10px #ff5a45}
 .cc-gap{height:12px;overflow:hidden}.cc-gap i{background:#ffc857}.cc-gap[data-state=near] i{background:#9fe870}.cc-gap[data-state=over] i{background:#ff6b5a}
@@ -89,27 +89,28 @@
 .cc-pips{display:flex;gap:6px;min-height:20px;align-items:center}
 .cc-pips i{width:14px;height:14px;border-radius:50%;border:2px solid #6b7f8c;background:#0b1620}
 .cc-pips i.on{background:#9fe870;border-color:#d8ffd0;box-shadow:0 0 8px #9fe870}.cc-pips i.now{border-color:#81e6df;box-shadow:0 0 6px #81e6df}
-.cc-bendwrap{width:min(100%,880px,calc((100dvh - 380px) * 1.5385));margin:0 auto}
+.cc-bendwrap{width:min(100%,880px);aspect-ratio:800/520;margin:0 auto}
 .cc-bendcanvas{cursor:default}
 .cc-play{display:grid;gap:8px}
 .cc-bendrow{display:grid;grid-template-columns:1fr .8fr 1fr;gap:10px;align-items:stretch}
-.cc-pad,.cc-set{min-height:76px;display:grid;place-items:center;align-content:center;gap:0;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;border-radius:14px}
-.cc-pad b,.cc-set b{font:800 30px/1 Inter,sans-serif}.cc-pad span,.cc-set span{font:700 10px Consolas,monospace;letter-spacing:.14em;text-transform:uppercase;opacity:.7}
-.cc-pad{border:2px solid #2f6b66;background:linear-gradient(180deg,#14303a,#0a1c26);color:#cfeee9}
-.cc-pad.is-next{border-color:#81e6df;box-shadow:0 0 0 2px #81e6df66,0 0 18px #81e6df55}
-.cc-pad.is-down{transform:translateY(2px) scale(.98);background:linear-gradient(180deg,#1f4a52,#10303a)}
-.cc-pad.is-hush{border-color:#ff6b5a}
+.cc-pad{--glow:0;min-height:76px;display:grid;place-items:center;align-content:center;gap:0;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.cc-pad b{font:800 30px/1 Inter,sans-serif}.cc-pad span{font:700 10px Consolas,monospace;letter-spacing:.14em;text-transform:uppercase;opacity:.7}
+/* the next key's pad glows in time with the ring's green window (bendView sets --glow each frame); the shape never changes */
+.cc-pad.is-next{box-shadow:0 0 calc(4px + 26px * var(--glow)) calc(1px + 3px * var(--glow)) rgba(129,230,223,calc(.2 + .7 * var(--glow)))}
+.cc-pad.is-down{transform:translateY(2px) scale(.98)}
+.cc-pad.is-hush{filter:hue-rotate(160deg)}
 .cc-giverow{justify-content:center}.cc-giverow button{min-height:36px;font-size:12px;opacity:.85}
 .cc-bendpanel.is-creaking .cc-strainstat{border-color:#ffad72}
+/* full screen: ONE block, no gap inside it. The step chip, scrap line, gauges, board, status and give up sit together; the board takes every spare pixel of height. */
 .wb-full .cc-bendpanel{gap:6px}
-.wb-full .cc-play{flex:1;min-height:0;align-content:center;justify-items:center}
-.wb-full .cc-play>*{width:100%}
-.wb-full .cc-bendwrap{flex:none;width:min(100%,880px,calc((100dvh - 380px) * 1.5385));display:block}
-.wb-full .cc-bendwrap .cc-canvas{width:100%;height:auto}
-.wb-full .cc-bendrow{padding-bottom:max(6px,env(safe-area-inset-bottom))}
+.wb-full .cc-play{flex:1;min-height:0;display:flex;flex-direction:column;gap:6px}
+.wb-full .cc-bendwrap{flex:1 1 0;min-height:120px;width:100%;max-width:none;aspect-ratio:auto;position:relative;display:block;margin:0}
+.wb-full .cc-bendwrap .cc-canvas{position:absolute;inset:0;width:100%;height:100%}
+.wb-full .cc-bendrow{padding-bottom:max(2px,env(safe-area-inset-bottom))}
+.wb-full .cc-recipe:has(.cc-bendpanel) .cc-chips{flex-wrap:wrap;overflow:visible;padding-bottom:0}
+.wb-full .cc-recipe:has(.cc-bendpanel) .cc-chip{white-space:normal}
 @media (max-width:700px){
   .cc-hud3{grid-template-columns:1fr 1fr}.cc-hud3>.cc-pipstat{grid-column:1/3}
   .wb-full .cc-pipstat{display:flex;align-items:center;gap:8px}
-  .cc-pad,.cc-set{min-height:92px}
-  .wb-full .cc-bendwrap{width:100%}
+  .cc-pad{min-height:84px}
 }

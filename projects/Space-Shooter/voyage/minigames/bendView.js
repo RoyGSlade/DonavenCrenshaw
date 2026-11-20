@@ -6,31 +6,36 @@
 import { bendPress, bendSet, bendGiveUp, bendTick, targetOf, nextKey, word, quality, since } from './bend.js';
 import { h, ensureStyle, loop, lcg } from './craftChainView.js';
 
-const W = 800, H = 520, K = 1.5, TAU = Math.PI * 2;
+const BW = 800, BH = 520, K = 1.5, TAU = Math.PI * 2;
 const P = { x: 300, y: 380 }, L = 300, RING = { x: 690, y: 125, r: 66 };
 const rad = (d) => (d * Math.PI) / 180;
 const now = () => performance.now() / 1000;
 
-function makeBench() {
-  const c = document.createElement('canvas'); c.width = W * K; c.height = H * K;
+// The picture is drawn in a 800 x 520 scene that is centred in whatever box the screen gives it: a taller box (a phone) adds
+// workshop wall above the bar, a wider one (desktop) adds bench to the sides. So spare height goes into the board, never into a gap.
+function makeBench(v) {
+  const { W, H, dx, dy } = v;
+  const c = document.createElement('canvas'); c.width = Math.round(W * K); c.height = Math.round(H * K);
   const g = c.getContext('2d'); g.scale(K, K);
   const r = lcg(23);
   const bg = g.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, '#26323d'); bg.addColorStop(1, '#141c24'); g.fillStyle = bg; g.fillRect(0, 0, W, H);
-  for (let i = 0; i < 260; i++) { const y = r() * H, x = r() * W; g.strokeStyle = r() > 0.5 ? 'rgba(255,255,255,.035)' : 'rgba(0,0,0,.12)'; g.lineWidth = 0.7; g.beginPath(); g.moveTo(x, y); g.lineTo(x + 40 + r() * 160, y); g.stroke(); }
-  const vg = g.createRadialGradient(W / 2, H / 2, 200, W / 2, H / 2, 520); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,.5)'); g.fillStyle = vg; g.fillRect(0, 0, W, H);
+  for (let i = 0; i < Math.round(260 * (W * H) / (BW * BH)); i++) { const y = r() * H, x = r() * W; g.strokeStyle = r() > 0.5 ? 'rgba(255,255,255,.035)' : 'rgba(0,0,0,.12)'; g.lineWidth = 0.7; g.beginPath(); g.moveTo(x, y); g.lineTo(x + 40 + r() * 160, y); g.stroke(); }
+  const vg = g.createRadialGradient(W / 2, H / 2, 200, W / 2, H / 2, Math.max(W, H) * 0.7); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,.5)'); g.fillStyle = vg; g.fillRect(0, 0, W, H);
   // the vice: a heavy block under the bar and a clamp plate over its fixed end
-  const blk = g.createLinearGradient(0, P.y + 16, 0, H); blk.addColorStop(0, '#6a7681'); blk.addColorStop(0.15, '#4a555f'); blk.addColorStop(1, '#2b343c');
-  g.fillStyle = blk; g.fillRect(0, P.y + 16, P.x + 14, H - P.y - 16);
-  g.fillStyle = 'rgba(255,255,255,.18)'; g.fillRect(0, P.y + 16, P.x + 14, 3);
-  for (const x of [60, 140, 220]) { g.fillStyle = '#20292f'; g.beginPath(); g.arc(x, P.y + 60, 11, 0, TAU); g.fill(); g.fillStyle = '#7d8993'; g.beginPath(); g.arc(x - 1.5, P.y + 58.5, 6, 0, TAU); g.fill(); }
+  const top = P.y + dy + 16, right = P.x + dx + 14;
+  const blk = g.createLinearGradient(0, top, 0, H); blk.addColorStop(0, '#6a7681'); blk.addColorStop(0.15, '#4a555f'); blk.addColorStop(1, '#2b343c');
+  g.fillStyle = blk; g.fillRect(0, top, right, H - top);
+  g.fillStyle = 'rgba(255,255,255,.18)'; g.fillRect(0, top, right, 3);
+  for (const x of [60, 140, 220]) { const bx = x + dx, by = P.y + dy + 60; g.fillStyle = '#20292f'; g.beginPath(); g.arc(bx, by, 11, 0, TAU); g.fill(); g.fillStyle = '#7d8993'; g.beginPath(); g.arc(bx - 1.5, by - 1.5, 6, 0, TAU); g.fill(); }
   return c;
 }
 
 export function playBend(root, { state, what = 'bracket', reducedMotion = () => false } = {}) {
   ensureStyle();
   const s = state;
-  const bench = makeBench();
-  const canvas = h('canvas', { class: 'cc-canvas cc-bendcanvas', width: String(W * K), height: String(H * K), 'aria-label': `A metal bar clamped in a vice with a dotted ghost line where the ${what} must end up. Press A and D in turn, in time with the ring, then Set.` });
+  let view = { W: BW, H: BH, dx: 0, dy: 0 };
+  let bench = makeBench(view);
+  const canvas = h('canvas', { class: 'cc-canvas cc-bendcanvas', width: String(BW * K), height: String(BH * K), 'aria-label': `A metal bar clamped in a vice with a dotted ghost line where the ${what} must end up. Press A and D in turn, in time with the ring, then Set.` });
   const ctx = canvas.getContext('2d');
 
   // the HUD: strain, the gap to the line (with a plain word), the bends as pips
@@ -43,9 +48,9 @@ export function playBend(root, { state, what = 'bracket', reducedMotion = () => 
     h('div', { class: 'cc-stat cc-pipstat' }, h('span', { text: s.bends > 1 ? 'Bends' : 'Bend' }), pips));
   const status = h('p', { class: 'rp-status cc-status', role: 'status', 'aria-live': 'polite', text: `Press A and D in turn, each time the ring is in the green. Stop on the dotted line and hit Set.` });
   const giveUp = h('button', { type: 'button', class: 'ui-btn cc-done cc-giveup', text: `Give up this ${what}` });
-  const padA = h('button', { type: 'button', class: 'ui-btn cc-pad cc-pad-a', 'data-key': 'a', 'aria-label': 'Left pad, the A key' }, h('b', { text: 'A' }), h('span', { text: 'press' }));
-  const padD = h('button', { type: 'button', class: 'ui-btn cc-pad cc-pad-d', 'data-key': 'd', 'aria-label': 'Right pad, the D key' }, h('b', { text: 'D' }), h('span', { text: 'press' }));
-  const setBtn = h('button', { type: 'button', class: 'primary ui-btn cc-set', 'aria-label': 'Set the bend (Space)' }, h('b', { text: 'SET' }), h('span', { text: 'Space' }));
+  const padA = h('button', { type: 'button', class: 'primary ui-btn cc-pad cc-pad-a', 'data-key': 'a', 'aria-label': 'Left pad, the A key' }, h('b', { text: 'A' }), h('span', { text: 'press' }));
+  const padD = h('button', { type: 'button', class: 'primary ui-btn cc-pad cc-pad-d', 'data-key': 'd', 'aria-label': 'Right pad, the D key' }, h('b', { text: 'D' }), h('span', { text: 'press' }));
+  const setBtn = h('button', { type: 'button', class: 'primary ui-btn cc-pad cc-set', 'aria-label': 'Set the bend (Space)' }, h('b', { text: 'SET' }), h('span', { text: 'Space' }));
   const actions = h('div', { class: 'cc-row cc-bendrow' }, padA, setBtn, padD);
   const wrap = h('div', { class: 'cc-boardwrap cc-bendwrap' }, canvas);
   const panel = h('section', { class: 'rp-panel cc-panel cc-bendpanel mg-skin ui-panel', role: 'group', 'aria-label': `Bend the ${what}`, 'data-game': 'bend' },
@@ -54,6 +59,19 @@ export function playBend(root, { state, what = 'bracket', reducedMotion = () => 
     actions, h('p', { class: 'rp-help', text: 'A and D in turn, when the ring is green: each good press bends the bar a little. Too soon strains it, too late does nothing, the same key twice does nothing. Space sets it. Over the line cannot be saved.' }));
   panel.__state = s;
   root.append(panel);
+  // Fit the canvas to its box: scene centred, the rest of the box is bench (wider) or wall above the bar (taller). Falls back to the plain 800 x 520.
+  const fitView = () => {
+    const bw = wrap.clientWidth, bh = wrap.clientHeight;
+    let v = { W: BW, H: BH, dx: 0, dy: 0 };
+    if (wrap.closest('.wb-full') && bw > 40 && bh > 40) {
+      const a = bw / bh, W = a >= BW / BH ? Math.round(BH * a) : BW, H = a >= BW / BH ? BH : Math.min(1500, Math.round(BW / a));
+      v = { W, H, dx: Math.round((W - BW) / 2), dy: H - BH };
+    }
+    if (v.W === view.W && v.H === view.H) return;
+    view = v; canvas.width = Math.round(v.W * K); canvas.height = Math.round(v.H * K); bench = makeBench(v);
+  };
+  if (typeof ResizeObserver !== 'undefined') new ResizeObserver(fitView).observe(wrap);
+  requestAnimationFrame(fitView);
 
   const layoutGauge = () => {
     const T = targetOf(s), span = T + s.over + 4;
@@ -71,12 +89,13 @@ export function playBend(root, { state, what = 'bracket', reducedMotion = () => 
   const press = (key) => { if (s.done) return; bendPress(s, key, now()); };
   const doSet = () => { if (s.done) return; bendSet(s, now()); };
   for (const pad of [padA, padD]) {
-    pad.addEventListener('pointerdown', (e) => { e.preventDefault(); pad.classList.add('is-down'); press(pad.dataset.key); });
+    pad.addEventListener('pointerdown', (e) => { e.preventDefault(); pad.classList.add('is-down'); setTimeout(() => pad.classList.remove('is-down'), 140); press(pad.dataset.key); });
     const off = () => pad.classList.remove('is-down');
     pad.addEventListener('pointerup', off); pad.addEventListener('pointercancel', off); pad.addEventListener('pointerleave', off);
     pad.addEventListener('keydown', (e) => { if (e.key === 'Enter') e.preventDefault(); }); // a focused pad must not turn Space or Enter into a press
     pad.addEventListener('contextmenu', (e) => e.preventDefault());
   }
+  setBtn.addEventListener('pointerdown', () => { setBtn.classList.add('is-down'); setTimeout(() => setBtn.classList.remove('is-down'), 140); });
   setBtn.addEventListener('click', doSet);
   giveUp.addEventListener('click', () => { if (!s.done) bendGiveUp(s); });
   const onKey = (e) => {
@@ -116,7 +135,8 @@ export function playBend(root, { state, what = 'bracket', reducedMotion = () => 
     const calm = reducedMotion();
     const sx = !calm && shake > 0.2 ? (rnd() - 0.5) * shake : 0, sy = !calm && shake > 0.2 ? (rnd() - 0.5) * shake : 0;
     g.save(); g.translate(sx, sy);
-    g.drawImage(bench, 0, 0, W, H);
+    g.drawImage(bench, 0, 0, view.W, view.H);
+    g.translate(view.dx, view.dy);
     const T = targetOf(s), done = s.done;
     const live = Math.max(0, Math.min(1, s.strain / 100));
     const tgt = rad(T);
@@ -144,11 +164,11 @@ export function playBend(root, { state, what = 'bracket', reducedMotion = () => 
     const col = `rgb(${Math.round(168 + 80 * heat)},${Math.round(182 - 70 * heat)},${Math.round(194 - 120 * heat)})`;
     g.save(); g.translate(0, wob * 0.5);
     if (live > 0.35 && !calm) { g.shadowColor = `rgba(255,${Math.round(150 - 90 * live)},60,${0.35 + 0.5 * live})`; g.shadowBlur = 8 + 26 * live; }
-    const path = () => { g.beginPath(); g.moveTo(30, P.y); g.arcTo(P.x, P.y, tip.x + wob, tip.y, 26 + 20 * Math.min(1, a)); g.lineTo(tip.x + wob, tip.y); };
+    const path = () => { g.beginPath(); g.moveTo(-view.dx - 20, P.y); g.arcTo(P.x, P.y, tip.x + wob, tip.y, 26 + 20 * Math.min(1, a)); g.lineTo(tip.x + wob, tip.y); };
     g.lineJoin = 'round'; g.lineCap = 'butt';
     g.strokeStyle = '#1f2a33'; g.lineWidth = 34; path(); g.stroke();
     g.shadowBlur = 0; g.strokeStyle = col; g.lineWidth = 27; path(); g.stroke();
-    g.strokeStyle = 'rgba(255,255,255,.34)'; g.lineWidth = 5; g.beginPath(); g.moveTo(30, P.y - 7); g.lineTo(P.x - 4, P.y - 7); g.stroke();
+    g.strokeStyle = 'rgba(255,255,255,.34)'; g.lineWidth = 5; g.beginPath(); g.moveTo(-view.dx, P.y - 7); g.lineTo(P.x - 4, P.y - 7); g.stroke();
     { const dx = Math.cos(a), dy = -Math.sin(a), nx = dy, ny = -dx; g.beginPath(); g.moveTo(P.x + 7 * nx + 14 * dx, P.y + 7 * ny + 14 * dy); g.lineTo(tip.x + 7 * nx - 8 * dx, tip.y + 7 * ny - 8 * dy); g.stroke(); }
     g.fillStyle = '#1f2a33'; g.beginPath(); g.arc(tip.x, tip.y, 6, 0, TAU); g.fill();
     g.restore();
@@ -156,7 +176,7 @@ export function playBend(root, { state, what = 'bracket', reducedMotion = () => 
     if (live > 0.6) { g.strokeStyle = `rgba(30,12,8,${0.35 + 0.5 * live})`; g.lineWidth = 1.6; for (let i = 0; i < 4; i++) { const o = -10 + i * 7; g.beginPath(); g.moveTo(P.x + o, P.y - 13); g.lineTo(P.x + o + 3 + live * 4, P.y - 3); g.lineTo(P.x + o - 2, P.y + 4); g.stroke(); } }
     // the clamp plate
     const pl = g.createLinearGradient(0, P.y - 40, 0, P.y - 14); pl.addColorStop(0, '#8b97a1'); pl.addColorStop(1, '#4a555f');
-    g.fillStyle = pl; g.fillRect(0, P.y - 40, P.x - 20, 26); g.fillStyle = 'rgba(255,255,255,.2)'; g.fillRect(0, P.y - 40, P.x - 20, 3);
+    g.fillStyle = pl; g.fillRect(-view.dx, P.y - 40, P.x - 20 + view.dx, 26); g.fillStyle = 'rgba(255,255,255,.2)'; g.fillRect(-view.dx, P.y - 40, P.x - 20 + view.dx, 3);
     g.fillStyle = '#20292f'; g.fillRect(P.x - 20, P.y - 40, 6, 26);
     // sparks
     for (const p of sparks) { g.globalAlpha = Math.max(0, Math.min(1, p.life * 2.2)); g.fillStyle = p.life > 0.3 ? '#fff3b0' : '#ff9a3c'; g.fillRect(p.x - 2, p.y - 2, 4, 4); }
@@ -180,8 +200,8 @@ export function playBend(root, { state, what = 'bracket', reducedMotion = () => 
     g.fillText(done ? '' : nk ? nk.toUpperCase() : 'A / D', 0, 2);
     g.restore();
     // banner and flash
-    if (bannerT > 0) { g.globalAlpha = Math.min(1, bannerT * 1.6); g.fillStyle = banner === 'SET' ? '#9fe870' : '#ff6b5a'; g.font = '800 54px Inter, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'alphabetic'; g.fillText(banner, W / 2, 96 + 18 * (1 - bannerT)); g.globalAlpha = 1; }
-    if (flash > 0) { g.globalAlpha = flash * 0.28; g.fillStyle = flashHue; g.fillRect(0, 0, W, H); g.globalAlpha = 1; }
+    if (bannerT > 0) { g.globalAlpha = Math.min(1, bannerT * 1.6); g.fillStyle = banner === 'SET' ? '#9fe870' : '#ff6b5a'; g.font = '800 54px Inter, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'alphabetic'; g.fillText(banner, BW / 2, 96 + 18 * (1 - bannerT)); g.globalAlpha = 1; }
+    if (flash > 0) { g.globalAlpha = flash * 0.28; g.fillStyle = flashHue; g.fillRect(-view.dx, -view.dy, view.W, view.H); g.globalAlpha = 1; }
     g.restore();
   }
 
@@ -204,7 +224,10 @@ export function playBend(root, { state, what = 'bracket', reducedMotion = () => 
     gapWord.textContent = gw;
     gapFill.parentElement.dataset.state = s.angle > targetOf(s) ? 'over' : Math.abs(s.angle - targetOf(s)) <= s.stop ? 'near' : 'short';
     const nk = nextKey(s);
-    padA.classList.toggle('is-next', nk === 'a'); padD.classList.toggle('is-next', nk === 'd');
+    // the cue where the thumb is: the next pad's glow follows the ring (dim while too soon, full in the green window, fading after it)
+    const sn = s.lastAt == null ? null : now() - s.lastAt;
+    const glow = s.done ? 0 : sn == null ? 0.7 : sn < s.lo ? 0.15 + 0.2 * (sn / s.lo) : sn <= s.hi ? 1 : Math.max(0.15, 1 - (sn - s.hi) * 3);
+    for (const pad of [padA, padD]) { const on = nk == null ? !s.done : nk === pad.dataset.key; pad.classList.toggle('is-next', on); pad.style.setProperty('--glow', on ? glow.toFixed(3) : '0'); }
     for (const pad of [padA, padD]) pad.classList.toggle('is-hush', hushPad > 0 && pad.dataset.key === s.lastKey);
     giveUp.disabled = s.done; setBtn.disabled = s.done; padA.disabled = padD.disabled = s.done;
     if (!reducedMotion()) panel.classList.toggle('is-creaking', live > 0.55);

@@ -116,13 +116,27 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
         assert.doesNotMatch(text, /\d/, `no number anywhere on the game screen: ${text}`);
         assert.match(text, /keep going/i); assert.match(text, /Strain/i); assert.match(text, /Gap to the line/i);
         await noScroll('bend');
-        // layout: the play block is grouped and centred, only the action row sits at the bottom, and it all fits on the screen
-        const lay = await page.evaluate((sel) => { const q = (s) => document.querySelector(`${sel} ${s}`).getBoundingClientRect(); const hud = q('.cc-bendhud'), cv = q('canvas'), row = q('.cc-bendrow'), sc = document.querySelector('.wb-full').getBoundingClientRect(); return { hudBottom: hud.bottom, cvTop: cv.top, cvBottom: cv.bottom, cvW: cv.width, rowTop: row.top, rowBottom: row.bottom, vh: innerHeight, vw: innerWidth, scBottom: sc.bottom }; }, PANEL);
-        assert.ok(lay.cvTop - lay.hudBottom < 24, `the HUD and the board stay together: ${JSON.stringify(lay)}`);
-        assert.ok(lay.rowBottom <= lay.vh + 1 && lay.rowBottom >= lay.vh - 100, `the action row pins to the bottom (above the chip strip): ${JSON.stringify(lay)}`);
+        // layout: the play block is ONE unit with no gap inside it (title bar, step chip, scrap line, gauges, board, status, give up, pads, chips):
+        // no gap over 48 px between neighbouring blocks, nothing runs off the side, the chips are not clipped, the board and pads fit the screen
+        const lay = await page.evaluate(() => {
+          const sel = ['.wb-ftop', '.wb-fnote', '.cc-steps', '.cc-spoil', '.cc-bendhud', '.cc-bendwrap', '.cc-status', '.cc-giverow', '.cc-bendrow', '.cc-chipbox'];
+          const rows = sel.map((q) => document.querySelector(`.wb-full ${q}`)).filter((e) => e && e.offsetParent && getComputedStyle(e).display !== 'none' && e.getBoundingClientRect().height > 0)
+            .map((e) => { const r = e.getBoundingClientRect(); return { c: e.className.toString().split(' ')[0], top: Math.round(r.top), bottom: Math.round(r.bottom) }; }).sort((x, y) => x.top - y.top);
+          const gaps = []; for (let i = 1; i < rows.length; i++) gaps.push({ between: `${rows[i - 1].c} > ${rows[i].c}`, px: rows[i].top - rows[i - 1].bottom });
+          const chips = document.querySelector('.wb-full .cc-chips'), cv = document.querySelector('.cc-panel[data-game=bend] canvas').getBoundingClientRect(), row = document.querySelector('.cc-panel[data-game=bend] .cc-bendrow').getBoundingClientRect();
+          return { rows, gaps, maxGap: Math.max(0, ...gaps.map((g) => g.px)), below: innerHeight - rows[rows.length - 1].bottom, chipsClipped: chips.scrollWidth - chips.clientWidth, cvW: cv.width, cvH: cv.height, cvBottom: cv.bottom, rowTop: row.top, vw: innerWidth, sw: document.documentElement.scrollWidth };
+        });
+        assert.ok(lay.maxGap <= 48, `no gap over 48 px inside the play block: ${JSON.stringify(lay.gaps)}`);
+        assert.ok(lay.sw <= lay.vw, `the page does not scroll sideways: ${lay.sw} > ${lay.vw}`);
+        assert.ok(lay.chipsClipped <= 0, `the chips wrap and none is cut off: ${lay.chipsClipped}`);
+        assert.ok(lay.below <= 24, `the last block sits at the bottom of the screen: ${lay.below}`);
         assert.ok(lay.cvBottom <= lay.rowTop + 1, 'the board does not run under the pads');
-        if (phone) assert.ok(lay.cvW >= profile.viewport.width - 40, `the board is full width on a phone: ${lay.cvW}`);
-        const padSize = await page.evaluate((sel) => [...document.querySelectorAll(`${sel} .cc-pad, ${sel} .cc-set`)].map((b) => { const r = b.getBoundingClientRect(); return [Math.round(r.width), Math.round(r.height)]; }), PANEL);
+        if (phone) assert.ok(lay.cvW >= profile.viewport.width - 40 && lay.cvH >= 300, `the board is full width and tall on a phone: ${lay.cvW} x ${lay.cvH}`);
+        // the three pads are the same kit button: same frame, same corners, same size class
+        const skin = await page.evaluate((sel) => [...document.querySelectorAll(`${sel} .cc-pad`)].map((b) => { const c = getComputedStyle(b); return { cls: b.className.split(' ').filter((x) => /^(primary|ui-btn|cc-pad)$/.test(x)).sort().join(' '), radius: c.borderTopLeftRadius, borderImage: c.borderImageSource, bg: c.backgroundImage, bw: c.borderTopWidth, h: Math.round(b.getBoundingClientRect().height) }; }), PANEL);
+        assert.equal(skin.length, 3); assert.equal(new Set(skin.map((x) => JSON.stringify({ ...x, h: 0 }))).size, 1, `A, D and Set share one skin: ${JSON.stringify(skin)}`);
+        assert.equal(new Set(skin.map((x) => x.h)).size, 1, 'and one height');
+        const padSize = await page.evaluate((sel) => [...document.querySelectorAll(`${sel} .cc-pad`)].map((b) => { const r = b.getBoundingClientRect(); return [Math.round(r.width), Math.round(r.height)]; }), PANEL);
         for (const [w, h] of padSize) assert.ok(w >= 80 && h >= 64, `thumb-size pads: ${padSize}`);
         await shot('1-bend-start');
         // bend one: pressed in the beat, a screenshot at about half the way, set square with the keyboard / the finger
@@ -150,6 +164,22 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
         const after = await state(page);
         assert.ok(after.progress.xp.crafting > before.progress.xp.crafting || after.progress.levels.crafting > before.progress.levels.crafting, 'XP in Crafting');
         assert.match(after.said, /Bend: you did it/);
+      });
+
+      await sub('the next pad pulses with the ring: dim while too soon, full in the green window, fading after it', async () => {
+        await openMenu(); await pick('bend');
+        await press('a'); // a real press; then one page task samples the ring clock and the next pad's glow together
+        const samples = await page.evaluate(() => new Promise((resolve) => {
+          const p = document.querySelector('.cc-panel[data-game=bend]'), s = p.__state, out = [];
+          const tick = () => { const since = performance.now() / 1000 - s.lastAt; out.push({ since, glow: Number(p.querySelector('.cc-pad-d').style.getPropertyValue('--glow')), next: p.querySelector('.cc-pad-d').classList.contains('is-next'), other: Number(p.querySelector('.cc-pad-a').style.getPropertyValue('--glow')), lo: s.lo, hi: s.hi }); if (since > 1.1) resolve(out); else requestAnimationFrame(tick); };
+          tick();
+        }));
+        const { lo, hi } = samples[0];
+        const soon = samples.filter((x) => x.since < lo * 0.9), inWin = samples.filter((x) => x.since > lo + 0.03 && x.since < hi - 0.03), late = samples.filter((x) => x.since > hi + 0.35);
+        assert.ok(soon.length && inWin.length && late.length, `sampled all three phases: ${soon.length}/${inWin.length}/${late.length}`);
+        assert.ok(soon.every((x) => x.glow < 0.5), 'dim while too soon'); assert.ok(inWin.every((x) => x.glow >= 0.99), 'full in the green window'); assert.ok(late.every((x) => x.glow < 0.6), 'fading after the window');
+        assert.ok(samples.every((x) => x.next && x.other === 0), 'only the next pad glows (D after A)');
+        await go(`${PANEL} .cc-giveup`); await gradeCard(); await page.locator('.cc-grade .cc-go').click(); await wait(page, 300); await recover();
       });
 
       await sub('mashing kinks the bar (a shake, a snap, redone from straight, costs ten), the same key twice does nothing', async () => {
