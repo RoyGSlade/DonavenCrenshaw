@@ -74,7 +74,7 @@ export function mountDocking(stage, { state, base, ship, sound = () => {}, reduc
   const row = h('div', { class: 'dk-row' }, pad);
   const root = h('section', { class: 'm-docking', role: 'group', 'aria-label': 'Docking', 'data-game': 'docking' }, head, hud, board, say, tip, row);
   const input = { aim: null, thrust: 0 };
-  root.__state = s; root.__input = input;
+  root.__state = s; root.__input = input; root.__audio = () => !!audio?.live;
   stage.append(root);
   sound('music:duck');
   sound(`line:${LINES.approach.id}`);
@@ -372,7 +372,7 @@ export function mountDocking(stage, { state, base, ship, sound = () => {}, reduc
         acc -= DOCKING_DT;
       }
     } else acc = 0;
-    if (s.done) { acc = 0; if (!lastDone) { lastDone = true; padOff(); Object.assign(input, { aim: null, thrust: 0 }); } }
+    if (s.done) { acc = 0; if (!lastDone) { lastDone = true; padOff(); pad.classList.add('is-off'); Object.assign(input, { aim: null, thrust: 0 }); } }
     vt = s.done ? vt + dt : s.t;
     if (s.done && s.result.outcome === OUTCOMES.docked) { const was = clampT; clampT = Math.min(1, clampT + dt * 2.2); if (was < 1 && clampT >= 1) { shake = 6; thump = 0.4; chase = 0; } chase += dt; }
     if (s.done && tug) { tug.t += dt; if (tug.t > 3.5 && clampT < 1) { const was = clampT; clampT = Math.min(1, clampT + dt * 2.2); if (was < 1 && clampT >= 1) { shake = 6; audio?.clamp(); } } }

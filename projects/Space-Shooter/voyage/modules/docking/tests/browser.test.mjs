@@ -96,6 +96,8 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
       await page.goto(`${server.origin}/test.html${query ? `?${query}` : ''}`);
       if (phone) await page.locator('#play').tap(); else await page.locator('#play').click();
       await page.waitForSelector(ROOT); await wait(page, 500);
+      const s0 = await snap(page), v = s0.view;   // the ship starts ON the board, with room around it (a seed once started it off the phone's edge)
+      assert.ok(v.x > v.l + 12 && v.x < v.l + v.w - 12 && v.y > v.t + 12 && v.y < v.t + v.h - 12, `the ship starts on the board (${Math.round(v.x)},${Math.round(v.y)} in ${Math.round(v.l)},${Math.round(v.t)},${Math.round(v.w)}x${Math.round(v.h)})`);
     };
     const card = () => page.waitForSelector('.dk-card', { timeout: 20000 });
     const result = () => page.evaluate(() => window.__result);
@@ -240,6 +242,8 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
           await page.mouse.move(s0.view.x - 80, s0.view.y); await page.keyboard.down('Space'); await wait(page, 600);
           const s3 = await snap(page); assert.equal(s3.thrusting, true, 'Space burns'); await page.keyboard.up('Space');
         }
+        const hasAudio = await page.evaluate(() => typeof (window.AudioContext || window.webkitAudioContext) === 'function');
+        if (hasAudio) assert.equal(await page.evaluate((sel) => document.querySelector(sel).__audio(), ROOT), true, 'the module made its own sound after the first touch or key');
         const ids = await page.evaluate(() => window.__sounds || []);
         assert.ok(ids.includes('music:duck') && ids.includes('line:dockmaster.approach'), `host sound ids: ${ids}`);
       });

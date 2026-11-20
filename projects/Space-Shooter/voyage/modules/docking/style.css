@@ -39,6 +39,8 @@
 .m-docking .dk-pad b{font:800 26px/1 Inter,sans-serif;letter-spacing:.04em}
 .m-docking .dk-pad span{font:700 10px Consolas,monospace;letter-spacing:.14em;text-transform:uppercase;opacity:.7}
 .m-docking .dk-pad.is-held{transform:translateY(2px) scale(.98);filter:drop-shadow(0 0 16px rgba(255,173,114,.95))}
+.m-docking .dk-pad.is-off{opacity:.45;pointer-events:none;filter:none}
+.m-docking .dk-go{pointer-events:auto;opacity:1}
 .m-docking .dk-pad:focus-visible{outline:2px solid rgba(255,173,114,.55);outline-offset:2px;border-radius:6px}
 .m-docking .dk-go{min-height:46px;font-size:14px;margin-top:2px}
 .m-docking .dk-card{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(420px,calc(100% - 16px));max-height:calc(100% - 12px);overflow:auto;z-index:3;display:grid;gap:7px;padding:16px 20px 14px;text-align:center;border:solid transparent;border-width:13px 18px 12px 18px;border-image:url(art/kit/panel-light.webp) 26 37 23 38 fill / 13px 18px 12px 18px stretch;background:none;animation:dk-rise .3s ease-out}
