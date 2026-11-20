@@ -18,7 +18,7 @@ import { compileMap, walkable } from '../onfoot/rules/mapdata.js';
 import { SPOTS, DOWNED, AWAY } from './presenceData.js';
 
 /** Walking pace of the crew, px per second (the player walks at 175). */
-export const NPC_SPEED = 135;
+export const NPC_SPEED = 150;
 /** Pause at a door, seconds: none. A person standing in a doorway or its entry passage would hold the door cycle. */
 export const DOOR_PAUSE = 0; // nobody stops in a doorway: they walk straight through
 export const ROOMS = Object.freeze([...SHIP.rooms]);

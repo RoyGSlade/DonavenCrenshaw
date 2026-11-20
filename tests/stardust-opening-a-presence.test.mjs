@@ -105,8 +105,8 @@ test('presence: if the player is in the target room, the person comes in through
   const p = createPresence();
   p.settle('tull', 'duchess-mess');
   const eta = p.send('tull', 'duchess-bridge', 0);
-  const entering = p.entries('duchess-bridge', eta - 3).find((e) => e.id === 'tull');
-  assert.ok(entering, 'a few seconds before he arrives he is on the bridge');
+  const entering = p.entries('duchess-bridge', eta - 2).find((e) => e.id === 'tull');
+  assert.ok(entering, 'a couple of seconds before he arrives he is on the bridge');
   assert.equal(entering.puppet, true);
   const door = MAP_DEFS['duchess-bridge'].spawns['from-corridor'];
   const first = p.entries('duchess-bridge', eta - (planTrip({ room: 'duchess-bridge', x: (door[0] + 0.5) * 48, y: (door[1] + 0.5) * 48 }, { room: 'duchess-bridge', spot: spotIn('duchess-bridge', 'tull') }).t1) + 0.01).find((e) => e.id === 'tull');

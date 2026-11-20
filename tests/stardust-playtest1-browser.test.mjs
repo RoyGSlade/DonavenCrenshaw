@@ -82,14 +82,15 @@ for (const [size, profile] of SIZES) {
       await settle(page, 400);
       await page.keyboard.press('KeyE'); await settle(page, 500);
       s = await state(page);
-      assert.equal(await page.locator('.of-coffee').count(), 1, 'the coffee machine opens its menu');
+      assert.equal(await page.locator('.ok-screen[data-screen=coffee]').count(), 1, 'the coffee machine opens its screen (opening track A: a full screen now)');
       assert.equal(s.held, true, 'held while the menu is up');
       const top = (sel) => page.evaluate((sel) => { const n = document.querySelector(sel); const r = n.getBoundingClientRect(); const e = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2); return n === e || n.contains(e) ? null : `${e?.tagName}#${e?.id}.${e?.className}`; }, sel);
-      assert.equal(await top('.of-coffee [data-coffee=leave]'), null, 'no HUD icon covers the menu\'s buttons');
-      await page.locator('.of-coffee [data-coffee=leave]').click();
+      assert.equal(await top('.ok-screen [data-coffee=leave]'), null, 'no HUD icon covers the screen\'s buttons');
+      for (const sel of ['.ok-screen .wb-fleave', '.ok-screen [data-coffee=drink]', '.ok-screen [data-coffee=take]']) { await page.locator(sel).scrollIntoViewIfNeeded(); assert.equal(await top(sel), null, `nothing covers ${sel}`); }
+      await page.locator('.ok-screen [data-coffee=leave]').click();
       await settle(page, 500);
       s = await state(page);
-      assert.equal(await page.locator('.of-coffee').count(), 0); assert.equal(s.held, false, 'the player is free again');
+      assert.equal(await page.locator('.ok-screen').count(), 0); assert.equal(s.held, false, 'the player is free again');
       let { a, b } = await walkRight(page);
       assert.ok(b.x > a.x + 20, `the player moves (${a.x} -> ${b.x})`);
       // A stand-in talk box (Next / Done): the Next button is the top element at its centre (the phone's bag must not sit over it), and a tap anywhere closes it.

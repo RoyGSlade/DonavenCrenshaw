@@ -154,19 +154,25 @@ for (const [size, profile] of SIZES) {
     try {
       await page.locator('#hg-dialogue .ui-dlg-choice', { hasText: 'Later' }).click({ timeout: 15000 });
       await settle(page, 600);
-      await go(page, 'duchess-holodeck');
-      // Both crew set off for the bridge; the player steps into the door passage at the same moment.
-      await page.evaluate(() => {
-        const p = window.__stardust.presence, w = window.__stardust.onfoot.world;
-        p.ledger.settle('nessa', 'duchess-holodeck'); p.ledger.settle('pip', 'duchess-holodeck');
-        p.ledger.send('nessa', 'duchess-bridge'); p.ledger.send('pip', 'duchess-bridge');
-        const e = w.doors.entries[0];
-        w.place(e.zone.x + e.zone.w / 2, e.zone.y + e.zone.h / 2);
-      });
-      await shot(page, 'door-shared', size);
-      /* time it inside the page, so a slow phone's round trips do not count */
-      const passed = await page.evaluate(() => new Promise((resolve) => { const w = window.__stardust.onfoot.world, t0 = performance.now(); const id = setInterval(() => { window.__stardust.presence.hooks.tick(0.02); if (w.map.id !== 'duchess-holodeck') { clearInterval(id); resolve((performance.now() - t0) / 1000); } else if (performance.now() - t0 > 8000) { clearInterval(id); resolve(null); } }, 20); }));
-      assert.ok(passed != null && passed < 2.5, `the player got through the shared door (${passed} s)`);
+      // The same crossing twice in one page (so a slow machine slows both the same): alone, then with both crew walking through the door.
+      const cross = async (withCrew) => {
+        await go(page, 'duchess-holodeck');
+        await page.evaluate((withCrew) => {
+          const p = window.__stardust.presence, w = window.__stardust.onfoot.world;
+          p.ledger.settle('nessa', 'duchess-holodeck'); p.ledger.settle('pip', 'duchess-holodeck');
+          if (withCrew) { p.ledger.send('nessa', 'duchess-bridge'); p.ledger.send('pip', 'duchess-bridge'); }
+          else { p.ledger.settle('nessa', 'duchess-mess'); p.ledger.settle('pip', 'duchess-mess'); }
+          const e = w.doors.entries[0];
+          w.place(e.zone.x + e.zone.w / 2, e.zone.y + e.zone.h / 2);
+        }, withCrew);
+        if (withCrew) await shot(page, 'door-shared', size);
+        /* time it inside the page, so round trips do not count */
+        return page.evaluate(() => new Promise((resolve) => { const w = window.__stardust.onfoot.world, t0 = performance.now(); const id = setInterval(() => { window.__stardust.presence.hooks.tick(0.02); if (w.map.id !== 'duchess-holodeck') { clearInterval(id); resolve((performance.now() - t0) / 1000); } else if (performance.now() - t0 > 12000) { clearInterval(id); resolve(null); } }, 20); }));
+      };
+      const alone = await cross(false);
+      const crowded = await cross(true);
+      assert.ok(alone != null && crowded != null, `both crossings finished (${alone}, ${crowded})`);
+      assert.ok(crowded - alone <= 1, `the crew in the door cost the player ${(crowded - alone).toFixed(2)} s (${crowded.toFixed(2)} s against ${alone.toFixed(2)} s alone)`);
       assert.deepEqual(errors, []);
     } finally { await context.close(); await browser.close(); server.close(); }
   });

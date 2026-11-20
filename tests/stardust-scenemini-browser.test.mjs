@@ -137,7 +137,7 @@ const SCENES = [
       await walkTo(page, 'duchess-bridge'); await readUntilChoices(page);
       await pick(page, 'Pull the arm housing'); await pick(page, 'On to the next job.'); await pick(page, 'Scan the lane carefully.'); await pick(page, 'Back to the bridge console.');
       await readUntilChoices(page); await pick(page, 'Go find Pip'); await settle(page, 500);
-      await walkTo(page, 'duchess-engine'); await readUntilChoices(page);
+      await walkTo(page, 'duchess-engine'); await readUntilChoices(page, 110); /* opening track A: the beat waits for Tull to walk down to the engine room (about 15 s at the crew's pace) plus a margin */
     } },
 ];
 
