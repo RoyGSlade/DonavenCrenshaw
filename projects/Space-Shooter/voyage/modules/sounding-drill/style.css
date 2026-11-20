@@ -107,7 +107,7 @@
 .m-sounding-drill .sd-row.is-lost .sd-row-img{filter:grayscale(1) opacity(.5)}
 .m-sounding-drill .sd-line{font:700 13px Consolas,monospace;letter-spacing:.06em;color:#81e6df}
 .m-sounding-drill .sd-card-btns{display:flex;gap:10px}
-.m-sounding-drill .sd-card-btns .ui-btn{flex:1}
+.m-sounding-drill .sd-card-btns .ui-btn{flex:1;white-space:nowrap;letter-spacing:.04em;font-size:12px}
 @media (prefers-reduced-motion:reduce){.m-sounding-drill .sd-card,.m-sounding-drill .sd-claw.is-ready,.m-sounding-drill .sd-cell.is-crit{animation:none}}
 
 .m-sounding-drill .sd-claw.is-armed{color:#2a1408;filter:drop-shadow(0 0 10px rgba(255,173,114,.9)) hue-rotate(-155deg) saturate(1.6)}

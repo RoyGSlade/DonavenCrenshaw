@@ -286,7 +286,7 @@ export function mountGame(stage, ctx, { fixtures, items, rock, resume, quick, on
         // the rock still to clear round a find: what is cut is gone from the picture, and the rim of what is left is drawn bright
         if (g.cut[cI]) continue;
         const rem = (q) => R.feat[q] === F.SHELL && R.findAt[q] === R.findAt[cI] && !g.cut[q];
-        a = (rem(cI - 1) && rem(cI + 1) && rem(cI - R.gw) && rem(cI + R.gw)) ? 0.3 : 0.85;
+        a = (rem(cI - 1) && rem(cI + 1) && rem(cI - R.gw) && rem(cI + R.gw)) ? 0.16 : 1;
       }
       a *= lit * (0.78 + 0.22 * hash(cI * 31 + fr));
       const o = cI * 4;
@@ -528,6 +528,7 @@ export function mountGame(stage, ctx, { fixtures, items, rock, resume, quick, on
     R.finds.forEach((f, i) => { const fr = isFreed(f); if (fr && !freedBefore[i] && phase === 'play') { sound.freed(); burst(f, 22, 110); navigator.vibrate?.([20, 30, 20]); flash = Math.max(flash, 0.5); } freedBefore[i] = fr; });
     if (g.over && phase === 'play') {
       sound.drill(false);
+      armed = 0; clawBtn.textContent = 'Bring the claw'; clawBtn.classList.remove('is-armed');
       const ok = resultOf(g).success;
       if (ok) { phase = 'claw'; phaseT = 0; sound.claw(); } else { phase = 'reveal'; phaseT = 0; }
       root.dataset.phase = phase;
