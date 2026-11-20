@@ -175,6 +175,19 @@ test('sounding drill in the browser: desktop (mouse and keys) and phone (touch)'
       await shot('5-hard-vein-bit-hot'); await ptr.up();
       const slow = await state(page); assert.ok(slow.heat > 30, 'the bit heated in the vein');
 
+      // ------------------------------------------------------------------ the three paths, seen: the same rock at 0 points and at 9
+      for (const pts of [0, 9]) {
+        await page.goto(url(`auto=1&seed=5&awareness=${pts}&inspection=${pts}&trace=${pts}`));
+        await page.waitForSelector('.m-sounding-drill canvas'); await page.waitForTimeout(400);
+        const rules = await page.evaluate(() => { const r = document.querySelector('.m-sounding-drill').__game.rules; return { reach: r.reach, hold: r.hold, shell: r.shellShown, glow: r.afterglow }; });
+        if (pts === 9) assert.ok(rules.shell && rules.hold === 3.75 && Math.abs(rules.glow - 0.45) < 1e-9, 'the paths are in the game');
+        else assert.ok(!rules.shell && rules.hold === 1.5 && rules.glow === 0);
+        rules.reach9 = rules.reach;
+        await drive(page, ptr, phone, { bot: 'perfect', maxMs: 40000, tickMs: 25, until: async (s) => s.share > 0.3 });
+        await ptr.up(); await page.waitForTimeout(450);
+        await shot(pts ? '12-points-9-outline-and-afterglow' : '12-points-0-same-moment');
+      }
+
       // ------------------------------------------------------------------ a whole pass, played through real input
       await page.goto(url('auto=1&seed=5&tier=0'));
       await page.waitForSelector('.m-sounding-drill canvas'); await page.waitForTimeout(400);
