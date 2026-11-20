@@ -409,7 +409,7 @@ function boot(session = { mode: 'local' }) {
     // A beat waits for the dice of the step before it to land, then plays in the dialogue box.
     dialogue: (v, pick) => {
       const wait = Math.max(0, lastRoll + 1400 - Date.now());
-      setTimeout(() => jobTalk.beat(v).then((i) => { if (i >= 0) pick(i); else if (i === -1) toast(OFFERS_WORDS.paused); }), wait);
+      setTimeout(() => jobTalk.beat(v).then((i) => { if (i >= 0) pick(i); else if (i === -1) { toast(OFFERS_WORDS.paused); slice?.snooze(); } }), wait);
     },
     card: (kind, v) => (slice && kind === 'end' && v ? slice.endCard(v, () => jobCard.show(kind)) : jobCard.show(kind)),
     // launch slice: a beat plays in its room, an on-foot fight runs on the Duchess's floor, a closed result card starts the next scene.
@@ -577,6 +577,7 @@ function boot(session = { mode: 'local' }) {
     boardOpen: () => place.current === 'board',
     jobBusy: () => jobTalk.busy || jobCard.open,
     onContinue: () => jobs.resume(),
+    canContinue: () => !slicing, /* the opening starts its own beats (slice/director.js watch) */
   });
   const controls = createControlsCard({ root: document.body, touch });
   const pause = createPause({
@@ -688,7 +689,8 @@ function boot(session = { mode: 'local' }) {
   // A job in progress waits on the tracker and the datapad (Continue); nothing pops up.
   // Launch slice: the opening picks its scene up (a reload lands back in the beat) or starts the next one.
   if (slicing) {
-    slice = createSliceDirector({ store, jobs, toast, world: () => onfoot?.world || null, fightIn: (setup) => onfoot.fight(setup), presence });
+    slice = createSliceDirector({ store, jobs, toast, world: () => onfoot?.world || null, fightIn: (setup) => onfoot.fight(setup), presence, busy: () => jobTalk.busy || jobCard.open || screenBusy() });
+    setInterval(() => slice.watch(), 250);
     sealClassicLinks();
     ready.then(() => {
       // A signed-in account whose own save is an older hangar game replaces the fresh one: leave the Duchess for the hangar.

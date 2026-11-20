@@ -22,7 +22,7 @@ const COLLAPSE_KEY = 'stardust.voyage.tracker.v1';
  */
 // jobBusy(): a job's beat or card is up right now. onContinue(): pick the job back up (round 3:
 // a job you have taken plays in the world; the tracker's Continue is how you get back to it).
-export function createTracker({ root, store, bus = null, world = () => null, stationInfo = () => null, boardOpen = () => false, jobBusy = () => false, onContinue = () => {}, touch = false }) {
+export function createTracker({ root, store, bus = null, world = () => null, stationInfo = () => null, boardOpen = () => false, jobBusy = () => false, onContinue = () => {}, canContinue = () => true, touch = false }) {
   let collapsed = (() => { try { return localStorage.getItem(COLLAPSE_KEY) === '1'; } catch { return false; } })();
   let last = '';
   root.className = 'dp-tracker';
@@ -72,7 +72,7 @@ export function createTracker({ root, store, bus = null, world = () => null, sta
       // NEXT plus the step text: the line older tests and screen readers read.
       el('p', { class: 'dp-tracker-now' }, el('b', { text: 'NEXT' }), stepMark('now', 'dp-tracker-star') || icon('objective', 'dp-tracker-star'), el('span', { text: now.text }), now.where ? el('small', { text: now.where }) : null),
       collapsed ? null : el('ol', { class: 'dp-tracker-next' }, next.map((s) => el('li', { dataset: { step: s.id } }, stepMark('next', 'dp-tracker-todo') || el('i', { 'aria-hidden': 'true' }), el('span', { text: s.text })))),
-      track.kind === 'job' && !jobBusy() ? el('button', { type: 'button', class: 'ui-btn primary dp-tracker-go', id: 'dp-continue', text: T.resume, on: { click: () => onContinue() } }) : null,
+      track.kind === 'job' && !jobBusy() && canContinue() ? el('button', { type: 'button', class: 'ui-btn primary dp-tracker-go', id: 'dp-continue', text: T.resume, on: { click: () => onContinue() } }) : null,
     ].filter(Boolean)); // replaceChildren would print a null as the word "null"
   }
 
