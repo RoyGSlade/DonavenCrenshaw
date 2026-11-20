@@ -167,10 +167,17 @@ test('sounding drill in the browser: desktop (mouse and keys) and phone (touch)'
       // ------------------------------------------------------------------ a hard vein: slow, grinding, the bit heats
       await page.goto(url('auto=1&seed=3&tier=-2'));
       await page.waitForSelector('.m-sounding-drill canvas'); await page.waitForTimeout(400);
-      const vein = await page.evaluate(() => { const root = document.querySelector('.m-sounding-drill'), g = root.__game, v = root.__view, R = g.rock, r = v.canvas.getBoundingClientRect(); let best = null, bd = 1e9; for (let i = 0; i < R.kind.length; i++) if (R.kind[i] === 2) { const x = (i % R.gw + 0.5) * R.cell, y = (((i / R.gw) | 0) + 0.5) * R.cell, d = Math.hypot(x - g.bit.x, y - g.bit.y); if (d < bd) { bd = d; best = { x, y }; } } const P = (x, y) => [r.left + (x - v.win.x) * v.scale, r.top + (y - v.win.y) * v.scale]; return { from: P(g.bit.x, g.bit.y), to: P(best.x + (R.cx - best.x) * 0.2, best.y + (R.cy - best.y) * 0.2) }; });
+      const vein = await page.evaluate(() => { const root = document.querySelector('.m-sounding-drill'), g = root.__game, v = root.__view, R = g.rock, r = v.canvas.getBoundingClientRect(); let best = null, bd = 1e9; for (let i = 0; i < R.kind.length; i++) if (R.kind[i] === 2) { const x = (i % R.gw + 0.5) * R.cell, y = (((i / R.gw) | 0) + 0.5) * R.cell, d = Math.hypot(x - g.bit.x, y - g.bit.y); if (d < bd) { bd = d; best = { x, y }; } } const P = (x, y) => [r.left + (x - v.win.x) * v.scale, r.top + (y - v.win.y) * v.scale]; return { from: P(g.bit.x, g.bit.y), to: P(best.x + (R.cx - best.x) * 0.45, best.y + (R.cy - best.y) * 0.45) }; });
       await ptr.to(vein.from[0], vein.from[1] + lift, true);
-      for (let i = 1; i <= 40; i++) { await ptr.to(vein.from[0] + (vein.to[0] - vein.from[0]) * i / 40, vein.from[1] + (vein.to[1] - vein.from[1]) * i / 40 + lift, true); await page.waitForTimeout(40); }
-      await page.waitForFunction(() => { const g = document.querySelector('.m-sounding-drill').__game; return g.frontKind === 2 && g.drilling && g.heat > 32; }, null, { timeout: 15000 });
+      // push on through whatever is in the way and watch for the bit to be grinding in a vein (state read and acted on in the same loop)
+      let grinding = false;
+      for (let i = 1; i <= 120 && !grinding; i++) {
+        const f = Math.min(1, i / 40);
+        await ptr.to(vein.from[0] + (vein.to[0] - vein.from[0]) * f, vein.from[1] + (vein.to[1] - vein.from[1]) * f + lift, true);
+        await page.waitForTimeout(40);
+        grinding = await page.evaluate(() => { const g = document.querySelector('.m-sounding-drill').__game; return g.frontKind === 2 && g.drilling && g.heat > 32; });
+      }
+      assert.ok(grinding, 'the bit ground into a hard vein and heated');
       assert.match(await page.locator('.sd-status').innerText(), /vein|hot/i, 'the words say so');
       await shot('5-hard-vein-bit-hot'); await ptr.up();
       const slow = await state(page); assert.ok(slow.heat > 30, 'the bit heated in the vein');
