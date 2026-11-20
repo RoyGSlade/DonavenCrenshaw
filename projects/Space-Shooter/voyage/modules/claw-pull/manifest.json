@@ -1,0 +1,64 @@
+{
+  "id": "claw-pull",
+  "version": "0.1.0",
+  "kind": "minigame",
+  "title": "Claw",
+  "verb": "Bring the claw",
+  "skill": "piloting",
+  "tabletop": "Handling",
+  "paths": [
+    {
+      "id": "control",
+      "division": "Control",
+      "tabletopSkill": "Handling"
+    },
+    {
+      "id": "maneuver",
+      "division": "Maneuver",
+      "tabletopSkill": "Handling"
+    },
+    {
+      "id": "pursuit",
+      "division": "Pursuit",
+      "tabletopSkill": "Handling"
+    }
+  ],
+  "path_aliases": {
+    "handling": "control",
+    "boost": "maneuver",
+    "landing": "pursuit"
+  },
+  "where": [
+    "loading bay (on the rock you just drilled)",
+    "trainer"
+  ],
+  "length_s": [
+    18,
+    45
+  ],
+  "quick_length_s": [
+    6,
+    14
+  ],
+  "inputs": [
+    "seed",
+    "tier",
+    "points",
+    "quick",
+    "context.rock",
+    "context.items"
+  ],
+  "outputs": [
+    "success",
+    "grade",
+    "pulled",
+    "dropped",
+    "knocks"
+  ],
+  "art": [
+    "art/items/ore-chunk.webp",
+    "art/kit/panel.webp"
+  ],
+  "status": "draft",
+  "contract": "1.1"
+}

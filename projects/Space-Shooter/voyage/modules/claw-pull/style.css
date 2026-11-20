@@ -1,0 +1,131 @@
+/* Claw. Everything is scoped under .m-claw-pull. Hangar-kit frames come from art/kit/ (copied, not imported).
+   Pads and buttons: the plain kit frame with a drop-shadow glow; no box-shadow, no hover or pressed art. */
+.m-claw-pull{--cp-amber:#ffc36b;--cp-cyan:#81e6df;--cp-hot:#ff8f6a;--cp-text:#eaf4f5;--cp-muted:#9db3c2;--cp-glass:#0b1724;
+  position:absolute;inset:0;display:grid;grid-template-rows:auto minmax(0,1fr) auto;grid-template-columns:minmax(0,1fr);
+  background:radial-gradient(120% 90% at 50% 40%,#0a141d 0%,#04070b 70%);color:var(--cp-text);font:600 14px/1.35 Inter,"Segoe UI",sans-serif;
+  overflow:hidden;outline:none;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+.m-claw-pull *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+.m-claw-pull .ui-nameplate{border:solid transparent;border-width:12px 14px 13px 24px;border-image:url(art/kit/nameplate.webp) 26 29 28 52 fill / 12px 14px 13px 24px stretch;background:none}
+.m-claw-pull .ui-card{border:solid transparent;border-width:13px 18px 12px 18px;border-image:url(art/kit/panel-light.webp) 26 37 23 38 fill / 13px 18px 12px 18px stretch;background:none}
+.m-claw-pull .ui-btn{font:700 13px Inter,"Segoe UI",sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--cp-text);min-height:52px;padding:0 6px;cursor:pointer;background:none;border-radius:0;
+  border:solid transparent;border-width:12px 19px;border-image:url(art/kit/button.webp) 24 38 fill / 12px 19px stretch;filter:drop-shadow(0 0 4px rgba(255,195,107,.22));touch-action:manipulation;transition:filter .15s}
+.m-claw-pull .ui-btn.primary{color:#241503;border-image:url(art/kit/button-primary.webp) 24 34 24 21 fill / 12px 17px 12px 11px stretch;filter:drop-shadow(0 0 6px rgba(255,195,107,.4))}
+.m-claw-pull .ui-btn:focus-visible{outline:3px solid var(--cp-cyan);outline-offset:3px}
+.m-claw-pull .ui-btn:disabled{opacity:.55;cursor:default}
+
+/* top bar */
+.m-claw-pull .cp-top{display:flex;align-items:center;gap:10px;padding:8px 92px 6px 10px;min-height:56px}
+.m-claw-pull .cp-title{display:flex;gap:8px;align-items:baseline;padding:0 10px 0 4px;white-space:nowrap;flex:none}
+.m-claw-pull .cp-title b{font:700 12px Consolas,monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--cp-amber)}
+.m-claw-pull .cp-title span{font:700 10px Consolas,monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--cp-cyan)}
+/* the grip: a word and a dot, shown while a load is in the jaws (the claw itself shows it too: tight, straining, slipping) */
+.m-claw-pull .cp-grip{display:flex;align-items:center;gap:8px;margin-left:auto;padding:5px 12px;border-radius:15px;background:rgba(6,14,22,.8);border:1px solid #2a4256;font:700 13px Inter,sans-serif;letter-spacing:.05em;transition:border-color .2s,color .2s}
+.m-claw-pull .cp-grip[hidden]{display:none}
+.m-claw-pull .cp-grip-dot{width:10px;height:10px;border-radius:50%;background:#7ee8a0;box-shadow:none;filter:drop-shadow(0 0 5px #7ee8a0);transition:background .2s,filter .2s}
+.m-claw-pull .cp-grip[data-level=mid]{border-color:#7a5a36;color:var(--cp-amber)}
+.m-claw-pull .cp-grip[data-level=mid] .cp-grip-dot{background:var(--cp-amber);filter:drop-shadow(0 0 5px var(--cp-amber))}
+.m-claw-pull .cp-grip[data-level=low]{border-color:#8a4a3a;color:var(--cp-hot);animation:cp-low .6s ease-in-out infinite}
+.m-claw-pull .cp-grip[data-level=low] .cp-grip-dot{background:var(--cp-hot);filter:drop-shadow(0 0 6px var(--cp-hot))}
+@keyframes cp-low{50%{opacity:.55}}
+
+/* the scope: the canvas fills it */
+.m-claw-pull .cp-scope{position:relative;min-height:0;min-width:0;margin:0 6px;display:flex}
+.m-claw-pull .cp-board{position:relative;flex:1;min-width:0;min-height:0;line-height:0}
+.m-claw-pull .cp-canvas{display:block;touch-action:none;cursor:crosshair;border-radius:6px;box-shadow:none;outline:1px solid #1d3347;outline-offset:-1px;background:#04070b;position:absolute;inset:0}
+.m-claw-pull .cp-status{position:absolute;left:50%;bottom:10px;line-height:1.35;transform:translateX(-50%);padding:5px 14px;border-radius:14px;background:rgba(5,12,19,.74);border:1px solid #24394b;
+  font:700 14px Inter,"Segoe UI",sans-serif;letter-spacing:.05em;color:var(--cp-text);white-space:nowrap;max-width:calc(100% - 16px);overflow:hidden;text-overflow:ellipsis;pointer-events:none;transition:color .15s,border-color .15s}
+.m-claw-pull .cp-status[data-tone=warn]{color:var(--cp-hot);border-color:#8a4a3a}
+.m-claw-pull .cp-status[data-tone=good]{color:var(--cp-amber);border-color:#7a5a36}
+.m-claw-pull .cp-intro{position:absolute;left:50%;top:10px;line-height:1.35;transform:translateX(-50%);width:min(360px,calc(100% - 24px));padding:10px 14px;border-radius:8px;background:rgba(5,12,19,.84);border:1px solid #2a4256;pointer-events:none;
+  display:grid;gap:3px;text-align:center;transition:opacity .6s}
+.m-claw-pull .cp-intro b{font:700 11px Consolas,monospace;letter-spacing:.16em;text-transform:uppercase;color:var(--cp-amber)}
+.m-claw-pull .cp-intro span{font:500 13px/1.4 Inter,"Segoe UI",sans-serif;color:var(--cp-text)}
+.m-claw-pull .cp-intro.is-gone{opacity:0}
+
+/* the find and the pads: a strip on a phone, a rail on a wide screen */
+.m-claw-pull .cp-side{display:flex;flex-direction:column;gap:6px;padding:6px 8px calc(8px + env(safe-area-inset-bottom,0px))}
+.m-claw-pull .cp-find{display:grid;grid-template-columns:44px minmax(0,1fr);grid-template-areas:"glyph small" "glyph word" "glyph pips";column-gap:10px;align-items:center;min-width:0;min-height:44px}
+.m-claw-pull .cp-find small{grid-area:small;font:700 10px Consolas,monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--cp-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.m-claw-pull .cp-glyph{grid-area:glyph;width:44px;height:44px;--find:#6f8392}
+.m-claw-pull .cp-ring-bg{fill:none;stroke:#1a2c3b;stroke-width:6}
+.m-claw-pull .cp-ring-fg{fill:none;stroke:var(--find);stroke-width:6;stroke-linecap:round;transition:stroke-dashoffset .3s,stroke .4s;filter:drop-shadow(0 0 3px var(--find))}
+.m-claw-pull .cp-gem{fill:none;stroke:var(--find);stroke-width:2;stroke-linejoin:round;opacity:.9}
+.m-claw-pull .cp-find-word{grid-area:word;font:700 13px Inter,"Segoe UI",sans-serif;color:var(--cp-text);min-width:0}
+.m-claw-pull .cp-find.is-free .cp-find-word{color:#9fe870}
+.m-claw-pull .cp-find[data-cracks="1"] .cp-ring-fg,.m-claw-pull .cp-find[data-cracks="2"] .cp-ring-fg{stroke-dasharray:207.3}
+.m-claw-pull .cp-find[data-cracks="2"] .cp-gem{stroke:var(--cp-hot)}
+.m-claw-pull .cp-pips{grid-area:pips;display:flex;gap:6px;min-height:10px;margin-top:2px}
+.m-claw-pull .cp-pip{width:9px;height:9px;transform:rotate(45deg);border:1.5px solid #4a6275;background:transparent;transition:background .3s,border-color .3s}
+.m-claw-pull .cp-pip.is-ready{border-color:var(--c);background:color-mix(in srgb,var(--c) 35%,transparent)}
+.m-claw-pull .cp-pip.is-lying{border-color:var(--cp-hot);background:color-mix(in srgb,var(--cp-hot) 40%,transparent)}
+.m-claw-pull .cp-pip.is-out{background:var(--c);border-color:var(--c)}
+.m-claw-pull .cp-pip.is-lost{border-color:#7d8f9d;background:#3c4a55}
+.m-claw-pull .cp-actions{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:10px;align-items:stretch}
+.m-claw-pull .cp-grab{min-height:60px;white-space:nowrap;padding:0 4px;letter-spacing:.05em;font-size:12px}
+.m-claw-pull .cp-grab.is-ready{animation:cp-ready 1.1s ease-in-out infinite}
+@keyframes cp-ready{50%{filter:drop-shadow(0 0 13px rgba(255,195,107,.95))}}
+.m-claw-pull .cp-grab.is-no,.m-claw-pull .cp-reel.is-no{animation:cp-no .4s}
+@keyframes cp-no{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.m-claw-pull .cp-reel{display:flex;align-items:center;justify-content:center;gap:10px;min-height:60px;touch-action:none;--glow:0}
+.m-claw-pull .cp-reel.is-off{opacity:.62}
+.m-claw-pull .cp-reel.is-ready{animation:cp-ready 1.1s ease-in-out infinite}
+.m-claw-pull .cp-reel.is-held{filter:drop-shadow(0 0 calc(7px + 9px * var(--glow)) rgba(255,214,150,.95))}
+.m-claw-pull .cp-reel.is-bay{letter-spacing:.04em}
+.m-claw-pull .cp-drum{width:30px;height:30px;flex:none}
+.m-claw-pull .cp-drum-rim{fill:#18242e;stroke:#9fb3c1;stroke-width:2.4}
+.m-claw-pull .cp-drum-hub{fill:var(--cp-amber)}
+.m-claw-pull .cp-drum-spoke{stroke:#9fb3c1;stroke-width:2}
+.m-claw-pull .cp-reel.is-bay .cp-drum{display:none}
+.m-claw-pull .cp-reel-text{display:grid;gap:3px;justify-items:start}
+.m-claw-pull .cp-reel-label{white-space:nowrap}
+.m-claw-pull .cp-lamps{display:flex;gap:4px}
+.m-claw-pull .cp-lamps i{width:16px;height:5px;border-radius:2px;background:#25323d;transition:background .12s,filter .12s}
+.m-claw-pull .cp-lamps i.on{background:var(--cp-amber);filter:drop-shadow(0 0 4px var(--cp-amber))}
+.m-claw-pull .cp-lamps i:nth-child(3).on{background:var(--cp-hot);filter:drop-shadow(0 0 4px var(--cp-hot))}
+.m-claw-pull .cp-reel.is-bay .cp-lamps{display:none}
+
+/* wide screens: the scope takes the left, the find and the pads stand in a rail on the right */
+.m-claw-pull.is-wide{grid-template-columns:minmax(0,1fr) 270px;grid-template-rows:auto minmax(0,1fr)}
+.m-claw-pull.is-wide .cp-top{grid-column:1/3;padding-right:110px}
+.m-claw-pull.is-wide .cp-side{grid-column:2;grid-row:2;justify-content:space-between;padding:10px 14px 18px 8px}
+.m-claw-pull.is-wide .cp-find{grid-template-columns:1fr;grid-template-areas:"small" "glyph" "word" "pips";justify-items:center;text-align:center;padding:14px 8px;border:1px solid #1f3446;border-radius:8px;background:rgba(8,18,27,.6)}
+.m-claw-pull.is-wide .cp-glyph{width:104px;height:104px}
+.m-claw-pull.is-wide .cp-pips{justify-content:center}
+.m-claw-pull.is-wide .cp-find-word{font-size:15px}
+.m-claw-pull.is-wide .cp-actions{grid-template-columns:1fr;gap:12px}
+.m-claw-pull.is-wide .cp-grab,.m-claw-pull.is-wide .cp-reel{min-height:68px}
+.m-claw-pull.is-wide .cp-scope{margin:0 0 10px 12px}
+@media (max-width:480px){
+  .m-claw-pull .cp-intro{top:122px}
+  .m-claw-pull .cp-top{gap:6px;padding:6px 88px 2px 8px}
+  .m-claw-pull .cp-title b{font-size:11px}
+  .m-claw-pull .cp-grip{font-size:12px;padding:4px 10px}
+}
+
+/* the result card */
+.m-claw-pull .cp-card-wrap{position:absolute;inset:0;display:flex;align-items:flex-end;justify-content:center;padding:12px;background:linear-gradient(180deg,rgba(4,7,11,0) 30%,rgba(4,7,11,.8));z-index:5}
+.m-claw-pull .cp-card-wrap[hidden]{display:none}
+.m-claw-pull.is-wide .cp-card-wrap{align-items:center;justify-content:flex-end;padding-right:24px;background:linear-gradient(270deg,rgba(4,7,11,.84),rgba(4,7,11,0) 60%)}
+.m-claw-pull .cp-card{width:min(460px,100%);padding:6px 8px 8px;display:grid;gap:8px;color:#e9f2f4;animation:cp-rise .35s cubic-bezier(.2,.8,.2,1);filter:drop-shadow(0 0 12px rgba(0,0,0,.6))}
+@keyframes cp-rise{from{opacity:0;transform:translateY(24px)}}
+.m-claw-pull .cp-card-head{display:grid;gap:2px}
+.m-claw-pull .cp-card-head b{font:700 20px Inter,sans-serif;letter-spacing:.02em;color:#eaf4f5}
+.m-claw-pull .cp-card.is-ok .cp-card-head b{color:#9fe870}
+.m-claw-pull .cp-card.is-bad .cp-card-head b{color:var(--cp-hot)}
+.m-claw-pull .cp-card-head span{font:500 13px/1.4 Inter,sans-serif;color:#c5d6de}
+.m-claw-pull .cp-rows{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.m-claw-pull .cp-row{display:flex;gap:10px;align-items:center;padding:4px 6px;border-radius:6px;background:rgba(255,195,107,.07)}
+.m-claw-pull .cp-row-img{width:40px;height:40px;object-fit:contain;flex:none;filter:drop-shadow(0 0 4px rgba(0,0,0,.35))}
+.m-claw-pull .cp-row-dot{width:14px;height:14px;border-radius:50%;background:#7d8f9d;flex:none;margin:0 13px}
+.m-claw-pull .cp-row-name{display:grid;min-width:0;flex:1}
+.m-claw-pull .cp-row-name b{font:700 14px Inter,sans-serif;color:#eaf4f5}
+.m-claw-pull .cp-row-name small{font:600 12px Inter,sans-serif;color:#9db3c2}
+.m-claw-pull .cp-row.is-out .cp-row-name small{color:#9fe870}
+.m-claw-pull .cp-row.is-lost .cp-row-name small{color:#ff8a70}
+.m-claw-pull .cp-row:not(.is-out) .cp-row-img{filter:grayscale(.85) opacity(.5)}
+.m-claw-pull .cp-q{display:block;width:54px;height:6px;border-radius:3px;background:#1b2a36;overflow:hidden;flex:none}
+.m-claw-pull .cp-q i{display:block;height:100%;background:linear-gradient(90deg,var(--cp-amber),#9fe870)}
+.m-claw-pull .cp-line{font:700 13px Consolas,monospace;letter-spacing:.06em;color:var(--cp-amber)}
+.m-claw-pull .cp-card-btns{display:flex;gap:10px}
+.m-claw-pull .cp-card-btns .ui-btn{flex:1;white-space:nowrap;letter-spacing:.04em;font-size:12px}
+@media (prefers-reduced-motion:reduce){.m-claw-pull .cp-card,.m-claw-pull .cp-grab.is-ready,.m-claw-pull .cp-reel.is-ready,.m-claw-pull .cp-grip[data-level=low]{animation:none}}

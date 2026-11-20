@@ -301,8 +301,6 @@ function recordPath(g, x, y) {
 
 /** Plain words about what is near, going in. */
 function nearbyWords(g) {
-  if (g.say.t > 0) return;
-  const B = g.board;
   let best = null;
   g.finds.forEach((f, i) => {
     if (f.state !== 'rock' && f.state !== 'lying') return;
@@ -310,7 +308,6 @@ function nearbyWords(g) {
     if (!best || d < best.d) best = { d, i, f };
   });
   g.nearest = best;
-  void B;
 }
 
 /** The player closes the jaws. Returns { ok, why } and says it in words. */

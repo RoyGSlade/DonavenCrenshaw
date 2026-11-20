@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Claw: test page</title>
+<style>
+  :root{color-scheme:dark}
+  body{margin:0;background:#070d14;color:#eaf4f5;font:14px/1.45 Inter,"Segoe UI",sans-serif}
+  main{max-width:640px;margin:0 auto;padding:20px 16px 40px}
+  h1{margin:0 0 4px;font-size:22px}
+  p.sub{margin:0 0 16px;color:#9db3c2}
+  form{display:grid;gap:12px;border:1px solid #223548;border-radius:8px;padding:14px;background:#0b1724}
+  label{display:grid;grid-template-columns:130px 1fr 40px;gap:8px;align-items:center;font:12px Consolas,monospace;letter-spacing:.06em;color:#b5c8d5}
+  label.wide{grid-template-columns:130px 1fr}
+  input,select,textarea{font:13px Consolas,monospace;background:#08121b;color:#eaf4f5;border:1px solid #2c4256;border-radius:4px;padding:6px}
+  output{color:#ffc36b;text-align:right}
+  .row{display:flex;gap:10px;flex-wrap:wrap}
+  button{font:700 13px Inter,sans-serif;letter-spacing:.06em;min-height:44px;padding:0 18px;border-radius:6px;border:1px solid #3f5566;background:#12283a;color:#eaf4f5;cursor:pointer}
+  button.go{background:#ffc36b;color:#241503;border-color:#ffc36b}
+  pre{white-space:pre-wrap;word-break:break-word;background:#08121b;border:1px solid #223548;border-radius:6px;padding:10px;font:12px Consolas,monospace;color:#b5c8d5;max-height:260px;overflow:auto}
+  /* The host stage: a full-screen overlay with a Leave button, as the game opens every module. */
+  #stage-host{position:fixed;inset:0;z-index:50;background:#000;display:none}
+  #stage-host.open{display:block}
+  #stage{position:absolute;inset:0}
+  #leave{position:absolute;top:8px;right:8px;z-index:60;min-height:40px;padding:0 14px}
+</style>
+</head>
+<body>
+<main>
+  <h1>Claw</h1>
+  <p class="sub">Test page for the module. Sets the roll and opens the game full screen, the way the game does. The board is a real Sounding drill result: pick one, or let the seed pick.</p>
+  <form id="panel" onsubmit="return false">
+    <label class="wide">Seed <input id="seed" type="number" value="1" min="1"></label>
+    <label class="wide">Roll <select id="tier"><option value="-2">Rough</option><option value="-1">Shaky</option><option value="0" selected>Steady</option><option value="1">Good</option><option value="2">Smooth</option></select></label>
+    <label>Control <input id="control" type="range" min="0" max="9" value="0"><output>0</output></label>
+    <label>Maneuver <input id="maneuver" type="range" min="0" max="9" value="0"><output>0</output></label>
+    <label>Pursuit <input id="pursuit" type="range" min="0" max="9" value="0"><output>0</output></label>
+    <label class="wide">Quick mode <input id="quick" type="checkbox"></label>
+    <label class="wide">Drill result <select id="fixture"><option value="">from the seed</option></select></label>
+    <label class="wide">Context (JSON) <textarea id="context" rows="3" placeholder='{"rock":{...a drill result...},"items":{...}}'></textarea></label>
+    <div class="row"><button class="go" id="open" type="button">Bring the claw</button></div>
+  </form>
+  <h2 style="font-size:14px;margin:18px 0 6px">Last result</h2>
+  <pre id="out">none yet</pre>
+</main>
+<div id="stage-host"><button id="leave" type="button">Leave</button><div id="stage"></div></div>
+<script type="module">
+  import { play } from './index.js';
+  import { rleDecode } from './board.js';
+  const $ = (id) => document.getElementById(id);
+  const q = new URLSearchParams(location.search);
+  const fx = await (await fetch('./fixtures.json')).json();
+  for (const r of fx.results) { const o = document.createElement('option'); o.value = r.name; o.textContent = `${r.name}${r.quick ? ' (quick)' : ''}`; $('fixture').append(o); }
+  for (const id of ['control', 'maneuver', 'pursuit']) { const i = $(id), o = i.nextElementSibling; i.addEventListener('input', () => { o.textContent = i.value; }); }
+  const setFrom = (k, id) => { if (q.has(k)) { $(id).value = q.get(k); $(id).dispatchEvent(new Event('input')); } };
+  setFrom('seed', 'seed'); setFrom('tier', 'tier'); setFrom('control', 'control'); setFrom('maneuver', 'maneuver'); setFrom('pursuit', 'pursuit'); setFrom('fixture', 'fixture');
+  if (q.get('quick') === '1') $('quick').checked = true;
+  if (q.has('context')) $('context').value = q.get('context');
+  let running = null, sounds = [];
+  // The host plays the module's named sounds through ctx.sound; here they are only logged (the module makes its own sound in audio.js).
+  async function open() {
+    if (running) return;
+    const host = $('stage-host'), stage = $('stage');
+    host.classList.add('open'); document.body.style.overflow = 'hidden';
+    let context = {}; try { context = $('context').value.trim() ? JSON.parse($('context').value) : {}; } catch { context = {}; }
+    const pick = $('fixture').value;
+    if (pick && !context.rock) { const r = fx.results.find((x) => x.name === pick); if (r) context = { ...context, rock: { finds: r.finds, tunnel: { ...r.tunnel, rows: rleDecode(r.tunnel.rle) } } }; }
+    sounds = []; window.__sounds = sounds;
+    const ctx = {
+      seed: +$('seed').value || 1, tier: +$('tier').value, quick: $('quick').checked, mode: 'field', level: 1, context,
+      points: { control: +$('control').value, maneuver: +$('maneuver').value, pursuit: +$('pursuit').value },
+      onLeave: (fn) => { window.__leave = fn; }, sound: (id) => { sounds.push(id); }, reducedMotion: () => matchMedia('(prefers-reduced-motion: reduce)').matches,
+    };
+    running = play(stage, ctx);
+    window.__running = running;
+    const result = await running;
+    running = null; window.__leave = null; host.classList.remove('open'); document.body.style.overflow = ''; stage.replaceChildren();
+    window.__result = result;
+    $('out').textContent = JSON.stringify(result, null, 1);
+  }
+  $('open').addEventListener('click', open);
+  $('leave').addEventListener('click', () => window.__leave?.());
+  if (q.get('auto') === '1') open();
+</script>
+</body>
+</html>

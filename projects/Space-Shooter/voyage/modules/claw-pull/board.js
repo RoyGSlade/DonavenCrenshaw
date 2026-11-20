@@ -154,6 +154,7 @@ export function probe(B, x, y, max = 40) {
 /** Open the cells a find's core held once it is lifted out. */
 export function openCore(B, i) {
   for (let c = 0; c < B.core.length; c++) if (B.core[c] === i) { B.core[c] = -1; B.open[c] = 1; }
+  B.rev = (B.rev || 0) + 1;   // the view redraws the rock when this changes
 }
 /** Put the core back (the find is set down inside the rock again is never needed, but tests use it). */
 export function coreCells(B, i) { const out = []; for (let c = 0; c < B.core.length; c++) if (B.core[c] === i) out.push(c); return out; }
