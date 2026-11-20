@@ -68,6 +68,7 @@ import { waitingOn } from './slice/rules.js';
 // Opening track A: the crew's ledger, the seal, roles and the fallback talk (slice/presenceRun.js, seal.js, role.js, fallbackLines.js).
 import { createPresenceRun } from './slice/presenceRun.js';
 import { sealReason, sealed, WHY } from './slice/seal.js';
+import { roleOf } from './slice/role.js';
 import { createStatuses, clock } from './status.js';
 // The workbench room: a dev-only test room (?newgame=1&start=workbench), its own files in ./workbench/.
 import { wantsWorkbench } from './workbench/entry.js';
@@ -394,6 +395,7 @@ function boot(session = { mode: 'local' }) {
     take: (quest) => jobs.take(quest),
     onBusy: (on) => { if (on) overlays.add('jobtalk'); else overlays.delete('jobtalk'); holdFloor(); tracker?.render(); },
     name: () => store.get().character?.name || '',
+    role: () => (slicing ? roleOf(store.get()) : null),
   });
   const jobCard = createJobCard({
     root: $('dp-jobcard'), later: $('dp-jobcard-later'), eyebrow: $('dp-jobcard-eyebrow'),
@@ -549,7 +551,7 @@ function boot(session = { mode: 'local' }) {
     }));
   }, 500);
   pad = createDatapad({
-    useItem: (id) => (id === 'coffee' ? onfoot.drinkCoffee(true) : false),
+    pageName: (id) => (slicing && id === 'captain' && roleOf(store.get()) !== 'captain' ? 'You' : null),
     root: document.body, store, bus, toast, touch, skillSave: createSkillSave({ store, economy }),
     world: () => onfoot?.world || null,
     tutorialOn, reducedMotion: still, stationInfo,

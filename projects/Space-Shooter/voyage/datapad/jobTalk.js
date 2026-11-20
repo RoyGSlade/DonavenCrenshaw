@@ -13,6 +13,7 @@ import { QUEST_GIVERS } from '../quests/data/givers.js';
 import { offersAt } from '../quests/offers.js';
 import { lineById, fillLine } from '../story/lines.js';
 import { voiceUrl } from '../story/voice.js';
+import { roleSay } from '../slice/roleSay.js';
 
 const W = OFFERS_DATA.words;
 const fill = (text, vars) => String(text).replace(/\{(\w+)\}/g, (_, k) => (vars[k] ?? ''));
@@ -24,7 +25,7 @@ const readMs = (text) => Math.min(7000, 900 + 55 * String(text || '').length);
  * bus: the story bus. store. take(quest): start the job (jobs.js). onBusy(on): the page
  * holds the floor while a talk or a beat is up. name(): the captain's name for {name}.
  */
-export function createJobTalk({ bus, store, take = () => {}, onBusy = () => {}, name = () => '' }) {
+export function createJobTalk({ bus, store, take = () => {}, onBusy = () => {}, name = () => '', role = () => null }) {
   let seq = 0;
   let asking = null; // { token, resolve }
   let busy = 0;
@@ -38,9 +39,9 @@ export function createJobTalk({ bus, store, take = () => {}, onBusy = () => {}, 
   });
 
   /** Say a line (a line id with its voice, or plain words). Resolves when it is read or skipped. */
-  function say({ id = null, speaker = null, name: who = '', text = '', emotion = 'neutral' }) {
+  function say({ id = null, speaker = null, name: who = '', text = '', emotion = 'neutral', roleAware = false }) {
     const line = id ? lineById(id) : null;
-    const words = line ? fillLine(line.text, { name: name() }) : text;
+    const words = line ? fillLine(line.text, { name: name(), role: role() }) : roleAware && role() ? roleSay(text, role()) : text;
     const s = `job-${++seq}`;
     const audio = id ? voiceUrl(id) : null;
     const durationMs = readMs(words);
@@ -74,11 +75,11 @@ export function createJobTalk({ bus, store, take = () => {}, onBusy = () => {}, 
       const greet = [1, 2, 3].map((n) => `${giver}.greet.${n}`).filter((id) => lineById(id));
       const greetId = greet[Math.floor(Math.random() * greet.length)] || null;
       if (!list.some((o) => o.ok)) {
-        say({ id: null, speaker: giver, name: giverName(giver), text: W.noJobs });
+        say({ id: null, speaker: giver, name: giverName(giver), text: W.noJobs, roleAware: true });
         await ask([...list.map(optionFor), { index: -1, label: W.notNow, kind: 'later' }]);
         return true;
       }
-      say(greetId ? { id: greetId } : { speaker: giver, name: giverName(giver), text: QUEST_GIVERS[giver]?.greeting || '' });
+      say(greetId ? { id: greetId } : { speaker: giver, name: giverName(giver), text: QUEST_GIVERS[giver]?.greeting || '', roleAware: true });
       for (;;) {
         const pick = await ask([...list.map(optionFor), { index: -1, label: W.notNow, kind: 'later' }]);
         if (pick < 0 || !list[pick]?.ok) return true;
@@ -92,7 +93,7 @@ export function createJobTalk({ bus, store, take = () => {}, onBusy = () => {}, 
         ]);
         if (yes === 0) { hold(false); take(o.quest, { from: 'giver', giver }); return true; }
         if (yes < 0) return true;
-        say(greetId ? { id: greetId } : { speaker: giver, name: giverName(giver), text: W.pickJob });
+        say(greetId ? { id: greetId } : { speaker: giver, name: giverName(giver), text: W.pickJob, roleAware: true });
       }
     } finally {
       if (busy) hold(false);
