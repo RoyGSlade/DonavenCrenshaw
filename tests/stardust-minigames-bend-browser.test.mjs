@@ -80,7 +80,13 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
         st = await bendState(page);
         if (!st || st.done) return st;
         if (st.angle >= st.target + past) break;
-        if (shotAt != null && !shot_ && st.angle >= st.target * shotAt) { shot_ = true; await shot(shotName); at = performance.now() + gap * 1000; }
+        if (shotAt != null && !shot_ && st.angle >= st.target * shotAt) {
+          // press, let the frame settle (the pad glow, the ring and the bar all follow the press), then shoot; the page agrees with itself at that moment
+          shot_ = true; await sleepUntil(at); await press(st.next, how); await wait(page, 180);
+          const agree = await page.evaluate((sel) => { const p = document.querySelector(sel), s = p.__state, named = s.lastKey === 'a' ? 'd' : 'a'; return { named, nextPad: [...p.querySelectorAll('.cc-pad[data-key]')].filter((b) => b.classList.contains('is-next')).map((b) => b.dataset.key) }; }, PANEL);
+          assert.deepEqual(agree.nextPad, [agree.named], 'only the pad the ring names is the next pad');
+          await shot(shotName); at = performance.now() + gap * 1000; continue;
+        }
         await sleepUntil(at); await press(st.next, how); at += gap * 1000;
       }
       st = await bendState(page);
