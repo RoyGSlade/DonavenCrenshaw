@@ -27,3 +27,8 @@ See `LESSONS.md` in the lane folder and the READY report. Every number is a plac
 
 ## Context the host can give
 `ctx.context.rock = { size, finds: [{ item, kind, main? }] }`, `ctx.context.items = { id: { name, icon, colour } }`, `ctx.context.resume` (a previous result's `resume`). With no rock, one is rolled from `fixtures.json`. `ctx.quick` shrinks it to a small rock with one find. `ctx.points = { awareness, inspection, trace }`.
+
+## Round 2 notes
+- One listen per stop; the listen ring charges round the bit. The thinker bot (`bots.js`) rests with the pointer held.
+- Wide board 1400 wide, phone board 1000 wide; the rock fills it; the main find sits deep with a vein always across the way; medium and large rocks hold 1-3 bonus finds.
+- Leave is `ctx.onLeave(fn)` (contract 1.1). `manifest.json` is contract 1.1 with measured `length_s`.
