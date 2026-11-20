@@ -531,13 +531,14 @@ function boot(session = { mode: 'local' }) {
   addEventListener('resize', fitSafe);
   // Something else owns the screen: a station panel, the licence or intro, a minigame or talk, a flight, a fight.
   const screenBusy = () => sheetOpen || Boolean(place.current) || overlays.has('intro') || overlays.has('licence') || overlays.has('nap') || overlays.has('pause') || flying
-    || onfoot.world.mode !== 'walk' || Boolean(floor.querySelector('.of-panel, .of-overlay, .of-talk')) || !$('hg-licence').hidden;
+    || onfoot.world.mode !== 'walk' || Boolean(floor.querySelector('.of-panel, .of-overlay, .of-talk')) || !$('hg-licence').hidden || Boolean(document.querySelector('.ok-screen')); /* an object screen owns the display */
   // Playtest 1: a status (Wired) shows as a small chip on the floor while it lasts.
   const statusChip = document.createElement('p');
   statusChip.className = 'hg-status';
   statusChip.setAttribute('role', 'status');
   statusChip.hidden = true;
   floor.append(statusChip);
+  // The HUD rule: a status is a word and a bar that drains, not digits.
   setInterval(() => {
     const on = statuses.active();
     statusChip.hidden = !on.length;
@@ -562,6 +563,7 @@ function boot(session = { mode: 'local' }) {
   }, 500);
   pad = createDatapad({
     pageName: (id) => (slicing && id === 'captain' && roleOf(store.get()) !== 'captain' ? 'You' : null),
+    useItem: (id) => (id === 'coffee' ? onfoot.drinkCoffee(true) : id === 'tea' ? onfoot.drinkTea(true) : false),
     root: document.body, store, bus, toast, touch, skillSave: createSkillSave({ store, economy }),
     world: () => onfoot?.world || null,
     tutorialOn, reducedMotion: still, stationInfo,

@@ -24,23 +24,29 @@ test('coffee: take a cup, drink at the machine, drink from the bag; Wired is 5% 
     await page.waitForTimeout(1500);
     await page.locator('#hg-dialogue .ui-dlg-choice', { hasText: 'Later' }).click({ timeout: 20000 });
     await page.waitForTimeout(1200);
-    const atMachine = async () => { await page.evaluate(() => window.__stardust.onfoot.world.place(72, 109)); await page.waitForTimeout(400); await page.keyboard.press('KeyE'); await page.waitForSelector('.of-coffee'); };
+    const atMachine = async () => { await page.evaluate(() => window.__stardust.onfoot.world.place(72, 109)); await page.waitForTimeout(400); await page.keyboard.press('KeyE'); await page.waitForSelector('.ok-screen[data-screen=coffee]'); };
+    const leave = async () => { await page.locator('.ok-screen .wb-fleave').click(); await page.waitForTimeout(400); }; /* opening track A: the machine is a full screen now; Leave is in its corner */
     const coffees = () => page.evaluate(() => window.__stardust.store.get().items.coffee || 0);
     assert.equal(await page.evaluate(() => window.__stardust.statuses.speedMult()), 1);
     // 1. Take a cup with you.
     await atMachine();
-    assert.deepEqual(await page.locator('.of-coffee button').allInnerTexts(), ['Drink a cup now', 'Take a cup with you', 'Leave it']);
-    await page.locator('.of-coffee [data-coffee=take]').click();
+    assert.deepEqual(await page.locator('.ok-screen [data-coffee]').allInnerTexts(), ['Drink a cup now', 'Take a cup with you', 'Leave it']);
+    await page.locator('.ok-screen [data-coffee=take]').click();
     await page.waitForTimeout(400);
     assert.equal(await coffees(), 1, 'a cup is in the pack');
+    await leave();
     assert.equal(await page.evaluate(() => window.__stardust.onfoot.world.held), false, 'the player is free');
     // 2. Drink one now.
     await atMachine();
-    await page.locator('.of-coffee [data-coffee=drink]').click();
+    await page.locator('.ok-screen [data-coffee=drink]').click();
     await page.waitForTimeout(700);
     assert.equal(await page.evaluate(() => window.__stardust.statuses.speedMult()), 1.05);
-    assert.match(await page.locator('.of-toast').innerText(), /Bodily functions coming soon/);
-    assert.match(await page.locator('.hg-status').innerText(), /Wired · [0-3]:\d\d/);
+    assert.match(await page.locator('.ok-feedback').innerText(), /Bodily functions coming soon/);
+    await leave();
+    await page.waitForTimeout(700);
+    assert.match(await page.locator('.hg-status').innerText(), /Wired/);
+    assert.equal(await page.locator('.hg-status .hg-st-bar i').count(), 1, 'the status is a word and a draining bar, not digits');
+    assert.doesNotMatch(await page.locator('.hg-status').innerText(), /\d:\d\d/);
     assert.equal(await coffees(), 1, 'drinking at the machine does not use the pack cup');
     if (PROOF) await page.screenshot({ path: `${PROOF}/coffee-wired-desktop.png` });
     // 3. Drink the pack cup from the bag.
