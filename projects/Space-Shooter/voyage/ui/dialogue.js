@@ -213,6 +213,8 @@ export function createDialogueBox({ root, bus, audio, reducedMotion = () => fals
     offs.push(bus.on('story:said', (d) => { if (introSeq != null && d?.seq === introSeq) { introSeq = null; audio?.stopLine(); } }));
     offs.push(bus.on('story:choices', (d) => showChoices(d)));
     offs.push(bus.on('story:done', () => hide()));
+    // Danger: dialogue shrinks to subtitles so the play area stays visible; no Next box (lines carry on by themselves).
+    offs.push(bus.on('audio:mood', (d) => root.classList.toggle('is-danger', d?.mode === 'danger' || d?.mode === 'combat')));
     offs.push(bus.on('talk:pause', () => setPaused(true)));
     offs.push(bus.on('talk:resume', () => setPaused(false)));
     offs.push(bus.on('talk:close', () => setPaused(false)));

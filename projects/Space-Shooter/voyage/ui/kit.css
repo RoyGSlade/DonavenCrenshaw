@@ -347,3 +347,14 @@
 .ui-dialogue.is-paused .ui-dlg-choice[data-wait]{opacity:.5;cursor:default}
 .ui-dlg-hint{margin:8px 0 0;font:700 11px Consolas,monospace;letter-spacing:.08em;color:var(--ui-amber)}
 .ui-dlg-hint[hidden]{display:none}
+/* Opening B: narration as a subtitle strip, and dialogue as subtitles while in danger. */
+.op-caption{position:fixed;z-index:7;left:50%;bottom:250px;transform:translateX(-50%);max-width:min(640px,92vw);margin:0;padding:6px 14px;border-radius:8px;background:#06101acc;color:#d5e0e7;font:italic 500 14px/1.45 Inter,"Segoe UI",sans-serif;text-align:center;pointer-events:none;text-shadow:0 1px 2px #000}
+.op-caption[hidden]{display:none}
+@media (max-width:700px){.op-caption{bottom:150px;font-size:13px}}
+.ui-dialogue.is-danger{grid-template-columns:minmax(0,1fr);gap:4px;width:min(600px,94vw);padding:6px 12px;bottom:10px;border-image:none;border:1px solid #6d2a26;border-radius:10px;background:#0a1017e6}
+.ui-dialogue.is-danger .ui-dlg-portrait,.ui-dialogue.is-danger .ui-dlg-next{display:none}
+.ui-dialogue.is-danger .ui-dlg-text{font-size:14px;min-height:0}
+.ui-dialogue.is-danger .ui-dlg-name{margin:0 0 2px}
+.ui-dialogue.is-danger .ui-dlg-choices{margin-top:4px;gap:4px}
+.ui-dialogue.is-danger .ui-dlg-choice{min-height:38px;padding:2px 10px}
+@media (max-width:700px){body:not(.hg-sheet-open) .ui-dialogue.is-danger{top:auto;bottom:150px}}

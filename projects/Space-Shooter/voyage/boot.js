@@ -35,6 +35,7 @@ import { shipTierArt } from './art.js';
 import { ambienceFor, bedIdFor } from './ui/assets.js';
 import { createSfx } from './onfoot/sfx.js';
 import { createMood } from './ui/mood.js';
+import { createSubtitles } from './ui/subtitle.js';
 import { createHangarAudio } from './ui/audio.js';
 import { createDialogueBox } from './ui/dialogue.js';
 import { createLicence } from './ui/licence.js';
@@ -195,6 +196,7 @@ function boot(session = { mode: 'local' }) {
   // Opening B sound: effects at a level a person hears, the music reacting to danger, voices left as a hook (bus 'voice:line').
   const sfx = createSfx({ muted: () => audio.settings().muted || !audio.unlocked, volume: () => audio.settings().voice });
   const mood = createMood({ audio });
+  createSubtitles({ bus });
   // The rifle off the deck is a pickup you hear.
   let hadRifle = Boolean(store.get().flags?.['reck-rifle-taken']);
   store.subscribe((save) => { const has = Boolean(save.flags?.['reck-rifle-taken']); if (has && !hadRifle) sfx('pickup'); hadRifle = has; });

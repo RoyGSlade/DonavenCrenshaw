@@ -145,18 +145,14 @@ test('Reck goes down on screen: the camera is on him when he falls, the map stat
   assert.equal(after.at(-1)[1], 'player', 'and the camera comes back to the player afterwards');
 });
 
-test('the cut-in waits for Reck\'s line and does not blow the door before it', () => {
-  const blowAt = (signals) => {
-    const h = harness();
-    h.stager.start('visitors/last');
-    let at = -1;
-    h.run(40000, { signals, until: () => { if (h.w.calls.some((c) => c[0] === 'blow')) { at = h.now(); return true; } return false; } });
-    return at;
-  };
-  const without = blowAt({}), withLine = blowAt({ 'reck.s2.3': 2500 });
-  assert.ok(withLine > 0 && withLine < without, `Reck's line brings the blow forward (${withLine} < ${without} ms)`);
-  assert.ok(without >= 11000, 'without it, the timeout holds the door shut for at least 11 s, and then it still blows (a scene never stalls)');
-  assert.ok(withLine >= 2500, 'never before the line is up');
+test('the cut-in blows the door only after the torch has finished the seam', () => {
+  const h = harness();
+  h.stager.start('visitors/last');
+  let at = -1;
+  h.run(40000, { until: () => { if (h.w.calls.some((c) => c[0] === 'blow')) { at = h.now(); return true; } return false; } });
+  const seams = h.w.calls.filter((c) => c[0] === 'seam').map((c) => c[1]);
+  assert.ok(seams.length > 20 && seams.at(-1) >= 0.95, `the seam crawled round (${seams.at(-1)})`);
+  assert.ok(at >= 5000 && at < 9000, `then it blows (${at} ms)`);
 });
 
 test('the Reavers leave before the result card, and the stage is cleared for the next scene', () => {

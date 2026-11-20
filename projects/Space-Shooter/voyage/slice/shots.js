@@ -4,7 +4,7 @@
 //
 // Scene 2, Visitors, all on the bridge, no cut:
 //   breach     the alarm: music cuts, klaxon, red pulse, a banner, the camera swings to the hatch, an "airlock cam" inset
-//   last       the cut-in: boots, the torch seam crawls round the hatch, a char decal; it blows when Reck's "get down" line is up
+//   last       the cut-in: boots, the torch seam crawls round the hatch, a char decal, then it blows (the narration for these three nodes is performed, not shown)
 //   reck-falls the stand: a Reaver in the hatch fires, Reck is hit twice and answers, the Reaver ducks out, Reck settles and goes down
 //   leave      the Reavers go on into the ship (before the result card)
 // Every word on a banner here is a DRAFT for Donaven.
@@ -25,8 +25,7 @@ export const SHOTS = Object.freeze({
     { op: 'sfx', id: 'boots', dt: 700 },
     { op: 'loop', id: 'torch', on: true, dt: 800 },
     { op: 'tween', what: 'seam', to: 1, ms: 4800, dt: 50 },
-    { op: 'await', await: 'say:reck.s2.3', timeout: 11000, dt: 0, name: 'reck-line' },
-    { op: 'wait', dt: 900 },
+    { op: 'wait', dt: 4900, name: 'seam-finishing' },
     { op: 'loop', id: 'torch', on: false },
     { op: 'blow', name: 'door-blown' },
     { op: 'cam', at: null, dt: 1700, name: 'back-to-player' },

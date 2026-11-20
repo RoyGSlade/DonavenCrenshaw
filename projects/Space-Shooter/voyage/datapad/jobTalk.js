@@ -13,6 +13,7 @@ import { QUEST_GIVERS } from '../quests/data/givers.js';
 import { offersAt } from '../quests/offers.js';
 import { lineById, fillLine } from '../story/lines.js';
 import { voiceUrl } from '../story/voice.js';
+import { beatMode } from '../slice/narration.js';
 
 const W = OFFERS_DATA.words;
 const fill = (text, vars) => String(text).replace(/\{(\w+)\}/g, (_, k) => (vars[k] ?? ''));
@@ -125,7 +126,9 @@ export function createJobTalk({ bus, store, take = () => {}, onBusy = () => {}, 
     bus.emit('talk:open', { speaker: speaker && speaker !== 'narrator' ? speaker : null });
     try {
       // The stage direction first, then the spoken line (its voice plays through jobs.js's voice hook).
-      if (v.beat && !choicesOnly) await say({ speaker: 'narrator', name: '', text: v.beat });
+      // Stage directions are not dialogue (opening B): a direction the staging performs is not shown; the rest is a small caption that
+      // goes by itself, never a box that waits for Next.
+      if (v.beat && !choicesOnly && beatMode(v.quest?.id, v.node) === 'caption') bus.emit('talk:caption', { text: v.beat, node: v.node });
       if (walkedOff) return -1;
       if (!choicesOnly) { say({ speaker: speaker || 'narrator', name: v.speaker || '', text: v.text }); if (v.line) bus.emit('talk:line', { id: v.line, speaker }); }
       const options = v.choices.map((c) => ({

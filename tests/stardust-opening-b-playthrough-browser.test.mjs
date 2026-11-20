@@ -3,6 +3,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import { CAMERA_WORDS } from '../projects/Space-Shooter/voyage/slice/narration.js';
 import { loadPlaywright, startServer, SIZES, skip, boot, settle, frameReport, PROOF } from '../scripts/stardust-opening-b-kit.mjs';
 
 for (const [size, profile] of SIZES) {
@@ -21,8 +22,10 @@ for (const [size, profile] of SIZES) {
           const S = window.__stardust, w = S.onfoot.world, store = S.store.get();
           const run = Object.values(store.quests.active || {})[0];
           const card = document.querySelector('#dp-jobcard');
-          return { done: Object.keys(store.quests.done || {}), quest: run?.quest || null, node: run?.node || null, mode: w.mode, map: w.map.id, retry: Boolean(document.querySelector('.op-retry-btn')), card: card && !card.hidden, approach: document.querySelector('.op-approach')?.dataset.phase || (document.querySelector('.op-approach') ? 'work' : null), sheet: !document.querySelector('#hg-minigame').hidden, pending: S.slice?.pendingRoom || null, choices: [...document.querySelectorAll('#hg-dialogue .ui-dlg-choice')].map((b) => ({ t: b.textContent.replace(/\s+/g, ' ').trim(), kind: b.dataset.kind, dis: b.disabled || b.hasAttribute('data-wait') })), skipping: Boolean(document.querySelector('.of-fade.on')) };
+          return { done: Object.keys(store.quests.done || {}), quest: run?.quest || null, node: run?.node || null, mode: w.mode, map: w.map.id, retry: Boolean(document.querySelector('.op-retry-btn')), card: card && !card.hidden, approach: document.querySelector('.op-approach')?.dataset.phase || (document.querySelector('.op-approach') ? 'work' : null), sheet: !document.querySelector('#hg-minigame').hidden, pending: S.slice?.pendingRoom || null, choices: [...document.querySelectorAll('#hg-dialogue .ui-dlg-choice')].map((b) => ({ t: b.textContent.replace(/\s+/g, ' ').trim(), kind: b.dataset.kind, dis: b.disabled || b.hasAttribute('data-wait') })), skipping: Boolean(document.querySelector('.of-fade.on')), texts: ['#hg-dialogue', '.op-caption', '#dp-jobcard', '.op-approach'].map((q) => { const n = document.querySelector(q); return n && !n.hidden ? n.innerText : ''; }).join(' | '), danger: Boolean(document.body.dataset.danger), nextShown: [...document.querySelectorAll('.ui-dlg-next')].some((n) => n.offsetParent !== null) };
         });
+        if (CAMERA_WORDS.test(st.texts) || /(^|\| )\s*Cut to/i.test(st.texts)) (notes.cameraText ||= []).push(st.texts.slice(0, 160));
+        if (st.danger && st.nextShown) (notes.nextInDanger ||= []).push(`${st.quest}/${st.node}`);
         const key = `${st.quest}/${st.node}/${st.mode}/${st.approach}/${st.card}`;
         if (key === lastNode) same++; else { same = 0; lastNode = key; }
         if (same > 150) { notes.stuck = { st, key }; await snap('stuck'); break; }
@@ -57,6 +60,8 @@ for (const [size, profile] of SIZES) {
       const r = await frameReport(page);
       notes.frames = r.frames; notes.cuts = r.cuts; notes.maxChange = r.maxChange; notes.captions = r.captions; notes.errors = errors;
       if (PROOF) fs.writeFileSync(`${PROOF}/playthrough-${size}.json`, JSON.stringify(notes, null, 1));
+      assert.equal(notes.cameraText, undefined, `camera language reached the screen: ${JSON.stringify(notes.cameraText)}`);
+      assert.equal(notes.nextInDanger, undefined, `a Next box showed in danger: ${JSON.stringify(notes.nextInDanger)}`);
       assert.equal(notes.stuck, null, `stuck: ${JSON.stringify(notes.stuck)}`);
       assert.deepEqual(r.cuts, [], 'no hard cut in six scenes');
       assert.ok(notes.scenes.length >= 6, `six scenes started: ${notes.scenes.map((s) => s.scene)}`);
