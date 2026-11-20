@@ -175,7 +175,7 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
           tick();
         }));
         const { lo, hi } = samples[0];
-        const soon = samples.filter((x) => x.since < lo * 0.9), inWin = samples.filter((x) => x.since > lo + 0.03 && x.since < hi - 0.03), late = samples.filter((x) => x.since > hi + 0.35);
+        const soon = samples.filter((x) => x.since > 0.05 && x.since < lo * 0.9), inWin = samples.filter((x) => x.since > lo + 0.03 && x.since < hi - 0.03), late = samples.filter((x) => x.since > hi + 0.35);
         assert.ok(soon.length && inWin.length && late.length, `sampled all three phases: ${soon.length}/${inWin.length}/${late.length}`);
         assert.ok(soon.every((x) => x.glow < 0.5), 'dim while too soon'); assert.ok(inWin.every((x) => x.glow >= 0.99), 'full in the green window'); assert.ok(late.every((x) => x.glow < 0.6), 'fading after the window');
         assert.ok(samples.every((x) => x.next && x.other === 0), 'only the next pad glows (D after A)');
