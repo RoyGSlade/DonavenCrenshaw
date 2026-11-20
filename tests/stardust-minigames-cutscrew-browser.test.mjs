@@ -113,7 +113,7 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
       await sub('the bench menu: the chain, the older game, the cutter grades', async () => {
         await openMenu();
         const m = await page.evaluate(() => ({ crafts: [...document.querySelectorAll('.wb-c')].map((b) => b.dataset.craft), tools: [...document.querySelectorAll('.wb-t')].map((b) => b.dataset.tool), on: document.querySelector('.wb-t.is-on').dataset.tool }));
-        assert.deepEqual(m.crafts, ['cut', 'screw', 'bend', 'bolt-plate', 'heat']); assert.deepEqual(m.tools, ['worn', 'shop', 'good']); assert.equal(m.on, 'shop');
+        assert.deepEqual(m.crafts, ['cut', 'screw', 'bend', 'flatten', 'bolt-plate', 'heat']); assert.deepEqual(m.tools, ['worn', 'shop', 'good']); assert.equal(m.on, 'shop');
         await noScroll('menu');
         await tap('.wb-t[data-tool="good"]');
         assert.equal(await page.evaluate(() => document.querySelector('.wb-t.is-on').dataset.tool), 'good');

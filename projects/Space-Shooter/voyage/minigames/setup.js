@@ -308,6 +308,19 @@ export function setupBend({ tier = 0, points = {}, level = POINT_MAX, bends = 1 
   };
 }
 
+// --- Crafting chain: Flatten (v2/PLAN.md section 4.2 and 4.3) ----------------------------------------
+//   Flatten  5 bubbles, each needs a power 30 to 80, right within 10; lean past 35% is a miss; the hammer charges 0 to 100 in 1.2 s
+//            (a Speed point: 5% faster, 0.83 s at nine).
+//   The roll (tier t): power band 10 + 1.5 t; the lean drift x (1 - 0.10 t); 4 bubbles at Smooth, 6 at Rough (1 fewer or more at the extremes).
+export const FLATTEN_BASE = Object.freeze({ bubbles: 5, band: 10, tierBand: 1.5, tierDrift: 0.10, charge: 1.2, chargePerPoint: 0.05, qualityPerPoint: 4, buildPerPoint: 0.05, materialPerPoint: 0.04 });
+export function setupFlatten({ tier = 0, points = {}, level = POINT_MAX } = {}) {
+  const p = cleanPoints(points, CRAFT_CATEGORIES, level), t = clampTier(tier), b = FLATTEN_BASE;
+  return {
+    kind: 'flatten', bubbles: b.bubbles - Math.trunc(t / 2), band: r4c(b.band + b.tierBand * t), drift: r4c(1 - b.tierDrift * t), charge: r4c(b.charge / (1 + b.chargePerPoint * p.speed)),
+    ...craftBits(b, p), tier: t, points: p, label: tierInfo(t).label,
+  };
+}
+
 // --- Navigation: plot the lane (PLAN.md section 2.3) ------------------------------
 // Categories: time (travel time), fuel (fuel use), warning (hazard warning).
 //   time     every lane costs 4% less travel time per point        (0..9 -> x1 .. x0.64, exact, never rounded)

@@ -125,7 +125,7 @@ export function createWorkbench({ store, bus, onfoot, dialogueBox, sheet, hud, t
     return playStart(station, start, { who, what, open, best, lock, titleText, context, tool });
   }
   /** Games that own the whole screen (the house rule): every station and mini-game view. The side sheet is for menus and panels only. */
-  const FULL_SCREEN = new Set(['repair', 'hack', 'craft', 'nav', 'pilot', 'stealth', 'persuade', 'intimidate', 'haggle', 'cut', 'screw', 'bend', 'bolt-plate']);
+  const FULL_SCREEN = new Set(['repair', 'hack', 'craft', 'nav', 'pilot', 'stealth', 'persuade', 'intimidate', 'haggle', 'cut', 'screw', 'bend', 'flatten', 'bolt-plate']);
   const BARE = new Set(['nav']); // Perihelion draws its own top bar and Leave
   async function playStart(station, start, { who, what, open, best, lock, titleText, word, context, tool, resume } = {}) {
     sheet.stage.replaceChildren();
@@ -165,7 +165,7 @@ export function createWorkbench({ store, bus, onfoot, dialogueBox, sheet, hud, t
     const part = loadPart();
     openPanel('CRAFTING BENCH', 'What are you making?', (pane) => renderCraftMenu(pane, { part, partWords: partLine(part), tool: cutter, onTool: (t) => { cutter = t; api.openPanel?.draw(); }, onPick: (id) => { closePanel(); resolve(id); }, onClose: () => { closePanel(); resolve(null); } }));
   });
-  const CRAFT_LABEL = { cut: ['CUT', 'Cut a plate', 'Cut'], screw: ['SCREW', 'Drive a bolt', 'Screw'], bend: ['BEND', 'Bend a bracket', 'Bend'], 'bolt-plate': ['BOLT PLATE', 'Bolt plate', 'Bolt plate'] };
+  const CRAFT_LABEL = { cut: ['CUT', 'Cut a plate', 'Cut'], screw: ['SCREW', 'Drive a bolt', 'Screw'], bend: ['BEND', 'Bend a bracket', 'Bend'], flatten: ['FLATTEN', 'Flatten a plate', 'Flatten'], 'bolt-plate': ['BOLT PLATE', 'Bolt plate', 'Bolt plate'] };
   const cutterNow = () => (state.items?.['good-cutter'] ? 'good' : cutter); // the cutter you earned from Pip beats the test picker
   async function useCraft(base, forced = null) {
     const pick = forced || await chooseCraft();
