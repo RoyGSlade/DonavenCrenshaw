@@ -42,6 +42,7 @@ import { economy } from '../account.js';
 import { COFFEE_WORDS } from '../status.js';
 import { playBoard } from './boardView.js';
 import { noteFlag } from '../slice/board.js';
+import { openModule } from '../modules/bind.js';
 
 // The tutorial's hop targets, in the order the legs open them.
 export const TARGETS_IN_ORDER = Object.freeze(SECTOR_MAP.places.map(p => p.id));
@@ -257,6 +258,8 @@ export function createOnFoot({ root, store = null, bus = null, hooks = {}, mapId
         toast(`${target.label}: the hangar's ${target.id} screen opens here.`);
         return null;
       }
+      // Modularity: a console or object bound to a module with one map data line, { kind: 'module', id }. The module plays full screen and its effects are applied (modules/bind.js).
+      case 'module': return (hooks.openModule || openModule)(target, { store, save, sound, reducedMotion, toast, applyWorld: hooks.applyWorld, openStage: hooks.openStage });
       case 'mine': return mine({ title: target.label?.split(':')[0] });
       case 'puzzle': return puzzle(target.id, { title: target.label });
       case 'range': return practice();

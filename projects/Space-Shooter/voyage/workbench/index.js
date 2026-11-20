@@ -27,13 +27,16 @@ import { checkChance, checkBonusText } from '../character.js';
 import { tierInfo } from '../minigames/setup.js';
 import { ROLL_SKILLS } from '../data.js';
 import { openFullScreen } from './fullScreen.js';
-import { renderHud, renderBoard, renderConfirm, renderSparPicker, renderWhere, renderCraftMenu, h } from './ui.js';
+import { renderShelf, renderHud, renderBoard, renderConfirm, renderSparPicker, renderWhere, renderCraftMenu, h } from './ui.js';
 import { PEOPLE, personSheet } from '../people/index.js';
 import * as C from '../talk/convo.js';
 import { talkModel } from '../talk/model.js';
 import { renderTalk } from '../talk/view.js';
 import { rollPreview } from '../minigames/rollPreview.js';
 import { cutStation } from './cut.js';
+import { shelfGroups } from '../modules/shelf.js';
+import { manifestOf } from '../modules/registry.js';
+import { playModule } from '../modules/host.js';
 import { voiceUrl } from '../story/voice.js';
 
 const SKILL_NAME = Object.fromEntries(ROLL_SKILLS.map((s) => [s.id, s.name]));
@@ -41,6 +44,7 @@ const OTHERS = {
   cut: { name: 'Cut station', prompt: 'Cut station: how wide is the line?' },
   hook: { name: "Pip's hook", prompt: 'Pip\'s hook: whose is it?' },
   lock: { name: 'Practice lock', prompt: 'Practice lock: no clock, no XP' },
+  modules: { name: 'Module shelf', prompt: 'Module shelf: every game and screen' },
   board: { name: 'Skills board', prompt: 'Skills board: levels, XP and risk' },
   scan: { name: 'Scan station', prompt: 'Scan station: save your progress' },
   reprint: { name: 'Reprint pod', prompt: 'Reprint pod: die and come back' },
@@ -203,7 +207,26 @@ export function createWorkbench({ store, bus, onfoot, dialogueBox, sheet, hud, t
     commit({ ...state, said: 'Practice lock done. It pays nothing and risks nothing.' }, { silent: true });
   }
 
+  /** The module shelf (modularity): every registered module, played full screen at a Steady roll with the character's own level and points. */
+  async function openShelf() {
+    await modulesReady();
+    let said = '';
+    const panel = openPanel('MODULE SHELF', 'Every game and screen', (pane) => renderShelf(pane, shelfGroups(), { said, onPlay: (id) => playShelf(id).then((s) => { said = s; api.openPanel?.draw?.(); }), onClose: closePanel }));
+    return panel;
+  }
+  async function playShelf(id) {
+    const m = manifestOf(id), { level, points } = m.skill && state.progress.levels[m.skill] ? loadoutOf(state, m.skill) : { level: 1, points: {} };
+    closePanel();
+    hold(true);
+    let r;
+    try { r = await playModule(id, { seed: nextSeed(), tier: 0, level, points, mode: 'trainer', sound, reducedMotion }, { openStage: (o) => openFullScreen(o) }); }
+    catch (error) { console.warn('Stardust workbench: the module could not run', error); r = null; }
+    hold(false);
+    openShelf();
+    return !r || r.left ? `${m.title}: you left it.` : `${m.title}: ${r.success ? 'you did it' : 'not this time'}.`;
+  }
   const openBoard = () => openPanel('SKILLS BOARD', 'Levels, XP and risk', (pane) => renderBoard(pane, state, {
+    onShelf: () => { closePanel(); openShelf(); },
     selected: boardSkill, onSelect: (id) => { boardSkill = id; api.openPanel?.draw(); },
     onDc: () => commit(nextDc(state), { silent: true }), onCredits: () => commit(withCredits(state, state.credits + 50, '+50 test credits.'), { silent: true }), onClose: closePanel,
   }));
@@ -343,6 +366,7 @@ export function createWorkbench({ store, bus, onfoot, dialogueBox, sheet, hud, t
       case 'cut': openCut(); break;
       case 'hook': openHook(); break;
       case 'board': openBoard(); break;
+      case 'modules': await openShelf(); break;
       case 'scan': doScan(); break;
       case 'reprint': confirmDie(); break;
       case 'gym': openGym(); break;
