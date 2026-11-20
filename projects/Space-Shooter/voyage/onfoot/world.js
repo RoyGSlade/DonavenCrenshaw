@@ -224,7 +224,7 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     let walkOpts = {};
     if (stealth) { const m = stealth.moveOf(mv, input.gait?.(mv)); mv = m.mv; walkOpts = m.opts; } // your gait sets the speed
     const wmap = doorsys.walkMap(map); // launch doors hook: a shut wall door is a wall
-    stepWalker(walker, mv, wmap, dt, walkOpts);
+    stepWalker(walker, mv, wmap, dt, { ...walkOpts, speed: (walkOpts.speed ?? WALK.speed) * (hooks.speedMult?.() || 1) }); // a status (Wired) scales the pace
     if (!walkedSent && walker.walked > map.tile * 3) { walkedSent = true; emit(TUTORIAL_EVENTS.moved, {}); }
     // Footsteps: a soft tick and a puff of dust on exteriors.
     if (walker.moving) {

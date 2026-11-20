@@ -7,7 +7,7 @@ import { loadPlaywright, startServer, blockHub } from '../scripts/stardust-test-
 const V = '/projects/Space-Shooter/voyage/';
 const skip = process.env.STARDUST_BROWSER_TEST !== '1' && 'set STARDUST_BROWSER_TEST=1';
 
-test('lone Done closes by itself (the coffee machine) and a lone Go on takes itself (the captain)', { skip, timeout: 120000 }, async () => {
+test('lone Done closes by itself (a stand-in talk box) and a lone Go on takes itself (the captain)', { skip, timeout: 120000 }, async () => {
   const { chromium } = await loadPlaywright();
   const server = await startServer();
   const browser = await chromium.launch({ headless: true });
@@ -26,13 +26,13 @@ test('lone Done closes by itself (the coffee machine) and a lone Go on takes its
     await page.waitForFunction(() => Object.values(window.__stardust.store.get().quests.active || {})[0]?.node === 'brief-2', null, { timeout: 15000 });
     const waited = Date.now() - t0;
     assert.ok(waited > 2000, `it waited for the line to be read (${waited} ms)`);
-    // Answer, then the coffee machine: its lone Done closes itself.
+    // Answer, then a stand-in talk box: its lone Done closes itself.
     await page.waitForFunction(() => [...document.querySelectorAll('#hg-dialogue .ui-dlg-choice')].some((b) => /Where is this gym/.test(b.textContent)));
     await page.locator('#hg-dialogue .ui-dlg-choice', { hasText: 'Where is this gym' }).click();
     await page.waitForTimeout(1500);
     await page.evaluate(() => window.__stardust.onfoot.world.place(72, 109));
     await page.waitForTimeout(400);
-    await page.keyboard.press('KeyE');
+    await page.evaluate(() => { window.__stardust.onfoot.say([{ who: 'captain', name: 'You', text: 'Lights blink. Numbers scroll. Nothing here needs you yet.' }]); });
     await page.waitForSelector('.of-talk');
     const t1 = Date.now();
     await page.waitForSelector('.of-talk', { state: 'detached', timeout: 12000 });

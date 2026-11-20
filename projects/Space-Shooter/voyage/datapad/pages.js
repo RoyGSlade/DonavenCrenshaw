@@ -61,7 +61,7 @@ export function createCaptainPage({ root, store, openLicence }) {
 
 // --- Pack: credits, what you wear, what you carry -----------------------------------
 const SLOT_NAMES = { armour: 'Armour', weapon: 'Sidearm' };
-export function createPackPage({ root, store, toast }) {
+export function createPackPage({ root, store, toast, useItem = null }) {
   function wear(fnResult, line) {
     if (!fnResult.ok) { toast(fnResult.reason); return; }
     store.update(() => fnResult.save);
@@ -72,7 +72,9 @@ export function createPackPage({ root, store, toast }) {
     return el('li', { class: 'dp-item', 'data-item': id },
       art ? el('img', { src: art, alt: '' }) : el('i', { class: 'dp-item-blank' }, icon(ITEM_ICONS[id] || 'pack', 'dp-item-glyph')),
       el('span', {}, el('strong', { text: itemName(id) }), extra ? el('small', { text: extra }) : null),
-      el('b', { text: count > 1 ? `×${count}` : '' }));
+      el('b', { text: count > 1 ? `×${count}` : '' }),
+      // Playtest 1: a cup of coffee is drunk from the bag.
+      id === 'coffee' && useItem ? el('button', { type: 'button', class: 'ui-btn', 'data-use': id, text: 'Drink', on: { click: () => useItem(id) } }) : null);
   }
   function render(save = store.get()) {
     const worn = gearOf(save);
