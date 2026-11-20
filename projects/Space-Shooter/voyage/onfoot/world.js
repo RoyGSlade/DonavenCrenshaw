@@ -229,7 +229,7 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     // Footsteps: a soft tick and a puff of dust on exteriors.
     if (walker.moving) {
       stepDist += Math.hypot(walker.vx, walker.vy) * dt;
-      if (stepDist > 38) { stepDist = 0; if (stealth?.gait !== 'sneak') sound('step'); if (map.kind === 'exterior' && !reducedMotion()) dust.push({ x: walker.x - Math.cos(walker.angle) * 10, y: walker.y - Math.sin(walker.angle) * 10, life: 0.5 }); }
+      if (stepDist > 38) { stepDist = 0; if (stealth?.gait !== 'sneak') sound('step'); if (!reducedMotion()) dust.push({ x: walker.x - Math.cos(walker.angle) * 10, y: walker.y - Math.sin(walker.angle) * 10, life: map.kind === 'exterior' ? 0.5 : 0.3, floor: map.kind !== 'exterior' }); /* playtest 1: a scuff of dust on the deck too */ }
     }
     checkRings();
     if (stealth && !busy && !paused) {
@@ -537,7 +537,7 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     for (const b of bodies) b.draw();
     if (stealth && mode === 'walk') stealth.drawOver(ctx, t); // meters, ?, !
     if (fight) drawFightFx();
-    for (const d of dust) { ctx.fillStyle = `rgba(160,170,180,${d.life * 0.5})`; ctx.beginPath(); ctx.arc(d.x, d.y, 4 + (0.5 - d.life) * 14, 0, Math.PI * 2); ctx.fill(); }
+    for (const d of dust) { ctx.fillStyle = `rgba(160,170,180,${d.life * (d.floor ? 0.4 : 0.5)})`; ctx.beginPath(); ctx.arc(d.x, d.y, d.floor ? 2 + (0.3 - d.life) * 9 : 4 + (0.5 - d.life) * 14, 0, Math.PI * 2); ctx.fill(); }
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     if (layer.overlay) layer.overlay(ctx, cam, view, t, mode === 'walk' ? walker : fight?.player); // r3-look hook: a look map's own lights, the captain's light and vignette
     else if (vignette) ctx.drawImage(vignette, 0, 0, canvas.width, canvas.height);
