@@ -13,8 +13,8 @@ export const CLEAR_AT = 0.92;
 export const REACH = 1.25;                 // the head's reach, in cells (a head 2.5 cells wide)
 export const SAMPLE = 0.25;                // one lift for every quarter cell of travel
 export const MAX_JUMP = 4;                 // a pointer jump longer than this (cells) is a lift and a new press, not a stroke
-export const BASE_PUDDLES = 5, PUDDLES_PER_MESS = 2, MAX_PUDDLES = 14;
-export const BASE_POWER = 0.06;
+export const BASE_PUDDLES = 5, PUDDLES_PER_MESS = 1, MAX_PUDDLES = 12;
+export const BASE_POWER = 0.11; // tuned by play: a plain head about 25 s on a normal floor, an absorber head about 10 s
 /** Mop heads: how much more each lifts than the plain head. */
 export const HEADS = Object.freeze({
   plain: Object.freeze({ id: 'plain', name: 'Plain head', mult: 1 }),
@@ -27,9 +27,11 @@ export const powerOf = (head) => BASE_POWER * headOf(head).mult;
 /** How many puddles a room with this much mess has. */
 export const puddlesFor = (mess = 0) => Math.min(MAX_PUDDLES, BASE_PUDDLES + PUDDLES_PER_MESS * Math.max(0, Math.trunc(mess) || 0));
 
-export function createMop({ seed = 1, mess = 0, head = 'plain' } = {}) {
+/** cols x rows: the floor's grid (24 x 14 wide, or 14 x 22 for a tall phone screen: the view picks the one that fills the screen). */
+export function createMop({ seed = 1, mess = 0, head = 'plain', cols = COLS, rows = ROWS } = {}) {
   let rng = hashSeed('mop', seed, mess);
   const rand = () => { const [v, next] = rngStep(rng); rng = next; return v; };
+  const COLS = cols, ROWS = rows;
   const goo = new Array(COLS * ROWS).fill(0);
   const n = puddlesFor(mess);
   // Puddles are placed on a loose grid so they spread over the floor instead of piling up.
@@ -68,6 +70,7 @@ export function mopDown(s, x, y) {
 export function mopUp(s) { s.down = false; return s; }
 
 function lift(s, x, y) {
+  const COLS = s.cols, ROWS = s.rows;
   const x0 = Math.max(0, Math.floor(x - REACH)), x1 = Math.min(COLS - 1, Math.floor(x + REACH));
   const y0 = Math.max(0, Math.floor(y - REACH)), y1 = Math.min(ROWS - 1, Math.floor(y + REACH));
   for (let cy = y0; cy <= y1; cy++) for (let cx = x0; cx <= x1; cx++) {
@@ -103,7 +106,7 @@ function finish(s) {
  * A straight sweep from one side to the other, for tests and bots: one stroke across `row` (a row y in cells), left to right.
  * Returns the state. Real hands wander; this is the cleanest a stroke can be.
  */
-export function sweepRow(s, y, from = 0, to = COLS) {
+export function sweepRow(s, y, from = 0, to = s.cols) {
   mopDown(s, from, y);
   for (let x = from + 1; x <= to && !s.done; x++) mopMove(s, x, y);
   mopUp(s);

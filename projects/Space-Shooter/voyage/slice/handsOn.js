@@ -23,7 +23,7 @@ export const FLAG = Object.freeze({
 });
 
 /** How much floor each loss floods (mess points; a point is two more puddles to mop). */
-export const MESS = Object.freeze({ valveLost: 3, valveShut: 1, hoseLost: 2 });
+export const MESS = Object.freeze({ valveLost: 3, valveShut: 1, valveSloppy: 1, hoseLost: 2 });
 
 export const beatOf = (node) => (node && typeof node.handsOn === 'string' && BEATS.includes(node.handsOn) ? node.handsOn : null);
 
@@ -43,7 +43,7 @@ export function chainOf(flags = {}) {
 /** Pip's hints for a thing used out of order, and what a finished beat says about itself. The words are DRAFT lines (opening-c/DESIGN.md). */
 export const LINES = Object.freeze({
   start: Object.freeze({
-    valve: 'Right, the wheel is the big one on the bottom pipe. Tighten it, fill the tank, do not let it go over.',
+    valve: 'Three wheels on the foam tank. Tighten the stuck one, open the feed, and stop at the line. Do not let it go over.',
     hose: 'The coolant hose on the left wall has a pinhole. Close every open end or it sprays.',
     mop: "Floor next. There's a mop by the cart, or check the cart itself.",
     lever: 'Now the program. The big lever on the panel. Pull it down and hold it. Wait for the hum to die. Then back up.',
@@ -117,7 +117,11 @@ export function whyNot(beat, task) {
 /** The valve game's result ({ success, valveShut }): the flag patch and the node choice (0 fixed, 1 lost). */
 export function afterValve(flags, result) {
   const c = chainOf(flags);
-  if (result?.success) return { flags: { [FLAG.valveFixed]: 1 }, choice: 0, line: LINES.valve.fixed, mess: 0 };
+  if (result?.success) {
+    // held at the line: a messy hold (more than half the floor's foam) still leaves a little to mop
+    const sloppy = Number(result.spilled) >= 0.5 ? MESS.valveSloppy : 0;
+    return { flags: { [FLAG.valveFixed]: 1, ...(sloppy ? { [FLAG.mess]: c.mess + sloppy } : {}) }, choice: 0, line: LINES.valve.fixed, mess: sloppy };
+  }
   const shut = Boolean(result?.valveShut);
   const add = shut ? MESS.valveShut : MESS.valveLost;
   return { flags: { [FLAG.valveLost]: 1, ...(shut ? { [FLAG.valveShut]: 1 } : {}), [FLAG.mess]: c.mess + add }, choice: 1, line: shut ? LINES.valve.shut : LINES.valve.lost, mess: add };

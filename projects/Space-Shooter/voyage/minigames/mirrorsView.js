@@ -15,7 +15,7 @@ const pts = (list) => list.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).jo
  * root: where the panel goes. opts: { state (from createMirrorHack) or seed + setup + context, title, reducedMotion, sound }.
  * Returns a promise (with .state).
  */
-export function playMirrors(root, { state = null, seed = 1, setup = null, context = 'foot', title = 'Terminal', sound = () => {}, reducedMotion = () => false } = {}) {
+export function playMirrors(root, { state = null, seed = 1, setup = null, context = 'foot', title = 'Terminal', showXp = true, sound = () => {}, reducedMotion = () => false } = {}) {
   const s = state || createMirrorHack({ seed, setup, context });
   const status = h('p', { class: 'rp-status', role: 'status', 'aria-live': 'polite', text: 'Turn the mirrors until the dashed beam ends on the firewall. Catch the portal, then fire.' });
   const clockFill = h('i');
@@ -181,7 +181,7 @@ export function playMirrors(root, { state = null, seed = 1, setup = null, contex
     const go = h('button', { type: 'button', class: 'primary ui-btn', text: r.success ? 'Continue' : 'Step back' });
     const card = h('div', { class: `rp-result ui-card ${r.success ? 'is-ok' : 'is-bad'}`, role: 'status' },
       h('b', { class: 'rp-stars', text: r.success ? 'IN' : 'LOCKED OUT' }),
-      h('span', { text: r.success ? `${r.firewalls} firewall${r.firewalls === 1 ? '' : 's'} down · ${r.retriesUsed} ${r.retriesUsed === 1 ? 'retry' : 'retries'} used · ${r.time} s · +${r.xp} Hacking XP` : `${r.broken} of ${r.firewalls} firewalls broken. ${c.line}` }), go);
+      h('span', { text: r.success ? `${r.firewalls} firewall${r.firewalls === 1 ? '' : 's'} down · ${r.retriesUsed} ${r.retriesUsed === 1 ? 'retry' : 'retries'} used · ${r.time} s ${showXp ? `· +${r.xp} Hacking XP` : ''}` : `${r.broken} of ${r.firewalls} firewalls broken. ${c.line}` }), go);
     go.addEventListener('click', () => { panel.remove(); finish(r); });
     panel.append(card); go.focus({ preventScroll: true });
     card.scrollIntoView({ block: 'nearest', behavior: reducedMotion() ? 'auto' : 'smooth' });

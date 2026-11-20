@@ -9,6 +9,7 @@
 import { openFullScreen } from '../workbench/fullScreen.js';
 import { startHook } from '../minigames/sceneHook.js';
 import { playRepair } from '../minigames/repairView.js';
+import { playFlowGame } from '../minigames/flowView.js';
 import { playMop } from '../minigames/mopView.js';
 import { playLeverGame, LEVER_WORDS } from '../minigames/leverView.js';
 import { createLever } from '../minigames/lever.js';
@@ -59,14 +60,18 @@ export function createHandsOn({ root, store, toast = () => {}, world = () => nul
 
   const start = (spec) => startHook({ minigame: spec, check: { pass: 'x', fail: 'y' } }, { total: 10, dc: 10, natural: false }, character() || {});
 
-  async function water(beat) {
-    const foam = beat === 'valve';
-    const hook = start(foam ? { kind: 'repair', system: 'wellness-foam', title: 'Foam valve' } : { kind: 'repair', system: 'engine-cooling', title: 'Coolant hose' });
-    const setup = foam ? { ...hook.setup, size: Math.min(4, hook.setup.size) } : hook.setup;
+  /** The hose: the repair (water rising) game. */
+  async function water() {
+    const hook = start({ kind: 'repair', system: 'engine-cooling', title: 'Coolant hose' });
     return game({
-      word: `REPAIR · ${foam ? 'FOAM VALVE' : 'COOLANT HOSE'}`, title: foam ? 'Foam valve' : 'Coolant hose',
-      run: (stage) => playRepair(stage, { seed: cur.seed, setup, system: hook.system || undefined, title: foam ? 'Foam valve' : 'Coolant hose', flavor: foam ? 'foam' : null, sound, reducedMotion }),
+      word: 'REPAIR · COOLANT HOSE', title: 'Coolant hose',
+      run: (stage) => playRepair(stage, { seed: cur.seed, setup: hook.setup, system: hook.system || undefined, title: 'Coolant hose', showXp: false, sound, reducedMotion }),
     });
+  }
+  /** The foam valve: its own flow-balance game (a tank, three wheels, the floor). Points only make the floor hold more. */
+  async function foam() {
+    const hook = start({ kind: 'repair', title: 'Foam valve' });
+    return game({ word: 'VALVES · FOAM TANK', title: 'Foam valve', run: (stage) => playFlowGame(stage, { setup: hook.setup, title: 'Foam valve', sound, reducedMotion }) });
   }
 
   function finishBeat(after) {
@@ -77,11 +82,11 @@ export function createHandsOn({ root, store, toast = () => {}, world = () => nul
   }
 
   async function doValve() {
-    const r = await water('valve');
+    const r = await foam();
     if (r) finishBeat(R.afterValve(flags(), r));
   }
   async function doHose() {
-    const r = await water('hose');
+    const r = await water();
     if (r) finishBeat(R.afterHose(flags(), r));
   }
   async function doMop() {

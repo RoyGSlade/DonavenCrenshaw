@@ -9,8 +9,8 @@ import { branchOf, HOOK_KINDS, worldResult } from './sceneHook.js';
 
 export async function playHook(root, { start, seed = 1, sound = () => {}, reducedMotion = () => false } = {}) {
   const { kind, setup } = start;
-  const result = kind === 'repair' ? await playRepair(root, { seed, setup, system: start.system || undefined, title: start.title || 'Repair', sound, reducedMotion })
-    : kind === 'hack' ? await playMirrors(root, { seed, setup, context: start.context, title: start.title || 'Terminal', sound, reducedMotion })
-    : await playHaggle(root, { state: createHaggle({ seed, open: start.open, best: start.best, setup }), who: start.who || 'Them', what: start.what || 'the deal', sound, reducedMotion });
+  const result = kind === 'repair' ? await playRepair(root, { seed, setup, system: start.system || undefined, title: start.title || 'Repair', showXp: false, sound, reducedMotion })
+    : kind === 'hack' ? await playMirrors(root, { seed, setup, context: start.context, title: start.title || 'Terminal', showXp: false, sound, reducedMotion })
+    : await playHaggle(root, { state: createHaggle({ seed, open: start.open, best: start.best, setup }), who: start.who || 'Them', what: start.what || 'the deal', showXp: false, sound, reducedMotion });
   return { branch: branchOf(kind, result), xp: result?.xp || 0, skill: HOOK_KINDS[kind].skill, world: worldResult(kind, result), result, ...(kind === 'haggle' && Number.isFinite(result?.price) ? { price: result.price } : {}) };
 }

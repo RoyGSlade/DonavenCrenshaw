@@ -6,7 +6,7 @@ import { ask, takeOffer, stepHaggle, needleAt, priceAt, bandPrices } from './hag
 const h = (tag, attrs = {}, ...kids) => { const el = document.createElement(tag); for (const [k, v] of Object.entries(attrs)) { if (k === 'text') el.textContent = v; else el.setAttribute(k, v); } el.append(...kids.filter(Boolean)); return el; };
 const WORDS = { well: 'A GREAT DEAL', fair: 'A FAIR DEAL', walked: 'THEY WALKED' };
 
-export function playHaggle(root, { state, who = 'Captain Tull', what = 'your share', sound = () => {}, reducedMotion = () => false } = {}) {
+export function playHaggle(root, { state, who = 'Captain Tull', what = 'your share', showXp = true, sound = () => {}, reducedMotion = () => false } = {}) {
   const s = state;
   const range = s.cap - s.open;
   const pos = (price) => `${(100 * (price - s.open)) / range}%`;
@@ -68,7 +68,7 @@ export function playHaggle(root, { state, who = 'Captain Tull', what = 'your sha
     const go = h('button', { type: 'button', class: 'primary ui-btn', text: ok ? 'Continue' : 'Step back' });
     const card = h('div', { class: `rp-result ui-card ${r.outcome === 'walked' ? 'is-bad' : 'is-ok'}`, role: 'status', 'data-outcome': r.outcome },
       h('b', { class: 'rp-stars', text: WORDS[r.outcome] }),
-      h('span', { text: `${r.price} credits · ${r.asks} ask${r.asks === 1 ? '' : 's'} · ${r.how === 'sweet' ? 'closed in the band' : r.how === 'low-ask' ? 'you could have asked for more' : r.how === 'final' ? 'their final offer' : r.how === 'took' ? 'you took their offer' : 'too greedy'}${r.xp ? ` · +${r.xp} Social XP` : ' · No XP'}` }), go);
+      h('span', { text: `${r.price} credits · ${r.asks} ask${r.asks === 1 ? '' : 's'} · ${r.how === 'sweet' ? 'closed in the band' : r.how === 'low-ask' ? 'you could have asked for more' : r.how === 'final' ? 'their final offer' : r.how === 'took' ? 'you took their offer' : 'too greedy'}${showXp ? (r.xp ? ` · +${r.xp} Social XP` : ' · No XP') : ''}` }), go);
     go.addEventListener('click', () => { panel.remove(); finish(r); });
     panel.append(card); go.focus({ preventScroll: true }); card.scrollIntoView({ block: 'nearest' });
   }

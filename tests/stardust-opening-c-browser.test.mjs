@@ -123,7 +123,7 @@ for (const [size, profile, path] of [['desktop', DESK, 'good'], ['phone', PHONE,
       await settle(page, 500);
       const m = await page.evaluate(() => {
         const r = document.querySelector('.wb-full').getBoundingClientRect();
-        const btns = [...document.querySelectorAll('.wb-full button, .wb-full .ho-slot, .wb-full .ho-canvas, .wb-full .rp-tile')].filter((b) => b.offsetParent).map((b) => {
+        const btns = [...document.querySelectorAll('.wb-full button, .wb-full .ho-slot, .wb-full .ho-wheel, .wb-full .ho-canvas, .wb-full .rp-tile')].filter((b) => b.offsetParent).map((b) => {
           const cs = getComputedStyle(b), q = b.getBoundingClientRect();
           return { t: (b.textContent || b.className).trim().slice(0, 22), hl: cs.webkitTapHighlightColor, bi: cs.borderImageSource, ui: b.classList.contains('ui-btn'), x0: q.left, x1: q.right };
         });
@@ -139,6 +139,11 @@ for (const [size, profile, path] of [['desktop', DESK, 'good'], ['phone', PHONE,
         if (b.ui) assert.ok(!/hover|pressed|disabled/.test(b.bi), `${label}: "${b.t}" wears the plain frame (${b.bi})`);
       }
       return m;
+    };
+    /** House rule: no digits on an opening screen (the screen's own words, bars and pips only). */
+    const noDigits = async (label) => {
+      const hits = await page.evaluate(() => [...document.querySelectorAll('.wb-full .rp-panel *')].filter((e) => e.children.length === 0 && e.offsetParent && !e.closest('.rp-help') && /\d/.test(e.textContent)).map((e) => `${e.tagName}.${e.className}: ${e.textContent.trim()}`));
+      assert.deepEqual(hits, [], `${label}: no digits on screen`);
     };
     /** Back in the room: the overlay is gone, same map, the floor is live, no dialogue box. */
     const backInRoom = async (label) => {
@@ -171,20 +176,24 @@ for (const [size, profile, path] of [['desktop', DESK, 'good'], ['phone', PHONE,
 
     /** A real drag over the mop canvas, row by row, until the floor is clean. Returns { sweeps, head, power, lifted }. */
     const mopBot = async () => {
+      await noDigits('mop');
       await page.waitForSelector('.wb-full .ho-mopcanvas');
       await settle(page, 400);
       const rect = await page.evaluate(() => { const r = document.querySelector('.ho-mopcanvas').getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; });
-      const px = (cx, cy) => [rect.x + (cx / 24) * rect.w, rect.y + (cy / 14) * rect.h];
+      const dims = await page.evaluate(() => { const s = document.querySelector('.rp-panel[data-game="mop"]').__state; return { cols: s.cols, rows: s.rows }; });
+      const px = (cx, cy) => [rect.x + (cx / dims.cols) * rect.w, rect.y + (cy / dims.rows) * rect.h];
+      const fullH = await page.evaluate(() => document.querySelector('.ho-mopcanvas').getBoundingClientRect().height / innerHeight);
+      assert.ok(fullH > (phone ? 0.45 : 0.6), `the mop board takes the spare height (${fullH.toFixed(2)} of the screen)`);
       let sweeps = 0, shot1 = false;
       for (let pass = 0; pass < 60; pass++) {
-        for (let y = 1; y < 14; y += 2) {
-          const [x0, yy] = px(0.5, y), [x1] = px(23.5, y);
+        for (let y = 1; y < dims.rows; y += 2) {
+          const [x0, yy] = px(0.5, y), [x1] = px(dims.cols - 0.5, y);
           await page.mouse.move(x0, yy); await page.mouse.down();
           await page.mouse.move(pass % 2 ? x0 : x1, yy, { steps: 28 });
           await page.mouse.up(); sweeps++;
           const st = await page.evaluate(() => { const s = document.querySelector('.rp-panel[data-game="mop"]')?.__state; return s ? { done: s.done, c: 1 - s.goo.reduce((a, b) => a + b, 0) / s.total } : null; });
           if (!shot1 && st && st.c > 0.3) { shot1 = true; await shot('mop-midway'); }
-          if (st?.done) { const r = await page.evaluate(() => { const s = document.querySelector('.rp-panel[data-game="mop"]').__state; return { head: s.head, power: s.power, lifted: s.lifted, puddles: s.puddles.length, mess: s.mess }; }); return { sweeps, ...r }; }
+          if (st?.done) { const r = await page.evaluate(() => { const s = document.querySelector('.rp-panel[data-game="mop"]').__state; return { head: s.head, power: s.power, lifted: s.lifted, puddles: s.puddles.length, mess: s.mess, workPerGoo: s.travel / s.total }; }); return { sweeps, ...r }; }
         }
       }
       throw new Error('the mop never finished');
@@ -214,11 +223,36 @@ for (const [size, profile, path] of [['desktop', DESK, 'good'], ['phone', PHONE,
         await use('valve');
         const m = await checkFull('valve');
         assert.match(await page.locator('.wb-full .rp-eyebrow').innerText(), /FOAM VALVE/i);
-        assert.equal(await page.locator('.rp-panel[data-flavor="foam"]').count(), 1, 'the foam skin');
-        assert.equal(await page.evaluate(() => document.querySelector('.rp-panel').__state.size), 4);
+        assert.equal(await page.locator('.rp-tile').count(), 0, 'the valve is its own game, not the pipe grid');
+        assert.equal(await page.locator('.ho-wheel').count(), 3, 'three wheels');
+        await noDigits('valve');
         await shot('valve-game');
-        if (path === 'good') { await solveWater(); await shot('valve-sealed'); await tapBtn('.wb-full .rp-result .primary'); }
-        else { await loseWater('shut'); await shot('valve-lost'); await tapBtn('.wb-full .rp-result button:not(.rp-shut)'); }
+        const spin = async (id, turns) => { // circle a wheel with the pointer: positive clockwise (shuts), negative the other way (opens)
+          const c = await page.evaluate((id) => { const r = document.querySelector(`.ho-wheel[data-valve="${id}"] .ho-wheel-rim`).getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2, r: r.width / 2 + 4 }; }, id);
+          const dir = Math.sign(turns), n = Math.ceil(Math.abs(turns) * Math.PI * 2 / 0.3);
+          await page.mouse.move(c.x + c.r, c.y); await page.mouse.down();
+          for (let i = 1; i <= n; i++) { const a = dir * i * 0.3; await page.mouse.move(c.x + Math.cos(a) * c.r, c.y + Math.sin(a) * c.r); }
+          await page.mouse.up();
+        };
+        const fs = () => page.evaluate(() => { const s = document.querySelector('.rp-panel[data-game="flow"]').__state; return { level: s.level, leak: s.valves.leak, feed: s.valves.feed, done: s.done, ok: s.result?.success, spilled: s.spilled / s.floor }; });
+        if (path === 'good') {
+          await spin('leak', 3.2); assert.equal((await fs()).leak, 0, 'the stuck valve is tight');
+          assert.match(await page.locator('.wb-full .rp-status').innerText(), /tight|open the feed/i);
+          await spin('feed', -3.2); assert.equal((await fs()).feed, 1);
+          for (let i = 0; i < 200 && (await fs()).level < 0.62; i++) await settle(page, 100);
+          await spin('feed', 3.2);
+          await page.waitForSelector('.wb-full .ho-card.is-ok', { timeout: 15000 });
+          assert.ok((await fs()).spilled < 0.3, 'a tidy hold');
+          await shot('valve-sealed');
+          await tapBtn('.wb-full .ho-card .primary');
+        } else {
+          await page.evaluate(() => { const s = document.querySelector('.rp-panel[data-game="flow"]').__state; s.spilled = s.floor; });
+          await page.waitForSelector('.wb-full .ho-card.is-bad', { timeout: 15000 });
+          await shot('valve-lost');
+          await tapBtn('.wb-full .ho-shutall'); await settle(page, 300);
+          assert.match(await page.locator('.wb-full .ho-card').innerText(), /flooding stops/i);
+          await tapBtn('.wb-full .ho-card button:not(.ho-shutall)');
+        }
         await backInRoom('valve');
         await waitNode(page, 'work-hose');
         const f = await flags(page);
@@ -234,8 +268,9 @@ for (const [size, profile, path] of [['desktop', DESK, 'good'], ['phone', PHONE,
         await checkFull('hose');
         assert.match(await page.locator('.wb-full .rp-eyebrow').innerText(), /COOLANT HOSE/i);
         assert.equal(await page.locator('.rp-panel[data-flavor="foam"]').count(), 0);
+        await noDigits('hose');
         await shot('hose-game');
-        if (path === 'good') { await solveWater(); await tapBtn('.wb-full .rp-result .primary'); }
+        if (path === 'good') { await solveWater(); assert.doesNotMatch(await page.locator('.wb-full .rp-result').innerText(), /XP/, 'no XP promised: none is granted'); await tapBtn('.wb-full .rp-result .primary'); }
         else { await loseWater('walk'); await tapBtn('.wb-full .rp-result button:not(.rp-shut)'); }
         await backInRoom('hose');
         await waitNode(page, 'work-mop');
@@ -314,6 +349,7 @@ for (const [size, profile, path] of [['desktop', DESK, 'good'], ['phone', PHONE,
         assert.match(await toastText(page), /lever|hum/i);
         await use('holo-panel');
         await checkFull('lever');
+        await noDigits('lever');
         await shot('lever-ready');
         const rect = await page.evaluate(() => { const r = document.querySelector('.ho-slot').getBoundingClientRect(); const hd = document.querySelector('.ho-handle').getBoundingClientRect(); return { x: r.left + r.width / 2, y0: hd.top + hd.height / 2, y1: r.bottom - 30 }; });
         const pull = async () => { await page.mouse.move(rect.x, rect.y0); await page.mouse.down(); await page.mouse.move(rect.x, rect.y1, { steps: 18 }); };
@@ -324,6 +360,7 @@ for (const [size, profile, path] of [['desktop', DESK, 'good'], ['phone', PHONE,
           assert.equal((await lv()).phase, 'off');
           await page.mouse.up(); await settle(page, 400);
           const w = await lv(); assert.equal(w.strikes, 1); assert.equal(w.done, false);
+          assert.equal(await page.locator('.ho-strikes i.is-on').count(), 1, 'the warning shows as a pip');
           assert.match(await page.locator('.wb-full .rp-status').innerText(), /too soon|again|hold/i);
           await shot('lever-warning');
         }
@@ -364,7 +401,7 @@ for (const [size, profile, path] of [['desktop', DESK, 'good'], ['phone', PHONE,
       globalThis.__ocRuns = { ...(globalThis.__ocRuns || {}), [size]: mopRun };
       const r = globalThis.__ocRuns;
       if (r.desktop && r.phone) {
-        assert.ok(r.desktop.sweeps >= r.phone.sweeps * 2, `plain ${r.desktop.sweeps} sweeps vs absorber ${r.phone.sweeps} (on a floor with more goo)`);
+        assert.ok(r.desktop.workPerGoo >= r.phone.workPerGoo * 1.6, `mopping travel per bit of goo: plain ${r.desktop.workPerGoo.toFixed(2)} vs absorber ${r.phone.workPerGoo.toFixed(2)}`);
         assert.ok(Math.abs(r.phone.power / r.desktop.power - 2.4) < 1e-6);
       }
       console.log(log.join('\n'));
