@@ -13,6 +13,8 @@ import { rollPreview, CHAIN_SPECS, SPECS } from '../projects/Space-Shooter/voyag
 import { CATEGORIES } from '../projects/Space-Shooter/voyage/minigames/picker.js';
 import { startStation, settleStation, stationById } from '../projects/Space-Shooter/voyage/workbench/stations.js';
 import { freshState } from '../projects/Space-Shooter/voyage/workbench/state.js';
+import { ready as modulesReady } from '../projects/Space-Shooter/voyage/modules/registry.js';
+await modulesReady(); // every game is a module: load the registry once
 
 const r4 = (x) => Math.round(+x.toFixed(6) * 10000) / 10000;
 const TIERS = [-2, -1, 0, 1, 2];

@@ -1,0 +1,46 @@
+{
+  "id": "hack",
+  "version": "1.0.0",
+  "kind": "minigame",
+  "title": "Mirrors and firewalls",
+  "verb": "Break the lock",
+  "skill": "hacking",
+  "where": [
+    "hacking bench",
+    "scene hook",
+    "trainer"
+  ],
+  "length_s": [
+    30,
+    180
+  ],
+  "inputs": [
+    "seed",
+    "tier",
+    "points",
+    "level",
+    "context"
+  ],
+  "outputs": [
+    "success",
+    "xp"
+  ],
+  "paths": [
+    {
+      "id": "time",
+      "division": "Time"
+    },
+    {
+      "id": "size",
+      "division": "Puzzle size"
+    },
+    {
+      "id": "retries",
+      "division": "Retries"
+    }
+  ],
+  "art": [],
+  "status": "in-game",
+  "adapter": true,
+  "contract": 1
+}

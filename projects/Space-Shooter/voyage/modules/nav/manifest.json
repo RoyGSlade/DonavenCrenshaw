@@ -1,0 +1,44 @@
+{
+  "id": "nav",
+  "version": "1.0.0",
+  "kind": "minigame",
+  "title": "Lane run",
+  "verb": "Run the lanes",
+  "skill": "navigation",
+  "where": [
+    "trainer"
+  ],
+  "length_s": [
+    30,
+    180
+  ],
+  "inputs": [
+    "seed",
+    "tier",
+    "points",
+    "level",
+    "context"
+  ],
+  "outputs": [
+    "success",
+    "xp"
+  ],
+  "paths": [
+    {
+      "id": "time",
+      "division": "Time"
+    },
+    {
+      "id": "fuel",
+      "division": "Fuel use"
+    },
+    {
+      "id": "warning",
+      "division": "Hazard warning"
+    }
+  ],
+  "art": [],
+  "status": "in-game",
+  "adapter": true,
+  "contract": 1
+}

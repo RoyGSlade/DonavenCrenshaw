@@ -1,0 +1,45 @@
+{
+  "id": "bolt-plate",
+  "version": "1.0.0",
+  "kind": "minigame",
+  "title": "Bolt plate",
+  "verb": "Cut, then bolt",
+  "skill": "crafting",
+  "where": [
+    "crafting bench",
+    "trainer"
+  ],
+  "length_s": [
+    30,
+    180
+  ],
+  "inputs": [
+    "seed",
+    "tier",
+    "points",
+    "level",
+    "context"
+  ],
+  "outputs": [
+    "success",
+    "xp"
+  ],
+  "paths": [
+    {
+      "id": "quality",
+      "division": "Quality"
+    },
+    {
+      "id": "speed",
+      "division": "Speed"
+    },
+    {
+      "id": "material",
+      "division": "Material use"
+    }
+  ],
+  "art": [],
+  "status": "in-game",
+  "adapter": true,
+  "contract": 1
+}

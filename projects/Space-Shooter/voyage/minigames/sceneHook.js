@@ -6,7 +6,8 @@
 //   { "label": "...", "check": { skill, stat, tag, dc, pass, fail },
 //     "minigame": { "kind": "repair"|"hack"|"haggle", ...params, "mid": "<node>" (haggle only) } }
 // Result -> node: win = check.pass, lose = check.fail, mid = minigame.mid (haggle's fair deal).
-import { tierOf, setupRepair, setupHack, setupHaggle } from './setup.js';
+import { tierOf } from './setup.js';
+import { setupOf } from '../modules/registry.js';
 import { CONTEXTS } from './mirrors.js';
 import { SYSTEMS, worldOf } from './repair.js';
 import { outcomeOf as haggleOutcome } from './haggle.js';
@@ -45,9 +46,7 @@ export function startHook(choice, attempt, character = {}) {
   const m = choice.minigame;
   const tier = tierOf(attempt);
   const level = levelFor(m.kind, character), points = pointsFor(m.kind, character);
-  const setup = m.kind === 'repair' ? setupRepair({ tier, level, points })
-    : m.kind === 'hack' ? setupHack({ tier, level, points, lock: m.lock ?? 1 })
-    : setupHaggle({ tier, level, points });
+  const setup = setupOf(m.kind, { tier, level, points, lock: m.lock ?? 1 }); // the module's own setup (call `await ready()` from modules/registry.js first)
   return { kind: m.kind, tier, setup, lock: m.lock ?? 1, context: m.context ?? 'foot', system: m.system ?? null, title: m.title || null, who: m.who || null, what: m.what || null, open: m.open ?? null, best: m.best ?? null };
 }
 

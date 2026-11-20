@@ -1,0 +1,46 @@
+{
+  "id": "repair",
+  "version": "1.0.0",
+  "kind": "minigame",
+  "title": "Coolant pipes",
+  "verb": "Patch the line",
+  "skill": "repair",
+  "where": [
+    "repair bench",
+    "scene hook",
+    "trainer"
+  ],
+  "length_s": [
+    30,
+    180
+  ],
+  "inputs": [
+    "seed",
+    "tier",
+    "points",
+    "level",
+    "context"
+  ],
+  "outputs": [
+    "success",
+    "xp"
+  ],
+  "paths": [
+    {
+      "id": "time",
+      "division": "Time"
+    },
+    {
+      "id": "size",
+      "division": "Puzzle size"
+    },
+    {
+      "id": "quality",
+      "division": "Quality"
+    }
+  ],
+  "art": [],
+  "status": "in-game",
+  "adapter": true,
+  "contract": 1
+}

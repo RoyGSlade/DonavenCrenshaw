@@ -1,0 +1,45 @@
+{
+  "id": "stealth",
+  "version": "1.0.0",
+  "kind": "minigame",
+  "title": "Shadow slip",
+  "verb": "Slip past the guards",
+  "skill": "stealth",
+  "where": [
+    "shadow lane",
+    "trainer"
+  ],
+  "length_s": [
+    30,
+    180
+  ],
+  "inputs": [
+    "seed",
+    "tier",
+    "points",
+    "level",
+    "context"
+  ],
+  "outputs": [
+    "success",
+    "xp"
+  ],
+  "paths": [
+    {
+      "id": "quiet",
+      "division": "Quiet movement"
+    },
+    {
+      "id": "range",
+      "division": "Detection range"
+    },
+    {
+      "id": "decay",
+      "division": "Heat decay"
+    }
+  ],
+  "art": [],
+  "status": "in-game",
+  "adapter": true,
+  "contract": 1
+}

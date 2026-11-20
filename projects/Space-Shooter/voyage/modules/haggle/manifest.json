@@ -1,0 +1,46 @@
+{
+  "id": "haggle",
+  "version": "1.0.0",
+  "kind": "minigame",
+  "title": "Haggle",
+  "verb": "Name your price",
+  "skill": "social",
+  "where": [
+    "trade counter",
+    "scene hook",
+    "trainer"
+  ],
+  "length_s": [
+    30,
+    180
+  ],
+  "inputs": [
+    "seed",
+    "tier",
+    "points",
+    "level",
+    "context"
+  ],
+  "outputs": [
+    "success",
+    "xp"
+  ],
+  "paths": [
+    {
+      "id": "persuade",
+      "division": "Persuade"
+    },
+    {
+      "id": "intimidate",
+      "division": "Intimidate"
+    },
+    {
+      "id": "haggle",
+      "division": "Haggle"
+    }
+  ],
+  "art": [],
+  "status": "in-game",
+  "adapter": true,
+  "contract": 1
+}

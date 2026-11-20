@@ -1,0 +1,45 @@
+{
+  "id": "pilot",
+  "version": "1.0.0",
+  "kind": "minigame",
+  "title": "Touchdown",
+  "verb": "Land on the pad",
+  "skill": "piloting",
+  "where": [
+    "flight console",
+    "trainer"
+  ],
+  "length_s": [
+    30,
+    180
+  ],
+  "inputs": [
+    "seed",
+    "tier",
+    "points",
+    "level",
+    "context"
+  ],
+  "outputs": [
+    "success",
+    "xp"
+  ],
+  "paths": [
+    {
+      "id": "handling",
+      "division": "Handling"
+    },
+    {
+      "id": "boost",
+      "division": "Boost"
+    },
+    {
+      "id": "landing",
+      "division": "Landing"
+    }
+  ],
+  "art": [],
+  "status": "in-game",
+  "adapter": true,
+  "contract": 1
+}

@@ -16,6 +16,8 @@ import { hookIssues, startHook, targetFor, branchOf, xpEvent, worldResult, HOOK_
 import { createRepair, rotateTile, stepRepair, nextHint } from '../projects/Space-Shooter/voyage/minigames/repair.js';
 import { createMirrorHack, stepMirrors, rotateStep, catchPortal, fire, inWindow } from '../projects/Space-Shooter/voyage/minigames/mirrors.js';
 import { createHaggle, stepHaggle, ask, takeOffer, bandPrices, priceAt } from '../projects/Space-Shooter/voyage/minigames/haggle.js';
+import { ready as modulesReady } from '../projects/Space-Shooter/voyage/modules/registry.js';
+await modulesReady(); // every game is a module: load the registry once
 
 const Q = Object.fromEntries(SLICE_LIST.map((q) => [q.id, q]));
 const BEFORE = JSON.stringify(SLICE_LIST);

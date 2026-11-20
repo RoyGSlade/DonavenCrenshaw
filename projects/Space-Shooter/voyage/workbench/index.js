@@ -10,6 +10,7 @@
 import { loadState, saveState, characterOf, earnXp, setPoints, scan, die, reset, nextDc, withCredits, freshState } from './state.js';
 import { STATIONS, stationOfProp, rollStation, startStation, settleStation, previewLine, loadoutOf } from './stations.js';
 import { playGame, resetCraftBank, loadPart } from './games.js';
+import { ready as modulesReady } from '../modules/registry.js';
 import { partLine } from '../minigames/craftChain.js';
 import { TALKS, nextAfterCheck } from './talks.js';
 import { sparSetup, sparXp, sparSaid } from './spar.js';
@@ -116,6 +117,7 @@ export function createWorkbench({ store, bus, onfoot, dialogueBox, sheet, hud, t
 
   /** The d20 tray shows the roll with the preview line, then the sheet opens the game. Resolves with the game's result (or null when left). */
   async function rollAndPlay(station, { who, what, open, best, lock, titleText, context, tool } = {}) {
+    await modulesReady(); // setups and previews come from the module registry
     const attemptState = state;
     const attempt = rollStation(attemptState, station, api.rng);
     const start = startStation(attemptState, station, attempt, { tool });

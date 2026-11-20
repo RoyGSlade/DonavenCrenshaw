@@ -1,0 +1,30 @@
+{
+  "id": "practice",
+  "version": "1.0.0",
+  "kind": "minigame",
+  "title": "Practice lock",
+  "verb": "Try a lock with no risk",
+  "skill": "hacking",
+  "where": [
+    "practice lock"
+  ],
+  "length_s": [
+    30,
+    180
+  ],
+  "inputs": [
+    "seed",
+    "tier",
+    "points",
+    "level",
+    "context"
+  ],
+  "outputs": [
+    "success",
+    "xp"
+  ],
+  "art": [],
+  "status": "in-game",
+  "adapter": true,
+  "contract": 1
+}

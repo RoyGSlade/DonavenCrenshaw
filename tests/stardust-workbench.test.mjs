@@ -21,6 +21,8 @@ import * as S from '../projects/Space-Shooter/voyage/workbench/state.js';
 import { STATIONS, stationOfProp, rollStation, startStation, settleStation, specOf, GAME_IDS, loadoutOf, previewLine } from '../projects/Space-Shooter/voyage/workbench/stations.js';
 import { TALKS, TALK_WHO, talkIssues, nextAfterCheck } from '../projects/Space-Shooter/voyage/workbench/talks.js';
 import { sparSetup, sparXp, sparSaid } from '../projects/Space-Shooter/voyage/workbench/spar.js';
+import { ready as modulesReady } from '../projects/Space-Shooter/voyage/modules/registry.js';
+await modulesReady(); // every game is a module: load the registry once
 
 const VOYAGE = new URL('../projects/Space-Shooter/voyage/', import.meta.url).pathname;
 const MAP = compileMap(WORKBENCH_DEF);
