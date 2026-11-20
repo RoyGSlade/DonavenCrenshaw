@@ -2,7 +2,7 @@
 // DOCK_TABLE=1 prints the pass-rate table the lane reports.   Run: node --test tests/model.test.mjs
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createDocking, stepDocking, frameOf, halfAt, safeAt, WALL_CAP, GRACE, dockingWord, warnFill, wallNear, wallBand, lightsLeft, dockingXp, dockingEffects, DOCKING_DT, RB, DM, SHIP_R, SCRAPE, PASS, OUTCOMES } from '../model.js';
+import { T0, XB, YB0, YB1, createDocking, stepDocking, frameOf, halfAt, safeAt, WALL_CAP, GRACE, dockingWord, warnFill, wallNear, wallBand, lightsLeft, dockingXp, dockingEffects, DOCKING_DT, RB, DM, SHIP_R, SCRAPE, PASS, OUTCOMES } from '../model.js';
 import { runBot, sweep, makeBot } from '../bot.js';
 import { setupDocking, DOCKING_BASE, PATHS, ALIASES, cleanPoints } from '../setup.js';
 import { endWords, tryWords, gradeWord, endLine, LINES, scrapeWords } from '../words.js';
@@ -44,8 +44,8 @@ test('the board: the ship starts past the funnel mouth, to one side of the lane,
     assert.ok(f.d > DM && f.d < DM + 16, `starts just past the mouth (${f.d})`);
     assert.ok(Math.abs(f.l) > 8, 'off the lane');
     assert.equal(Math.hypot(s.vx, s.vy), 0);
-    assert.ok(Math.abs(frameOf(s, 6).th) < 1e-9, 'straight down six seconds in');
-    assert.ok(Math.hypot(s.x, s.y) < 150 && Math.abs(s.x) < 100, 'inside the board');
+    assert.ok(Math.abs(frameOf(s, T0).th) < 1e-9, 'straight down a few seconds in');
+    assert.ok(Math.abs(s.x) < XB - 4 && s.y < YB1 && s.y > YB0, 'inside the board, with room for the ship');
   }
 });
 
@@ -122,7 +122,7 @@ test('the walls warn first: outside the lit lane the warning drains, back inside
 
 test('past the funnel mouth there are no walls: open space never scrapes', () => {
   const s = createDocking({ seed: 4, setup: STEADY });
-  for (let i = 0; i < 600; i++) { place(s, DM + 20, 90); stepDocking(s, DOCKING_DT, { aim: null, thrust: 0 }); }
+  for (let i = 0; i < 600; i++) { place(s, DM + 20, 40); stepDocking(s, DOCKING_DT, { aim: null, thrust: 0 }); }
   assert.equal(s.hullLost, 0); assert.equal(s.scrapes, 0);
 });
 
@@ -373,4 +373,12 @@ test('a scrape is a lesson, not a trap: a breath before the wall can warn again,
   const lazy = runBot('lazy', { seed: 3, setup: STEADY }); assert.ok(lazy.result.hullLost <= WALL_CAP, `hull lost ${lazy.result.hullLost}`); assert.equal(lazy.result.outcome, OUTCOMES.wavedOff);
   const t = createDocking({ seed: 4, setup: STEADY }); for (let i = 0; i < 60 * 25; i++) { place(t, 40, halfAt(STEADY, 40) + 4); stepDocking(t, DOCKING_DT, { aim: null, thrust: 0 }); if (t.done) break; }
   assert.equal(t.wallLost, WALL_CAP, 'the walls alone stop at the cap'); assert.equal(t.done, false, 'and the run goes on');
+});
+
+test('the board has edges: a ship that burns away from the base is turned back at the edge of the screen, with no scrape', () => {
+  const s = createDocking({ seed: 3, setup: STEADY });
+  for (let i = 0; i < 60 * 8 && !s.done; i++) { stepDocking(s, DOCKING_DT, { aim: 0, thrust: 1 }); assert.ok(s.x <= XB + 1e-9 && s.x >= -XB && s.y <= YB1 && s.y >= YB0, `on the board at ${i}`); }
+  assert.equal(s.x, XB, 'held at the right edge'); assert.equal(s.hullLost, 0, 'and it cost nothing');
+  const q = createDocking({ seed: 3, setup: STEADY }); for (let i = 0; i < 60 * 8 && !q.done; i++) stepDocking(q, DOCKING_DT, { aim: Math.PI / 2, thrust: 1 });
+  assert.ok(q.y <= YB1 + 1e-9);
 });

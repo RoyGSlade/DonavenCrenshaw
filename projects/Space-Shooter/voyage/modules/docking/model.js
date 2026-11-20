@@ -17,7 +17,7 @@ export const SHIP_R = 2.5;       // the ship's nose reaches the berth when d is 
 export const A_T = 20;           // thrust (units/s^2)
 export const DRAG = 0.7;         // a docking-aid drag on the ship's world speed, a second
 export const TURN = 9;           // how fast the ship swings to its aim (rad/s)
-export const T0 = 6;             // the lane points straight down this many seconds in (the sweep starts to one side of it)
+export const T0 = 3;             // the lane points straight down this many seconds in (the sweep starts to one side of it; kept small so the whole run fits a phone-wide board)
 export const T0_QUICK = 3;
 export const QUICK_IN = 16;      // a quick run starts this far inside the funnel mouth
 export const PASS = 70;
@@ -27,6 +27,7 @@ export const BOUNCE_IN = 0.8;    // after a wall scrape you sit this share of th
 export const BOUNCE_BACK = 0.4;  // and are thrown back inside at this share of the sideways speed you hit it with
 export const GRACE = 1.0;        // after any scrape the wall cannot start a new warning for this long (seconds)
 export const WALL_CAP = 40;      // the walls alone can cost at most this much hull in a run; past it they only nudge you back in (a parked ship in a sweeping corridor is not a wreck)
+export const XB = 80, YB0 = -44, YB1 = 140; // the board's edges: the ship cannot drift off the screen (the base's beacon field turns it back, with no scrape)
 export const PATH_EVERY = 0.1;   // the flight line is sampled this often (seconds)
 
 const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
@@ -131,6 +132,8 @@ export function stepDocking(s, dt = DOCKING_DT, input = {}) {
   s.vx += (level * A_T * Math.cos(s.h) - DRAG * s.vx) * dt;
   s.vy += (level * A_T * Math.sin(s.h) - DRAG * s.vy) * dt;
   s.x += s.vx * dt; s.y += s.vy * dt;
+  if (s.x > XB || s.x < -XB) { s.x = clamp(s.x, -XB, XB); s.vx = 0; }
+  if (s.y > YB1 || s.y < YB0) { s.y = clamp(s.y, YB0, YB1); s.vy = 0; }
 
   const f = frameOf(s);
   const { u, n } = f;
