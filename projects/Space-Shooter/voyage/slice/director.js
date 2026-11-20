@@ -9,6 +9,7 @@ import { QUESTS } from '../quests/data/quests/index.js';
 import { storyOf } from '../story/progress.js';
 import { nextScene, sliceStarted, SLICE_FLAG, START_ROOM, roomOf, arriveMode, activeScene } from './rules.js';
 import { placeName } from './places.js';
+import { castFor } from './presenceNames.js';
 
 /** Should this page open the Duchess? A fresh save with the new game on (not a Studio link, not ?start=hangar), or a save that began it. */
 export function wantsSlice({ save, params, throwaway = false, newGame = true }) {
@@ -34,11 +35,13 @@ export function startRoom(save) {
 
 /**
  * store, jobs (voyage/jobs.js), toast(text). world(): the on-foot world. fightIn(setup): the live shooter in the current
- * room (onfoot.fight). Returns { beat, fight, entered, advance, boot, pendingRoom }.
+ * room (onfoot.fight). presence (optional, slice/presenceRun.js): the crew ledger; a beat waits for the people it needs to walk in.
+ * busy(): a dialogue, card or full screen is up (the auto-resume stays out of its way). Returns { beat, fight, entered, advance, boot, pendingRoom, watch, snooze }.
  */
-export function createSliceDirector({ store, jobs, toast = () => {}, world, fightIn }) {
+export function createSliceDirector({ store, jobs, toast = () => {}, world, fightIn, presence = null }) {
   let pending = null; // a beat waiting for the player to walk into its room: { room, node, play }
   let cutting = null; // a fade in progress: { room, resolve }
+  let waitingCast = false; // a beat is waiting for people to walk into its room
   const here = () => world()?.map?.id || null;
 
   /** Fade to a room and resolve once the player is standing in it. */
@@ -57,9 +60,10 @@ export function createSliceDirector({ store, jobs, toast = () => {}, world, figh
   }
 
   /** A dialogue beat of a scene: play it here, fade to its room, or wait for the player to walk to it. */
-  function beat(v, play) {
+  function beat(v, play0) {
     const quest = QUESTS[v.quest?.id];
     const room = roomOf(quest, v.node);
+    // Opening track A: the people this beat needs walk to its room (through doors, at walking speed); it plays once they are in it.
     if (!room || here() === room) { pending = null; play(); return; }
     if (arriveMode(quest, v.node) === 'cut') { pending = null; cutTo(room).then(() => setTimeout(play, 350)); return; }
     pending = { room, node: v.node, play };
@@ -104,6 +108,7 @@ export function createSliceDirector({ store, jobs, toast = () => {}, world, figh
   /** On page load: pick the scene in progress back up, else start the next one. */
   function boot() {
     if (!sliceStarted(store.get())) return;
+    presence?.restore(store.get());
     if (jobs.playing) jobs.resume(); else advance();
   }
 

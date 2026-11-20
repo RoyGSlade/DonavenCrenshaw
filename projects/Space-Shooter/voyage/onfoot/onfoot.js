@@ -270,6 +270,7 @@ export function createOnFoot({ root, store = null, bus = null, hooks = {}, mapId
   world = createWorld({
     root, mapId, spawn, emit, shipArt, reducedMotion, unlocked, sound,
     hooks: {
+      presence: hooks.presence || null, // opening track A: the crew ledger (slice/presenceRun.js)
       interact,
       speedMult: () => hooks.statuses?.speedMult() || 1,
       locked: (door) => { toast(`${door.label}: ${door.gate?.reason || 'Locked.'}`); sound('jam'); },

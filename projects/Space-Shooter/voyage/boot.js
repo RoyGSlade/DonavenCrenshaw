@@ -65,6 +65,8 @@ import { OFFERS_DATA } from './quests/data/offers.js';
 // Launch slice: the opening on the Tin Duchess (slice/director.js).
 import { wantsSlice, startSlice, startRoom, createSliceDirector } from './slice/director.js';
 import { waitingOn } from './slice/rules.js';
+// Opening track A: the crew's ledger, the seal, roles and the fallback talk (slice/presenceRun.js, seal.js, role.js, fallbackLines.js).
+import { createPresenceRun } from './slice/presenceRun.js';
 import { createStatuses, clock } from './status.js';
 // The workbench room: a dev-only test room (?newgame=1&start=workbench), its own files in ./workbench/.
 import { wantsWorkbench } from './workbench/entry.js';
@@ -461,11 +463,15 @@ function boot(session = { mode: 'local' }) {
 
   // The walkable floor. Walking up to a station and pressing E opens it in place.
   const statuses = createStatuses();
+  // Opening track A: one ledger for the crew (who is where, who is walking), the seal on every way off the ship, and the fallback talk.
+  const presence = slicing ? createPresenceRun({ flags: () => store.get().flags || {} }) : null;
+  presence?.restore(store.get());
   onfoot = createOnFoot({
     root: floor, store, bus, mapId: link.map || (workbench ? WORKBENCH_ID : slicing ? startRoom(store.get()) : 'hangar'), spawn: link.map ? link.spawn : 'default',
     reducedMotion: still,
     hooks: {
       statuses,
+      presence: presence?.hooks || null,
       openStation: (id) => (workbenchRoom && String(id).startsWith('wb-') ? workbenchRoom.openStation(id) : new Promise((resolve) => {
         if (!place.openStation(id, { via: 'walk' })) { resolve(); return; }
         const off = place.subscribe((e) => { if (e.type === 'close') { off(); resolve(); } });
@@ -521,7 +527,24 @@ function boot(session = { mode: 'local' }) {
   setInterval(() => {
     const on = statuses.active();
     statusChip.hidden = !on.length;
-    if (on.length) statusChip.textContent = on.map((x) => `${x.name} · ${clock(x.left)}`).join('  ');
+    if (!on.length) return;
+    statusChip.replaceChildren(...on.map((x) => {
+      const item = document.createElement('span');
+      item.className = 'hg-st';
+      item.dataset.status = x.id;
+      item.title = x.text;
+      item.setAttribute('aria-label', `${x.name}, ${clock(x.left)} left`);
+      const word = document.createElement('b');
+      word.textContent = x.name;
+      const bar = document.createElement('span');
+      bar.className = 'hg-st-bar';
+      bar.setAttribute('role', 'meter');
+      const fill = document.createElement('i');
+      fill.style.width = `${Math.max(0, Math.min(100, (x.left / x.total) * 100))}%`;
+      bar.append(fill);
+      item.append(word, bar);
+      return item;
+    }));
   }, 500);
   pad = createDatapad({
     useItem: (id) => (id === 'coffee' ? onfoot.drinkCoffee(true) : false),
@@ -636,7 +659,7 @@ function boot(session = { mode: 'local' }) {
   // A job in progress waits on the tracker and the datapad (Continue); nothing pops up.
   // Launch slice: the opening picks its scene up (a reload lands back in the beat) or starts the next one.
   if (slicing) {
-    slice = createSliceDirector({ store, jobs, toast, world: () => onfoot?.world || null, fightIn: (setup) => onfoot.fight(setup) });
+    slice = createSliceDirector({ store, jobs, toast, world: () => onfoot?.world || null, fightIn: (setup) => onfoot.fight(setup), presence });
     ready.then(() => {
       // A signed-in account whose own save is an older hangar game replaces the fresh one: leave the Duchess for the hangar.
       if (!store.get().flags?.['slice-started']) { onfoot.world.go('hangar', 'default'); return; }
@@ -646,5 +669,5 @@ function boot(session = { mode: 'local' }) {
 
   // For tests and poking around in the console (no secrets: the save is the player's own).
   setTimeout(maybeControls, 600);
-  window.__stardust = { statuses, store, story, onfoot, place, jobs, licence, bus, pad, tracker, controls, pause, jobTalk, jobCard, crew, slice, workbench: workbenchRoom };
+  window.__stardust = { presence, statuses, store, story, onfoot, place, jobs, licence, bus, pad, tracker, controls, pause, jobTalk, jobCard, crew, slice, workbench: workbenchRoom };
 }

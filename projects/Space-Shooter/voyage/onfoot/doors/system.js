@@ -20,20 +20,22 @@ export function createDoorSystem() {
   }
 
   /** One frame. `bodies` are the walker and the people; returns { events: [{ type: 'swap', to, arrive, entry }], sounds }. */
-  function step(dt, { walker, bodies = [], locked = () => false, still = false } = {}) {
+  function step(dt, { walker, bodies = [], gapBodies = bodies, locked = () => false, still = false } = {}) {
     const events = [], sounds = [];
     if (!map || !doors.length) return { events, sounds };
     const T = map.tile, hold = new Map();
     for (const e of entries) {
       const room = e.roomDoor, far = e.farDoor;
-      const inZone = insideRect(walker.x, walker.y, e.zone, 2);
+      // Pressing up against the door you came in by (right after arriving) takes you back: it counts as leaving the passage, so the entry re-arms.
+      const pushingBack = est.get(e.id).phase === 'exiting' && rectDistance(walker.x, walker.y, far) < TUNING.pushBack * T;
+      const inZone = insideRect(walker.x, walker.y, e.zone, 2) && !pushingBack;
       const inTrigger = inZone && rectDistance(walker.x, walker.y, room) >= TUNING.trigger * T;
-      const r = stepEntry(est.get(e.id), { dt, inTrigger, inZone, roomOpen: open.get(room.id), farOpen: open.get(far.id), gap: bodyInGap(room, bodies) });
+      const r = stepEntry(est.get(e.id), { dt, inTrigger, inZone, roomOpen: open.get(room.id), farOpen: open.get(far.id), gap: bodyInGap(room, gapBodies) });
       hold.set(room.id, r.hold); hold.set(far.id, 'shut'); pulse.set(room.id, r.pulse); pulse.set(far.id, r.pulse);
       for (const ev of r.events) if (ev.type === 'swap') events.push({ type: 'swap', to: e.to, arrive: e.arrive, entry: e.id });
     }
     for (const d of doors) {
-      const w = doorWants({ mode: hold.get(d.id) || 'free', near: bodyNear(d, bodies, T), locked: !d.far && locked(d), far: d.far, gap: bodyInGap(d, bodies) });
+      const w = doorWants({ mode: hold.get(d.id) || 'free', near: bodyNear(d, bodies, T), locked: !d.far && locked(d), far: d.far, gap: bodyInGap(d, gapBodies) });
       if (w !== want.get(d.id)) { want.set(d.id, w); if (open.get(d.id) !== (w ? 1 : 0)) sounds.push(w ? 'open' : 'close'); }
       open.set(d.id, stepOpen(open.get(d.id), w, dt, still));
     }

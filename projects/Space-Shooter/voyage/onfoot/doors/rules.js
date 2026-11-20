@@ -12,6 +12,7 @@ export const TUNING = Object.freeze({
   trigger: 0.85,     // tiles in from the room door before the vestibule seals behind you
   cycleSecs: 0.9,    // both doors shut, lights cycling, before the map changes
   settleSecs: 0.5,   // arrived: both doors shut for a beat before the next room's door opens
+  pushBack: 0.4,     // tiles: standing against the far door of the passage you arrived in turns you round (a player is never stuck in it)
   eps: 0.001,
 });
 
