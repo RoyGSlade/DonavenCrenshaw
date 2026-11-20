@@ -1,5 +1,5 @@
 // The crafting chain's shared rules (v2/PLAN.md section 4.2) and a small recipe runner. Pure: no DOM, no clock, no randomness
-// of its own. Every game of the chain (Cut, Screw, Bend, Flatten, Polish now; Weld later) ends with a grade 0..100 and hands it
+// of its own. Every game of the chain (Cut, Screw, Bend, Flatten, Polish, Pour now; Weld later) ends with a grade 0..100 and hands it
 // to submit(); this module decides pass, redo or ruin, counts the spoils, and builds the result card. The old heat-and-shape
 // game (craft.js) keeps its own rules; this module reuses its material bank and star rules so a craft costs the same everywhere.
 //
@@ -9,7 +9,7 @@
 //   item quality = the average of the passing grades + 4 per Quality point, 100 at most; stars at 65 and 90 (the built rule)
 //   XP (placeholder) = 2 + 1 per game passed + 1 per star above the first, 10 at most; 0 if ruined
 import { settleMaterials, starsOf, SPOIL_SHARE } from './craft.js';
-import { setupCut, setupScrew, setupBend, setupFlatten, setupPolish, CRAFT_CATEGORIES, POINT_MAX } from './setup.js';
+import { setupCut, setupScrew, setupBend, setupFlatten, setupPolish, setupPour, CRAFT_CATEGORIES, POINT_MAX } from './setup.js';
 
 export const PASS = 70, CLEAN = 85, PERFECT = 95;
 export const MAX_REDOS = 2;
@@ -37,20 +37,22 @@ export const RECIPES = Object.freeze({
   bend: Object.freeze({ id: 'bend', name: 'Bend a bracket', what: 'bracket', materials: 3, build: 20, steps: Object.freeze([{ name: 'Bend the bracket', games: Object.freeze([{ kind: 'bend', bends: 2 }]) }]) }),
   flatten: Object.freeze({ id: 'flatten', name: 'Flatten a plate', what: 'plate', materials: 3, build: 20, steps: Object.freeze([{ name: 'Flatten the plate', games: Object.freeze([{ kind: 'flatten' }]) }]) }),
   polish: Object.freeze({ id: 'polish', name: 'Polish a plate', what: 'plate', materials: 3, build: 25, steps: Object.freeze([{ name: 'Polish the plate', games: Object.freeze([{ kind: 'polish' }]) }]) }),
+  pour: Object.freeze({ id: 'pour', name: 'Mix a coolant flask', what: 'flask', materials: 3, build: 15, steps: Object.freeze([{ name: 'Pour the flask', games: Object.freeze([{ kind: 'pour', pours: 3, liquids: Object.freeze(['coolant', 'glycol', 'water']) }]) }]) }),
   'bolt-plate': Object.freeze({
     id: 'bolt-plate', name: 'Bolt plate', what: 'bolt plate', materials: 4, build: 30,
     steps: Object.freeze([{ name: 'Cut the plate', games: Object.freeze([{ kind: 'cut' }]) }, { name: 'Bolt it down', games: Object.freeze([{ kind: 'screw' }]) }]),
   }),
 });
-export const KIND_NAME = Object.freeze({ cut: 'Cut', screw: 'Screw', bend: 'Bend', flatten: 'Flatten', polish: 'Polish' });
+export const KIND_NAME = Object.freeze({ cut: 'Cut', screw: 'Screw', bend: 'Bend', flatten: 'Flatten', polish: 'Polish', pour: 'Pour' });
 
 /** The setup of one game of the chain at the craft's roll. */
-export function gameSetup(kind, { tier = 0, points = {}, level = POINT_MAX, tool = 'shop', bends = 1 } = {}) {
+export function gameSetup(kind, { tier = 0, points = {}, level = POINT_MAX, tool = 'shop', bends = 1, pours = 3, liquids = null } = {}) {
   if (kind === 'cut') return setupCut({ tier, points, level, tool });
   if (kind === 'screw') return setupScrew({ tier, points, level });
   if (kind === 'bend') return setupBend({ tier, points, level, bends });
   if (kind === 'flatten') return setupFlatten({ tier, points, level });
   if (kind === 'polish') return setupPolish({ tier, points, level });
+  if (kind === 'pour') return setupPour({ tier, points, level, pours, liquids });
   throw new Error(`No chain game ${kind}`);
 }
 
@@ -76,7 +78,7 @@ export function current(s) {
   const g = s.list[s.i];
   return {
     kind: g.kind, shape: g.shape, index: s.i, total: s.list.length, step: g.step, stepName: g.stepName, attempt: s.attempt, redosLeft: MAX_REDOS - s.attempt,
-    seed: s.seed + s.i * 977 + s.attempt * 131, bends: g.bends, setup: gameSetup(g.kind, { tier: s.tier, points: s.points, level: s.level, tool: s.tool, bends: g.bends }),
+    seed: s.seed + s.i * 977 + s.attempt * 131, bends: g.bends, pours: g.pours, liquids: g.liquids, setup: gameSetup(g.kind, { tier: s.tier, points: s.points, level: s.level, tool: s.tool, bends: g.bends, pours: g.pours, liquids: g.liquids }),
   };
 }
 

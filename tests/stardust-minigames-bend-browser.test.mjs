@@ -105,7 +105,7 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
       await sub('the bench menu lists Bend and Flatten between Screw and Bolt plate', async () => {
         await openMenu();
         const crafts = await page.evaluate(() => [...document.querySelectorAll('.wb-c')].map((b) => b.dataset.craft));
-        assert.deepEqual(crafts, ['cut', 'screw', 'bend', 'flatten', 'polish', 'bolt-plate', 'heat']);
+        assert.deepEqual(crafts, ['cut', 'screw', 'bend', 'flatten', 'polish', 'pour', 'bolt-plate', 'heat']);
         assert.match(await page.locator('.wb-c[data-craft="bend"]').innerText(), /Bend a bracket/);
         await noScroll('menu'); await shot('0-bench-menu');
       });

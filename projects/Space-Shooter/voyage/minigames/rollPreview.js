@@ -2,7 +2,7 @@
 // "Smooth roll: 15 s more, a smaller board (4 x 4)." and how far the next tier up is: "2 more on the
 // d20 would make it Smooth." It compares the setup at the rolled tier with the setup at a Steady roll
 // (same level and points) using the real setup functions, so the line cannot disagree with the game. Pure.
-import { tierOf, tierInfo, setupRepair, setupHack, setupHaggle, setupPersuade, setupIntimidate, setupCraft, setupCut, setupScrew, setupBend, setupFlatten, setupPolish, setupNav, setupPerihelion, setupStealth, setupPilot } from './setup.js';
+import { tierOf, tierInfo, setupRepair, setupHack, setupHaggle, setupPersuade, setupIntimidate, setupCraft, setupCut, setupScrew, setupBend, setupFlatten, setupPolish, setupPour, setupNav, setupPerihelion, setupStealth, setupPilot } from './setup.js';
 
 const r1 = (x) => Math.round(x * 10) / 10;
 const num = (x) => (Number.isInteger(r1(x)) ? String(r1(x)) : r1(x).toFixed(1));
@@ -32,6 +32,7 @@ export const CHAIN_SPECS = Object.freeze({
   bend: { setup: setupBend, phrases: [(b, n) => { const d = Math.round(((n.hi - n.lo) / (b.hi - b.lo) - 1) * 100); return d === 0 ? null : `rhythm window ${Math.abs(d)}% ${d > 0 ? 'wider' : 'narrower'}`; }, (b, n) => (n.stop === b.stop ? null : `stop zone ${n.stop > b.stop ? 'wider' : 'narrower'}`)] },
   flatten: { setup: setupFlatten, phrases: [(b, n) => (n.band === b.band ? null : `power band ${n.band > b.band ? 'wider' : 'narrower'}`), (b, n) => { const d = Math.round((n.drift / b.drift - 1) * 100); return d === 0 ? null : `the hammer leans ${Math.abs(d)}% ${d < 0 ? 'less' : 'more'}`; }, (b, n) => { const d = n.bubbles - b.bubbles; return d === 0 ? null : `${Math.abs(d)} ${d < 0 ? 'fewer' : 'more'} bubble${Math.abs(d) === 1 ? '' : 's'}`; }] },
   polish: { setup: setupPolish, phrases: [(b, n) => { const d = Math.round((n.pullFactor / b.pullFactor - 1) * 100); return d === 0 ? null : `the wheel is pulled ${Math.abs(d)}% ${d < 0 ? 'less' : 'more'}`; }, (b, n) => (n.limit === b.limit ? null : `a cell takes ${n.limit > b.limit ? 'longer' : 'less time'} to dimple`)] },
+  pour: { setup: setupPour, phrases: [(b, n) => { const d = Math.round((n.clean / b.clean - 1) * 100); return d === 0 ? null : `the clean band on the line ${Math.abs(d)}% ${d > 0 ? 'wider' : 'narrower'}`; }, (b, n) => { const d = Math.round((n.pass / b.pass - 1) * 100); return d === 0 ? null : `the pass band ${Math.abs(d)}% ${d > 0 ? 'wider' : 'narrower'}`; }] },
   'bolt-plate': { setup: (o) => ({ ...setupCut(o), turns: setupScrew(o).turns, zone: setupScrew(o).zone }), phrases: [pct('width', 'cutting line', 'wider', 'narrower'), (b, n) => { const d = Math.round((n.turns - b.turns) * 100) / 100; return d === 0 ? null : `${Math.abs(d)} ${d < 0 ? 'fewer' : 'more'} turns on the bolt`; }, pct('zone', 'snug zone')] }
 });
 

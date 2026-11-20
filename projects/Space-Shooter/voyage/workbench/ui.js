@@ -99,6 +99,7 @@ export function renderCraftMenu(root, { part = null, partWords = '', tool = 'sho
     ['bend', 'Bend a bracket', 'Bend: press A and D in the beat, stop on the ghost line, set it. Two bends, about 25 seconds.'],
     ['flatten', 'Flatten a plate', 'Flatten: pick a bubble, hold to charge the hammer, steer against the lean, let go. About 25 seconds.'],
     ['polish', 'Polish a plate', 'Polish: drag the wire wheel over the dull cells, fight the pull, stop before a cell dimples. About 40 seconds.'],
+    ['pour', 'Mix a coolant flask', 'Kitchen, Pour: hold to tip the jug, let go with the liquid on the line. Three ingredients, about 20 seconds.'],
     ['bolt-plate', 'Bolt plate', 'Cut the plate, then bolt it down. Two games, one roll, a part kept between them.'],
     ['heat', 'Old: heat and shape', 'The older game: heat the stock, then tap the tools in order.'],
   ];

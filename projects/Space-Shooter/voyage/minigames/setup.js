@@ -334,6 +334,20 @@ export function setupPolish({ tier = 0, points = {}, level = POINT_MAX } = {}) {
   };
 }
 
+// --- Cooking: Pour (v2/PLAN.md section 6) ----------------------------------------------------------
+//   Pour  every ingredient has its own glass and line; the glass fills 25 a second while you hold; within 6 of the line is clean, within 12 passes at 70; over is a spill; under can be topped up (-5).
+//   The roll (tier t): both bands x (1 + 0.15 t): clean 4.2 / 7.8 and pass 8.4 / 15.6 at Rough / Smooth.
+//   One Speed point: the stream is 5% quicker (25 up to 36.25) but only while the level is far from the line; the last 22 always run at 25.
+//   Why: with a human's fixed reaction time a faster stream overshoots by more, so a plain "5% faster" made the stop harder (Polish taught this).
+export const POUR_BASE = Object.freeze({ pours: 3, clean: 6, pass: 12, tierBand: 0.15, rate: 25, ratePerPoint: 0.05, qualityPerPoint: 4, buildPerPoint: 0.05, materialPerPoint: 0.04 });
+export function setupPour({ tier = 0, points = {}, level = POINT_MAX, pours = 3, liquids = null } = {}) {
+  const p = cleanPoints(points, CRAFT_CATEGORIES, level), t = clampTier(tier), b = POUR_BASE, f = 1 + b.tierBand * t;
+  return {
+    kind: 'pour', pours: Math.max(1, Math.min(4, Math.trunc(pours) || 1)), liquids: liquids || null, clean: r4c(b.clean * f), pass: r4c(b.pass * f), rate: b.rate, quick: r4c(b.ratePerPoint * p.speed), fastRate: r4c(b.rate * (1 + b.ratePerPoint * p.speed)),
+    ...craftBits(b, p), tier: t, points: p, label: tierInfo(t).label,
+  };
+}
+
 // --- Navigation: plot the lane (PLAN.md section 2.3) ------------------------------
 // Categories: time (travel time), fuel (fuel use), warning (hazard warning).
 //   time     every lane costs 4% less travel time per point        (0..9 -> x1 .. x0.64, exact, never rounded)

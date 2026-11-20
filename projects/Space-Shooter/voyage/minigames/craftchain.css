@@ -153,3 +153,24 @@
 .wb-full .cc-polrow{padding-bottom:max(2px,env(safe-area-inset-bottom))}
 .wb-full .cc-recipe:has(.cc-polpanel) .cc-chips{flex-wrap:wrap;overflow:visible;padding-bottom:0}
 .wb-full .cc-recipe:has(.cc-polpanel) .cc-chip{white-space:normal}
+
+/* Pour: glass gauge with the line and its green and amber bands, ingredient pips, one big Pour pad (the same kit button as the other pads) */
+.cc-hud.cc-hud2{grid-template-columns:1.7fr 1fr}
+.cc-glass{height:12px;overflow:hidden}.cc-glass i{background:#4fd8e8}
+.cc-glass .cc-zone{top:0;bottom:0;box-shadow:none}.cc-glass .cc-passzone{background:#ffc857;opacity:.45}.cc-glass .cc-cleanzone{background:#7be36a;opacity:.8}
+.cc-glass .cc-tick{top:0;bottom:0;background:#fff}
+.cc-glassstat em,.cc-pourstat em{font-size:12px}
+.cc-glass[data-state=right] ~ em{color:#9fe870}.cc-glass[data-state=over] ~ em{color:#ff8a70}
+.cc-pourstat{grid-template-columns:auto 1fr;align-items:center;column-gap:8px}.cc-pourstat>span{grid-column:1/3}
+.cc-pourstat .cc-liquidname{grid-column:2;justify-self:end;font-size:12px}
+.cc-pips i[style]{border-color:#e8f5f8}
+.cc-pourwrap{width:min(100%,880px);aspect-ratio:800/560;margin:0 auto}
+.cc-pourcanvas{cursor:default;touch-action:none}
+.cc-pourrow{display:grid;grid-template-columns:1fr;max-width:640px;width:100%;margin:0 auto}
+.cc-pourpad{min-height:92px}.cc-pourpad b{font-size:34px}
+.wb-full .cc-pourpanel{gap:6px;width:100%;margin-left:0;margin-right:0}
+.wb-full .cc-pourwrap{flex:1 1 0;min-height:120px;width:100%;max-width:none;aspect-ratio:auto;position:relative;display:block;margin:0}
+.wb-full .cc-pourwrap .cc-canvas{position:absolute;inset:0;width:100%;height:100%}
+.wb-full .cc-pourrow{padding-bottom:max(2px,env(safe-area-inset-bottom))}
+.wb-full .cc-recipe:has(.cc-pourpanel) .cc-chips{flex-wrap:wrap;overflow:visible;padding-bottom:0}
+.wb-full .cc-recipe:has(.cc-pourpanel) .cc-chip{white-space:normal}
