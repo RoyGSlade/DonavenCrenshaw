@@ -58,6 +58,8 @@
 @keyframes dk-shake{0%,100%{transform:translate(0)}20%{transform:translate(-3px,2px)}40%{transform:translate(3px,-2px)}60%{transform:translate(-2px,-2px)}80%{transform:translate(2px,2px)}}
 @media (prefers-reduced-motion:reduce){.m-docking.is-shake .dk-board,.m-docking .dk-start,.m-docking .dk-lamps i.is-last,.m-docking .dk-card{animation:none}}
 @media (max-width:700px){
+  .m-docking .dk-warnstat{display:none}
+  .m-docking .dk-closing,.m-docking .dk-hullstat{grid-column:span 3}
   .m-docking{gap:5px}
   .m-docking .dk-stat{padding:4px 6px}
   .m-docking .dk-stat em{font-size:13px}

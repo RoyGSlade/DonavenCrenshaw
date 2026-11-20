@@ -46,7 +46,7 @@ export const DOCKING_BASE = Object.freeze({
   corridorTier: [0.85, 0.92, 1, 1.1, 1.2], sweepTier: [1.2, 1.1, 1, 0.9, 0.8],
 });
 
-export function setupDocking({ tier = 0, points = {}, level = POINT_MAX, quick = false } = {}) {
+export function setupDocking({ tier = 0, points = {}, level = POINT_MAX, quick = false, fee = null } = {}) {
   const p = cleanPoints(points, level);
   const t = clampTier(tier);
   const b = DOCKING_BASE;
@@ -56,7 +56,7 @@ export function setupDocking({ tier = 0, points = {}, level = POINT_MAX, quick =
     berth: r4(b.berth * c), mouth: r4(b.mouth * c),
     sweep: r4(b.sweep * b.sweepTier[t + 2] * (1 - b.sweepPerPoint * p.maneuver)),
     warn: r4(b.warn + b.warnPerPoint * p.pursuit),
-    safe: b.safe, tmax: quick ? b.tmaxQuick : b.tmax, lights: b.lights, fee: b.fee, quick: !!quick,
+    safe: b.safe, tmax: quick ? b.tmaxQuick : b.tmax, lights: b.lights, fee: Number.isFinite(fee) && fee >= 0 ? Math.round(fee) : b.fee, quick: !!quick,
     tier: t, points: p, label: tierInfo(t).label,
   };
 }

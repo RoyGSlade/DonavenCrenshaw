@@ -144,6 +144,14 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
         await open('seed=3&tier=1');
         const s0 = await snap(page); assert.equal(s0.done, false);
         await first();
+        const z0 = (await page.evaluate((sel) => document.querySelector(sel).__view().zoom, ROOT));
+        assert.ok(z0 < 1.15, `far out the view is wide (zoom ${z0})`);
+        let mid = await fly({ until: (q) => { const f = frameOf(q); return Math.hypot(q.x - f.B.x, q.y - f.B.y) < 14; } });
+        assert.ok(!mid.done, 'still flying at 14 from the berth'); await wait(page, 700);   // let the camera finish gliding in
+        const near = await page.evaluate((sel) => { const r = document.querySelector(sel); const v = r.__view(); return { zoom: v.zoom, shipLen: 8.2 * v.sc }; }, ROOT);
+        assert.ok(near.zoom > 2.3, `closing on the berth the camera has zoomed in (${near.zoom})`);
+        assert.ok(near.shipLen >= 30, `the ship is big enough to read its nose: ${Math.round(near.shipLen)} css px long`);
+        await shot('2b-zoomed-in');
         await fly();
         await wait(page, 200);
         const s = await snap(page);
@@ -173,7 +181,7 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
         s = await fly({ ms: 20000, steer: (q) => toWall(q), until: async (q) => { const f = frameOf(q); if (!sawGlow && Math.abs(f.l) > f.half * 0.8 && Math.abs(f.l) <= f.half) sawGlow = true; return q.outside && q.warnLeft < q.warn * 0.7; } });
         assert.ok(s.outside, 'outside the walls'); assert.equal(s.scrapes, 0, 'the warning comes before any scrape');
         await shot('3-wall-warning');
-        assert.equal(await page.locator(`${ROOT} .dk-warnstat em`).innerText(), 'steer back');
+        if (!phone) assert.equal(await page.locator(`${ROOT} .dk-warnstat em`).innerText(), 'steer back');   // the phone HUD drops the wall panel: the wall itself glows
         assert.match(await page.locator(`${ROOT} .dk-tip`).innerText(), /steer back|drifting wide/i);
         // 3. keep going: the wall scrapes, which costs hull and bounces you, and never ends the run
         s = await fly({ ms: 20000, steer: (q) => toWall(q), until: (q) => q.scrapes >= 1 });
@@ -249,13 +257,34 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
         assert.ok(ids.includes('music:duck') && ids.includes('line:dockmaster.approach'), `host sound ids: ${ids}`);
       });
 
-      await sub('Leave: the host closes the stage, the game lets go of the keys and the sound, and the run resolves as left', async () => {
+      await sub('Leave (contract 1.1): the module registered ctx.onLeave once, the host calls it, and the loop, the keys and every sound stop', async () => {
         await open('seed=9');
+        assert.equal(await page.evaluate(() => window.__leaveRegistered), 1, 'registered the leave handler once at the start');
         await first();
+        if (phone) { fingers.pad = true; await sendTouches(); } else await page.keyboard.down('KeyD');   // sound is running: the thruster and the guide tone
+        await wait(page, 500);
+        const audioOn = () => page.evaluate(async () => (await import('./audio.js')).liveAudioContexts());
+        assert.equal(await audioOn(), 1, 'one audio context is live while it plays');
         if (phone) await page.locator('#leave').tap(); else await page.locator('#leave').click();
         await wait(page, 500);
-        assert.equal(await page.locator(ROOT).count(), 0, 'the game is gone'); assert.equal((await result()).left, true);
+        assert.equal(await page.locator(ROOT).count(), 0, 'the game is gone');
+        const r = await result(); assert.equal(r.left, true); assert.equal(r.done, true);
+        assert.equal(await audioOn(), 0, 'no audio context (so no thruster, guide tone or wall pulse) is running after Leave');
+        if (phone) { fingers.pad = false; await sendTouches(); } else await page.keyboard.up('KeyD');
         await page.keyboard.press('Space'); await page.keyboard.press('KeyD'); await wait(page, 300);
+        assert.equal(await audioOn(), 0, 'and a key press afterwards starts nothing');
+      });
+
+      await sub('reduced motion: the camera zooms in three steps instead of gliding', async () => {
+        await page.emulateMedia({ reducedMotion: 'reduce' });
+        await open('seed=3&tier=1');
+        await first();
+        const seen = new Set();
+        await fly({ until: async (q) => { const z = await page.evaluate((sel) => document.querySelector(sel).__view().zoom, ROOT); seen.add(Math.round(z * 100) / 100); return false; } });
+        await page.emulateMedia({ reducedMotion: 'no-preference' });
+        const allowed = [1, 1.8, 2.6];
+        assert.ok([...seen].every((z) => allowed.some((a) => Math.abs(a - z) < 0.02)), `only the three steps ${allowed}, saw ${[...seen]}`);
+        assert.ok(seen.size >= 2, `it did step in (${[...seen]})`);
       });
     } finally {
       await browser.close(); await server.close();

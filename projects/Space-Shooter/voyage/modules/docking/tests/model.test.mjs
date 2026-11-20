@@ -382,3 +382,23 @@ test('the board has edges: a ship that burns away from the base is turned back a
   const q = createDocking({ seed: 3, setup: STEADY }); for (let i = 0; i < 60 * 8 && !q.done; i++) stepDocking(q, DOCKING_DT, { aim: Math.PI / 2, thrust: 1 });
   assert.ok(q.y <= YB1 + 1e-9);
 });
+
+// ---- contract 1.1: the manifest and the points it names ---------------------------------------------------------------------------------
+test('the manifest follows contract 1.1: path objects whose ids are the ids ctx.points is read with, no tabletop field, contract "1.1"', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const m = JSON.parse(await readFile(new URL('../manifest.json', import.meta.url), 'utf8'));
+  assert.equal(m.contract, '1.1'); assert.equal(m.id, 'docking'); assert.equal(m.kind, 'minigame'); assert.ok(!('tabletop' in m), 'no tabletop field'); assert.ok(!('pathAliases' in m), 'the alias table lives in the code');
+  assert.ok(Array.isArray(m.paths) && m.paths.every((p) => p && typeof p === 'object' && p.id && p.division && p.tabletopSkill === 'Handling'));
+  assert.deepEqual(m.paths.map((p) => p.id), [...PATHS], 'the manifest ids are the ids the setup reads');
+  assert.deepEqual(m.paths.map((p) => p.division), ['Control', 'Maneuver', 'Pursuit']);
+  for (const p of m.paths) { const base = setupDocking({}), one = setupDocking({ points: { [p.id]: 6 }, level: 9 }); assert.notDeepEqual(one, base, `points keyed by "${p.id}" change the setup`); assert.equal(one.points[p.id], 6); }
+  for (const k of ['success', 'grade', 'clean', 'hullLost', 'timeS', 'scrapes', 'wavedOff', 'berth']) assert.ok(m.outputs.includes(k), k);
+});
+test('the tug fee comes from the base record when it has one, else the placeholder', () => {
+  assert.equal(setupDocking({}).fee, DOCKING_BASE.fee); assert.equal(setupDocking({ fee: 60 }).fee, 60); assert.equal(setupDocking({ fee: -3 }).fee, DOCKING_BASE.fee); assert.equal(setupDocking({ fee: undefined }).fee, DOCKING_BASE.fee);
+  assert.equal(createDocking({ seed: 1, setup: setupDocking({ fee: 60 }) }).fee, 60);
+});
+test('the dockmaster lines are marked as drafts in the fixtures', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const f = JSON.parse(await readFile(new URL('../fixtures.json', import.meta.url), 'utf8')); assert.equal(f.lines.status, 'draft'); assert.match(f.lines.note, /draft/i);
+});

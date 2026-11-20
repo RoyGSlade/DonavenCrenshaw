@@ -5,15 +5,60 @@
   "title": "Docking",
   "verb": "Bring her in",
   "skill": "piloting",
-  "tabletop": "Handling",
-  "paths": ["control", "maneuver", "pursuit"],
-  "pathAliases": { "landing": "control", "handling": "maneuver", "boost": "pursuit" },
-  "where": ["arriving at the star base", "any station with a berth", "trainer"],
-  "length_s": [15, 25],
-  "quick_length_s": [6, 10],
-  "inputs": ["seed", "tier", "points", "level", "quick", "context.base", "context.ship"],
-  "outputs": ["success", "grade", "clean", "hullLost", "timeS", "scrapes", "wavedOff", "berth"],
-  "art": ["art/base-drift-station.webp", "art/ship-courier.webp"],
+  "paths": [
+    {
+      "id": "control",
+      "division": "Control",
+      "tabletopSkill": "Handling"
+    },
+    {
+      "id": "maneuver",
+      "division": "Maneuver",
+      "tabletopSkill": "Handling"
+    },
+    {
+      "id": "pursuit",
+      "division": "Pursuit",
+      "tabletopSkill": "Handling"
+    }
+  ],
+  "where": [
+    "arriving at the star base",
+    "any station with a berth",
+    "trainer"
+  ],
+  "length_s": [
+    15,
+    25
+  ],
+  "quick_length_s": [
+    6,
+    10
+  ],
+  "inputs": [
+    "seed",
+    "tier",
+    "points",
+    "level",
+    "quick",
+    "context.base",
+    "context.ship",
+    "context.base.tugFee"
+  ],
+  "outputs": [
+    "success",
+    "grade",
+    "clean",
+    "hullLost",
+    "timeS",
+    "scrapes",
+    "wavedOff",
+    "berth"
+  ],
+  "art": [
+    "art/base-drift-station.webp",
+    "art/ship-courier.webp"
+  ],
   "status": "draft",
-  "contract": 1
+  "contract": "1.1"
 }

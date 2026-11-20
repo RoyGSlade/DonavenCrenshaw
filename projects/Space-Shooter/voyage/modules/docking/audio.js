@@ -2,6 +2,10 @@
 // corridor, a wall warning pulses faster as the wall nears, the thruster hisses while you burn. The browser only lets audio start after a
 // touch or a key, so `unlock()` is called from the first one; before that every call is a quiet no-op. Never throws.
 //   const a = createAudio();  a.unlock();  a.update({ thrust, centred, warn, wall });  a.scrape('wall'); a.clamp(); a.lightOut(); a.tug();  a.close();
+let liveContexts = 0;
+/** How many AudioContexts this module has open right now (the Leave test checks it is 0 after Leave). */
+export const liveAudioContexts = () => liveContexts;
+
 export function createAudio({ enabled = true } = {}) {
   let ac = null, master = null, thr = null, thrGain = null, guide = null, guideGain = null, warnOsc = null, warnGain = null, dead = false;
   const Ctor = typeof globalThis !== 'undefined' ? (globalThis.AudioContext || globalThis.webkitAudioContext) : null;
@@ -15,7 +19,7 @@ export function createAudio({ enabled = true } = {}) {
     if (!enabled || dead || !Ctor) return;
     try {
       if (!ac) {
-        ac = new Ctor(); master = ac.createGain(); master.gain.value = 0.5; master.connect(ac.destination);
+        ac = new Ctor(); liveContexts++; master = ac.createGain(); master.gain.value = 0.5; master.connect(ac.destination);
         const src = ac.createBufferSource(); src.buffer = noiseBuffer(1); src.loop = true;
         const bp = ac.createBiquadFilter(); bp.type = 'lowpass'; bp.frequency.value = 520; thrGain = ac.createGain(); thrGain.gain.value = 0;
         src.connect(bp); bp.connect(thrGain); thrGain.connect(master); src.start(); thr = src;
@@ -59,7 +63,7 @@ export function createAudio({ enabled = true } = {}) {
     clamp() { blip(95, 0.28, 'sine', 0.35, -45); setTimeout(() => { if (ok()) { blip(80, 0.3, 'sine', 0.4, -40); burst(0.1, 0.18, 2200); } }, 170); setTimeout(() => blip(660, 0.5, 'triangle', 0.1), 420); setTimeout(() => blip(880, 0.6, 'triangle', 0.1), 560); },
     lightOut() { blip(520, 0.25, 'triangle', 0.1, -300); },
     tug() { blip(130, 0.9, 'sawtooth', 0.08, 30); burst(0.5, 0.1, 400); },
-    close() { dead = true; try { thr?.stop(); guide?.stop(); warnOsc?.stop(); ac?.close(); } catch {} ac = null; },
+    close() { dead = true; if (ac) liveContexts = Math.max(0, liveContexts - 1); try { thr?.stop(); guide?.stop(); warnOsc?.stop(); ac?.close(); } catch {} ac = null; },
     get live() { return ok(); },
   };
 }

@@ -97,9 +97,16 @@ export function mountDocking(stage, { state, base, ship, sound = () => {}, reduc
 
   // ---- the board ------------------------------------------------------------------------------------------------------------------------
   const ctx2 = canvas.getContext('2d');
-  let cw = 0, ch = 0, dpr = 1, sc = 1, ox = 0, oy = 0, stars = null, camX = null;
-  const camTarget = (f) => clamp((s.x + f.B.x) / 2, -55, 55);   // the camera keeps you and the berth on the board: on a narrow phone the base slides across as the lane sweeps
-  const view = () => ({ sc, ox, oy, w: cw, h: ch, shipX: ox + s.x * sc, shipY: oy + s.y * sc });
+  let cw = 0, ch = 0, dpr = 1, sc = 1, scE = 1, ox = 0, oy = 0, stars = null, camX = null, camY = CY, zoom = 1;
+  // The camera has two jobs. Far out it keeps today's wide view, panning with the midpoint of you and the berth so a narrow phone keeps
+  // both on the board as the lane sweeps. As you close on the berth it ZOOMS IN (smoothly; in reduced motion in three steps), so the last
+  // third fills the board: the walls feel close, the ship's nose reads, and the clamps are an event. Pure geometry; the model never moves.
+  const ZOOM_MAX = 2.6, ZD_FAR = 78, ZD_NEAR = 16;
+  const smooth = (x) => x * x * (3 - 2 * x);
+  const closeness = (f) => clamp((ZD_FAR - Math.hypot(s.x - f.B.x, s.y - f.B.y)) / (ZD_FAR - ZD_NEAR), 0, 1);
+  const stepped = (k) => (k < 0.34 ? 0 : k < 0.67 ? 0.5 : 1);
+  const view = () => ({ sc: scE, ox, oy, w: cw, h: ch, zoom, shipX: ox + s.x * scE, shipY: oy + s.y * scE });
+  const aim = () => { ox = cw / 2 - camX * scE; oy = ch / 2 - camY * scE; };
   root.__view = view;
   const resize = () => {
     const r = board.getBoundingClientRect(); const w = Math.round(r.width), hh = Math.round(r.height);
@@ -107,7 +114,7 @@ export function mountDocking(stage, { state, base, ship, sound = () => {}, reduc
     dpr = Math.min(2, globalThis.devicePixelRatio || 1);
     if (w === cw && hh === ch && canvas.width === Math.round(w * dpr)) return;
     cw = w; ch = hh; canvas.width = Math.round(w * dpr); canvas.height = Math.round(hh * dpr);
-    sc = Math.min(cw / WW, ch / WH); ox = cw / 2 - (camX ?? 0) * sc; oy = ch / 2 - CY * sc; stars = null;
+    sc = Math.min(cw / WW, ch / WH); scE = sc * zoom; camX ??= 0; aim(); stars = null;
   };
   const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(resize) : null; ro?.observe(board);
   requestAnimationFrame(resize); resize();
@@ -204,7 +211,7 @@ export function mountDocking(stage, { state, base, ship, sound = () => {}, reduc
       if (sprite) { g.drawImage(sprite, -3.2, -3.5, 6.4, 7); }
       else { g.fillStyle = `hsl(${hashStr(d.ship) % 360},35%,70%)`; g.beginPath(); g.moveTo(0, -5); g.lineTo(4, 4); g.lineTo(-4, 4); g.closePath(); g.fill(); }
       g.restore();
-      if (sc >= 2.2) { g.save(); g.translate(Math.cos(ang) * (RB + 8), Math.sin(ang) * (RB + 8)); g.fillStyle = 'rgba(200,230,236,.55)'; g.font = `${Math.max(2.8, 9 / sc)}px Inter, sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(d.ship, 0, 0); g.restore(); }
+      if (scE >= 2.2) { g.save(); g.translate(Math.cos(ang) * (RB + 8), Math.sin(ang) * (RB + 8)); g.fillStyle = 'rgba(200,230,236,.55)'; g.font = `${Math.max(2.8, 9 / scE)}px Inter, sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(d.ship, 0, 0); g.restore(); }
     }
   }
 
@@ -283,14 +290,19 @@ export function mountDocking(stage, { state, base, ship, sound = () => {}, reduc
     if (!stars) stars = makeStars();
     const g = ctx2;
     g.setTransform(1, 0, 0, 1, 0, 0);
-    const par = (((-(camX ?? 0) * sc * 0.25 * dpr) % canvas.width) + canvas.width) % canvas.width;
+    const par = (((-(camX ?? 0) * scE * 0.25 * dpr) % canvas.width) + canvas.width) % canvas.width;
     g.drawImage(stars.bg, 0, 0, canvas.width, canvas.height);
     g.drawImage(stars.tile, par, 0, canvas.width, canvas.height); g.drawImage(stars.tile, par - canvas.width, 0, canvas.width, canvas.height);
     const sx = !calm() && shake > 0.2 ? (rnd() - 0.5) * shake : 0, sy = !calm() && shake > 0.2 ? (rnd() - 0.5) * shake : 0;
-    g.setTransform(dpr * sc, 0, 0, dpr * sc, dpr * (ox + sx), dpr * (oy + sy));
     const f = frameOf(s, vt);
-    const want = camTarget(f); camX = camX == null ? want : camX + (want - camX) * Math.min(1, dt * 2.4); ox = cw / 2 - camX * sc;
-    g.setTransform(dpr * sc, 0, 0, dpr * sc, dpr * (ox + sx), dpr * (oy + sy));
+    {   // the camera: pan to the midpoint, zoom in as the distance to the berth shrinks
+      const k = closeness(f), kz = calm() ? stepped(k) : smooth(k), midX = (s.x + f.B.x) / 2, midY = (s.y + f.B.y) / 2;
+      const wantX = clamp(midX, -55, 55) + (clamp(midX, -110, 110) - clamp(midX, -55, 55)) * kz, wantY = CY + (midY - CY) * kz, wantZ = 1 + (ZOOM_MAX - 1) * kz;
+      const a = calm() ? 1 : Math.min(1, dt * 2.6);
+      camX = camX == null ? wantX : camX + (wantX - camX) * a; camY += (wantY - camY) * a; zoom += (wantZ - zoom) * (calm() ? 1 : Math.min(1, dt * 3));
+      scE = sc * zoom; aim();
+    }
+    g.setTransform(dpr * scE, 0, 0, dpr * scE, dpr * (ox + sx), dpr * (oy + sy));
     drawBase(g, f, vt); drawLane(g, f, vt);
     // the wake
     for (let i = 0; i < trail.length; i++) { const p = trail[i]; g.globalAlpha = (i / trail.length) * 0.28; g.fillStyle = '#9fe8e2'; g.beginPath(); g.arc(p[0], p[1], 0.6, 0, TAU); g.fill(); }
@@ -439,5 +451,6 @@ export function mountDocking(stage, { state, base, ship, sound = () => {}, reduc
   }
   raf = requestAnimationFrame((t) => { last = t; frame(t); });
   promise.close = close;
+  promise.leave = () => { if (closed) return; close(); finish({ left: true }); };     // the host's Leave: stop the loop, the keys and the sound
   return promise;
 }

@@ -63,17 +63,19 @@ for (const [k, id] of [['seed', 'seed'], ['tier', 'tier'], ['control', 'p-contro
 if (q.get('quick') === '1') $('quick').checked = true;
 if (q.get('trainer') === '1') $('trainer').checked = true;
 const sounds = [];
-let leaveNow = null;
-$('leave').addEventListener('click', () => leaveNow?.());
+let leaveNow = null, registered = null;   // registered: the handler the module gave ctx.onLeave (contract 1.1)
+$('leave').addEventListener('click', () => (registered ? registered() : leaveNow?.()));
 async function run() {
   let docked = []; try { docked = JSON.parse($('docked').value || '[]'); } catch {}
   const points = { control: +$('p-control').value || 0, maneuver: +$('p-maneuver').value || 0, pursuit: +$('p-pursuit').value || 0 };
   const ctx = {
     seed: Math.max(1, +$('seed').value || 1), tier: +$('tier').value, points, level: 9, quick: $('quick').checked, mode: $('trainer').checked ? 'trainer' : 'field',
     context: { base: { id: 'star-base', name: $('base-name').value, berths: 4, berth: +$('base-berth').value || 1, docked }, ship: { name: 'Tin Duchess' } },
+    onLeave: (fn) => { registered = fn; window.__leaveRegistered = (window.__leaveRegistered || 0) + 1; },
     sound: (id) => { sounds.push(id); window.__sounds = sounds; }, reducedMotion: () => matchMedia('(prefers-reduced-motion: reduce)').matches,
   };
   $('host').hidden = false; document.body.style.overflow = 'hidden'; $('stage').replaceChildren();
+  registered = null;
   const left = new Promise((r) => { leaveNow = () => r({ done: true, success: false, grade: 0, left: true }); });
   const result = await Promise.race([play($('stage'), ctx), left]);
   $('stage').replaceChildren(); $('host').hidden = true; document.body.style.overflow = '';

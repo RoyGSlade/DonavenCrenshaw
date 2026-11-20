@@ -8,9 +8,23 @@
     "berths": 4,
     "berth": 1,
     "docked": [
-      { "ship": "Brass Heron", "berth": 2 },
-      { "ship": "Kestrel", "berth": 3 }
-    ]
+      {
+        "ship": "Brass Heron",
+        "berth": 2
+      },
+      {
+        "ship": "Kestrel",
+        "berth": 3
+      }
+    ],
+    "tugFee": 25
   },
-  "ship": { "name": "Tin Duchess", "icon": "ship-courier" }
+  "ship": {
+    "name": "Tin Duchess",
+    "icon": "ship-courier"
+  },
+  "lines": {
+    "status": "draft",
+    "note": "The four dockmaster lines in words.js are the module lead's drafts for Donaven, not his words. Voice is rendered separately on his go."
+  }
 }

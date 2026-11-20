@@ -15,11 +15,14 @@ export async function play(stage, ctx = {}) {
   const fx = await defaults(), cx = ctx.context || {};
   const base = { ...FALLBACK.base, ...fx.base, ...(cx.base || {}) }, ship = { ...FALLBACK.ship, ...fx.ship, ...(cx.ship || {}) };
   const quick = !!ctx.quick;
-  const setup = setupDocking({ tier: ctx.tier ?? 0, points: ctx.points || {}, level: ctx.level ?? POINT_MAX, quick });
+  const setup = setupDocking({ tier: ctx.tier ?? 0, points: ctx.points || {}, level: ctx.level ?? POINT_MAX, quick, fee: base.tugFee });   // the tug's fee comes from the base record when it has one
   const berth = Math.max(1, Math.min(base.berths, Math.trunc(base.berth) || 1));
   const state = createDocking({ seed: ctx.seed ?? 1, setup, quick, berth });
   await loadStyle();
-  const r = await mountDocking(stage, { state, base: { ...base, berth }, ship, sound: ctx.sound || (() => {}), reducedMotion: ctx.reducedMotion || (() => false) });
+  const run = mountDocking(stage, { state, base: { ...base, berth }, ship, sound: ctx.sound || (() => {}), reducedMotion: ctx.reducedMotion || (() => false) });
+  ctx.onLeave?.(() => run.leave());          // contract 1.1: register the leave handler once; on Leave the host calls it and we stop everything
+  const r = await run;
+  if (r.left) return { done: true, success: false, grade: 0, left: true };
   return {
     done: true, success: r.success, grade: r.grade, xp: r.xp, effects: dockingEffects(r, { ...base, berth }),
     clean: r.clean, hullLost: r.hullLost, timeS: r.timeS, scrapes: r.scrapes, wavedOff: r.wavedOff, berth: r.berth,
