@@ -38,6 +38,7 @@ export function createDialogueBox({ root, bus, audio, reducedMotion = () => fals
   let current = null; // { seq, timer }
   let typeTimer = 0;
   let idleTimer = 0;
+  let lone = null; // the lone plain choice's button, while one is showing
   const offs = [];
 
   function setPortrait(speaker, emotion) {
@@ -157,6 +158,9 @@ export function createDialogueBox({ root, bus, audio, reducedMotion = () => fals
       });
       return b;
     }));
+    // One plain choice besides "Later" (a lone "Go on"): a tap on the box takes it.
+    const plain = options.filter((o) => o.kind !== 'later');
+    lone = plain.length === 1 && !plain[0].locked && plain[0].kind === 'choice' ? [...choices.querySelectorAll('button')].find((b) => b.dataset.kind === 'choice') : null;
     choices.querySelector('button:not(:disabled)')?.focus({ preventScroll: true });
   }
 
@@ -166,7 +170,7 @@ export function createDialogueBox({ root, bus, audio, reducedMotion = () => fals
   }
 
   next.addEventListener('click', () => { if (current) finish(current.seq); else hide(); });
-  root.addEventListener('click', (e) => { if (e.target === root || e.target === text) { if (current) finish(current.seq); } });
+  root.addEventListener('click', (e) => { if (e.target === root || e.target === text) { if (current) finish(current.seq); else if (lone?.isConnected) lone.click(); } });
   // Intro lines are drawn by the intro overlay; the box only plays their voice
   // and answers story:said when it ends, so the intro keeps its own pace.
   let introSeq = null;
