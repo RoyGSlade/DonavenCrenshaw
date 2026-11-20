@@ -27,7 +27,7 @@ export function playOrder(root, { state, what = 'steak', reducedMotion = () => f
     h('div', { class: 'cc-stat cc-panstat' }, h('span', { text: 'Pan' }), h('div', { class: 'cc-meter cc-panmeter', role: 'img', 'aria-label': 'How hot the pan is. The green zone is the next ingredient\'s heat band.' }, heatZone, heatFill), heatWord),
     h('div', { class: 'cc-stat cc-timestat' }, h('span', { text: 'Timing' }), h('div', { class: 'cc-meter cc-timemeter', role: 'img', 'aria-label': 'Time since the ingredient this one waits for. The green zone is its time window.' }, timeZone, timeFill), timeWord),
     h('div', { class: 'cc-stat cc-stepstat' }, h('span', { text: 'Steps' }), pips, recipeLine));
-  const status = h('p', { class: 'rp-status cc-status', role: 'status', 'aria-live': 'polite', text: 'The pan heats by itself. Add butter when the pan is medium, then the steak when it is hot and the butter has foamed, then salt, then turn it. Tap the tiles, or press 1 to 4.' });
+  const status = h('p', { class: 'rp-status cc-status', role: 'status', 'aria-live': 'polite', text: 'The pan heats by itself. Add butter when the pan is medium, then the steak when it is hot and the butter has foamed, then salt, then turn it. Tap the tiles, or press the number keys.' });
   const giveUp = h('button', { type: 'button', class: 'ui-btn cc-done cc-giveup', text: `Give up this ${what}` });
   const tiles = s.layout.map((id, i) => {
     const st = s.steps.find((x) => x.id === id);
@@ -39,7 +39,7 @@ export function playOrder(root, { state, what = 'steak', reducedMotion = () => f
     h('p', { class: 'rp-eyebrow ui-nameplate', text: `ORDER · ${what.toUpperCase()}` }),
     h('div', { class: 'cc-play' }, hud, wrap, status, h('div', { class: 'cc-row cc-giverow' }, giveUp)),
     h('div', { class: 'cc-row cc-ordrow' }, ...tiles),
-    h('p', { class: 'rp-help', text: 'Tap the tiles (or keys 1 to 4) in the recipe order. Each ingredient has a heat band on the thermometer and a time window. The wrong tile spoils it, too early or late costs, and a pan left too long burns.' }));
+    h('p', { class: 'rp-help', text: 'Tap the tiles (or the number keys) in the recipe order. Each ingredient has a heat band on the thermometer and a time window. The wrong tile spoils it, too early or late costs, and a pan left too long burns.' }));
   panel.__state = s; panel.__time = T;
   root.append(panel);
 
