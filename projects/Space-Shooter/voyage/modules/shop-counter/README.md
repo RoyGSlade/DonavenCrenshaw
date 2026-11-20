@@ -17,7 +17,7 @@
 
 ```js
 import { play } from './index.js';
-const result = await play(stage, ctx);   // resolves when the player leaves (or the host leaves it)
+const result = await play(stage, ctx);   // resolves when the player leaves: the host's Leave calls the handler registered with ctx.onLeave, or Esc
 ```
 
 `ctx` follows `CONTRACT.md` plus `CONTRACT-PROPOSALS.md`. What this module reads:
@@ -40,7 +40,7 @@ const result = await play(stage, ctx);   // resolves when the player leaves (or 
 | `context.save` | `money`, `items`, `rep`, `skills`, `flags`, `stats` (the game's save; `save.character.skills` and `.stats` are read too) |
 | `context.bought` | `{ itemId: n }` bought here before; with `limit` it sets what is left on the shelf. Anything in it (or `context.visits` above 0) makes the keeper greet you with the record's `lines.back`, if it has one |
 
-**Leaving.** The host's Leave calls `stage.leave()` (or dispatches a `stardust:leave` event on the stage), and the promise resolves with `{ left: true, ... }` and everything bought and sold so far. Esc does the same. Pay is final: it changes nothing until pressed, so leaving with a full basket buys nothing.
+**Leaving (contract 1.1).** The module calls `ctx.onLeave(fn)` once at the start to register its leave handler. When the player presses the host's Leave, the host calls `fn()`; the module stops its timers, asks the host to stop any music, and resolves `{ done: true, left: true, ... }` with everything bought and sold so far. Esc inside the module calls the same handler. If `ctx.onLeave` is missing the module still works and Esc still leaves; if the module never registers, the host tears it down and resolves for it (the test page does this with `?noleave=1`). Pay is final: it changes nothing until pressed, so leaving with a full basket buys nothing.
 
 **Result.**
 ```

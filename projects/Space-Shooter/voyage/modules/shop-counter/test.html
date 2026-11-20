@@ -139,14 +139,18 @@ async function start() {
   };
   sounds.length = 0; window.__sounds = sounds;
   $('panel').hidden = true; $('host').hidden = false;
-  window.__result = null;
-  const result = await play($('stage'), ctx);
+  window.__result = null; window.__leaveRegistered = 0; leaveHandler = null;
+  const left = new Promise((r) => { leaveDefault = r; });
+  if (!q.has('noleave')) ctx.onLeave = (fn) => { leaveHandler = fn; window.__leaveRegistered += 1; };
+  const result = await Promise.race([play($('stage'), ctx), left]);
   window.__result = result;
   $('host').hidden = true; $('panel').hidden = false;
   $('result').textContent = JSON.stringify(result, null, 2);
 }
 $('go').addEventListener('click', start);
-$('leave').addEventListener('click', () => $('stage').leave?.());
+// The host's Leave (contract 1.1): call the handler the module registered with ctx.onLeave; if it never registered, tear down and resolve for it.
+let leaveHandler = null, leaveDefault = null;
+$('leave').addEventListener('click', () => (leaveHandler ? leaveHandler() : leaveDefault?.({ done: true, left: true })));
 if (q.get('autoplay') === '1') start();
 </script>
 </body>

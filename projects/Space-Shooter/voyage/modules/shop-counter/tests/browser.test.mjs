@@ -248,6 +248,35 @@ test('desktop: the shelf units are as tall as what they hold, the keeper and cou
   await t.context.close();
 });
 
+for (const [name, profile] of [['desktop', DESKTOP], ['phone', PHONE]]) {
+  test(`${name}: leaving follows contract 1.1 (ctx.onLeave registration)`, async () => {
+    let t = await open(profile);
+    await t.up();
+    assert.equal(await t.page.evaluate(() => window.__leaveRegistered), 1, 'the module registered its handler once, at the start');
+    assert.equal(await t.page.evaluate(() => typeof document.getElementById('stage').leave), 'undefined', 'no stage.leave any more');
+    await t.tap('.sc-slot[data-id=medkit]');
+    await t.page.waitForTimeout(500);
+    await t.tap('.sc-pay');
+    await t.page.waitForTimeout(700);
+    const r = await t.leave();
+    assert.equal(r.done, true);
+    assert.equal(r.left, true);
+    assert.equal(r.effects.world.moneyDelta, -35, 'the effects so far come with it');
+    assert.equal(await t.page.locator('.m-shop-counter').count(), 0, 'torn down');
+    await t.context.close();
+    t = await open(profile, 'fixture=mel&noleave=1');
+    await t.up();
+    assert.equal(await t.page.evaluate(() => window.__leaveRegistered), 0, 'a host that offers no ctx.onLeave');
+    await t.tap('.sc-slot[data-id=medkit]');
+    await t.page.keyboard.press('Escape');
+    await t.page.waitForFunction(() => window.__result);
+    const e = await t.page.evaluate(() => window.__result);
+    assert.equal(e.left, true, 'Esc still leaves');
+    assert.equal(e.success, false);
+    await t.context.close();
+  });
+}
+
 test('phone: no gap over 48 px between neighbouring blocks, shelves scroll up and down only', async () => {
   const t = await open(PHONE);
   await t.up();

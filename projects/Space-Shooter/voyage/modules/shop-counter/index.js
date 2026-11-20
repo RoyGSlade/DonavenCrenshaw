@@ -1,4 +1,5 @@
 // Shop counter entry: play(stage, ctx) -> Promise<result>. See README.md for ctx and the result.
+// Leave: the module calls ctx.onLeave(fn) once at the start; the host calls fn() when its Leave is pressed (CONTRACT.md section 3).
 import { createCounter, finish } from './model.js';
 import { mount } from './view.js';
 
@@ -23,20 +24,17 @@ export async function play(stage, ctx = {}) {
   return new Promise((resolve) => {
     let ui = null;
     let ended = false;
-    const leave = (extra = {}) => {
+    // Leaving (contract 1.1): the host's Leave calls the handler we registered; Esc calls it too. We stop our timers and
+    // ask the host to stop any music, then resolve with what was bought and sold so far.
+    const leave = () => {
       if (ended) return;
       ended = true;
       if (state.music) ctx.sound?.('music:stop');
-      const result = finish(state, { left: true, ...extra });
-      stage.removeEventListener('stardust:leave', onLeaveEvent);
-      delete stage.leave;
       ui?.destroy();
-      resolve(result);
+      resolve(finish(state, { left: true }));
     };
-    const onLeaveEvent = () => leave();
-    stage.addEventListener('stardust:leave', onLeaveEvent);
-    stage.leave = () => leave();
-    ui = mount(stage, state, { ctx, base: BASE, onLeave: () => leave() });
+    ui = mount(stage, state, { ctx, base: BASE, onLeave: leave });
+    ctx.onLeave?.(leave);
     if (state.music) ctx.sound?.(`music:${state.music}`);
   });
 }

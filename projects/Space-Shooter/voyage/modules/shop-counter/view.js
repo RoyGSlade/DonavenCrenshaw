@@ -68,7 +68,7 @@ const withBase = (base, p) => (!p ? null : /^(https?:|data:|blob:|\/)/.test(p) ?
 
 /**
  * mount(stage, state, { ctx, base, onLeave }) -> { destroy() }
- * `onLeave(left)` is called when the player leaves from inside the module (Esc); the entry resolves the promise.
+ * `onLeave()` is called when the player leaves from inside the module (Esc); the entry resolves the promise.
  */
 export function mount(stage, state, env) {
   const { ctx = {}, base } = env;
@@ -381,10 +381,10 @@ export function mount(stage, state, env) {
   paint();
   rolling = { purse: state.save.money, till: 0 };
   paint();
-  let openTimer = 0;
+  let openTimer = 0, upTimer = 0;
   if (open0) {
     sound('shutter');
-    setTimeout(() => { room.classList.add('is-up'); }, 60); // a timer, not a frame: a page that is not painting yet must still roll up
+    upTimer = setTimeout(() => { room.classList.add('is-up'); }, 60); // a timer, not a frame: a page that is not painting yet must still roll up
     openTimer = setTimeout(() => { room.classList.remove('is-rolling'); say.classList.add('pop'); if (state.speech?.lineId) sound(`line:${state.speech.lineId}`); }, 1100);
   } else if (!state.shut && state.speech?.lineId) sound(`line:${state.speech.lineId}`);
   if (state.shut && state.speech?.lineId) sound(`line:${state.speech.lineId}`);
@@ -392,7 +392,7 @@ export function mount(stage, state, env) {
   const onKey = (e) => { if (e.key === 'Escape') { e.preventDefault(); env.onLeave?.(); } };
   document.addEventListener('keydown', onKey);
   return {
-    destroy() { destroyed = true; clearTimeout(openTimer); Object.values(tweens).forEach(cancelAnimationFrame); document.removeEventListener('keydown', onKey); phoneQuery.removeEventListener?.('change', onPhoneChange); root.remove(); },
+    destroy() { destroyed = true; clearTimeout(openTimer); clearTimeout(upTimer); Object.values(tweens).forEach(cancelAnimationFrame); document.removeEventListener('keydown', onKey); phoneQuery.removeEventListener?.('change', onPhoneChange); root.remove(); },
     root,
   };
 }
