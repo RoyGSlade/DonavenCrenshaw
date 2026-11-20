@@ -4,7 +4,7 @@
 // the farther you pull from where you touched, the faster the wheel goes. The Done pad (Space) finishes the plate.
 // No number is shown: a shine bar with a word, a heat gauge with a word, the pull with a word, and pips for the dimples.
 // Resolves with the pure result. The pure rules are polish.js (polishStep takes a time step and the hand's input).
-import { polishStep, polishFinish, polishGiveUp, pullAt, coveredBy, hotCell, plateWord, heatWord, pullWord, motionWord, CELL, REACH, SPEED, AUTO_AT, RUIN_AT, POLISHED } from './polish.js';
+import { polishStep, polishFinish, polishGiveUp, pullAt, coveredBy, hotCell, plateWord, heatWord, pullWord, motionWord, CELL, REACH, SPEED, AUTO_AT, RUIN_AT, POLISHED, HOT_SPARE } from './polish.js';
 import { h, ensureStyle, loop, lcg } from './craftChainView.js';
 
 const TAU = Math.PI * 2, STEP = 1 / 60, STICK = 56;
@@ -92,7 +92,7 @@ export function playPolish(root, { state, what = 'plate', reducedMotion = () => 
 
   function tile(g, c, i, t) {
     const p = P(c.x - CELL / 2, c.y - CELL / 2), sz = CELL * sc, gap = Math.max(2, sz * 0.03), r = Math.max(3, sz * 0.07);
-    const k = clamp01(c.shine / POLISHED), heatK = c.state === 'dimpled' ? 0 : clamp01((c.shine - (s.limit - 30)) / 30);
+    const k = clamp01(c.shine / POLISHED), heatK = c.state === 'dimpled' ? 0 : clamp01((c.shine - (s.limit - HOT_SPARE)) / HOT_SPARE);
     g.save(); g.beginPath(); g.roundRect(p.x + gap, p.y + gap, sz - 2 * gap, sz - 2 * gap, r); g.clip();
     // dull brown-grey steel to mirror bright: the base lifts, then a bright reflection sweeps in
     const base = Math.round(62 + 150 * k), gr = g.createLinearGradient(p.x, p.y, p.x + sz, p.y + sz);

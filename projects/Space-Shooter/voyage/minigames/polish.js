@@ -8,11 +8,11 @@
 //   The plate finishes by itself at 36 polished cells, or when you say Done (Space, or the Done pad). Three dimples ruin it.
 //   Grade = polished share x 100 - 10 per dimple. (At the automatic finish that is 90 at best: the plan's own numbers.)
 //   My readings: a cell is under the wheel when the wheel's middle is within 54 units of the cell's middle (cells are 60 units; so the
-//   wheel covers one cell at a cell's middle and up to four at a corner); the wheel stays on the plate; a cell with 25 shine to spare
+//   wheel covers one cell at a cell's middle and up to four at a corner); the wheel stays on the plate; a cell with 45 shine to spare
 //   before its limit is HOT (the view glows it; the word says "too hot!"); the plate is 8 x 5 cells, or 5 x 8 on a portrait screen.
 import { PASS, gradeWord } from './craftChain.js';
 
-export const CELL = 60, REACH = 54, SPEED = 220, POLISHED = 70, DIMPLE_COST = 10, AUTO_AT = 36, RUIN_AT = 3, HOT_SPARE = 25, CELLS = 40;
+export const CELL = 60, REACH = 54, SPEED = 220, POLISHED = 70, DIMPLE_COST = 10, AUTO_AT = 36, RUIN_AT = 3, HOT_SPARE = 45, CELLS = 40;
 
 function lcg(seed) { let x = (seed >>> 0) || 1; return () => { x = (Math.imul(x, 1664525) + 1013904223) >>> 0; return x / 4294967296; }; }
 
@@ -29,10 +29,10 @@ export function createPolish({ seed = 1, setup = {}, portrait = false } = {}) {
   return s;
 }
 
-/** The pull at time t, units a second to the left (it eases between strengths over a quarter of a second). */
+/** The pull at time t, units a second to the left (it eases from one strength to the next over 1.2 s, so you can watch it change and answer). */
 export function pullAt(s, t) {
   const i = s.segs.findIndex((g) => t < g.to), g = s.segs[i < 0 ? s.segs.length - 1 : i];
-  if (i > 0) { const k = Math.min(1, (t - g.from) / 0.25); return s.segs[i - 1].v + (g.v - s.segs[i - 1].v) * k; }
+  if (i > 0) { const k = Math.min(1, (t - g.from) / 1.2); return s.segs[i - 1].v + (g.v - s.segs[i - 1].v) * k; }
   return g.v;
 }
 export const coveredBy = (s, wheel = s.wheel) => s.cells.filter((c) => Math.hypot(c.x - wheel.x, c.y - wheel.y) <= REACH);

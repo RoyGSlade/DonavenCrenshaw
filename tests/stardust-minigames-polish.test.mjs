@@ -57,7 +57,7 @@ test('the pull: 40 to 140 units a second to the left, a new strength every 1.5 t
   assert.deepEqual(game({}, 5).segs, s.segs); assert.notDeepEqual(game({}, 6).segs, s.segs);
   for (let t = 0; t < 120; t += 0.37) { const v = P.pullAt(s, t); assert.ok(v >= 40 - 1e-9 && v <= 140 + 1e-9, `pull at ${t}: ${v}`); }
   for (const tier of TIERS) { const u = game({ tier }, 5); for (let t = 0; t < 60; t += 0.7) assert.ok(Math.abs(P.pullAt(u, t) - P.pullAt(s, t) * (1 - 0.1 * tier)) < 1e-6, `scaled at ${tier}`); }
-  assert.equal(P.pullAt(s, 0), s.segs[0].v); assert.ok(Math.abs(P.pullAt(s, s.segs[0].to + 0.25) - s.segs[1].v) < 1e-9, 'eased in a quarter of a second');
+  assert.equal(P.pullAt(s, 0), s.segs[0].v); assert.ok(Math.abs(P.pullAt(s, s.segs[0].to + 1.2) - s.segs[1].v) < 1e-9, 'eased in 1.2 s'); const mid = P.pullAt(s, s.segs[0].to + 0.6); assert.ok(Math.abs(mid - (s.segs[0].v + s.segs[1].v) / 2) < 1e-9, 'halfway at 0.6 s');
 });
 
 test('the wheel: 220 units a second under your hand, pulled left all the time, kept on the plate; the input is cut to length 1', () => {
@@ -120,13 +120,13 @@ test('the grade: polished share x 100 minus 10 a dimple, whole numbers, 90 at th
   s.polished = 27; s.dimples = 0; assert.equal(P.gradeOf(s), 68, '27 of 40 is 67.5');
 });
 
-test('the words: keep going, nearly done, and the heat of the cell under the wheel (too hot! within 25 of its limit); no numbers', () => {
+test('the words: keep going, nearly done, and the heat of the cell under the wheel (too hot! within 45 of its limit); no numbers', () => {
   const s = game({}, 5);
   assert.equal(P.plateWord(s), 'keep going'); s.polished = 19; assert.equal(P.plateWord(s), 'keep going'); s.polished = 20; assert.equal(P.plateWord(s), 'nearly done'); s.polished = 36; assert.equal(P.plateWord(s), 'done');
   const h = game({}, 5); h.wheel.x = 150; h.wheel.y = 150; assert.equal(P.heatWord(h), 'cool');
   holdAt(h, 150, 150, 0.5); assert.equal(P.heatWord(h), 'grinding'); holdAt(h, 150, 150, 0.9); assert.equal(P.heatWord(h), 'polished here: move on');
   holdAt(h, 150, 150, 0.55); const c = P.coveredBy(h)[0]; assert.ok(c.shine >= 105 && c.shine < 130, `${c.shine}`); assert.equal(P.heatWord(h), 'too hot!'); assert.equal(P.hotCell(h), c);
-  const t = game({ tier: 2 }, 5); t.wheel.x = 150; t.wheel.y = 150; holdAt(t, 150, 150, 1.8); assert.equal(P.hotCell(t), null, 'Smooth: 108 is not yet hot (limit 146, hot from 121)');
+  const t = game({ tier: 2 }, 5); t.wheel.x = 150; t.wheel.y = 150; holdAt(t, 150, 150, 1.5); assert.equal(P.hotCell(t), null, 'Smooth: 90 is not yet hot (limit 146, hot from 101)');
   assert.ok(['light pull', 'steady pull', 'strong pull'].includes(P.pullWord(h)));
   assert.equal(P.motionWord(-60), 'with the pull: fast and light'); assert.equal(P.motionWord(60), 'against the pull: slow, grinds hard'); assert.equal(P.motionWord(0), 'on the spot: grinds hard, watch the heat'); assert.equal(P.motionWord(15), 'on the spot: grinds hard, watch the heat');
   for (const w of [P.plateWord(h), P.heatWord(h), P.pullWord(h), P.motionWord(-60), P.motionWord(60), P.motionWord(0)]) assert.doesNotMatch(w, /\d/);
@@ -159,13 +159,13 @@ const TABLE = {};
  * A hand that polishes in passes along the lines between rows (the pull helps going left and fights going right), back and forth: a line between two
  * rows covers both at once, the last line of an odd plate runs along its edge. It aims at the net speed that lands a tile's shine in the safe part of
  * the polished-to-dimple range. `lag` is how old its picture of the pull is (seconds), `speedSd` how badly it judges its speed (a share), `jitter`
- * the wobble of the thumb, `ySd` how far it strays from its line (units), `frac` where in the range it aims (0 = just polished, 1 = just short of a dimple).
+ * the wobble of the thumb, `ySd` how far it strays from its line (units), `react` how long a hot tile has to glow before it answers with full speed (seconds; null: it never looks), `frac` where in the range it aims (0 = just polished, 1 = just short of a dimple).
  */
 const CHORD = 90; // the stretch of a line one tile is under the wheel, at 30 units off its middle
 function passLines(s) { const out = []; for (let r = 0; r < s.rows; r += 2) out.push(r + 1 < s.rows ? (r + 1) * 60 : s.rows * 60); return out; }
-function hand(setup, seed, { lag = 0, speedSd = 0, jitter = 0, ySd = 0, frac = 0.35, portrait = false, maxSeconds = 400 } = {}) {
+function hand(setup, seed, { lag = 0, speedSd = 0, jitter = 0, ySd = 0, frac = 0.35, react = null, portrait = false, maxSeconds = 400 } = {}) {
   const s = P.createPolish({ seed, setup, portrait }), r = lcg(seed * 13 + 7), lines = passLines(s);
-  let k = 0, dir = 1, st = 'start', yErr = 0, vErr = 0;
+  let k = 0, dir = 1, st = 'start', yErr = 0, vErr = 0, hotFor = 0;
   for (let i = 0; i < Math.round(maxSeconds / DT) && !s.done; i++) {
     if (k >= lines.length) { P.polishFinish(s); break; }
     if (i % 30 === 0) { yErr = ySd * gauss(r); vErr = speedSd * gauss(r); }
@@ -174,6 +174,7 @@ function hand(setup, seed, { lag = 0, speedSd = 0, jitter = 0, ySd = 0, frac = 0
     let ix;
     if (st === 'start') { ix = -1; if (s.wheel.x <= 2 && Math.abs(dy) < 6 + Math.abs(yErr)) st = 'sweep'; }
     else { ix = (dir > 0 ? v + pull : pull - v) / 220 + jitter * gauss(r); if (dir > 0 ? s.wheel.x >= s.W - 2 : s.wheel.x <= 2) { k++; dir = -dir; } }
+    if (react != null) { hotFor = P.hotCell(s) ? hotFor + DT : 0; if (hotFor >= react && st !== 'start') ix = dir > 0 ? 1 : -1; } // a hot tile is on the screen: after a reaction time the hand pushes on at full speed
     P.polishStep(s, DT, { x: ix, y: iy });
   }
   if (!s.done) P.polishFinish(s);
@@ -204,7 +205,7 @@ test('lazy hands never pass: hands off, one direction, scribbling, Done at once,
 });
 
 test('slow-handed bot (late to see the pull, jittery thumb, a hand that misjudges its speed): a slope, not a cliff, with the roll', () => {
-  const h = { lag: 0.4, speedSd: 0.12, jitter: 0.12, ySd: 8 };
+  const h = { lag: 0.5, speedSd: 0.2, jitter: 0.2, ySd: 12, react: 0.35 };
   const at = (tier, points = {}) => sweep((i) => hand(setupPolish({ tier, points, level: 9 }), i, h), 200).rate;
   const runs = TIERS.map((t) => sweep((i) => hand(setupPolish({ tier: t, level: 9 }), i, h), 200)), byTier = runs.map((r) => r.rate); TIERS.forEach((t, i) => { TABLE[`slow t${t}`] = byTier[i]; TABLE[`slow seconds t${t}`] = runs[i].seconds; });
   assert.ok(runs[2].seconds <= 45, `a wobbly hand at Steady: ${runs[2].seconds} s`);
