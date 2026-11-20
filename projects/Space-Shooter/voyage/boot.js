@@ -40,7 +40,7 @@ import { createSettings } from './ui/settings.js';
 import { createAttemptRoller } from './ui/attemptRoll.js';
 import { createMinigameSheet } from './minigames/sheet.js';
 import { mountStory } from './story/mount.js';
-import { storyOf, currentStep } from './story/progress.js';
+import { storyOf, currentStep, idleLine } from './story/progress.js';
 import { STEP_IDS, STEPS } from './story/tutorial.js';
 import { addLines, lineById } from './story/lines.js';
 import { contentLines } from './quests/lines.js';
@@ -69,6 +69,7 @@ import { waitingOn } from './slice/rules.js';
 import { createPresenceRun } from './slice/presenceRun.js';
 import { sealReason, sealed, WHY } from './slice/seal.js';
 import { roleOf } from './slice/role.js';
+import { fallbackLine } from './slice/fallbackLines.js';
 import { createStatuses, clock } from './status.js';
 // The workbench room: a dev-only test room (?newgame=1&start=workbench), its own files in ./workbench/.
 import { wantsWorkbench } from './workbench/entry.js';
@@ -469,6 +470,7 @@ function boot(session = { mode: 'local' }) {
   // Opening track A: one ledger for the crew (who is where, who is walking), the seal on every way off the ship, and the fallback talk.
   const presence = slicing ? createPresenceRun({ flags: () => store.get().flags || {} }) : null;
   presence?.restore(store.get());
+  const crewTalks = new Map();
   onfoot = createOnFoot({
     root: floor, store, bus, mapId: link.map || (workbench ? WORKBENCH_ID : slicing ? startRoom(store.get()) : 'hangar'), spawn: link.map ? link.spawn : 'default',
     reducedMotion: still,
@@ -476,6 +478,14 @@ function boot(session = { mode: 'local' }) {
       statuses,
       presence: presence?.hooks || null,
       sealed: (d) => (slicing ? sealReason(store.get(), d) : null),
+      // Nothing scripted: they answer anyway, in a few words (slice/fallbackLines.js). A person the story already has idle lines for keeps them.
+      talk: (who) => {
+        if (!slicing || idleLine(who, store.get(), 0)) return null;
+        const n = crewTalks.get(who) || 0;
+        crewTalks.set(who, n + 1);
+        const line = fallbackLine(who, { role: roleOf(store.get()), moving: Boolean(onfoot.world.npcAt(who)?.moving), n });
+        return line ? onfoot.say([line]) : null;
+      },
       openStation: (id) => (workbenchRoom && String(id).startsWith('wb-') ? workbenchRoom.openStation(id) : new Promise((resolve) => {
         if (!place.openStation(id, { via: 'walk' })) { resolve(); return; }
         const off = place.subscribe((e) => { if (e.type === 'close') { off(); resolve(); } });
