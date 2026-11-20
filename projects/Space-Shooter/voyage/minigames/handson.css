@@ -1,0 +1,63 @@
+/* Scene 1 hands-on games (opening track C): the mop and the power lever, plus a phone pass for every button in them (and in the
+   water games opened from the room). Same tokens as minigames.css; the canvases draw the rest. */
+
+/* Phone rule (bend lesson 7): no translucent tap square, the kit's hover and pressed pictures never stick after a touch, a press shows as a transform. */
+body.ho-open .wb-full button,body.ho-open .wb-full .ho-slot,body.ho-open .wb-full .ho-canvas,body.ho-open .wb-full .rp-tile{-webkit-tap-highlight-color:transparent}
+body.ho-open .wb-full .ui-btn:hover:not(:disabled),body.ho-open .wb-full .ui-btn:active:not(:disabled){border-image-source:url(../ui/kit/button.webp);filter:none}
+body.ho-open .wb-full .ui-btn.primary:hover:not(:disabled),body.ho-open .wb-full .ui-btn.primary:active:not(:disabled){border-image-source:url(../ui/kit/button-primary.webp);filter:none}
+body.ho-open .wb-full .ui-btn:active:not(:disabled){transform:translateY(1px) scale(.985)}
+
+/* The foam valve: the same water game, the water is white wellness foam. */
+.rp-panel[data-flavor="foam"] .rp-water{stroke:#cfeede}
+.rp-panel[data-flavor="foam"] .rp-tile.is-on .rp-water{stroke:#dff6e9}
+.rp-panel[data-flavor="foam"] .rp-flow{stroke:#fff}
+.rp-panel[data-flavor="foam"] .rp-mouth.is-pouring{border-color:#e6f8ee;background:#f4fff8}
+.rp-panel[data-flavor="foam"] .rp-mouth.is-pouring::after{background:repeating-linear-gradient(180deg,#e8f9ef 0 9px,#bfe6d2 9px 14px)}
+.rp-panel[data-flavor="foam"] .rp-sea{background:linear-gradient(180deg,rgba(232,249,239,.55),rgba(170,214,194,.66));border-top-color:#f4fff8;box-shadow:0 -6px 14px rgba(220,255,236,.25)}
+.rp-panel[data-flavor="foam"] .rp-sea-wave{background:radial-gradient(circle at 8px 8px,transparent 5px,#f4fff8 5.5px,#f4fff8 7px,transparent 7.5px) 0 0/16px 8px repeat-x}
+
+/* Mop */
+.ho-meter{height:12px;overflow:visible}
+.ho-meter i{background:linear-gradient(90deg,#4aa3a0,#9fe870)}
+.ho-mark{position:absolute;top:-4px;bottom:-4px;width:2px;margin-left:-1px;background:#ffc857}
+.ho-pct{font:700 14px Consolas,monospace;color:#eaf4f5;font-style:normal}
+.ho-head[data-head="absorber"],.ho-head[data-head="loose"]{color:#7ff0d6}
+.ho-mopcanvas{cursor:grab;outline:none}
+.ho-mopcanvas:focus-visible{outline:3px solid #ffc857;outline-offset:2px}
+.ho-card{margin:0 auto;max-width:480px}
+
+/* Lever */
+.ho-rig{flex:1 1 0;min-height:220px;display:grid;grid-template-columns:minmax(0,1fr) 150px;gap:14px;align-items:stretch}
+.ho-screen{position:relative;border:2px solid #0b121a;border-radius:8px;background:radial-gradient(120% 90% at 50% 100%,#124b3f,#0a1f1c 70%);overflow:hidden;box-shadow:0 6px 18px #0008;transition:opacity .08s linear}
+.ho-jungle{position:absolute;inset:0}
+.ho-jungle i{position:absolute;bottom:0;width:16%;border-radius:60% 60% 0 0;background:linear-gradient(180deg,#38d9a9,#12604a);opacity:.9}
+.ho-jungle i:nth-child(1){left:4%;height:46%}.ho-jungle i:nth-child(2){left:22%;height:70%}.ho-jungle i:nth-child(3){left:42%;height:54%}
+.ho-jungle i:nth-child(4){left:60%;height:78%}.ho-jungle i:nth-child(5){left:80%;height:50%}
+.ho-screentext{position:absolute;left:0;right:0;top:10px;margin:0;text-align:center;font:700 12px Consolas,monospace;letter-spacing:.2em;color:#7ff0d6}
+.ho-screen.is-flash::after{content:"";position:absolute;inset:0;background:#ff5a45;opacity:var(--flash,0);mix-blend-mode:screen}
+.ho-lever.is-off .ho-screen .ho-jungle{filter:saturate(.3)}
+.ho-slot{position:relative;border:2px solid #0b121a;border-radius:12px;background:linear-gradient(90deg,#10202c,#1d3347 50%,#10202c);box-shadow:0 6px 18px #0008 inset;touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none;outline:none;min-height:220px}
+.ho-slot:focus-visible{outline:3px solid #ffc857;outline-offset:3px}
+.ho-rail{position:absolute;left:50%;top:26px;bottom:26px;width:12px;margin-left:-6px;border-radius:6px;background:#050b11;box-shadow:0 0 0 2px #2a4152}
+.ho-tag{position:absolute;left:0;right:0;text-align:center;font:700 11px Consolas,monospace;letter-spacing:.16em;color:#8fa6b7}
+.ho-tag-on{top:4px;color:#9fe870}.ho-tag-off{bottom:4px;color:#ff8a70}
+.ho-handle{position:absolute;left:50%;top:0;width:96px;height:56px;margin-left:-48px;border-radius:12px;background:linear-gradient(180deg,#ffb98a,#d9622f);border:2px solid #3a1a0d;box-shadow:0 4px 10px #000a;display:flex;flex-direction:column;justify-content:center;gap:5px;padding:0 14px;box-sizing:border-box}
+.ho-handle i{display:block;height:4px;border-radius:2px;background:#3a1a0d66}
+.ho-slot.is-down .ho-handle{background:linear-gradient(180deg,#ff8a70,#b8321f)}
+.ho-lever.is-dead .ho-slot{box-shadow:0 0 0 3px #9fe870aa,0 6px 18px #0008 inset}
+.ho-power{font:700 13px Consolas,monospace;color:#9fe870;font-style:normal}
+.ho-lever.is-off .ho-power{color:#ff8a70}
+.ho-hum i{background:linear-gradient(90deg,#ffc857,#ff6b5a)}
+.ho-strikes{font:700 12px Consolas,monospace;color:#eaf4f5;font-style:normal}
+@media (max-width:700px){
+  .ho-rig{grid-template-columns:minmax(0,1fr) 120px;gap:10px;min-height:260px}
+  .ho-handle{width:84px;margin-left:-42px}
+  .ho-hud{grid-template-columns:1fr 1fr 1fr!important}
+  .ho-hud .cc-stat em,.ho-hud .ho-power{font-size:11px!important}
+  .ho-hud .cc-stat span{font-size:9px;letter-spacing:.06em}
+}
+
+/* The supply cart panel in the room */
+.ho-cartbtns{display:flex;flex-wrap:wrap;gap:12px;margin-top:14px}
+.ho-cartbtns .ui-btn{flex:1 1 150px}
+.ho-cart .ho-cartline{font-size:13px;color:#cfe3ec}
