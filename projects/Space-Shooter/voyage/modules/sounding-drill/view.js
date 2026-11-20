@@ -49,7 +49,8 @@ export function mountGame(stage, ctx, { fixtures, items, rock, resume, quick, on
   const canvas = el('canvas', 'sd-canvas', { 'aria-label': 'The rock. Press and drag to drill.' });
   const intro = el('div', 'sd-intro', {}, [el('b', '', {}, 'Sound the rock'), el('span', '', {}, 'Press on the rock and drag to drill. Each ring shows what is inside for a moment. Find the glint, clear the rock around it without touching it, then bring the claw.')]);
   const status = el('div', 'sd-status', { 'aria-live': 'polite' }, 'press and drag');
-  const scope = el('div', 'sd-scope', {}, [canvas, intro, status]);
+  const boardEl = el('div', 'sd-board', {}, [canvas, intro, status]);
+  const scope = el('div', 'sd-scope', {}, [boardEl]);
   const svgNS = 'http://www.w3.org/2000/svg';
   const mk = (n, a) => { const e = document.createElementNS(svgNS, n); for (const [k, v] of Object.entries(a)) e.setAttribute(k, v); return e; };
   const ringBg = mk('circle', { cx: 40, cy: 40, r: 33, class: 'sd-ring-bg' }), ringFg = mk('circle', { cx: 40, cy: 40, r: 33, class: 'sd-ring-fg', 'stroke-dasharray': '207.3', 'stroke-dashoffset': '207.3', transform: 'rotate(-90 40 40)' });
@@ -72,10 +73,13 @@ export function mountGame(stage, ctx, { fixtures, items, rock, resume, quick, on
   const g = createGame({ seed: ctx.seed ?? 1, tier: ctx.tier ?? 0, points: ctx.points || {}, quick, board, rock, items, fixtures, resume });
   const R = g.rock;
   const itemOf = (f) => R.itemMap?.[f.item] || {};
+  // The window onto the board: the rock and a margin, so a small rock fills the screen rather than floating in it.
   const win = (() => {
-    if (!quick) return { x: 0, y: 0, w: R.W, h: R.H };
-    const m = 56, x0 = R.cx - R.rx - m, x1 = R.cx + R.rx + m, y0 = R.cy - R.ry - m, y1 = R.cy + R.ry + m;
-    return { x: Math.max(0, x0), y: Math.max(0, y0), w: Math.min(R.W, x1) - Math.max(0, x0), h: Math.min(R.H, y1) - Math.max(0, y0) };
+    let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+    for (let i = 0; i < 90; i++) { const p = rimPoint(R, i / 90 * Math.PI * 2); x0 = Math.min(x0, p.x); x1 = Math.max(x1, p.x); y0 = Math.min(y0, p.y); y1 = Math.max(y1, p.y); }
+    const m = 46;
+    x0 = Math.max(0, x0 - m); y0 = Math.max(0, y0 - m); x1 = Math.min(R.W, x1 + m); y1 = Math.min(R.H, y1 + m);
+    return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
   })();
 
   // offscreen layers at grid resolution
@@ -279,8 +283,9 @@ export function mountGame(stage, ctx, { fixtures, items, rock, resume, quick, on
     // the entry: a small marker on the rim
     {
       const e = g.entry, a = e.angle, ux = Math.cos(a), uy = Math.sin(a), pulse = 0.6 + 0.4 * Math.sin(t * 3);
-      c.save(); c.translate(e.x, e.y); c.rotate(Math.atan2(uy, ux) + Math.PI);
-      c.strokeStyle = `rgba(255,173,114,${0.55 + 0.35 * pulse})`; c.lineWidth = 3 / scale; c.lineCap = 'round'; c.lineJoin = 'round';
+      const eb = Math.max(1, 0.85 / scale);
+      c.save(); c.translate(e.x, e.y); c.rotate(Math.atan2(uy, ux) + Math.PI); c.scale(eb, eb);
+      c.strokeStyle = `rgba(255,173,114,${0.55 + 0.35 * pulse})`; c.lineWidth = 3 / scale / eb; c.lineCap = 'round'; c.lineJoin = 'round';
       c.beginPath(); c.moveTo(-26, -13); c.lineTo(-8, 0); c.lineTo(-26, 13); c.stroke();
       c.restore();
     }
@@ -303,9 +308,9 @@ export function mountGame(stage, ctx, { fixtures, items, rock, resume, quick, on
     // rings
     for (const ring of g.rings) {
       const age = g.t - ring.t0, p = Math.min(1, age / ring.dur), rad = ring.reach * p;
-      const a = Math.max(0, 1 - Math.max(0, age - ring.dur * 0.7) / (ring.dur * 0.6 + 0.25)) * (ring.kind === 'listen' ? 0.9 : 0.75) * (1 - p * 0.35);
+      const a = Math.max(0, 1 - Math.max(0, age - ring.dur * 0.7) / (ring.dur * 0.6 + 0.25)) * (ring.kind === 'listen' ? 1 : 0.95) * (1 - p * 0.3);
       if (a <= 0.01 || rad < 2) continue;
-      c.save(); c.strokeStyle = rgba(ringRGB, a); c.lineWidth = (ring.kind === 'listen' ? 3.2 : 2.2) / scale; c.shadowColor = rgba(ringRGB, a); c.shadowBlur = 10;
+      c.save(); c.strokeStyle = rgba(ringRGB, a); c.lineWidth = (ring.kind === 'listen' ? 4 : 3) / scale; c.shadowColor = rgba(ringRGB, a); c.shadowBlur = 12;
       c.beginPath(); c.arc(ring.x, ring.y, rad, 0, 7); c.stroke();
       c.strokeStyle = rgba(ringRGB, a * 0.28); c.lineWidth = 7 / scale; c.beginPath(); c.arc(ring.x, ring.y, Math.max(1, rad - 6), 0, 7); c.stroke();
       c.restore();
@@ -329,6 +334,10 @@ export function mountGame(stage, ctx, { fixtures, items, rock, resume, quick, on
     // the bit
     if (phase === 'play' || phase === 'claw') drawBit(c, t);
 
+    // scope brackets and a faint sweep, so it reads as an instrument and not a picture
+    c.setTransform(1, 0, 0, 1, 0, 0);
+    c.strokeStyle = 'rgba(129,230,223,.35)'; c.lineWidth = 2 * dpr; const bl = 18 * dpr, bo = 8 * dpr;
+    for (const [x0, y0, dx, dy] of [[bo, bo, 1, 1], [W - bo, bo, -1, 1], [bo, H - bo, 1, -1], [W - bo, H - bo, -1, -1]]) { c.beginPath(); c.moveTo(x0 + dx * bl, y0); c.lineTo(x0, y0); c.lineTo(x0, y0 + dy * bl); c.stroke(); }
     // flash on a crack
     if (flash > 0.01) { c.setTransform(1, 0, 0, 1, 0, 0); c.fillStyle = `rgba(255,236,200,${flash * 0.16})`; c.fillRect(0, 0, W, H); }
 
@@ -356,11 +365,12 @@ export function mountGame(stage, ctx, { fixtures, items, rock, resume, quick, on
     const hc = heatRGB(g.heat / 100), b = g.bit, seized = g.seizeLeft > 0;
     const li = g.lastInput;
     if (g.moving) { const a = Math.atan2(li.y - b.y, li.x - b.x); let d = a - bitAngle; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI; bitAngle += d * 0.25; }
-    const gl = 44 + (g.drilling ? 6 * Math.sin(t * 40) : 0) + g.heat * 0.25;
+    const bs = Math.max(1, 0.85 / scale);   // the bit is never smaller than a thumbnail on a small screen
+    const gl = (44 + (g.drilling ? 6 * Math.sin(t * 40) : 0) + g.heat * 0.25) * bs;
     const gr = c.createRadialGradient(b.x, b.y, 0, b.x, b.y, gl);
     gr.addColorStop(0, rgba(hc, seized ? 0.55 + 0.3 * Math.sin(t * 30) : 0.7)); gr.addColorStop(0.35, rgba(hc, 0.22)); gr.addColorStop(1, rgba(hc, 0));
     c.fillStyle = gr; c.beginPath(); c.arc(b.x, b.y, gl, 0, 7); c.fill();
-    c.save(); c.translate(b.x, b.y); c.rotate(bitAngle + Math.PI / 2);
+    c.save(); c.translate(b.x, b.y); c.rotate(bitAngle + Math.PI / 2); c.scale(bs, bs);
     const spin = g.drilling ? t * 30 : t * 2;
     c.fillStyle = '#c9d6df'; c.strokeStyle = rgba(hc, 0.9); c.lineWidth = 1.6 / scale;
     c.beginPath(); c.moveTo(0, -17); c.lineTo(8, 4); c.lineTo(-8, 4); c.closePath(); c.fill(); c.stroke();

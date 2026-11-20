@@ -522,7 +522,7 @@ export function drain(g) { const e = g.events; g.events = []; return e; }
 /** Plain-word state for the HUD (no digits). */
 export function words(g) {
   const R = g.rock, r = g.rules;
-  if (g.over) return g.over.why === 'cell' ? "the cell's spent" : g.over.why === 'shattered' ? 'it shattered' : 'claw coming down';
+  if (g.over) return g.over.why === 'cell' ? "the cell's spent" : g.over.why === 'shattered' ? 'it shattered' : mainProgress(g).share >= 1 ? 'claw coming down' : 'the claw comes up empty';
   if (g.seizeLeft > 0) return 'seized: let it cool';
   let nearest = 1e9;
   for (const f of R.finds) if (f.cracks < BASE.shatter) nearest = Math.min(nearest, Math.hypot(g.bit.x - f.x, g.bit.y - f.y) - f.r);
