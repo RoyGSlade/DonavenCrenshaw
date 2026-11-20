@@ -81,7 +81,7 @@ function measure(img) {
     const w = x1 - x0 + 1, hgt = y1 - y0 + 1;
     const aspect = Math.min(w, hgt) / Math.max(w, hgt);       // 1 is square, 0.4 is a long gun
     const sc = Math.min(1.4, Math.max(1, Math.sqrt(0.8 / aspect)));
-    const tilt = w > hgt && aspect < 0.62 ? -8 : 0;
+    const tilt = w > hgt && aspect < 0.7 ? -8 : 0;
     return { sc: +sc.toFixed(2), tilt };
   } catch { return { sc: 1, tilt: 0 }; } // a picture the browser will not let us read stays as it is
 }
