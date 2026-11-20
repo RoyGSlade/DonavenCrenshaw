@@ -106,14 +106,6 @@ export function mountGame(stage, ctx, { fixtures, items, rock, resume, quick, on
     for (let i = 0; i < R.gw * R.gh; i++) { if (R.kind[i] === K.OUT) continue; const h = hash(i * 7919 + g.seed); const v = 10 + Math.floor(h * 14); img.data[i * 4] = v; img.data[i * 4 + 1] = v + 6; img.data[i * 4 + 2] = v + 12; img.data[i * 4 + 3] = 255; }
     x.putImageData(img, 0, 0); return c;
   })();
-  const shellEdge = new Set();
-  for (const f of R.finds) {
-    const own = new Set(f.shells);
-    for (const c of f.shells) {
-      const gx = c % R.gw, gy = (c / R.gw) | 0;
-      if (!own.has(c - 1) || !own.has(c + 1) || !own.has(c - R.gw) || !own.has(c + R.gw) || gx === 0 || gy === 0) shellEdge.add(c);
-    }
-  }
 
   // --- sizing ------------------------------------------------------------------------------------------------------
   let cssW = 0, cssH = 0, scale = 1, dpr = 1;
@@ -289,7 +281,13 @@ export function mountGame(stage, ctx, { fixtures, items, rock, resume, quick, on
       if (reveal) lit = Math.max(lit, reveal * (ft === F.SHELL ? 0.5 : 0.9));
       if (lit <= 0.01) continue;
       const col = FEAT[ft];
-      let a = ft === F.VEIN ? 0.55 : ft === F.HOLLOW ? 0.22 : ft === F.EDGE ? 0.9 : (shellEdge.has(cI) ? 0.6 : 0.16);
+      let a = ft === F.VEIN ? 0.55 : ft === F.HOLLOW ? 0.22 : ft === F.EDGE ? 0.9 : 0;
+      if (ft === F.SHELL) {
+        // the rock still to clear round a find: what is cut is gone from the picture, and the rim of what is left is drawn bright
+        if (g.cut[cI]) continue;
+        const rem = (q) => R.feat[q] === F.SHELL && R.findAt[q] === R.findAt[cI] && !g.cut[q];
+        a = (rem(cI - 1) && rem(cI + 1) && rem(cI - R.gw) && rem(cI + R.gw)) ? 0.3 : 0.85;
+      }
       a *= lit * (0.78 + 0.22 * hash(cI * 31 + fr));
       const o = cI * 4;
       ld[o] = col[0]; ld[o + 1] = col[1]; ld[o + 2] = col[2]; ld[o + 3] = Math.min(255, Math.round(a * 255));
