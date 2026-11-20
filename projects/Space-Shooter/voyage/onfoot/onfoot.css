@@ -82,6 +82,11 @@
 .of-course span{font-weight:400;color:#8fa6b7;letter-spacing:0}
 /* Conversation box. */
 .of-talk{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);z-index:9;width:min(620px,calc(100% - 24px));padding:14px 16px;border:1px solid #2a4152;border-left:3px solid #81e6df;border-radius:6px;background:#0d1826f5;box-shadow:0 12px 40px #000a;display:grid;grid-template-columns:1fr auto;gap:4px 14px;align-items:end}
+.of-talk{cursor:pointer}
+/* The talk box lives in the floor's layer, under the bag (z 6): while it is up the bag steps aside (as it does for the datapad), so it never covers Next. */
+body:has(.of-talk) .dp-bag{opacity:0;pointer-events:none}
+/* A stand-in talk (the coffee machine) sits over the story's dialogue box: never under it, or its buttons cannot be reached. */
+body:has(.of-talk) #hg-dialogue{display:none}
 .of-talk-name{grid-column:1/-1;font:700 11px Consolas,monospace;letter-spacing:.12em;text-transform:uppercase}
 .of-talk-text{margin:0;color:#eaf4f5;font:15px/1.55 Inter,"Segoe UI",sans-serif}
 /* Touch controls. */

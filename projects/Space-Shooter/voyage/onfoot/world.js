@@ -294,6 +294,10 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     inRings = now;
   }
 
+  // Input is live only when nothing holds the floor: an interaction running AND a page pause are both holds,
+  // and ending one must not switch the other off (a closed talk used to re-enable input under a dialogue).
+  function syncInput() { input.enabled = !(busy || paused); }
+
   function use(it) {
     if (it.kind === 'takedown') { stealth?.takedown(it.id, walker); return; }
     if (it.kind === 'door' || it.kind === 'wdoor') {
@@ -302,7 +306,7 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
       if (gate?.hack) {
         const key = `hack:${map.id}:${d.id}`;
         const r = hooks.interact?.({ kind: 'hack', id: key, level: gate.hack, label: d.label, door: true, pick: gate.pick }, api);
-        if (r?.then) { busy = true; input.enabled = false; r.then(res => { if (res?.success) { opened.add(key); layerDirty = true; } }).finally(() => { busy = false; input.enabled = true; }); }
+        if (r?.then) { busy = true; input.enabled = false; r.then(res => { if (res?.success) { opened.add(key); layerDirty = true; } }).finally(() => { busy = false; syncInput(); }); }
         return;
       }
       if (gate) { hooks.locked?.({ ...d, gate }, api); return; }
@@ -316,7 +320,7 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
       busy = true;
       walker.vx = walker.vy = 0;
       input.enabled = false;
-      result.catch(error => console.warn('Stardust: an interaction failed', error)).finally(() => { busy = false; input.enabled = true; });
+      result.catch(error => console.warn('Stardust: an interaction failed', error)).finally(() => { busy = false; syncInput(); });
     }
   }
 
@@ -749,11 +753,15 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     /** launch maps: a tag's state on this map now (or every tag's: no argument). */
     stateOf(tag) { const st = map.def.stateOf || {}; return tag ? st[tag] ?? null : { ...st }; },
     pause() { paused = true; input.enabled = false; },
-    resume() { paused = false; input.enabled = true; },
+    resume() { paused = false; syncInput(); },
     /** For tests and the director: use whatever is in reach. */
     useTarget() { if (target) use(target); return target; },
     /** Screen point (CSS px in the canvas) of a world point, for tests and pointer hints. */
     screenOf(x, y) { const c = lastCam || { x: 0, y: 0, zoom: 1 }; return { x: (x - c.x) * c.zoom, y: (y - c.y) * c.zoom }; },
+    /** Where the player stands (tests, the director). */
+    position: () => ({ x: walker.x, y: walker.y, moving: Boolean(walker.moving) }),
+    /** True while something holds the floor (tests): an interaction is running or the page paused the world. */
+    get held() { return busy || paused; },
     /** Teleport (tests, director cuts). */
     place(x, y, angle) { walker.x = x; walker.y = y; if (angle != null) walker.angle = angle; walker.vx = walker.vy = 0; },
     /** The HUD's safe area (px kept clear at the top and bottom): marks and the prompt stay inside it. */
