@@ -126,7 +126,11 @@ for (const [name, profile] of [['desktop', DESK], ['phone', PHONE]]) {
           await dragTo(ix, iy); guard++;
         }
         await dragEnd();
-        const fin = await snap(page);
+        let fin = await snap(page);
+        if (!fin.done) { // every pass is made: say Done (the pad on a phone, Space on a desktop) when the plate did not finish by itself
+          if (phone) { const r = await page.locator(`${PANEL} .cc-donepad`).boundingBox(); await touch('touchStart', r.x + r.width / 2, r.y + r.height / 2); await touch('touchEnd'); } else await page.keyboard.press('Space');
+          await wait(page, 200); fin = await snap(page);
+        }
         assert.ok(fin.done, 'the plate finished'); assert.ok(guard > 200, 'a real hand-steered run');
         assert.ok(fin.polished >= 28 && fin.dimples <= 2, `a steady hand polished it: ${JSON.stringify(fin)}`);
         await gradeCard();
