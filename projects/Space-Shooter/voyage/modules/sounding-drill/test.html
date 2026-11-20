@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Sounding drill: test page</title>
+<style>
+  :root{color-scheme:dark}
+  body{margin:0;background:#070d14;color:#eaf4f5;font:14px/1.45 Inter,"Segoe UI",sans-serif}
+  main{max-width:640px;margin:0 auto;padding:20px 16px 40px}
+  h1{margin:0 0 4px;font-size:22px}
+  p.sub{margin:0 0 16px;color:#9db3c2}
+  form{display:grid;gap:12px;border:1px solid #223548;border-radius:8px;padding:14px;background:#0b1724}
+  label{display:grid;grid-template-columns:130px 1fr 40px;gap:8px;align-items:center;font:12px Consolas,monospace;letter-spacing:.06em;color:#b5c8d5}
+  label.wide{grid-template-columns:130px 1fr}
+  input,select,textarea{font:13px Consolas,monospace;background:#08121b;color:#eaf4f5;border:1px solid #2c4256;border-radius:4px;padding:6px}
+  output{color:#81e6df;text-align:right}
+  .row{display:flex;gap:10px;flex-wrap:wrap}
+  button{font:700 13px Inter,sans-serif;letter-spacing:.06em;min-height:44px;padding:0 18px;border-radius:6px;border:1px solid #3f5566;background:#12283a;color:#eaf4f5;cursor:pointer}
+  button.go{background:#81e6df;color:#062226;border-color:#81e6df}
+  pre{white-space:pre-wrap;word-break:break-word;background:#08121b;border:1px solid #223548;border-radius:6px;padding:10px;font:12px Consolas,monospace;color:#b5c8d5;max-height:260px;overflow:auto}
+  /* The host stage: a full-screen overlay with a Leave button, as the game opens every module. */
+  #stage-host{position:fixed;inset:0;z-index:50;background:#000;display:none}
+  #stage-host.open{display:block}
+  #stage{position:absolute;inset:0}
+  #leave{position:absolute;top:8px;right:8px;z-index:60;min-height:40px;padding:0 14px}
+</style>
+</head>
+<body>
+<main>
+  <h1>Sounding drill</h1>
+  <p class="sub">Test page for the module. Sets the roll and opens the game full screen, the way the game does.</p>
+  <form id="panel" onsubmit="return false">
+    <label class="wide">Seed <input id="seed" type="number" value="1" min="1"></label>
+    <label class="wide">Roll <select id="tier"><option value="-2">Rough</option><option value="-1">Shaky</option><option value="0" selected>Steady</option><option value="1">Good</option><option value="2">Smooth</option></select></label>
+    <label>Awareness <input id="awareness" type="range" min="0" max="9" value="0"><output>0</output></label>
+    <label>Inspection <input id="inspection" type="range" min="0" max="9" value="0"><output>0</output></label>
+    <label>Trace <input id="trace" type="range" min="0" max="9" value="0"><output>0</output></label>
+    <label class="wide">Quick mode <input id="quick" type="checkbox"></label>
+    <label class="wide">Context (JSON) <textarea id="context" rows="3" placeholder='{"rock":{"size":"medium","finds":[{"item":"gem-blue","kind":"gem","main":true}]}}'></textarea></label>
+    <div class="row"><button class="go" id="open" type="button">Sound the rock</button></div>
+  </form>
+  <h2 style="font-size:14px;margin:18px 0 6px">Last result</h2>
+  <pre id="out">none yet</pre>
+</main>
+<div id="stage-host"><button id="leave" type="button">Leave</button><div id="stage"></div></div>
+<script type="module">
+  import { play } from './index.js';
+  const $ = (id) => document.getElementById(id);
+  const q = new URLSearchParams(location.search);
+  for (const id of ['awareness', 'inspection', 'trace']) { const i = $(id), o = i.nextElementSibling; i.addEventListener('input', () => { o.textContent = i.value; }); }
+  const setFrom = (k, id) => { if (q.has(k)) { $(id).value = q.get(k); $(id).dispatchEvent(new Event('input')); } };
+  setFrom('seed', 'seed'); setFrom('tier', 'tier'); setFrom('awareness', 'awareness'); setFrom('inspection', 'inspection'); setFrom('trace', 'trace');
+  if (q.get('quick') === '1') $('quick').checked = true;
+  if (q.has('context')) $('context').value = q.get('context');
+  let running = null;
+  async function open() {
+    if (running) return;
+    const host = $('stage-host'), stage = $('stage');
+    host.classList.add('open'); document.body.style.overflow = 'hidden';
+    let context = {}; try { context = $('context').value.trim() ? JSON.parse($('context').value) : {}; } catch { context = {}; }
+    const ctx = {
+      seed: +$('seed').value || 1, tier: +$('tier').value, quick: $('quick').checked, mode: 'field', level: 1, context,
+      points: { awareness: +$('awareness').value, inspection: +$('inspection').value, trace: +$('trace').value },
+      sound: (id) => { (window.__sounds ||= []).push(id); }, reducedMotion: () => matchMedia('(prefers-reduced-motion: reduce)').matches,
+    };
+    running = play(stage, ctx);
+    window.__running = running;
+    const result = await running;
+    running = null; host.classList.remove('open'); document.body.style.overflow = ''; stage.replaceChildren();
+    window.__result = result;
+    $('out').textContent = JSON.stringify({ ...result, tunnel: result.tunnel ? { ...result.tunnel, rows: `[${result.tunnel.rows?.length} rows]` } : undefined, resume: result.resume ? '[resume data]' : undefined }, null, 1);
+  }
+  $('open').addEventListener('click', open);
+  $('leave').addEventListener('click', () => $('stage').dispatchEvent(new CustomEvent('module:leave')));
+  if (q.get('auto') === '1') open();
+</script>
+</body>
+</html>

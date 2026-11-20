@@ -67,7 +67,7 @@ function blockMap(g, margin) {
 
 // --- perfect -------------------------------------------------------------------------------------------------------
 export function perfectBot(g, o = {}) {
-  const P = { ringD: 17, sweep: 12.6, look: 40, stopAt: 0.74, ...o };
+  const P = { ringD: 19, sweep: 12.6, look: 40, stopAt: 0.74, ...o };
   const R = g.rock, main = R.finds[0];
   let path = null, pi = 0, circ = null, cooling = false, plannedFor = -1;
   const plan = () => {
@@ -116,7 +116,7 @@ export function perfectBot(g, o = {}) {
       if (main.share >= P.stopAt || circ.swept > P.sweep || g.charge < g.chargeMax * 0.03) return { claw: true };
       // first loop close in, the second a little wider, so the outer part of the shell goes too
       const D = main.r + (circ.swept < 6.0 ? P.ringD : P.ringD + 9);
-      const ahead = th + circ.dir * (P.look / D);
+      const ahead = th + circ.dir * Math.max(0.42, 28 / D);
       return { x: main.x + Math.cos(ahead) * D, y: main.y + Math.sin(ahead) * D, down: true };
     },
   };
@@ -124,7 +124,7 @@ export function perfectBot(g, o = {}) {
 
 // --- wobbly --------------------------------------------------------------------------------------------------------
 export function wobblyBot(g, o = {}) {
-  const P = { sigma: 13, lag: 0.32, memT: 2.6, listenEvery: 200, corrT: 0.45, estSigma: 13, ringD: 31, look: 46, ...o };
+  const P = { sigma: 22, lag: 0.32, memT: 2.6, listenEvery: 200, corrT: 0.45, estSigma: 13, ringD: 26, look: 46, lapse: 0.25, lapseK: 14, ...o };
   const rnd = roller({ rng: hashSeed('sounding-drill', 'bot', 'wobbly', g.seed, o.salt || 0) });
   const gauss = mkGauss(rnd);
   const R = g.rock, main = R.finds[0];
@@ -142,7 +142,8 @@ export function wobblyBot(g, o = {}) {
       lastB = { x: b.x, y: b.y };
       // what it can see: only what is lit right now
       if (findLight(g, main) > 0.3) {
-        if (g.t - lastSeen > 0.6 || !mem) mem = { x: main.x + gauss() * P.estSigma, y: main.y + gauss() * P.estSigma, r: main.r };
+        if (g.t - lastSeen > 0.6 || !mem) { const k = rnd.next() < P.lapse ? P.lapseK : 1; mem = { x: main.x + gauss() * P.estSigma * k, y: main.y + gauss() * P.estSigma * k, r: main.r }; }
+        else { const k2 = Math.hypot(lg.x - main.x, lg.y - main.y) < 230 ? 0.2 : 0.02; mem.x += (main.x + gauss() * P.estSigma * 0.4 - mem.x) * k2; mem.y += (main.y + gauss() * P.estSigma * 0.4 - mem.y) * k2; }
         lastSeen = g.t; memAt = g.t;
       }
       if (mem && g.t - memAt > P.memT) { mem = null; sinceListen = P.listenEvery; }

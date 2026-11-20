@@ -28,9 +28,9 @@ export const BASE = Object.freeze({
   hold: 1.5, fade: 1.0,       // how long a lit thing stays lit, then fades
   listenReach: 1.6, listenTime: 1.2, listenCost: 0.04, listenAfter: 0.5, stillRadius: 14,
   heat: Object.freeze({ vein: 30, soft: 6, openCool: 12, cool: 25, seizeAt: 100, seizeTime: 2, after: 40 }),
-  charge: 960, veinCost: 2,  // charge in units of soft tunnel; a vein costs double
+  charge: 1060, veinCost: 2,  // charge in units of soft tunnel; a vein costs double
   coreMin: 28, coreMax: 46, shell: 34, freedAt: 0.70,
-  shatter: 3, crackPad: 4, crackCool: 0.9,
+  shatter: 3, crackPad: 4, crackCool: 1.3,
   quickCharge: 0.6, maxTurns: 2,
   sizeScale: Object.freeze({ small: 0.62, medium: 0.82, large: 1.0 }),
   gradeMain: 60, gradeClean: 20, gradeOneCrack: 10, gradeBonus: 10,
@@ -51,7 +51,7 @@ export function rulesFor({ tier = 0, points = {}, quick = false, board = { w: 10
   const t = tierOf(tier);
   const info = tierInfo(t);
   const p = cleanPoints(points);
-  const sizeK = (board.w + board.h) / 1760;   // a wide board is 1000 x 760
+  const sizeK = (board.w + board.h) / 1700;   // a wide board is 1000 x 760
   const u = board.w / 1000;                   // a narrower (phone) board sees proportionally less far
   return {
     tier: t, label: info.label, points: p, quick: !!quick,
@@ -142,9 +142,9 @@ export function makeRock({ seed = 1, board = { w: 1000, h: 760 }, quick = false,
     for (let i = 0; i < tries; i++) {
       let x, y;
       if (isMain) {
-        // somewhere across the rock from the first entry: 0.32 to 0.56 of the rock's width away
+        // somewhere across the rock from the first entry: 0.36 to 0.62 of the rock's width away (out of the first ring's reach)
         const toC = Math.atan2(R.cy - entry0.y, R.cx - entry0.x), a = toC + (rnd.next() - 0.5) * 1.9;
-        const dd = (0.22 + rnd.next() * 0.38) * 2 * Math.sqrt(R.rx * R.ry);
+        const dd = (0.36 + rnd.next() * 0.26) * 2 * Math.sqrt(R.rx * R.ry);
         x = entry0.x + Math.cos(a) * dd; y = entry0.y + Math.sin(a) * dd;
       } else {
         const a = rnd.next() * 6.28, f = 0.25 + rnd.next() * 0.65;
@@ -154,7 +154,7 @@ export function makeRock({ seed = 1, board = { w: 1000, h: 760 }, quick = false,
       let good = true;
       for (const o of R.finds) if (Math.hypot(o.x - x, o.y - y) < o.r + r + 2 * BASE.shell + 70) good = false;
       const de = Math.hypot(entry0.x - x, entry0.y - y), diam = 2 * Math.sqrt(R.rx * R.ry);
-      if (isMain ? (de < 0.22 * diam || de > 0.6 * diam) : de < 170) good = false;
+      if (isMain ? (de < 0.36 * diam || de > 0.62 * diam) : de < 170) good = false;
       if (good) { best = { x, y }; break; }
       if (!best) best = { x, y, bad: true };
     }
@@ -187,23 +187,25 @@ export function makeRock({ seed = 1, board = { w: 1000, h: 760 }, quick = false,
   }
 
   // Veins: three candidates across the way from entry to main find; the roll keeps the first `veins`.
+  // Every rock has three on file: if the careful placement finds no room, the checks relax a step at a time.
   const mf = R.finds[0];
   const pathA = entry0, pathB = { x: mf.x, y: mf.y };
   const fr = [0.3 + rnd.next() * 0.1, 0.5 + rnd.next() * 0.1, 0.7 + rnd.next() * 0.08];
   for (let i = 0; i < 3; i++) {
     let made = null;
-    for (let tries = 0; tries < 60 && !made; tries++) {
+    for (let tries = 0; tries < 160 && !made; tries++) {
+      const relax = tries < 60 ? 0 : tries < 110 ? 1 : 2;
       const f = tries < 30 ? fr[i] + (rnd.next() - 0.5) * 0.1 : rnd.next();
       const px = pathA.x + (pathB.x - pathA.x) * f, py = pathA.y + (pathB.y - pathA.y) * f;
-      const dir = Math.atan2(pathB.y - pathA.y, pathB.x - pathA.x) + Math.PI / 2 + (rnd.next() - 0.5) * 1.2;
-      const half = (110 + rnd.next() * 90) * Math.max(0.7, s), w = 44 + rnd.next() * 22;
-      const off = (rnd.next() - 0.5) * 150;
+      const dir = Math.atan2(pathB.y - pathA.y, pathB.x - pathA.x) + Math.PI / 2 + (rnd.next() - 0.5) * (relax ? 3 : 1.2);
+      const half = (110 + rnd.next() * 90) * Math.max(0.7, s) * (relax === 2 ? 0.6 : 1), w = 44 + rnd.next() * 22;
+      const off = (rnd.next() - 0.5) * (relax ? 260 : 150);
       const cx = px + Math.cos(dir + Math.PI / 2) * off, cy = py + Math.sin(dir + Math.PI / 2) * off;
       const v = { ax: cx - Math.cos(dir) * half, ay: cy - Math.sin(dir) * half, bx: cx + Math.cos(dir) * half, by: cy + Math.sin(dir) * half, w, ph: rnd.next() * 6.28 };
-      if (!insideRock(R, v.ax, v.ay) && !insideRock(R, v.bx, v.by) && !insideRock(R, cx, cy)) continue;
-      if (R.finds.some((o) => dist2seg(o.x, o.y, v.ax, v.ay, v.bx, v.by).d < o.r + BASE.shell + w / 2 + 14)) continue;
+      if (!insideRock(R, cx, cy)) continue;
+      if (R.finds.some((o) => dist2seg(o.x, o.y, v.ax, v.ay, v.bx, v.by).d < o.r + BASE.shell + w / 2 + (relax === 2 ? 4 : 14))) continue;
       if (R.hollows.some((o) => dist2seg(o.x, o.y, v.ax, v.ay, v.bx, v.by).d < o.rad + w / 2 + 10)) continue;
-      if (dist2seg(entry0.x, entry0.y, v.ax, v.ay, v.bx, v.by).d < w / 2 + 60) continue;
+      if (dist2seg(entry0.x, entry0.y, v.ax, v.ay, v.bx, v.by).d < w / 2 + (relax ? 30 : 60)) continue;
       made = v;
     }
     if (made) R.veins.push(made);
@@ -493,8 +495,9 @@ export function step(g, dt, input = {}) {
     if (mv > 1e-6) {
       g.bit.x = nx; g.bit.y = ny; g.moving = true;
       const cost = stamp(g, nx, ny);
-      if (cost > 0) {
-        g.drilling = true; g.charge -= cost;
+      g.charge -= cost;
+      if (cost > 0 || solidAhead) {
+        g.drilling = true;
         g.heat += (g.frontKind === K.VEIN ? H.vein : H.soft) * dt; cooling = false;
         if (g.frontKind === K.VEIN) g.events.push({ type: 'grind' });
       } else { g.heat = Math.max(0, g.heat - H.openCool * dt); cooling = false; }
