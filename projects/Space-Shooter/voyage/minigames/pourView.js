@@ -42,7 +42,7 @@ export function playPour(root, { state, what = 'flask', reducedMotion = () => fa
   if (typeof ResizeObserver !== 'undefined') new ResizeObserver(fit).observe(wrap);
   requestAnimationFrame(fit);
   const geo = (dx = 0) => {
-    const bottom = H * 0.9, gh = Math.min(H * 0.7, W * 1.15), gw = Math.min(W * 0.44, gh * 0.62), cx = W * 0.5 + dx, top = bottom - gh;
+    const bottom = H * 0.92, gh = Math.min(H * 0.6, W * 1.1), gw = Math.min(W * 0.44, gh * 0.62), cx = W * 0.5 + dx, top = bottom - gh;
     return { bottom, gh, gw, cx, top, inner: 7, yOf: (L) => bottom - 8 - (Math.max(0, Math.min(100, L)) / 100) * (gh - 8), halfAt: (y) => { const k = (y - top) / gh; return (gw / 2) * (1 - 0.14 * Math.max(0, Math.min(1, k))); } };
   };
   panel.__view = () => { const r = canvas.getBoundingClientRect(), g = geo(); return { left: r.left, top: r.top, w: W, h: H, lineAt: (L) => ({ x: r.left + g.cx, y: r.top + g.yOf(L) }) }; };
@@ -88,7 +88,7 @@ export function playPour(root, { state, what = 'flask', reducedMotion = () => fa
     else if (ev.type === 'next') { const nx = s.plan[ev.idx]; slide = { t: 0, left: ev.left }; shown = 0; say(`Next: ${nx.name}, in a fresh glass. Hold Pour and stop at its line.`); }
     else if (ev.type === 'spill') {
       spillAnim = { t: 0, color: liq.color, base: ev.base }; puddleHue = liq.color; puddle = Math.min(1, puddle + 0.5); shake = 7; flash = 0.8; flashHue = '#ff6b5a';
-      say(`Spilled! That ${liq.name} is spoiled (-${SPILL_COST}). The glass is back where it was: pour it again.`);
+      say(`Spilled! That ${liq.name} is spoiled (-${SPILL_COST}). The glass is empty: pour it again.`);
     } else if (ev.type === 'done') { say(ev.how === 'gave-up' ? 'Given up.' : ev.success ? 'Poured.' : 'Too much spoiled.'); endAt = performance.now(); }
   }
 
@@ -121,7 +121,7 @@ export function playPour(root, { state, what = 'flask', reducedMotion = () => fa
   }
   function jug(g, mouthX, mouthY, ang, color, u) {
     ctx.save(); ctx.translate(mouthX, mouthY); ctx.rotate(-ang);
-    const bw = 70 * u, bh = 96 * u; // the body hangs from the mouth up and to the right when tipped
+    const bw = 56 * u, bh = 80 * u; // the body hangs from the mouth up and to the right when tipped
     ctx.fillStyle = '#d7dee4'; ctx.strokeStyle = '#26323c'; ctx.lineWidth = 2;
     ctx.beginPath(); ctx.moveTo(-4 * u, 0); ctx.lineTo(bw, -6 * u); ctx.quadraticCurveTo(bw + 12 * u, -bh * 0.5, bw - 6 * u, -bh); ctx.lineTo(10 * u, -bh); ctx.quadraticCurveTo(-8 * u, -bh * 0.5, -4 * u, 0); ctx.closePath();
     const bg = ctx.createLinearGradient(0, -bh, bw, 0); bg.addColorStop(0, '#f1f6f9'); bg.addColorStop(1, '#9fb0bc'); ctx.fillStyle = bg; ctx.fill(); ctx.stroke();
@@ -169,7 +169,7 @@ export function playPour(root, { state, what = 'flask', reducedMotion = () => fa
     drawGlass(gl, [[0, Math.max(0, shown), liquidOf(s).color]], s.done && s.pours.length >= s.N ? null : s.plan[Math.min(s.idx, s.N - 1)], amp, tt, true);
     const g2 = gl;
     // the jug and the stream
-    const mouthX = gl.cx + 18 * u, mouthY = gl.top - gl.gh * 0.12 - 8 * u, want = s.holding ? 0.95 : 0.12;
+    const mouthX = gl.cx + 18 * u, mouthY = gl.top - gl.gh * 0.07 - 6 * u, want = s.holding ? 0.8 : 0.1;
     tilt += (want - tilt) * Math.min(1, dt * (s.holding ? 6 : 4)); streamK += ((s.holding ? 1 : 0) - streamK) * Math.min(1, dt * (s.holding ? 22 : 14));
     jug(gl, mouthX, mouthY, tilt, liquidOf(s).color, u);
     if (streamK > 0.04 && !calm || streamK > 0.04) {

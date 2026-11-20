@@ -161,8 +161,8 @@
 .cc-glass .cc-tick{top:0;bottom:0;background:#fff}
 .cc-glassstat em,.cc-pourstat em{font-size:12px}
 .cc-glass[data-state=right] ~ em{color:#9fe870}.cc-glass[data-state=over] ~ em{color:#ff8a70}
-.cc-pourstat{grid-template-columns:auto 1fr;align-items:center;column-gap:8px}.cc-pourstat>span{grid-column:1/3}
-.cc-pourstat .cc-liquidname{grid-column:2;justify-self:end;font-size:12px}
+.cc-pourstat{grid-template-columns:1fr auto;align-items:center;column-gap:8px}.cc-pourstat>span{grid-area:1/1}
+.cc-pourstat .cc-liquidname{grid-area:1/2;justify-self:end;font-size:12px}.cc-pourstat .cc-pips{grid-area:2/1/3/3;flex-wrap:wrap}
 .cc-pips i[style]{border-color:#e8f5f8}
 .cc-pourwrap{width:min(100%,880px);aspect-ratio:800/560;margin:0 auto}
 .cc-pourcanvas{cursor:default;touch-action:none}
