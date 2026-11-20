@@ -40,7 +40,7 @@ import { createSettings } from './ui/settings.js';
 import { createAttemptRoller } from './ui/attemptRoll.js';
 import { createMinigameSheet } from './minigames/sheet.js';
 import { mountStory } from './story/mount.js';
-import { storyOf, currentStep } from './story/progress.js';
+import { storyOf, currentStep, idleLine } from './story/progress.js';
 import { STEP_IDS, STEPS } from './story/tutorial.js';
 import { addLines, lineById } from './story/lines.js';
 import { contentLines } from './quests/lines.js';
@@ -65,6 +65,11 @@ import { OFFERS_DATA } from './quests/data/offers.js';
 // Launch slice: the opening on the Tin Duchess (slice/director.js).
 import { wantsSlice, startSlice, startRoom, createSliceDirector } from './slice/director.js';
 import { waitingOn } from './slice/rules.js';
+// Opening track A: the crew's ledger, the seal, roles and the fallback talk (slice/presenceRun.js, seal.js, role.js, fallbackLines.js).
+import { createPresenceRun } from './slice/presenceRun.js';
+import { sealReason, sealed, WHY } from './slice/seal.js';
+import { roleOf } from './slice/role.js';
+import { fallbackLine } from './slice/fallbackLines.js';
 import { createStatuses, clock } from './status.js';
 // The workbench room: a dev-only test room (?newgame=1&start=workbench), its own files in ./workbench/.
 import { wantsWorkbench } from './workbench/entry.js';
@@ -391,6 +396,7 @@ function boot(session = { mode: 'local' }) {
     take: (quest) => jobs.take(quest),
     onBusy: (on) => { if (on) overlays.add('jobtalk'); else overlays.delete('jobtalk'); holdFloor(); tracker?.render(); },
     name: () => store.get().character?.name || '',
+    role: () => (slicing ? roleOf(store.get()) : null),
   });
   const jobCard = createJobCard({
     root: $('dp-jobcard'), later: $('dp-jobcard-later'), eyebrow: $('dp-jobcard-eyebrow'),
@@ -403,7 +409,7 @@ function boot(session = { mode: 'local' }) {
     // A beat waits for the dice of the step before it to land, then plays in the dialogue box.
     dialogue: (v, pick) => {
       const wait = Math.max(0, lastRoll + 1400 - Date.now());
-      setTimeout(() => jobTalk.beat(v).then((i) => { if (i >= 0) pick(i); else if (i === -1) toast(OFFERS_WORDS.paused); }), wait);
+      setTimeout(() => jobTalk.beat(v).then((i) => { if (i >= 0) pick(i); else if (i === -1) { toast(OFFERS_WORDS.paused); slice?.snooze(); } }), wait);
     },
     card: (kind, v) => (slice && kind === 'end' && v ? slice.endCard(v, () => jobCard.show(kind)) : jobCard.show(kind)),
     // launch slice: a beat plays in its room, an on-foot fight runs on the Duchess's floor, a closed result card starts the next scene.
@@ -461,11 +467,25 @@ function boot(session = { mode: 'local' }) {
 
   // The walkable floor. Walking up to a station and pressing E opens it in place.
   const statuses = createStatuses();
+  // Opening track A: one ledger for the crew (who is where, who is walking), the seal on every way off the ship, and the fallback talk.
+  const presence = slicing ? createPresenceRun({ flags: () => store.get().flags || {} }) : null;
+  presence?.restore(store.get());
+  const crewTalks = new Map();
   onfoot = createOnFoot({
     root: floor, store, bus, mapId: link.map || (workbench ? WORKBENCH_ID : slicing ? startRoom(store.get()) : 'hangar'), spawn: link.map ? link.spawn : 'default',
     reducedMotion: still,
     hooks: {
       statuses,
+      presence: presence?.hooks || null,
+      sealed: (d) => (slicing ? sealReason(store.get(), d) : null),
+      // Nothing scripted: they answer anyway, in a few words (slice/fallbackLines.js). A person the story already has idle lines for keeps them.
+      talk: (who) => {
+        if (!slicing || idleLine(who, store.get(), 0)) return null;
+        const n = crewTalks.get(who) || 0;
+        crewTalks.set(who, n + 1);
+        const line = fallbackLine(who, { role: roleOf(store.get()), moving: Boolean(onfoot.world.npcAt(who)?.moving), n });
+        return line ? onfoot.say([line]) : null;
+      },
       openStation: (id) => (workbenchRoom && String(id).startsWith('wb-') ? workbenchRoom.openStation(id) : new Promise((resolve) => {
         if (!place.openStation(id, { via: 'walk' })) { resolve(); return; }
         const off = place.subscribe((e) => { if (e.type === 'close') { off(); resolve(); } });
@@ -511,20 +531,39 @@ function boot(session = { mode: 'local' }) {
   addEventListener('resize', fitSafe);
   // Something else owns the screen: a station panel, the licence or intro, a minigame or talk, a flight, a fight.
   const screenBusy = () => sheetOpen || Boolean(place.current) || overlays.has('intro') || overlays.has('licence') || overlays.has('nap') || overlays.has('pause') || flying
-    || onfoot.world.mode !== 'walk' || Boolean(floor.querySelector('.of-panel, .of-overlay, .of-talk')) || !$('hg-licence').hidden;
+    || onfoot.world.mode !== 'walk' || Boolean(floor.querySelector('.of-panel, .of-overlay, .of-talk')) || !$('hg-licence').hidden || Boolean(document.querySelector('.ok-screen')); /* an object screen owns the display */
   // Playtest 1: a status (Wired) shows as a small chip on the floor while it lasts.
   const statusChip = document.createElement('p');
   statusChip.className = 'hg-status';
   statusChip.setAttribute('role', 'status');
   statusChip.hidden = true;
   floor.append(statusChip);
+  // The HUD rule: a status is a word and a bar that drains, not digits.
   setInterval(() => {
     const on = statuses.active();
     statusChip.hidden = !on.length;
-    if (on.length) statusChip.textContent = on.map((x) => `${x.name} · ${clock(x.left)}`).join('  ');
+    if (!on.length) return;
+    statusChip.replaceChildren(...on.map((x) => {
+      const item = document.createElement('span');
+      item.className = 'hg-st';
+      item.dataset.status = x.id;
+      item.title = x.text;
+      item.setAttribute('aria-label', `${x.name}, ${clock(x.left)} left`);
+      const word = document.createElement('b');
+      word.textContent = x.name;
+      const bar = document.createElement('span');
+      bar.className = 'hg-st-bar';
+      bar.setAttribute('role', 'meter');
+      const fill = document.createElement('i');
+      fill.style.width = `${Math.max(0, Math.min(100, (x.left / x.total) * 100))}%`;
+      bar.append(fill);
+      item.append(word, bar);
+      return item;
+    }));
   }, 500);
   pad = createDatapad({
-    useItem: (id) => (id === 'coffee' ? onfoot.drinkCoffee(true) : false),
+    pageName: (id) => (slicing && id === 'captain' && roleOf(store.get()) !== 'captain' ? 'You' : null),
+    useItem: (id) => (id === 'coffee' ? onfoot.drinkCoffee(true) : id === 'tea' ? onfoot.drinkTea(true) : false),
     root: document.body, store, bus, toast, touch, skillSave: createSkillSave({ store, economy }),
     world: () => onfoot?.world || null,
     tutorialOn, reducedMotion: still, stationInfo,
@@ -540,6 +579,7 @@ function boot(session = { mode: 'local' }) {
     boardOpen: () => place.current === 'board',
     jobBusy: () => jobTalk.busy || jobCard.open,
     onContinue: () => jobs.resume(),
+    canContinue: () => !slicing, /* the opening starts its own beats (slice/director.js watch) */
   });
   const controls = createControlsCard({ root: document.body, touch });
   const pause = createPause({
@@ -625,6 +665,21 @@ function boot(session = { mode: 'local' }) {
   crew.render();
   ready.then(() => crew.refresh());
 
+  // Opening track A, outcome 2: the links back to the classic game are shut while the opening runs; a click says why.
+  function sealClassicLinks() {
+    const back = $('vy-back');
+    const mark = () => { const on = sealed(store.get()); back.toggleAttribute('data-sealed', on); if (on) back.setAttribute('aria-disabled', 'true'); else back.removeAttribute('aria-disabled'); };
+    mark();
+    store.subscribe(mark);
+    addEventListener('click', (e) => {
+      const a = e.target instanceof Element ? e.target.closest('a[href*="activity=classic"]') : null;
+      if (!a || !sealed(store.get())) return;
+      e.preventDefault();
+      e.stopPropagation();
+      toast(WHY.classic);
+    }, true);
+  }
+
   // --- Where to start ---
   const step = currentStep(store.get())?.id || null;
   if (link.quest) {
@@ -636,7 +691,9 @@ function boot(session = { mode: 'local' }) {
   // A job in progress waits on the tracker and the datapad (Continue); nothing pops up.
   // Launch slice: the opening picks its scene up (a reload lands back in the beat) or starts the next one.
   if (slicing) {
-    slice = createSliceDirector({ store, jobs, toast, world: () => onfoot?.world || null, fightIn: (setup) => onfoot.fight(setup) });
+    slice = createSliceDirector({ store, jobs, toast, world: () => onfoot?.world || null, fightIn: (setup) => onfoot.fight(setup), presence, busy: () => jobTalk.busy || jobCard.open || screenBusy() });
+    setInterval(() => slice.watch(), 250);
+    sealClassicLinks();
     ready.then(() => {
       // A signed-in account whose own save is an older hangar game replaces the fresh one: leave the Duchess for the hangar.
       if (!store.get().flags?.['slice-started']) { onfoot.world.go('hangar', 'default'); return; }
@@ -646,5 +703,5 @@ function boot(session = { mode: 'local' }) {
 
   // For tests and poking around in the console (no secrets: the save is the player's own).
   setTimeout(maybeControls, 600);
-  window.__stardust = { statuses, store, story, onfoot, place, jobs, licence, bus, pad, tracker, controls, pause, jobTalk, jobCard, crew, slice, workbench: workbenchRoom };
+  window.__stardust = { presence, statuses, store, story, onfoot, place, jobs, licence, bus, pad, tracker, controls, pause, jobTalk, jobCard, crew, slice, workbench: workbenchRoom };
 }

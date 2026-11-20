@@ -18,6 +18,7 @@ import { sprite, playerFrames, preload, onArtLoaded, captainSprite, playerArt } 
 import { fitCanvas, viewZoom, cameraFor } from './viewport.js';
 import { createInput } from './input.js';
 import { createEl } from './dom.js';
+import { gapBodies } from '../slice/presence.js';
 import { createStealthLayer } from './stealthLayer.js'; // live stealth: only for a map with a `stealth` block (the workbench yard)
 import { TUTORIAL_EVENTS } from './events.js';
 import { createSfx } from './sfx.js';
@@ -29,7 +30,7 @@ import { BASICS_DATA } from '../datapad/data.js';
 import { hudArt } from '../ui/assets.js';
 // launch maps: things that switch in play (doors, the goo, the reactor) are map data (rules/states.js).
 import { hasStates, resolveStates, applyStates, stateSignature } from './rules/states.js';
-import { compileMap } from './rules/mapdata.js';
+import { compileMap, walkable } from './rules/mapdata.js';
 import { createDoorSystem } from './doors/system.js'; // launch doors: doors built into the walls and two-door entries
 import { drawWallDoors } from './doors/paint.js';
 const expandEntries = def => def.entries || [];
@@ -107,8 +108,9 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     if (!force && sig === stateSig) return false;
     map = withStates(baseMap);
     const keep = new Map(npcs.map(n => [n.id, n]));
-    npcs = map.npcs.map(n => keep.get(n.id) || { ...n, home: { ...n.home }, vx: 0, vy: 0, moving: false });
-    for (const n of keep.values()) if (n.follow && !npcs.includes(n)) npcs.push(n);
+    npcs = crewDrop(map.npcs).map(n => keep.get(n.id) || { ...n, home: { ...n.home }, vx: 0, vy: 0, moving: false });
+    for (const n of keep.values()) if ((n.follow || crewIds()?.has(n.id)) && !npcs.includes(n)) npcs.push(n);
+    syncCrew();
     layerDirty = true;
     doorsys.load(map, { keep: true }); // launch doors hook
     emit('map:state', { map: map.id, states: { ...(map.def.stateOf || {}) } });
@@ -124,6 +126,43 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
 
   const offArt = onArtLoaded(() => { layerDirty = true; });
 
+  // Opening track A: the crew are run by one ledger (slice/presence.js), not by a copy in every room's map data. hooks.presence =
+  // { managed: Set of ids, entries(mapId), tick(dt) }. A person in transit is a puppet placed from the ledger; a settled one stands
+  // at their spot and idles as before. Without hooks.presence nothing here does anything.
+  const crewIds = () => hooks.presence?.managed || null;
+  const crewDrop = (list) => { const m = crewIds(); return m ? list.filter(n => !m.has(n.id)) : list; };
+  function syncCrew() {
+    const p = hooks.presence;
+    if (!p || !map) return;
+    const want = p.entries(map.id);
+    const shown = (w) => w.puppet || w.spot?.custom || map.npcs.some(x => x.id === w.id); /* a map state can hide a person (Pip under the panel) */
+    npcs = npcs.filter(n => !p.managed.has(n.id) || want.some(w => w.id === n.id && shown(w)));
+    for (const w of want) {
+      if (!shown(w)) continue;
+      let n = npcs.find(x => x.id === w.id);
+      if (!n) {
+        const base = map.npcs.find(x => x.id === w.id) || { id: w.id, face: 'down', wander: w.spot?.wander ?? 0 };
+        n = { ...base, x: w.x, y: w.y, home: { x: w.x, y: w.y }, angle: w.angle, vx: 0, vy: 0, moving: false };
+        npcs.push(n);
+      }
+      if (w.puppet) {
+        n.puppet = true; n.x = w.x; n.y = w.y; n.angle = w.angle; n.moving = w.moving; n.vx = n.vy = 0;
+        // A walker steps aside for the player in their way (drawn off the path; the ledger's walk is untouched, so nobody is ever held up).
+        if (walker) {
+          const dx = n.x - walker.x, dy = n.y - walker.y, d = Math.hypot(dx, dy), gap = 44;
+          if (d < gap && d > 0.01) {
+            const push = Math.min(24, gap - d), ox = n.x + (dx / d) * push, oy = n.y + (dy / d) * push;
+            if (walkable(map, ox, oy, 10)) { n.x = ox; n.y = oy; }
+          }
+        }
+      }
+      else if (n.puppet || (w.spot?.custom && !n.placed)) {
+        n.puppet = false; n.placed = true; n.x = w.x; n.y = w.y; n.angle = w.angle; n.moving = false;
+        n.home = { x: w.x, y: w.y }; n.wander = w.spot?.wander ?? n.wander ?? 0;
+      }
+    }
+  }
+
   function setMap(id, spawnName = 'default') {
     baseMap = enterMap(id); // a generic place (the cantina) is dressed fresh on every visit
     map = withStates(baseMap); // launch maps: in the states the save's flags (and scripts) say
@@ -133,9 +172,10 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     const keep = walker;
     walker = createWalker(s);
     if (keep) walker.walked = keep.walked;
-    npcs = map.npcs.map(n => ({ ...n, home: { ...n.home }, vx: 0, vy: 0, moving: false }));
+    npcs = crewDrop(map.npcs).map(n => ({ ...n, home: { ...n.home }, vx: 0, vy: 0, moving: false }));
     // Followers (Ralph) come along through doors.
     for (const id2 of following) if (!npcs.some(n => n.id === id2)) npcs.push({ id: id2, x: s.x + 30, y: s.y + 20, home: { x: s.x, y: s.y }, angle: s.angle, follow: true, wander: 0, moving: false });
+    syncCrew();
     layerDirty = true;
     arrivedAt = t;
     camera = null;
@@ -231,12 +271,13 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
       stepDist += Math.hypot(walker.vx, walker.vy) * dt;
       if (stepDist > 38) { stepDist = 0; if (stealth?.gait !== 'sneak') sound('step'); if (!reducedMotion()) dust.push({ x: walker.x - Math.cos(walker.angle) * 10, y: walker.y - Math.sin(walker.angle) * 10, life: map.kind === 'exterior' ? 0.5 : 0.3, floor: map.kind !== 'exterior' }); /* playtest 1: a scuff of dust on the deck too */ }
     }
+    if (hooks.presence) { if (!busy && !paused) hooks.presence.tick(dt); syncCrew(); }
     checkRings();
     if (stealth && !busy && !paused) {
       if (caughtT > 0) { caughtT -= dt; if (caughtT <= 0) stealthRestart(); } else stealth.step(dt, walker);
     }
     for (const n of npcs) {
-      if (hidden.has(n.id)) continue;
+      if (hidden.has(n.id) || n.puppet) continue;
       stepNpc(n, t, dt, wmap, following.has(n.id) ? walker : null);
     }
     // Npc interact points follow the npc.
@@ -249,7 +290,7 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     if (busy || paused) return;
     // launch doors hook: panels, the vestibule sequence (the swap happens with both doors shut)
     if (!busy && !paused) {
-      const r = doorsys.step(dt, { walker, bodies: doorBodies(), locked: doorLocked, still: reducedMotion() });
+      const r = doorsys.step(dt, { walker, bodies: doorBodies(), gapBodies: gapBodies(walker, npcs.filter(n => !hidden.has(n.id)), crewIds()), locked: doorLocked, still: reducedMotion() }); /* the crew open doors as they come, but never hold one: the player is never kept waiting on a person */
       if (r.sounds.includes('open') && t - lastDoorSound > 0.25) { lastDoorSound = t; sound('door'); }
       const swap = r.events.find(e => e.type === 'swap');
       if (swap) { transit(swap.to, swap.arrive); return; }
@@ -361,7 +402,7 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     if (objective.map && !objective.station) {
       if (map.id === objective.map) {
         const live = objective.npc ? npcs.find(x => !hidden.has(x.id) && x.id === objective.npc) : null;
-        const pt = live ? { x: live.x, y: live.y } : markerPoint(map, objective);
+        const pt = live ? { x: live.x, y: live.y } : objective.npc && crewIds()?.has(objective.npc) ? null : markerPoint(map, objective); /* a person who has not walked in yet has no marker */
         if (pt) return { x: pt.x, y: pt.y, ...(live ? { npc: live.id } : {}), label: objective.label || (live ? castLook(live.id).name : null) };
         return null;
       }
@@ -713,7 +754,7 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
   const api = {
     get map() { return map; },
     /** Where an npc is now ({ x, y } in world px), or null: tests and the page's pointers. */
-    npcAt(id) { const n = npcs.find(x => x.id === id && !hidden.has(x.id)); return n ? { x: n.x, y: n.y } : null; },
+    npcAt(id) { const n = npcs.find(x => x.id === id && !hidden.has(x.id)); return n ? { x: n.x, y: n.y, moving: Boolean(n.puppet && n.moving) } : null; },
     get player() { return walker; },
     get mode() { return mode; },
     get fightState() { return fight; },

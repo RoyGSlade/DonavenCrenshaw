@@ -33,7 +33,7 @@ function tabArt(p) {
  * onChange(open): the page holds or frees the floor. openLicence(): no captain yet.
  * stationInfo(id): { name, locked } for the map's legend.
  */
-export function createDatapad({ useItem = null, root = document.body, store, skillSave = null, bus = null, toast = () => {}, world = () => null, tutorialOn = () => false, reducedMotion = () => false, canOpen = () => true, onChange = () => {}, openLicence = () => {}, stationInfo = () => null, touch = false, onContinueJob = () => {}, onTrain = null, onScan = null }) {
+export function createDatapad({ useItem = null, pageName = null, root = document.body, store, skillSave = null, bus = null, toast = () => {}, world = () => null, tutorialOn = () => false, reducedMotion = () => false, canOpen = () => true, onChange = () => {}, openLicence = () => {}, stationInfo = () => null, touch = false, onContinueJob = () => {}, onTrain = null, onScan = null }) {
   // --- The bag in the HUD corner ---
   const bagArt = hudArt('bag-closed');
     const badge = el('span', { class: 'dp-bag-badge', hidden: true });
@@ -54,6 +54,12 @@ export function createDatapad({ useItem = null, root = document.body, store, ski
     tabButtons[p.id] = b;
     tabs.append(b);
     screens[p.id] = el('section', { class: `dp-page dp-page-${p.id}`, id: `dp-page-${p.id}`, role: 'tabpanel', 'aria-labelledby': `dp-tab-${p.id}`, hidden: true, dataset: { page: p.id } });
+  }
+  // Opening track A: a page can be named for who you are (a janitor's "Captain" page reads "You"). pageName(id) -> text or null.
+  if (pageName) {
+    const nameTabs = () => { for (const p of PAGES) { const t = tabButtons[p.id].querySelector('.dp-tab-name'); const n = pageName(p.id) || p.name; if (t && t.textContent !== n) t.textContent = n; } };
+    store.subscribe(nameTabs);
+    nameTabs();
   }
   // The Captain and Pack pages keep the ids the hangar's tests and kit know.
   screens.captain.id = 'pane-captain';

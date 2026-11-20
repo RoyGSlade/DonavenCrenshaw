@@ -39,9 +39,10 @@ import { visualTier } from '../upgrades.js';
 import { effect } from '../character.js';
 import { createEl } from './dom.js';
 import { economy } from '../account.js';
-import { COFFEE_WORDS } from '../status.js';
+import { COFFEE_WORDS, TEA_WORDS } from '../status.js';
 import { playBoard } from './boardView.js';
 import { noteFlag } from '../slice/board.js';
+import { createObjectScreens } from './objects/index.js';
 
 // The tutorial's hop targets, in the order the legs open them.
 export const TARGETS_IN_ORDER = Object.freeze(SECTOR_MAP.places.map(p => p.id));
@@ -80,7 +81,11 @@ export function createOnFoot({ root, store = null, bus = null, hooks = {}, mapId
   //   lock: { hack: n }          a lock you can bypass with the hack minigame (open to anyone)
   //   lock: { pick: n }          a lock you can pick (needs the Lockpick skill: access door.locked)
   // Reasons are whole sentences ending in a full stop.
-  const gate = (def) => gateFor(def, { character: captain(), save: store ? save() : null });
+  // Opening track A: while the opening runs, hooks.sealed({ kind, id, to, map }) says why a door or the helm is shut (slice/seal.js).
+  const gate = (def, map) => {
+    const why = hooks.sealed?.({ kind: def.to ? 'door' : def.kind, id: def.id, to: def.to || null, map: (map || world?.map)?.id || null });
+    return why ? { reason: why } : gateFor(def, { character: captain(), save: store ? save() : null });
+  };
 
   async function hack(target) {
     const r = await playHack(root, { title: target.label || 'Lock', difficulty: target.level || 1, seed: Date.now() % 100000, mods: { ...mods('hack'), ...mods('lock') }, pick: Boolean(target.pick), sound, reducedMotion });
@@ -230,6 +235,16 @@ export function createOnFoot({ root, store = null, bus = null, hooks = {}, mapId
     toast(COFFEE_WORDS.drink);
     return true;
   }
+  /** Opening track A: a cup of tea from the pack (Steady, colour only). */
+  function drinkTea(fromPack = false) {
+    if (fromPack) {
+      if (!(save()?.items?.tea > 0)) return false;
+      store.update((s) => ({ ...s, items: { ...s.items, tea: Math.max(0, (s.items.tea || 0) - 1) } }));
+    }
+    hooks.statuses?.add('steady');
+    toast(TEA_WORDS.drink);
+    return true;
+  }
   function coffee() {
     return new Promise((resolve) => {
       const panel = createEl('section', { class: 'of-panel of-helm of-coffee', role: 'dialog', 'aria-label': COFFEE_WORDS.menuTitle },
@@ -244,10 +259,15 @@ export function createOnFoot({ root, store = null, bus = null, hooks = {}, mapId
     });
   }
 
+  // Opening track A: the object screens (the drinks machine, the engine core, the gun feed, the nav console).
+  const objects = createObjectScreens({ store, statuses: hooks.statuses, sound, helm: () => helm() });
+
   async function interact(target) {
     if (hooks.allow && hooks.allow(target) === false) return null;
     const shut = target.kind === 'hack' && target.door ? null : gate(target);
     if (shut && !shut.hack) { toast(`${target.label}: ${shut.reason}`); sound('jam'); return null; }
+    const screen = hooks.statuses || target.id !== 'coffee' ? objects.screenFor(target) : null;
+    if (screen) return screen();
     if (shut?.hack) return hack({ ...target, level: shut.hack, pick: shut.pick });
     switch (target.kind) {
       case 'hack': return hack(target);
@@ -270,6 +290,7 @@ export function createOnFoot({ root, store = null, bus = null, hooks = {}, mapId
   world = createWorld({
     root, mapId, spawn, emit, shipArt, reducedMotion, unlocked, sound,
     hooks: {
+      presence: hooks.presence || null, // opening track A: the crew ledger (slice/presenceRun.js)
       interact,
       speedMult: () => hooks.statuses?.speedMult() || 1,
       locked: (door) => { toast(`${door.label}: ${door.gate?.reason || 'Locked.'}`); sound('jam'); },
@@ -302,7 +323,7 @@ export function createOnFoot({ root, store = null, bus = null, hooks = {}, mapId
   }
 
   return {
-    world, emit, talk, say: (lines) => talkBox.show(lines), drinkCoffee, mine, puzzle, hack, practice, fight, flyTo, helm, toast, sound, gate, mods,
+    world, emit, talk, say: (lines) => talkBox.show(lines), drinkCoffee, drinkTea, mine, puzzle, hack, practice, fight, flyTo, helm, toast, sound, gate, mods,
     get docked() { return docked; },
     /** Put the ship somewhere without flying (a reload, a Studio link, a test). */
     dockAt(id) { if (PLACES[id]) docked = id; },

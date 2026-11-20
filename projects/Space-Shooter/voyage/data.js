@@ -320,6 +320,7 @@ export const ITEMS = Object.freeze([
   { id: 'cargo-crate', name: 'Cargo crate', kind: 'cargo', max: 99 },
   // Playtest 1: the mess hall's coffee urn. Carried, drunk from the bag: the Wired status (status.js).
   { id: 'coffee', name: 'Cup of coffee', kind: 'consumable', max: 9 },
+  { id: 'tea', name: 'Cup of tea', kind: 'consumable', max: 9 },
   // Proposed by quests (INTERFACES.md 1.4): a tool you have to procure for the
   // railgun's build route at Garrity's yard.
   { id: 'mining-drill', name: 'Mining drill', kind: 'key', max: 1 },

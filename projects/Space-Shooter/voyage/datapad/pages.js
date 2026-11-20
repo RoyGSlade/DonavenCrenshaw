@@ -74,7 +74,7 @@ export function createPackPage({ root, store, toast, useItem = null }) {
       el('span', {}, el('strong', { text: itemName(id) }), extra ? el('small', { text: extra }) : null),
       el('b', { text: count > 1 ? `×${count}` : '' }),
       // Playtest 1: a cup of coffee is drunk from the bag.
-      id === 'coffee' && useItem ? el('button', { type: 'button', class: 'ui-btn', 'data-use': id, text: 'Drink', on: { click: () => useItem(id) } }) : null);
+      (id === 'coffee' || id === 'tea') && useItem ? el('button', { type: 'button', class: 'ui-btn', 'data-use': id, text: 'Drink', on: { click: () => useItem(id) } }) : null);
   }
   function render(save = store.get()) {
     const worn = gearOf(save);

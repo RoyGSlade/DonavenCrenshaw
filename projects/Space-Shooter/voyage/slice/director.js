@@ -7,8 +7,10 @@
 // The rules (which scene, walk or cut) are pure and live in ./rules.js. All words come from the quest data.
 import { QUESTS } from '../quests/data/quests/index.js';
 import { storyOf } from '../story/progress.js';
-import { nextScene, sliceStarted, SLICE_FLAG, START_ROOM, roomOf, arriveMode, activeScene } from './rules.js';
+import { nextScene, sliceStarted, SLICE_FLAG, START_ROOM, roomOf, arriveMode, activeScene, markerFor } from './rules.js';
+import { markerPoint, markerReach } from './places.js';
 import { placeName } from './places.js';
+import { castFor } from './presenceNames.js';
 
 /** Should this page open the Duchess? A fresh save with the new game on (not a Studio link, not ?start=hangar), or a save that began it. */
 export function wantsSlice({ save, params, throwaway = false, newGame = true }) {
@@ -34,11 +36,14 @@ export function startRoom(save) {
 
 /**
  * store, jobs (voyage/jobs.js), toast(text). world(): the on-foot world. fightIn(setup): the live shooter in the current
- * room (onfoot.fight). Returns { beat, fight, entered, advance, boot, pendingRoom }.
+ * room (onfoot.fight). presence (optional, slice/presenceRun.js): the crew ledger; a beat waits for the people it needs to walk in.
+ * busy(): a dialogue, card or full screen is up (the auto-resume stays out of its way). Returns { beat, fight, entered, advance, boot, pendingRoom, watch, snooze }.
  */
-export function createSliceDirector({ store, jobs, toast = () => {}, world, fightIn }) {
+export function createSliceDirector({ store, jobs, toast = () => {}, world, fightIn, presence = null, busy = () => false }) {
   let pending = null; // a beat waiting for the player to walk into its room: { room, node, play }
   let cutting = null; // a fade in progress: { room, resolve }
+  let waitingCast = false; // a beat is waiting for people to walk into its room
+  let beatAt = 0; // when the last beat was handed to the director (the auto-resume leaves a beat that is still starting alone)
   const here = () => world()?.map?.id || null;
 
   /** Fade to a room and resolve once the player is standing in it. */
@@ -57,9 +62,18 @@ export function createSliceDirector({ store, jobs, toast = () => {}, world, figh
   }
 
   /** A dialogue beat of a scene: play it here, fade to its room, or wait for the player to walk to it. */
-  function beat(v, play) {
+  function beat(v, play0) {
     const quest = QUESTS[v.quest?.id];
     const room = roomOf(quest, v.node);
+    // Opening track A: the people this beat needs walk to its room (through doors, at walking speed); it plays once they are in it.
+    beatAt = Date.now();
+    const cast = presence ? presence.arrange(quest.id, v.node) : null;
+    const play = () => {
+      if (!cast?.needs.length || presence.ready(cast.needs, room)) { play0(); return; }
+      toast(`${castFor(presence.late(cast.needs, room))} on the way.`);
+      waitingCast = true;
+      presence.whenReady(cast.needs, room).then(() => setTimeout(() => { waitingCast = false; if (here() === room) play0(); else pending = { room, node: v.node, play: play0 }; }, 500));
+    };
     if (!room || here() === room) { pending = null; play(); return; }
     if (arriveMode(quest, v.node) === 'cut') { pending = null; cutTo(room).then(() => setTimeout(play, 350)); return; }
     pending = { room, node: v.node, play };
@@ -104,8 +118,36 @@ export function createSliceDirector({ store, jobs, toast = () => {}, world, figh
   /** On page load: pick the scene in progress back up, else start the next one. */
   function boot() {
     if (!sliceStarted(store.get())) return;
+    presence?.restore(store.get());
     if (jobs.playing) jobs.resume(); else advance();
   }
 
-  return { beat, endCard, fight, entered, advance, afterCard, boot, get pendingRoom() { return pending?.room || null; } };
+  // Opening track A, outcome 5: a scene never waits for a button. A beat the player stepped away from ("Later") picks itself up when they
+  // walk back to its marker (a person: talk to them, as before; a zone or a thing: step up to it), and the tracker has no Continue.
+  let snoozed = null; // { room, away } set when the player said Later: wait until they have left the marker's reach, then come back
+  function snooze() { beatAt = Date.now(); const save = store.get(); const id = activeScene(save); const quest = id && QUESTS[id]; snoozed = quest ? { away: false } : null; }
+  let lastWatch = 0;
+  /** Call about 4 times a second. Resumes a paused scene when the player is standing at its marker. */
+  function watch(now = Date.now()) {
+    if (now - lastWatch < 250) return false;
+    lastWatch = now;
+    const w = world();
+    if (!w || !jobs.playing || pending || cutting || waitingCast || busy() || w.mode !== 'walk' || w.held) return false;
+    const save = store.get();
+    const id = activeScene(save);
+    const run = id && save.quests.active[id];
+    const m = run && markerFor(QUESTS[id], run);
+    if (!m || w.map.id !== m.map) { if (snoozed) snoozed.away = true; return false; }
+    const at = m.npc ? w.npcAt(m.npc) : markerPoint(w.map, m);
+    if (!at) return false;
+    const p = w.position();
+    const near = Math.hypot(at.x - p.x, at.y - p.y) <= markerReach(w.map, m) * (m.npc ? 1.5 : 1.8);
+    if (snoozed) { if (!near) snoozed.away = true; if (!snoozed.away || !near) return false; snoozed = null; }
+    else if (!near) return false;
+    if (now - beatAt < 4000) return false; // a beat that has only just been handed over is still starting
+    lastWatch = now + 2500; // give the beat time to start before looking again
+    return jobs.resume();
+  }
+
+  return { beat, endCard, fight, entered, advance, afterCard, boot, watch, snooze, get pendingRoom() { return pending?.room || null; } };
 }

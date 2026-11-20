@@ -19,5 +19,11 @@ export const STAND_IN = Object.freeze({
   scrap: [{ who: 'captain', name: 'Scrap pile', text: 'Half a drive coil, a hatch with teeth marks, and a garden gnome. Garrity has filed the gnome as "rare".' }],
   'lane-traffic': [{ who: 'captain', name: 'Lane traffic board', text: 'Forty ships inbound, three flagged amber. The Relay Guild runs on tea and paranoia.' }],
   console: [{ who: 'captain', name: 'You', text: 'Lights blink. Numbers scroll. Nothing here needs you yet.' }],
+  // Opening track A: the Tin Duchess's own things say what they are, not the stock console line (DRAFT words).
+  'reck-rifle': [{ who: 'captain', name: "Reck's rifle", text: 'Where he left it. The sticker on the stock is still cheerful.' }],
+  comms: [{ who: 'captain', name: 'Comms', text: 'The channel is open and quiet. Nessa has muted three tolls today.' }],
+  'airlock-outer': [{ who: 'captain', name: 'Outer airlock door', text: 'Cold metal, and a light that has no business being red.' }],
+  'captain-desk': [{ who: 'captain', name: "Tull's desk", text: 'The screen is angled away from you. Of course it is.' }],
+  'duchess-hull': [{ who: 'captain', name: 'The Tin Duchess', text: 'Dents, tape and a hull that has seen things. Mostly Tull.' }],
   repair: [{ who: 'captain', name: 'You', text: 'All green. Your crew patches this mid-fight when something breaks.' }],
 });
