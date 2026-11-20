@@ -2,7 +2,7 @@
 // roll effect in plain words, straight from the setup so the words cannot disagree with the game), the grade card and a
 // requestAnimationFrame loop. DOM only; no rules here.
 import { KIND_NAME, PASS, CLEAN, PERFECT, gradeWord } from './craftChain.js';
-import { CUT_BASE, SCREW_BASE, BEND_BASE, FLATTEN_BASE } from './setup.js';
+import { CUT_BASE, SCREW_BASE, BEND_BASE, FLATTEN_BASE, POLISH_BASE } from './setup.js';
 
 export const h = (tag, attrs = {}, ...kids) => {
   const el = document.createElement(tag);
@@ -25,6 +25,7 @@ const CUT_ROLL = Object.freeze({ '-2': 'a much narrower line', '-1': 'a narrower
 const SCREW_ROLL = Object.freeze({ '-2': 'more turns and a narrow snug zone', '-1': 'a few more turns and a narrower snug zone', '0': 'normal turns and a normal snug zone', '1': 'fewer turns and a wider snug zone', '2': 'much fewer turns and a wide snug zone' });
 const BEND_ROLL = Object.freeze({ '-2': 'a much narrower rhythm window and a tight stop zone', '-1': 'a narrower rhythm window and a tighter stop zone', '0': 'a normal rhythm window and stop zone', '1': 'a wider rhythm window and stop zone', '2': 'a much wider rhythm window and stop zone' });
 const FLATTEN_ROLL = Object.freeze({ '-2': 'a much narrower power band, a stronger lean and one more bubble', '-1': 'a narrower power band and a stronger lean', '0': 'a normal power band and lean', '1': 'a wider power band and a gentler lean', '2': 'a much wider power band, a gentler lean and one fewer bubble' });
+const POLISH_ROLL = Object.freeze({ '-2': 'a much stronger pull and cells that dimple sooner', '-1': 'a stronger pull and cells that dimple sooner', '0': 'a normal pull and dimple point', '1': 'a weaker pull and cells that dimple later', '2': 'a much weaker pull and cells that dimple much later' });
 
 /**
  * The effect chips for one game at this craft's roll, in plain words: what the roll did and what each of the three paths did.
@@ -48,6 +49,10 @@ export function effectChips(kind, setup) {
   else if (kind === 'flatten') {
     out.push({ id: 'roll', text: `${setup.label} roll: ${FLATTEN_ROLL[String(setup.tier)]}` });
     out.push({ id: 'speed', text: sp ? `Speed ${sp}: the hammer charges ${Math.round(FLATTEN_BASE.chargePerPoint * sp * 100)}% faster` : 'Speed 0: normal hammer' });
+  }
+  else if (kind === 'polish') {
+    out.push({ id: 'roll', text: `${setup.label} roll: ${POLISH_ROLL[String(setup.tier)]}` });
+    out.push({ id: 'speed', text: sp ? `Speed ${sp}: the wheel shines ${Math.round(POLISH_BASE.ratePerPoint * sp * 100)}% faster` : 'Speed 0: normal wheel' });
   }
   out.push({ id: 'quality', text: q ? `Quality ${q}: +${setup.qualityBonus} on the item` : 'Quality 0: no bonus' });
   out.push({ id: 'material', text: ma ? `Material ${ma}: ${Math.round((1 - setup.materialFactor) * 100)}% less scrap, carried across crafts` : 'Material 0: normal scrap use' });

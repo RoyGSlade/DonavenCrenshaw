@@ -6,10 +6,12 @@ import { createCut, cutWhy } from './cut.js';
 import { createScrew, screwWhy } from './screw.js';
 import { createBend, bendWhy } from './bend.js';
 import { createFlatten, flattenWhy } from './flatten.js';
+import { createPolish, polishWhy } from './polish.js';
 import { playCut } from './cutView.js';
 import { playScrew } from './screwView.js';
 import { playBend } from './bendView.js';
 import { playFlatten } from './flattenView.js';
+import { playPolish } from './polishView.js';
 import { h, ensureStyle, effectChips, chipList, gradeCard } from './craftChainView.js';
 
 const r2 = (x) => Math.round(x * 100) / 100;
@@ -45,14 +47,14 @@ export async function playRecipe(root, { state, unit = 'scrap', onProgress = () 
     drawHeader();
     const cur = current(s);
     chips.replaceChildren(chipList(effectChips(cur.kind, cur.setup)));
-    const what = cur.kind === 'cut' ? 'plate' : cur.kind === 'bend' || cur.kind === 'flatten' ? s.recipe.what : 'bolt';
-    const game = cur.kind === 'cut' ? createCut({ seed: cur.seed, setup: cur.setup }) : cur.kind === 'bend' ? createBend({ seed: cur.seed, setup: cur.setup }) : cur.kind === 'flatten' ? createFlatten({ seed: cur.seed, setup: cur.setup }) : createScrew({ setup: cur.setup });
+    const what = cur.kind === 'cut' ? 'plate' : cur.kind === 'bend' || cur.kind === 'flatten' || cur.kind === 'polish' ? s.recipe.what : 'bolt';
+    const game = cur.kind === 'cut' ? createCut({ seed: cur.seed, setup: cur.setup }) : cur.kind === 'bend' ? createBend({ seed: cur.seed, setup: cur.setup }) : cur.kind === 'flatten' ? createFlatten({ seed: cur.seed, setup: cur.setup }) : cur.kind === 'polish' ? createPolish({ seed: cur.seed, setup: cur.setup, portrait: window.innerWidth < window.innerHeight }) : createScrew({ setup: cur.setup });
     stage.replaceChildren();
-    const result = await (cur.kind === 'cut' ? playCut : cur.kind === 'bend' ? playBend : cur.kind === 'flatten' ? playFlatten : playScrew)(stage, { state: game, what, reducedMotion });
+    const result = await (cur.kind === 'cut' ? playCut : cur.kind === 'bend' ? playBend : cur.kind === 'flatten' ? playFlatten : cur.kind === 'polish' ? playPolish : playScrew)(stage, { state: game, what, reducedMotion });
     const outcome = submit(s, result.grade);
     onProgress(s);
     drawHeader();
-    const why = cur.kind === 'cut' ? cutWhy(result) : cur.kind === 'bend' ? bendWhy(result) : cur.kind === 'flatten' ? flattenWhy(result) : screwWhy(result);
+    const why = cur.kind === 'cut' ? cutWhy(result) : cur.kind === 'bend' ? bendWhy(result) : cur.kind === 'flatten' ? flattenWhy(result) : cur.kind === 'polish' ? polishWhy(result) : screwWhy(result);
     await new Promise((resolve) => {
       const { card } = gradeCard({ kind: cur.kind, grade: result.grade, why, passed: outcome === 'passed', redoNo: s.attempt, redosAllowed: MAX_REDOS, last: outcome === 'ruined', onGo: resolve,
         goText: outcome === 'passed' ? (s.done ? 'See the result' : `Next: ${KIND_NAME[s.list[s.i].kind]}`) : outcome === 'ruined' ? 'See the result' : 'Redo on a fresh sheet' });
