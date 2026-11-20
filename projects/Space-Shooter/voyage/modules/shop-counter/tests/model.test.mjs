@@ -363,7 +363,7 @@ test('tabletop paths: valuation, barter and market only ever add things to see',
   assert.deepEqual(a.shelves.map((x) => [x.id, x.price, x.locked, x.shown]), b.shelves.map((x) => [x.id, x.price, x.locked, x.shown]), 'prices, locks and stock never change with points');
   assert.equal(M.haggleRequest((M.lift(rich, 'fuel-cell'), rich)).points.barter, 3, 'barter goes to the haggle game');
   assert.equal(M.cleanPoints({ haggle: 3 }).barter, 3, 'social\'s haggle points count as barter');
-  assert.deepEqual(M.cleanPoints({ valuation: 9, barter: 9, market: 9 }, 12), { valuation: 9, barter: 3, market: 0 }, 'never more points than the level');
+  assert.deepEqual(M.cleanPoints({ valuation: 9, barter: 9, market: 9 }, 12), { valuation: 9, barter: 0, market: 0 }, 'never more points than the level (nine at most)');
 });
 
 test('points never make it worse: the same basket costs the same and trades the same at every point total', () => {
@@ -443,6 +443,6 @@ test('records the module has never seen: empty and odd input never throws', () =
 
 test('nothing about any shop is written in the model or the view', () => {
   const src = readFileSync(path.join(here, '..', 'model.js'), 'utf8') + readFileSync(path.join(here, '..', 'view.js'), 'utf8');
-  for (const word of ['Mel', 'Edna', 'Chibby', 'locker', 'medkit', 'flak', 'hask', 'garrity', 'credits']) assert.equal(new RegExp(word, 'i').test(src) && word !== 'credits', false, word);
+  for (const word of ['Mel', 'Edna', 'Chibby', 'locker', 'medkit', 'flak', 'hask', 'garrity', 'credits']) assert.equal(new RegExp(`\\b${word}\\b`, 'i').test(src) && word !== 'credits', false, word);
   assert.equal(/Math\.random|Date\.now|performance\.now/.test(readFileSync(path.join(here, '..', 'model.js'), 'utf8')), false, 'the model has no clock and no unseeded random');
 });

@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Shop counter: test page</title>
+<style>
+  :root{color-scheme:dark}
+  *{box-sizing:border-box}
+  body{margin:0;background:#0a1119;color:#eaf4f5;font:14px/1.45 Inter,"Segoe UI",system-ui,sans-serif}
+  .tp{max-width:760px;margin:0 auto;padding:20px 16px 60px}
+  .tp h2{margin:0 0 4px;font:800 20px Inter,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#ffd9b0}
+  .tp p.lead{margin:0 0 16px;color:#9db3c2}
+  .tp fieldset{border:1px solid #3f5566;border-radius:6px;margin:0 0 14px;padding:10px 12px;background:#0b1724}
+  .tp legend{padding:0 6px;font:700 11px Consolas,monospace;letter-spacing:.14em;color:#81e6df;text-transform:uppercase}
+  .tp .row{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center}
+  .tp label{display:flex;flex-direction:column;gap:2px;font-size:12px;color:#9db3c2}
+  .tp input,.tp select,.tp textarea{font:14px Inter,sans-serif;color:#eaf4f5;background:#0a1624;border:1px solid #3f5566;border-radius:4px;padding:6px 8px}
+  .tp input[type=number]{width:74px}
+  .tp label.check{flex-direction:row;align-items:center;gap:6px}
+  .tp textarea{width:100%;min-height:160px;font:12px Consolas,monospace}
+  .tp .go{font:800 15px Inter,sans-serif;letter-spacing:.08em;padding:12px 26px;border-radius:4px;border:0;background:#81e6df;color:#062226;cursor:pointer}
+  .tp pre{margin:6px 0 0;padding:10px;background:#07111c;border:1px solid #3f5566;border-radius:4px;white-space:pre-wrap;word-break:break-word;font:12px Consolas,monospace;max-height:260px;overflow:auto}
+  .host{position:fixed;inset:0;z-index:1000;background:#05090e}
+  .host[hidden]{display:none}
+  #stage{position:absolute;inset:0}
+  .leave{position:fixed;z-index:1001;top:10px;right:10px;min-width:44px;min-height:44px;padding:0 16px;font:800 12px Inter,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#eaf4f5;background:#0b1724e6;border:1px solid #81e6df;border-radius:22px;cursor:pointer}
+  .picker{position:fixed;inset:0;z-index:1100;display:flex;align-items:center;justify-content:center;background:#05090ecc}
+  .picker[hidden]{display:none}
+  .picker div{width:min(92vw,340px);padding:18px;border:1px solid #81e6df;border-radius:8px;background:#0b1724;text-align:center}
+  .picker h3{margin:0 0 6px;font:800 14px Inter,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#ffad72}
+  .picker p{margin:0 0 12px;color:#9db3c2}
+  .picker button{display:block;width:100%;min-height:46px;margin:6px 0;font:700 14px Inter,sans-serif;color:#eaf4f5;background:#13283a;border:1px solid #3f5566;border-radius:4px;cursor:pointer}
+</style>
+</head>
+<body>
+<main class="tp" id="panel">
+  <h2>Shop counter: test page</h2>
+  <p class="lead">Plays the module with a fake host: a full-screen stage, a Leave button, and a stub for <code>ctx.play('haggle')</code>.</p>
+  <fieldset><legend>Shop</legend>
+    <div class="row">
+      <label>Fixture <select id="fixture"></select></label>
+      <label>Money <input id="money" type="number" min="0" step="1"></label>
+      <label class="check"><input id="open" type="checkbox" checked> Shop open</label>
+      <label class="check"><input id="quick" type="checkbox"> Quick mode</label>
+    </div>
+  </fieldset>
+  <fieldset><legend>Roll and tabletop paths (Commerce)</legend>
+    <div class="row">
+      <label>Seed <input id="seed" type="number" value="1" step="1"></label>
+      <label>Tier <select id="tier"><option value="-2">-2 Rough</option><option value="-1">-1 Shaky</option><option value="0" selected>0 Steady</option><option value="1">+1 Good</option><option value="2">+2 Smooth</option></select></label>
+      <label>Valuation <input id="p-valuation" type="number" min="0" max="9" value="0"></label>
+      <label>Barter <input id="p-barter" type="number" min="0" max="9" value="0"></label>
+      <label>Market <input id="p-market" type="number" min="0" max="9" value="0"></label>
+      <label>Level <input id="level" type="number" min="1" max="9" value="9"></label>
+    </div>
+  </fieldset>
+  <fieldset><legend>Host</legend>
+    <div class="row">
+      <label>ctx.play (haggle) <select id="haggle"><option value="picker">stub: ask me</option><option value="well">always well</option><option value="fair">always fair</option><option value="walked">always walked</option><option value="none">missing</option></select></label>
+    </div>
+  </fieldset>
+  <details><summary>Context (JSON, editable)</summary><textarea id="ctx" spellcheck="false"></textarea></details>
+  <p><button class="go" id="go" type="button">Play</button></p>
+  <fieldset><legend>Result</legend><pre id="result">(nothing yet)</pre></fieldset>
+  <fieldset><legend>Sounds asked for</legend><pre id="sounds">(none)</pre></fieldset>
+</main>
+<div class="host" id="host" hidden><div id="stage"></div><button class="leave" id="leave" type="button">Leave</button></div>
+<div class="picker" id="picker" hidden><div><h3>Haggle (stub)</h3><p id="picker-ask"></p>
+  <button type="button" data-o="well">Well: a great deal</button><button type="button" data-o="fair">Fair: a fair deal</button><button type="button" data-o="walked">Walked: no deal</button><button type="button" data-o="left">Close without playing</button></div></div>
+<script type="module">
+import { play } from './index.js';
+const $ = (id) => document.getElementById(id);
+const q = new URLSearchParams(location.search);
+const fixtures = (await (await fetch('fixtures.json')).json()).fixtures;
+for (const [k, f] of Object.entries(fixtures)) $('fixture').append(new Option(f.label, k));
+const sounds = [];
+const ctxText = $('ctx');
+
+function loadFixture(k) {
+  const c = structuredClone(fixtures[k].context);
+  ctxText.value = JSON.stringify(c, null, 2);
+  $('money').value = c.save?.money ?? 0;
+  $('open').checked = c.shop?.open !== false;
+}
+$('fixture').addEventListener('change', () => loadFixture($('fixture').value));
+const fx = q.get('fixture') && fixtures[q.get('fixture')] ? q.get('fixture') : Object.keys(fixtures)[0];
+$('fixture').value = fx; loadFixture(fx);
+if (q.has('seed')) $('seed').value = q.get('seed');
+if (q.has('tier')) $('tier').value = q.get('tier');
+if (q.has('points')) { const [a, b, c] = q.get('points').split(',').map(Number); $('p-valuation').value = a || 0; $('p-barter').value = b || 0; $('p-market').value = c || 0; }
+if (q.has('level')) $('level').value = q.get('level');
+if (q.get('quick') === '1') $('quick').checked = true;
+if (q.get('open') === '0') $('open').checked = false;
+if (q.has('money')) $('money').value = q.get('money');
+if (q.has('haggle')) $('haggle').value = q.get('haggle');
+
+function picker(ask) {
+  return new Promise((resolve) => {
+    $('picker-ask').textContent = `They ask ${ask.open}. A great deal is ${ask.best}. Barter ${ask.points?.barter ?? 0}, tier ${ask.tier}.`;
+    $('picker').hidden = false;
+    const onClick = (e) => {
+      const o = e.target.closest('button')?.dataset.o;
+      if (!o) return;
+      $('picker').removeEventListener('click', onClick);
+      $('picker').hidden = true;
+      resolve(o === 'left' ? { left: true } : { done: true, outcome: o, success: o === 'well' });
+    };
+    $('picker').addEventListener('click', onClick);
+  });
+}
+
+async function start() {
+  let context;
+  try { context = JSON.parse(ctxText.value); } catch (e) { $('result').textContent = `The context is not valid JSON: ${e.message}`; return; }
+  context.save = { ...(context.save || {}), money: Number($('money').value) || 0 };
+  context.shop = { ...(context.shop || {}), open: $('open').checked };
+  const mode = $('haggle').value;
+  const ctx = {
+    seed: Number($('seed').value) || 1, tier: Number($('tier').value) || 0,
+    points: { valuation: Number($('p-valuation').value) || 0, barter: Number($('p-barter').value) || 0, market: Number($('p-market').value) || 0 },
+    level: Number($('level').value) || 9, quick: $('quick').checked, mode: 'field', context,
+    sound: (id) => { sounds.push(id); $('sounds').textContent = sounds.slice(-40).join('\n'); window.__sounds = sounds; },
+    reducedMotion: () => q.get('reduced') === '1',
+    ...(mode === 'none' ? {} : { play: async (id, o) => { window.__haggleAsk = { id, ...o }; return mode === 'picker' ? picker(o) : { done: true, outcome: mode, success: mode === 'well' }; } }),
+  };
+  sounds.length = 0; window.__sounds = sounds;
+  $('panel').hidden = true; $('host').hidden = false;
+  window.__result = null;
+  const result = await play($('stage'), ctx);
+  window.__result = result;
+  $('host').hidden = true; $('panel').hidden = false;
+  $('result').textContent = JSON.stringify(result, null, 2);
+}
+$('go').addEventListener('click', start);
+$('leave').addEventListener('click', () => $('stage').leave?.());
+if (q.get('autoplay') === '1') start();
+</script>
+</body>
+</html>
