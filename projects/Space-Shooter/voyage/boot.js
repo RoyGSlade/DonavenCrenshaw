@@ -32,7 +32,7 @@ import { bus, tutorialOn, isUnlocked } from './hangarLinks.js';
 import { createCrew } from './crew.js';
 import { createJobs } from './jobs.js';
 import { shipTierArt } from './art.js';
-import { ambienceFor } from './ui/assets.js';
+import { ambienceFor, bedIdFor } from './ui/assets.js';
 import { createHangarAudio } from './ui/audio.js';
 import { createDialogueBox } from './ui/dialogue.js';
 import { createLicence } from './ui/licence.js';
@@ -186,9 +186,8 @@ function boot(session = { mode: 'local' }) {
 
   // --- Sound: nothing plays until the player touches the page ---
   const audio = createHangarAudio();
-  const BED_FOR = { workshop: 'workshop', den: 'den', cantina: 'den' };
-  const setBed = (ambient) => {
-    const amb = ambienceFor(BED_FOR[ambient] || 'hangar');
+  const setBed = (ambient, mapId = '') => {
+    const amb = ambienceFor(bedIdFor(ambient, mapId));
     if (amb) audio.setAmbience(amb.url, amb.gain);
   };
   setBed('hangar');
@@ -472,7 +471,7 @@ function boot(session = { mode: 'local' }) {
       tutorial: () => tutorialOn(store.get()),
       // During the tutorial, a lesson waits for its turn (the director pays for each one once).
       allow: (target) => allowLesson(target),
-      entered: (map) => { clearToast(); slice?.entered(map); setBed(map.ambient); place?.closeStation({ restoreFocus: false }); place?.place(); setPlaceName(placeNameFor(map)); },
+      entered: (map) => { clearToast(); slice?.entered(map); setBed(map.ambient, map.id); place?.closeStation({ restoreFocus: false }); place?.place(); setPlaceName(placeNameFor(map)); },
       flying: (on) => { flying = on; holdFloor(); place?.place(); if (on) setPlaceName('The Drift'); else if (onfoot?.world?.map) setPlaceName(placeNameFor(onfoot.world.map)); },
       stationInfo: (id) => (workbenchRoom && String(id).startsWith('wb-') ? workbenchRoom.stationInfo(id) : stationInfo(id)),
       // Live stealth (the workbench's patrol yard): the test character's stealth points, and the guards' events as toasts.
