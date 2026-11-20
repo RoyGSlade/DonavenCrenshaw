@@ -136,3 +136,20 @@
 .wb-full .cc-flatrow{padding-bottom:max(2px,env(safe-area-inset-bottom))}
 .wb-full .cc-recipe:has(.cc-flatpanel) .cc-chips{flex-wrap:wrap;overflow:visible;padding-bottom:0}
 .wb-full .cc-recipe:has(.cc-flatpanel) .cc-chip{white-space:normal}
+
+/* Polish: plate, heat, pull and dimple gauges, a floating-stick board, one Done pad (the same kit button as the other pads) */
+.cc-shine{height:12px;overflow:visible}.cc-shine i{background:#9fe870}.cc-shine .cc-tick{top:-2px;bottom:-2px}
+.cc-heat{height:12px;overflow:hidden}.cc-heat i{background:#81e6df}.cc-heat[data-state=ok] i{background:#ffc857}.cc-heat[data-state=hot] i{background:#ff5a45;box-shadow:0 0 10px #ff5a45}
+.cc-pull{height:12px;overflow:hidden}.cc-pull i{background:#b9a4ff}
+.cc-heatstat[data-state=hot] em{color:#ff8a70}
+.cc-platestat em,.cc-heatstat em,.cc-pullstat em{font-size:12px}
+.cc-polwrap{width:min(100%,880px);aspect-ratio:800/500;margin:0 auto}
+.cc-polcanvas{cursor:grab;touch-action:none}
+.cc-polrow{display:grid;grid-template-columns:1fr;max-width:640px;width:100%;margin:0 auto}
+.cc-donepad{min-height:84px}.cc-donepad b{font-size:30px}
+.wb-full .cc-polpanel{gap:6px;width:100%;margin-left:0;margin-right:0}
+.wb-full .cc-polwrap{flex:1 1 0;min-height:120px;width:100%;max-width:none;aspect-ratio:auto;position:relative;display:block;margin:0}
+.wb-full .cc-polwrap .cc-canvas{position:absolute;inset:0;width:100%;height:100%}
+.wb-full .cc-polrow{padding-bottom:max(2px,env(safe-area-inset-bottom))}
+.wb-full .cc-recipe:has(.cc-polpanel) .cc-chips{flex-wrap:wrap;overflow:visible;padding-bottom:0}
+.wb-full .cc-recipe:has(.cc-polpanel) .cc-chip{white-space:normal}
