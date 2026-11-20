@@ -129,6 +129,11 @@ export function createQuestPlayer({ root, session, status = () => {}, onEnd = ()
 
   // A hooked choice's d20 only sets up its minigame: the tray says so, with the roll preview line (what the roll did to the game).
   function withPreview(result) {
+    // Opening B: an approach's roll says what it bought (help and time); doing the thing decides the branch.
+    const a = result.run?.assist;
+    if (a && presenter?.assistVerdict && current) {
+      return result.rolls.map((r, i) => (i === result.rolls.length - 1 ? { ...r, verdict: presenter.assistVerdict(current.quest.id, a.node, a), pass: true, natural: Boolean(r.natural) } : r));
+    }
     const m = result.run?.minigame;
     if (!m) return result.rolls;
     const ch = result.save.character, skill = HOOK_KINDS[m.kind]?.skill;
@@ -230,10 +235,22 @@ export function createQuestPlayer({ root, session, status = () => {}, onEnd = ()
       }
       return;
     }
+    // An approach (opening B): the roll set the help and the time; the page plays it out and hands back how it ended.
+    if (v.assist && !v.ended && !v.part) {
+      root.replaceChildren();
+      presenter?.card(null);
+      if (live) return;
+      if (presenter?.approach) {
+        live = { close: () => {} };
+        presenter.approach(v, (r) => { live = null; doAct({ type: 'assist', branch: r.branch }); });
+      } else setTimeout(() => doAct({ type: 'assist', branch: current?.run.lastCheck?.pass ? 'pass' : 'fail' }), 0);
+      return;
+    }
     if (presenter && !v.ended && !v.part) {
       root.replaceChildren();
       presenter.card(null);
-      presenter.dialogue(v, (index) => doAct({ type: 'choose', index }));
+      const specs = presenter.approachSpecs?.(v);
+      presenter.dialogue(specs && Object.keys(specs).length ? { ...v, approach: specs } : v, (index) => doAct({ type: 'choose', index, ...(presenter.wantsApproach?.(v, index) ? { assist: true } : {}) }));
       return;
     }
     // An on-foot fight the page runs itself (the slice's rooms): the shooter in that room, then the result goes to the engine.
@@ -504,8 +521,11 @@ export function createQuestPlayer({ root, session, status = () => {}, onEnd = ()
     return true;
   }
 
+  /** Opening B (retry): drop the job in progress without any exit callbacks, so the scene can be started again from its first beat. */
+  function reset() { current = null; live = null; lastEvents = []; ui = { key: '', cipher: [], riddle: [] }; voiced = ''; footManual = ''; root.replaceChildren(); presenter?.card(null); onChange(); }
+
   return {
-    start, resume, render, keydown, exit, crewAct, raceResult,
+    start, resume, render, keydown, exit, crewAct, raceResult, reset,
     get active() { return Boolean(current); },
     get quest() { return current?.quest || null; },
     get live() { return Boolean(live); },

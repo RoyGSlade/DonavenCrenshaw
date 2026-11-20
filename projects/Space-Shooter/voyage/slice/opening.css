@@ -1,0 +1,46 @@
+/* The opening's own look (opening B lane): no hard cuts, fades only where time skips, a readable fight and breach. */
+/* Cards and sheets come in, they do not pop. */
+.dp-jobcard:not([hidden]){animation:op-card-in .26s ease-out both}
+#hg-minigame:not([hidden]){animation:op-sheet-in .22s ease-out both}
+@keyframes op-card-in{from{opacity:0;transform:translate(-50%,calc(-50% + 14px))}to{opacity:1;transform:translate(-50%,-50%)}}
+@keyframes op-sheet-in{from{opacity:0}to{opacity:1}}
+/* The fight's HUD slides in with the pull-back. */
+.of-world.is-fight .of-hud{animation:op-hud-in .5s ease-out both}
+@keyframes op-hud-in{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+/* A time skip: through black with one line. */
+.of-fade.is-skip{transition:opacity .6s ease-in-out;display:grid;place-items:center;z-index:20}
+.of-fade-caption{margin:0;padding:0 24px;max-width:min(560px,90%);text-align:center;font:600 22px/1.4 Inter,"Segoe UI",sans-serif;letter-spacing:.04em;color:#dce9ef;opacity:0;transition:opacity .5s .25s}
+.of-fade.is-skip.on .of-fade-caption{opacity:1}
+@media (prefers-reduced-motion:reduce){.dp-jobcard:not([hidden]),#hg-minigame:not([hidden]),.of-world.is-fight .of-hud{animation:none}.of-fade.is-skip,.of-fade-caption{transition:none}}
+/* An approach: a rolled choice you do. Time bar, work bar, a Hold button for touch, a way out. */
+.op-approach{position:fixed;z-index:7;left:50%;top:108px;transform:translateX(-50%);width:min(470px,94vw);padding:10px 14px 12px;border:1px solid #3a4a58;border-top:3px solid #f4d35e;border-radius:10px;background:linear-gradient(#0f1d2cf4,#08121df4);box-shadow:0 10px 28px #000b;color:#eaf4f5;font:600 13px/1.4 Inter,"Segoe UI",sans-serif;pointer-events:auto;animation:op-card-in2 .2s ease-out both}
+@keyframes op-card-in2{from{opacity:0;transform:translate(-50%,-8px)}to{opacity:1;transform:translate(-50%,0)}}
+.op-ap-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.op-ap-verb{margin:0;font:800 15px Inter,"Segoe UI",sans-serif;letter-spacing:.01em}
+.op-ap-secs{font:800 14px Consolas,monospace;color:#f4d35e}
+.op-approach.is-low .op-ap-secs{color:#ff6b5a}
+.op-ap-bar{height:9px;margin-top:6px;border:1px solid #2a4152;border-radius:5px;background:#0a1624;overflow:hidden}
+.op-ap-bar i{display:block;height:100%;width:100%;background:linear-gradient(90deg,#f4d35e,#ffad72)}
+.op-approach.is-low .op-ap-time i{background:linear-gradient(90deg,#ff6b5a,#ff9a3c)}
+.op-ap-work i{width:0;background:linear-gradient(90deg,#81e6df,#9fe870)}
+.op-ap-help{margin:8px 0 0;font:700 11px Consolas,monospace;letter-spacing:.04em;color:#81e6df}
+.op-ap-hint{margin:2px 0 0;color:#c9d6de;font-weight:500}
+.op-ap-actions{display:flex;gap:8px;margin-top:8px}
+.op-ap-actions button{flex:1;min-height:44px;border:1px solid #3a4a58;border-radius:8px;background:#0d1826;color:#eaf4f5;font:700 13px Inter,"Segoe UI",sans-serif;-webkit-tap-highlight-color:transparent;touch-action:none}
+.op-ap-actions button:disabled{opacity:.45}
+.op-ap-hold{border-color:#81e6df;background:#10303a}
+.op-ap-hold.is-down{transform:scale(.97);background:#81e6df;color:#082126}
+.op-ap-actions button:hover:not(:disabled){background:#142638}
+@media (max-width:700px){.op-approach{top:auto;bottom:150px;padding:8px 12px 10px}.op-ap-hint{display:none}}
+@media (prefers-reduced-motion:reduce){.op-approach{animation:none}}
+/* The retry screen: you went down. */
+.op-retry{position:fixed;inset:0;z-index:40;display:grid;place-items:center;background:radial-gradient(ellipse at center,#2a0a0acc,#030507f2);animation:op-sheet-in .45s ease-out both}
+.op-retry.is-leaving{opacity:0;transition:opacity .3s}
+.op-retry-card{width:min(420px,calc(100vw - 32px));padding:22px 22px 24px;border:1px solid #6d2a26;border-top:3px solid #ff4638;border-radius:12px;background:linear-gradient(#10161f,#0a0f16);box-shadow:0 20px 60px #000c;text-align:center;color:#eaf4f5}
+.op-retry-eyebrow{margin:0 0 6px;font:800 11px Consolas,monospace;letter-spacing:.2em;color:#ff7a6e}
+.op-retry-title{margin:0 0 10px;font:800 28px/1.15 Inter,"Segoe UI",sans-serif}
+.op-retry-body{margin:0 0 18px;font:500 15px/1.5 Inter,"Segoe UI",sans-serif;color:#c9d6de}
+.op-retry-btn{width:100%;min-height:56px;border:2px solid #ff7a6e;border-radius:12px;background:#2a1311;color:#fff2ee;font:800 17px Inter,"Segoe UI",sans-serif;-webkit-tap-highlight-color:transparent}
+.op-retry-btn:hover{background:#3a1a17}
+.op-retry-btn:active{transform:scale(.98)}
+@media (prefers-reduced-motion:reduce){.op-retry{animation:none}}

@@ -320,6 +320,7 @@ export function view(quest, run, save) {
     locationName: SECTORS[run.location]?.name || run.location,
     log: run.log.slice(-8),
     minigame: run.minigame ? { ...run.minigame } : null,
+    assist: run.assist ? { ...run.assist, attempt: { ...run.assist.attempt } } : null,
     ended: run.ended ? { ...run.ended, text: fill(node.text || '', s), reward: endReward(node, run) || null } : null,
   };
   if (node.type === 'dialogue') {
@@ -352,10 +353,11 @@ const CREW_PUZZLE = Object.freeze({ cipher: 'guess', riddle: 'answer' });
 
 // Pick dialogue choice `index`; its check (if any) rolls for `roller` (the
 // captain, or the crew taking it). Returns an error string or null.
-function choose(quest, run, ctx, node, index, roller, now) {
+function choose(quest, run, ctx, node, index, roller, now, assist = false) {
   const raw = node.choices?.[index];
   if (!raw) return 'No such option.';
   if (run.minigame) return 'Finish the minigame first.';
+  run.assist = null; // opening B: picking another option abandons an approach in progress (its roll is spent)
   const choice = { ...choiceFor(raw, run, ctx.save) };
   if (choice.cost) choice.cost = resolveReward(choice.cost, run);
   const reasons = reqReasons(choice.requires, run, ctx.save);
@@ -374,6 +376,12 @@ function choose(quest, run, ctx, node, index, roller, now) {
     if (choice.minigame && roller === ctx.save.character) {
       // The captain plays it: the d20 only sets the minigame up (tier from total, dc and natural); the page sends { type: 'minigame', branch } when it ends.
       run.minigame = { node: run.node, index, kind: choice.minigame.kind, attempt: { total: r.total, dc: r.dc, natural: r.natural } };
+      return null;
+    }
+    // Opening B: an approach. The same roll (same draw, same maths) only sets how much help and time the player gets; what they do
+    // decides the branch, and the page sends { type: 'assist', branch } when it ends (slice/assist.js says what a roll is worth).
+    if (assist && !choice.minigame && roller === ctx.save.character) {
+      run.assist = { node: run.node, index, attempt: { total: r.total, dc: r.dc, natural: r.natural } };
       return null;
     }
     target = r.pass ? choice.check.pass : choice.check.fail;
@@ -407,6 +415,21 @@ function finishMinigame(quest, run, ctx, node, action, now) {
   const world = cleanWorld(action.world);
   if (world) { run.world = { ...(run.world || {}), [choice.minigame.kind]: world }; ctx.out.events.push({ type: 'minigame-world', kind: choice.minigame.kind, world }); }
   pushLog(run, `${choice.minigame.title || choice.minigame.kind}: ${action.branch}.`);
+  enter(quest, target, ctx, now);
+  return null;
+}
+
+// The page hands back how an approach ended: branch 'pass' (done in time), 'fail' (time ran out) or 'abandon' (they picked another option).
+function finishAssist(quest, run, ctx, node, action, now) {
+  const pending = run.assist;
+  if (!pending || pending.node !== run.node) return 'No approach to finish.';
+  if (action.branch === 'abandon') { run.assist = null; return null; }
+  const choice = node.choices?.[pending.index];
+  const target = { pass: choice?.check?.pass, fail: choice?.check?.fail }[action.branch];
+  if (!target) return 'That approach has no such ending.';
+  run.assist = null;
+  run.steps++;
+  pushLog(run, `${choice.label}: ${action.branch === 'pass' ? 'done in time' : 'ran out of time'}.`);
   enter(quest, target, ctx, now);
   return null;
 }
@@ -452,6 +475,9 @@ function actInner(quest, runIn, saveIn, action, { now = 0, crew = null } = {}) {
   if (action?.type === 'minigame') {
     const error = finishMinigame(quest, run, ctx, node, action, now);
     if (error) return fail(error);
+  } else if (action?.type === 'assist') {
+    const error = finishAssist(quest, run, ctx, node, action, now);
+    if (error) return fail(error);
   } else if (action?.type === 'crew') {
     const error = actAsCrew(quest, run, ctx, node, action, now);
     if (error) return fail(error);
@@ -462,7 +488,7 @@ function actInner(quest, runIn, saveIn, action, { now = 0, crew = null } = {}) {
     if (run.part.state.done) finishPart(quest, node, ctx, now);
   } else if (node.type === 'dialogue') {
     if (action?.type !== 'choose') return fail('Choose an option.');
-    const error = choose(quest, run, ctx, node, action.index, ctx.save.character, now);
+    const error = choose(quest, run, ctx, node, action.index, ctx.save.character, now, action.assist === true);
     if (error) return fail(error);
   } else return fail('Nothing to do here.');
 

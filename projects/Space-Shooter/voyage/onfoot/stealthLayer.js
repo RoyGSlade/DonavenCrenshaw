@@ -13,9 +13,9 @@ const GAIT_WORD = { sneak: 'SNEAK', walk: 'WALK', run: 'RUN' };
 const CONE = { patrol: [255, 226, 120], look: [255, 196, 90], inspect: [255, 150, 60], return: [255, 226, 120], alert: [255, 70, 56] };
 const GUARD_LIFT = 'brightness(2.1) saturate(2.2) contrast(1.1)';
 
-export function createStealthLayer({ map, root, setup = null, reducedMotion = () => false, touch = false, onEvent = () => {} }) {
+export function createStealthLayer({ map, root, setup = null, def = null, reducedMotion = () => false, touch = false, onEvent = () => {} }) {
   const tuning = liveTuning(setup || {});
-  const sim = createStealth({ map, tuning, seed: 7 });
+  const sim = createStealth({ map, def: def || map.def?.stealth, tuning, seed: 7 }); // opening B: `def` lets a scene run stealth in a room that has no stealth block
   const T = map.tile;
   // ---- the readout ----
   const hud = createEl('div', { class: 'of-stealth', role: 'status', 'aria-live': 'polite' });

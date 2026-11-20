@@ -31,8 +31,8 @@ export const CAST = Object.freeze(['chibby', 'ralph', 'mel', 'edna', 'hask', 've
 export const STATIONS = Object.freeze(['pad', 'kennel', 'scrap', 'locker', 'range', 'backroom', 'board', 'quarters', 'hatch']);
 
 // Sound hook ids: the page (voice lane's audio map) can play real files for
-// these; until then sfx.js makes small synth blips.
-export const SOUNDS = Object.freeze(['step', 'door', 'talk', 'shot', 'hit', 'hurt', 'kill', 'dash', 'guard', 'drill', 'crack', 'jam', 'ore', 'turn', 'power', 'unlock', 'scan', 'boost', 'bump', 'dock']);
+// these; until then sfx.js makes small synth sounds. (klaxon and torch are loops: sound.loop(id, on).)
+export const SOUNDS = Object.freeze(['step', 'door', 'talk', 'shot', 'hit', 'hurt', 'kill', 'dash', 'guard', 'drill', 'crack', 'jam', 'ore', 'turn', 'power', 'unlock', 'scan', 'boost', 'bump', 'dock', 'pickup', 'thud', 'boots', 'breach', 'klaxon', 'torch']);
 
 export const EVENT_NAME = 'stardust:tutorial';
 
