@@ -26,8 +26,8 @@ export const tierInfo = (tier) => TIER[String(tierOf(tier))];
 export const BASE = Object.freeze({
   speedIn: 180,                 // head speed going in, units a second (brief): the base; a clean line picks up speed (see cruise)
   cruiseGain: 0.9, cruiseUp: 0.55, cruiseDown: 3.2,   // a head that goes without touching a wall winds up to 1.9 x the base speed over about 1.6 s; a scrape takes it back at 3.2 a second (not in the brief: a long tunnel is dead time otherwise)
-  slowKnockShare: 0.5,          // the most of the grip that knocks at the slow reel can take in one trip
-  tripBudget: 0.4,              // creeping all the way at the slow reel tires at most this share of the grip, however long the tunnel (so a careful hand always has grip left to finish)
+  slowKnockShare: 0.4,          // the most of the grip that knocks at the slow reel can take in one trip
+  tripBudget: 0.35,              // creeping all the way at the slow reel tires at most this share of the grip, however long the tunnel (so a careful hand always has grip left to finish)
   warnRange: 7, warnLead: 0.28, // the wall warning: how close (units) and how far ahead (s) the swing is looked at; Pursuit lengthens both
   headR: 4.5,                     // collision radius of the folded head. The brief's "30 wide" is the jaws spread; the drill's tunnel is only about 26 wide (measured), so the folded head is what has to fit
   loadPad: 10,                  // the brief's "+10": the load's extra width at 0 points (7.3 at 9)
@@ -42,7 +42,7 @@ export const BASE = Object.freeze({
   crackGrip: 0.1,               // each crack takes this share off the grip on that find (not in the brief: it is what makes a drop a harder problem)
   knockLo: 22, knockHi: 40,     // a knock costs this much by how hard the load hit (brief: 22 to 40 by speed)
   strain: 30,                   // a fast pull strains the jaws this much a second at full reel, by the square of how far past slow it is (not in the brief)
-  tire: 3,                      // the grip tires this much a second while you reel (brief 2.5; raised a little so that creeping all the way is not free)
+  tire: 7,                      // the grip tires this much a second while you reel (brief 2.5; raised a little so that creeping all the way is not free)
   nudgeMax: 16, nudgeW: 8,      // how far the nudge can shift the cable's end, and how quickly it follows the push (per second)
   lead: 64,                     // how far ahead of the head the pointer's anchor may run
   knockSpeed: 3, knockCool: 0.4, grindAfter: 0.3,
@@ -352,7 +352,7 @@ export function grab(g) {
   if (!g.deepPath || g.s > pathLen(g.deepPath)) g.deepPath = g.path.slice();   // the way in as it first stood: where a dropped find can roll back to
   const e = pathAt(g.path, g.s);
   g.anchor = { x: e.x, y: e.y, vx: 0, vy: 0 };
-  g.off = { x: g.off.x * 0.3, y: g.off.y * 0.3, vx: 0, vy: 0 };
+  g.off = { x: 0, y: 0, vx: 0, vy: 0 };   // the jaws clamp and steady the load
   g.gripNow = g.gripMax * Math.max(0.4, 1 - BASE.crackGrip * f.cracks);   // a cracked find crumbles under the jaws: it holds worse for every crack
   g.grip = g.gripNow; g.reelHold = false; g.ramp = 0; g.v = 0; g.nudge = { x: 0, y: 0 }; g.reeledT = 0; g.knocksTrip = 0; g.tripTired = 0;
   g.aVel = { x: 0, y: 0 }; g.phase = 'reel'; g.touching = false; g.touchT = 0;
@@ -401,7 +401,7 @@ function stepReel(g, dt, input) {
   // the grip tires only while the winch is turning: a thumb resting on the glass costs nothing
   if (g.v > 2) {
     g.reeledT += dt;
-    if (g.freeLeft > 0) g.freeLeft -= dt; else { g.grip -= g.tireRate * dt; g.tripTired += g.tireRate * dt; }
+    if (g.freeLeft > 0) g.freeLeft -= dt; else { const tr = g.tireRate * Math.min(1.25, g.v / BASE.slow) * dt; g.grip -= tr; g.tripTired += tr; }   // the tiring goes by distance reeled (up to a little over the slow reel), so short gentle pulls cost no more than one long slow one
     // a fast pull also strains the jaws: the cable goes taut and the load tugs at them (nothing at the slow reel)
     const over = Math.max(0, (g.v - BASE.slow) / (BASE.full - BASE.slow));
     g.grip -= BASE.strain * over * over * dt;
@@ -431,7 +431,7 @@ function stepReel(g, dt, input) {
       const fast = Math.max(0, (g.v - BASE.slow) / (BASE.full - BASE.slow));   // the cost goes by speed: a knock at full reel is a hard one
       let cost = knockCost(g, Math.max(fast, grind && !fresh ? Math.max(sev, 0.25) : Math.max(sev, 0.1)));
       // the first knock of a trip is a lesson, not a blow: it costs no more than the lower part of the band
-      if (g.firstKnockTrip) { g.firstKnockTrip = false; cost = Math.min(cost, g.rules.knockLo + 0.35 * (g.rules.knockHi - g.rules.knockLo)); }
+      g.firstKnockTrip = false;
       // a careful reel is never ruined by knocks alone: at the slow reel (up to 1.25 x slow) the knocks of one trip can take at most half the grip,
       // and creeping tires at most 0.4 of it, so a hand that reels gently always has grip left to finish
       if (g.v <= BASE.slow * 1.25) { const room = Math.max(0, BASE.slowKnockShare * g.gripNow - g.slowKnockDmg); cost = Math.min(cost, room); g.slowKnockDmg += cost; }
