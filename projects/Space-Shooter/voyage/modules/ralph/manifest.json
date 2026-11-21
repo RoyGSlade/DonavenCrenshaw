@@ -6,12 +6,47 @@
   "verb": "Say hello",
   "skill": null,
   "paths": [],
-  "where": ["hangar kennel", "hangar workshop"],
-  "length_s": [20, 240],
-  "inputs": ["seed", "quick", "context.ralph", "context.items", "context.now", "context.save.items", "context.lines"],
-  "outputs": ["success", "grade", "fetches", "petted", "fed", "found", "effects.items", "effects.world.ralph"],
-  "art": ["art/ralph-top.webp", "art/ralph-happy.webp", "art/ralph-neutral.webp", "art/ralph-annoyed.webp", "art/prop-ralph-ball.webp", "art/prop-dog-bowl.webp", "art/dog-bed.png", "art/prop-kennel.webp", "art/ui/"],
-  "audio": ["audio.js (made in code with Web Audio; createSfx())"],
-  "status": "draft",
+  "where": [
+    "hangar kennel",
+    "hangar workshop"
+  ],
+  "length_s": [
+    20,
+    240
+  ],
+  "inputs": [
+    "seed",
+    "quick",
+    "context.ralph",
+    "context.items",
+    "context.now",
+    "context.save.items",
+    "context.lines"
+  ],
+  "outputs": [
+    "success",
+    "grade",
+    "fetches",
+    "petted",
+    "fed",
+    "found",
+    "effects.items",
+    "effects.world.ralph"
+  ],
+  "art": [
+    "art/ralph-top.webp",
+    "art/ralph-happy.webp",
+    "art/ralph-neutral.webp",
+    "art/ralph-annoyed.webp",
+    "art/prop-ralph-ball.webp",
+    "art/prop-dog-bowl.webp",
+    "art/dog-bed.png",
+    "art/prop-kennel.webp",
+    "art/ui/"
+  ],
+  "audio": [
+    "audio.js (made in code with Web Audio; createSfx())"
+  ],
+  "status": "fable-passed",
   "contract": "1.1"
 }
