@@ -1,0 +1,67 @@
+/* The workbench room (dev only). Loaded by mount.js; plain rules on the game's own tokens, no art. */
+.wb-hud{position:fixed;z-index:6;top:64px;left:12px;display:grid;gap:2px;max-width:min(300px,64vw);padding:8px 10px;border:1px solid #2a4152;border-radius:6px;background:#0a1624e6;color:#dbe9ef;font:12px/1.35 Inter,sans-serif;pointer-events:none}
+.wb-hud b{font:700 10px Consolas,monospace;letter-spacing:.14em;color:#9fe870}
+.wb-hud[data-tone=low] b{color:#ffd166}.wb-hud[data-tone=high] b{color:#ff8a70}
+.wb-hud[data-tone=low]{border-color:#8a7a3a}.wb-hud[data-tone=high]{border-color:#8c4a3c}.wb-hud[data-tone=safe]{border-color:#4d7d3a}
+.wb-hud i{font:11px Consolas,monospace;color:#9db3c2;font-style:normal}
+.wb-hud[hidden]{display:none}
+.wb-pane{display:grid;gap:10px;padding:4px 2px 12px}
+.wb-pane .gm-row{display:flex;flex-wrap:wrap;gap:8px}
+.wb-pane .gm-row button{min-height:44px}
+.wb-pane .gm-h{margin:6px 0 0;font:700 11px Consolas,monospace;letter-spacing:.12em;color:#9db3c2}
+.wb-said{min-height:1.4em;color:#cfe8f0}
+.wb-stage{display:block;min-width:0}
+.wb-preview{margin:0 0 8px;color:#cfe8f0}
+.wb-leave{margin-top:10px;min-height:44px}
+.wb-skills .ex-skills{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media (max-width:700px){.wb-hud{top:58px;left:8px;max-width:calc(100vw - 16px)}.wb-skills .ex-skills{grid-template-columns:1fr}}
+.hg-fight .wb-hud{display:none}
+
+/* The conversation (social lane): the game's own dialogue kit (portrait frame, metal box, kit buttons). Dialogue choices are what you say,
+   with a small tag after. Amber words are things you can raise. */
+body .tk-panel.ui-dialogue{z-index:30;cursor:default;width:min(820px,96vw);max-height:calc(100dvh - 28px);overflow-y:auto;overflow-x:hidden;bottom:14px;top:auto;left:50%;right:auto;transform:translateX(-50%);align-items:start;scrollbar-width:thin}
+body .tk-panel[hidden]{display:none}
+.tk-side{position:sticky;top:0;display:grid;gap:6px;justify-items:center;align-content:start}
+.tk-pips{display:flex;gap:4px}.tk-pips i{width:11px;height:11px;border-radius:50%;border:1px solid #6b7f8c;background:#0b1620;box-shadow:inset 0 0 3px #000}
+.tk-pips i.on{background:var(--ui-amber,#ffc857);border-color:#ffe3a0;box-shadow:0 0 7px #ffc857}
+.tk-bondname{font:700 10px Consolas,monospace;letter-spacing:.1em;color:var(--ui-muted,#9db3c2);text-transform:uppercase}
+.tk-body{display:grid;gap:8px;min-width:0}
+.tk-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.tk-head .ui-dlg-name{margin:0;font-size:13px}
+.tk-marks{font:11px Consolas,monospace;color:#ffb199}
+.tk-leave{margin-left:auto;min-height:44px;min-width:70px;padding:0 14px}
+.tk-lines{display:grid;gap:6px}
+.tk-line{display:grid;gap:1px}
+.tk-line.is-you{padding-left:10px;border-left:3px solid var(--ui-cyan,#5fe0d6)}
+.tk-line.is-you .tk-text{color:#cfeee9;font-style:italic}
+.tk-line.is-earlier{opacity:.8}
+.tk-speaker{font:700 10px Consolas,monospace;letter-spacing:.14em;color:var(--ui-cyan,#5fe0d6);text-transform:uppercase}
+.tk-voice{font:10px Consolas,monospace;color:#6f8797}
+.tk-lit{all:unset;display:inline;cursor:pointer;color:#ffc857;border-bottom:2px dashed #ffc857;padding:0 1px}
+.tk-lit:hover,.tk-lit:focus-visible{background:#ffc85726;outline:2px solid #ffc857;outline-offset:2px}
+.tk-learned,.tk-notes{margin:0;padding:0;list-style:none;display:grid;gap:3px;font-size:13px}
+.tk-learned li{color:#ffc857;padding-left:18px;position:relative}.tk-learned li:before{content:"\2605";position:absolute;left:0}
+.tk-notes li{color:#bfe5c8;padding-left:18px;position:relative}.tk-notes li:before{content:"\203A";position:absolute;left:4px}
+.tk-want{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:5px 8px;border:1px solid #6a5a2a;border-radius:4px;background:#1c180a99}
+.tk-want b{font:700 10px Consolas,monospace;letter-spacing:.14em;color:#ffc857;text-transform:uppercase}
+.tk-chip{padding:1px 10px;border-radius:99px;background:#ffc85722;border:1px solid #ffc857;color:#ffe3a0;font-size:13px}
+.tk-none{font-size:13px;color:#9db3c2}
+.tk-choices{margin-top:2px}
+.tk-choice{text-align:left;min-height:44px}
+.tk-said{display:block}
+.tk-choice.is-on{outline:2px solid var(--ui-cyan,#5fe0d6);outline-offset:1px}
+.tk-choice.is-locked{opacity:.7}.tk-choice.is-locked .tk-said{font-style:italic;color:#9db3c2}
+.tk-preview{display:grid;gap:3px;padding:8px 10px;border:1px solid #2f6b66;border-radius:4px;background:#0a2124cc}
+.tk-roll{margin:0;font-size:16px;color:var(--ui-cyan,#5fe0d6)}
+.tk-dc{margin:0;font:12px Consolas,monospace;color:#cfe8f0;overflow-wrap:anywhere}
+.tk-head-start{margin:0;font-size:13px;color:#ffc857}.tk-head-start:before{content:"\2605 "}
+.tk-cost{margin:0;font-size:13px;color:#ffb199}
+.tk-note{margin:0;font-size:12px;color:#9db3c2}
+.tk-say-it{margin-top:4px;text-align:center;font-weight:700;min-height:44px}
+.tk-bag{margin:0;font:11px Consolas,monospace;color:#6f8797}
+.is-talking .wb-hud{display:none}
+.pc-card.is-named{outline:2px solid #ffc857}.pc-named{display:block;font:700 10px Consolas,monospace;color:#ffc857;letter-spacing:.08em;font-style:normal;text-transform:uppercase}
+.wb-cutbar{position:relative;height:34px;border:1px solid #2a4152;border-radius:6px;background:#0d1b2a;overflow:hidden}.wb-cutbar i{display:block;height:100%;background:#3c7c5a}.wb-cutbar b{position:absolute;inset:0;display:grid;place-items:center;font:700 13px Consolas,monospace;color:#fff}
+.wb-want-pin{margin:0;padding:6px 10px;border:1px dashed #ffc857;border-radius:8px;color:#ffe3a0;font-weight:700}
+@media (max-width:700px){.tk-panel{bottom:0;left:0;transform:none;width:100vw;max-height:88dvh;border-radius:12px 12px 0 0;padding:10px 12px 14px;font-size:14px}.tk-text{font-size:15px}.tk-line.is-you{margin-left:8px}}
+.tk-line.is-earlier{opacity:.78;border-left-color:#3b5a70}
+@media (max-width:700px){body .tk-panel.ui-dialogue{top:auto;bottom:6px;left:50%;width:98vw;max-height:84dvh;grid-template-columns:56px minmax(0,1fr)}.tk-pips i{width:7px;height:7px}.tk-pips{gap:2px}.tk-bondname{font-size:8px}}

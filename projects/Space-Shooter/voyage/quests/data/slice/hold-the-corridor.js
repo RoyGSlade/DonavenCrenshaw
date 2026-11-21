@@ -127,6 +127,11 @@ export default {
             "dc": 12,
             "pass": "end-sealed",
             "fail": "fight-hold"
+          },
+          "minigame": {
+            "kind": "hack",
+            "lock": 2,
+            "title": "Inner airlock door"
           }
         },
         {

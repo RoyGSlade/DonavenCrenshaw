@@ -103,6 +103,14 @@ export default {
             "dc": 10,
             "pass": "end-hired-well",
             "fail": "end-lowballed"
+          },
+          "minigame": {
+            "kind": "haggle",
+            "who": "Captain Tull",
+            "what": "your share",
+            "open": 20,
+            "best": 30,
+            "mid": "end-hired-fair"
           }
         },
         {
@@ -135,6 +143,14 @@ export default {
             "dc": 12,
             "pass": "end-hired-well",
             "fail": "end-lowballed"
+          },
+          "minigame": {
+            "kind": "haggle",
+            "who": "Captain Tull",
+            "what": "your share",
+            "open": 20,
+            "best": 30,
+            "mid": "end-hired-fair"
           }
         },
         {
@@ -167,6 +183,14 @@ export default {
             "dc": 10,
             "pass": "end-hired-well",
             "fail": "end-lowballed"
+          },
+          "minigame": {
+            "kind": "haggle",
+            "who": "Captain Tull",
+            "what": "your share",
+            "open": 20,
+            "best": 30,
+            "mid": "end-hired-fair"
           }
         },
         {
