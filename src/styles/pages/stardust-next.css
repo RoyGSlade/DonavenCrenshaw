@@ -1,0 +1,63 @@
+/* The next Stardust: teaser page. Sits on the Planetfall page shell (.pf-page) and adds its own pieces. */
+.sn-page {
+  --sn-cyan: #81e6df;
+  --sn-orange: #ffad72;
+  --sn-ink: #070d17;
+}
+.sn-hero { padding: clamp(28px, 5vw, 72px) 0 clamp(20px, 3vw, 36px); }
+.sn-hero h1 { margin: 0 0 18px; color: var(--pf-ice); font-size: clamp(2.9rem, 9vw, 7.4rem); font-weight: 350; line-height: .92; letter-spacing: -.045em; }
+.sn-hero h1 span { display: block; color: var(--pf-warm); }
+.sn-lede { max-width: 46ch; margin: 0; color: var(--pf-ice); font-size: clamp(1.15rem, 2.1vw, 1.6rem); line-height: 1.4 !important; }
+
+/* The film is the page. It breaks out to the edge of the screen on a phone. */
+.sn-film { margin: 0; }
+.sn-film video { display: block; width: 100%; height: auto; aspect-ratio: 16 / 10; border: 1px solid var(--pf-line); border-radius: 10px; background: #03070b; box-shadow: 0 30px 90px rgba(0, 0, 0, .55), 0 0 0 1px rgba(129, 230, 223, .06); }
+.sn-film figcaption { display: flex; flex-wrap: wrap; gap: 4px 18px; padding: 12px 2px 0; color: var(--pf-muted); font-size: .8rem; }
+.sn-film figcaption span:first-child { color: var(--sn-cyan); font: 700 .68rem var(--font-mono); letter-spacing: .14em; text-transform: uppercase; }
+.sn-under { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 18px 40px; padding: clamp(22px, 3vw, 34px) 0 0; }
+.sn-under .pf-actions { margin-top: 0; }
+.sn-under .pf-caveat { margin: 0; max-width: 48ch; }
+
+.sn-quote { margin: clamp(48px, 7vw, 104px) 0; padding: 0 0 0 clamp(18px, 3vw, 34px); border-left: 2px solid var(--sn-orange); }
+.sn-quote blockquote { max-width: 24ch; margin: 0; color: var(--pf-ice); font-size: clamp(1.7rem, 4.6vw, 3.5rem); font-weight: 350; line-height: 1.12; letter-spacing: -.02em; }
+.sn-quote p { margin: 16px 0 0; color: var(--pf-muted); font: 700 .7rem var(--font-mono); letter-spacing: .14em; text-transform: uppercase; }
+
+.sn-beats h2, .sn-skills h2, .sn-status h2 { margin: 0 0 12px; color: var(--pf-ice); font-size: clamp(1.6rem, 3vw, 2.6rem); font-weight: 400; line-height: 1.15; }
+.sn-beat { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, .75fr); gap: clamp(20px, 4vw, 56px); align-items: center; margin: 0 0 clamp(34px, 6vw, 84px); }
+.sn-beat:nth-of-type(even) { grid-template-columns: minmax(0, .75fr) minmax(0, 1.25fr); }
+.sn-beat:nth-of-type(even) figure { order: 2; }
+.sn-beat figure { margin: 0; overflow: hidden; border: 1px solid var(--pf-line); border-radius: 8px; background: #03070b; }
+.sn-beat-copy span { display: block; margin: 0 0 10px; color: var(--sn-orange); font: 700 .7rem var(--font-mono); letter-spacing: .16em; }
+.sn-beat-copy h3 { margin: 0 0 10px; color: var(--pf-ice); font-size: clamp(1.45rem, 2.6vw, 2.2rem); font-weight: 400; line-height: 1.15; }
+.sn-beat-copy p { max-width: 42ch; margin: 0; color: var(--pf-muted); }
+
+.sn-skills { padding: clamp(8px, 2vw, 24px) 0 clamp(40px, 6vw, 80px); }
+.sn-skills > p { max-width: 60ch; margin: 0 0 24px; color: var(--pf-muted); }
+.sn-skill-list { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 0; padding: 0; list-style: none; }
+.sn-skill-list li { padding: 16px 16px 18px; border: 1px solid var(--pf-line); border-top: 2px solid var(--c); border-radius: 6px; background: linear-gradient(180deg, color-mix(in srgb, var(--c) 9%, transparent), transparent 62%), rgba(8, 13, 19, .7); }
+.sn-skill-list strong { display: block; margin: 0 0 6px; color: var(--c); font: 700 .78rem var(--font-mono); letter-spacing: .12em; text-transform: uppercase; }
+.sn-skill-list span { display: block; color: var(--pf-muted); font-size: .88rem; line-height: 1.45; }
+
+.sn-status { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); gap: 20px 48px; padding: clamp(24px, 3vw, 42px); border: 1px solid rgba(129, 230, 223, .28); border-radius: 8px; background: linear-gradient(110deg, rgba(129, 230, 223, .1), rgba(129, 230, 223, .02) 70%), #080d13; }
+.sn-status h2 { margin: 0; }
+.sn-status ul { margin: 0; padding: 0; list-style: none; }
+.sn-status li { position: relative; margin: 0 0 10px; padding-left: 22px; color: var(--pf-muted); line-height: 1.5; }
+.sn-status li::before { content: ""; position: absolute; left: 0; top: .55em; width: 9px; height: 9px; border: 1px solid var(--sn-cyan); border-radius: 50%; }
+.sn-status li.is-done::before { background: var(--sn-cyan); }
+.sn-status li strong { color: var(--pf-ice); font-weight: 600; }
+.sn-page .pf-last-link { margin-top: clamp(40px, 6vw, 80px); }
+
+@media (max-width: 900px) {
+  .sn-beat, .sn-beat:nth-of-type(even) { grid-template-columns: 1fr; gap: 16px; }
+  .sn-beat:nth-of-type(even) figure { order: 0; }
+  .sn-skill-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .sn-status { grid-template-columns: 1fr; }
+}
+@media (max-width: 600px) {
+  .sn-film { margin-inline: -18px; }
+  .sn-film video { border-inline: 0; border-radius: 0; }
+  .sn-film figcaption { padding-inline: 18px; }
+  .sn-under { flex-direction: column; align-items: stretch; }
+  .sn-skill-list { gap: 8px; }
+  .sn-skill-list li { padding: 13px 12px 14px; }
+}
