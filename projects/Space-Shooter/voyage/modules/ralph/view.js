@@ -228,8 +228,8 @@ export async function mount(stage, state, o) {
     const bw = L.bowl, bx = sx(bw.x), by = sy(bw.y), R = ppu * 0.56; g.fillStyle = 'rgba(0,0,0,.3)'; g.beginPath(); g.ellipse(bx + 3, by + 5, R, R * 0.9, 0, 0, TAU); g.fill();
     let gr = g.createRadialGradient(bx - R * 0.3, by - R * 0.3, R * 0.2, bx, by, R); gr.addColorStop(0, '#d9e3ea'); gr.addColorStop(1, '#6c7d8b'); g.fillStyle = gr; g.beginPath(); g.arc(bx, by, R, 0, TAU); g.fill();
     g.strokeStyle = '#27323b'; g.lineWidth = 2; g.stroke();
-    gr = g.createRadialGradient(bx, by, R * 0.1, bx, by, R * 0.78); gr.addColorStop(0, '#7c2f2b'); gr.addColorStop(1, '#b4463a'); g.fillStyle = gr; g.beginPath(); g.arc(bx, by, R * 0.76, 0, TAU); g.fill();
-    g.strokeStyle = 'rgba(255,255,255,.25)'; g.lineWidth = 2; g.beginPath(); g.arc(bx, by, R * 0.76, 3.6, 4.7); g.stroke();
+    gr = g.createRadialGradient(bx, by, R * 0.1, bx, by, R * 0.78); gr.addColorStop(0, '#7c2f2b'); gr.addColorStop(1, '#b4463a'); g.fillStyle = gr; g.beginPath(); g.arc(bx, by, R * 0.6, 0, TAU); g.fill();
+    g.strokeStyle = 'rgba(255,255,255,.25)'; g.lineWidth = 2; g.beginPath(); g.arc(bx, by, R * 0.6, 3.6, 4.7); g.stroke();
     if (state.bowlFull) { g.fillStyle = '#b3743c'; for (let i = 0; i < 12; i++) { g.beginPath(); g.arc(sx(bw.x) + (hash(i) - 0.5) * ppu * 0.6, sy(bw.y) + (hash(i + 20) - 0.5) * ppu * 0.6, Math.max(2.4, ppu * 0.075), 0, TAU); g.fill(); } }
   }
   function drawBall(g) {
