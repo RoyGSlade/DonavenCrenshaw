@@ -65,6 +65,8 @@ export function makeAudio() {
     /** The jaws slip: a short rattle going down. Level 2 is worse. */
     slip(level = 1) { if (!ready()) return; for (let i = 0; i < 2 + level; i++) tone(900 - i * 90 - level * 100, 0.06, { type: 'square', gain: 0.03, delay: i * 0.05 }); },
     buried() { if (!ready()) return; tone(150, 0.16, { type: 'square', gain: 0.07, slide: 0.7 }); burst(0.08, { freq: 500, q: 2, gain: 0.08 }); },
+    /** The wall warning: two short ticks, rising. */
+    warn() { if (!ready()) return; tone(880, 0.06, { type: 'square', gain: 0.035 }); tone(1180, 0.07, { type: 'square', gain: 0.035, delay: 0.08 }); },
     miss() { if (!ready()) return; tone(320, 0.1, { type: 'triangle', gain: 0.05, slide: 0.7 }); },
     drop() { if (!ready()) return; tone(520, 0.5, { type: 'triangle', gain: 0.09, slide: 0.25 }); burst(0.3, { freq: 900, q: 0.8, gain: 0.1, delay: 0.32 }); tone(80, 0.25, { type: 'sine', gain: 0.16, slide: 0.5, delay: 0.34 }); },
     crack() { if (!ready()) return; burst(0.22, { freq: 2600, q: 0.8, gain: 0.2, type: 'highpass' }); tone(190, 0.25, { type: 'square', gain: 0.08, slide: 0.5 }); },

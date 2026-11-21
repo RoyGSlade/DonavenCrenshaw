@@ -142,7 +142,7 @@ function safeSpeed(g, c = 1) {
 function reelControl(g, o, rnd, st) {
   // pace: hold while below what the bends coming up allow
   const vs = safeSpeed(g, o.paceC);
-  const hold = g.v < Math.min(o.vmax ?? BASE.full, vs);
+  const hold = g.v < Math.min(o.vmax ?? BASE.full, Math.max(vs, o.vmin ?? 72));   // a careful hand never stops dead mid-trip: the load would swing on into the wall
   // keep the load off the walls: push the cable's end away from the nearest wall
   const pr = probe(g.board, g.head.x, g.head.y, g.head.r + 14);
   let nx = 0, ny = 0;
@@ -187,7 +187,7 @@ export function perfectBot(g, o = {}) {
 
 // --- wobbly --------------------------------------------------------------------------------------------------------
 export function wobblyBot(g, o = {}) {
-  const P = { sigma: 7, lag: 0.28, paceC: 1.5, margin: 2.5, flutter: 0.35, hold: [1.2, 2.2], nudgeLag: 0.3, nudgeSigma: 0.35, eye: 6, lapse: 0.2, ...o };
+  const P = { sigma: 7, lag: 0.28, paceC: 3, margin: 2.5, flutter: 0.35, hold: [1.2, 2.2], nudgeLag: 0.3, nudgeSigma: 0.35, eye: 6, lapse: 0.5, ...o };
   const rnd = roller({ rng: hashSeed('claw-pull', 'bot', o.kind || 'wobbly', g.seed, o.salt || 0) });
   const gauss = mkGauss(rnd);
   const pl = planner(g, { check: false, rnd, eyeNoise: P.eye });

@@ -129,3 +129,10 @@
 .m-claw-pull .cp-card-btns{display:flex;gap:10px}
 .m-claw-pull .cp-card-btns .ui-btn{flex:1;white-space:nowrap;letter-spacing:.04em;font-size:12px}
 @media (prefers-reduced-motion:reduce){.m-claw-pull .cp-card,.m-claw-pull .cp-grab.is-ready,.m-claw-pull .cp-reel.is-ready,.m-claw-pull .cp-grip[data-level=low]{animation:none}}
+
+/* the wall warning on the Reel pad: the lamps turn red and blink as the load nears a wall */
+.m-claw-pull .cp-reel.is-warn .cp-lamps i{background:var(--cp-hot);filter:drop-shadow(0 0 5px var(--cp-hot));animation:cp-warn .32s steps(2) infinite}
+@keyframes cp-warn{50%{opacity:.3}}
+.m-claw-pull .cp-hint{position:absolute;left:50%;bottom:48px;transform:translateX(-50%);line-height:1.3;padding:4px 12px;border-radius:12px;background:rgba(5,12,19,.8);border:1px solid #2f6b6a;color:var(--cp-cyan);font:700 12px Inter,sans-serif;letter-spacing:.04em;white-space:nowrap;max-width:calc(100% - 16px);overflow:hidden;text-overflow:ellipsis;pointer-events:none}
+.m-claw-pull .cp-hint[hidden]{display:none}
+@media (prefers-reduced-motion:reduce){.m-claw-pull .cp-reel.is-warn .cp-lamps i{animation:none}}

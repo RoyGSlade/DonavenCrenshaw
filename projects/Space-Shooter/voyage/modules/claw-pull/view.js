@@ -2,7 +2,7 @@
 // around it (plain words and drawn state, no digits on the live screen). The model is stepped here from real input; the view only reads it.
 // Everything on the canvas is drawn in code.
 import { createGame, step, grab, goBack, done, giveUp, resultOf, words, gripWord, gripFrac, drain, pathAt, BASE } from './model.js';
-import { probe } from './board.js';
+import { probe, graspCheck } from './board.js';
 import { makeAudio } from './audio.js';
 
 /** Handling's colour: a work-lamp amber. Not taken by another skill (shooting #FF7A59, crafting #FFB547, navigation #C8E06B, perception #F4E3A1). */
@@ -51,7 +51,8 @@ export function mountGame(stage, ctx, { result, items, fixtures, quick, onDone }
   const introText = el('span', '', {}, 'Drag to steer the claw down your own tunnel. Close the jaws on the find, then hold Reel, and nudge the load off the walls.');
   const intro = el('div', 'cp-intro', {}, [introTitle, introText]);
   const status = el('div', 'cp-status', { 'aria-live': 'polite' }, 'steer down the tunnel');
-  const boardEl = el('div', 'cp-board', {}, [canvas, intro, status]);
+  const hint = el('div', 'cp-hint', { hidden: true }, 'Drag beside the load to nudge it off a wall');
+  const boardEl = el('div', 'cp-board', {}, [canvas, intro, hint, status]);
   const scope = el('div', 'cp-scope', {}, [boardEl]);
 
   const findWord = el('div', 'cp-find-word', {}, 'down in the rock');
@@ -224,7 +225,7 @@ export function mountGame(stage, ctx, { result, items, fixtures, quick, onDone }
     if (reduced) n = Math.ceil(n / 3);
     for (let i = 0; i < n; i++) { const a = rnd() * 6.283, v = sp * (0.3 + rnd()); parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - up, life: life * (0.6 + rnd() * 0.7), age: 0, kind, col, s: 0.9 + rnd() * 1.6 }); }
   };
-  let nudgeVec = { x: 0, y: 0 };
+  let nudgeVec = { x: 0, y: 0 }, hintT = 0, buriedHint = null, lastPhaseSeen = 'in';
   let shake = 0, flash = 0, facing = 0, ang = 0, drumA = 0, lastDraw = 0, raf = 0, frame = 0, tension = 0, grabAnim = 1, landFlare = 0;
   const crackAnim = new Map();
   const jaw = { open: 0.35 };
@@ -245,7 +246,8 @@ export function mountGame(stage, ctx, { result, items, fixtures, quick, onDone }
         audio.clamp(); if (ev.tear) audio.tear(); const f = g.finds[ev.find]; grabAnim = 0; flash = Math.max(flash, 0.35); shake = Math.max(shake, 0.5);
         burst(f.x, f.y, ev.tear ? 22 : 10, { kind: 'chip', col: hex(f.colour), sp: 90, life: 0.9 }); burst(f.x, f.y, 10, { kind: 'grit', sp: 50 }); navigator.vibrate?.(22); break;
       }
-      case 'buried': audio.buried(); shake = Math.max(shake, 0.25); burst(g.head.x, g.head.y, 6, { kind: 'grit', sp: 40 }); break;
+      case 'warn': audio.warn(); break;
+      case 'buried': { const f = g.finds[ev.find], angs = []; for (let k = 0; k < 36; k++) { const a = k / 36 * Math.PI * 2, x = f.x + Math.cos(a) * (f.r + 13), y = f.y + Math.sin(a) * (f.r + 13); if (B.open[Math.floor(y / B.cell) * B.gw + Math.floor(x / B.cell)] && graspCheck(B, f, x, y, BASE.reach, ev.find).ok) angs.push(a); } buriedHint = { f, angs, t: 3 }; audio.buried(); shake = Math.max(shake, 0.25); burst(g.head.x, g.head.y, 6, { kind: 'grit', sp: 40 }); break; }
       case 'miss': audio.miss(); break;
       case 'scrape': audio.scrape(ev.loaded); if (!reduced) burst(ev.x, ev.y, 2, { kind: 'grit', sp: 26, up: -10 }); break;
       case 'knock': audio.knock(ev.sev); shake = Math.max(shake, 0.5 + 0.7 * ev.sev); flash = Math.max(flash, 0.12); burst(ev.x, ev.y, 10 + Math.round(8 * ev.sev), { kind: 'spark', sp: 120 }); burst(ev.x, ev.y, 8, { kind: 'grit', sp: 60 }); navigator.vibrate?.(18 + 22 * ev.sev); break;
@@ -519,6 +521,34 @@ export function mountGame(stage, ctx, { result, items, fixtures, quick, onDone }
       else { c2.fillStyle = `rgba(170,185,198,${a * 0.6})`; c2.beginPath(); c2.arc(d.x, d.y, d.s * 0.8 * (0.6 + 0.4 * a), 0, 7); c2.fill(); }
     }
 
+    // which side is clear: faint arcs on the find's open side after a refused grab
+    if (buriedHint && buriedHint.t > 0) {
+      const f = buriedHint.f, al = Math.min(1, buriedHint.t) * (0.55 + 0.35 * Math.sin(t * 8));
+      c2.save(); c2.strokeStyle = `rgba(150,245,170,${al})`; c2.lineWidth = 3.2; c2.lineCap = 'round';
+      for (const a of buriedHint.angs) { c2.beginPath(); c2.arc(f.x, f.y, f.r + 9, a - 0.09, a + 0.09); c2.stroke(); }
+      c2.restore();
+    }
+    // the wall warning: the wall and the load's near edge glow before the knock
+    if (g.phase === 'reel' && g.warn.level > 0.04) {
+      const w = g.warn, L = w.level, hot = [255, Math.round(mix(190, 90, L)), Math.round(mix(110, 70, L))];
+      const gl = c2.createRadialGradient(w.x, w.y, 0, w.x, w.y, 16 + 14 * L); gl.addColorStop(0, rgba(hot, 0.75 * L)); gl.addColorStop(1, rgba(hot, 0));
+      c2.fillStyle = gl; c2.beginPath(); c2.arc(w.x, w.y, 16 + 14 * L, 0, 7); c2.fill();
+      c2.strokeStyle = rgba(hot, 0.5 + 0.5 * L); c2.lineWidth = 2.2; c2.lineCap = 'round'; c2.beginPath(); c2.moveTo(w.x - w.ny * 9, w.y + w.nx * 9); c2.lineTo(w.x + w.ny * 9, w.y - w.nx * 9); c2.stroke();
+      const ea = Math.atan2(-w.ny, -w.nx); c2.lineWidth = 2.6; c2.beginPath(); c2.arc(g.head.x, g.head.y, g.head.r + 4, ea - 0.8, ea + 0.8); c2.stroke();
+    }
+    // the first reel of a visit shows how to nudge, before any knock
+    if (g.phase === 'reel' && hintT > 0 && !(nudgeVec.x || nudgeVec.y)) {
+      const p = 0.6 + 0.4 * Math.sin(t * 6);
+      c2.save(); c2.strokeStyle = `rgba(129,230,223,${0.8 * p})`; c2.fillStyle = `rgba(129,230,223,${0.8 * p})`; c2.lineWidth = 1.6; c2.lineCap = 'round';
+      for (const sgn of [-1, 1]) { const x0 = g.head.x + sgn * 22; c2.beginPath(); c2.moveTo(x0, g.head.y); c2.lineTo(x0 + sgn * 12, g.head.y); c2.stroke(); c2.beginPath(); c2.moveTo(x0 + sgn * 17, g.head.y); c2.lineTo(x0 + sgn * 10, g.head.y - 4); c2.lineTo(x0 + sgn * 10, g.head.y + 4); c2.closePath(); c2.fill(); }
+      c2.restore();
+    }
+    // a clean line winds the head up: faint streaks behind it
+    if (g.phase === 'in' && g.cruise > 0.25 && !reduced) {
+      c2.save(); c2.translate(g.head.x, g.head.y); c2.rotate(ang); c2.strokeStyle = `rgba(255,224,170,${0.35 * g.cruise})`; c2.lineWidth = 1.2;
+      for (const yy of [-5, 0, 5]) { c2.beginPath(); c2.moveTo(-14, yy); c2.lineTo(-14 - 26 * g.cruise, yy); c2.stroke(); }
+      c2.restore();
+    }
     // the nudge: an arrow from the load toward where you are pushing it
     if (g.phase === 'reel' && (nudgeVec.x || nudgeVec.y)) {
       const l = Math.hypot(nudgeVec.x, nudgeVec.y), ux = nudgeVec.x / l, uy = nudgeVec.y / l, len = 14 + 16 * Math.min(1, l), a = Math.atan2(uy, ux);
@@ -627,8 +657,10 @@ export function mountGame(stage, ctx, { result, items, fixtures, quick, onDone }
     }
     btnA.classList.toggle('is-ready', inReach);
     btnB.classList.toggle('is-ready', mode === 'reel' && !reelPad);
+    btnB.classList.toggle('is-warn', mode === 'reel' && g.warn.level > 0.35);
     root.dataset.phase = g.phase === 'over' ? (cardT > 1.1 ? 'card' : 'over') : g.phase;
     setLamps(mode === 'reel' ? g.ramp : 0);
+    for (const l of lamps) l.style.setProperty('--w', String(mode === 'reel' ? g.warn.level : 0));
     drum.style.setProperty('--spin', `${drumA}rad`);
     drumG.setAttribute('transform', `translate(24 24) rotate(${(drumA * 57.3).toFixed(1)})`);
     btnB.style.setProperty('--glow', String(clamp(g.v / BASE.full, 0, 1)));
@@ -679,6 +711,12 @@ export function mountGame(stage, ctx, { result, items, fixtures, quick, onDone }
     audio.winch(g.phase === 'reel' ? clamp(g.v / BASE.full, 0, 1) : g.phase === 'land' ? 0.35 : 0, g.phase === 'reel' ? tension : 0);
     grabAnim = Math.min(1, grabAnim + dt / 0.35);
     for (const [kk, v] of crackAnim) crackAnim.set(kk, v + dt);
+    if (g.phase === 'reel' && lastPhaseSeen !== 'reel') hintT = 7;
+    lastPhaseSeen = g.phase;
+    if (nudgeVec.x || nudgeVec.y) hintT = Math.min(hintT, 0.2);
+    hintT = Math.max(0, hintT - dt);
+    if (buriedHint) buriedHint.t -= dt;
+    hint.hidden = !(g.phase === 'reel' && hintT > 0);
     for (let i = parts.length - 1; i >= 0; i--) { const d = parts[i]; d.age += dt; d.x += d.vx * dt; d.y += d.vy * dt; d.vy += (d.kind === 'glint' ? -10 : 90) * dt; d.vx *= 1 - dt * 1.5; if (d.age > d.life) parts.splice(i, 1); }
     shake = Math.max(0, shake - dt * 2.4); flash = Math.max(0, flash - dt * 4); landFlare = Math.max(0, landFlare - dt * 1.2);
     if (g.over && cardT > 1.2 && card.hidden && !finished) showCard();

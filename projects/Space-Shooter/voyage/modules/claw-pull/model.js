@@ -24,7 +24,11 @@ export const tierOf = (tier) => Math.max(-2, Math.min(2, Math.trunc(tier) || 0))
 export const tierInfo = (tier) => TIER[String(tierOf(tier))];
 
 export const BASE = Object.freeze({
-  speedIn: 180,                 // head speed going in, units a second (brief)
+  speedIn: 180,                 // head speed going in, units a second (brief): the base; a clean line picks up speed (see cruise)
+  cruiseGain: 0.9, cruiseUp: 0.55, cruiseDown: 3.2,   // a head that goes without touching a wall winds up to 1.9 x the base speed over about 1.6 s; a scrape takes it back at 3.2 a second (not in the brief: a long tunnel is dead time otherwise)
+  slowKnockShare: 0.5,          // the most of the grip that knocks at the slow reel can take in one trip
+  tripBudget: 0.4,              // creeping all the way at the slow reel tires at most this share of the grip, however long the tunnel (so a careful hand always has grip left to finish)
+  warnRange: 7, warnLead: 0.28, // the wall warning: how close (units) and how far ahead (s) the swing is looked at; Pursuit lengthens both
   headR: 4.5,                     // collision radius of the folded head. The brief's "30 wide" is the jaws spread; the drill's tunnel is only about 26 wide (measured), so the folded head is what has to fit
   loadPad: 10,                  // the brief's "+10": the load's extra width at 0 points (7.3 at 9)
   loadR: 2.2,                   // how much radius the load adds at pad 10 for a core of radius 40 (tuned: the brief's core width + 10 cannot fit a 26-wide tunnel)
@@ -75,6 +79,7 @@ export function rulesFor({ tier = 0, points = {}, quick = false } = {}) {
     knockLo: BASE.knockLo * ease, knockHi: BASE.knockHi * ease,   // 22 to 40, down to 14 to 26
     freeTire: 2 * Math.floor(p.pursuit / 3),               // seconds of a trip the grip does not tire (every 3 points: 2 s)
     tire: BASE.tire,
+    warnRange: BASE.warnRange * (1 + 0.12 * p.pursuit), warnLead: BASE.warnLead * (1 + 0.1 * p.pursuit),   // Pursuit: a longer warning
   };
 }
 export const loadRadius = (rules, f) => BASE.headR + rules.pad / 10 * BASE.loadR * (f.r / 40);
@@ -158,6 +163,7 @@ export function createGame({ seed = 1, tier = 0, points = {}, quick = false, res
     path: withS([{ x: B.start.x, y: B.start.y }]), pathSample: { x: B.start.x, y: B.start.y },
     carry: -1, grip: 0, gripMax: rules.gripMax, s: 0, nudge: { x: 0, y: 0 }, nudgeIn: { x: 0, y: 0 },
     reelHold: false, ramp: 0, v: 0, reeledT: 0, tripTired: 0,
+    cruise: 0, warn: { level: 0, nx: 0, ny: 0, x: 0, y: 0 }, lastWarnT: -9, firstKnockTrip: true, tireRate: rules.tire,
     touching: false, touchT: 0, knockCool: 0, lastN: { x: 0, y: 0 }, scrapeT: 0,
     knocks: 0, knocksTrip: 0, drops: 0, landT: 0, landFind: -1, passed: false,
     say: { text: '', t: 0, tone: '' }, events: [], grabbed: 0, outCount: 0, lastGrabFail: '',
@@ -206,7 +212,11 @@ function swing(g, dt, ax, ay) {
 
 /** Put the head where the anchor and the sway say, then push it out of the walls. Returns the wall hit, if any. */
 function seat(g, dt, K) {
-  const B = g.board, o = g.off, a = g.anchor, r = headRadius(g);
+  const B = g.board, o = g.off, a = g.anchor;
+  let r = headRadius(g);
+  // the jaws fold to fit a gap: where the cable itself runs through a neck narrower than the load, the load squeezes (Maneuver makes it slimmer to begin with)
+  if (g.carry >= 0) r = Math.min(r, Math.max(BASE.headR, probe(B, a.x, a.y, r + 2).d - 2.5));
+  g.head.r = r;
   let hx = a.x + o.x * K, hy = a.y + o.y * K;
   let hit = null;
   for (let it = 0; it < 3; it++) {
@@ -248,10 +258,12 @@ function stepIn(g, dt, input) {
   // the anchor runs toward the pointer, never further than `lead` ahead of the head
   const hx = g.head.x, hy = g.head.y;
   const lx = tx - hx, ly = ty - hy, ll = Math.hypot(lx, ly);
-  if (ll > BASE.lead) { tx = hx + lx / ll * BASE.lead; ty = hy + ly / ll * BASE.lead; }
+  if (ll > BASE.lead * (1 + 0.6 * g.cruise)) { tx = hx + lx / ll * BASE.lead * (1 + 0.6 * g.cruise); ty = hy + ly / ll * BASE.lead * (1 + 0.6 * g.cruise); }
   const dx = tx - a.x, dy = ty - a.y, L = Math.hypot(dx, dy);
+  // a clean line winds the head up; touching a wall takes it back
+  if (g.touching) g.cruise = Math.max(0, g.cruise - BASE.cruiseDown * dt); else if (down && L > 20) g.cruise = Math.min(1, g.cruise + BASE.cruiseUp * dt); else if (!down) g.cruise = Math.max(0, g.cruise - 1.2 * dt);
   const slow = g.touching ? 0.55 : 1;
-  const sp = Math.min(BASE.speedIn * slow, L * 7);
+  const sp = Math.min(BASE.speedIn * (1 + BASE.cruiseGain * g.cruise) * slow, L * 7);
   let nx = a.x, ny = a.y;
   if (L > 0.5) { nx = a.x + dx / L * sp * dt; ny = a.y + dy / L * sp * dt; }
   // the anchor slides along the walls: it never goes into rock
@@ -345,8 +357,10 @@ export function grab(g) {
   g.grip = g.gripNow; g.reelHold = false; g.ramp = 0; g.v = 0; g.nudge = { x: 0, y: 0 }; g.reeledT = 0; g.knocksTrip = 0; g.tripTired = 0;
   g.aVel = { x: 0, y: 0 }; g.phase = 'reel'; g.touching = false; g.touchT = 0;
   g.freeLeft = g.rules.freeTire;
+  g.tireRate = Math.min(g.rules.tire, BASE.tripBudget * g.gripNow * BASE.slow / Math.max(200, g.s));
+  g.firstKnockTrip = true; g.slowKnockDmg = 0; g.warn = { level: 0, nx: 0, ny: 0, x: 0, y: 0 }; g.cruise = 0;
   emit(g, { type: 'grab', find: i, x: f.x, y: f.y, tear: !wasLying });
-  say(g, 'got it: hold Reel', 'good', 2.2);
+  say(g, 'got it: reel gently, ease off in tight spots', 'good', 3);
   return { ok: true, why: '', find: i };
 }
 
@@ -387,10 +401,22 @@ function stepReel(g, dt, input) {
   // the grip tires only while the winch is turning: a thumb resting on the glass costs nothing
   if (g.v > 2) {
     g.reeledT += dt;
-    if (g.freeLeft > 0) g.freeLeft -= dt; else { g.grip -= g.rules.tire * dt; g.tripTired += g.rules.tire * dt; }
+    if (g.freeLeft > 0) g.freeLeft -= dt; else { g.grip -= g.tireRate * dt; g.tripTired += g.tireRate * dt; }
     // a fast pull also strains the jaws: the cable goes taut and the load tugs at them (nothing at the slow reel)
     const over = Math.max(0, (g.v - BASE.slow) / (BASE.full - BASE.slow));
     g.grip -= BASE.strain * over * over * dt;
+  }
+  // the warning: where the swing will put the load a moment from now, and how near that is to a wall
+  {
+    const vhx = a.vx + g.off.vx * K, vhy = a.vy + g.off.vy * K, R0 = g.head.r;
+    const px = g.head.x + vhx * g.rules.warnLead, py = g.head.y + vhy * g.rules.warnLead;
+    const pr = Math.min(probe(B, px, py, R0 + g.rules.warnRange + 2).d, probe(B, g.head.x, g.head.y, R0 + g.rules.warnRange + 2).d);
+    const pw = probe(B, px, py, R0 + g.rules.warnRange + 2), p0 = probe(B, g.head.x, g.head.y, R0 + g.rules.warnRange + 2), pn = pw.d <= p0.d ? pw : p0, wx0 = pw.d <= p0.d ? px : g.head.x, wy0 = pw.d <= p0.d ? py : g.head.y;
+    const level = g.v > 2 || Math.hypot(vhx, vhy) > 12 ? Math.max(0, Math.min(1, 1 - (pr - R0) / g.rules.warnRange)) : 0;
+    const was = g.warn.level;
+    g.warn = { level, nx: pn.nx, ny: pn.ny, x: wx0 - pn.nx * pn.d, y: wy0 - pn.ny * pn.d };
+    if (level > 0.25) g.lastWarnT = g.t;
+    if (level > 0.5 && was <= 0.5) emit(g, { type: 'warn', x: g.warn.x, y: g.warn.y });
   }
   // knocks: a load that meets a wall it was clear of is a knock; riding along a wall while the winch turns is another every so often
   const wasTouching = g.touching;
@@ -403,20 +429,25 @@ function stepReel(g, dt, input) {
     if ((fresh || grind) && g.knockCool <= 0) {
       g.knockCool = BASE.knockCool; g.touchT = 0;
       const fast = Math.max(0, (g.v - BASE.slow) / (BASE.full - BASE.slow));   // the cost goes by speed: a knock at full reel is a hard one
-      const cost = knockCost(g, Math.max(fast, grind && !fresh ? Math.max(sev, 0.25) : Math.max(sev, 0.1)));
+      let cost = knockCost(g, Math.max(fast, grind && !fresh ? Math.max(sev, 0.25) : Math.max(sev, 0.1)));
+      // the first knock of a trip is a lesson, not a blow: it costs no more than the lower part of the band
+      if (g.firstKnockTrip) { g.firstKnockTrip = false; cost = Math.min(cost, g.rules.knockLo + 0.35 * (g.rules.knockHi - g.rules.knockLo)); }
+      // a careful reel is never ruined by knocks alone: at the slow reel (up to 1.25 x slow) the knocks of one trip can take at most half the grip,
+      // and creeping tires at most 0.4 of it, so a hand that reels gently always has grip left to finish
+      if (g.v <= BASE.slow * 1.25) { const room = Math.max(0, BASE.slowKnockShare * g.gripNow - g.slowKnockDmg); cost = Math.min(cost, room); g.slowKnockDmg += cost; }
+      const warned = g.t - g.lastWarnT < 0.7;
       g.grip -= cost; g.knocks++; g.knocksTrip++; f.knocks++;
-      emit(g, { type: 'knock', x: g.head.x - hit.nx * g.head.r, y: g.head.y - hit.ny * g.head.r, nx: hit.nx, ny: hit.ny, sev, cost, grip: g.grip / g.gripNow });
-      say(g, g.knocks === 1 ? 'knock! drag beside the load to nudge it clear' : sev > 0.5 ? 'hard knock: the grip loosens' : 'knock: the grip loosens', 'warn', g.knocks === 1 ? 2.6 : 1.4);
+      emit(g, { type: 'knock', x: g.head.x - hit.nx * g.head.r, y: g.head.y - hit.ny * g.head.r, nx: hit.nx, ny: hit.ny, sev, cost, warned, grip: Math.max(0, g.grip / g.gripNow) });
+      say(g, g.knocks === 1 ? 'knock! nudge the load off the wall' : sev > 0.5 ? 'hard knock: the grip loosens' : 'knock: the grip loosens', 'warn', g.knocks === 1 ? 2.6 : 1.4);
     } else if ((g.scrapeT += dt) > 0.12) { g.scrapeT = 0; emit(g, { type: 'scrape', x: g.head.x - hit.nx * 6, y: g.head.y - hit.ny * 6, nx: hit.nx, ny: hit.ny, loaded: true }); }
   } else g.touchT = 0;
-  g.head.r = f.carriedR;
   // grip words and thresholds
   const frac = g.grip / g.gripNow;
   if (frac < 0.6 && !g.said60) { g.said60 = true; emit(g, { type: 'slip', level: 1 }); }
   if (frac < 0.3 && !g.said30) { g.said30 = true; emit(g, { type: 'slip', level: 2 }); }
   if (frac >= 0.6) g.said60 = false;
   if (frac >= 0.3) g.said30 = false;
-  if (g.grip <= 0) { dropLoad(g); return; }
+  if (g.grip <= 0) { g.grip = 0; dropLoad(g); return; }
   // out at the mouth
   if (g.s <= 0.01 && Math.hypot(g.head.x - B.start.x, g.head.y - B.start.y) < BASE.openAt) {
     g.phase = 'land'; g.landT = 0; g.landFind = g.carry; g.v = 0; g.reelHold = false;
@@ -513,8 +544,9 @@ export function words(g) {
   if (g.phase === 'bay') return 'resting at the mouth';
   if (g.phase === 'reel') {
     const frac = g.grip / g.gripNow;
-    if (g.v < 2) return frac < 0.3 ? "it's going: be gentle" : frac < 0.6 ? 'slipping: take it easy' : 'hold Reel to pull';
+    if (g.v < 2) return frac < 0.3 ? "it's going: be gentle" : frac < 0.6 ? 'slipping: take it easy' : 'short pulls on Reel: gently';
     if (g.touching) return 'scraping the wall';
+    if (g.warn.level > 0.5 && g.v > 2) return 'wall close: ease off or nudge';
     const sp = (g.v - BASE.slow) / (BASE.full - BASE.slow);
     if (frac < 0.3) return "it's going";
     if (frac < 0.6) return 'slipping';
@@ -532,6 +564,7 @@ export function words(g) {
   if (g.touching) return 'scraping in';
   const lying = g.finds.find((f) => f.state === 'lying');
   if (lying) return lying.main ? 'the dropped find is further along' : 'the dropped one is further along';
+  if (g.cruise > 0.5) return 'clean line: picking up speed';
   return 'steer down the tunnel';
 }
 

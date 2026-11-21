@@ -103,7 +103,7 @@ test('going in: the head follows the pointer at up to 180 units a second, a wall
   const tx = g.finds[0].x - 40;
   const t0 = g.t; let maxV = 0;
   run(g, 8, (q) => { maxV = Math.max(maxV, Math.hypot(q.anchor.vx, q.anchor.vy)); return { x: tx, y: 304, down: true }; });
-  assert.ok(maxV <= BASE.speedIn + 1 && maxV > 150, `top speed ${maxV}`);
+  assert.ok(maxV <= BASE.speedIn * (1 + BASE.cruiseGain) + 1 && maxV > 250, `top speed ${maxV}: a clean line winds the head up to ${BASE.speedIn * (1 + BASE.cruiseGain)}`);
   assert.ok(g.head.x > tx - 60, `the head reached ${g.head.x}`);
   // a wall: point straight into the rock and the anchor slows and slides, never into rock
   const h = mkSynth({ len: 600 });
@@ -119,6 +119,21 @@ test('going in: the head follows the pointer at up to 180 units a second, a wall
   const snap = { grip: k.grip, knocks: k.knocks, cracks: k.finds[0].cracks, state: k.finds[0].state, phase: k.phase };
   run(k, 6, (q) => ({ x: q.head.x, y: q.head.y, down: true }));
   assert.deepEqual({ grip: k.grip, knocks: k.knocks, cracks: k.finds[0].cracks, state: k.finds[0].state, phase: k.phase }, snap);
+});
+
+test('a clean line is quick: the head winds up the longer it goes without touching a wall, and a scrape takes it back', () => {
+  const g = mkSynth({ len: 1500 }), tx = g.finds[0].x - 40;
+  const speeds = []; run(g, 6, (q) => { speeds.push(Math.hypot(q.anchor.vx, q.anchor.vy)); return { x: tx, y: 304, down: true }; });
+  assert.ok(speeds[8] < speeds[60 * 4] - 80 && speeds[60 * 4] > 280, `winds up: ${speeds[8].toFixed(0)} then ${speeds[240].toFixed(0)}`);
+  assert.ok(g.cruise > 0.9);
+  assert.match(words(g), /clean line|find is close|steer/);
+  // base speed over the same ground would take 1500 / 180 = 8.3 s: the clean line is well under that
+  const h = mkSynth({ len: 1500 }); let t = 0; for (let i = 0; i < 60 * 12 && h.anchor.x < tx - 20; i++) { step(h, 1 / 60, { x: tx, y: 304, down: true }); t = h.t; }
+  assert.ok(t < 1500 / 180 * 0.8, `a clean 1500-unit run took ${t.toFixed(1)} s`);
+  // a scrape: lean on the wall and the speed falls back
+  const k = mkSynth({ len: 1500 }); run(k, 3, { x: tx, y: 304, down: true }); const hi = k.cruise;
+  run(k, 1.5, { x: k.head.x, y: 304 + 300, down: true });
+  assert.ok(k.cruise < hi - 0.3, `a scrape took the speed back: ${hi.toFixed(2)} to ${k.cruise.toFixed(2)}`);
 });
 
 test('sway: a damped swing with a natural period of about 1.1 s; Control settles it faster; the roll scales it', () => {
@@ -232,6 +247,38 @@ test('a knock costs 22 to 40 by speed, loosens the grip, and a fast pull strains
   assert.ok(slow.grip > fast.grip, `slow ${slow.grip} fast ${fast.grip}`);
 });
 
+test('a knock is seen coming: the wall glows before it hits, Pursuit warns earlier, and the first knock is a lesson', () => {
+  assert.ok(rulesFor({ points: { pursuit: 9 } }).warnRange > rulesFor({}).warnRange * 1.8 && rulesFor({ points: { pursuit: 9 } }).warnLead > rulesFor({}).warnLead);
+  let warnedKnocks = 0, knocks = 0, firstCost = null;
+  for (let seed = 1; seed <= 8; seed++) {
+    const g = mkSynth({ len: 1500, half: 10 }, { seed }); grabMain(g); g.grip = 1e6; g.gripNow = 1e6;
+    run(g, 12, (q) => { for (const e of drain(q)) if (e.type === 'knock') { knocks++; if (e.warned) warnedKnocks++; if (firstCost == null) firstCost = e.cost; } return { reel: true }; });
+  }
+  assert.ok(knocks >= 6, `a tight corridor at full reel knocks (${knocks})`);
+  assert.ok(warnedKnocks / knocks >= 0.8, `${warnedKnocks} of ${knocks} knocks were warned about first`);
+  const w = mkSynth({ len: 900, half: 10 }); grabMain(w); w.grip = 1e6; let maxLevel = 0; run(w, 5, (q) => { maxLevel = Math.max(maxLevel, q.warn.level); return { reel: true }; });
+  assert.ok(maxLevel > 0.5, `the warning rises: ${maxLevel}`);
+  // the first knock of a trip costs no more than the lower part of the band
+  const f = mkSynth({ len: 900, half: 10 }); grabMain(f); const lo = f.rules.knockLo, hi = f.rules.knockHi; let c0 = null; run(f, 10, (q) => { for (const e of drain(q)) if (e.type === 'knock' && c0 == null) c0 = e.cost; return { reel: true }; });
+  assert.ok(c0 == null || (c0 >= 0 && c0 <= lo + 0.35 * (hi - lo) + 1e-6), `first knock ${c0}`);
+});
+
+test('a knock never costs more than 40, and the grip never reads below zero', () => {
+  for (let seed = 1; seed <= 6; seed++) {
+    const g = mkSynth({ len: 1500, half: 9 }, { seed, tier: -2 }); grabMain(g);
+    run(g, 14, (q) => { for (const e of drain(q)) { if (e.type === 'knock') { assert.ok(e.cost <= 40 + 1e-9 && e.grip >= 0, `cost ${e.cost} grip ${e.grip}`); } } assert.ok(gripFrac(q) >= 0 && q.grip >= 0 - 1e-9 || q.phase !== 'reel', 'grip'); return { reel: true }; });
+    assert.ok(g.grip >= 0);
+  }
+});
+
+test('a hand that reels gently always has grip to finish: knocks at the slow reel cannot take more than half, creeping tires at most 0.4', () => {
+  const g = mkSynth({ len: 2400, half: 9 }, { tier: -2 }); grabMain(g);
+  let dmg = 0; run(g, 40, (q) => { for (const e of drain(q)) if (e.type === 'knock') dmg += e.cost; return { reel: q.v < 78 }; });
+  assert.ok(g.phase !== 'in' || g.drops === 0, 'no drop at the slow reel');
+  assert.ok(dmg <= BASE.slowKnockShare * g.gripNow + 1e-6, `slow knocks took ${dmg} of ${g.gripNow}`);
+  assert.ok(g.tireRate <= BASE.tripBudget * g.gripNow * BASE.slow / 2400 + 1e-9 || g.tireRate <= BASE.tire);
+});
+
 test('a dropped find falls, takes one crack, lies somewhere else, and can be fetched; a retry is never the same attempt', () => {
   const g = mkSynth({ len: 900, half: 14 }); grabMain(g);
   run(g, 1.2, { reel: true });
@@ -316,8 +363,8 @@ test('plain words that change with every action: nothing goes stale', () => {
   const f = g.finds[0];
   for (let i = 0; i < 60 * 14 && g.phase === 'in'; i++) { step(g, 1 / 60, { x: f.x - f.r - 10, y: f.y, down: true }); note(); }
   assert.ok(seen.some((w) => /close|reach|near|closer|find is close/.test(w)), `near the find: ${seen.join(' | ')}`);
-  grab(g); note(); assert.match(words(g), /got it|Reel/);
-  for (let i = 0; i < 60 * 2; i++) { step(g, 1 / 60, { reel: false }); note(); }
+  grab(g); note(); assert.match(words(g), /got it: reel gently/);
+  for (let i = 0; i < 60 * 3.2; i++) { step(g, 1 / 60, { reel: false }); note(); }
   assert.match(words(g), /Reel/, 'the grab message gives way to what is going on');
   for (let i = 0; i < 60; i++) { step(g, 1 / 60, { reel: true }); note(); }
   assert.ok(seen.some((w) => /pull/.test(w)), seen.join(' | '));
@@ -377,9 +424,9 @@ test('bot sweep: perfect passes everywhere, mash never, lazy rarely, the wobbly 
   for (const tier of [-2, -1, 0, 1, 2]) {
     const row = { tier, perfect: sweep('perfect', tier), wobbly: sweep('wobbly', tier, { n: SWEEP * 2 }), thinker: sweep('thinker', tier, { n: SWEEP * 2 }), lazy: sweep('lazy', tier), mash: sweep('mash', tier) };
     rows.push(row);
-    assert.ok(row.perfect >= 0.94, `perfect ${JSON.stringify(row)}`);
-    assert.ok(row.mash <= 0.08, `mash ${JSON.stringify(row)}`);
-    assert.ok(row.lazy <= 0.35, `lazy ${JSON.stringify(row)}`);
+    assert.ok(row.perfect >= 0.99, `perfect ${JSON.stringify(row)}`);
+    assert.ok(row.mash <= 0.12, `mash ${JSON.stringify(row)}`);
+    assert.ok(row.lazy <= 0.45, `lazy ${JSON.stringify(row)}`);
   }
   console.log('bot table (pass rate)\n' + rows.map((r) => `${TIER[String(r.tier)].label.padEnd(6)} perfect ${(r.perfect * 100).toFixed(0)}%  wobbly ${(r.wobbly * 100).toFixed(0)}%  thinker ${(r.thinker * 100).toFixed(0)}%  lazy ${(r.lazy * 100).toFixed(0)}%  mash ${(r.mash * 100).toFixed(0)}%`).join('\n'));
   const w = (t) => rows.find((r) => r.tier === t).wobbly;
