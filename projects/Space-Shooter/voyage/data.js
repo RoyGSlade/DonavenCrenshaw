@@ -67,6 +67,20 @@ export const ROLL_SKILLS = Object.freeze([
   { id: 'navigation', name: 'Navigation', blurb: 'Scanning, noticing and finding the way.' },
 ]);
 export const ROLL_SKILL_IDS = Object.freeze(ROLL_SKILLS.map((s) => s.id));
+// The three categories of each roll skill, where level-up points go (one point per level,
+// at most POINT_MAX in a category). minigames/picker.js says what each one does; a test
+// keeps the two lists equal, and the Hub keeps the same list (stardustLedger CATEGORIES).
+export const POINT_MAX = 9;
+export const SKILL_CATEGORY_IDS = Object.freeze({
+  shooting: Object.freeze(['reload', 'ammo', 'spray']),
+  piloting: Object.freeze(['handling', 'boost', 'landing']),
+  stealth: Object.freeze(['quiet', 'range', 'decay']),
+  hacking: Object.freeze(['time', 'size', 'retries']),
+  repair: Object.freeze(['time', 'size', 'quality']),
+  crafting: Object.freeze(['quality', 'speed', 'material']),
+  social: Object.freeze(['persuade', 'intimidate', 'haggle']),
+  navigation: Object.freeze(['time', 'fuel', 'warning']),
+});
 
 // AI crew by tier (design doc Section 9, Donaven Nov 16: low skill, mistakes,
 // paid per job). The page's defaults; with the home server on, the hub's
