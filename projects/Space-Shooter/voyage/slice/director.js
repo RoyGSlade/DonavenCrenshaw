@@ -48,6 +48,12 @@ export function startRoom(save) {
  * room (onfoot.fight). presence (optional, slice/presenceRun.js): the crew ledger; a beat waits for the people it needs to walk in.
  * busy(): a dialogue, card or full screen is up (the auto-resume stays out of its way). Returns { beat, fight, entered, advance, boot, pendingRoom, watch, snooze }.
  */
+/** The toast when a scene of the opening starts: its title and its first goal, the same words the tracker shows. */
+export function sceneToast(quest) {
+  const goal = quest?.steps?.[0]?.text;
+  return goal ? `${quest.title}: ${goal}` : quest?.title || '';
+}
+
 export function createSliceDirector({ store, jobs, toast = () => {}, world, fightIn, presence = null, busy = () => false, handsOn = null, stager = null, runner = null, retryScreen: retryIn }) {
   const snapshots = new Map(); // scene id -> the save as it was when the scene began (the retry point)
   const retryScreen = !SWITCHES.retryOnDeath ? null : retryIn !== undefined ? retryIn : typeof document !== 'undefined' ? createRetry({ onRetry: () => retryScene() }) : null;
@@ -186,7 +192,7 @@ export function createSliceDirector({ store, jobs, toast = () => {}, world, figh
     const w = world();
     if (!id || !snap) { toast('Nothing to retry from.'); return; }
     stager?.reset();
-    const again = () => { store.update(() => snap); jobs.restart(QUESTS[id]); };
+    const again = () => { store.update(() => snap); jobs.restart(QUESTS[id], { toast: sceneToast(QUESTS[id]) }); };
     if (w?.skip) w.skip({ room: roomOf(QUESTS[id], QUESTS[id].start) || START_ROOM, caption: '', holdMs: 500 }).then(again); else again();
   }
 
@@ -202,11 +208,11 @@ export function createSliceDirector({ store, jobs, toast = () => {}, world, figh
     const w = world();
     if (line && w?.skip) {
       starting = true;
-      w.skip({ room: startRoom(save), caption: line }).then(() => { starting = false; checkpoint(id); jobs.take(QUESTS[id]); });
+      w.skip({ room: startRoom(save), caption: line }).then(() => { starting = false; checkpoint(id); jobs.take(QUESTS[id], { toast: sceneToast(QUESTS[id]) }); });
       return true;
     }
     checkpoint(id);
-    return jobs.take(QUESTS[id]);
+    return jobs.take(QUESTS[id], { toast: sceneToast(QUESTS[id]) });
   }
 
   /** A result card was closed: the next scene starts, or the opening is over. */

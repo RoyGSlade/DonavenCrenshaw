@@ -22,6 +22,9 @@
 .wb-fstage>.rp-panel:is(.hk-panel,.hg-panel,.pc-panel,.it-panel,.mh-panel,.pl-panel,.st-panel,.cf-panel){flex:0 1 auto;margin:auto}
 /* Perihelion hides its own Leave on a phone (it has Quit); on the shared full-screen helper every game keeps a Leave. */
 .wb-full .pr-leave{display:inline-flex}
+/* The pipe board (repair) fits the height as well as the width: sized by width alone it pushed its instruction line below the fold at
+   800x600 and 1280x720. 310px is the screen's own chrome (top bar, nameplate, water word, instruction, Hint). */
+.wb-fstage>.rp-panel>.rp-stage{width:min(100%,max(240px,calc(100dvh - 310px)));margin-inline:auto}
 /* A tall game inside the full-screen stage scrolls inside its panel; its parts keep their height rather than squashing into each other. */
 .wb-fstage>.rp-panel:not(.cc-panel):not(.pr-full):not(.ga-full)>*{flex-shrink:0}
 
