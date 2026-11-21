@@ -530,7 +530,9 @@ export function words(g) {
     if (near.d < 120) return 'the find is close';
   }
   if (g.touching) return 'scraping in';
-  return g.drift ? 'drifting' : 'steer down the tunnel';
+  const lying = g.finds.find((f) => f.state === 'lying');
+  if (lying) return lying.main ? 'the dropped find is further along' : 'the dropped one is further along';
+  return 'steer down the tunnel';
 }
 
 /** The grip as a plain word, for the HUD on the claw. */
