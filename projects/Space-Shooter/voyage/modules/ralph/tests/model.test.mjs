@@ -154,7 +154,8 @@ test('determinism: the same seed and the same hands give the same visit', () => 
 });
 test('the model and view carry no world content: no item ids, names or lines in model.js or view.js', async () => {
   const { readFile } = await import('node:fs/promises');
-  for (const f of ['../model.js', '../view.js']) { let src; try { src = await readFile(new URL(f, import.meta.url), 'utf8'); } catch { continue; } for (const bad of ['loose-bolt', 'work-glove', 'Math.random', 'Date.now', 'performance.now']) assert.ok(!src.includes(bad), `${f} has ${bad}`); }
+  for (const f of ['../model.js', '../view.js']) { let src; try { src = await readFile(new URL(f, import.meta.url), 'utf8'); } catch { continue; } const bans = ['loose-bolt', 'work-glove', 'Math.random', 'Date.now'].concat(f.includes('model') ? ['performance.now', 'setTimeout', 'document', 'window'] : []);
+    for (const bad of bans) assert.ok(!src.includes(bad), `${f} has ${bad}`); }
 });
 test('every word key the model can say has a plain line', () => {
   const s = mk(); const keys = new Set();

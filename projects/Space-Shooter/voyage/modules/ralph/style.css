@@ -1,0 +1,51 @@
+/* Ralph. Everything is scoped under .m-ralph. The yard is one canvas; the face, the words and the tray are DOM.
+   Pads use the plain kit frame with a drop-shadow glow: no box-shadow, no hover or pressed art. */
+.m-ralph{--cy:#81e6df;--am:#ffad72;--tx:#eaf4f5;--mu:#9db3c2;--gl:#0b1724;--ln:#3f5566;
+  position:absolute;inset:0;overflow:hidden;color:var(--tx);font:14px/1.4 Inter,"Segoe UI",system-ui,sans-serif;background:#070c12;
+  -webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;touch-action:none}
+.m-ralph *{box-sizing:border-box}
+.m-ralph button{font:inherit;color:inherit;-webkit-tap-highlight-color:transparent}
+.m-ralph .rl-canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:grab}
+
+/* head: his face, the sign (the page's one h1) and one line of words */
+.m-ralph .rl-head{position:absolute;z-index:2;left:0;right:0;top:0;display:flex;align-items:center;gap:12px;padding:10px 76px 6px 12px;pointer-events:none;min-height:72px}
+.m-ralph .rl-face{flex:0 0 auto;width:54px;height:54px;border-radius:50%;overflow:hidden;background:radial-gradient(#26384a,#0b1724);border:2px solid var(--cy);filter:drop-shadow(0 0 8px #81e6df66);transition:border-color .4s,filter .4s}
+.m-ralph .rl-face img{display:block;width:100%;height:100%;object-fit:cover;object-position:50% 20%;transform:scale(1.15);pointer-events:none}
+.m-ralph .rl-face[data-mood=happy]{border-color:#ffd27a;filter:drop-shadow(0 0 12px #ffc76699);animation:rl-bob 1.2s ease-in-out infinite}
+.m-ralph .rl-face[data-mood=low]{border-color:#9a6a5a;filter:drop-shadow(0 0 6px #ff6a4a44)}
+.m-ralph .rl-title{min-width:0;display:flex;flex-direction:column;gap:2px}
+.m-ralph .rl-sign{margin:0;align-self:flex-start;font:800 clamp(14px,2.2vw,20px)/1.1 Inter,"Segoe UI",sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#ffd9b0;text-shadow:0 0 12px #ffad7288;
+  border:solid transparent;border-width:12px 14px 13px 24px;border-image:url(art/ui/nameplate.webp) 26 29 28 52 fill / 12px 14px 13px 24px stretch;padding:0 12px 0 2px}
+.m-ralph .rl-say{margin:0;font:600 15px/1.3 Inter,"Segoe UI",sans-serif;color:var(--tx);text-shadow:0 1px 3px #000c,0 0 10px #000a;min-height:20px}
+.m-ralph .rl-say.is-new{animation:rl-in .35s ease-out}
+@keyframes rl-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+@keyframes rl-bob{50%{transform:translateY(-2px)}}
+
+/* tray: what you carry for him. Drag a pad out onto Ralph or his bowl. */
+.m-ralph .rl-tray{position:absolute;z-index:2;left:0;right:0;bottom:0;height:100px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:6px max(14px,env(safe-area-inset-left)) max(10px,env(safe-area-inset-bottom));pointer-events:none}
+.m-ralph .rl-hand{flex:1;margin:0}
+.m-ralph .rl-pad{pointer-events:auto;position:relative;display:flex;align-items:center;gap:10px;min-width:132px;min-height:64px;padding:0 20px 0 14px;cursor:grab;background:none;touch-action:none;
+  border:solid transparent;border-width:12px 19px;border-image:url(art/ui/button.webp) 24 38 fill / 12px 19px stretch;filter:drop-shadow(0 0 6px #81e6df55);transition:filter .15s}
+.m-ralph .rl-pad:focus-visible{outline:3px solid var(--am);outline-offset:2px}
+.m-ralph .rl-pad.is-held{filter:drop-shadow(0 0 12px #ffad72cc)}
+.m-ralph .rl-pad.is-glow{filter:drop-shadow(0 0 14px #ffd27acc)}
+.m-ralph .rl-pad.is-empty{border-image-source:url(art/ui/button-disabled.webp);filter:none;cursor:default;color:#8c99a4}
+.m-ralph .rl-pad.is-used{filter:drop-shadow(0 0 4px #ffad7266)}
+.m-ralph .rl-label{font:800 12px/1 Inter,sans-serif;letter-spacing:.1em;text-transform:uppercase;white-space:nowrap}
+.m-ralph .rl-icon{flex:0 0 auto;width:38px;height:30px;background:center/contain no-repeat;filter:drop-shadow(0 2px 2px #000a)}
+.m-ralph .rl-bone{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 38 30'%3E%3Cg fill='%23efe6cc' stroke='%23a99a78' stroke-width='1.2'%3E%3Crect x='6' y='12' width='26' height='6' rx='2' transform='rotate(-28 19 15)'/%3E%3Ccircle cx='8' cy='17' r='4' transform='rotate(-28 19 15)'/%3E%3Ccircle cx='8' cy='11' r='4' transform='rotate(-28 19 15)'/%3E%3Ccircle cx='30' cy='17' r='4' transform='rotate(-28 19 15)'/%3E%3Ccircle cx='30' cy='11' r='4' transform='rotate(-28 19 15)'/%3E%3C/g%3E%3C/svg%3E")}
+.m-ralph .rl-kibble{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 38 30'%3E%3Cg fill='%23b3743c' stroke='%237a4a22' stroke-width='1'%3E%3Ccircle cx='10' cy='22' r='4'/%3E%3Ccircle cx='19' cy='24' r='4'/%3E%3Ccircle cx='28' cy='22' r='4'/%3E%3Ccircle cx='14' cy='16' r='4'/%3E%3Ccircle cx='24' cy='16' r='4'/%3E%3Ccircle cx='19' cy='10' r='4'/%3E%3C/g%3E%3C/svg%3E")}
+.m-ralph .rl-pad.is-empty .rl-icon{opacity:.35}
+.m-ralph .rl-pips{position:absolute;left:50%;bottom:3px;transform:translateX(-50%);display:flex;gap:4px}
+.m-ralph .rl-pips i{width:6px;height:6px;border-radius:50%;background:var(--am);filter:drop-shadow(0 0 3px #ffad72)}
+.m-ralph.is-sleep .rl-canvas{filter:brightness(.9)}
+
+@media (max-width:640px){
+  .m-ralph .rl-head{padding-right:64px;gap:10px}
+  .m-ralph .rl-say{font-size:14px}
+  .m-ralph .rl-tray{height:96px}
+  .m-ralph .rl-pad{min-width:0;flex:1;max-width:46%;padding:0 16px 0 10px}
+  .m-ralph .rl-hand{display:none}
+  .m-ralph .rl-tray{gap:10px}
+}
+@media (prefers-reduced-motion:reduce){.m-ralph .rl-face[data-mood=happy]{animation:none}.m-ralph .rl-say.is-new{animation:none}}

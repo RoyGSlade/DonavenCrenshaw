@@ -84,6 +84,7 @@ export function createRalph(o = {}) {
   const rec = normaliseRecord(o.context);
   const L = layout(o.w, o.h);
   const s = {
+    force: o.force && typeof o.force === 'object' ? o.force : null, // a test and proof hook only: { style: 'bring'|'drop'|'keep', find: 'item-id' }
     seed: Math.floor(num(o.seed, 1)), rng: hashSeed('ralph', Math.floor(num(o.seed, 1))), t: 0, quick: !!o.quick,
     L, rec, events: [], flash: null, left: false,
     ralph: {
@@ -267,6 +268,7 @@ function pickUp(s) { // Ralph reaches the ball
     setMode(s, 'bring', 0, 'stand'); goto_(s, L.hand.x, L.hand.y - 0.8, GAITS.trot, 0.55); return;
   }
   // the wrong thing?
+  if (s.force?.find && r.find == null && s.foundItems.length < FIND_CAP) { r.find = s.force.find; s.force = { ...s.force, find: null }; }
   if (r.find == null && s.foundItems.length < FIND_CAP) {
     for (const f of s.rec.finds) {
       if (rnd(s) < f.chance) { r.find = f.item; break; }
@@ -280,7 +282,8 @@ function pickUp(s) { // Ralph reaches the ball
     return;
   }
   b.state = 'carried'; emit(s, 'pickup', {});
-  const u = rnd(s), tired = r.energy < 0.18;
+  let u = rnd(s); const tired = r.energy < 0.18;
+  if (s.force?.style) { u = { bring: 0, drop: RATES.bring + 0.001, keep: 0.999 }[s.force.style] ?? u; s.force = { ...s.force, style: null }; }
   r.styleFrom = { x: r.x, y: r.y };
   if (tired || u >= RATES.bring + RATES.drop) { r.style = 'keep'; s.stat.keeps++; r.carry = 'ball'; keepSpot(s); }
   else if (u >= RATES.bring) { r.style = 'drop'; r.carry = 'ball'; setMode(s, 'dropwalk', 0, 'stand'); goto_(s, L.hand.x, L.hand.y - 0.8, GAITS.trot, 0.5); r.dropAt = 0.4 + 0.15 * rnd(s); r.d0 = hyp(L.hand.x - r.x, L.hand.y - r.y); }
@@ -587,3 +590,15 @@ export function finish(s, { left = false } = {}) {
   };
   return JSON.parse(JSON.stringify(res));
 }
+
+// ---------- helpers for the view ----------
+// Where a throw would first land if you let go with the pointer at (px, py): drawn as a dotted aim line. No bounces counted.
+export function previewThrow(s, px, py) {
+  const b = s.ball, dx = b.x - px, dy = b.y - py, pull = Math.hypot(dx, dy);
+  if (pull < 0.7) return null;
+  const P = Math.min(pull, 4.2), ux = dx / pull, uy = dy / pull, vh = 3 + P * 2.6, vz = 4.5 + P * 1.1;
+  const tl = (vz + Math.sqrt(vz * vz + 2 * G * 0.5)) / G;
+  const pts = []; for (let i = 0; i <= 8; i++) { const t = tl * i / 8; pts.push({ x: clamp(b.x + ux * vh * t, 0.35, s.L.w - 0.35), y: clamp(b.y + uy * vh * t, 0.35, s.L.h - 0.35), z: Math.max(0, 0.5 + vz * t - 0.5 * G * t * t) }); }
+  return { pts, power: P / 4.2, land: pts[pts.length - 1] };
+}
+export function nudge(s, key, dur = 2.4) { sayFlash(s, key, dur); }
