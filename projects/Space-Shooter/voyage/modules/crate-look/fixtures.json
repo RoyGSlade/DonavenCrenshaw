@@ -1,0 +1,560 @@
+{
+  "note": "Draft words for Donaven. Every name, label, reason and blurb here is a draft.",
+  "fixtures": {
+    "ore": {
+      "label": "Ore crate (wood, matching slip)",
+      "context": {
+        "crate": {
+          "id": "crate-7",
+          "label": "Crate 7 · Dustfall ore",
+          "owner": "Dustfall Mining",
+          "kind": "wood",
+          "capacity": 24,
+          "contents": [
+            {
+              "item": "ore",
+              "qty": 9
+            },
+            {
+              "item": "scrap",
+              "qty": 4
+            }
+          ],
+          "slip": [
+            {
+              "item": "ore",
+              "qty": 9
+            },
+            {
+              "item": "scrap",
+              "qty": 4
+            }
+          ],
+          "origin": "Dustfall seam, lot seven",
+          "tag": "none"
+        },
+        "items": {
+          "ore": {
+            "name": "Dustfall ore",
+            "icon": "art/items/ore.webp",
+            "kind": "material",
+            "blurb": "Grey ore with a rust-orange vein."
+          },
+          "scrap": {
+            "name": "Scrap metal",
+            "icon": "art/items/scrap.webp",
+            "kind": "material",
+            "blurb": "Bent plate and cut pipe."
+          },
+          "fuel-cell": {
+            "name": "Fuel cell",
+            "icon": "art/items/fuel-cell.webp",
+            "kind": "consumable",
+            "blurb": "Sealed, still warm."
+          },
+          "medkit": {
+            "name": "Medkit",
+            "icon": "art/items/medkit.webp",
+            "kind": "consumable",
+            "blurb": "Pressed lid, red cross."
+          },
+          "circuit": {
+            "name": "Circuit board",
+            "icon": "art/items/circuit.webp",
+            "kind": "part",
+            "blurb": "Green board, gold traces."
+          },
+          "nav-chip": {
+            "name": "Nav chip",
+            "icon": "art/items/nav-chip.webp",
+            "kind": "data",
+            "blurb": "A chart chip with a worn edge."
+          },
+          "hull-patch": {
+            "name": "Hull patch",
+            "icon": "art/items/hull-patch.webp",
+            "kind": "part",
+            "blurb": "Self-sealing plate."
+          },
+          "shield-cell": {
+            "name": "Shield cell",
+            "icon": "art/items/shield-cell.webp",
+            "kind": "consumable",
+            "blurb": "Hums when held."
+          },
+          "ration": {
+            "name": "Ration pack",
+            "kind": "consumable",
+            "glyph": "kit",
+            "blurb": "Hot-seal, three meals."
+          },
+          "dried-fruit": {
+            "name": "Dried fruit",
+            "kind": "consumable",
+            "blurb": "Sweet and chewy."
+          },
+          "tea-brick": {
+            "name": "Tea brick",
+            "kind": "consumable",
+            "glyph": "roll",
+            "blurb": "Pressed black tea."
+          },
+          "cold-fish": {
+            "name": "Frozen fish",
+            "kind": "consumable",
+            "blurb": "Glass-hard and silver."
+          }
+        },
+        "save": {
+          "items": {
+            "fuel-cell": 2,
+            "medkit": 1
+          },
+          "capacity": 8
+        }
+      }
+    },
+    "food": {
+      "label": "Food crate (cold box, no slip)",
+      "context": {
+        "crate": {
+          "id": "crate-12",
+          "label": "Crate 12 · Galley stores",
+          "owner": "Galley",
+          "kind": "cold",
+          "capacity": 16,
+          "contents": [
+            {
+              "item": "ration",
+              "qty": 6
+            },
+            {
+              "item": "dried-fruit",
+              "qty": 3
+            },
+            {
+              "item": "tea-brick",
+              "qty": 2
+            },
+            {
+              "item": "cold-fish",
+              "qty": 5
+            }
+          ],
+          "traces": [
+            "Cold, and a smell of salt",
+            "A frost-stamped lid",
+            "Fish scales on the latch"
+          ]
+        },
+        "items": {
+          "ore": {
+            "name": "Dustfall ore",
+            "icon": "art/items/ore.webp",
+            "kind": "material",
+            "blurb": "Grey ore with a rust-orange vein."
+          },
+          "scrap": {
+            "name": "Scrap metal",
+            "icon": "art/items/scrap.webp",
+            "kind": "material",
+            "blurb": "Bent plate and cut pipe."
+          },
+          "fuel-cell": {
+            "name": "Fuel cell",
+            "icon": "art/items/fuel-cell.webp",
+            "kind": "consumable",
+            "blurb": "Sealed, still warm."
+          },
+          "medkit": {
+            "name": "Medkit",
+            "icon": "art/items/medkit.webp",
+            "kind": "consumable",
+            "blurb": "Pressed lid, red cross."
+          },
+          "circuit": {
+            "name": "Circuit board",
+            "icon": "art/items/circuit.webp",
+            "kind": "part",
+            "blurb": "Green board, gold traces."
+          },
+          "nav-chip": {
+            "name": "Nav chip",
+            "icon": "art/items/nav-chip.webp",
+            "kind": "data",
+            "blurb": "A chart chip with a worn edge."
+          },
+          "hull-patch": {
+            "name": "Hull patch",
+            "icon": "art/items/hull-patch.webp",
+            "kind": "part",
+            "blurb": "Self-sealing plate."
+          },
+          "shield-cell": {
+            "name": "Shield cell",
+            "icon": "art/items/shield-cell.webp",
+            "kind": "consumable",
+            "blurb": "Hums when held."
+          },
+          "ration": {
+            "name": "Ration pack",
+            "kind": "consumable",
+            "glyph": "kit",
+            "blurb": "Hot-seal, three meals."
+          },
+          "dried-fruit": {
+            "name": "Dried fruit",
+            "kind": "consumable",
+            "blurb": "Sweet and chewy."
+          },
+          "tea-brick": {
+            "name": "Tea brick",
+            "kind": "consumable",
+            "glyph": "roll",
+            "blurb": "Pressed black tea."
+          },
+          "cold-fish": {
+            "name": "Frozen fish",
+            "kind": "consumable",
+            "blurb": "Glass-hard and silver."
+          }
+        },
+        "save": {
+          "items": {
+            "fuel-cell": 2,
+            "medkit": 1
+          },
+          "capacity": 8
+        }
+      }
+    },
+    "empty": {
+      "label": "Empty crate",
+      "context": {
+        "crate": {
+          "id": "crate-3",
+          "label": "Crate 3 · Spare bay",
+          "owner": "",
+          "kind": "wood",
+          "capacity": 20,
+          "contents": []
+        },
+        "items": {
+          "ore": {
+            "name": "Dustfall ore",
+            "icon": "art/items/ore.webp",
+            "kind": "material",
+            "blurb": "Grey ore with a rust-orange vein."
+          },
+          "scrap": {
+            "name": "Scrap metal",
+            "icon": "art/items/scrap.webp",
+            "kind": "material",
+            "blurb": "Bent plate and cut pipe."
+          },
+          "fuel-cell": {
+            "name": "Fuel cell",
+            "icon": "art/items/fuel-cell.webp",
+            "kind": "consumable",
+            "blurb": "Sealed, still warm."
+          },
+          "medkit": {
+            "name": "Medkit",
+            "icon": "art/items/medkit.webp",
+            "kind": "consumable",
+            "blurb": "Pressed lid, red cross."
+          },
+          "circuit": {
+            "name": "Circuit board",
+            "icon": "art/items/circuit.webp",
+            "kind": "part",
+            "blurb": "Green board, gold traces."
+          },
+          "nav-chip": {
+            "name": "Nav chip",
+            "icon": "art/items/nav-chip.webp",
+            "kind": "data",
+            "blurb": "A chart chip with a worn edge."
+          },
+          "hull-patch": {
+            "name": "Hull patch",
+            "icon": "art/items/hull-patch.webp",
+            "kind": "part",
+            "blurb": "Self-sealing plate."
+          },
+          "shield-cell": {
+            "name": "Shield cell",
+            "icon": "art/items/shield-cell.webp",
+            "kind": "consumable",
+            "blurb": "Hums when held."
+          },
+          "ration": {
+            "name": "Ration pack",
+            "kind": "consumable",
+            "glyph": "kit",
+            "blurb": "Hot-seal, three meals."
+          },
+          "dried-fruit": {
+            "name": "Dried fruit",
+            "kind": "consumable",
+            "blurb": "Sweet and chewy."
+          },
+          "tea-brick": {
+            "name": "Tea brick",
+            "kind": "consumable",
+            "glyph": "roll",
+            "blurb": "Pressed black tea."
+          },
+          "cold-fish": {
+            "name": "Frozen fish",
+            "kind": "consumable",
+            "blurb": "Glass-hard and silver."
+          }
+        },
+        "save": {
+          "items": {
+            "fuel-cell": 2,
+            "medkit": 1
+          },
+          "capacity": 8
+        }
+      }
+    },
+    "sealed": {
+      "label": "Sealed crate",
+      "context": {
+        "crate": {
+          "id": "crate-9",
+          "label": "Crate 9 · Customs hold",
+          "owner": "Customs",
+          "kind": "steel",
+          "sealed": true,
+          "reason": "Customs seal. Cut it and you answer for it.",
+          "capacity": 30,
+          "contents": [
+            {
+              "item": "circuit",
+              "qty": 8
+            }
+          ]
+        },
+        "items": {
+          "ore": {
+            "name": "Dustfall ore",
+            "icon": "art/items/ore.webp",
+            "kind": "material",
+            "blurb": "Grey ore with a rust-orange vein."
+          },
+          "scrap": {
+            "name": "Scrap metal",
+            "icon": "art/items/scrap.webp",
+            "kind": "material",
+            "blurb": "Bent plate and cut pipe."
+          },
+          "fuel-cell": {
+            "name": "Fuel cell",
+            "icon": "art/items/fuel-cell.webp",
+            "kind": "consumable",
+            "blurb": "Sealed, still warm."
+          },
+          "medkit": {
+            "name": "Medkit",
+            "icon": "art/items/medkit.webp",
+            "kind": "consumable",
+            "blurb": "Pressed lid, red cross."
+          },
+          "circuit": {
+            "name": "Circuit board",
+            "icon": "art/items/circuit.webp",
+            "kind": "part",
+            "blurb": "Green board, gold traces."
+          },
+          "nav-chip": {
+            "name": "Nav chip",
+            "icon": "art/items/nav-chip.webp",
+            "kind": "data",
+            "blurb": "A chart chip with a worn edge."
+          },
+          "hull-patch": {
+            "name": "Hull patch",
+            "icon": "art/items/hull-patch.webp",
+            "kind": "part",
+            "blurb": "Self-sealing plate."
+          },
+          "shield-cell": {
+            "name": "Shield cell",
+            "icon": "art/items/shield-cell.webp",
+            "kind": "consumable",
+            "blurb": "Hums when held."
+          },
+          "ration": {
+            "name": "Ration pack",
+            "kind": "consumable",
+            "glyph": "kit",
+            "blurb": "Hot-seal, three meals."
+          },
+          "dried-fruit": {
+            "name": "Dried fruit",
+            "kind": "consumable",
+            "blurb": "Sweet and chewy."
+          },
+          "tea-brick": {
+            "name": "Tea brick",
+            "kind": "consumable",
+            "glyph": "roll",
+            "blurb": "Pressed black tea."
+          },
+          "cold-fish": {
+            "name": "Frozen fish",
+            "kind": "consumable",
+            "blurb": "Glass-hard and silver."
+          }
+        },
+        "save": {
+          "items": {
+            "fuel-cell": 2,
+            "medkit": 1
+          },
+          "capacity": 8
+        }
+      }
+    },
+    "wrongslip": {
+      "label": "Wrong slip, one hidden thing",
+      "context": {
+        "crate": {
+          "id": "crate-15",
+          "label": "Crate 15 · Mixed freight",
+          "owner": "Harbour freight",
+          "kind": "steel",
+          "capacity": 20,
+          "contents": [
+            {
+              "item": "fuel-cell",
+              "qty": 4
+            },
+            {
+              "item": "scrap",
+              "qty": 3
+            },
+            {
+              "item": "medkit",
+              "qty": 2
+            },
+            {
+              "item": "hull-patch",
+              "qty": 5
+            },
+            {
+              "item": "nav-chip",
+              "qty": 1,
+              "hidden": true
+            }
+          ],
+          "slip": [
+            {
+              "item": "fuel-cell",
+              "qty": 6
+            },
+            {
+              "item": "scrap",
+              "qty": 3
+            },
+            {
+              "item": "hull-patch",
+              "qty": 2
+            },
+            {
+              "item": "shield-cell",
+              "qty": 2
+            }
+          ],
+          "traces": [
+            "Dust from a mining moon",
+            "A harbour freight stamp",
+            "A faint smell of coolant"
+          ]
+        },
+        "items": {
+          "ore": {
+            "name": "Dustfall ore",
+            "icon": "art/items/ore.webp",
+            "kind": "material",
+            "blurb": "Grey ore with a rust-orange vein."
+          },
+          "scrap": {
+            "name": "Scrap metal",
+            "icon": "art/items/scrap.webp",
+            "kind": "material",
+            "blurb": "Bent plate and cut pipe."
+          },
+          "fuel-cell": {
+            "name": "Fuel cell",
+            "icon": "art/items/fuel-cell.webp",
+            "kind": "consumable",
+            "blurb": "Sealed, still warm."
+          },
+          "medkit": {
+            "name": "Medkit",
+            "icon": "art/items/medkit.webp",
+            "kind": "consumable",
+            "blurb": "Pressed lid, red cross."
+          },
+          "circuit": {
+            "name": "Circuit board",
+            "icon": "art/items/circuit.webp",
+            "kind": "part",
+            "blurb": "Green board, gold traces."
+          },
+          "nav-chip": {
+            "name": "Nav chip",
+            "icon": "art/items/nav-chip.webp",
+            "kind": "data",
+            "blurb": "A chart chip with a worn edge."
+          },
+          "hull-patch": {
+            "name": "Hull patch",
+            "icon": "art/items/hull-patch.webp",
+            "kind": "part",
+            "blurb": "Self-sealing plate."
+          },
+          "shield-cell": {
+            "name": "Shield cell",
+            "icon": "art/items/shield-cell.webp",
+            "kind": "consumable",
+            "blurb": "Hums when held."
+          },
+          "ration": {
+            "name": "Ration pack",
+            "kind": "consumable",
+            "glyph": "kit",
+            "blurb": "Hot-seal, three meals."
+          },
+          "dried-fruit": {
+            "name": "Dried fruit",
+            "kind": "consumable",
+            "blurb": "Sweet and chewy."
+          },
+          "tea-brick": {
+            "name": "Tea brick",
+            "kind": "consumable",
+            "glyph": "roll",
+            "blurb": "Pressed black tea."
+          },
+          "cold-fish": {
+            "name": "Frozen fish",
+            "kind": "consumable",
+            "blurb": "Glass-hard and silver."
+          }
+        },
+        "save": {
+          "items": {
+            "fuel-cell": 2,
+            "medkit": 1
+          },
+          "capacity": 8
+        }
+      }
+    }
+  }
+}
