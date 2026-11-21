@@ -1,0 +1,18 @@
+/* The workbench room (dev only). Loaded by mount.js; plain rules on the game's own tokens, no art. */
+.wb-hud{position:fixed;z-index:6;top:64px;left:12px;display:grid;gap:2px;max-width:min(300px,64vw);padding:8px 10px;border:1px solid #2a4152;border-radius:6px;background:#0a1624e6;color:#dbe9ef;font:12px/1.35 Inter,sans-serif;pointer-events:none}
+.wb-hud b{font:700 10px Consolas,monospace;letter-spacing:.14em;color:#9fe870}
+.wb-hud[data-tone=low] b{color:#ffd166}.wb-hud[data-tone=high] b{color:#ff8a70}
+.wb-hud[data-tone=low]{border-color:#8a7a3a}.wb-hud[data-tone=high]{border-color:#8c4a3c}.wb-hud[data-tone=safe]{border-color:#4d7d3a}
+.wb-hud i{font:11px Consolas,monospace;color:#9db3c2;font-style:normal}
+.wb-hud[hidden]{display:none}
+.wb-pane{display:grid;gap:10px;padding:4px 2px 12px}
+.wb-pane .gm-row{display:flex;flex-wrap:wrap;gap:8px}
+.wb-pane .gm-row button{min-height:44px}
+.wb-pane .gm-h{margin:6px 0 0;font:700 11px Consolas,monospace;letter-spacing:.12em;color:#9db3c2}
+.wb-said{min-height:1.4em;color:#cfe8f0}
+.wb-stage{display:block;min-width:0}
+.wb-preview{margin:0 0 8px;color:#cfe8f0}
+.wb-leave{margin-top:10px;min-height:44px}
+.wb-skills .ex-skills{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media (max-width:700px){.wb-hud{top:58px;left:8px;max-width:calc(100vw - 16px)}.wb-skills .ex-skills{grid-template-columns:1fr}}
+.hg-fight .wb-hud{display:none}

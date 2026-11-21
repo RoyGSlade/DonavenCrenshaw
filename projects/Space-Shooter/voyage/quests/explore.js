@@ -37,7 +37,14 @@ function tripActions(part) {
   return [{ type: 'continue' }];
 }
 
+// A choice with a minigame waits for the page to hand back how it ended: the explorer takes every ending the choice has.
+function minigameActions(quest, run) {
+  const choice = quest.nodes[run.node]?.choices?.[run.minigame.index];
+  return [['win', choice?.check?.pass], ['mid', choice?.minigame?.mid], ['lose', choice?.check?.fail]].filter(([, to]) => to).map(([branch]) => ({ type: 'minigame', branch, xp: 0, skill: choice.check.skill }));
+}
+
 export function actionsFor(quest, run, save) {
+  if (run.minigame) return minigameActions(quest, run);
   const v = view(quest, run, save);
   if (v.type === 'dialogue' && !run.part) return v.choices.filter(c => !c.locked).map(c => ({ type: 'choose', index: c.index }));
   if (v.part) return partActions(v.part, run);

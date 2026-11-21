@@ -50,11 +50,12 @@ export function createFight({ map, spawn = 'default', enemies = [], player = {},
 }
 
 function spawnEnemy(e, i, map) {
-  const kind = ENEMY_TYPES[e.type];
-  if (!kind) throw new Error(`Unknown enemy type ${e.type}`);
+  const base = ENEMY_TYPES[e.type];
+  if (!base) throw new Error(`Unknown enemy type ${e.type}`);
+  const kind = e.radius ? { ...base, radius: e.radius } : base; // a setup may make one fighter bigger (the workbench ring)
   const x = e.at ? (e.at[0] + 0.5) * map.tile : e.x, y = e.at ? (e.at[1] + 0.5) * map.tile : e.y;
   const hp = e.hp ?? kind.hp;
-  return { id: i, type: e.type, kind, x, y, vx: 0, vy: 0, angle: e.angle ?? Math.PI / 2, hp, maxHp: hp, cool: 0.6 + i * 0.35, burst: 0, burstT: 0,
+  return { id: i, type: e.type, kind, size: e.size || null, lift: e.lift || null, x, y, vx: 0, vy: 0, angle: e.angle ?? Math.PI / 2, hp, maxHp: hp, cool: 0.6 + i * 0.35, burst: 0, burstT: 0,
     state: 'engage', stateT: 0, hit: 0, touchCd: 0, strafe: i % 2 ? 1 : -1, alive: true, awake: kind.brain === 'still' || Boolean(e.awake) };
 }
 

@@ -9,6 +9,7 @@ import { TRACKS } from './data/tracks.js';
 import { GIVERS, ITEMS, STAT_NAMES, checkIssues } from './core.js';
 import { SKILLS as SKILL_LIST } from '../data.js';
 import { isPlace } from '../slice/places.js';
+import { hookIssues } from '../minigames/sceneHook.js';
 import { ENEMY_TYPES } from '../onfoot/rules/shooter.js';
 
 const SKILLS = Object.fromEntries(SKILL_LIST.map((s) => [s.id, s]));
@@ -35,6 +36,7 @@ export function links(node) {
     for (const c of [choice, ...(choice.variants || [])]) {
       if (c.to) out.push(c.to);
       if (c.check) out.push(c.check.pass, c.check.fail);
+      if (c.minigame?.mid) out.push(c.minigame.mid);
     }
   }
   for (const c of node.cases || []) out.push(c.to);
@@ -135,6 +137,7 @@ export function validateQuest(quest) {
         if (!choice.to && !choice.check) err(`${id}: choice ${i} goes nowhere`);
         if (choice.check && !STAT_NAMES[choice.check.stat] && !choice.check.skill) err(`${id}: choice ${i} checks unknown stat`);
         if (choice.check) for (const issue of checkIssues(choice.check)) err(`${id}: choice ${i} ${issue}`);
+        if (choice.minigame) for (const issue of hookIssues(choice, quest.nodes)) err(`${id}: choice ${i} ${issue}`);
         errors.push(...reqIssues(choice.requires, `${quest.id}: ${id}[${i}]`), ...rewardIssues(choice.reward, `${quest.id}: ${id}[${i}]`));
       }
     }
