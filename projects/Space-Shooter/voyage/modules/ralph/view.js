@@ -183,7 +183,7 @@ export async function mount(stage, state, o) {
     g.save(); g.translate(0, -2);
     if (r.carry === 'ball') { g.rotate(Math.sin(t * 9) * 0.05 * Math.min(1, sp)); if (imgBall) g.drawImage(imgBall, -11, -17, 22, 22); }
     else if (r.carry === 'bone') drawBone(g, 1.05);
-    else if (r.carry === 'find' || r.mode === 'showoff') { g.translate(0, -8); drawNut(g, 8); }
+    else if (r.carry === 'find' || r.mode === 'showoff') { g.translate(0, -10); drawNut(g, 12); }
     g.restore();
     g.restore();
     // downward chain (to the rump)
@@ -376,8 +376,8 @@ export async function mount(stage, state, o) {
     drawBedBowl(cx);
     for (const c of L.crates) drawCrate(cx, c);
     drawScrap(cx, L.scrap); drawKennel(cx);
-    drawBall(cx);
     if (imgDog) drawDog(cx, r, dt);
+    drawBall(cx);
     drawAim(cx); drawDrag(cx);
     drawFloat(cx, dt);
     hud();

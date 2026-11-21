@@ -36,6 +36,11 @@ export class Driver {
   async release() { return this.up({ x: 0, y: 0 }); }
   async dragPad(item, toWorld) { // drag a tray pad out onto the yard
     const el = await this.page.locator(`.m-ralph .rl-pad[data-item=${item}]`).boundingBox(); const a = { x: el.x + el.width / 2, y: el.y + el.height / 2 };
+    if (toWorld === 'ralph') { // chase him: aim at where he is now on every step
+      await this.down(a); await this.page.waitForTimeout(40); let cur = a;
+      for (let i = 1; i <= 14; i++) { const t = await this.scr(...(await this.st(() => { const r = window.__ralph.state.ralph; return [r.x, r.y]; }))); cur = { x: a.x + (t.x - a.x) * i / 14, y: a.y + (t.y - a.y) * i / 14 }; await this.moveTo(cur); await this.page.waitForTimeout(20); }
+      return this.up(cur);
+    }
     const b = await this.scr(toWorld.x, toWorld.y); await this.drag(a, b, { steps: 14, ms: 20 });
   }
 }

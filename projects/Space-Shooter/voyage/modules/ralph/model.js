@@ -459,7 +459,8 @@ export function press(s, x, y) {
   s.touch = { kind: 'deck', x, y, sx: x, sy: y, t: 0, speed: 0, moved: 0 };
   const onBall = (b.state === 'rest') && hyp(x - b.x, y - b.y) < 0.85;
   const onRalph = hyp(x - r.x, y - r.y) < 1.05;
-  if (onBall && !(onRalph && r.mode === 'keep')) { s.touch.kind = 'ball'; return 'ball'; }
+  const nearerBall = hyp(x - b.x, y - b.y) < hyp(x - r.x, y - r.y) * 0.6; // pressing on him while he sits by the ball pets him
+  if (onBall && (!onRalph || nearerBall) && !(onRalph && r.mode === 'keep')) { s.touch.kind = 'ball'; return 'ball'; }
   if (onRalph && (CALM.has(r.mode) || r.mode === 'sleep' || r.mode === 'keep' || r.mode === 'chew' || r.mode === 'lean' || r.mode === 'present' || r.mode === 'showoff' || r.mode === 'search')) {
     s.touch.kind = 'ralph'; r.rubbing = true; r.rubT = 0; r.spotT = 0; s.stat.petted++; emit(s, 'pet', {});
     if (r.mode === 'wander') { stopGoal(s); }

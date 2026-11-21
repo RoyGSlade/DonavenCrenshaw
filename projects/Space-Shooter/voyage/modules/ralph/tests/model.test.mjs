@@ -170,3 +170,11 @@ test('the layout fits both yard shapes: crates and kennel do not overlap, the bo
     for (const p of [L.bed, L.bowl, L.hand]) for (const o of L.rects) assert.ok(!(p.x > o.x - 0.6 && p.x < o.x + o.w + 0.6 && p.y > o.y - 0.6 && p.y < o.y + o.h + 0.6), `point clear of ${o.id} in ${w}x${h}`);
   }
 });
+test('the manifest matches contract 1.1: a screen with no skill and no paths, files in place', async () => {
+  const { readFile, access } = await import('node:fs/promises');
+  const m = JSON.parse(await readFile(new URL('../manifest.json', import.meta.url), 'utf8'));
+  assert.equal(m.id, 'ralph'); assert.equal(m.kind, 'screen'); assert.equal(m.skill, null); assert.deepEqual(m.paths, []); assert.equal(m.contract, '1.1'); assert.ok(['draft', 'fable-passed', 'erik-played', 'approved', 'in-game'].includes(m.status));
+  assert.ok(Array.isArray(m.length_s) && m.length_s.length === 2);
+  for (const f of ['index.js', 'model.js', 'view.js', 'style.css', 'test.html', 'README.md', 'fixtures.json', 'audio.js', 'tests/model.test.mjs', 'tests/browser.test.mjs']) await access(new URL('../' + f, import.meta.url));
+  for (const a of m.art) if (!a.endsWith('/')) await access(new URL('../' + a, import.meta.url));
+});

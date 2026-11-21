@@ -61,8 +61,8 @@ for (const [size, opt] of Object.entries(SIZES)) {
     await d.waitFor(() => window.__ralph.state.stat.fed === 1, 20000);
     await page.waitForTimeout(600);
     const r3 = await d.st(() => { const r = window.__ralph.state.ralph; return { x: r.x, y: r.y }; });
-    await d.dragPad('bone', r3); await d.waitFor(() => window.__ralph.state.stat.usedBone === 1, 4000);
-    assert.ok(await page.locator('.rl-pad[data-item=bone]').evaluate((e) => e.classList.contains('is-empty')), 'the bone pad empties when the only bone is used');
+    await d.dragPad('bone', 'ralph'); await d.waitFor(() => window.__ralph.state.stat.usedBone === 1, 4000);
+    await page.waitForSelector('.rl-pad[data-item=bone].is-empty', { timeout: 2000 }); // the pad empties when the only bone is used
 
     // 5 (contract 1.1). Leave: the module registered a handler; the host's Leave resolves it with effects and stops sounds
     assert.equal(await d.st(() => window.__leaveRegistered), 1, 'registered ctx.onLeave once');
