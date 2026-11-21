@@ -6,16 +6,57 @@
   "verb": "Look inside",
   "skill": "perception",
   "paths": [
-    { "id": "awareness", "division": "Awareness", "tabletopSkill": "Perception" },
-    { "id": "inspection", "division": "Inspection", "tabletopSkill": "Perception" },
-    { "id": "trace", "division": "Trace", "tabletopSkill": "Perception" }
+    {
+      "id": "awareness",
+      "division": "Awareness",
+      "tabletopSkill": "Perception"
+    },
+    {
+      "id": "inspection",
+      "division": "Inspection",
+      "tabletopSkill": "Perception"
+    },
+    {
+      "id": "trace",
+      "division": "Trace",
+      "tabletopSkill": "Perception"
+    }
   ],
-  "where": ["hangar bay crates", "loading bay", "ship hold", "wrecks"],
-  "length_s": [8, 90],
-  "inputs": ["seed", "tier", "points", "quick", "context.crate", "context.items", "context.save"],
-  "outputs": ["success", "grade", "took", "put", "tag", "saw", "effects.items", "effects.world.crates"],
-  "art": ["art/items/"],
-  "audio": ["audio.js"],
-  "status": "draft",
+  "where": [
+    "hangar bay crates",
+    "loading bay",
+    "ship hold",
+    "wrecks"
+  ],
+  "length_s": [
+    8,
+    90
+  ],
+  "inputs": [
+    "seed",
+    "tier",
+    "points",
+    "quick",
+    "context.crate",
+    "context.items",
+    "context.save"
+  ],
+  "outputs": [
+    "success",
+    "grade",
+    "took",
+    "put",
+    "tag",
+    "saw",
+    "effects.items",
+    "effects.world.crates"
+  ],
+  "art": [
+    "art/items/"
+  ],
+  "audio": [
+    "audio.js"
+  ],
+  "status": "fable-passed",
   "contract": "1.1"
 }
