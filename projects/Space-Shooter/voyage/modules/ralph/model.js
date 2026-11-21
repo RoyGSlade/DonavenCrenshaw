@@ -19,8 +19,10 @@ const angDiff = (a, b) => { let d = (b - a) % (Math.PI * 2); if (d > Math.PI) d 
 // ---------- the yard ----------
 export function layout(w, h) {
   w = clamp(num(w, 16), 8, 26); h = clamp(num(h, 10), 8, 20);
-  const kennel = { id: 'kennel', x: 0.4, y: 0.4, w: 3.2, h: 2.75, tall: 1.3 };
-  const scrap = { id: 'scrap', x: w - 3.6, y: 0.4, w: 3.2, h: 2.4, tall: 1.1 };
+  const narrow = w < 11; // a phone yard: smaller kennel and pile so Ralph can pass between them
+  const kennel = { id: 'kennel', x: 0.4, y: 0.4, w: narrow ? 2.7 : 3.2, h: narrow ? 2.3 : 2.75, tall: 1.3 };
+  const sw = narrow ? 2.4 : 3.2;
+  const scrap = { id: 'scrap', x: w - 0.4 - sw, y: 0.4, w: sw, h: narrow ? 2.0 : 2.4, tall: 1.1 };
   const mid = (w - kennel.w - scrap.w) / 2;
   const crates = [
     { id: 'crate1', x: clamp(w * 0.28, 1.2, w - 3), y: h * 0.5, w: 1.3, h: 1.3, tall: 0.9 },
@@ -177,17 +179,24 @@ function opinion(s) { // what Ralph thinks of the throw, judged where it first t
 function mood(s, d) { const r = s.ralph; r.mood = clamp(r.mood + d, 0, 100); }
 
 // ---------- movement ----------
-function nav(s, ax, ay, bx, by) { // the next point to steer to, going round the rectangles
-  const L = s.L, pad = 0.62;
-  for (const r of L.rects) {
-    if (insideRect(r, bx, by, pad) || !segHitsRect(ax, ay, bx, by, r, pad)) continue;
-    const cs = [[r.x - pad - 0.12, r.y - pad - 0.12], [r.x + r.w + pad + 0.12, r.y - pad - 0.12], [r.x - pad - 0.12, r.y + r.h + pad + 0.12], [r.x + r.w + pad + 0.12, r.y + r.h + pad + 0.12]]
-      .filter(([x, y]) => x > 0.4 && y > 0.4 && x < L.w - 0.4 && y < L.h - 0.4 && !L.rects.some((o) => o !== r && insideRect(o, x, y, pad)));
-    let best = null, bd = 1e9;
-    for (const [x, y] of cs) { const d = hyp(x - ax, y - ay) + hyp(bx - x, by - y); if (d < bd && !segHitsRect(ax, ay, x, y, r, pad - 0.05)) { bd = d; best = { x, y }; } }
-    if (best) return best;
+function nav(s, ax, ay, bx, by) { // the next point to steer to: the shortest way round the rectangles, over their corners
+  const L = s.L, pad = 0.62, cpad = pad + 0.12;
+  const near = (r, x, y) => insideRect(r, x, y, pad);
+  const clear = (x0, y0, x1, y1) => !L.rects.some((r) => segHitsRect(x0, y0, x1, y1, r, near(r, x0, y0) || near(r, x1, y1) ? 0.05 : pad));
+  if (clear(ax, ay, bx, by)) return { x: bx, y: by };
+  const nodes = [{ x: ax, y: ay }, { x: bx, y: by }];
+  for (const r of L.rects) for (const [x, y] of [[r.x - cpad, r.y - cpad], [r.x + r.w + cpad, r.y - cpad], [r.x - cpad, r.y + r.h + cpad], [r.x + r.w + cpad, r.y + r.h + cpad]]) {
+    if (x > 0.4 && y > 0.4 && x < L.w - 0.4 && y < L.h - 0.4 && !L.rects.some((o) => near(o, x, y))) nodes.push({ x, y });
   }
-  return { x: bx, y: by };
+  const n = nodes.length, dist = new Array(n).fill(Infinity), prev = new Array(n).fill(-1), done = new Array(n).fill(false); dist[0] = 0;
+  for (let k = 0; k < n; k++) {
+    let u = -1; for (let i = 0; i < n; i++) if (!done[i] && (u < 0 || dist[i] < dist[u])) u = i;
+    if (u < 0 || dist[u] === Infinity) break; done[u] = true; if (u === 1) break;
+    for (let v = 0; v < n; v++) if (!done[v] && clear(nodes[u].x, nodes[u].y, nodes[v].x, nodes[v].y)) { const d = dist[u] + hyp(nodes[u].x - nodes[v].x, nodes[u].y - nodes[v].y); if (d < dist[v]) { dist[v] = d; prev[v] = u; } }
+  }
+  if (prev[1] < 0) return { x: bx, y: by };
+  let v = 1; while (prev[v] > 0) v = prev[v];
+  return nodes[v];
 }
 function moveStep(s, h) {
   const r = s.ralph, L = s.L;
@@ -199,7 +208,7 @@ function moveStep(s, h) {
     if (dist < g.arrive) arrived = true;
     const wp = nav(s, r.x, r.y, g.x, g.y);
     const wd = hyp(wp.x - r.x, wp.y - r.y) || 1;
-    const final = wp.x === g.x && wp.y === g.y;
+    const final = wp.x === g.x && wp.y === g.y; // heading straight for the goal
     const brake = Math.sqrt(2 * 15 * Math.max(0, dist - g.arrive * 0.6));
     const sp = Math.min(g.speed * tiredK, final ? brake : 99);
     dvx = (wp.x - r.x) / wd * sp; dvy = (wp.y - r.y) / wd * sp;
@@ -368,8 +377,8 @@ function ralphThink(s, h) {
     case 'keep': if (r.mt > r.mtMax && !r.rubbing) { giveUp(s, 'bored'); } break;
     case 'findgo': if (arrivedFlag || r.mt > 8) { stopGoal(s); setMode(s, 'dig', 1.5, 'stand'); emit(s, 'dig', {}); faceAt(s, L.scrap.x + 1, L.scrap.y + 1); } break;
     case 'dig': if (r.mt > r.mtMax) { setMode(s, 'findback', 0, 'stand'); r.carry = 'find'; goto_(s, L.hand.x, L.hand.y - 0.9, GAITS.run, 0.6); emit(s, 'unearth', {}); } break;
-    case 'findback': if (arrivedFlag || r.mt > 14) { stopGoal(s); setMode(s, 'showoff', 2.2, 'sit'); faceAt(s, L.hand.x, L.hand.y + 2); s.pocketing = { item: r.find, at: s.t }; s.stat.found++; s.foundItems.push(r.find); r.carry = null; mood(s, 6); emit(s, 'found', { item: r.find }); } break;
-    case 'showoff': if (r.mt > r.mtMax) { r.find = null; enterIdle(s); } break;
+    case 'findback': if (arrivedFlag || r.mt > 14) { stopGoal(s); setMode(s, 'showoff', 2.2, 'sit'); faceAt(s, L.hand.x, L.hand.y + 2); const item = r.find; r.find = null; r.shown = item; s.pocketing = { item, at: s.t }; s.stat.found++; s.foundItems.push(item); r.carry = null; mood(s, 6); emit(s, 'found', { item }); } break;
+    case 'showoff': if (r.mt > r.mtMax) { r.shown = null; enterIdle(s); } break;
     case 'eatgo': if (arrivedFlag || r.mt > 8) { stopGoal(s); setMode(s, 'eat', 2.6, 'stand'); r.eatBeats = 0; faceAt(s, L.bowl.x, L.bowl.y); } break;
     case 'eat': {
       const beat = Math.floor(r.mt / 0.5); if (beat !== r.eatBeats && r.mt < r.mtMax) { r.eatBeats = beat; emit(s, 'crunch', {}); }
