@@ -32,35 +32,49 @@ export function geometry(tall, tallH = 880) {
   const xr = (y) => W - xl(y);
   return { H, y0, y1, y2: H - 40, xl, xr, tall };
 }
-/** Where each slot's pile stands, in box units. Stable for a slot. */
-export function slotBoxes(g, n, seed, fill = 0) {
-  const cols = Math.min(Math.max(n, 1), g.tall ? 3 : 4);
-  const rows = Math.ceil(Math.max(n, 1) / cols);
-  const top = g.y0 + (g.y1 - g.y0) * (g.tall ? 0.3 - 0.14 * fill : 0.2 - 0.05 * fill), bot = g.y1 - 6;
+/** Where the bed's back edge is for a fill (the straw rises up the wall as the crate fills). */
+export const bedBack = (g, ratio) => g.y1 - (g.y1 - g.y0) * (0.34 + 0.52 * ratio);
+/**
+ * Where each slot's cell is, in box units: { x, y, w, h } (centre and size). A crate that is nearly empty keeps a small huddle in
+ * the front corner; as it fills the cells spread to cover the whole bed, front to back. Wider cells go to bigger stacks.
+ */
+export function slotBoxes(g, n, seed, fill = 0, weights = []) {
+  const count = Math.max(n, 1);
+  const cols = Math.min(count, g.tall ? 3 : 4);
+  const rows = Math.ceil(count / cols);
+  const rf = 0.42 + 0.58 * Math.pow(fill, 0.8); // how much of the bed the goods spread over
+  const full = { top: bedBack(g, fill) + 4, bot: g.y1 - 2 };
+  const top = full.bot - (full.bot - full.top) * rf, bot = full.bot;
   const rh = (bot - top) / rows;
+  const left = M.rand01(M.hashSeed(seed, 'corner')) < 0.5; // which corner the huddle sits in
   const out = [];
-  for (let i = 0; i < Math.max(n, 1); i++) {
-    const r = Math.floor(i / cols), c = i % cols;
-    const inRow = Math.min(cols, Math.max(n, 1) - r * cols);
+  for (let r = 0; r < rows; r++) {
+    const idx = []; for (let i = r * cols; i < Math.min(count, (r + 1) * cols); i++) idx.push(i);
     const yc = top + (r + 0.5) * rh;
-    const l = g.xl(yc) + 18, rr = g.xr(yc) - 18;
-    const cw = (rr - l) / cols;
-    const off = (cols - inRow) * cw * 0.5;
-    const size = Math.min(cw * (1.1 + 0.3 * fill), rh * (1.3 + 0.35 * fill));
-    const jx = (M.rand01(M.hashSeed(seed, 'jx', i)) - 0.5) * cw * 0.1, jy = (M.rand01(M.hashSeed(seed, 'jy', i)) - 0.5) * rh * 0.08;
-    out.push({ x: l + off + (c + 0.5) * cw + jx, y: yc + jy, size });
+    const xl = g.xl(yc) + 8, xr = g.xr(yc) - 8;
+    const span = (xr - xl) * rf, x0 = left ? xl : xr - span;
+    const ws = idx.map((i) => Math.max(0.5, weights[i] ?? 1)); const tot = ws.reduce((a, b2) => a + b2, 0);
+    let cx = x0;
+    idx.forEach((i, k) => { const w = (span * ws[k]) / tot; out[i] = { x: cx + w / 2, y: yc, w, h: rh, size: Math.min(w, rh) }; cx += w; });
   }
   return out;
 }
-/** A pile of n copies as a pyramid: [{ x, y, s }] in 0..1 of the cell, bottom row first. */
-export function pyramid(n) {
-  let k = 1; while ((k * (k + 1)) / 2 < n) k++;
-  const s = 0.9 / (1 + (k - 1) * 0.62);
-  const out = []; let row = 0, left = n;
-  while (left > 0) {
-    const w = Math.min(k - row, left);
-    for (let i = 0; i < w; i++) out.push({ x: 0.5 + (i - (w - 1) / 2) * s * 0.66, y: 0.92 - s * 0.5 - row * s * 0.5, s });
-    left -= w; row += 1;
+/** A pile of n copies inside its cell: where each copy goes, in 0..1 of the cell. At a low fill a small huddle in the cell's corner;
+ *  at a high fill the copies cover the whole cell, overlapping. */
+export function pileCopies(n, cw, ch, fill, seed, key) {
+  const e = 0.5 + 0.5 * Math.pow(fill, 0.9);
+  const pw = cw * e, ph = ch * e;
+  const cols = Math.max(1, Math.round(Math.sqrt((n * pw) / ph))), rows = Math.ceil(n / cols);
+  const natural = Math.min(pw / cols, ph / rows), cover = Math.max(pw / cols, ph / rows) * 1.12;
+  const s = Math.min(cw, ch * 1.4, natural + (cover - natural) * Math.pow(fill, 1.5));
+  const ox = (cw - pw) * (1 - fill) * 0.15, oy = ch - ph; // a thin pile sits on the floor of its cell
+  const out = [];
+  for (let i = 0; i < n; i++) {
+    const r = Math.floor(i / cols), c = i % cols; const inRow = Math.min(cols, n - r * cols);
+    const jx = (M.rand01(M.hashSeed(seed, key, 'x', i)) - 0.5) * 0.12 * s, jy = (M.rand01(M.hashSeed(seed, key, 'y', i)) - 0.5) * 0.1 * s;
+    const x = ox + (pw - inRow * (pw / cols)) / 2 + (c + 0.5) * (pw / cols) + jx;
+    const y = oy + (rows - 1 - r + 0.5) * (ph / rows) + jy;
+    out.push({ x: x / cw, y: y / ch, w: s / cw, h: s / ch });
   }
   return out;
 }
@@ -321,14 +335,15 @@ export function mount(stage, state, env) {
   };
 
   let fillNow = 0;
+  const layoutFor = (v) => { const wts = Array.from({ length: Math.max(v.slotCount, 1) }, () => 0.6); for (const s of v.stacks) wts[Math.max(0, s.slot)] = Math.sqrt(Math.max(1, s.shown)); return slotBoxes(g, v.slotCount, state.seed, v.fill.ratio, wts); };
   function stackEl(s, box0) {
     const cell = h('button', { class: `cl-stack${s.status === 'glint' ? ' is-glint' : ''}${s.status === 'found' ? ' is-found' : ''}${s.heaped ? ' is-heaped' : ''}`, type: 'button', 'data-k': s.key, 'data-item': s.id, 'data-qty': s.qty, 'aria-label': `${s.name}: take one. Hold to take all.`,
-      style: { left: `${(box0.x / W) * 100}%`, top: `${(box0.y / g.H) * 100}%`, width: `${(box0.size / W) * 100}%`, height: `${(box0.size / g.H) * 100}%` } });
+      style: { left: `${(box0.x / W) * 100}%`, top: `${(box0.y / g.H) * 100}%`, width: `${(box0.w / W) * 100}%`, height: `${(box0.h / g.H) * 100}%` } });
     const pile = h('span', { class: 'cl-pile' });
     cell.style.setProperty('--fill', String(fillNow));
     cell.append(h('span', { class: 'cl-mound', 'aria-hidden': 'true' }));
-    pyramid(s.shown).forEach((c, i) => {
-      const ic = h('span', { class: 'cl-copy', style: { left: `${c.x * 100}%`, top: `${c.y * 100}%`, width: `${c.s * 100}%`, height: `${c.s * 100}%`, '--i': i, '--rot': `${r1((M.rand01(M.hashSeed(state.seed, s.key, i)) - 0.5) * 14)}deg` } }, iconOf(s));
+    pileCopies(s.shown, box0.w, box0.h, fillNow, state.seed, s.key).forEach((c, i) => {
+      const ic = h('span', { class: 'cl-copy', style: { left: `${c.x * 100}%`, top: `${c.y * 100}%`, width: `${c.w * 100}%`, height: `${c.h * 100}%`, '--i': i, '--rot': `${r1((M.rand01(M.hashSeed(state.seed, s.key, i)) - 0.5) * 14)}deg` } }, iconOf(s));
       pile.append(ic);
     });
     cell.append(pile, h('span', { class: 'cl-ring', 'aria-hidden': 'true' }));
@@ -406,7 +421,7 @@ export function mount(stage, state, env) {
     setStraw(v);
     fillNow = v.fill.ratio; root.style.setProperty('--fill', String(v.fill.ratio)); root.classList.toggle('is-packed', v.fill.ratio >= 0.85);
     // stacks
-    const boxes = slotBoxes(g, v.slotCount, state.seed, v.fill.ratio);
+    const boxes = layoutFor(v);
     stacksLayer.replaceChildren(...v.stacks.map((s) => { const el = stackEl(s, boxes[Math.max(0, s.slot)] || boxes[0]); if (!seen.has(s.key)) { if (seen.size || v.opened) el.classList.add('is-new'); seen.add(s.key); } return el; }));
     strawDents.replaceChildren(...dents.map((d) => h('i', { style: { left: `${(d.x / W) * 100}%`, top: `${(d.y / g.H) * 100}%`, '--s': d.s } })));
     dressLayer.replaceChildren();
@@ -457,7 +472,7 @@ export function mount(stage, state, env) {
     for (const e of events) {
       if (e.sound) sound(e.sound);
       if (e.straw) { sound('straw'); crate.classList.remove('is-shift'); void crate.offsetWidth; crate.classList.add('is-shift'); }
-      if (e.type === 'take') { const r = before.get(e.key); if (r) { const b = boxFor(e.key); dents.push({ x: b?.x ?? 400, y: (b?.y ?? 300) + (b?.size ?? 60) * 0.18, s: 0.9 }); if (dents.length > 7) dents.shift(); } flyTo(srcEl, e); }
+      if (e.type === 'take') { const r = before.get(e.key); if (r) { const b = boxFor(e.key); dents.push({ x: b?.x ?? 400, y: (b?.y ?? 300) + (b?.h ?? 60) * 0.18, s: 0.9 }); if (dents.length > 7) dents.shift(); } flyTo(srcEl, e); }
       if (e.type === 'put') flyFrom(e);
       if (e.type === 'bagfull') shake(tray);
       if (e.type === 'cratefull') shake(crate);
@@ -468,7 +483,7 @@ export function mount(stage, state, env) {
     render();
     if (events.some((e) => e.type === 'chalk')) { chalkEl.classList.remove('is-draw'); void chalkEl.offsetWidth; chalkEl.classList.add('is-draw'); }
   }
-  const boxFor = (key) => { const v = M.view(state); const s = v.stacks.find((x) => x.key === key); const boxes = slotBoxes(g, v.slotCount, state.seed, v.fill.ratio); return s ? boxes[Math.max(0, s.slot)] : null; };
+  const boxFor = (key) => { const v = M.view(state); const s = v.stacks.find((x) => x.key === key); const boxes = layoutFor(v); return s ? boxes[Math.max(0, s.slot)] : null; };
   function shake(el) { el.classList.remove('is-shake'); void el.offsetWidth; el.classList.add('is-shake'); later(() => el.classList.remove('is-shake'), 500); }
   function flyTo(srcEl, e) {
     if (reduced() || !srcEl?.getBoundingClientRect) return;

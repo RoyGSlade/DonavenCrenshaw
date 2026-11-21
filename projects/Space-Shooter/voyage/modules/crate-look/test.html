@@ -70,7 +70,7 @@ const fixtures = (await (await fetch('fixtures.json')).json()).fixtures;
 for (const [k, f] of Object.entries(fixtures)) $('fixture').append(new Option(f.label, k));
 const sounds = [];
 const ctxText = $('ctx');
-function loadFixture(k) { const c = structuredClone(fixtures[k].context); ctxText.value = JSON.stringify(c, null, 2); $('bagcap').value = c.save?.capacity ?? ''; }
+function loadFixture(k) { const c = structuredClone(fixtures[k].context); if (q.has('crate')) { try { Object.assign(c.crate, JSON.parse(q.get('crate'))); } catch { /* a bad override is ignored */ } } ctxText.value = JSON.stringify(c, null, 2); $('bagcap').value = c.save?.capacity ?? ''; }
 $('fixture').addEventListener('change', () => loadFixture($('fixture').value));
 const fx = q.get('fixture') && fixtures[q.get('fixture')] ? q.get('fixture') : Object.keys(fixtures)[0];
 $('fixture').value = fx; loadFixture(fx);

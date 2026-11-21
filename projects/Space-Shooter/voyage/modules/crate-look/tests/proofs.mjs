@@ -23,6 +23,8 @@ const SCENES = [
   { name: '10-quick', q: 'fixture=ore&quick=1', run: async () => {} },
   { name: '11-glint-awareness', q: 'fixture=wrongslip&points=1,0,0&level=9', run: open },
   { name: '12-trace-origin', q: 'fixture=food&points=0,0,1&level=9&seed=2', run: open },
+  { name: '14-nearly-empty', q: 'fixture=ore&crate=' + encodeURIComponent(JSON.stringify({ contents: [{ item: 'ore', qty: 3 }, { item: 'scrap', qty: 2 }], slip: null })), run: open },
+  { name: '15-packed-ore', q: 'fixture=ore&crate=' + encodeURIComponent(JSON.stringify({ contents: [{ item: 'ore', qty: 14 }, { item: 'scrap', qty: 9 }], capacity: 24 })), run: open },
   { name: '13-steel-open', q: 'fixture=wrongslip&tier=-2', run: open },
 ];
 for (const sz of sizesArg.split(',')) {

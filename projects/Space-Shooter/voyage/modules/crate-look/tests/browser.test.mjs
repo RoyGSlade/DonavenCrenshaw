@@ -135,6 +135,38 @@ for (const size of SIZES) {
   });
 }
 
+// "Packed tight" must look packed: the share of the bed the piles cover, front to back, at each fill word, at both sizes.
+for (const size of SIZES) {
+  test(`${size}: the piles cover the bed as the crate fills (packed >= 70%, nearly empty a small huddle)`, async () => {
+    const cases = [
+      { word: 'nearly empty', q: 'fixture=ore&crate=' + encodeURIComponent(JSON.stringify({ contents: [{ item: 'ore', qty: 3 }, { item: 'scrap', qty: 2 }], slip: null })) },
+      { word: 'about half', q: 'fixture=ore' },
+      { word: 'packed tight', q: 'fixture=food' },
+      { word: 'packed tight', q: 'fixture=ore&crate=' + encodeURIComponent(JSON.stringify({ contents: [{ item: 'ore', qty: 14 }, { item: 'scrap', qty: 9 }], capacity: 24 })) },
+    ];
+    const got = [];
+    for (const c of cases) {
+      const s = await session(size, c.q); await s.openLid();
+      const m = await s.page.evaluate(async () => {
+        const { geometry, bedBack } = await import('./view.js');
+        const crate = document.querySelector('.cl-crate').getBoundingClientRect();
+        const H = Math.round((800 * crate.height) / crate.width); const tall = innerWidth < 600 && innerHeight > innerWidth * 1.05;
+        const g = geometry(tall, tall ? H : 560); const ratio = Number(getComputedStyle(document.querySelector('.m-crate-look')).getPropertyValue('--fill'));
+        const sx = crate.width / 800, sy = crate.height / g.H; const rects = [...document.querySelectorAll('.cl-copy')].map((e) => e.getBoundingClientRect());
+        let tot = 0, hit = 0; const back = bedBack(g, ratio);
+        for (let y = back + 3; y < g.y1; y += 5) for (let x = g.xl(y) + 3; x < g.xr(y); x += 5) { tot++; const px = crate.left + x * sx, py = crate.top + y * sy; if (rects.some((r) => px >= r.left && px <= r.right && py >= r.top && py <= r.bottom)) hit++; }
+        const minX = Math.min(...rects.map((r) => r.left)), maxX = Math.max(...rects.map((r) => r.right));
+        return { cover: hit / tot, word: document.querySelector('.cl-fillword').innerText.toLowerCase(), width: (maxX - minX) / crate.width, ratio };
+      });
+      assert.equal(m.word, c.word, `fill word for ${c.q.slice(0, 20)}`); got.push({ ...m }); await s.ctx.close();
+    }
+    console.log(`# coverage ${size}: ` + got.map((m) => `${m.word} ${Math.round(m.cover * 100)}%`).join(', '));
+    for (const m of got) if (m.word === 'packed tight') assert.ok(m.cover >= 0.7, `${size}: packed tight covers ${Math.round(m.cover * 100)}% of the bed`);
+    assert.ok(got[0].cover <= 0.3, `${size}: nearly empty is a small huddle (${Math.round(got[0].cover * 100)}%)`); assert.ok(got[0].width <= 0.62, `${size}: nearly empty huddles in one corner (${Math.round(got[0].width * 100)}% wide)`);
+    assert.ok(got[0].cover < got[1].cover && got[1].cover < got[2].cover, `${size}: coverage grows with the fill: ${got.map((m) => Math.round(m.cover * 100)).join(', ')}`);
+  });
+}
+
 test('desktop keys: Tab and Enter open the lid and take; Escape leaves', async () => {
   const s = await session('desktop', 'fixture=ore'); const { page } = s;
   await page.keyboard.press('Tab'); assert.equal(await page.evaluate(() => document.activeElement?.className.includes('cl-lid')), true, 'the lid is first in the tab order');

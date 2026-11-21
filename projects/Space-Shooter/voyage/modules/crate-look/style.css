@@ -79,7 +79,7 @@
 .m-crate-look .cl-lid-art-host{position:absolute;inset:0;pointer-events:none}
 .m-crate-look .cl-lid-text{position:absolute;left:0;right:0;text-align:center;font:900 calc(var(--u)*30)/1.1 "Stencil Std","Arial Black",Impact,sans-serif;letter-spacing:.09em;text-transform:uppercase;color:#f3e6c4;opacity:.8;transform:perspective(calc(var(--u)*900)) rotateX(48deg);pointer-events:none;padding:0 12%;white-space:nowrap;overflow:hidden;text-overflow:clip}
 .m-crate-look.cl-k-steel .cl-lid-text{color:#eef3f6}.m-crate-look.cl-k-cold .cl-lid-text{color:#2a4552}
-.m-crate-look .cl-lid.is-off{transform:translate(0,0%) perspective(calc(var(--u)*1100)) rotateX(-26deg) rotate(-2deg) scale(.36);pointer-events:none;cursor:default;transition:none}
+.m-crate-look .cl-lid.is-off{transform:translate(0,1%) perspective(calc(var(--u)*1100)) rotateX(-26deg) rotate(-2deg) scale(.29);pointer-events:none;cursor:default;transition:none}
 .m-crate-look .cl-lid.is-off .cl-lid-text,.m-crate-look .cl-lid.is-off .cl-seal{display:none}
 .m-crate-look .cl-lid.is-lifting{animation:cl-lift .78s cubic-bezier(.3,.1,.3,1) forwards;pointer-events:none}
 .m-crate-look .cl-lid.is-landing{animation:cl-land .52s cubic-bezier(.6,0,.9,.5) forwards;pointer-events:none}
@@ -195,8 +195,8 @@
 @keyframes cl-dentin{from{opacity:0;transform:translate(-50%,-50%) scale(.4)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
 @keyframes cl-fog{0%,100%{transform:translate(0,0) scale(1);opacity:.5}50%{transform:translate(calc(var(--i) * 8px - 14px),-34%) scale(1.3);opacity:.95}}
 @keyframes cl-puff{0%{opacity:.9;transform:translate(-50%,0) scale(.3)}100%{opacity:0;transform:translate(-50%,-160%) scale(1.8)}}
-@keyframes cl-lift{0%{transform:translateY(var(--drag,0px))}34%{transform:translateY(-9%) rotate(-1.2deg) scale(1.03)}100%{transform:translate(0,0%) perspective(calc(var(--u)*1100)) rotateX(-26deg) rotate(-2deg) scale(.36)}}
-@keyframes cl-land{0%{transform:translate(0,0%) perspective(calc(var(--u)*1100)) rotateX(-26deg) rotate(-2deg) scale(.36)}60%{transform:translateY(-6%) scale(1.02)}100%{transform:translateY(0) scale(1)}}
+@keyframes cl-lift{0%{transform:translateY(var(--drag,0px))}34%{transform:translateY(-9%) rotate(-1.2deg) scale(1.03)}100%{transform:translate(0,1%) perspective(calc(var(--u)*1100)) rotateX(-26deg) rotate(-2deg) scale(.29)}}
+@keyframes cl-land{0%{transform:translate(0,1%) perspective(calc(var(--u)*1100)) rotateX(-26deg) rotate(-2deg) scale(.29)}60%{transform:translateY(-6%) scale(1.02)}100%{transform:translateY(0) scale(1)}}
 @media (prefers-reduced-motion:reduce){.m-crate-look *{animation-duration:.01s!important;transition-duration:.01s!important}}
 
 .m-crate-look.is-sealed .cl-lid-text{display:none}
