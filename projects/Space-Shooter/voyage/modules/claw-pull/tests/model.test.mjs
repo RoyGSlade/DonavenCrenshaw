@@ -193,12 +193,12 @@ test('the grab: reach 26 from the core, the side has to be cleared, and a refusa
 });
 
 test('reeling: the pad winds the winch from slow (80) to full (200) and stops it when let go', () => {
-  const g = mkSynth({ len: 3000 }); grabMain(g);
+  const g = mkSynth({ len: 3000 }); grabMain(g); g.grip = 1e6;   // a very strong grip, so that only the winch is under test
   assert.equal(g.phase, 'reel');
   run(g, 0.5, { reel: true }); assert.ok(g.v > 30 && g.v <= 95, `after half a second ${g.v}`);
   run(g, 4, { reel: true }); assert.ok(g.v > 195 && g.v <= 200.01, `held ${g.v}`);
   run(g, 1.4, { reel: false }); assert.ok(g.v < 5, `let go ${g.v}`);
-  let maxV = 0; const h = mkSynth({ len: 3000 }); grabMain(h); run(h, 6, (q) => { maxV = Math.max(maxV, q.v); return { reel: true }; }); assert.ok(maxV <= BASE.full + 0.01);
+  let maxV = 0; const h = mkSynth({ len: 3000 }); grabMain(h); h.grip = 1e6; run(h, 6, (q) => { maxV = Math.max(maxV, q.v); return { reel: true }; }); assert.ok(maxV <= BASE.full + 0.01);
 });
 
 test('the grip tires only while the winch turns: a thumb resting costs nothing', () => {

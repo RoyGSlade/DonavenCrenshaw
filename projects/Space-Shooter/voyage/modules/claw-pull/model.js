@@ -406,7 +406,7 @@ function stepReel(g, dt, input) {
       const cost = knockCost(g, Math.max(fast, grind && !fresh ? Math.max(sev, 0.25) : Math.max(sev, 0.1)));
       g.grip -= cost; g.knocks++; g.knocksTrip++; f.knocks++;
       emit(g, { type: 'knock', x: g.head.x - hit.nx * g.head.r, y: g.head.y - hit.ny * g.head.r, nx: hit.nx, ny: hit.ny, sev, cost, grip: g.grip / g.gripNow });
-      say(g, sev > 0.5 ? 'hard knock: the grip loosens' : 'knock: the grip loosens', 'warn', 1.4);
+      say(g, g.knocks === 1 ? 'knock! drag beside the load to nudge it clear' : sev > 0.5 ? 'hard knock: the grip loosens' : 'knock: the grip loosens', 'warn', g.knocks === 1 ? 2.6 : 1.4);
     } else if ((g.scrapeT += dt) > 0.12) { g.scrapeT = 0; emit(g, { type: 'scrape', x: g.head.x - hit.nx * 6, y: g.head.y - hit.ny * 6, nx: hit.nx, ny: hit.ny, loaded: true }); }
   } else g.touchT = 0;
   g.head.r = f.carriedR;

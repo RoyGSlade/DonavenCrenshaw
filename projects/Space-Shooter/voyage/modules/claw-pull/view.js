@@ -173,17 +173,22 @@ export function mountGame(stage, ctx, { result, items, fixtures, quick, onDone }
     ptr.down = true; ptr.id = e.pointerId; ptr.type = e.pointerType || 'mouse';
     const w = toWorld(e.clientX, e.clientY, ptr.type === 'touch' && g.phase === 'in' ? LIFT : 0); ptr.x = w.x; ptr.y = w.y;
     try { canvas.setPointerCapture(e.pointerId); } catch { /* not capturable */ }
-    // a tap on a find, with the claw close, closes the jaws
-    if (g.phase === 'in') {
+    ptr.t0 = performance.now(); ptr.cx = e.clientX; ptr.cy = e.clientY;
+  });
+  canvas.addEventListener('pointermove', (e) => { if (!ptr.down || e.pointerId !== ptr.id) return; const w = toWorld(e.clientX, e.clientY, ptr.type === 'touch' && g.phase === 'in' ? LIFT : 0); ptr.x = w.x; ptr.y = w.y; });
+  const up = (e) => {
+    audio.unlock();
+    if (e.pointerId !== ptr.id) return;
+    // a quick tap on a find, with the claw close, closes the jaws (a press that drags is steering, never a grab)
+    if (e.type === 'pointerup' && g.phase === 'in' && !g.over && performance.now() - (ptr.t0 || 0) < 320 && Math.hypot(e.clientX - ptr.cx, e.clientY - ptr.cy) < 12) {
       const tw = toWorld(e.clientX, e.clientY, 0);
       for (const f of g.finds) {
         if (f.state !== 'rock' && f.state !== 'lying') continue;
-        if (Math.hypot(tw.x - f.x, tw.y - f.y) < f.r + 16 && Math.hypot(g.head.x - f.x, g.head.y - f.y) < f.r + BASE.reach + 40) { grabNow(); ptr.down = false; return; }
+        if (Math.hypot(tw.x - f.x, tw.y - f.y) < f.r + 16 && Math.hypot(g.head.x - f.x, g.head.y - f.y) < f.r + BASE.reach + 40) { grabNow(); break; }
       }
     }
-  });
-  canvas.addEventListener('pointermove', (e) => { if (!ptr.down || e.pointerId !== ptr.id) return; const w = toWorld(e.clientX, e.clientY, ptr.type === 'touch' && g.phase === 'in' ? LIFT : 0); ptr.x = w.x; ptr.y = w.y; });
-  const up = (e) => { audio.unlock(); if (e.pointerId === ptr.id) { ptr.down = false; ptr.id = null; } };
+    ptr.down = false; ptr.id = null;
+  };
   canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', up);
 
   const holdReel = (v) => { reelPad = v; btnB.classList.toggle('is-held', v); };
@@ -219,6 +224,7 @@ export function mountGame(stage, ctx, { result, items, fixtures, quick, onDone }
     if (reduced) n = Math.ceil(n / 3);
     for (let i = 0; i < n; i++) { const a = rnd() * 6.283, v = sp * (0.3 + rnd()); parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - up, life: life * (0.6 + rnd() * 0.7), age: 0, kind, col, s: 0.9 + rnd() * 1.6 }); }
   };
+  let nudgeVec = { x: 0, y: 0 };
   let shake = 0, flash = 0, facing = 0, ang = 0, drumA = 0, lastDraw = 0, raf = 0, frame = 0, tension = 0, grabAnim = 1, landFlare = 0;
   const crackAnim = new Map();
   const jaw = { open: 0.35 };
@@ -513,6 +519,12 @@ export function mountGame(stage, ctx, { result, items, fixtures, quick, onDone }
       else { c2.fillStyle = `rgba(170,185,198,${a * 0.6})`; c2.beginPath(); c2.arc(d.x, d.y, d.s * 0.8 * (0.6 + 0.4 * a), 0, 7); c2.fill(); }
     }
 
+    // the nudge: an arrow from the load toward where you are pushing it
+    if (g.phase === 'reel' && (nudgeVec.x || nudgeVec.y)) {
+      const l = Math.hypot(nudgeVec.x, nudgeVec.y), ux = nudgeVec.x / l, uy = nudgeVec.y / l, len = 14 + 16 * Math.min(1, l), a = Math.atan2(uy, ux);
+      c2.save(); c2.translate(g.head.x, g.head.y); c2.rotate(a); c2.strokeStyle = 'rgba(129,230,223,.9)'; c2.fillStyle = 'rgba(129,230,223,.9)'; c2.lineWidth = 1.6; c2.lineCap = 'round';
+      c2.beginPath(); c2.moveTo(10, 0); c2.lineTo(10 + len, 0); c2.stroke(); c2.beginPath(); c2.moveTo(12 + len, 0); c2.lineTo(5 + len, -4); c2.lineTo(5 + len, 4); c2.closePath(); c2.fill(); c2.restore();
+    }
     // the lamp's own bloom, then the claw on top of it (never smaller than a thumbnail on a small screen)
     c2.save(); c2.globalCompositeOperation = 'lighter';
     const bl = c2.createRadialGradient(lp.x, lp.y, 0, lp.x, lp.y, 40); bl.addColorStop(0, 'rgba(255,214,150,.34)'); bl.addColorStop(1, 'rgba(255,190,120,0)');
@@ -639,7 +651,7 @@ export function mountGame(stage, ctx, { result, items, fixtures, quick, onDone }
           let nx = 0, ny = 0;
           if (ptr.down) { nx = clamp((ptr.x - g.head.x) / 34, -1, 1); ny = clamp((ptr.y - g.head.y) / 34, -1, 1); }
           else if (kb.dx || kb.dy) { const l = Math.hypot(kb.dx, kb.dy) || 1; nx = kb.dx / l; ny = kb.dy / l; }
-          inp = { reel: reelPad, nx, ny };
+          inp = { reel: reelPad, nx, ny }; nudgeVec = { x: nx, y: ny };
         } else if (ptr.down) inp = { x: ptr.x, y: ptr.y, down: true };
         else if (kb.dx || kb.dy) { const l = Math.hypot(kb.dx, kb.dy) || 1; inp = { x: g.head.x + kb.dx / l * 90, y: g.head.y + kb.dy / l * 90, down: true }; }
         else inp = { down: false };

@@ -85,7 +85,7 @@ export async function drive(page, input, phone, { bot = 'perfect', until = () =>
     else if (s.act?.giveUp) { await input.release(); await page.evaluate(() => document.querySelector('.m-claw-pull').__game && 0); break; }
     else if (s.phase === 'in') {
       await input.reel(false, s.pad);
-      if (s.grab) { await input.board(0, 0, false); await page.click('.cp-grab'); }
+      if (s.grab) { await input.board(0, 0, false); await page.click('.cp-grab'); await page.evaluate(() => { const g = document.querySelector('.m-claw-pull').__game; if (g.phase === 'in') window.__bot.refused?.(g.lastGrabFail); }); }   // a hand sees "that side's still buried" and tries another side
       else if (s.sp && s.down) await input.board(s.sp.x, s.sp.y, true); else await input.board(0, 0, false);
     } else if (s.phase === 'reel') {
       if (s.nudge?.on) await input.board(s.nudge.x, s.nudge.y, true); else await input.board(0, 0, false);
