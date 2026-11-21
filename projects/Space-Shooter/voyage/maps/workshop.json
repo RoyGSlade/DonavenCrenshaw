@@ -16,7 +16,11 @@
     "#............#",
     "#............#",
     "#............#",
-    "######..######"
+    "######..######",
+    "     #..#     ",
+    "     #..#     ",
+    "     #..#     ",
+    "     #..#     "
   ],
   "props": [
     {"art":"workbench","at":[1,1],"size":[2,1],"block":"low","station":"pad","interact":{"kind":"station","id":"pad","label":"Chibby's bench: ship upgrades"}},
@@ -45,6 +49,10 @@
   ],
   "spawns": {
     "default": [6.5,8,"up"],
-    "from-hangar": [6.5,8,"up"]
-  }
+    "from-hangar": [6,12,"up"]
+  },
+  "roomBox": [0,0,14,10],
+  "entries": [
+    {"id":"out","door":"out","spawn":"from-hangar"}
+  ]
 }

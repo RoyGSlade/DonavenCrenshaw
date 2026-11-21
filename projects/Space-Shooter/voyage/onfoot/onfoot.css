@@ -82,6 +82,11 @@
 .of-course span{font-weight:400;color:#8fa6b7;letter-spacing:0}
 /* Conversation box. */
 .of-talk{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);z-index:9;width:min(620px,calc(100% - 24px));padding:14px 16px;border:1px solid #2a4152;border-left:3px solid #81e6df;border-radius:6px;background:#0d1826f5;box-shadow:0 12px 40px #000a;display:grid;grid-template-columns:1fr auto;gap:4px 14px;align-items:end}
+.of-talk{cursor:pointer}
+/* The talk box lives in the floor's layer, under the bag (z 6): while it is up the bag steps aside (as it does for the datapad), so it never covers Next. */
+body:has(.of-talk) .dp-bag{opacity:0;pointer-events:none}
+/* A stand-in talk (the coffee machine) sits over the story's dialogue box: never under it, or its buttons cannot be reached. */
+body:has(.of-talk) #hg-dialogue{display:none}
 .of-talk-name{grid-column:1/-1;font:700 11px Consolas,monospace;letter-spacing:.12em;text-transform:uppercase}
 .of-talk-text{margin:0;color:#eaf4f5;font:15px/1.55 Inter,"Segoe UI",sans-serif}
 /* Touch controls. */
@@ -125,3 +130,63 @@
 .of-mark.is-icon{padding:3px;gap:0;opacity:.82}
 @media (prefers-reduced-motion:reduce){.of-mark > span{transition:opacity .12s linear}}
 .of-prompt.is-below::after{bottom:auto;top:-7px;transform:translateX(-50%) rotate(225deg)}
+
+/* live stealth (a map with a `stealth` block): the gait and who-is-watching readout */
+.of-stealth{position:absolute;left:50%;transform:translateX(-50%);top:62px;z-index:4;max-width:min(330px,calc(100% - 24px));padding:6px 9px 7px;border-left:3px solid #ffd166;background:#0d1826d9;color:#eaf4f5;pointer-events:none;font:600 11px Consolas,monospace}
+.of-st-row{display:flex;align-items:center;gap:7px}
+.of-st-title{letter-spacing:.16em;color:#b5c8d5}
+.of-st-gait,.of-st-state{padding:1px 7px;border-radius:9px;font:800 10px Consolas,monospace;letter-spacing:.08em;background:#17324a;color:#cfe8f0}
+.of-st-gait[data-gait=sneak]{background:#1c4a44;color:#9ff3e6}
+.of-st-gait[data-gait=run]{background:#5a2d1c;color:#ffb98a}
+.of-st-state[data-state=hidden]{background:#1c3a24;color:#a8f0a8}
+.of-st-state[data-state=seen],.of-st-state[data-state=suspicious]{background:#5a4412;color:#ffe27a}
+.of-st-state[data-state=alarm]{background:#6a1d18;color:#ff9a90}
+.of-st-help{margin:5px 0 0;font:500 10.5px/1.35 Inter,"Segoe UI",sans-serif;color:#9fb4c4}
+@media (max-width:620px){.of-stealth{top:128px;max-width:calc(100% - 16px)}.of-st-help{display:none}}
+
+/* Playtest 1: a status chip (Wired) at the floor's top left, under the header. */
+.hg-status{position:absolute;left:12px;top:58px;z-index:5;margin:0;padding:4px 10px;border:1px solid #ffb23a99;border-radius:999px;background:#0d1826dd;color:#ffd98a;font:700 12px/1.2 Inter,"Segoe UI",sans-serif;letter-spacing:.04em;pointer-events:none}
+
+/* Playtest 1: the crew board close-up, drawn in code: cork, pins, marker crosses, scuffs, a coffee ring, scrap notes. */
+.of-board{position:fixed;inset:0;z-index:30;display:grid;grid-template-rows:1fr auto;justify-items:center;align-content:center;gap:10px;padding:56px 14px 18px;background:#05080df2;overflow:auto}
+.of-board-face{position:relative;width:min(860px,100%);aspect-ratio:16/10;min-height:300px;border:12px solid #2e2a26;border-image:linear-gradient(135deg,#5a4a3a,#2a241e 40%,#4a3c30) 1;border-radius:6px;overflow:hidden;display:grid;place-items:center;box-shadow:inset 0 0 50px #000a,0 18px 50px #000b;
+  background-color:#a97c4f;
+  background-image:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' seed='4'/><feColorMatrix values='0 0 0 0 .25  0 0 0 0 .15  0 0 0 0 .05  0 0 0 1.1 -.25'/></filter><rect width='220' height='220' filter='url(%23n)'/></svg>"),
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='m'><feTurbulence type='turbulence' baseFrequency='.05' numOctaves='2' seed='9'/><feColorMatrix values='0 0 0 0 .95  0 0 0 0 .8  0 0 0 0 .55  0 0 0 .9 -.3'/></filter><rect width='180' height='180' filter='url(%23m)'/></svg>"),
+    radial-gradient(ellipse at 28% 18%,#c0905a,#9a6f44 55%,#7a5532);}
+.of-board-title{position:absolute;top:10px;left:0;right:0;margin:0;text-align:center;font:800 13px Consolas,monospace;letter-spacing:.24em;color:#3a2814;text-shadow:0 1px 0 #e0bd8a88}
+.of-board-plates{list-style:none;margin:0;padding:0;width:62%;display:grid;gap:9px;position:relative;z-index:2}
+.of-board-plate{position:relative;padding:8px 16px 7px 26px;background:linear-gradient(#efe2c4,#e3d3ad);color:#241a10;border-radius:2px;font:700 clamp(13px,2.4vw,19px) Consolas,monospace;letter-spacing:.06em;box-shadow:0 3px 5px #0009;transform:rotate(var(--r,0deg))}
+.of-board-plate:nth-child(odd){--r:-.6deg}.of-board-plate:nth-child(even){--r:.5deg}
+.of-board-plate.is-pencil{background:linear-gradient(#e6dcc4,#d9ceb4);color:#6a6e72;font-weight:400;font-style:italic;text-shadow:0 0 1px #6a6e7266}
+.of-board-x{position:absolute;inset:-3px -4px;pointer-events:none}.of-board-x svg{width:100%;height:100%;display:block}
+.of-board-pin{position:absolute;left:8px;top:50%;width:11px;height:11px;margin-top:-6px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff9,transparent 45%),var(--pin,#e0463a);box-shadow:2px 3px 3px #0009;z-index:1}
+/* Notes tucked into the corners and behind the plates: tilted scraps with scribble you can see before you read them. */
+.of-board-note{position:absolute;z-index:1;width:54px;height:42px;min-height:0;padding:0;border:0;border-radius:2px;background:linear-gradient(135deg,#e4d6b0,#cdbb8f);box-shadow:1px 3px 4px #0008;opacity:.82;transform:rotate(var(--tilt,-5deg));cursor:pointer;display:grid;place-items:center}
+.of-board-note svg{width:78%;height:70%;margin-top:4px}
+.of-board-note .of-board-pin{left:50%;top:3px;margin:0 0 0 -5px;width:9px;height:9px}
+.of-board-note:hover,.of-board-note:focus-visible,.of-board-note.is-read{opacity:1}
+.of-board-note.is-read{background:linear-gradient(135deg,#f3e8c6,#e0d0a2) !important}
+.of-board-ring{position:absolute;right:11%;bottom:9%;width:74px;height:70px;border-radius:50%;border:5px solid #4a2c1088;border-right-color:#4a2c1033;border-top-width:4px;transform:rotate(-20deg);filter:blur(.5px);pointer-events:none;z-index:0}
+.of-board-scuff{position:absolute;pointer-events:none;background:linear-gradient(100deg,transparent,#2a180a40 45%,transparent);height:5px;border-radius:3px;z-index:0}
+.of-board-scuff-a{left:7%;top:34%;width:26%;transform:rotate(-14deg)}
+.of-board-scuff-b{right:5%;top:58%;width:30%;transform:rotate(9deg);height:4px}
+.of-board-hint,.of-board-count{margin:0;color:#8fa6b7;font:13px Inter,"Segoe UI",sans-serif;text-align:center}
+.of-board-count{display:flex;gap:10px;align-items:center;justify-content:center}
+.of-board-pips{display:inline-flex;gap:5px}.of-board-pips i{width:9px;height:9px;border-radius:50%;border:1px solid #ffb23a99}.of-board-pips i.is-on{background:#ffb23a}
+.of-board-reading{margin:0;max-width:min(620px,100%);padding:12px 16px;border:1px solid #2a4152;border-left:3px solid #ffb23a;border-radius:6px;background:#0d1826;color:#eaf4f5;font:15px/1.5 Inter,"Segoe UI",sans-serif;display:grid;gap:2px}
+.of-board-reading b{font:700 11px Consolas,monospace;letter-spacing:.12em;text-transform:uppercase;color:#ffb23a}
+@media (max-width:520px){.of-board{padding-top:64px}.of-board-face{aspect-ratio:auto;min-height:360px}.of-board-plates{width:80%}.of-board-note{width:60px;height:46px}}
+body:has(.of-board) .dp-bag,body:has(.of-board) .dp-tracker,body:has(.of-board) .dp-pause-btn{opacity:0;pointer-events:none}
+body:has(.of-board) .of-toast,body:has(.of-board) .vy-toast{display:none}
+.of-board-note:hover,.of-board-note:focus,.of-board-note:active{background:linear-gradient(135deg,#f3e8c6,#e0d0a2) !important;color:inherit;border:0 !important;outline:0;box-shadow:1px 3px 4px #0008 !important}
+.of-board-note:focus-visible{outline:2px solid #ffb23a;outline-offset:2px}
+/* Opening track A: a status is a word and a draining bar (the HUD rule), and the classic links are shut while the opening runs. */
+.hg-status{display:flex;flex-direction:column;gap:5px;border-radius:12px;padding:6px 12px}
+.hg-st{display:flex;align-items:center;gap:8px}
+.hg-st b{font:800 12px Inter,"Segoe UI",sans-serif;letter-spacing:.06em}
+.hg-st-bar{display:block;width:84px;height:7px;border-radius:4px;background:#04080e;border:1px solid #ffb23a66;overflow:hidden}
+.hg-st-bar i{display:block;height:100%;background:linear-gradient(90deg,#b97a16,#ffc455);transition:width .5s linear}
+.hg-st[data-status=steady] .hg-st-bar{border-color:#7ee0a166}.hg-st[data-status=steady] .hg-st-bar i{background:linear-gradient(90deg,#2f9a63,#7ee0a1)}
+#vy-back[data-sealed]{opacity:.4;cursor:not-allowed}

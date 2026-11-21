@@ -1,0 +1,15 @@
+{
+  "id": "_sample-screen",
+  "version": "1.0.0",
+  "kind": "screen",
+  "title": "Sample gun feed",
+  "verb": "Switch a gun to auto",
+  "skill": "shooting",
+  "where": ["bridge console"],
+  "length_s": [5, 30],
+  "inputs": ["context.guns"],
+  "outputs": ["success"],
+  "art": [],
+  "status": "draft",
+  "contract": 1
+}

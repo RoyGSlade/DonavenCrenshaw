@@ -4,7 +4,7 @@
 // now are handed in), and every change returns a new character.
 import {
   NAME_MAX, STAT_DIE, STAT_BASELINE, START_POINTS, STATS, STAT_IDS, TREES, SKILLS, DEATH, PORTRAITS, COLORS, CHECK,
-  ROLL_SKILLS, ROLL_SKILL_IDS, LEVEL_MIN, LEVEL_MAX, CHECK_SKILL,
+  ROLL_SKILLS, ROLL_SKILL_IDS, LEVEL_MIN, LEVEL_MAX, CHECK_SKILL, SKILL_CATEGORY_IDS, POINT_MAX,
 } from './data.js';
 
 const SKILL = new Map(SKILLS.map((s) => [s.id, s]));
@@ -63,6 +63,44 @@ export function cleanLevels(input) {
   return out;
 }
 
+/**
+ * Skill category points: { skill: { category: 1..9 } }, known ids only. A skill never holds
+ * more in all than its level (P1: one per level); the last category is trimmed first.
+ * Anything else is dropped. Old saves have none: every point is unspent.
+ */
+export function cleanPoints(input, levels = {}) {
+  const out = {};
+  if (!input || typeof input !== 'object' || Array.isArray(input)) return out;
+  for (const skill of ROLL_SKILL_IDS) {
+    const row = input[skill];
+    if (!row || typeof row !== 'object' || Array.isArray(row)) continue;
+    let room = Number.isFinite(levels[skill]) ? levels[skill] : LEVEL_MIN;
+    const clean = {};
+    for (const cat of SKILL_CATEGORY_IDS[skill]) {
+      const n = Number.isInteger(row[cat]) ? Math.min(POINT_MAX, Math.max(0, row[cat])) : 0;
+      const take = Math.min(n, room);
+      if (take > 0) { clean[cat] = take; room -= take; }
+    }
+    if (Object.keys(clean).length) out[skill] = clean;
+  }
+  return out;
+}
+
+/** Total XP per roll skill (the hub's number): whole, 1..1e9, zero entries dropped. */
+export function cleanXp(input) {
+  const out = {};
+  if (!input || typeof input !== 'object' || Array.isArray(input)) return out;
+  for (const id of ROLL_SKILL_IDS) if (Number.isFinite(input[id]) && input[id] >= 1) out[id] = Math.min(1e9, Math.trunc(input[id]));
+  return out;
+}
+
+/** The last scan { levels, xp, points, at } a death goes back to; null when there is none. */
+export function cleanScan(input) {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) return null;
+  const levels = cleanLevels(input.levels);
+  return { levels, xp: cleanXp(input.xp), points: cleanPoints(input.points, levels), at: int(input.at, 0, Number.MAX_SAFE_INTEGER, 0) };
+}
+
 /** A new captain with rolled stats. Returns null when the name is empty. */
 export function createCharacter({ name, look } = {}, rng = Math.random, now = Date.now) {
   const clean = cleanName(name);
@@ -73,6 +111,9 @@ export function createCharacter({ name, look } = {}, rng = Math.random, now = Da
     look: cleanLook(look),
     stats: rollStats(rng),
     levels: startLevels(),
+    points: {},
+    xp: {},
+    scan: { levels: startLevels(), xp: {}, points: {}, at: Math.floor(now()) }, // scanned at the start: a first death goes back there
     earned: START_POINTS,
     permanent: 0,
     skills: {},
@@ -338,6 +379,24 @@ export function rollMissingStats(c, rng = Math.random) {
 
 // --- Cleaning ------------------------------------------------------------------
 
+/**
+ * Local-mode bookkeeping for the XP caps (server mode keeps these on the hub):
+ * { log: { skill: [[at, xp], ...] } (claims in the last hour), ups: { skill: [at, ...] } (level-ups
+ * in the last hour), runs: [runId, ...] (the last claims, so a run pays once) }.
+ */
+export function cleanTrack(input) {
+  const out = { log: {}, ups: {}, runs: [] };
+  const rows = (v) => (v && typeof v === 'object' && !Array.isArray(v) ? v : {});
+  for (const id of ROLL_SKILL_IDS) {
+    const log = Array.isArray(rows(input.log)[id]) ? rows(input.log)[id].filter((e) => Array.isArray(e) && Number.isFinite(e[0]) && Number.isFinite(e[1])).slice(-32).map((e) => [Math.trunc(e[0]), Math.trunc(e[1])]) : [];
+    if (log.length) out.log[id] = log;
+    const ups = Array.isArray(rows(input.ups)[id]) ? rows(input.ups)[id].filter(Number.isFinite).slice(-9).map(Math.trunc) : [];
+    if (ups.length) out.ups[id] = ups;
+  }
+  out.runs = Array.isArray(input.runs) ? input.runs.filter((r) => typeof r === 'string' && /^[A-Za-z0-9-]{6,64}$/.test(r)).slice(-64) : [];
+  return out;
+}
+
 /** A character from a save or the network, repaired; null when it can't be. */
 export function cleanCharacter(input) {
   if (!input || typeof input !== 'object') return null;
@@ -363,6 +422,10 @@ export function cleanCharacter(input) {
     look: cleanLook(input.look),
     stats,
     levels: cleanLevels(input.levels),
+    points: cleanPoints(input.points, cleanLevels(input.levels)),
+    xp: cleanXp(input.xp),
+    scan: cleanScan(input.scan),
+    ...(input.xpTrack && typeof input.xpTrack === 'object' && !Array.isArray(input.xpTrack) ? { xpTrack: cleanTrack(input.xpTrack) } : {}),
     earned: int(input.earned, 0, 9999, 0),
     permanent: int(input.permanent, 0, 9999, 0),
     skills,

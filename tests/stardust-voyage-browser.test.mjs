@@ -32,14 +32,17 @@ test('new hangar: closed by default; captain, credits, upgrade and skill survive
   await page.keyboard.press('Escape');
   await page.locator('#vy-dev-open').click();
   for (let i = 0; i < 3; i++) await page.locator('#vy-dev-job').click();
-  await page.keyboard.press('KeyK');
-  await page.locator('[data-skill="pilot"]').click();
-  await page.locator('[data-learn="pilot"]').click();
+  await page.keyboard.press('KeyL');
+  await page.locator('[data-skill-tile="piloting"]').click();
+  await page.locator('.sk-cat[data-cat-index="0"] .sk-notch[data-n="0"]').click();
+  await page.locator('[data-lock]').click();
+  await page.waitForFunction(() => JSON.parse(localStorage.getItem('stardust.voyage.v1')).character.points?.piloting?.handling === 1);
+  await page.keyboard.press('Escape');
   await openStation(page, 'pad');
   await page.locator('[data-upgrade="hull"]').click();
   const before = await page.evaluate(() => JSON.parse(localStorage.getItem('stardust.voyage.v1')));
   assert.equal(before.upgrades.hull, 1);
-  assert.equal(before.character.skills.pilot, 1);
+  assert.deepEqual(before.character.points.piloting, { handling: 1 });
   assert.equal(before.character.earned, 5, '2 to start + 3 from jobs');
   assert.ok(before.rep.hask >= 30, 'three jobs at 10 rep, more with a charming captain');
 
@@ -56,6 +59,7 @@ test('new hangar: closed by default; captain, credits, upgrade and skill survive
   const dead = await page.evaluate(() => JSON.parse(localStorage.getItem('stardust.voyage.v1')).character);
   assert.equal(dead.earned, 3, 'half of 5 lost, rounded down');
   assert.deepEqual(dead.skills, {});
+  assert.deepEqual(dead.points, {}, 'the point you locked after the last scan goes with the death');
   assert.equal(dead.deaths, 1);
   // Round 2: the new stats are rolled on the dice (the licence opens in roll-only mode).
   await page.locator('#hg-licence:not([hidden])').waitFor();

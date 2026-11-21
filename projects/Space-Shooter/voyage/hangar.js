@@ -5,12 +5,13 @@
 // decides which station is open; this file only draws. Words on the station
 // panels come from hangarData.js. Every bit of text reaches the page through
 // textContent. Reads and writes go through the store.
-import { UPGRADES, REP_MAX, SHIP_STAT_NAMES, TOP_TIER, UNLOCK_NAMES, ACTIVITIES, DEATH, SKILLS } from './data.js';
-import { unspentPoints, spentPoints, check } from './character.js';
+import { UPGRADES, REP_MAX, SHIP_STAT_NAMES, TOP_TIER, UNLOCK_NAMES, ACTIVITIES, DEATH, ROLL_SKILLS } from './data.js';
+import { check } from './character.js';
+import { unspentOnCharacter, SKILL_UI } from './skills/model.js';
 import { money, giverName, itemName, discount } from './economy.js';
 import { voyageShipStats, canUpgrade, visualTier } from './upgrades.js';
 import { BASICS_DATA } from './datapad/data.js';
-import { napQuote, takeNap, canPick, canUnpick, fillText } from './datapad/nap.js';
+import { napQuote, takeNap, canTake, canKeep, cleanPlan, spentTotal, fillText } from './datapad/nap.js';
 import { iconFor, HANGAR_ART } from './ui/assets.js';
 import { CAST_NAMES } from './hangarStations.js';
 import { launches } from './hangarApi.js';
@@ -62,7 +63,7 @@ function holdLine(save, ids) {
 export function createHangar({ panes, store, ship, crew, toast, dev = false, onTier = () => {}, tutorialOn = () => false, openLicence = () => {}, hooks = {}, bus = null, reducedMotion = () => false, openPad = () => {}, onNap = () => {} }) {
   let pets = 0;
   let napping = false;
-  const napPlan = {}; // { skillId: ranks to take back } picked at the bunk
+  const napPlan = {}; // { skill: { path: points to take back } } picked at the bunk
   let lastWhy = '';
 
   function say(events) {
@@ -207,25 +208,34 @@ export function createHangar({ panes, store, ship, crew, toast, dev = false, onT
           return;
         }
         const tutorial = tutorialOn(save);
-        // Drop picks the save no longer allows (a skill learned or lost since).
-        for (const id of Object.keys(napPlan)) if (!(c.skills?.[id] > 0)) delete napPlan[id]; else napPlan[id] = Math.min(napPlan[id], c.skills[id]);
-        const q = napQuote(save, tutorial, napPlan);
+        // Drop picks the save no longer holds (a nap, a death or a hub answer since).
+        const kept = cleanPlan(c, napPlan);
+        for (const k of Object.keys(napPlan)) delete napPlan[k];
+        Object.assign(napPlan, kept);
+        const hubOn = Boolean(economy?.on);
+        const q = napQuote(save, tutorial, napPlan, { hub: hubOn });
         const redraw = () => renderStation(station, state, pane, view);
         let why = '';
-        const spent = SKILLS.filter((sk) => (c.skills?.[sk.id] || 0) > 0);
-        const rows = spent.map((sk) => {
-          const rank = c.skills[sk.id];
-          const back = napPlan[sk.id] || 0;
-          const pick = canPick(c, napPlan, sk.id);
-          const keep = canUnpick(c, napPlan, sk.id);
-          const pips = el('span', { class: 'vy-nap-pips', 'aria-hidden': 'true' }, Array.from({ length: sk.max }, (_, n) => el('i', { class: n < rank - back ? 'is-kept' : n < rank ? 'is-back' : '' })));
-          return el('li', { class: `vy-nap-row${back ? ' is-picked' : ''}`, 'data-nap-skill': sk.id }, [
-            el('span', { class: 'vy-nap-name' }, [el('b', { text: sk.name }), el('small', { text: back ? `${rank - back} of ${rank} kept, ${back} back` : `Rank ${rank} of ${sk.max}` })]),
-            pips,
-            el('button', { type: 'button', class: 'vy-nap-btn', 'data-keep': sk.id, disabled: !back || napping, 'aria-label': fillText(NAP.keepOne, { skill: sk.name }), text: '+', on: { click: () => { if (keep.ok) { napPlan[sk.id] -= 1; if (!napPlan[sk.id]) delete napPlan[sk.id]; redraw(); } else { lastWhy = keep.reason; redraw(); } } } }),
-            el('button', { type: 'button', class: 'vy-nap-btn', 'data-take': sk.id, disabled: back >= rank || napping, 'aria-label': fillText(NAP.pickOne, { skill: sk.name }), text: '−', on: { click: () => { if (pick.ok) { napPlan[sk.id] = back + 1; lastWhy = ''; redraw(); } else { lastWhy = pick.reason; redraw(); } } } }),
-          ]);
-        });
+        const NAME = Object.fromEntries(ROLL_SKILLS.map((s2) => [s2.id, s2.name]));
+        const rows = [];
+        for (const [skill, row] of Object.entries(c.points || {})) {
+          SKILL_UI[skill]?.cats.forEach((cat) => {
+            const have = row[cat.id] || 0;
+            if (!have) return;
+            const back = napPlan[skill]?.[cat.id] || 0;
+            const pick = canTake(c, napPlan, skill, cat.id);
+            const keep = canKeep(napPlan, skill, cat.id);
+            const vars = { skill: NAME[skill] || skill, path: cat.name };
+            const pips = el('span', { class: 'vy-nap-pips', 'aria-hidden': 'true' }, Array.from({ length: have }, (_, n) => el('i', { class: n < have - back ? 'is-kept' : 'is-back' })));
+            rows.push(el('li', { class: `vy-nap-row${back ? ' is-picked' : ''}`, 'data-nap-skill': `${skill}.${cat.id}` }, [
+              el('span', { class: 'vy-nap-name' }, [el('b', { text: `${vars.skill}: ${cat.name}` }), el('small', { text: back ? `${have - back} of ${have} kept, ${back} back` : `${have} point${have === 1 ? '' : 's'}` })]),
+              pips,
+              el('button', { type: 'button', class: 'vy-nap-btn', 'data-keep': `${skill}.${cat.id}`, disabled: !keep.ok || napping, 'aria-label': fillText(NAP.keepOne, vars), text: '+', on: { click: () => { napPlan[skill][cat.id] -= 1; if (!napPlan[skill][cat.id]) delete napPlan[skill][cat.id]; if (!Object.keys(napPlan[skill]).length) delete napPlan[skill]; redraw(); } } }),
+              el('button', { type: 'button', class: 'vy-nap-btn', 'data-take': `${skill}.${cat.id}`, disabled: !pick.ok || napping, 'aria-label': fillText(NAP.pickOne, vars), text: '−', on: { click: () => { napPlan[skill] = { ...napPlan[skill], [cat.id]: back + 1 }; redraw(); } } }),
+            ]));
+          });
+        }
+        const spent = rows;
         why = lastWhy;
         lastWhy = '';
         const nap = el('button', {
@@ -236,7 +246,7 @@ export function createHangar({ panes, store, ship, crew, toast, dev = false, onT
             napping = true;
             onNap(true);
             const plan = { ...napPlan };
-            const r = await takeNap({ store, tutorial: tutorialOn(store.get()), plan, reducedMotion });
+            const r = await takeNap({ store, tutorial: tutorialOn(store.get()), plan, hub: hubOn, reducedMotion });
             napping = false;
             onNap(false);
             if (r.ok) { for (const k of Object.keys(napPlan)) delete napPlan[k]; bus?.emit('hangar:respec', { points: r.points, nap: true, cost: r.cost }); toast(r.text); } else toast(r.reason);
@@ -246,8 +256,8 @@ export function createHangar({ panes, store, ship, crew, toast, dev = false, onT
         fill(pane,
           hero(station, NAP.title, NAP.body),
           el('div', { class: 'vy-points' }, [
-            el('span', {}, ['Spent ', el('b', { 'data-points': 'spent', text: String(spentPoints(c)) })]),
-            el('span', {}, ['Unspent ', el('b', { text: String(unspentPoints(c)) })]),
+            el('span', {}, ['Spent ', el('b', { 'data-points': 'spent', text: String(spentTotal(c)) })]),
+            el('span', {}, ['Unspent ', el('b', { text: String(unspentOnCharacter(c)) })]),
             el('span', {}, ['Credits ', el('b', { text: money(save.money) })]),
           ]),
           spent.length ? el('h3', { text: NAP.pickTitle }) : null,
@@ -256,7 +266,7 @@ export function createHangar({ panes, store, ship, crew, toast, dev = false, onT
           el('p', { class: q.ok ? 'vy-note' : 'vy-note vy-why', 'data-nap-quote': '', text: q.ok ? q.line : q.reason }),
           el('div', { class: 'vy-nap-actions' }, [
             nap,
-            el('button', { type: 'button', 'data-open-pad': 'captain', text: NAP.openPad, on: { click: () => openPad('captain') } }),
+            el('button', { type: 'button', 'data-open-pad': 'skills', text: NAP.openPad, on: { click: () => openPad('skills') } }),
           ]),
         );
         return;

@@ -19,6 +19,7 @@ export const ICONS = Object.freeze({
   look: 'M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z',
   fly: 'M12 2l3 7 5 3-5 1-3 7-3-7-5-1 5-3z',
   locked: 'M6 11h12v10H6zM8 11V8a4 4 0 0 1 8 0v3M12 15v2',
+  skills: 'M5 20v-5M10 20v-9M15 20V7M20 20V3M3 20h18',
   captain: 'M12 4a4 4 0 1 0 0 8 4 4 0 0 0 0-8zM4 21c0-4 4-6 8-6s8 2 8 6',
   pack: 'M6 8h12v13H6zM9 8V5h6v3M6 13h12M11 13v2h2v-2',
   map: 'M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2zM9 4v14M15 6v14',

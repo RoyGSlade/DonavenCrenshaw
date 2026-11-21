@@ -52,3 +52,16 @@ export function markerFor(quest, run) {
 }
 
 export const questById = (id) => QUESTS[id] || null;
+
+/**
+ * Is the scene in progress waiting on this person here? True when the step the run is on has its marker on `who` in `mapId`
+ * (the captain after a "Later", say): talking to them must pick the scene back up, never fall through to a stock line.
+ */
+export function waitingOn(save, who, mapId) {
+  const id = activeScene(save);
+  if (!id) return false;
+  const quest = QUESTS[id];
+  const run = save.quests.active[id];
+  const m = markerFor(quest, run);
+  return Boolean(m && m.npc === who && m.map === mapId && quest.nodes[run.node]?.type === 'dialogue');
+}

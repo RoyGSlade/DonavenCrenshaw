@@ -67,6 +67,20 @@ export const ROLL_SKILLS = Object.freeze([
   { id: 'navigation', name: 'Navigation', blurb: 'Scanning, noticing and finding the way.' },
 ]);
 export const ROLL_SKILL_IDS = Object.freeze(ROLL_SKILLS.map((s) => s.id));
+// The three categories of each roll skill, where level-up points go (one point per level,
+// at most POINT_MAX in a category). minigames/picker.js says what each one does; a test
+// keeps the two lists equal, and the Hub keeps the same list (stardustLedger CATEGORIES).
+export const POINT_MAX = 9;
+export const SKILL_CATEGORY_IDS = Object.freeze({
+  shooting: Object.freeze(['reload', 'ammo', 'spray']),
+  piloting: Object.freeze(['handling', 'boost', 'landing']),
+  stealth: Object.freeze(['quiet', 'range', 'decay']),
+  hacking: Object.freeze(['time', 'size', 'retries']),
+  repair: Object.freeze(['time', 'size', 'quality']),
+  crafting: Object.freeze(['quality', 'speed', 'material']),
+  social: Object.freeze(['persuade', 'intimidate', 'haggle']),
+  navigation: Object.freeze(['time', 'fuel', 'warning']),
+});
 
 // AI crew by tier (design doc Section 9, Donaven Nov 16: low skill, mistakes,
 // paid per job). The page's defaults; with the home server on, the hub's
@@ -304,6 +318,9 @@ export const ITEMS = Object.freeze([
   { id: 'nav-chip', name: 'Nav chip', kind: 'part', max: 9 },
   { id: 'railgun', name: 'Railgun', kind: 'part', max: 9 },
   { id: 'cargo-crate', name: 'Cargo crate', kind: 'cargo', max: 99 },
+  // Playtest 1: the mess hall's coffee urn. Carried, drunk from the bag: the Wired status (status.js).
+  { id: 'coffee', name: 'Cup of coffee', kind: 'consumable', max: 9 },
+  { id: 'tea', name: 'Cup of tea', kind: 'consumable', max: 9 },
   // Proposed by quests (INTERFACES.md 1.4): a tool you have to procure for the
   // railgun's build route at Garrity's yard.
   { id: 'mining-drill', name: 'Mining drill', kind: 'key', max: 1 },

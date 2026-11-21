@@ -299,8 +299,14 @@ export function drawContained(ctx, img, p, pad = 0, piece = null) {
  * opts: { size, t, moving, stride, frames, hit, look, lift }
  */
 export function drawBody(ctx, x, y, angle, img, { size = 44, t = 0, moving = false, stride = 0, hit = 0, tint = null, label = null, dog = false, lift = null } = {}) {
-  const sway = moving ? Math.sin(stride * Math.PI) * 0.07 : Math.sin(t * 1.6) * 0.015;
-  const bob = moving ? 1 + Math.abs(Math.sin(stride * Math.PI)) * 0.035 : 1 + Math.sin(t * 2.1) * 0.01;
+  // Playtest 1 ("feels like floating, no foot or body movement"): the sprite is one still picture, so the steps come from code.
+  // `stride` counts steps (it grows with distance walked, so the cycle is timed to speed): the body rocks from foot to foot,
+  // rises a little on each step (a hop up, a plant down), squashes on the plant, and the shadow pulses with it. Idle: upright and still but for a slow breath.
+  const phase = stride * Math.PI, step = Math.abs(Math.sin(phase));
+  const sway = moving ? Math.sin(phase) * 0.12 : Math.sin(t * 1.6) * 0.012;
+  const bob = moving ? 1 + step * 0.05 : 1 + Math.sin(t * 2.1) * 0.008;
+  const hop = moving ? step * Math.max(2, size * 0.07) : 0; // screen px the body rises on a step
+  const squash = moving ? 1 - (1 - step) * 0.035 : 1;
   ctx.save();
   ctx.translate(x, y);
   if (activeLook) {
@@ -308,14 +314,16 @@ export function drawBody(ctx, x, y, angle, img, { size = 44, t = 0, moving = fal
     const pl = activeLook.people;
     size *= pl.scale ?? 1;
     img = litCopy(img, lift || pl.lift); // a person's own `lift` (cast data) replaces the room's people boost
-    // The soft shadow moves with the body and falls away from the nearest lamp.
+    // The soft shadow moves with the body and falls away from the nearest lamp; it shrinks when the body is up and lands on the plant.
     const [sx, sy] = shadowOffset(activeLights, x, y, size * 0.15);
-    const g = ctx.createRadialGradient(sx, sy, 0, sx, sy, size * 0.44);
-    g.addColorStop(0, `rgba(0,0,0,${pl.shadowAlpha ?? 0.5})`); g.addColorStop(0.55, `rgba(0,0,0,${(pl.shadowAlpha ?? 0.5) * 0.5})`); g.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(sx, sy, size * 0.44, 0, TAU); ctx.fill();
-  } else { ctx.fillStyle = '#0007'; ctx.beginPath(); ctx.ellipse(3, 5, size * 0.36, size * 0.3, 0, 0, TAU); ctx.fill(); }
+    const sr = size * 0.44 * (1 - (moving ? step * 0.12 : 0));
+    const g = ctx.createRadialGradient(sx, sy, 0, sx, sy, sr);
+    g.addColorStop(0, `rgba(0,0,0,${(pl.shadowAlpha ?? 0.5) * (moving ? 1.1 - step * 0.25 : 1)})`); g.addColorStop(0.55, `rgba(0,0,0,${(pl.shadowAlpha ?? 0.5) * 0.5})`); g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(sx, sy, sr, 0, TAU); ctx.fill();
+  } else { ctx.fillStyle = '#0007'; ctx.beginPath(); ctx.ellipse(3, 5, size * 0.36 * (1 - (moving ? step * 0.1 : 0)), size * 0.3, 0, 0, TAU); ctx.fill(); }
+  ctx.translate(0, -hop);
   ctx.rotate(angle + Math.PI / 2 + sway);
-  ctx.scale(bob, bob);
+  ctx.scale(bob * squash, bob / squash);
   if (img) {
     const k = size / Math.max(img.width, img.height);
     ctx.drawImage(img, -img.width * k / 2, -img.height * k / 2, img.width * k, img.height * k);

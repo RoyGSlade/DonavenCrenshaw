@@ -1,0 +1,443 @@
+{
+ "id": "workbench-yard",
+ "name": "Patrol yard (stealth test)",
+ "kind": "interior",
+ "tile": 48,
+ "floor": "deck",
+ "ambient": "ship-hum",
+ "grid": [
+  "############################",
+  "#............#.............#",
+  "#............#.............#",
+  "#............#.............#",
+  "#............#.............#",
+  "#............#.............#",
+  "#..........................#",
+  "#..........................#",
+  "#.................####.....#",
+  "#..........................#",
+  "#..........................#",
+  "#............#.............#",
+  "#............#.............#",
+  "#............#.............#",
+  "#............#.............#",
+  "#............#.............#",
+  "###..#######################"
+ ],
+ "look": {
+  "set": "freighter",
+  "accents": {
+   "holo": "#2fe0c0",
+   "warm": "#ffb867",
+   "spar": "#ff6b5a"
+  },
+  "decals": [
+   {
+    "kind": "text",
+    "at": [
+     24.5,
+     2.45
+    ],
+    "text": "VAULT",
+    "size": 0.3,
+    "color": "holo",
+    "alpha": 0.8
+   },
+   {
+    "kind": "text",
+    "at": [
+     3.5,
+     15.45
+    ],
+    "text": "BAY",
+    "size": 0.3,
+    "color": "warm",
+    "alpha": 0.8
+   },
+   {
+    "kind": "text",
+    "at": [
+     20,
+     13.4
+    ],
+    "text": "PATROL YARD",
+    "size": 0.34,
+    "color": "spar",
+    "alpha": 0.35
+   },
+   {
+    "kind": "hazard",
+    "at": [
+     13,
+     6
+    ],
+    "size": [
+     0.25,
+     5
+    ]
+   }
+  ],
+  "lights": [
+   {
+    "kind": "lamp",
+    "at": [
+     6,
+     4
+    ],
+    "r": 4.0,
+    "color": "cool",
+    "strength": 0.22
+   },
+   {
+    "kind": "lamp",
+    "at": [
+     19,
+     3
+    ],
+    "r": 4.0,
+    "color": "cool",
+    "strength": 0.22
+   },
+   {
+    "kind": "lamp",
+    "at": [
+     6,
+     12
+    ],
+    "r": 4.0,
+    "color": "warm",
+    "strength": 0.22
+   },
+   {
+    "kind": "lamp",
+    "at": [
+     20,
+     11
+    ],
+    "r": 4.0,
+    "color": "warm",
+    "strength": 0.22
+   },
+   {
+    "kind": "lamp",
+    "at": [
+     13,
+     8
+    ],
+    "r": 4.0,
+    "color": "spar",
+    "strength": 0.25
+   },
+   {
+    "kind": "lamp",
+    "at": [
+     25,
+     2
+    ],
+    "r": 3.5,
+    "color": "holo",
+    "strength": 0.3
+   }
+  ],
+  "mounts": [
+   {
+    "art": "wall-sign-hazard",
+    "at": [
+     12,
+     0.25
+    ],
+    "size": [
+     2,
+     0.5
+    ],
+    "face": true
+   }
+  ],
+  "clutter": [
+   {
+    "art": "traffic-cone",
+    "at": [
+     13.5,
+     5.6
+    ],
+    "size": [
+     0.5,
+     0.5
+    ]
+   }
+  ]
+ },
+ "props": [
+  {
+   "art": "cargo-crate",
+   "at": [
+    5,
+    13
+   ],
+   "size": [
+    1,
+    1
+   ],
+   "block": "low"
+  },
+  {
+   "art": "cargo-crate",
+   "at": [
+    6,
+    13
+   ],
+   "size": [
+    1,
+    1
+   ],
+   "block": "low"
+  },
+  {
+   "art": "cargo-crate",
+   "at": [
+    9,
+    12
+   ],
+   "size": [
+    1,
+    1
+   ],
+   "block": "low"
+  },
+  {
+   "art": "cargo-crate",
+   "at": [
+    10,
+    6
+   ],
+   "size": [
+    1,
+    1
+   ],
+   "block": "low"
+  },
+  {
+   "art": "cargo-crate",
+   "at": [
+    4,
+    7
+   ],
+   "size": [
+    1,
+    1
+   ],
+   "block": "low"
+  },
+  {
+   "art": "cargo-crate",
+   "at": [
+    2,
+    10
+   ],
+   "size": [
+    1,
+    1
+   ],
+   "block": "low"
+  },
+  {
+   "art": "cargo-crate",
+   "at": [
+    16,
+    11
+   ],
+   "size": [
+    1,
+    1
+   ],
+   "block": "low"
+  },
+  {
+   "art": "cargo-crate",
+   "at": [
+    17,
+    11
+   ],
+   "size": [
+    1,
+    1
+   ],
+   "block": "low"
+  },
+  {
+   "art": "cargo-crate",
+   "at": [
+    21,
+    12
+   ],
+   "size": [
+    1,
+    1
+   ],
+   "block": "low"
+  },
+  {
+   "art": "cargo-crate",
+   "at": [
+    24,
+    10
+   ],
+   "size": [
+    1,
+    1
+   ],
+   "block": "low"
+  },
+  {
+   "art": "cargo-crate",
+   "at": [
+    16,
+    5
+   ],
+   "size": [
+    1,
+    1
+   ],
+   "block": "low"
+  },
+  {
+   "art": "cargo-crate",
+   "at": [
+    22,
+    5
+   ],
+   "size": [
+    1,
+    1
+   ],
+   "block": "low"
+  },
+  {
+   "art": "cargo-crate",
+   "at": [
+    25,
+    8
+   ],
+   "size": [
+    1,
+    1
+   ],
+   "block": "low"
+  },
+  {
+   "art": "cargo-container-closed",
+   "at": [
+    8,
+    3
+   ],
+   "size": [
+    2,
+    1
+   ],
+   "block": "low"
+  },
+  {
+   "art": "holo-terminal",
+   "at": [
+    24,
+    1
+   ],
+   "size": [
+    2,
+    1
+   ],
+   "block": "low",
+   "name": "wb-yard-goal",
+   "interact": {
+    "kind": "station",
+    "id": "wb-yard-goal",
+    "label": "Vault console: open it unseen"
+   }
+  }
+ ],
+ "npcs": [],
+ "doors": [
+  {
+   "id": "to-bay",
+   "at": [
+    3,
+    16
+   ],
+   "size": [
+    2,
+    1
+   ],
+   "to": "workbench",
+   "arrive": "from-yard",
+   "label": "Back to the bay"
+  }
+ ],
+ "spawns": {
+  "default": [
+   3,
+   15,
+   "up"
+  ],
+  "from-bay": [
+   3,
+   15,
+   "up"
+  ]
+ },
+ "zones": [],
+ "stealth": {
+  "guards": [
+   {
+    "id": "g1",
+    "path": [
+     [
+      2,
+      9
+     ],
+     [
+      11,
+      9
+     ]
+    ],
+    "mode": "pingpong",
+    "pause": 1.6,
+    "face": "right"
+   },
+   {
+    "id": "g2",
+    "path": [
+     [
+      15,
+      8
+     ]
+    ],
+    "face": "left",
+    "sweep": 0.7
+   },
+   {
+    "id": "g3",
+    "path": [
+     [
+      17,
+      3
+     ],
+     [
+      25,
+      3
+     ],
+     [
+      25,
+      6
+     ],
+     [
+      17,
+      6
+     ]
+    ],
+    "mode": "loop",
+    "pause": 1.0,
+    "face": "right"
+   }
+  ]
+ }
+}

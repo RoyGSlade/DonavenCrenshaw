@@ -119,6 +119,7 @@ function makeCtx(run, save, out, crew = null) {
     crew,
     ship: shipFor(save),
     rng: roller(run),
+    out,
     log: line => pushLog(run, line),
     grant(reward) {
       const result = grant(ctx.save, reward);
@@ -159,6 +160,14 @@ export function resolveReward(reward, run) {
   return out;
 }
 
+// A haggle's price is the pay: the number on the card is the number in the wallet. The result picks the ending (and its rep and
+// flags); run.pay.money, set when the haggle ends, replaces the ending's fixed credits. No price (a stubbed result) keeps the data's.
+const HAGGLE_PAY_MAX = 40;
+function endReward(node, run) {
+  const reward = resolveReward(node.reward, run);
+  return reward && run.pay && node.type === 'end' && reward.money > 0 ? { ...reward, money: run.pay.money } : reward;
+}
+
 function resolveEnemy(spec, ctx) {
   if (typeof spec === 'string' && spec.startsWith('$')) return structuredClone(lookup(ctx.run.rolls, spec.slice(1)));
   return roll(spec, ctx.rng);
@@ -195,7 +204,7 @@ function enter(quest, nodeId, ctx, now, depth = 0) {
     return enter(quest, hit ? hit.to : node.else, ctx, now, depth + 1);
   }
   if (node.type === 'end') {
-    if (node.reward) ctx.grant(resolveReward(node.reward, run));
+    if (node.reward) ctx.grant(endReward(node, run));
     // death: true marks an ending the captain does not walk away from (S25). The
     // page calls core's store.die() when it sees it; the engine only reports it.
     run.ended = { result: node.result, outcome: node.outcome || nodeId, title: node.title || '', followUp: node.followUp || null, node: nodeId, death: Boolean(node.death) };
@@ -310,7 +319,9 @@ export function view(quest, run, save) {
     location: run.location,
     locationName: SECTORS[run.location]?.name || run.location,
     log: run.log.slice(-8),
-    ended: run.ended ? { ...run.ended, text: fill(node.text || '', s), reward: resolveReward(node.reward, run) || null } : null,
+    minigame: run.minigame ? { ...run.minigame } : null,
+    assist: run.assist ? { ...run.assist, attempt: { ...run.assist.attempt } } : null,
+    ended: run.ended ? { ...run.ended, text: fill(node.text || '', s), reward: endReward(node, run) || null } : null,
   };
   if (node.type === 'dialogue') {
     base.choices = (node.choices || []).map((raw, index) => {
@@ -324,6 +335,7 @@ export function view(quest, run, save) {
         locked: reasons.length > 0,
         reasons: reasons.length && choice.lockedHint ? [choice.lockedHint] : reasons,
         hidden: reasons.length > 0 && Boolean(choice.hideLocked),
+        minigame: choice.minigame ? { kind: choice.minigame.kind, title: choice.minigame.title || null, who: choice.minigame.who || null, what: choice.minigame.what || null, lock: choice.minigame.lock ?? null, open: choice.minigame.open ?? null, best: choice.minigame.best ?? null } : null,
         check: choice.check ? { stat: choice.check.stat, skill: checkSkillOf(choice.check), name: checkName(choice.check), dc: choice.check.dc, text: checkText(choice.check, save.character), roll: checkBonusText(save.character, choice.check), chance: checkChance(save.character, choice.check) } : null,
         cost: choice.cost || null,
       };
@@ -341,9 +353,11 @@ const CREW_PUZZLE = Object.freeze({ cipher: 'guess', riddle: 'answer' });
 
 // Pick dialogue choice `index`; its check (if any) rolls for `roller` (the
 // captain, or the crew taking it). Returns an error string or null.
-function choose(quest, run, ctx, node, index, roller, now) {
+function choose(quest, run, ctx, node, index, roller, now, assist = false) {
   const raw = node.choices?.[index];
   if (!raw) return 'No such option.';
+  if (run.minigame) return 'Finish the minigame first.';
+  run.assist = null; // opening B: picking another option abandons an approach in progress (its roll is spent)
   const choice = { ...choiceFor(raw, run, ctx.save) };
   if (choice.cost) choice.cost = resolveReward(choice.cost, run);
   const reasons = reqReasons(choice.requires, run, ctx.save);
@@ -359,8 +373,63 @@ function choose(quest, run, ctx, node, index, roller, now) {
     const who = roller === ctx.save.character ? '' : `${roller.name || 'Your crew'} takes it. `;
     pushLog(run, `${who}${checkName(choice.check)}: ${rollText(r)}, ${r.pass ? 'pass' : 'fail'}.`);
     run.lastCheck = r;
+    if (choice.minigame && roller === ctx.save.character) {
+      // The captain plays it: the d20 only sets the minigame up (tier from total, dc and natural); the page sends { type: 'minigame', branch } when it ends.
+      run.minigame = { node: run.node, index, kind: choice.minigame.kind, attempt: { total: r.total, dc: r.dc, natural: r.natural } };
+      return null;
+    }
+    // Opening B: an approach. The same roll (same draw, same maths) only sets how much help and time the player gets; what they do
+    // decides the branch, and the page sends { type: 'assist', branch } when it ends (slice/assist.js says what a roll is worth).
+    if (assist && !choice.minigame && roller === ctx.save.character) {
+      run.assist = { node: run.node, index, attempt: { total: r.total, dc: r.dc, natural: r.natural } };
+      return null;
+    }
     target = r.pass ? choice.check.pass : choice.check.fail;
   }
+  enter(quest, target, ctx, now);
+  return null;
+}
+
+// The page hands back how a minigame ended: branch 'win' | 'mid' | 'lose' (sceneHook.branchOf) and the XP it earned.
+const WORLD_KEYS = Object.freeze({ broken: 'boolean', flooding: 'boolean', offline: 'string', system: 'string', systemName: 'string', security: 'string', terminal: 'string', port: 'string', section: 'string' });
+/** Only the known plain facts of a mini-game's world result survive (the page is not trusted with arbitrary data). */
+function cleanWorld(w) {
+  if (!w || typeof w !== 'object') return null;
+  const out = {};
+  for (const [k, type] of Object.entries(WORLD_KEYS)) if (typeof w[k] === type) out[k] = type === 'string' ? w[k].slice(0, 40) : w[k];
+  return Object.keys(out).length ? out : null;
+}
+function finishMinigame(quest, run, ctx, node, action, now) {
+  const pending = run.minigame;
+  if (!pending || pending.node !== run.node) return 'No minigame to finish.';
+  const choice = node.choices?.[pending.index];
+  const target = { win: choice?.check?.pass, lose: choice?.check?.fail, mid: choice?.minigame?.mid }[action.branch];
+  if (!target) return 'That minigame has no such ending.';
+  run.minigame = null;
+  run.steps++;
+  const xp = Math.max(0, Math.min(10, Math.trunc(action.xp) || 0));
+  if (xp > 0) ctx.out.events.push({ type: 'skill-xp', skill: action.skill, xp });
+  if (choice.minigame.kind === 'haggle' && Number.isFinite(action.price)) run.pay = { money: Math.max(0, Math.min(HAGGLE_PAY_MAX, Math.round(action.price))) };
+  // The world result the v2 games already build (a lost coolant line and the valve you shut; a hack that alerted security and locked the terminal):
+  // kept as plain facts on the run and handed to the page as an event. It changes no scene text and no ending: only the branch picks the node.
+  const world = cleanWorld(action.world);
+  if (world) { run.world = { ...(run.world || {}), [choice.minigame.kind]: world }; ctx.out.events.push({ type: 'minigame-world', kind: choice.minigame.kind, world }); }
+  pushLog(run, `${choice.minigame.title || choice.minigame.kind}: ${action.branch}.`);
+  enter(quest, target, ctx, now);
+  return null;
+}
+
+// The page hands back how an approach ended: branch 'pass' (done in time), 'fail' (time ran out) or 'abandon' (they picked another option).
+function finishAssist(quest, run, ctx, node, action, now) {
+  const pending = run.assist;
+  if (!pending || pending.node !== run.node) return 'No approach to finish.';
+  if (action.branch === 'abandon') { run.assist = null; return null; }
+  const choice = node.choices?.[pending.index];
+  const target = { pass: choice?.check?.pass, fail: choice?.check?.fail }[action.branch];
+  if (!target) return 'That approach has no such ending.';
+  run.assist = null;
+  run.steps++;
+  pushLog(run, `${choice.label}: ${action.branch === 'pass' ? 'done in time' : 'ran out of time'}.`);
   enter(quest, target, ctx, now);
   return null;
 }
@@ -403,7 +472,13 @@ function actInner(quest, runIn, saveIn, action, { now = 0, crew = null } = {}) {
   const node = quest.nodes[run.node];
   const fail = error => ({ run: runIn, save: saveIn, events: [], error });
 
-  if (action?.type === 'crew') {
+  if (action?.type === 'minigame') {
+    const error = finishMinigame(quest, run, ctx, node, action, now);
+    if (error) return fail(error);
+  } else if (action?.type === 'assist') {
+    const error = finishAssist(quest, run, ctx, node, action, now);
+    if (error) return fail(error);
+  } else if (action?.type === 'crew') {
     const error = actAsCrew(quest, run, ctx, node, action, now);
     if (error) return fail(error);
   } else if (run.part) {
@@ -413,7 +488,7 @@ function actInner(quest, runIn, saveIn, action, { now = 0, crew = null } = {}) {
     if (run.part.state.done) finishPart(quest, node, ctx, now);
   } else if (node.type === 'dialogue') {
     if (action?.type !== 'choose') return fail('Choose an option.');
-    const error = choose(quest, run, ctx, node, action.index, ctx.save.character, now);
+    const error = choose(quest, run, ctx, node, action.index, ctx.save.character, now, action.assist === true);
     if (error) return fail(error);
   } else return fail('Nothing to do here.');
 

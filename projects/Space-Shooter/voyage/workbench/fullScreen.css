@@ -1,0 +1,55 @@
+/* The shared full-screen game overlay (fullScreen.js). Its own stylesheet, loaded by fullScreen.js, so a scene's mini-game (no workbench on the page) gets the same screen. */
+.wb-full{position:fixed;inset:0;z-index:60;display:flex;flex-direction:column;gap:6px;padding:max(8px,env(safe-area-inset-top)) 12px max(8px,env(safe-area-inset-bottom));background:radial-gradient(120% 90% at 50% 0%,#0d1b2b,#04080e);color:#eaf4f5;overflow:hidden}
+.wb-ftop{display:flex;justify-content:space-between;align-items:center;gap:10px;max-width:1100px;width:100%;margin:0 auto}
+.wb-fhead{min-width:0}
+.wb-feyebrow{margin:0;font:700 11px Consolas,monospace;letter-spacing:.16em;color:#ffad72}
+.wb-ftitle{margin:0;font:700 18px Inter,sans-serif}
+.wb-fleave{margin:0;min-height:44px;min-width:88px}
+.wb-fnote{margin:0 auto;max-width:1100px;width:100%;font-size:12px}
+.wb-fstage{flex:1 1 0;min-height:0;display:flex;flex-direction:column;max-width:1100px;width:100%;margin:0 auto}
+@media (max-width:700px){.wb-fnote{display:none}.wb-ftitle{font-size:15px}}
+
+/* Every station's game on the shared full-screen helper (integration lane). The game panel fills the stage; boards stay readable at their own
+   aspect and centre; long panels scroll inside the stage rather than the page. Games that draw their own top bar (gallery, Perihelion) are
+   mounted bare: their panel is the whole screen, so the fixed positioning they use alone is dropped here. */
+.wb-fstage>.rp-panel{flex:1 1 0;min-height:0;max-width:960px;width:100%;margin:0 auto;display:flex;flex-direction:column;gap:8px;overflow:auto;overscroll-behavior:contain;background:#0b141fcc;border-radius:10px}
+.wb-fstage>.rp-panel>.rp-eyebrow{margin:0}
+.wb-fstage>.rp-panel>.rp-help:not(.rp-status){display:none}
+.wb-full-bare .wb-fstage{max-width:none;padding:0}
+.wb-full-bare .wb-fstage>.rp-panel.ga-full,.wb-full-bare .wb-fstage>.rp-panel.pr-full{position:relative;inset:auto;z-index:auto;max-width:none;overflow:hidden;background:none;border-radius:0}
+.wb-full-bare{padding:0}
+/* Panels with no board to stretch (locks, haggle, persuade, intimidate) sit centred at their own height instead of leaving an empty frame. */
+.wb-fstage>.rp-panel:is(.hk-panel,.hg-panel,.pc-panel,.it-panel,.mh-panel,.pl-panel,.st-panel,.cf-panel){flex:0 1 auto;margin:auto}
+/* Perihelion hides its own Leave on a phone (it has Quit); on the shared full-screen helper every game keeps a Leave. */
+.wb-full .pr-leave{display:inline-flex}
+/* A tall game inside the full-screen stage scrolls inside its panel; its parts keep their height rather than squashing into each other. */
+.wb-fstage>.rp-panel:not(.cc-panel):not(.pr-full):not(.ga-full)>*{flex-shrink:0}
+
+/* ONE LAYOUT RULE FOR EVERY OVERLAY ON A PHONE (integration round 2).
+   The HUD sits at the top (the helper's bar, then the game's own meters); the frame starts right under it and fills the screen down to the
+   bottom edge, so there is no dead band above or below it; the play area floats in the free height between the HUD and the actions;
+   the action buttons are pinned to the bottom of the frame, where the thumb is. */
+@media (max-width:700px){
+  .wb-fstage>.rp-panel,.wb-fstage>.rp-panel:is(.hk-panel,.hg-panel,.pc-panel,.it-panel,.mh-panel,.pl-panel,.st-panel,.cf-panel){flex:1 1 0;margin:0;max-width:none;width:100%}
+  /* Round 3: the play block (the game's HUD row, the play element, the instruction line) is ONE unit, centred in the free height; only the
+     action row pins to the bottom. Order does it without touching any game: eyebrow first, the play block, the instruction, the actions,
+     then small print. Two auto margins (under the nameplate, under the instruction) share the spare height equally. */
+  .wb-fstage>.rp-panel>.rp-eyebrow{order:-1;margin-bottom:auto}
+  .wb-fstage>.rp-panel>.rp-status{order:8;margin-bottom:auto}
+  .wb-fstage>.rp-panel>:is(.rp-foot,.mh-actions,.it-row,.pl-controls,.hk-btn,.nv-back,.hg-take){order:9}
+  .wb-fstage>.rp-panel>.rp-par{order:10}
+  .wb-fstage>.rp-panel>:is(.rp-foot,.hk-btn){margin-bottom:6px}
+  .wb-fstage>.rp-panel>:is(.rp-foot,.mh-actions,.it-row,.pl-controls){margin-top:6px}
+  /* a game whose instruction is its last line has no actions: the block still centres */
+  /* Haggle: the gauge takes the spare height (about 2.6x its old height), the price scale stays under it. */
+  .hg-panel .hg-track{height:168px;margin-bottom:0}.hg-panel .hg-scale{margin-bottom:10px}
+  /* Persuade: all eight cards on one screen, no scrolling inside the frame. Short quote, small type, two columns by four rows. */
+  .pc-panel .pc-tells{margin:0 0 4px}.pc-panel .pc-tells li{padding:5px 8px;font-size:13px}
+  .pc-panel .pc-lead{margin:2px 0}
+  .pc-panel .pc-hand{grid-template-columns:1fr 1fr;grid-auto-rows:minmax(0,1fr);gap:6px;flex:1 1 0;min-height:0;margin:4px 0 6px}
+  .pc-panel .pc-card,.mg-skin .pc-panel .pc-card{min-height:0;padding:2px 4px;gap:2px;justify-content:center;border-width:9px 12px 9px 12px;border-image-width:9px 12px 9px 12px}
+  .pc-panel .pc-card b{font-size:11px}
+  .pc-panel .pc-card span{font-size:16px;line-height:1.2;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+  .pc-panel .pc-card small{min-height:0;font-size:10px}.pc-panel .pc-card small:empty{display:none}
+  .pc-panel .pc-card .pc-named{display:none}
+}

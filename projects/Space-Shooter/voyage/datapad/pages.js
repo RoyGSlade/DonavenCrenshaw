@@ -1,16 +1,13 @@
 // The datapad's pages (round 3, basics lane): Captain (stats with what each
-// does, the skill tree, spend points anywhere), Pack (credits, gear worn and
+// does; the skills have their own page, skills/skillsPage.js), Pack (credits, gear worn and
 // carried, equip here), Jobs (what you are doing, step by step; who is hiring;
 // what you have done) and Map (a plan of where you are). Draw only; every
 // write goes through the store. All words through textContent.
-import { STATS, ITEMS, GIVERS, REP_MAX, MAX_REP_REWARDS, UNLOCK_NAMES, CURRENCY, TREES, SKILLS, ROLL_SKILLS } from '../data.js';
-import { unspentPoints, spentPoints, canLearn, rollLevel } from '../character.js';
-import { HANGAR_DATA } from '../hangarData.js';
+import { STATS, ITEMS, GIVERS, REP_MAX, MAX_REP_REWARDS, UNLOCK_NAMES, CURRENCY, ROLL_SKILLS } from '../data.js';
+import { rollLevel } from '../character.js';
 import { money, itemName, repBand } from '../economy.js';
 import { statCard, HOW_CHECKS_WORK } from '../story/stats.js';
-import { createSkillTree } from '../ui/skillTree.js';
 import { iconFor, castPortrait, itemArt } from '../ui/assets.js';
-import { RESPEC } from '../hangarSkills.js';
 import { GEAR, SLOTS, gearOf, equip, unequip, loadout } from '../shops/shop.js';
 import { QUESTS } from '../quests/data/quests/index.js';
 import { QUEST_GIVERS } from '../quests/data/givers.js';
@@ -22,57 +19,12 @@ import { BASICS_DATA } from './data.js';
 import { icon, stepMark, ITEM_ICONS } from './icons.js';
 import { lookFor } from './marks.js';
 
-export function el(tag, props = {}, ...kids) {
-  const node = document.createElement(tag);
-  for (const [k, v] of Object.entries(props)) {
-    if (v == null || v === false) continue;
-    if (k === 'text') node.textContent = v;
-    else if (k === 'class') node.className = v;
-    else if (k === 'style') node.setAttribute('style', v);
-    else if (k === 'on') for (const [e, f] of Object.entries(v)) node.addEventListener(e, f);
-    else if (k === 'dataset') Object.assign(node.dataset, v);
-    else node.setAttribute(k, v === true ? '' : v);
-  }
-  for (const c of kids.flat()) if (c != null && c !== false) node.append(c);
-  return node;
-}
-const fill = (node, ...kids) => node.replaceChildren(...kids.flat().filter((k) => k != null && k !== false));
+export { el, fill } from './dom.js';
+import { el, fill } from './dom.js';
 const initials = (name) => String(name || '?').split(' ').filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join('') || '?';
-const NAP = BASICS_DATA.nap;
-const fillText = (text, vars) => String(text).replace(/\{(\w+)\}/g, (_, k) => (vars[k] ?? ''));
 
-/** "Want points back? Nap at your bunk and pick which: 10 credits a point." (free in the tutorial) */
-export function napLine(save, tutorial) {
-  const cost = tutorial && RESPEC.freeInTutorial ? NAP.padFree : `${money(RESPEC.feePerPoint)} a point`;
-  return fillText(NAP.padLine, { cost });
-}
-
-// --- Captain: who you are, what your stats do, and the whole skill tree --------------
-export function createCaptainPage({ root, store, toast, tutorialOn, reducedMotion, bus, openLicence }) {
-  const side = el('div', { class: 'dp-cap-side' });
-  const treeHost = el('div', { class: 'dp-cap-tree ui-tree-host' });
-  const detail = el('div', { class: 'dp-cap-detail' });
-  const head = el('div', { class: 'dp-cap-points' });
-  const tree = createSkillTree({
-    root: treeHost, detailRoot: detail, headRoot: head, store, toast, tutorialOn, reducedMotion,
-    respec: false, respecNote: (save) => napLine(save, tutorialOn(save)),
-    fit: true,
-    onLearned: (id) => bus?.emit('hangar:learned', { skill: id }),
-  });
-
-  // Phones: every skill by name under the tree (the tree there shows nodes and ranks only, so
-  // nothing is clipped or overlaps at 390); tap one to see it in the skill card.
-  function skillList(c) {
-    return el('div', { class: 'dp-skill-list' }, TREES.map((t) => el('section', { class: 'dp-skill-tree', style: `--tree:${HANGAR_DATA.skillTree.colours[t.id] || '#81e6df'}` },
-      el('h4', { text: t.name }),
-      el('div', { class: 'dp-skill-chips' }, SKILLS.filter((sk) => sk.trees[0] === t.id).map((sk) => {
-        const rank = c.skills?.[sk.id] || 0;
-        const can = canLearn(c, sk.id).ok;
-        return el('button', { type: 'button', class: `dp-skill-chip${rank ? ' is-learned' : ''}${can ? ' is-ready' : ''}${tree.selected === sk.id ? ' is-selected' : ''}`, 'data-skill-chip': sk.id,
-          on: { click: () => { tree.select(sk.id); render(); } } }, el('span', { text: sk.name }), el('b', { text: `${rank}/${sk.max}` }));
-      })))));
-  }
-
+// --- Captain: who you are and what your stats do (the skills have their own page now) -----------
+export function createCaptainPage({ root, store, openLicence }) {
   function render(save = store.get()) {
     const c = save.character;
     if (!c) {
@@ -84,42 +36,32 @@ export function createCaptainPage({ root, store, toast, tutorialOn, reducedMotio
       return;
     }
     const face = castPortrait(c.look.portrait);
-    fill(side,
-      el('div', { class: 'vy-captain dp-cap-who' },
-        face ? el('img', { class: 'vy-badge vy-badge-face', src: face, alt: '', style: `border-color:${c.look.color}` })
-          : el('div', { class: 'vy-badge', style: `background:${c.look.color}`, 'aria-hidden': 'true', text: initials(c.name) }),
-        el('div', {}, el('p', { class: 'ui-eyebrow', text: `CAPTAIN${c.deaths ? ` · ${c.deaths} DEATH${c.deaths === 1 ? '' : 'S'}` : ''}` }), el('h2', { text: c.name }))),
-      el('h3', { class: 'dp-h', text: 'STATS · ROLLED ONCE' }),
-      el('ul', { class: 'dp-stats' }, STATS.map((s) => {
-        const card = statCard(s.id, c.stats[s.id]);
-        const art = iconFor(s.id);
-        return el('li', { class: 'dp-stat', dataset: { stat: s.id } },
-          art ? el('img', { src: art, alt: '' }) : el('i'),
-          el('div', {}, el('strong', { text: s.name }), el('small', { text: card?.line || s.blurb }), card ? el('small', { class: 'dp-odds', text: card.bonus ? `${card.bonus} on attempts · ${card.odds.replace(/^Your odds[^:]*: /, '')}` : card.now }) : null),
-          el('b', { 'data-stat': s.id, text: String(c.stats[s.id]) }));
-      })),
-      // The eight skills a d20 roll adds (levels 1-9).
-      el('h3', { class: 'dp-h', text: 'SKILLS · d20 + LEVEL' }),
-      el('ul', { class: 'dp-levels' }, ROLL_SKILLS.map((k) => el('li', { dataset: { skill: k.id }, title: k.blurb }, el('span', { text: k.name }), el('b', { text: String(rollLevel(c, k.id)) })))),
-      el('details', { class: 'ui-how' }, el('summary', { text: 'How rolls work' }), el('ul', { class: 'vy-list' }, HOW_CHECKS_WORK.map((t) => el('li', { text: t })))));
-    tree.render(save);
     fill(root,
-      side,
-      el('div', { class: 'dp-cap-mid' }, head, treeHost, skillList(c)),
-      el('div', { class: 'dp-cap-right' },
-        detail,
-        el('div', { class: 'dp-points-row' },
-          el('span', {}, 'Unspent ', el('b', { text: String(unspentPoints(c)) })),
-          el('span', {}, 'Spent ', el('b', { text: String(spentPoints(c)) })),
-          el('span', {}, 'Permanent ', el('b', { 'data-points': 'permanent', text: String(c.permanent) }))),
-        el('p', { class: 'dp-nap-note', 'data-nap-note': '' }, icon('bunk', 'dp-inline-icon'), el('span', { text: napLine(save, tutorialOn(save)) }))));
+      el('div', { class: 'dp-cap-side' },
+        el('div', { class: 'vy-captain dp-cap-who' },
+          face ? el('img', { class: 'vy-badge vy-badge-face', src: face, alt: '', style: `border-color:${c.look.color}` })
+            : el('div', { class: 'vy-badge', style: `background:${c.look.color}`, 'aria-hidden': 'true', text: initials(c.name) }),
+          el('div', {}, el('p', { class: 'ui-eyebrow', text: `CAPTAIN${c.deaths ? ` · ${c.deaths} DEATH${c.deaths === 1 ? '' : 'S'}` : ''}` }), el('h2', { text: c.name }))),
+        el('h3', { class: 'dp-h', text: 'STATS · ROLLED ONCE' }),
+        el('ul', { class: 'dp-stats' }, STATS.map((s) => {
+          const card = statCard(s.id, c.stats[s.id]);
+          const art = iconFor(s.id);
+          return el('li', { class: 'dp-stat', dataset: { stat: s.id } },
+            art ? el('img', { src: art, alt: '' }) : el('i'),
+            el('div', {}, el('strong', { text: s.name }), el('small', { text: card?.line || s.blurb }), card ? el('small', { class: 'dp-odds', text: card.bonus ? `${card.bonus} on attempts · ${card.odds.replace(/^Your odds[^:]*: /, '')}` : card.now }) : null),
+            el('b', { 'data-stat': s.id, text: String(c.stats[s.id]) }));
+        })),
+        el('h3', { class: 'dp-h', text: 'SKILLS · d20 + LEVEL' }),
+        el('ul', { class: 'dp-levels' }, ROLL_SKILLS.map((k) => el('li', { dataset: { skill: k.id }, title: k.blurb }, el('span', { text: k.name }), el('b', { text: String(rollLevel(c, k.id)) })))),
+        el('p', { class: 'dp-nap-note' }, 'Spend skill points on the Skills page (L).'),
+        el('details', { class: 'ui-how' }, el('summary', { text: 'How rolls work' }), el('ul', { class: 'vy-list' }, HOW_CHECKS_WORK.map((t) => el('li', { text: t }))))));
   }
-  return { render, tree };
+  return { render };
 }
 
 // --- Pack: credits, what you wear, what you carry -----------------------------------
 const SLOT_NAMES = { armour: 'Armour', weapon: 'Sidearm' };
-export function createPackPage({ root, store, toast }) {
+export function createPackPage({ root, store, toast, useItem = null }) {
   function wear(fnResult, line) {
     if (!fnResult.ok) { toast(fnResult.reason); return; }
     store.update(() => fnResult.save);
@@ -130,7 +72,9 @@ export function createPackPage({ root, store, toast }) {
     return el('li', { class: 'dp-item', 'data-item': id },
       art ? el('img', { src: art, alt: '' }) : el('i', { class: 'dp-item-blank' }, icon(ITEM_ICONS[id] || 'pack', 'dp-item-glyph')),
       el('span', {}, el('strong', { text: itemName(id) }), extra ? el('small', { text: extra }) : null),
-      el('b', { text: count > 1 ? `×${count}` : '' }));
+      el('b', { text: count > 1 ? `×${count}` : '' }),
+      // Playtest 1: a cup of coffee is drunk from the bag.
+      (id === 'coffee' || id === 'tea') && useItem ? el('button', { type: 'button', class: 'ui-btn', 'data-use': id, text: 'Drink', on: { click: () => useItem(id) } }) : null);
   }
   function render(save = store.get()) {
     const worn = gearOf(save);

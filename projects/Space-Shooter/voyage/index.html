@@ -19,6 +19,11 @@
   <link rel="stylesheet" href="./story/story.css">
   <link rel="stylesheet" href="./shops/shop.css">
   <link rel="stylesheet" href="./datapad/datapad.css">
+  <link rel="stylesheet" href="./minigames/minigames.css">
+  <link rel="stylesheet" href="./minigames/minigames-skin.css">
+  <link rel="stylesheet" href="./minigames/trainer.css">
+  <link rel="stylesheet" href="./skills/skills.css">
+  <link rel="stylesheet" href="./slice/opening.css">
 </head>
 <body>
   <main id="hg-floor" class="of-stage hg-floor" aria-label="The floor. Walk with WASD or the arrow keys, E to use what is marked, Tab for your bag and datapad, Esc to pause; on a phone, the stick, the Use button and the bag."></main>
@@ -58,6 +63,11 @@
         <section id="pane-mount" class="vy-pane" hidden></section>
       </div>
     </section>
+    <!-- The opening's minigames (voyage/minigames/sheet.js): repair, hack and haggle play here, then the sheet closes. -->
+    <aside id="hg-minigame" class="hg-sheet ui-panel" data-side="right" role="region" aria-labelledby="hg-minigame-title" hidden>
+      <header class="hg-sheet-head"><div><p class="ui-eyebrow" id="hg-minigame-eyebrow"></p><h2 id="hg-minigame-title"></h2></div></header>
+      <div class="hg-sheet-body" id="hg-minigame-stage"></div>
+    </aside>
     <section id="dp-jobcard" class="dp-jobcard ui-panel" hidden aria-label="The job you are on">
       <header class="dp-jobcard-head"><p class="ui-eyebrow" id="dp-jobcard-eyebrow">JOB</p><button type="button" id="dp-jobcard-later" class="ui-btn">Later</button></header>
       <section id="pane-jobs" class="vy-pane vy-jobs-pane"></section>

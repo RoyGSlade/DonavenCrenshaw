@@ -40,11 +40,12 @@ export function createHangarAudio({ createAudio = (src) => new Audio(src), stora
   let line = null; // { audio, done }
   let wantBed = null;
   let chime = null; // Web Audio context for cue chimes, made on first use
+  let moodFactor = 1; // opening B: the music reacts to danger: 1 = the bed plays, 0 = it is cut (ui/mood.js plays the tense bed over the silence)
 
   function bedVolume() {
     if (!bed) return 0;
     const speaking = line ? duck : 1;
-    return prefs.muted ? 0 : clamp01(bed.gain * prefs.ambience * speaking, 0);
+    return prefs.muted ? 0 : clamp01(bed.gain * prefs.ambience * speaking * moodFactor, 0);
   }
   function applyBed() {
     if (!bed) return;
@@ -145,6 +146,10 @@ export function createHangarAudio({ createAudio = (src) => new Audio(src), stora
         return true;
       } catch { return false; }
     },
+
+    /** Opening B: scale the ambience bed for danger (0 cuts it, 1 restores it). */
+    setMoodFactor(f) { moodFactor = clamp01(f, 1); applyBed(); },
+    get moodFactor() { return moodFactor; },
 
     settings: () => ({ ...prefs }),
     /** Change mute or a volume; saved for this device at once. */

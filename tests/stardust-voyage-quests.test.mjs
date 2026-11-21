@@ -18,6 +18,8 @@ import { createSkirmish, actSkirmish } from '../projects/Space-Shooter/voyage/qu
 import { routes, createTrip, actTrip } from '../projects/Space-Shooter/voyage/quests/parts/travel.js';
 import { liveFightSetup, createLiveFight, stepLiveFight, liveFightResult, enemyInput } from '../projects/Space-Shooter/voyage/quests/live/dogfight.js';
 import { GLYPHS } from '../projects/Space-Shooter/systems/progression.js';
+import { ready as modulesReady } from '../projects/Space-Shooter/voyage/modules/registry.js';
+await modulesReady(); // scene-hook validation reads each game's manifest from the module registry
 
 const low = () => ({ ...emptySave(), character: testCharacter({ cha: 1, con: 1, dex: 1, wis: 1 }) });
 // Every shop item a quest can ask for, and every skill gate's level (round 2:

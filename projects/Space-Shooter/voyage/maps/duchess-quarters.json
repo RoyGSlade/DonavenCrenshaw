@@ -15,7 +15,11 @@
     "#............#",
     "#............#",
     "#............#",
-    "#######.######"
+    "#######.######",
+    "      #.#     ",
+    "      #.#     ",
+    "      #.#     ",
+    "      #.#     "
   ],
   "look": {
     "set": "freighter",
@@ -28,7 +32,10 @@
       {"art":"oil-1","at":[8,6.4],"size":[1.2,1.2],"alpha":0.35},
       {"art":"vent-1","at":[6,1],"size":[1,1]},
       {"kind":"stain","at":[6.2,6.8],"r":0.5},
-      {"art":"cable-loose-2","at":[10.6,5.0],"size":[2,1],"alpha":0.8}
+      {"art":"cable-loose-2","at":[10.6,5.0],"size":[2,1],"alpha":0.8},
+      {"art":"station-mat-cyan","alpha":0.5,"at":[7,10.15],"size":[1,2.7]},
+      {"kind":"hazard","at":[7,10],"size":[1,0.2]},
+      {"kind":"hazard","at":[7,12.8],"size":[1,0.2]}
     ],
     "lights": [
       {"kind":"prop","at":[9,2],"size":[2,1],"pool":[10,3.0],"r":2.8,"color":"warm","strength":0.32},
@@ -41,7 +48,8 @@
       {"kind":"screen","at":[12.25,8.2],"size":[0.5,0.3],"pool":[11.6,7.6],"r":2.2,"color":"quarters","strength":0.3},
       {"kind":"screen","at":[10.9,8.15],"size":[0.5,0.12],"pool":[11,7.4],"r":1.6,"color":"quarters","strength":0.18},
       {"kind":"strip","art":"light-strip-warm-v","at":[0.62,6.6],"size":[0.3,1.2],"pool":[1.9,7.2],"r":2.2,"color":"warm","strength":0.2},
-      {"kind":"strip","art":"light-strip-cyan-h","at":[3.4,9.08],"size":[1.2,0.3],"pool":[4,7.8],"r":2.4,"color":"quarters","strength":0.2}
+      {"kind":"strip","art":"light-strip-cyan-h","at":[3.4,9.08],"size":[1.2,0.3],"pool":[4,7.8],"r":2.4,"color":"quarters","strength":0.2},
+      {"kind":"lamp","at":[7.5,11.5],"r":2.4,"color":"cool","strength":0.26}
     ],
     "mounts": [
       {"art":"wall-screen","at":[9,0.14],"size":[2,0.75],"face":true},
@@ -88,6 +96,10 @@
   ],
   "spawns": {
     "default": [7,8,"up"],
-    "from-corridor": [7,8,"up"]
-  }
+    "from-corridor": [7,12,"up"]
+  },
+  "roomBox": [0,0,14,10],
+  "entries": [
+    {"id":"corridor","door":"corridor","spawn":"from-corridor"}
+  ]
 }

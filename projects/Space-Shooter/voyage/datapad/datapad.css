@@ -76,7 +76,7 @@ body .hg-layer .hg-spot:focus-visible{opacity:1!important;pointer-events:auto}
 .dp-scrim.is-still{transition-duration:.12s}
 
 /* --- Captain page: stats | the whole tree | the skill card --- */
-.dp-page-captain:not([hidden]){display:grid;grid-template-columns:260px minmax(0,1fr);grid-template-rows:minmax(0,1fr);gap:18px;overflow:hidden}
+.dp-page-captain:not([hidden]){display:grid;grid-template-columns:minmax(0,520px);grid-template-rows:minmax(0,1fr);gap:18px;overflow:hidden}
 /* The skill card floats in the tree's empty top-right corner, so the tree gets the whole middle. */
 .dp-cap-right{position:absolute;top:18px;right:20px;width:270px;max-height:calc(100% - 36px);z-index:2}
 .dp-cap-side,.dp-cap-right{min-height:0;overflow:auto;scrollbar-width:thin;padding-right:2px}
@@ -226,7 +226,7 @@ body .hg-layer .hg-spot:focus-visible{opacity:1!important;pointer-events:auto}
   .dp-head{flex-wrap:wrap;gap:8px;padding:0 4px 8px}
   .dp-title{order:1;flex:1;padding-left:14px}
   .dp-close{order:2;min-height:44px;min-width:44px;justify-content:center}
-  .dp-tabs{order:3;flex:1 1 100%;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}
+  .dp-tabs{order:3;flex:1 1 100%;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}
   .dp-tab{flex-direction:column;gap:2px;min-height:52px;padding:4px 2px;font-size:11px;justify-content:center}
   .dp-glare{top:120px}
   .dp-page{padding:14px 12px}

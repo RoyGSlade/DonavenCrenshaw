@@ -19,9 +19,12 @@ import { CIPHER_SYMBOLS } from '../parts/cipher.js';
 import { openLiveFightOverlay } from '../../races/liveFightUi.js';
 import { giverPortrait } from '../../art.js';
 import { BADGES_DATA } from '../data/badges.js';
-import { UNLOCK_NAMES } from '../../data.js';
+import { UNLOCK_NAMES, ROLL_SKILLS } from '../../data.js';
 import { playFootFight } from '../../onfoot/footFight.js';
 import { placeName } from '../../slice/places.js';
+import { rollPreview } from '../../minigames/rollPreview.js';
+import { HOOK_KINDS } from '../../minigames/sceneHook.js';
+import { hashSeed } from '../rng.js';
 
 // ---- tiny DOM helper ------------------------------------------------------
 export function el(tag, props = {}, ...children) {
@@ -41,7 +44,7 @@ export const button = (label, onclick, props = {}) => el('button', { type: 'butt
 
 // ---- reward lines -----------------------------------------------------------
 /** The reward events worth showing a player (story flags other than Knock fragments stay quiet). */
-export const shownEvents = events => events.filter(e => (e.type !== 'flag' || (e.id.startsWith('fragment-') && e.value)) && e.amount !== 0);
+export const shownEvents = events => events.filter(e => (e.type !== 'flag' || (e.id.startsWith('fragment-') && e.value)) && e.amount !== 0 && e.type !== 'skill-xp'); // skill XP is display-only until something grants it: a card must not promise it
 
 export function eventText(e) {
   const sign = n => (n > 0 ? `+${n}` : String(n));
@@ -49,6 +52,7 @@ export function eventText(e) {
   if (e.type === 'rep') return `${sign(e.amount)} rep with ${GIVERS[e.giver]?.name || e.giver}`;
   if (e.type === 'item') return `${sign(e.amount)} ${ITEMS[e.id]?.name || e.id}`;
   if (e.type === 'skill-points') return `${sign(e.amount)} skill point${e.amount === 1 ? '' : 's'}`;
+  if (e.type === 'skill-xp') return `+${e.xp} ${ROLL_SKILLS.find(s => s.id === e.skill)?.name || e.skill} XP`;
   if (e.type === 'flag') return 'A Knock fragment';
   if (e.type === 'max-rep') return `Max rep with ${GIVERS[e.giver]?.name || e.giver}`;
   if (e.type === 'unlock') {
@@ -123,13 +127,27 @@ export function createQuestPlayer({ root, session, status = () => {}, onEnd = ()
     return false;
   }
 
+  // A hooked choice's d20 only sets up its minigame: the tray says so, with the roll preview line (what the roll did to the game).
+  function withPreview(result) {
+    // Opening B: an approach's roll says what it bought (help and time); doing the thing decides the branch.
+    const a = result.run?.assist;
+    if (a && presenter?.assistVerdict && current) {
+      return result.rolls.map((r, i) => (i === result.rolls.length - 1 ? { ...r, verdict: presenter.assistVerdict(current.quest.id, a.node, a), pass: true, natural: Boolean(r.natural) } : r));
+    }
+    const m = result.run?.minigame;
+    if (!m) return result.rolls;
+    const ch = result.save.character, skill = HOOK_KINDS[m.kind]?.skill;
+    const p = rollPreview(m.kind, m.attempt, { level: ch?.levels?.[skill] ?? 1, points: ch?.points?.[skill] ?? {} });
+    return result.rolls.map((r, i) => (i === result.rolls.length - 1 && p ? { ...r, verdict: 'The roll sets the board. Now play it.', preview: `${p.line} ${p.nextLine}` } : r));
+  }
+
   // One engine step; returns the engine's error, or null.
   function apply(action, actor = null) {
     if (!current) return 'No job running.';
     const result = act(current.quest, current.run, session.get(), action, { now: Date.now(), crew: actor || crew() });
     if (result.error) return result.error;
     current.run = result.run;
-    if (result.rolls?.length) { try { rolled(result.rolls); } catch (error) { console.warn('Stardust: showing a roll failed', error); } }
+    if (result.rolls?.length) { try { rolled(withPreview(result)); } catch (error) { console.warn('Stardust: showing a roll failed', error); } }
     lastEvents = result.events;
     const lines = shownEvents(result.events);
     if (announceEvents && lines.length) status(lines.map(eventText).join(' · '));
@@ -199,10 +217,40 @@ export function createQuestPlayer({ root, session, status = () => {}, onEnd = ()
       crew() ? el('p', { class: 'qs-where qs-crew', text: `Crew aboard: ${crew().name}, on the turret, repairs, scopes and checks.` }) : null,
       el('p', { class: 'qs-where qs-ship', dataset: { shipHull: String(v.hullMax), shipGuns: String(ship.guns), shipRace: String(ship.race) }, text: `Your ship: hull ${v.hullMax} · guns ${ship.guns} · race +${ship.race}` }),
     );
+    // A hooked choice (scenes 3, 4, 5): its d20 set the tier, now the page plays the minigame and hands back how it ended.
+    if (v.minigame && !v.ended && !v.part) {
+      root.replaceChildren();
+      presenter?.card(null);
+      if (live) return;
+      const choice = v.choices[v.minigame.index];
+      if (presenter?.minigame && choice?.minigame) {
+        live = { close: () => {} };
+        presenter.minigame({ block: choice.minigame, attempt: v.minigame.attempt, seed: hashSeed(current.run.seed, current.run.steps), node: v.node }, (r) => {
+          live = null;
+          doAct({ type: 'minigame', branch: r.branch, xp: r.xp, skill: r.skill, ...(r.world && Object.keys(r.world).length ? { world: r.world } : {}), ...(r.price != null ? { price: r.price } : {}) });
+        });
+      } else {
+        // No page to play it (the plain panel): the d20 stands as the result, as it did before the hooks.
+        setTimeout(() => doAct({ type: 'minigame', branch: current?.run.lastCheck?.pass ? 'win' : 'lose' }), 0);
+      }
+      return;
+    }
+    // An approach (opening B): the roll set the help and the time; the page plays it out and hands back how it ended.
+    if (v.assist && !v.ended && !v.part) {
+      root.replaceChildren();
+      presenter?.card(null);
+      if (live) return;
+      if (presenter?.approach) {
+        live = { close: () => {} };
+        presenter.approach(v, (r) => { live = null; doAct({ type: 'assist', branch: r.branch }); });
+      } else setTimeout(() => doAct({ type: 'assist', branch: current?.run.lastCheck?.pass ? 'pass' : 'fail' }), 0);
+      return;
+    }
     if (presenter && !v.ended && !v.part) {
       root.replaceChildren();
       presenter.card(null);
-      presenter.dialogue(v, (index) => doAct({ type: 'choose', index }));
+      const specs = presenter.approachSpecs?.(v);
+      presenter.dialogue(specs && Object.keys(specs).length ? { ...v, approach: specs } : v, (index) => doAct({ type: 'choose', index, ...(presenter.wantsApproach?.(v, index) ? { assist: true } : {}) }));
       return;
     }
     // An on-foot fight the page runs itself (the slice's rooms): the shooter in that room, then the result goes to the engine.
@@ -473,8 +521,11 @@ export function createQuestPlayer({ root, session, status = () => {}, onEnd = ()
     return true;
   }
 
+  /** Opening B (retry): drop the job in progress without any exit callbacks, so the scene can be started again from its first beat. */
+  function reset() { current = null; live = null; lastEvents = []; ui = { key: '', cipher: [], riddle: [] }; voiced = ''; footManual = ''; root.replaceChildren(); presenter?.card(null); onChange(); }
+
   return {
-    start, resume, render, keydown, exit, crewAct, raceResult,
+    start, resume, render, keydown, exit, crewAct, raceResult, reset,
     get active() { return Boolean(current); },
     get quest() { return current?.quest || null; },
     get live() { return Boolean(live); },
