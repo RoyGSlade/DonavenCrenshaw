@@ -242,7 +242,7 @@ export function mountGame(stage, ctx, { result, items, fixtures, quick, onDone }
   const onEvent = (ev) => {
     say(`claw:${ev.type}`);
     switch (ev.type) {
-      case 'grab': {
+      case 'grab': { buriedHint = null;
         audio.clamp(); if (ev.tear) audio.tear(); const f = g.finds[ev.find]; grabAnim = 0; flash = Math.max(flash, 0.35); shake = Math.max(shake, 0.5);
         burst(f.x, f.y, ev.tear ? 22 : 10, { kind: 'chip', col: hex(f.colour), sp: 90, life: 0.9 }); burst(f.x, f.y, 10, { kind: 'grit', sp: 50 }); navigator.vibrate?.(22); break;
       }
@@ -580,7 +580,7 @@ export function mountGame(stage, ctx, { result, items, fixtures, quick, onDone }
       if (tgt) col = hex(tgt.colour);
     } else if (g.phase === 'reel') { tgt = { x: B.start.x, y: B.start.y }; col = [255, 224, 170]; }
     if (!tgt) return;
-    const px = (tgt.x - cam.x) * k + W / 2, py = (tgt.y - cam.y) * k + H / 2, m = 30 * dpr, mb = 62 * dpr, mt = 30 * dpr;
+    const px = (tgt.x - cam.x) * k + W / 2, py = (tgt.y - cam.y) * k + H / 2, m = 30 * dpr, mb = 92 * dpr, mt = 30 * dpr;
     if (px > m && px < W - m && py > mt && py < H - mb) return;
     const cx = W / 2, cy = (H - mb + mt) / 2, hh = (H - mb - mt) / 2, dx = px - cx, dy = py - cy, sc = Math.min((W / 2 - m) / Math.abs(dx || 1e-6), hh / Math.abs(dy || 1e-6)), ex = cx + dx * sc, ey = cy + dy * sc, a = Math.atan2(dy, dx);
     const pulse = 0.6 + 0.4 * Math.sin(t * 4);
