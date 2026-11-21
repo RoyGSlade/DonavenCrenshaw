@@ -1,0 +1,198 @@
+/* Crate look. Everything is scoped under .m-crate-look. Drawn in CSS and SVG: steel and straw, a lamp from above, the hangar kit's
+   cyan trim and amber. Pads use the plain kit frame with a drop-shadow glow: no box-shadow, no hover or pressed art. */
+.m-crate-look{--cy:#81e6df;--am:#ffad72;--gold:#ffc766;--tx:#eaf4f5;--mu:#9db3c2;--gl:#0b1724;--ln:#3f5566;--u:1px;
+  position:absolute;inset:0;overflow:hidden;color:var(--tx);font:14px/1.4 Inter,"Segoe UI",system-ui,sans-serif;display:flex;flex-direction:column;
+  -webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;background:#0a1119}
+.m-crate-look *{box-sizing:border-box}
+.m-crate-look button{font:inherit;color:inherit;-webkit-tap-highlight-color:transparent}
+.m-crate-look [hidden]{display:none!important}
+
+/* the bay floor, lit from above */
+.m-crate-look .cl-floor{position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(60% 55% at 50% 42%,#ffd9a026,transparent 72%),radial-gradient(40% 30% at 50% 0,#ffcf8a30,transparent 70%),
+  repeating-linear-gradient(90deg,#ffffff08 0 2px,transparent 2px 140px),repeating-linear-gradient(0deg,#ffffff08 0 2px,transparent 2px 140px),linear-gradient(#0c141c,#101c27 60%,#0a1119)}
+.m-crate-look .cl-floor::after{content:"";position:absolute;left:0;right:0;bottom:0;height:14px;opacity:.5;background:repeating-linear-gradient(-45deg,#e6a23c 0 14px,#1a1408 14px 28px)}
+
+/* head: the label (the page's one h1) and how full it is */
+.m-crate-look .cl-head{position:relative;z-index:2;display:flex;flex-wrap:wrap;align-items:center;gap:6px 20px;padding:10px 76px 2px 20px;min-height:58px}
+.m-crate-look .cl-titles{min-width:0}
+.m-crate-look .cl-sign{margin:0;display:inline-block;max-width:100%;font:800 clamp(15px,2vw,24px)/1.1 Inter,"Segoe UI",sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#ffd9b0;
+  text-shadow:0 0 12px #ffad7255;padding:5px 14px 5px 12px;border-left:5px solid var(--am);background:linear-gradient(90deg,#1b2a38cc,#0f1b2600);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.m-crate-look .cl-owner{margin:2px 0 0 17px;font:600 12px/1.2 Inter,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:var(--mu)}
+.m-crate-look .cl-fill{display:flex;align-items:center;gap:10px;font:700 12px Inter,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:var(--cy)}
+.m-crate-look .cl-pips{display:inline-flex;gap:4px}
+.m-crate-look .cl-pips i{width:18px;height:9px;border-radius:2px;background:#1c2e3c;border:1px solid #3f5566;transition:background .4s,filter .4s}
+.m-crate-look .cl-pips i.on{background:linear-gradient(#ffd9a0,#ffad72);border-color:#ffc766;filter:drop-shadow(0 0 5px #ffad7299)}
+
+/* the middle: the crate, and the slip beside it */
+.m-crate-look .cl-main{position:relative;z-index:2;flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) clamp(220px,22vw,300px);gap:14px;padding:0 20px;align-items:center}
+.m-crate-look .cl-box{height:100%;min-height:0;min-width:0;display:flex;align-items:center;justify-content:center;padding-top:calc(var(--u) * 6)}
+.m-crate-look .cl-crate{position:relative;flex:none;filter:drop-shadow(0 18px 22px #000a)}
+.m-crate-look .cl-layer{position:absolute;left:0;right:0;pointer-events:none}
+.m-crate-look .cl-shell-host,.m-crate-look .cl-front-host{top:0;bottom:0}
+.m-crate-look .cl-shell,.m-crate-look .cl-front,.m-crate-look .cl-lid-art{position:absolute;inset:0;width:100%;height:100%;display:block}
+.m-crate-look .cl-straw{position:absolute;inset:0;background-size:100% 100%;transition:clip-path .7s cubic-bezier(.3,.8,.3,1);pointer-events:none}
+.m-crate-look .cl-dent-host{inset:0;top:0;bottom:0}
+.m-crate-look .cl-dents i{position:absolute;width:calc(var(--u)*78);height:calc(var(--u)*30);transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(ellipse,#2a1a0a99,#2a1a0a44 55%,transparent 72%);animation:cl-dentin .5s ease-out both}
+.m-crate-look .cl-dress{top:0;bottom:0}
+.m-crate-look .cl-dr{position:absolute;display:block;transform:rotate(var(--r,0deg));opacity:.92;filter:drop-shadow(0 2px 2px #0008)}
+.m-crate-look .cl-dr svg{display:block;width:100%;height:auto}
+
+/* things in the straw: a pile per kind, a bigger stack looks bigger */
+.m-crate-look .cl-stacks{top:0;bottom:0}
+.m-crate-look .cl-stack{position:absolute;transform:translate(-50%,-50%);padding:0;margin:0;background:none;border:0;cursor:pointer;pointer-events:auto;touch-action:manipulation;outline-offset:2px;border-radius:12px}
+.m-crate-look .cl-stack:focus-visible{outline:3px solid var(--am)}
+.m-crate-look .cl-stack::before{content:"";position:absolute;left:8%;right:8%;bottom:6%;height:14%;background:radial-gradient(ellipse,#000a,transparent 70%);pointer-events:none}
+.m-crate-look .cl-pile{position:absolute;inset:0;pointer-events:none;transition:transform .25s}
+.m-crate-look .cl-stack:hover .cl-pile{transform:translateY(-3px)}
+.m-crate-look .cl-copy{position:absolute;transform:translate(-50%,-50%) rotate(var(--rot,0deg));pointer-events:none}
+.m-crate-look .cl-icon,.m-crate-look .cl-glyph,.m-crate-look .cl-glyph svg{display:block;width:100%;height:100%;object-fit:contain;pointer-events:none}
+.m-crate-look .cl-icon,.m-crate-look .cl-glyph svg{filter:drop-shadow(0 3px 2px #000b)}
+.m-crate-look .cl-stack.is-new{animation:cl-pop .45s cubic-bezier(.3,1.5,.5,1)}
+.m-crate-look .cl-ring{position:absolute;inset:-4%;border-radius:50%;pointer-events:none;opacity:0;--p:0%;background:conic-gradient(var(--am) var(--p),transparent 0);-webkit-mask:radial-gradient(circle,transparent 62%,#000 64%);mask:radial-gradient(circle,transparent 62%,#000 64%);filter:drop-shadow(0 0 6px #ffad72aa)}
+.m-crate-look .cl-stack.is-holding .cl-ring{opacity:1;animation:cl-hold .52s linear forwards}
+@property --p{syntax:"<percentage>";inherits:false;initial-value:0%}
+.m-crate-look .cl-stack.is-glint .cl-pile{clip-path:inset(30% 0 0 0);transform:translateY(8%)}
+.m-crate-look .cl-stack.is-glint::after{content:"";position:absolute;left:4%;right:4%;bottom:0;height:46%;background:repeating-linear-gradient(100deg,#c99a3e 0 3px,#e0b95a 3px 6px,#a87a2a 6px 8px);clip-path:polygon(0 100%,4% 40%,14% 62%,26% 22%,40% 58%,52% 18%,66% 54%,80% 24%,92% 56%,100% 100%);pointer-events:none}
+.m-crate-look .cl-glint{position:absolute;left:50%;top:28%;width:22%;aspect-ratio:1;transform:translate(-50%,-50%);pointer-events:none;background:conic-gradient(from 0deg,transparent 0 40deg,#fff 45deg,transparent 50deg 130deg,#fff 135deg,transparent 140deg 220deg,#fff 225deg,transparent 230deg 310deg,#fff 315deg,transparent 320deg);filter:drop-shadow(0 0 5px #fff);animation:cl-glint 1.6s ease-in-out infinite}
+.m-crate-look .cl-notslip{position:absolute;left:50%;bottom:-4%;transform:translateX(-50%) rotate(-2deg);white-space:nowrap;padding:1px 7px;font:700 10px/1.3 Inter,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#6b1d12;background:#efe3c6;border:1px solid #9b8450;border-radius:2px;pointer-events:none;filter:drop-shadow(0 2px 2px #0008)}
+
+/* the front: stencil, chalk, latches */
+.m-crate-look .cl-front-text{display:flex;align-items:center;justify-content:flex-start;padding-left:7%}
+.m-crate-look .cl-stencil{max-width:58%;font:900 calc(var(--u)*27)/1.15 "Stencil Std","Arial Black",Impact,sans-serif;letter-spacing:.07em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#f3e6c4;opacity:.86;mix-blend-mode:normal}
+.m-crate-look.cl-k-steel .cl-stencil{color:#eef3f6}.m-crate-look.cl-k-cold .cl-stencil{color:#2a4552}
+.m-crate-look .cl-chalk{position:absolute;left:62%;width:32%;transform:rotate(-4deg);pointer-events:none;display:flex;align-items:center}
+.m-crate-look .cl-chalk svg{width:100%;height:auto;max-height:100%;overflow:visible}
+.m-crate-look .cl-chalk.is-draw path{stroke-dasharray:1;stroke-dashoffset:1;animation:cl-draw .55s ease-out forwards}
+.m-crate-look .cl-chalk.is-draw text{animation:cl-fade .5s .25s both}
+.m-crate-look .cl-latches{left:0;right:0}
+.m-crate-look .cl-latch{position:absolute;left:var(--x);transform:translateX(-50%);width:calc(var(--u)*50);height:calc(var(--u)*56);cursor:pointer;pointer-events:auto}
+.m-crate-look .cl-hasp{position:absolute;left:20%;right:20%;top:46%;height:44%;background:linear-gradient(#e0e8ee,#8191a0);border:2px solid #1d262e;border-radius:3px}
+.m-crate-look .cl-clasp{position:absolute;left:26%;right:26%;top:0;height:78%;background:linear-gradient(90deg,#aebcc8,#eef3f6 45%,#7b8a97);border:2px solid #1d262e;border-radius:3px 3px 9px 9px;transform-origin:50% 8%;transition:transform .26s cubic-bezier(.3,1.5,.5,1) var(--d,0ms)}
+.m-crate-look .cl-clasp::after{content:"";position:absolute;left:30%;right:30%;bottom:10%;height:22%;border-radius:50%;background:#1d262e}
+.m-crate-look .cl-latch.is-open .cl-clasp{transform:rotate(128deg)}
+.m-crate-look.cl-k-cold .cl-hasp{background:linear-gradient(#5d7280,#2e3f4b)}
+
+/* the lid: drag it up or tap it; latches flip, it lifts with weight, and settles against the back wall */
+.m-crate-look .cl-lid{position:absolute;inset:0;padding:0;margin:0;border:0;background:none;cursor:grab;touch-action:none;transform-origin:50% 0;transform:translateY(var(--drag,0px));outline-offset:-6px;pointer-events:auto}
+.m-crate-look .cl-lid:focus-visible{outline:3px solid var(--am)}
+.m-crate-look .cl-lid-art-host{position:absolute;inset:0;pointer-events:none}
+.m-crate-look .cl-lid-text{position:absolute;left:0;right:0;text-align:center;font:900 calc(var(--u)*30)/1.1 "Stencil Std","Arial Black",Impact,sans-serif;letter-spacing:.09em;text-transform:uppercase;color:#f3e6c4;opacity:.8;transform:perspective(calc(var(--u)*900)) rotateX(48deg);pointer-events:none;padding:0 12%;white-space:nowrap;overflow:hidden;text-overflow:clip}
+.m-crate-look.cl-k-steel .cl-lid-text{color:#eef3f6}.m-crate-look.cl-k-cold .cl-lid-text{color:#2a4552}
+.m-crate-look .cl-lid.is-off{transform:translate(0,-2%) rotate(-3deg) scale(.34);pointer-events:none;cursor:default;transition:none}
+.m-crate-look .cl-lid.is-off .cl-lid-text,.m-crate-look .cl-lid.is-off .cl-seal{display:none}
+.m-crate-look .cl-lid.is-lifting{animation:cl-lift .78s cubic-bezier(.3,.1,.3,1) forwards;pointer-events:none}
+.m-crate-look .cl-lid.is-landing{animation:cl-land .52s cubic-bezier(.6,0,.9,.5) forwards;pointer-events:none}
+.m-crate-look .cl-seal{position:absolute;left:0;right:0;display:none;pointer-events:none}
+.m-crate-look.is-sealed .cl-seal{display:block}
+.m-crate-look .cl-seal i{position:absolute;top:0;bottom:0;width:7%;background:repeating-linear-gradient(45deg,#f2b441 0 14px,#1b1608 14px 28px);opacity:.95;filter:drop-shadow(0 3px 3px #0009)}
+.m-crate-look .cl-seal i:nth-child(1){left:22%}.m-crate-look .cl-seal i:nth-child(2){right:22%}
+.m-crate-look .cl-seal b{position:absolute;left:50%;top:42%;transform:translate(-50%,-50%) rotate(-5deg);padding:6px 16px;font:900 calc(var(--u)*26)/1 Inter,sans-serif;letter-spacing:.2em;color:#fff3e0;background:linear-gradient(#c8372a,#8f2118);border:3px solid #ffd9a0;border-radius:6px;filter:drop-shadow(0 4px 6px #000a)}
+.m-crate-look .cl-lid.is-shake,.m-crate-look .cl-tray.is-shake,.m-crate-look .cl-crate.is-shake{animation:cl-shake .45s}
+.m-crate-look .cl-crate.is-shift .cl-straw{animation:cl-shift .35s ease-out}
+
+/* cold boxes breathe fog; opening kicks up dust */
+.m-crate-look .cl-fog{opacity:0;transition:opacity 1s}
+.m-crate-look.has-fog .cl-fog{opacity:1}
+.m-crate-look .cl-fog i{position:absolute;bottom:20%;left:calc(8% + var(--i) * 18%);width:30%;aspect-ratio:1.6;border-radius:50%;background:radial-gradient(ellipse,#e8f8ffcc,#e8f8ff00 68%);filter:blur(10px);animation:cl-fog 5s ease-in-out infinite;animation-delay:calc(var(--i) * -1s)}
+.m-crate-look .cl-dust i{position:absolute;left:var(--x);bottom:6%;width:calc(var(--u)*90);aspect-ratio:1;border-radius:50%;background:radial-gradient(circle,#d8c9a8cc,#d8c9a800 70%);transform:translate(-50%,0);animation:cl-puff .95s ease-out both;animation-delay:var(--dl)}
+
+/* the slip clipped on the side */
+.m-crate-look .cl-slip-wrap{align-self:center;min-width:0;display:flex;justify-content:center}
+.m-crate-look .cl-slip{position:relative;display:block;width:100%;text-align:left;cursor:pointer;border:0;color:#1c2b4a;padding:30px 16px 16px;transform:rotate(1.6deg);
+  background:repeating-linear-gradient(transparent 0 25px,#8aa2c433 25px 26px),linear-gradient(135deg,#f6ecd2,#e7d9b5);filter:drop-shadow(0 10px 12px #000b);font-family:"Segoe Print","Bradley Hand","Chalkboard SE","Comic Sans MS","Comic Neue",cursive;
+  clip-path:polygon(0 0,100% 0,100% calc(100% - 10px),96% 100%,90% calc(100% - 4px),84% 100%,78% calc(100% - 5px),70% 100%,62% calc(100% - 3px),54% 100%,46% calc(100% - 5px),38% 100%,30% calc(100% - 3px),22% 100%,14% calc(100% - 5px),6% 100%,0 calc(100% - 4px))}
+.m-crate-look .cl-clip{position:absolute;left:50%;top:-4px;width:64px;height:26px;transform:translateX(-50%);border-radius:5px 5px 2px 2px;background:linear-gradient(#8996a3,#4a5763);border:2px solid #1d262e}
+.m-crate-look .cl-clip::after{content:"";position:absolute;left:14px;right:14px;top:6px;height:10px;border-radius:3px;background:#1d262e}
+.m-crate-look .cl-slip-h{font:800 11px Consolas,monospace;letter-spacing:.2em;text-transform:uppercase;color:#6b5a38;margin:0 0 6px;text-align:center}
+.m-crate-look .cl-slip ul{list-style:none;margin:0;padding:0}
+.m-crate-look .cl-sl{position:relative;display:flex;align-items:baseline;gap:6px;min-height:26px;font-size:15px;line-height:26px;color:#1d3a8a;flex-wrap:wrap}
+.m-crate-look .cl-sl-name{flex:0 1 auto}.m-crate-look .cl-sl-dots{flex:1 1 12px;border-bottom:2px dotted #1d3a8a55;transform:translateY(-4px);min-width:12px}
+.m-crate-look .cl-sl-qty{font-weight:800;min-width:1.2em;text-align:right;position:relative}
+.m-crate-look .cl-sl.is-more .cl-sl-qty::before,.m-crate-look .cl-sl.is-less .cl-sl-qty::before,.m-crate-look .cl-sl.is-missing .cl-sl-qty::before{content:"";position:absolute;inset:-2px -8px;border:2.5px solid #c0392b;border-radius:50% 46% 52% 48%;transform:rotate(-6deg)}
+.m-crate-look .cl-pencil{flex:0 0 100%;text-align:right;font:700 12px/1 "Segoe Print","Bradley Hand","Comic Sans MS",cursive;color:#c0392b;margin-top:-6px;padding-bottom:4px}
+.m-crate-look .cl-pencil b{font-weight:700;border-bottom:2px solid #c0392b66}
+.m-crate-look .cl-sl.is-smudged .cl-sl-name{filter:blur(.6px)}
+.m-crate-look .cl-blot{font:italic 11px sans-serif;color:#5c5a52;background:radial-gradient(ellipse,#2a2a3a99,#2a2a3a22 70%);padding:0 10px;filter:blur(1.4px);border-radius:50%}
+.m-crate-look .cl-origin{margin-top:8px;padding-top:6px;border-top:1px dashed #8a7a52;font:italic 600 12px/1.3 Georgia,serif;color:#5b4a2a;text-align:right}
+.m-crate-look .cl-origin.is-trace{color:#4a5a3a}
+.m-crate-look .cl-notice{width:100%;padding:16px 16px 14px;background:linear-gradient(#2a1410,#1a0d0b);border:2px solid #c8372a;border-radius:4px;filter:drop-shadow(0 0 10px #c8372a66);transform:rotate(-1deg)}
+.m-crate-look .cl-notice-h{font:900 16px Inter,sans-serif;letter-spacing:.24em;text-transform:uppercase;color:#ff8a78;margin-bottom:6px}
+.m-crate-look .cl-notice p{margin:0;color:#ffd9d2;font-size:15px}
+.m-crate-look .cl-tagcard{position:relative;width:100%;padding:22px 14px 14px;background:linear-gradient(135deg,#efe3c6,#dccb9f);color:#3a2f1a;border-radius:4px 4px 10px 10px;filter:drop-shadow(0 8px 10px #000b);transform:rotate(-2deg);font-family:Georgia,serif}
+.m-crate-look .cl-tagcard::before{content:"";position:absolute;left:50%;top:7px;width:12px;height:12px;border-radius:50%;background:#1a1408;transform:translateX(-50%)}
+.m-crate-look .cl-tagcard-h{font:800 10px Consolas,monospace;letter-spacing:.22em;text-transform:uppercase;color:#7a6a40}
+.m-crate-look .cl-tagcard p{margin:4px 0 0;font-style:italic;font-size:15px}
+
+/* what the screen says right now */
+.m-crate-look .cl-say{position:relative;z-index:2;min-height:30px;padding:4px 20px;text-align:center;font:600 15px/1.35 Inter,sans-serif;color:#ffe2c2;text-shadow:0 1px 8px #000}
+.m-crate-look .cl-say.is-empty{visibility:hidden}
+
+/* the bottom: your bag, and the action row */
+.m-crate-look .cl-bottom{position:relative;z-index:2;display:flex;align-items:stretch;gap:16px;padding:6px 20px 22px}
+.m-crate-look .cl-tray{flex:1;min-width:0;padding:8px 12px 10px;background:linear-gradient(180deg,#14222e,#0f1b26);border:1px solid #2a3d4d;border-radius:6px;filter:drop-shadow(0 0 8px #81e6df22);position:relative}
+.m-crate-look .cl-tray::before{content:"";position:absolute;left:0;right:0;top:0;height:2px;background:linear-gradient(90deg,transparent,var(--cy),transparent);opacity:.45}
+.m-crate-look .cl-tray.is-full{filter:drop-shadow(0 0 10px #ff8a7866)}
+.m-crate-look .cl-tray-head{display:flex;align-items:center;gap:12px;margin-bottom:6px;font:800 11px Inter,sans-serif;letter-spacing:.16em;text-transform:uppercase}
+.m-crate-look .cl-tray-title{color:var(--cy)}.m-crate-look .cl-tray-state{margin-left:auto;color:var(--mu);font-weight:700}
+.m-crate-look .cl-tray.is-full .cl-tray-state{color:#ff9a88}
+.m-crate-look .cl-bagpips{display:inline-flex;gap:2px;flex-wrap:wrap}
+.m-crate-look .cl-bagpips i{width:7px;height:11px;border-radius:2px;background:#1c2e3c;border:1px solid #3f5566}
+.m-crate-look .cl-bagpips i.on{background:var(--cy);border-color:var(--cy)}
+.m-crate-look .cl-tray-items{display:flex;flex-wrap:wrap;gap:8px;min-height:60px;align-items:stretch}
+.m-crate-look .cl-tray-empty{align-self:center;color:var(--mu);font-size:13px}
+.m-crate-look .cl-tray-item{position:relative;display:flex;align-items:center;gap:8px;min-height:54px;padding:4px 12px 4px 6px;background:linear-gradient(#1b2e3d,#132230);border:1px solid #3f5566;border-radius:6px;cursor:pointer;text-align:left;filter:drop-shadow(0 0 4px #81e6df1a);touch-action:manipulation}
+.m-crate-look .cl-tray-item:hover{filter:drop-shadow(0 0 8px #81e6dfaa)}
+.m-crate-look .cl-tray-item.is-view{cursor:default}
+.m-crate-look .cl-tray-item.is-got{animation:cl-pop .5s cubic-bezier(.3,1.5,.5,1)}
+.m-crate-look .cl-tray-item:focus-visible{outline:3px solid var(--am)}
+.m-crate-look .cl-tray-ic{width:44px;height:44px;flex:none;display:block}
+.m-crate-look .cl-tray-name{font:700 12px/1.15 Inter,sans-serif;max-width:110px}
+.m-crate-look .cl-more{display:inline-flex;gap:3px;margin-left:2px}.m-crate-look .cl-more i{width:6px;height:6px;border-radius:50%;background:var(--gold)}
+.m-crate-look .cl-actions{display:flex;flex-direction:column;gap:8px;justify-content:center;min-width:170px}
+.m-crate-look .cl-btn{display:flex;align-items:center;gap:10px;min-height:48px;padding:0 18px;cursor:pointer;font:800 13px Inter,sans-serif;letter-spacing:.1em;text-transform:uppercase;text-align:left;color:var(--tx);
+  background:linear-gradient(#1d3446,#122434);border:1px solid var(--cy);border-radius:6px;filter:drop-shadow(0 0 6px #81e6df44);touch-action:manipulation}
+.m-crate-look .cl-btn:hover{filter:drop-shadow(0 0 11px #81e6dfcc)}
+.m-crate-look .cl-btn:focus-visible{outline:3px solid var(--am)}
+.m-crate-look .cl-btn-ic{color:var(--am);font-size:16px}
+.m-crate-look .cl-chalk-state{margin-left:auto;color:var(--gold);font-weight:700}
+
+/* phone: the crate is one unit with its slip, the action row pins to the bottom */
+@media (max-width:600px){
+  .m-crate-look .cl-head{padding:8px 60px 0 12px;min-height:50px;gap:4px 12px}
+  .m-crate-look .cl-main{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto;gap:6px;padding:0 8px;align-items:stretch}
+  .m-crate-look .cl-slip-wrap{align-self:start}
+  .m-crate-look .cl-slip{padding:26px 14px 12px}
+  .m-crate-look .cl-slip ul{max-height:110px;overflow:hidden;-webkit-mask:linear-gradient(#000 78%,transparent);mask:linear-gradient(#000 78%,transparent)}
+  .m-crate-look .cl-slip.is-open ul{max-height:none;-webkit-mask:none;mask:none}
+  .m-crate-look .cl-bottom{flex-direction:column;gap:8px;padding:4px 10px 16px}
+  .m-crate-look .cl-actions{flex-direction:row;min-width:0}
+  .m-crate-look .cl-actions .cl-btn{flex:1;justify-content:center;padding:0 10px;min-width:0}
+  .m-crate-look .cl-chalk-state{margin-left:6px}
+  .m-crate-look .cl-tray-items{min-height:56px}
+  .m-crate-look .cl-say{font-size:14px;padding:2px 12px;min-height:26px}
+}
+@media (max-height:640px) and (min-width:601px){
+  .m-crate-look .cl-head{min-height:46px;padding-top:6px}.m-crate-look .cl-bottom{padding-bottom:16px}.m-crate-look .cl-tray-items{min-height:50px}.m-crate-look .cl-tray-ic{width:36px;height:36px}.m-crate-look .cl-tray-item{min-height:46px}.m-crate-look .cl-btn{min-height:44px}
+}
+
+.m-crate-look .cl-fly{position:fixed;z-index:50;width:48px;height:48px;pointer-events:none}
+.m-crate-look .cl-fly .cl-icon,.m-crate-look .cl-fly .cl-glyph{width:100%;height:100%}
+
+@keyframes cl-pop{0%{transform:translate(-50%,-50%) scale(.5)}60%{transform:translate(-50%,-50%) scale(1.1)}100%{transform:translate(-50%,-50%) scale(1)}}
+.m-crate-look .cl-tray-item.is-got{animation-name:cl-pop-tray}
+@keyframes cl-pop-tray{0%{transform:scale(.8)}60%{transform:scale(1.08)}100%{transform:scale(1)}}
+@keyframes cl-hold{from{--p:0%}to{--p:100%}}
+@keyframes cl-draw{to{stroke-dashoffset:0}}
+@keyframes cl-fade{from{opacity:0}to{opacity:1}}
+@keyframes cl-glint{0%,100%{opacity:.2;transform:translate(-50%,-50%) scale(.6) rotate(0)}50%{opacity:1;transform:translate(-50%,-50%) scale(1.15) rotate(25deg)}}
+@keyframes cl-shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-7px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(3px)}}
+@keyframes cl-shift{0%{transform:translate(0,0)}30%{transform:translate(2px,-2px)}60%{transform:translate(-2px,1px)}100%{transform:translate(0,0)}}
+@keyframes cl-dentin{from{opacity:0;transform:translate(-50%,-50%) scale(.4)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+@keyframes cl-fog{0%,100%{transform:translate(0,0) scale(1);opacity:.5}50%{transform:translate(calc(var(--i) * 8px - 14px),-34%) scale(1.3);opacity:.95}}
+@keyframes cl-puff{0%{opacity:.9;transform:translate(-50%,0) scale(.3)}100%{opacity:0;transform:translate(-50%,-160%) scale(1.8)}}
+@keyframes cl-lift{0%{transform:translateY(var(--drag,0px))}34%{transform:translateY(-9%) rotate(-1.2deg) scale(1.03)}100%{transform:translate(0,-2%) rotate(-3deg) scale(.34)}}
+@keyframes cl-land{0%{transform:translate(0,-2%) rotate(-3deg) scale(.34)}60%{transform:translateY(-6%) scale(1.02)}100%{transform:translateY(0) scale(1)}}
+@media (prefers-reduced-motion:reduce){.m-crate-look *{animation-duration:.01s!important;transition-duration:.01s!important}}
+
+.m-crate-look.is-sealed .cl-lid-text{display:none}
