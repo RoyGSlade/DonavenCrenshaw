@@ -404,7 +404,7 @@ function escapeAttribute(value) {
 }
 
 function rewriteInternalUrls(html, site, route) {
-    return html.replace(/\b(href|src)=(['"])(.*?)\2/gi, (match, attribute, quote, value) => {
+    return html.replace(/\b(href|src|poster)=(['"])(.*?)\2/gi,(match, attribute, quote, value) => {
         if (!value || /^(?:[a-z][a-z\d+.-]*:|\/\/|#|\/)/i.test(value)) return match;
         let resolved = value;
         if (value.startsWith('./') || value.startsWith('../')) {
