@@ -134,13 +134,14 @@ test('claw in the browser: desktop (mouse and keys), phone (touch), the house ru
       await input.board(bx.x, bx.y, true); for (let i = 0; i < 14; i++) { await input.board(bx.x + i * 3, bx.y + i * 14, true); await page.waitForTimeout(60); } await input.board(0, 0, false);
       const hp1 = await page.evaluate(() => { const g = document.querySelector('.m-claw-pull').__game; return { x: g.head.x, y: g.head.y }; });
       assert.ok(Math.hypot(hp1.x - hp0.x, hp1.y - hp0.y) > 6, 'a real touch drag moves the claw');
-      let knockShot = false, dropShot = false, slipSeen = false, tightShot = false, jawsShot = false, lastK = 0, lastD = 0, gotWords = new Set();
+      let warnShotP = false, knockShot = false, dropShot = false, slipSeen = false, tightShot = false, jawsShot = false, lastK = 0, lastD = 0, gotWords = new Set();
       const final = await drive(page, input, true, {
         bot: 'lazy', maxMs: 100000, botOpts: { clean: true },
         onTick: async (s, n) => {
           gotWords.add(await page.evaluate(() => document.querySelector('.cp-status').textContent));
           if (s.phase === 'in' && s.t > 3 && !tightShot) { tightShot = true; await shot(page, 'phone-2-going-in-lamp'); }
           if (s.phase === 'reel' && !jawsShot) { jawsShot = true; await page.waitForTimeout(100); await shot(page, 'phone-3-jaws-closed'); }
+          if (s.phase === 'reel' && s.warn > 0.5 && s.knocks === 0 && !warnShotP) { warnShotP = true; await shot(page, 'phone-4b-warning-before-knock'); }
           if (s.knocks > lastK) { lastK = s.knocks; const slip = await page.evaluate(() => document.querySelector('.cp-grip')?.dataset.level); if (slip && slip !== 'good') slipSeen = true; if (!knockShot && (slipSeen || s.knocks >= 2)) { knockShot = true; await shot(page, 'phone-5-knock-grip-slipping'); } }
           if (s.drops > lastD) { lastD = s.drops; if (!dropShot) { dropShot = true; await page.waitForTimeout(250); await shot(page, 'phone-6-drop'); } }
           if (n % 30 === 0) await houseRules(page, true, `phone ${s.phase}`);
@@ -274,8 +275,9 @@ test('claw proofs on a desktop: the careful hand past a tight spot, and the flat
     {
       const { ctx, page, errs } = await newPage(browser, DESK, 'seed=5&tier=-1&fixture=wide-clean-3');
       const input = inputFor(page, false, null);
-      let lastK = 0, lastD = 0, knockShot = false, dropShot = false;
+      let lastK = 0, lastD = 0, knockShot = false, dropShot = false, warnShot = false;
       await drive(page, input, false, { bot: 'lazy', botOpts: { clean: true }, maxMs: 100000, tickMs: 20, onTick: async (s) => {
+        if (s.phase === 'reel' && s.warn > 0.5 && s.knocks === 0 && !warnShot) { warnShot = true; await shot(page, 'desk-4b-warning-before-knock'); }
         if (s.knocks > lastK) { lastK = s.knocks; if (!knockShot && s.knocks >= 2) { knockShot = true; await shot(page, 'desk-5-knock-grip-slipping'); } }
         if (s.drops > lastD) { lastD = s.drops; if (!dropShot) { dropShot = true; await page.waitForTimeout(250); await shot(page, 'desk-6-drop'); } }
       } });

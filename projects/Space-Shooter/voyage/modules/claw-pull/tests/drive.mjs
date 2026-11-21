@@ -76,7 +76,7 @@ export async function drive(page, input, phone, { bot = 'perfect', until = () =>
       if (g.phase === 'in' && inp.x != null) { const p = v.toScreen(inp.x, inp.y); sp = { x: p.x, y: p.y + lift }; }
       if (g.phase === 'reel') { const hp = v.toScreen(g.head.x, g.head.y); nudge = { x: hp.x + (inp.nx || 0) * 34 * v.cam.z, y: hp.y + (inp.ny || 0) * 34 * v.cam.z, on: Math.hypot(inp.nx || 0, inp.ny || 0) > 0.02 }; }
       const pad = document.querySelector('.cp-reel').getBoundingClientRect();
-      return { act, grab: !!inp.grab, reel: !!inp.reel, down: !!inp.down, sp, nudge, pad: { x: pad.left + pad.width / 2, y: pad.top + pad.height / 2 }, phase: g.phase, t: g.t, v: g.v, grip: g.grip, gripMax: g.gripNow || g.gripMax, knocks: g.knocks, drops: g.drops, s: g.s, head: { x: g.head.x, y: g.head.y } };
+      return { act, grab: !!inp.grab, reel: !!inp.reel, down: !!inp.down, sp, nudge, pad: { x: pad.left + pad.width / 2, y: pad.top + pad.height / 2 }, phase: g.phase, t: g.t, v: g.v, grip: g.grip, gripMax: g.gripNow || g.gripMax, knocks: g.knocks, warn: g.warn?.level || 0, drops: g.drops, s: g.s, head: { x: g.head.x, y: g.head.y } };
     }, { lift: phone ? 48 : 0 });
     last = s;
     if (s.over) break;

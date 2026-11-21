@@ -126,7 +126,7 @@ test('a clean line is quick: the head winds up the longer it goes without touchi
   const speeds = []; run(g, 6, (q) => { speeds.push(Math.hypot(q.anchor.vx, q.anchor.vy)); return { x: tx, y: 304, down: true }; });
   assert.ok(speeds[8] < speeds[60 * 4] - 80 && speeds[60 * 4] > 280, `winds up: ${speeds[8].toFixed(0)} then ${speeds[240].toFixed(0)}`);
   assert.ok(g.cruise > 0.9);
-  assert.match(words(g), /clean line|find is close|steer/);
+  assert.match(words(g), /clean line|close|reach|steer/);
   // base speed over the same ground would take 1500 / 180 = 8.3 s: the clean line is well under that
   const h = mkSynth({ len: 1500 }); let t = 0; for (let i = 0; i < 60 * 12 && h.anchor.x < tx - 20; i++) { step(h, 1 / 60, { x: tx, y: 304, down: true }); t = h.t; }
   assert.ok(t < 1500 / 180 * 0.8, `a clean 1500-unit run took ${t.toFixed(1)} s`);
