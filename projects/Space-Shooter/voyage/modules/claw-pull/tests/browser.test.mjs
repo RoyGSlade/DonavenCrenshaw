@@ -163,14 +163,16 @@ test('claw in the browser: desktop (mouse and keys), phone (touch), the house ru
       allErrs.push(errs);
       const cdp = await ctx.newCDPSession(page);
       const input = inputFor(page, true, cdp);
-      let reelShot = 0, bayShot = false, lastPhase = '';
+      let reelShot = 0, bayShot = false, lastPhase = '', reelS0 = null;
       await page.evaluate(async () => { window.__probe = (await import('./board.js')).probe; });
       const final = await drive(page, input, true, {
         bot: 'perfect', maxMs: 140000,
         onTick: async (s) => {
-          if (s.phase === 'reel' && s.v > 50 && reelShot < 1) {
+          if (s.phase === 'reel' && reelS0 == null) reelS0 = s.s;
+          if (s.phase !== 'reel') reelS0 = null;
+          if (s.phase === 'reel' && s.v > 50 && reelShot < 1 && reelS0 - s.s > 110) {
             const clr = await page.evaluate(() => { const g = document.querySelector('.m-claw-pull').__game; return window.__probe(g.board, g.head.x, g.head.y, 30).d; });
-            if (clr < 12.5 || s.s < 160) { reelShot++; await shot(page, 'phone-4-reel-past-tight-spot'); }
+            if (clr < 12 || reelS0 - s.s > 300) { reelShot++; await shot(page, 'phone-4-reel-past-tight-spot'); }
           }
           if (s.phase !== lastPhase) { lastPhase = s.phase; if (s.phase === 'bay' && !bayShot) { bayShot = true; await page.waitForTimeout(150); await shot(page, 'phone-7-bay-choice'); } }
         },
@@ -247,5 +249,38 @@ test('claw in the browser: desktop (mouse and keys), phone (touch), the house ru
       await ctx.close();
     }
     for (const e of allErrs) assert.deepEqual(e, []);
+  } finally { await browser.close(); await srv.close(); }
+});
+
+test('claw proofs on a desktop: the careful hand past a tight spot, and the flat-out hand for a knock, a slip and a drop', { skip, timeout: 600000 }, async () => {
+  const { chromium } = await loadPlaywright();
+  const srv = await serve(); srvOrigin = srv.origin;
+  const browser = await chromium.launch();
+  try {
+    {
+      const { ctx, page, errs } = await newPage(browser, DESK, 'seed=2&tier=2&fixture=wide-two-3');
+      const input = inputFor(page, false, null);
+      await page.evaluate(async () => { window.__probe = (await import('./board.js')).probe; });
+      let reelShot = 0, reelS0 = null, bayShot = false, lastPhase = '', landShot = false;
+      await drive(page, input, false, { bot: 'perfect', maxMs: 140000, tickMs: 20, onTick: async (s) => {
+        if (s.phase === 'reel' && reelS0 == null) reelS0 = s.s; if (s.phase !== 'reel') reelS0 = null;
+        if (s.phase === 'reel' && s.v > 50 && !reelShot && reelS0 - s.s > 110) { const clr = await page.evaluate(() => { const g = document.querySelector('.m-claw-pull').__game; return window.__probe(g.board, g.head.x, g.head.y, 30).d; }); if (clr < 12 || reelS0 - s.s > 300) { reelShot = 1; await shot(page, 'desk-4-reel-past-tight-spot'); } }
+        if (s.phase !== lastPhase) { lastPhase = s.phase; if (s.phase === 'land' && !landShot) { landShot = true; await page.waitForTimeout(500); await shot(page, 'desk-6b-landing'); } if (s.phase === 'bay' && !bayShot) { bayShot = true; await page.waitForTimeout(150); await shot(page, 'desk-7b-bay-choice'); } }
+      } });
+      await page.waitForTimeout(2400); await shot(page, 'desk-9-result-card-clean');
+      assert.equal(await page.evaluate(() => document.querySelector('.m-claw-pull').__game.passed), true);
+      assert.deepEqual(errs, []); await ctx.close();
+    }
+    {
+      const { ctx, page, errs } = await newPage(browser, DESK, 'seed=5&tier=-1&fixture=wide-clean-3');
+      const input = inputFor(page, false, null);
+      let lastK = 0, lastD = 0, knockShot = false, dropShot = false;
+      await drive(page, input, false, { bot: 'lazy', botOpts: { clean: true }, maxMs: 100000, tickMs: 20, onTick: async (s) => {
+        if (s.knocks > lastK) { lastK = s.knocks; if (!knockShot && s.knocks >= 2) { knockShot = true; await shot(page, 'desk-5-knock-grip-slipping'); } }
+        if (s.drops > lastD) { lastD = s.drops; if (!dropShot) { dropShot = true; await page.waitForTimeout(250); await shot(page, 'desk-6-drop'); } }
+      } });
+      await page.waitForTimeout(2400);
+      assert.ok(lastK >= 1, 'flat out knocks the load'); assert.deepEqual(errs, []); await ctx.close();
+    }
   } finally { await browser.close(); await srv.close(); }
 });
