@@ -1,0 +1,40 @@
+{
+  "fixtures": {
+    "friend": {
+      "label": "Good friend (bond 3), bone and kibble",
+      "context": {
+        "now": 1790000000000,
+        "ralph": { "mood": 55, "bond": 3, "asleep": false, "lastSeen": 1789900000000, "favourite": "scrap", "spot": "behind-ear", "tricks": ["sit", "paw", "spin"], "finds": [{ "item": "loose-bolt", "chance": 0.2 }, { "item": "work-glove", "chance": 0.1 }], "fetches": 12 },
+        "items": { "loose-bolt": { "name": "a loose bolt" }, "work-glove": { "name": "a work glove" }, "bone": { "name": "a bone" }, "kibble": { "name": "kibble" } },
+        "save": { "items": { "bone": 1, "kibble": 3, "ball": 1 } }
+      }
+    },
+    "new": {
+      "label": "Barely knows you (bond 0)",
+      "context": {
+        "now": 1790000000000,
+        "ralph": { "mood": 40, "bond": 0, "asleep": false, "lastSeen": 1789990000000, "favourite": "ball", "spot": "chest", "tricks": ["sit"], "finds": [{ "item": "loose-bolt", "chance": 0.15 }] },
+        "items": { "loose-bolt": { "name": "a loose bolt" } },
+        "save": { "items": { "bone": 0, "kibble": 1, "ball": 1 } }
+      }
+    },
+    "devoted": {
+      "label": "Devoted (bond 5), back after a long job",
+      "context": {
+        "now": 1790000000000,
+        "ralph": { "mood": 60, "bond": 5, "asleep": false, "lastSeen": 1789400000000, "favourite": "rub", "spot": "shoulder", "tricks": ["sit", "roll"], "finds": [{ "item": "work-glove", "chance": 0.18 }] },
+        "items": { "work-glove": { "name": "a work glove" } },
+        "save": { "items": { "bone": 2, "kibble": 2, "ball": 1 } }
+      }
+    },
+    "asleep": {
+      "label": "Asleep in his bed",
+      "context": {
+        "now": 1790000000000,
+        "ralph": { "mood": 45, "bond": 2, "asleep": true, "lastSeen": 1789950000000, "favourite": "kibble", "spot": "back", "tricks": ["sit"], "finds": [] },
+        "save": { "items": { "bone": 1, "kibble": 1, "ball": 1 } }
+      }
+    },
+    "empty": { "label": "Empty record", "context": {} }
+  }
+}
