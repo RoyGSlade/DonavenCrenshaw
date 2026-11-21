@@ -59,6 +59,6 @@
     "art/items/ore-chunk.webp",
     "art/kit/panel.webp"
   ],
-  "status": "draft",
+  "status": "fable-passed",
   "contract": "1.1"
 }
