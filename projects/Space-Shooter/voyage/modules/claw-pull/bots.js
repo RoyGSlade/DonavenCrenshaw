@@ -246,7 +246,7 @@ export function thinkerBot(g, o = {}) {
       if (g.phase !== lastPhase) { lastPhase = g.phase; since = 0; rest = 0; }
       since += Math.hypot(b.x - last.x, b.y - last.y) + (g.phase === 'reel' ? g.v * dt : 0); last = { x: b.x, y: b.y };
       if (rest > 0) { rest -= dt; return g.phase === 'in' ? { x: b.x, y: b.y, down: true } : { reel: false }; }
-      if (g.phase !== 'bay' && since > 260 * (0.7 + 0.6 * rnd.next())) { since = 0; rest = 2 + rnd.next() * 2; g.restedT = (g.restedT || 0) + rest; return g.phase === 'in' ? { x: b.x, y: b.y, down: true } : { reel: false }; }
+      if (g.phase !== 'bay' && since > (g.phase === 'reel' ? 620 : 260) * (0.7 + 0.6 * rnd.next())) { since = 0; rest = 2 + rnd.next() * 2; g.restedT = (g.restedT || 0) + rest; return g.phase === 'in' ? { x: b.x, y: b.y, down: true } : { reel: false }; }
       return inner.think(gg, dt);
     },
     refused(why) { inner.refused(why); },

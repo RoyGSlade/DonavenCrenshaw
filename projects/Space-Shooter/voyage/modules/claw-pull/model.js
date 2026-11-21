@@ -28,7 +28,7 @@ export const BASE = Object.freeze({
   cruiseGain: 0.9, cruiseUp: 0.55, cruiseDown: 3.2,   // a head that goes without touching a wall winds up to 1.9 x the base speed over about 1.6 s; a scrape takes it back at 3.2 a second (not in the brief: a long tunnel is dead time otherwise)
   slowKnockShare: 0.3,          // the most of the grip that knocks at the slow reel can take in one trip
   tireClock: 0.2,               // how much of the tiring is the same on every roll (0.5: half is a share of the roll's grip, half of a plain 100), so a great roll is not just a bigger tank for the same tire
-  tripShare: 0.55,               // the tiring is set by the board: reeling steadily at the slow reel from the pocket to the mouth spends this share of the grip, however long the tunnel. It goes by seconds with the winch turning, so a slower or stop-start reel costs more than a brisk one (brief: 'creeping all the way is not free')
+  tripShare: 0.58,               // the tiring is set by the board: reeling steadily at the slow reel from the pocket to the mouth spends this share of the grip, however long the tunnel. It goes by seconds with the winch turning, so a slower or stop-start reel costs more than a brisk one (brief: 'creeping all the way is not free')
   warnRange: 7, warnLead: 0.28, // the wall warning: how close (units) and how far ahead (s) the swing is looked at; Pursuit lengthens both
   headR: 4.5,                     // collision radius of the folded head. The brief's "30 wide" is the jaws spread; the drill's tunnel is only about 26 wide (measured), so the folded head is what has to fit
   loadPad: 10,                  // the brief's "+10": the load's extra width at 0 points (7.3 at 9)
@@ -410,7 +410,9 @@ function stepReel(g, dt, input) {
   // the grip tires only while the winch is turning: a thumb resting on the glass costs nothing
   if (g.v > 2) {
     g.reeledT += dt;
-    if (g.freeLeft > 0) g.freeLeft -= dt; else { const tr = g.tireRate * dt; g.grip -= tr; g.tripTired += tr; }   // by seconds with the winch turning: a thumb resting costs nothing, creeping costs time
+    // by seconds with the winch turning (coasting down and winding up included): a thumb resting with the winch stopped costs nothing, a long hold at the slow reel costs time,
+    // and stop-start costs more than a steady hold because the winch spends its time winding up and coasting
+    if (g.freeLeft > 0) g.freeLeft -= dt; else { const tr = g.tireRate * dt; g.grip -= tr; g.tripTired += tr; }
     // a fast pull also strains the jaws: the cable goes taut and the load tugs at them (nothing at the slow reel)
     const over = Math.max(0, (g.v - BASE.slow) / (BASE.full - BASE.slow));
     g.grip -= BASE.strain * over * over * dt;
