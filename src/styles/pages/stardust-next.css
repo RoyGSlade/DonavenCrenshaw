@@ -61,3 +61,14 @@
   .sn-skill-list { gap: 8px; }
   .sn-skill-list li { padding: 13px 12px 14px; }
 }
+
+/* The banner on the Stardust page that leads here. */
+.sd-next-preview { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr); gap: 24px; align-items: center; margin: 36px 0 0; padding: 18px; border: 1px solid rgba(129, 230, 223, .32); border-radius: 8px; background: linear-gradient(110deg, rgba(129, 230, 223, .09), rgba(129, 230, 223, .02) 70%), rgba(8, 13, 19, .6); }
+.sd-next-preview-image { position: relative; display: block; overflow: hidden; border-radius: 5px; }
+.sd-next-preview img { display: block; width: 100%; height: auto; }
+.sd-next-preview-image span { position: absolute; left: 12px; bottom: 12px; padding: 7px 12px 7px 10px; border: 1px solid rgba(233, 246, 255, .5); border-radius: 999px; background: rgba(4, 7, 13, .78); color: #e9f6ff; font: 700 .68rem var(--font-mono); letter-spacing: .12em; text-transform: uppercase; }
+.sd-next-preview-kicker { margin: 0 0 7px; color: #81e6df !important; font: 700 .68rem var(--font-mono); letter-spacing: .12em; text-transform: uppercase; }
+.sd-page .sd-next-preview h2 { margin: 0 0 7px; font-size: clamp(1.5rem, 3vw, 2.4rem); }
+.sd-next-preview p:not(.sd-next-preview-kicker) { margin: 0 0 12px; }
+.sd-next-preview a:not(.sd-next-preview-image) { color: #e6f5ff; text-decoration-color: #81e6df; text-underline-offset: 5px; }
+@media (max-width: 700px) { .sd-next-preview { grid-template-columns: 1fr; } }

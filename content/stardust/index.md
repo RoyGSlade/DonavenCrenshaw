@@ -28,6 +28,16 @@ ogImage: "assets/images/social/stardust-card.png"
   <div><strong>Play with friends</strong><span>Challenge links and Dogfight rooms</span></div>
 </div>
 
+<section class="sd-next-preview" aria-labelledby="sd-next-preview-title">
+  <a class="sd-next-preview-image" href="stardust/next/"><img src="assets/video/stardust-next/poster.jpg" width="1280" height="800" loading="lazy" decoding="async" alt="The bridge of the Tin Duchess lit red by a hull breach alarm, with two boarders coming through the airlock."><span aria-hidden="true">▶ Watch · 1 min</span></a>
+  <div>
+    <p class="sd-next-preview-kicker">The next Stardust · In development</p>
+    <h2 id="sd-next-preview-title">Get out of the cockpit.</h2>
+    <p>The next version puts you on your feet aboard the freighter Tin Duchess: a mop, a rifle and a very long week. Watch one minute recorded from the current build. It is not public yet and has no date.</p>
+    <a href="stardust/next/">Watch the film →</a>
+  </div>
+</section>
+
 <section class="sd-section" id="garage" aria-labelledby="sd-garage-title">
   <div class="sd-section-head"><h2 id="sd-garage-title">Build the ship you want to fly</h2><p class="sd-meta">Needle · Manta · Wisp · Original Courier</p></div>
   <p class="sd-copy">Choose a family, swap body, wings, cockpit and engines, then make it yours with paint, palettes and layered decals. Compare the build's speed, thrust, grip, boost and brake in the garage before you equip it.</p>

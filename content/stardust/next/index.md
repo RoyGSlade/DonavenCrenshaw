@@ -19,7 +19,7 @@ ogImageAlt: "The bridge of the Tin Duchess seen from above, lit red by a hull br
   <video controls playsinline preload="metadata" width="1280" height="800" poster="assets/video/stardust-next/poster.jpg" aria-label="One minute of the next Stardust: cleaning the ship, a hull breach, a corridor fight, stealth, the skill games, a race and a dogfight.">
     <source src="assets/video/stardust-next/showcase.mp4" type="video/mp4">
   </video>
-  <figcaption><span>Recorded from the current build · 21 November 2026</span><span>Music: “Alpha Relay: Open Thrust”, from today's Stardust.</span></figcaption>
+  <figcaption><span>Recorded from the current build · 21 November 2026</span><span>Music: “Dustfall Station: Narrow Drift”, from today's Stardust.</span></figcaption>
 </figure>
 
 <div class="sn-under">
