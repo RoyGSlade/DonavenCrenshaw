@@ -26,9 +26,9 @@ export const tierInfo = (tier) => TIER[String(tierOf(tier))];
 export const BASE = Object.freeze({
   speedIn: 180,                 // head speed going in, units a second (brief): the base; a clean line picks up speed (see cruise)
   cruiseGain: 0.9, cruiseUp: 0.55, cruiseDown: 3.2,   // a head that goes without touching a wall winds up to 1.9 x the base speed over about 1.6 s; a scrape takes it back at 3.2 a second (not in the brief: a long tunnel is dead time otherwise)
-  slowKnockShare: 0.3,          // the most of the grip that knocks at the slow reel can take in one trip
+  slowKnockShare: 0.25,          // the most of the grip that knocks at the slow reel can take in one trip
   tireClock: 0.2,               // how much of the tiring is the same on every roll (0.5: half is a share of the roll's grip, half of a plain 100), so a great roll is not just a bigger tank for the same tire
-  tripShare: 0.58,               // the tiring is set by the board: reeling steadily at the slow reel from the pocket to the mouth spends this share of the grip, however long the tunnel. It goes by seconds with the winch turning, so a slower or stop-start reel costs more than a brisk one (brief: 'creeping all the way is not free')
+  tripShare: 0.66,               // the tiring is set by the board: reeling steadily at the slow reel from the pocket to the mouth spends this share of the grip, however long the tunnel. It goes by seconds with the winch turning, so a slower or stop-start reel costs more than a brisk one (brief: 'creeping all the way is not free')
   warnRange: 7, warnLead: 0.28, // the wall warning: how close (units) and how far ahead (s) the swing is looked at; Pursuit lengthens both
   headR: 4.5,                     // collision radius of the folded head. The brief's "30 wide" is the jaws spread; the drill's tunnel is only about 26 wide (measured), so the folded head is what has to fit
   loadPad: 10,                  // the brief's "+10": the load's extra width at 0 points (7.3 at 9)
@@ -38,6 +38,7 @@ export const BASE = Object.freeze({
   reach: 26,                    // grab reach from the head to the core's skin (brief)
   slow: 80, full: 200,          // reel speeds (brief)
   rampUp: 0.7, rampDown: 2.2,   // how fast a held pad winds the winch from slow to full, and how fast it unwinds when let go (per second)
+  stopDamp: 4,                  // extra damping of the swing while the winch slows after you let go (per second): easing off is the thing the warning asks for, so it must not cost a knock
   accel: 130, brake: 140,       // how fast the winch itself speeds up and slows down (units a second per second)
   grip: 100,                    // the grip (brief)
   crackGrip: 0.1,               // each crack takes this share off the grip on that find (not in the brief: it is what makes a drop a harder problem)
@@ -403,6 +404,8 @@ function stepReel(g, dt, input) {
     const noise = (Math.sin(js.f[0] * 6.283 * g.t + js.p[0]) + Math.sin(js.f[1] * 6.283 * g.t + js.p[1]) * 0.8 + Math.sin(js.f[2] * 6.283 * g.t + js.p[2]) * 0.6) / 1.7;
     ax += -q.ty * J * noise; ay += q.tx * J * noise;
   }
+  // easing off (pad up, the winch slowing) must not throw the load into the wall: the cable plays out the forward swing of a stop
+  if (!g.reelHold && g.v > 2) { const d = Math.max(0, 1 - BASE.stopDamp * dt); g.off.vx *= d; g.off.vy *= d; }
   swing(g, dt, ax - fx / swayScale(g), ay - fy / swayScale(g));
   const K = swayScale(g);
   const hit = seat(g, dt, K);

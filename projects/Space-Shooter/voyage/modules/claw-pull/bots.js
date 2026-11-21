@@ -154,7 +154,7 @@ function reelControl(g, o, rnd, st) {
 
 // --- perfect -------------------------------------------------------------------------------------------------------
 export function perfectBot(g, o = {}) {
-  const P = { paceC: 0.4, margin: 2, vmax: 95, ...o };
+  const P = { paceC: 0.4, margin: 2, vmax: 100, vmin: 80, ...o };
   const pl = planner(g, { check: true });
   let lastFail = -9, waitT = 0;
   return {
@@ -187,7 +187,7 @@ export function perfectBot(g, o = {}) {
 
 // --- wobbly --------------------------------------------------------------------------------------------------------
 export function wobblyBot(g, o = {}) {
-  const P = { sigma: 7, lag: 0.28, paceC: 1.1, margin: 2.5, flutter: 0.35, hold: [1.2, 2.2], nudgeLag: 0.3, nudgeSigma: 0.35, eye: 6, lapse: 0.1, ...o };
+  const P = { sigma: 7, lag: 0.28, paceC: 1.3, margin: 2.5, flutter: 0.35, hold: [1.2, 2.2], nudgeLag: 0.3, nudgeSigma: 0.35, eye: 6, lapse: 0.15, ...o };
   const rnd = roller({ rng: hashSeed('claw-pull', 'bot', o.kind || 'wobbly', g.seed, o.salt || 0) });
   const gauss = mkGauss(rnd);
   const pl = planner(g, { check: false, rnd, eyeNoise: P.eye });
