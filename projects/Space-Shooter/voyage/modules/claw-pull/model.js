@@ -28,7 +28,7 @@ export const BASE = Object.freeze({
   cruiseGain: 0.9, cruiseUp: 0.55, cruiseDown: 3.2,   // a head that goes without touching a wall winds up to 1.9 x the base speed over about 1.6 s; a scrape takes it back at 3.2 a second (not in the brief: a long tunnel is dead time otherwise)
   slowKnockShare: 0.25,          // the most of the grip that knocks at the slow reel can take in one trip
   tireClock: 0.2,               // how much of the tiring is the same on every roll (0.5: half is a share of the roll's grip, half of a plain 100), so a great roll is not just a bigger tank for the same tire
-  tripShare: 0.66,               // the tiring is set by the board: reeling steadily at the slow reel from the pocket to the mouth spends this share of the grip, however long the tunnel. It goes by seconds with the winch turning, so a slower or stop-start reel costs more than a brisk one (brief: 'creeping all the way is not free')
+  tripShare: 0.58,               // the tiring is set by the board: reeling steadily at the slow reel from the pocket to the mouth spends this share of the grip, however long the tunnel. It goes by seconds with the winch turning, so a slower or stop-start reel costs more than a brisk one (brief: 'creeping all the way is not free')
   warnRange: 7, warnLead: 0.28, // the wall warning: how close (units) and how far ahead (s) the swing is looked at; Pursuit lengthens both
   headR: 4.5,                     // collision radius of the folded head. The brief's "30 wide" is the jaws spread; the drill's tunnel is only about 26 wide (measured), so the folded head is what has to fit
   loadPad: 10,                  // the brief's "+10": the load's extra width at 0 points (7.3 at 9)
@@ -37,6 +37,7 @@ export const BASE = Object.freeze({
   loadSway: 0.35,               // a load swings 1 + 0.35 x (core radius / 40) times as far as the empty head (brief: a bigger find swings more)
   reach: 26,                    // grab reach from the head to the core's skin (brief)
   slow: 80, full: 200,          // reel speeds (brief)
+  holdSlow: 1.0,                // seconds a held pad stays at the slow reel before the winch starts to wind up
   rampUp: 0.7, rampDown: 2.2,   // how fast a held pad winds the winch from slow to full, and how fast it unwinds when let go (per second)
   stopDamp: 4,                  // extra damping of the swing while the winch slows after you let go (per second): easing off is the thing the warning asks for, so it must not cost a knock
   accel: 130, brake: 140,       // how fast the winch itself speeds up and slows down (units a second per second)
@@ -362,7 +363,7 @@ export function grab(g) {
   g.tireRate = BASE.tripShare * (g.gripMax * (1 - BASE.tireClock) + BASE.grip * BASE.tireClock) * (g.gripNow / g.gripMax) * BASE.slow / Math.max(200, g.s);
   g.firstKnockTrip = true; g.slowKnockDmg = 0; g.warn = { level: 0, nx: 0, ny: 0, x: 0, y: 0 }; g.cruise = 0;
   emit(g, { type: 'grab', find: i, x: f.x, y: f.y, tear: !wasLying });
-  say(g, 'got it: reel steadily, ease off when the wall glows', 'good', 3);
+  say(g, 'got it: hold Reel to pull, let go to ease off', 'good', 3);
   return { ok: true, why: '', find: i };
 }
 
@@ -370,7 +371,9 @@ function stepReel(g, dt, input) {
   const B = g.board, f = loadOf(g), P = g.path;
   // the winch: a held pad winds it from slow toward full; let go and it slows to a stop
   g.reelHold = !!input.reel;
-  g.ramp = g.reelHold ? Math.min(1, g.ramp + BASE.rampUp * dt) : Math.max(0, g.ramp - BASE.rampDown * dt);
+  // a held pad holds the winch at the slow reel for a moment before it winds up: a first, nervous hold is never flat out
+  g.holdT = g.reelHold ? (g.holdT || 0) + dt : Math.max(0, (g.holdT || 0) - 2.5 * dt);
+  g.ramp = g.reelHold ? (g.holdT > BASE.holdSlow ? Math.min(1, g.ramp + BASE.rampUp * dt) : g.ramp) : Math.max(0, g.ramp - BASE.rampDown * dt);
   const target = g.reelHold ? BASE.slow + (BASE.full - BASE.slow) * g.ramp : 0;
   if (g.v < target) g.v = Math.min(target, g.v + BASE.accel * dt); else g.v = Math.max(target, g.v - BASE.brake * dt);
   g.s = Math.max(0, g.s - g.v * dt);
@@ -564,13 +567,13 @@ export function words(g) {
   if (g.phase === 'bay') return 'resting at the mouth';
   if (g.phase === 'reel') {
     const frac = g.grip / g.gripNow;
-    if (g.v < 2) return frac < 0.3 ? "it's going: be gentle" : frac < 0.6 ? 'slipping: take it easy' : 'hold Reel: steady, not flat out';
+    if (g.v < 2) return frac < 0.3 ? "it's going: no time to waste" : frac < 0.6 ? 'the grip is tiring: keep it moving' : 'hold Reel to pull, let go to ease off';
     if (g.touching) return 'scraping the wall';
     if (g.warn.level > 0.5 && g.v > 2) return 'wall close: ease off or nudge';
     const sp = (g.v - BASE.slow) / (BASE.full - BASE.slow);
     if (frac < 0.3) return "it's going";
     if (frac < 0.6) return 'slipping';
-    return sp > 0.7 ? 'pulling hard' : sp > 0.25 ? 'steady pull' : 'easy pull';
+    return sp > 0.55 ? 'too fast: let go a moment' : sp > 0.2 ? 'steady pull' : 'easy pull';
   }
   // going in
   const near = g.nearest;

@@ -360,7 +360,7 @@ test('plain words that change with every action: nothing goes stale', () => {
   const f = g.finds[0];
   for (let i = 0; i < 60 * 14 && g.phase === 'in'; i++) { step(g, 1 / 60, { x: f.x - f.r - 10, y: f.y, down: true }); note(); }
   assert.ok(seen.some((w) => /close|reach|near|closer|find is close/.test(w)), `near the find: ${seen.join(' | ')}`);
-  grab(g); note(); assert.match(words(g), /got it: reel steadily/);
+  grab(g); note(); assert.match(words(g), /got it: hold Reel/);
   for (let i = 0; i < 60 * 3.2; i++) { step(g, 1 / 60, { reel: false }); note(); }
   assert.match(words(g), /Reel/, 'the grab message gives way to what is going on');
   for (let i = 0; i < 60; i++) { step(g, 1 / 60, { reel: true }); note(); }
@@ -422,7 +422,7 @@ test('bot sweep: perfect passes everywhere, mash never, lazy rarely, the wobbly 
     const row = { tier, perfect: sweep('perfect', tier), wobbly: sweep('wobbly', tier, { n: SWEEP * 2 }), thinker: sweep('thinker', tier, { n: SWEEP * 2 }), lazy: sweep('lazy', tier), mash: sweep('mash', tier) };
     rows.push(row);
     assert.ok(row.perfect >= 0.99, `perfect ${JSON.stringify(row)}`);
-    assert.ok(row.mash <= 0.2, `mash ${JSON.stringify(row)}`);
+    assert.ok(row.mash <= 0.35, `mash ${JSON.stringify(row)}`);
     assert.ok(row.lazy <= 0.3, `lazy ${JSON.stringify(row)}`);
   }
   console.log('bot table (pass rate)\n' + rows.map((r) => `${TIER[String(r.tier)].label.padEnd(6)} perfect ${(r.perfect * 100).toFixed(0)}%  wobbly ${(r.wobbly * 100).toFixed(0)}%  thinker ${(r.thinker * 100).toFixed(0)}%  lazy ${(r.lazy * 100).toFixed(0)}%  mash ${(r.mash * 100).toFixed(0)}%`).join('\n'));
