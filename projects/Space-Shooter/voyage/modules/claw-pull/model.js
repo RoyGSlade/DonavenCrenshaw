@@ -26,8 +26,9 @@ export const tierInfo = (tier) => TIER[String(tierOf(tier))];
 export const BASE = Object.freeze({
   speedIn: 180,                 // head speed going in, units a second (brief): the base; a clean line picks up speed (see cruise)
   cruiseGain: 0.9, cruiseUp: 0.55, cruiseDown: 3.2,   // a head that goes without touching a wall winds up to 1.9 x the base speed over about 1.6 s; a scrape takes it back at 3.2 a second (not in the brief: a long tunnel is dead time otherwise)
-  slowKnockShare: 0.4,          // the most of the grip that knocks at the slow reel can take in one trip
-  tripBudget: 0.35,              // creeping all the way at the slow reel tires at most this share of the grip, however long the tunnel (so a careful hand always has grip left to finish)
+  slowKnockShare: 0.3,          // the most of the grip that knocks at the slow reel can take in one trip
+  tireClock: 0.2,               // how much of the tiring is the same on every roll (0.5: half is a share of the roll's grip, half of a plain 100), so a great roll is not just a bigger tank for the same tire
+  tripShare: 0.55,               // the tiring is set by the board: reeling steadily at the slow reel from the pocket to the mouth spends this share of the grip, however long the tunnel. It goes by seconds with the winch turning, so a slower or stop-start reel costs more than a brisk one (brief: 'creeping all the way is not free')
   warnRange: 7, warnLead: 0.28, // the wall warning: how close (units) and how far ahead (s) the swing is looked at; Pursuit lengthens both
   headR: 4.5,                     // collision radius of the folded head. The brief's "30 wide" is the jaws spread; the drill's tunnel is only about 26 wide (measured), so the folded head is what has to fit
   loadPad: 10,                  // the brief's "+10": the load's extra width at 0 points (7.3 at 9)
@@ -37,13 +38,13 @@ export const BASE = Object.freeze({
   reach: 26,                    // grab reach from the head to the core's skin (brief)
   slow: 80, full: 200,          // reel speeds (brief)
   rampUp: 0.7, rampDown: 2.2,   // how fast a held pad winds the winch from slow to full, and how fast it unwinds when let go (per second)
-  accel: 100, brake: 140,       // how fast the winch itself speeds up and slows down (units a second per second)
+  accel: 130, brake: 140,       // how fast the winch itself speeds up and slows down (units a second per second)
   grip: 100,                    // the grip (brief)
   crackGrip: 0.1,               // each crack takes this share off the grip on that find (not in the brief: it is what makes a drop a harder problem)
   knockLo: 22, knockHi: 40,     // a knock costs this much by how hard the load hit (brief: 22 to 40 by speed)
   strain: 30,                   // a fast pull strains the jaws this much a second at full reel, by the square of how far past slow it is (not in the brief)
   tire: 7,                      // the grip tires this much a second while you reel (brief 2.5; raised a little so that creeping all the way is not free)
-  nudgeMax: 16, nudgeW: 8,      // how far the nudge can shift the cable's end, and how quickly it follows the push (per second)
+  nudgeMax: 16, nudgeAccel: 400, nudgeLook: 0.15,   // the nudge is a push on the load of up to this acceleration (units a second per second), fading out as the load, looking this far ahead (s), reaches the middle of the tunnel
   lead: 64,                     // how far ahead of the head the pointer's anchor may run
   knockSpeed: 3, knockCool: 0.4, grindAfter: 0.3,
   shatter: 3,                   // cracks to shatter, shared with the drill (brief)
@@ -357,10 +358,10 @@ export function grab(g) {
   g.grip = g.gripNow; g.reelHold = false; g.ramp = 0; g.v = 0; g.nudge = { x: 0, y: 0 }; g.reeledT = 0; g.knocksTrip = 0; g.tripTired = 0;
   g.aVel = { x: 0, y: 0 }; g.phase = 'reel'; g.touching = false; g.touchT = 0;
   g.freeLeft = g.rules.freeTire;
-  g.tireRate = Math.min(g.rules.tire, BASE.tripBudget * g.gripNow * BASE.slow / Math.max(200, g.s));
+  g.tireRate = BASE.tripShare * (g.gripMax * (1 - BASE.tireClock) + BASE.grip * BASE.tireClock) * (g.gripNow / g.gripMax) * BASE.slow / Math.max(200, g.s);
   g.firstKnockTrip = true; g.slowKnockDmg = 0; g.warn = { level: 0, nx: 0, ny: 0, x: 0, y: 0 }; g.cruise = 0;
   emit(g, { type: 'grab', find: i, x: f.x, y: f.y, tear: !wasLying });
-  say(g, 'got it: reel gently, ease off in tight spots', 'good', 3);
+  say(g, 'got it: reel steadily, ease off when the wall glows', 'good', 3);
   return { ok: true, why: '', find: i };
 }
 
@@ -372,15 +373,23 @@ function stepReel(g, dt, input) {
   const target = g.reelHold ? BASE.slow + (BASE.full - BASE.slow) * g.ramp : 0;
   if (g.v < target) g.v = Math.min(target, g.v + BASE.accel * dt); else g.v = Math.max(target, g.v - BASE.brake * dt);
   g.s = Math.max(0, g.s - g.v * dt);
-  // the nudge: where the player pushes the end of the cable, within a small reach
-  const nl = Math.hypot(input.nx || 0, input.ny || 0), k = nl > 1 ? 1 / nl : 1;
-  const wx = (input.nx || 0) * k * BASE.nudgeMax, wy = (input.ny || 0) * k * BASE.nudgeMax;
-  // the end of the cable follows the push like a heavy thing: a critically damped follow, so a jab is not a jolt
-  const wn = BASE.nudgeW, nv = g.nudge;
-  nv.vx = (nv.vx || 0) + (wn * wn * (wx - nv.x) - 2 * wn * (nv.vx || 0)) * dt; nv.vy = (nv.vy || 0) + (wn * wn * (wy - nv.y) - 2 * wn * (nv.vy || 0)) * dt;
-  nv.x += nv.vx * dt; nv.y += nv.vy * dt;
+  // the nudge is a lean: a push on the load itself (not on the cable's end, which would swing the load the wrong way for a moment). It eases the load
+  // toward the middle of the tunnel along the push and stops pushing once the load is there, so it cannot overshoot the middle
+  const nl = Math.hypot(input.nx || 0, input.ny || 0);
+  const q0 = pathAt(P, g.s);
+  let fx = 0, fy = 0, leanF = 0;
+  if (nl > 0.02) {
+    const ux = (input.nx || 0) / nl, uy = (input.ny || 0) / nl;
+    const ray = (sx, sy) => { for (let d = 1.5; d <= 30; d += 1.5) if (probe(B, q0.x + sx * d, q0.y + sy * d, 2).d < 1) return d; return 30; };
+    const mid = (ray(ux, uy) - ray(-ux, -uy)) / 2;                       // the middle between the walls, along the push, from the cable's own point
+    const hu = (g.head.x - q0.x) * ux + (g.head.y - q0.y) * uy, vu = (g.anchor.vx + g.off.vx * swayScale(g)) * ux + (g.anchor.vy + g.off.vy * swayScale(g)) * uy;
+    const gate = Math.max(0, Math.min(1, (mid - (hu + vu * BASE.nudgeLook)) / 5));   // fades to nothing as the load (and where it is heading) reaches the middle
+    leanF = BASE.nudgeAccel * Math.min(1, nl) * gate;
+    fx = ux * leanF; fy = uy * leanF;
+  }
+  g.nudge.x = fx / BASE.nudgeAccel * BASE.nudgeMax; g.nudge.y = fy / BASE.nudgeAccel * BASE.nudgeMax;   // for the view and the tests: how hard the lean is pushing
   const q = pathAt(P, g.s);
-  let nx = q.x + g.nudge.x, ny = q.y + g.nudge.y;
+  let nx = q.x, ny = q.y;
   // the end of the cable cannot be pushed into rock
   const pe = probe(B, nx, ny, 5);
   if (pe.d < 3) { nx += pe.nx * (3 - pe.d); ny += pe.ny * (3 - pe.d); }
@@ -394,14 +403,14 @@ function stepReel(g, dt, input) {
     const noise = (Math.sin(js.f[0] * 6.283 * g.t + js.p[0]) + Math.sin(js.f[1] * 6.283 * g.t + js.p[1]) * 0.8 + Math.sin(js.f[2] * 6.283 * g.t + js.p[2]) * 0.6) / 1.7;
     ax += -q.ty * J * noise; ay += q.tx * J * noise;
   }
-  swing(g, dt, ax, ay);
+  swing(g, dt, ax - fx / swayScale(g), ay - fy / swayScale(g));
   const K = swayScale(g);
   const hit = seat(g, dt, K);
 
   // the grip tires only while the winch is turning: a thumb resting on the glass costs nothing
   if (g.v > 2) {
     g.reeledT += dt;
-    if (g.freeLeft > 0) g.freeLeft -= dt; else { const tr = g.tireRate * Math.min(1.25, g.v / BASE.slow) * dt; g.grip -= tr; g.tripTired += tr; }   // the tiring goes by distance reeled (up to a little over the slow reel), so short gentle pulls cost no more than one long slow one
+    if (g.freeLeft > 0) g.freeLeft -= dt; else { const tr = g.tireRate * dt; g.grip -= tr; g.tripTired += tr; }   // by seconds with the winch turning: a thumb resting costs nothing, creeping costs time
     // a fast pull also strains the jaws: the cable goes taut and the load tugs at them (nothing at the slow reel)
     const over = Math.max(0, (g.v - BASE.slow) / (BASE.full - BASE.slow));
     g.grip -= BASE.strain * over * over * dt;
@@ -436,9 +445,15 @@ function stepReel(g, dt, input) {
       // and creeping tires at most 0.4 of it, so a hand that reels gently always has grip left to finish
       if (g.v <= BASE.slow * 1.25) { const room = Math.max(0, BASE.slowKnockShare * g.gripNow - g.slowKnockDmg); cost = Math.min(cost, room); g.slowKnockDmg += cost; }
       const warned = g.t - g.lastWarnT < 0.7;
-      g.grip -= cost; g.knocks++; g.knocksTrip++; f.knocks++;
-      emit(g, { type: 'knock', x: g.head.x - hit.nx * g.head.r, y: g.head.y - hit.ny * g.head.r, nx: hit.nx, ny: hit.ny, sev, cost, warned, grip: Math.max(0, g.grip / g.gripNow) });
-      say(g, g.knocks === 1 ? 'knock! nudge the load off the wall' : sev > 0.5 ? 'hard knock: the grip loosens' : 'knock: the grip loosens', 'warn', g.knocks === 1 ? 2.6 : 1.4);
+      if (cost < 0.5) {
+        // a contact that costs nothing is a scrape, not a knock: no knock event, no count, a quiet scrape
+        g.knockCool = 0.15; g.firstKnockTrip = true;
+        if ((g.scrapeT += dt) > 0.1) { g.scrapeT = 0; emit(g, { type: 'scrape', x: g.head.x - hit.nx * 6, y: g.head.y - hit.ny * 6, nx: hit.nx, ny: hit.ny, loaded: true }); }
+      } else {
+        g.grip -= cost; g.knocks++; g.knocksTrip++; f.knocks++;
+        emit(g, { type: 'knock', x: g.head.x - hit.nx * g.head.r, y: g.head.y - hit.ny * g.head.r, nx: hit.nx, ny: hit.ny, sev, cost, warned, grip: Math.max(0, g.grip / g.gripNow) });
+        say(g, g.knocks === 1 ? 'knock! nudge the load off the wall' : sev > 0.5 ? 'hard knock: the grip loosens' : 'knock: the grip loosens', 'warn', g.knocks === 1 ? 2.6 : 1.4);
+      }
     } else if ((g.scrapeT += dt) > 0.12) { g.scrapeT = 0; emit(g, { type: 'scrape', x: g.head.x - hit.nx * 6, y: g.head.y - hit.ny * 6, nx: hit.nx, ny: hit.ny, loaded: true }); }
   } else g.touchT = 0;
   // grip words and thresholds
@@ -544,7 +559,7 @@ export function words(g) {
   if (g.phase === 'bay') return 'resting at the mouth';
   if (g.phase === 'reel') {
     const frac = g.grip / g.gripNow;
-    if (g.v < 2) return frac < 0.3 ? "it's going: be gentle" : frac < 0.6 ? 'slipping: take it easy' : 'short pulls on Reel: gently';
+    if (g.v < 2) return frac < 0.3 ? "it's going: be gentle" : frac < 0.6 ? 'slipping: take it easy' : 'hold Reel: steady, not flat out';
     if (g.touching) return 'scraping the wall';
     if (g.warn.level > 0.5 && g.v > 2) return 'wall close: ease off or nudge';
     const sp = (g.v - BASE.slow) / (BASE.full - BASE.slow);
