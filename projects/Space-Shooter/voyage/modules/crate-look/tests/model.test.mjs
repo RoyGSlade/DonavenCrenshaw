@@ -215,3 +215,21 @@ test('every fixture is complete: five, with the words and shapes the brief asks 
   assert.ok(FX.wrongslip.context.crate.contents.some((c) => c.hidden) && FX.wrongslip.context.crate.slip.length);
   assert.deepEqual(new Set(Object.values(FX).map((f) => f.context.crate.kind)), new Set(['wood', 'cold', 'steel']));
 });
+
+test('the manifest matches contract 1.1: a screen, the Perception paths, the files it names exist', () => {
+  const man = JSON.parse(fs.readFileSync(path.join(HERE, '..', 'manifest.json'), 'utf8'));
+  assert.equal(man.id, 'crate-look'); assert.equal(man.kind, 'screen'); assert.equal(man.contract, '1.1'); assert.equal(man.skill, 'perception');
+  assert.deepEqual(man.paths.map((p) => p.id), [...M.PATHS]); for (const p of man.paths) { assert.equal(p.tabletopSkill, 'Perception'); assert.ok(p.division); }
+  assert.ok(['draft', 'fable-passed', 'erik-played', 'approved', 'in-game'].includes(man.status));
+  for (const f of ['index.js', 'model.js', 'view.js', 'style.css', 'audio.js', 'test.html', 'README.md', 'fixtures.json', 'tests/model.test.mjs', 'tests/browser.test.mjs', ...man.art.filter((a) => !a.endsWith('/')), ...man.audio]) assert.ok(fs.existsSync(path.join(HERE, '..', f)), f);
+  for (const it of Object.values(FX.ore.context.items)) if (it.icon) assert.ok(fs.existsSync(path.join(HERE, '..', it.icon)), it.icon);
+  for (const k of ['seed', 'tier', 'points', 'quick', 'context.crate']) assert.ok(man.inputs.includes(k));
+  const css = fs.readFileSync(path.join(HERE, '..', 'style.css'), 'utf8'); assert.ok(!/box-shadow/.test(css.replace(/\/\*[\s\S]*?\*\//g, '')), 'no box-shadow in the stylesheet');
+});
+
+test('every sound id the model sends is one audio.js can make, and the lists match', async () => {
+  const A = await import('../audio.js'); assert.deepEqual([...A.SOUND_IDS].sort(), [...M.SOUND_IDS].sort());
+  const s = make('wrongslip'); const ids = new Set();
+  for (const e of [...M.openLid(s), ...M.take(s, 'fuel-cell'), ...M.putIn(s, 'medkit'), ...M.chalk(s), ...M.shutLid(s)]) if (e.sound) ids.add(e.sound);
+  for (const id of ids) assert.ok(A.SOUND_IDS.includes(id), id);
+});

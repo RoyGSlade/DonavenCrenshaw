@@ -96,6 +96,7 @@ for (const size of SIZES) {
     assert.equal(await page.evaluate(() => window.__leaveRegistered), 1, 'registered once through ctx.onLeave');
     assert.equal(await page.locator('.m-crate-look').count(), 0, 'torn down');
     const sounds = await page.evaluate(() => window.__sounds); for (const id of ['latch', 'creak', 'thud', 'straw', 'thunk', 'chalk']) assert.ok(sounds.includes(id), `sound ${id} was asked for`);
+    assert.ok((await page.evaluate(() => window.__played)).includes('latch'), 'the sounds really played through the host');
     await page.waitForTimeout(1800); assert.equal(await page.evaluate(() => window.__voices()), 0, 'no sound left running');
     assert.deepEqual(s.errors, []); await s.ctx.close();
   });

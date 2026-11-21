@@ -1,0 +1,21 @@
+{
+  "id": "crate-look",
+  "version": "0.1.0",
+  "kind": "screen",
+  "title": "Crate contents",
+  "verb": "Look inside",
+  "skill": "perception",
+  "paths": [
+    { "id": "awareness", "division": "Awareness", "tabletopSkill": "Perception" },
+    { "id": "inspection", "division": "Inspection", "tabletopSkill": "Perception" },
+    { "id": "trace", "division": "Trace", "tabletopSkill": "Perception" }
+  ],
+  "where": ["hangar bay crates", "loading bay", "ship hold", "wrecks"],
+  "length_s": [8, 90],
+  "inputs": ["seed", "tier", "points", "quick", "context.crate", "context.items", "context.save"],
+  "outputs": ["success", "grade", "took", "put", "tag", "saw", "effects.items", "effects.world.crates"],
+  "art": ["art/items/"],
+  "audio": ["audio.js"],
+  "status": "draft",
+  "contract": "1.1"
+}

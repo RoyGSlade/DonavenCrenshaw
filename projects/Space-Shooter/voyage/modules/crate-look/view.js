@@ -46,7 +46,7 @@ export function slotBoxes(g, n, seed) {
     const l = g.xl(yc) + 18, rr = g.xr(yc) - 18;
     const cw = (rr - l) / cols;
     const off = (cols - inRow) * cw * 0.5;
-    const size = Math.min(cw * 1.04, rh * 1.25);
+    const size = Math.min(cw * 1.1, rh * 1.3);
     const jx = (M.rand01(M.hashSeed(seed, 'jx', i)) - 0.5) * cw * 0.1, jy = (M.rand01(M.hashSeed(seed, 'jy', i)) - 0.5) * rh * 0.08;
     out.push({ x: l + off + (c + 0.5) * cw + jx, y: yc + jy, size });
   }
@@ -264,7 +264,7 @@ export function mount(stage, state, env) {
     const bw = box.clientWidth, bh = box.clientHeight;
     const wantTall = stage.clientWidth < 600 && stage.clientHeight > stage.clientWidth * 1.05;
     // on a phone the crate grows taller to fill the room it is given, so the piles stay big enough to tap
-    const wantH = wantTall && bw > 0 && bh > 0 ? Math.max(700, Math.min(1000, Math.round((bh / bw) * W))) : g.H;
+    const wantH = wantTall && bw > 0 && bh > 0 ? Math.max(700, Math.min(1180, Math.round((bh / bw) * W))) : g.H;
     if (wantTall !== tall || (wantTall && Math.abs(wantH - g.H) > 6)) { tall = wantTall; g = geometry(tall, wantH); buildShell(); render(); }
     const wpx = Math.max(0, Math.min(bw, bh * (W / g.H)));
     crate.style.width = `${wpx}px`; crate.style.height = `${wpx * (g.H / W)}px`;
@@ -352,7 +352,7 @@ export function mount(stage, state, env) {
       l.smudged ? h('span', { class: 'cl-blot', text: 'smudged' }) : null,
       l.mark ? h('span', { class: 'cl-pencil' }, h('b', { text: l.mark === 'missing' ? 'none here' : l.mark === 'more' ? `found ${l.found}` : `found ${l.found}` })) : null));
     const paper = h('button', { class: `cl-slip${slipOpen ? ' is-open' : ''}`, type: 'button', 'aria-expanded': String(slipOpen), 'aria-label': 'Packing slip: tap to read or fold' },
-      h('i', { class: 'cl-clip', 'aria-hidden': 'true' }), h('div', { class: 'cl-slip-h', text: 'Packing slip' }), h('ul', {}, ...lines),
+      h('i', { class: 'cl-clip', 'aria-hidden': 'true' }), h('div', { class: 'cl-slip-h', text: 'Packing slip' }), h('ul', {}, ...lines), v.slip.length > 3 ? h('i', { class: 'cl-caret', 'aria-hidden': 'true', text: '▾' }) : null,
       v.origin ? h('div', { class: `cl-origin is-${v.origin.from}`, text: (v.origin.from === 'trace' ? 'You notice: ' : 'From: ') + v.origin.text }) : null);
     paper.addEventListener('click', () => { slipOpen = !slipOpen; sound('slip'); paper.classList.toggle('is-open', slipOpen); paper.setAttribute('aria-expanded', String(slipOpen)); });
     slipEl.append(paper);

@@ -94,12 +94,12 @@
 /* cold boxes breathe fog; opening kicks up dust */
 .m-crate-look .cl-fog{opacity:0;transition:opacity 1s}
 .m-crate-look.has-fog .cl-fog{opacity:1}
-.m-crate-look .cl-fog i{position:absolute;bottom:20%;left:calc(8% + var(--i) * 18%);width:30%;aspect-ratio:1.6;border-radius:50%;background:radial-gradient(ellipse,#e8f8ffcc,#e8f8ff00 68%);filter:blur(10px);animation:cl-fog 5s ease-in-out infinite;animation-delay:calc(var(--i) * -1s)}
+.m-crate-look .cl-fog i{position:absolute;bottom:34%;left:calc(14% + var(--i) * 12%);width:26%;aspect-ratio:1.6;border-radius:50%;background:radial-gradient(ellipse,#e8f8ffcc,#e8f8ff00 68%);filter:blur(10px);animation:cl-fog 5s ease-in-out infinite;animation-delay:calc(var(--i) * -1s)}
 .m-crate-look .cl-dust i{position:absolute;left:var(--x);bottom:6%;width:calc(var(--u)*90);aspect-ratio:1;border-radius:50%;background:radial-gradient(circle,#d8c9a8cc,#d8c9a800 70%);transform:translate(-50%,0);animation:cl-puff .95s ease-out both;animation-delay:var(--dl)}
 
 /* the slip clipped on the side */
 .m-crate-look .cl-slip-wrap{align-self:center;min-width:0;display:flex;justify-content:center}
-.m-crate-look .cl-slip{position:relative;display:block;width:100%;text-align:left;cursor:pointer;border:0;color:#1c2b4a;padding:30px 16px 16px;transform:rotate(1.6deg);
+.m-crate-look .cl-slip{position:relative;display:block;width:100%;text-align:left;cursor:pointer;border:0;color:#1c2b4a;padding:30px 26px 16px 16px;transform:rotate(1.6deg);
   background:repeating-linear-gradient(transparent 0 25px,#8aa2c433 25px 26px),linear-gradient(135deg,#f6ecd2,#e7d9b5);filter:drop-shadow(0 10px 12px #000b);font-family:"Segoe Print","Bradley Hand","Chalkboard SE","Comic Sans MS","Comic Neue",cursive;
   clip-path:polygon(0 0,100% 0,100% calc(100% - 10px),96% 100%,90% calc(100% - 4px),84% 100%,78% calc(100% - 5px),70% 100%,62% calc(100% - 3px),54% 100%,46% calc(100% - 5px),38% 100%,30% calc(100% - 3px),22% 100%,14% calc(100% - 5px),6% 100%,0 calc(100% - 4px))}
 .m-crate-look .cl-clip{position:absolute;left:50%;top:-4px;width:64px;height:26px;transform:translateX(-50%);border-radius:5px 5px 2px 2px;background:linear-gradient(#8996a3,#4a5763);border:2px solid #1d262e}
@@ -159,6 +159,8 @@
 
 /* phone: the crate is one unit with its slip, the action row pins to the bottom */
 @media (max-width:600px){
+  .m-crate-look .cl-caret{position:absolute;left:50%;bottom:2px;transform:translateX(-50%);font-style:normal;color:#6b5a38;font-size:14px;line-height:1}
+  .m-crate-look .cl-slip.is-open .cl-caret{display:none}
   .m-crate-look .cl-head{padding:8px 60px 0 12px;min-height:50px;gap:4px 12px}
   .m-crate-look .cl-main{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto;gap:6px;padding:0 8px;align-items:stretch}
   .m-crate-look .cl-slip-wrap{align-self:start}
@@ -196,3 +198,8 @@
 @media (prefers-reduced-motion:reduce){.m-crate-look *{animation-duration:.01s!important;transition-duration:.01s!important}}
 
 .m-crate-look.is-sealed .cl-lid-text{display:none}
+
+.m-crate-look .cl-caret{display:none}
+/* a shut crate invites you: the latches pulse softly until you touch it */
+.m-crate-look[data-lid=shut]:not(.is-sealed) .cl-latch{animation:cl-nudge 2.4s ease-in-out infinite;filter:drop-shadow(0 0 6px #81e6dfaa)}
+@keyframes cl-nudge{0%,100%{filter:drop-shadow(0 0 2px #81e6df55)}50%{filter:drop-shadow(0 0 9px #81e6dfee)}}
