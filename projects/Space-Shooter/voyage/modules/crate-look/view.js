@@ -33,10 +33,10 @@ export function geometry(tall, tallH = 880) {
   return { H, y0, y1, y2: H - 40, xl, xr, tall };
 }
 /** Where each slot's pile stands, in box units. Stable for a slot. */
-export function slotBoxes(g, n, seed) {
+export function slotBoxes(g, n, seed, fill = 0) {
   const cols = Math.min(Math.max(n, 1), g.tall ? 3 : 4);
   const rows = Math.ceil(Math.max(n, 1) / cols);
-  const top = g.y0 + (g.y1 - g.y0) * (g.tall ? 0.3 : 0.2), bot = g.y1 - 6;
+  const top = g.y0 + (g.y1 - g.y0) * (g.tall ? 0.3 - 0.14 * fill : 0.2 - 0.05 * fill), bot = g.y1 - 6;
   const rh = (bot - top) / rows;
   const out = [];
   for (let i = 0; i < Math.max(n, 1); i++) {
@@ -46,7 +46,7 @@ export function slotBoxes(g, n, seed) {
     const l = g.xl(yc) + 18, rr = g.xr(yc) - 18;
     const cw = (rr - l) / cols;
     const off = (cols - inRow) * cw * 0.5;
-    const size = Math.min(cw * 1.1, rh * 1.3);
+    const size = Math.min(cw * (1.1 + 0.3 * fill), rh * (1.3 + 0.35 * fill));
     const jx = (M.rand01(M.hashSeed(seed, 'jx', i)) - 0.5) * cw * 0.1, jy = (M.rand01(M.hashSeed(seed, 'jy', i)) - 0.5) * rh * 0.08;
     out.push({ x: l + off + (c + 0.5) * cw + jx, y: yc + jy, size });
   }
@@ -218,6 +218,7 @@ export function mount(stage, state, env) {
   const crate = h('div', { class: 'cl-crate' });
   const shellHost = h('div', { class: 'cl-layer cl-shell-host' });
   const straw = h('div', { class: 'cl-straw' });
+  const ridge = h('div', { class: 'cl-ridge', 'aria-hidden': 'true' });
   const strawDents = h('div', { class: 'cl-dents' });
   const dressLayer = h('div', { class: 'cl-layer cl-dress' });
   const stacksLayer = h('div', { class: 'cl-layer cl-stacks' });
@@ -232,11 +233,12 @@ export function mount(stage, state, env) {
   const sealBand = h('div', { class: 'cl-seal', 'aria-hidden': 'true' }, h('i'), h('i'), h('b', { text: 'SEALED' }));
   const lidArt = h('div', { class: 'cl-lid-art-host' });
   const lid = h('button', { class: 'cl-lid', type: 'button', 'aria-label': 'Lift the lid' }, lidArt, lidText, sealBand);
-  crate.append(shellHost, straw, h('div', { class: 'cl-layer cl-dent-host' }, strawDents), dressLayer, stacksLayer, fog, frontHost, frontText, chalkEl, lid, latchRow, dust);
+  crate.append(shellHost, straw, ridge, h('div', { class: 'cl-layer cl-dent-host' }, strawDents), dressLayer, stacksLayer, fog, frontHost, frontText, chalkEl, lid, latchRow, dust);
 
   const slipEl = h('aside', { class: 'cl-slip-wrap', 'aria-label': 'Packing slip' });
   const main = h('div', { class: 'cl-main' }, h('div', { class: 'cl-box' }, crate), slipEl);
   const say = h('div', { class: 'cl-say', role: 'status', 'aria-live': 'polite' });
+  const hint = h('div', { class: 'cl-hint', text: 'Tap a thing to take one. Hold it to take all.' });
   const trayName = h('span', { class: 'cl-tray-title', text: 'Your bag' });
   const trayState = h('span', { class: 'cl-tray-state' });
   const trayPips = h('span', { class: 'cl-bagpips', 'aria-hidden': 'true' });
@@ -247,7 +249,7 @@ export function mount(stage, state, env) {
   const btnBack = h('button', { class: 'cl-btn cl-backbtn', type: 'button' }, h('span', { class: 'cl-btn-t', text: 'Step back' }));
   const actions = h('div', { class: 'cl-actions' }, btnChalk, btnLid, btnBack);
   const bottom = h('footer', { class: 'cl-bottom' }, tray, actions);
-  root.append(h('div', { class: 'cl-floor', 'aria-hidden': 'true' }), head, main, say, bottom);
+  root.append(h('div', { class: 'cl-floor', 'aria-hidden': 'true' }), head, main, say, hint, bottom);
 
   // ---- state the view keeps (the model has none of this) ----
   let g = geometry(false);
@@ -297,6 +299,7 @@ export function mount(stage, state, env) {
   function setStraw(v) {
     const back = g.y1 - (g.y1 - g.y0) * (0.34 + 0.52 * v.fill.ratio);
     const pt = (x, y) => `${r1((x / W) * 100)}% ${r1((y / g.H) * 100)}%`;
+    const rh = (g.y1 - g.y0) * 0.16 * v.fill.ratio; ridge.style.cssText = `left:${r1((g.xl(back) / W) * 100)}%;width:${r1(((g.xr(back) - g.xl(back)) / W) * 100)}%;top:${r1(((back - rh * 0.55) / g.H) * 100)}%;height:${r1(((rh * 1.4) / g.H) * 100)}%;opacity:${v.fill.ratio >= 0.5 ? 1 : 0}`;
     straw.style.clipPath = `polygon(${pt(g.xl(back), back)}, ${pt(g.xr(back), back)}, ${pt(g.xr(g.y1) + 2, g.y1 + 6)}, ${pt(g.xl(g.y1) - 2, g.y1 + 6)})`;
   }
 
@@ -317,10 +320,13 @@ export function mount(stage, state, env) {
     btn.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (!busy) act(() => (e.shiftKey ? M.takeAll(state, key) : M.take(state, key, 1)), btn); } });
   };
 
+  let fillNow = 0;
   function stackEl(s, box0) {
     const cell = h('button', { class: `cl-stack${s.status === 'glint' ? ' is-glint' : ''}${s.status === 'found' ? ' is-found' : ''}${s.heaped ? ' is-heaped' : ''}`, type: 'button', 'data-k': s.key, 'data-item': s.id, 'data-qty': s.qty, 'aria-label': `${s.name}: take one. Hold to take all.`,
       style: { left: `${(box0.x / W) * 100}%`, top: `${(box0.y / g.H) * 100}%`, width: `${(box0.size / W) * 100}%`, height: `${(box0.size / g.H) * 100}%` } });
     const pile = h('span', { class: 'cl-pile' });
+    cell.style.setProperty('--fill', String(fillNow));
+    cell.append(h('span', { class: 'cl-mound', 'aria-hidden': 'true' }));
     pyramid(s.shown).forEach((c, i) => {
       const ic = h('span', { class: 'cl-copy', style: { left: `${c.x * 100}%`, top: `${c.y * 100}%`, width: `${c.s * 100}%`, height: `${c.s * 100}%`, '--i': i, '--rot': `${r1((M.rand01(M.hashSeed(state.seed, s.key, i)) - 0.5) * 14)}deg` } }, iconOf(s));
       pile.append(ic);
@@ -352,7 +358,7 @@ export function mount(stage, state, env) {
       l.smudged ? h('span', { class: 'cl-blot', text: 'smudged' }) : null,
       l.mark ? h('span', { class: 'cl-pencil' }, h('b', { text: l.mark === 'missing' ? 'none here' : l.mark === 'more' ? `found ${l.found}` : `found ${l.found}` })) : null));
     const paper = h('button', { class: `cl-slip${slipOpen ? ' is-open' : ''}`, type: 'button', 'aria-expanded': String(slipOpen), 'aria-label': 'Packing slip: tap to read or fold' },
-      h('i', { class: 'cl-clip', 'aria-hidden': 'true' }), h('div', { class: 'cl-slip-h', text: 'Packing slip' }), h('ul', {}, ...lines), v.slip.length > 3 ? h('i', { class: 'cl-caret', 'aria-hidden': 'true', text: '▾' }) : null,
+      h('i', { class: 'cl-clip', 'aria-hidden': 'true' }), h('div', { class: 'cl-slip-h', text: 'Packing slip' }), h('ul', {}, ...lines), v.slip.length > 3 ? h('i', { class: 'cl-caret', 'aria-hidden': 'true', text: 'tap to read ▾' }) : null,
       v.origin ? h('div', { class: `cl-origin is-${v.origin.from}`, text: (v.origin.from === 'trace' ? 'You notice: ' : 'From: ') + v.origin.text }) : null);
     paper.addEventListener('click', () => { slipOpen = !slipOpen; sound('slip'); paper.classList.toggle('is-open', slipOpen); paper.setAttribute('aria-expanded', String(slipOpen)); });
     slipEl.append(paper);
@@ -398,8 +404,9 @@ export function mount(stage, state, env) {
     const lit = v.lid === 'open' ? Math.ceil(v.fill.ratio * 5 - 0.001) : 0;
     [...pips.children].forEach((p, i) => p.classList.toggle('on', i < lit));
     setStraw(v);
+    fillNow = v.fill.ratio; root.style.setProperty('--fill', String(v.fill.ratio)); root.classList.toggle('is-packed', v.fill.ratio >= 0.85);
     // stacks
-    const boxes = slotBoxes(g, v.slotCount, state.seed);
+    const boxes = slotBoxes(g, v.slotCount, state.seed, v.fill.ratio);
     stacksLayer.replaceChildren(...v.stacks.map((s) => { const el = stackEl(s, boxes[Math.max(0, s.slot)] || boxes[0]); if (!seen.has(s.key)) { if (seen.size || v.opened) el.classList.add('is-new'); seen.add(s.key); } return el; }));
     strawDents.replaceChildren(...dents.map((d) => h('i', { style: { left: `${(d.x / W) * 100}%`, top: `${(d.y / g.H) * 100}%`, '--s': d.s } })));
     dressLayer.replaceChildren();
@@ -416,7 +423,8 @@ export function mount(stage, state, env) {
     }
     // lid + cold fog
     lid.disabled = false;
-    lid.setAttribute('aria-label', v.sealed ? 'Sealed' : 'Lift the lid');
+    lid.setAttribute('aria-label', v.sealed ? 'Sealed lid. Cannot be opened' : lidMode === 'off' ? 'Lid, set aside' : 'Lift the lid. Tap, or drag up');
+    lid.tabIndex = lidMode === 'off' ? -1 : 0; if (lidMode === 'off') lid.setAttribute('aria-hidden', 'true'); else lid.removeAttribute('aria-hidden');
     lid.hidden = false;
     if (lidMode === 'off') lid.classList.add('is-off'); else lid.classList.remove('is-off');
     lidText.textContent = v.label;
@@ -427,11 +435,12 @@ export function mount(stage, state, env) {
     if (v.tag !== lastTag || !chalkEl.childElementCount) { renderChalk(v.tag); lastTag = v.tag; }
     renderSlip(v); renderTray(v);
     // actions
-    btnChalk.hidden = !v.canChalk; btnChalk.querySelector('.cl-chalk-state').textContent = v.tag === 'none' ? '' : v.tag;
-    btnLid.hidden = v.sealed || v.quick; btnLid.querySelector('.cl-btn-t').textContent = v.lid === 'open' ? 'Shut lid' : 'Lift lid';
+    btnChalk.hidden = !v.canChalk; btnChalk.setAttribute('aria-label', v.tag === 'none' ? 'Chalk the crate: keep, sell or scrap' : `Chalk mark is ${v.tag}. Tap for the next mark`); btnChalk.querySelector('.cl-chalk-state').textContent = v.tag === 'none' ? '' : v.tag;
+    btnLid.hidden = v.sealed || v.quick; btnLid.querySelector('.cl-btn-t').textContent = v.lid === 'open' ? 'Shut lid' : 'Lift lid'; btnLid.setAttribute('aria-label', v.lid === 'open' ? 'Shut the lid' : 'Lift the lid'); btnBack.setAttribute('aria-label', 'Step back and leave the crate');
     btnBack.hidden = !v.sealed;
     actions.hidden = btnChalk.hidden && btnLid.hidden && btnBack.hidden;
     tray.classList.toggle('is-read', !v.canPut);
+    hint.hidden = !(v.lid === 'open' && v.stacks.length > 0);
     say.textContent = v.say || '';
     say.classList.toggle('is-empty', !v.say);
     if (wasK !== undefined || wasItem) {
@@ -459,7 +468,7 @@ export function mount(stage, state, env) {
     render();
     if (events.some((e) => e.type === 'chalk')) { chalkEl.classList.remove('is-draw'); void chalkEl.offsetWidth; chalkEl.classList.add('is-draw'); }
   }
-  const boxFor = (key) => { const v = M.view(state); const s = v.stacks.find((x) => x.key === key); const boxes = slotBoxes(g, v.slotCount, state.seed); return s ? boxes[Math.max(0, s.slot)] : null; };
+  const boxFor = (key) => { const v = M.view(state); const s = v.stacks.find((x) => x.key === key); const boxes = slotBoxes(g, v.slotCount, state.seed, v.fill.ratio); return s ? boxes[Math.max(0, s.slot)] : null; };
   function shake(el) { el.classList.remove('is-shake'); void el.offsetWidth; el.classList.add('is-shake'); later(() => el.classList.remove('is-shake'), 500); }
   function flyTo(srcEl, e) {
     if (reduced() || !srcEl?.getBoundingClientRect) return;

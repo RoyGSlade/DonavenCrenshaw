@@ -42,7 +42,7 @@
 .m-crate-look .cl-stacks{top:0;bottom:0}
 .m-crate-look .cl-stack{position:absolute;transform:translate(-50%,-50%);padding:0;margin:0;background:none;border:0;cursor:pointer;pointer-events:auto;touch-action:manipulation;outline-offset:2px;border-radius:12px}
 .m-crate-look .cl-stack:focus-visible{outline:3px solid var(--am)}
-.m-crate-look .cl-stack::before{content:"";position:absolute;left:8%;right:8%;bottom:6%;height:14%;background:radial-gradient(ellipse,#000a,transparent 70%);pointer-events:none}
+.m-crate-look .cl-pile{z-index:1}.m-crate-look .cl-stack::before{content:"";position:absolute;left:8%;right:8%;bottom:6%;height:14%;background:radial-gradient(ellipse,#000a,transparent 70%);pointer-events:none}
 .m-crate-look .cl-pile{position:absolute;inset:0;pointer-events:none;transition:transform .25s}
 .m-crate-look .cl-stack:hover .cl-pile{transform:translateY(-3px)}
 .m-crate-look .cl-copy{position:absolute;transform:translate(-50%,-50%) rotate(var(--rot,0deg));pointer-events:none}
@@ -79,7 +79,7 @@
 .m-crate-look .cl-lid-art-host{position:absolute;inset:0;pointer-events:none}
 .m-crate-look .cl-lid-text{position:absolute;left:0;right:0;text-align:center;font:900 calc(var(--u)*30)/1.1 "Stencil Std","Arial Black",Impact,sans-serif;letter-spacing:.09em;text-transform:uppercase;color:#f3e6c4;opacity:.8;transform:perspective(calc(var(--u)*900)) rotateX(48deg);pointer-events:none;padding:0 12%;white-space:nowrap;overflow:hidden;text-overflow:clip}
 .m-crate-look.cl-k-steel .cl-lid-text{color:#eef3f6}.m-crate-look.cl-k-cold .cl-lid-text{color:#2a4552}
-.m-crate-look .cl-lid.is-off{transform:translate(0,-2%) rotate(-3deg) scale(.34);pointer-events:none;cursor:default;transition:none}
+.m-crate-look .cl-lid.is-off{transform:translate(0,0%) perspective(calc(var(--u)*1100)) rotateX(-26deg) rotate(-2deg) scale(.36);pointer-events:none;cursor:default;transition:none}
 .m-crate-look .cl-lid.is-off .cl-lid-text,.m-crate-look .cl-lid.is-off .cl-seal{display:none}
 .m-crate-look .cl-lid.is-lifting{animation:cl-lift .78s cubic-bezier(.3,.1,.3,1) forwards;pointer-events:none}
 .m-crate-look .cl-lid.is-landing{animation:cl-land .52s cubic-bezier(.6,0,.9,.5) forwards;pointer-events:none}
@@ -150,15 +150,17 @@
 .m-crate-look .cl-tray-name{font:700 12px/1.15 Inter,sans-serif;max-width:110px}
 .m-crate-look .cl-more{display:inline-flex;gap:3px;margin-left:2px}.m-crate-look .cl-more i{width:6px;height:6px;border-radius:50%;background:var(--gold)}
 .m-crate-look .cl-actions{display:flex;flex-direction:column;gap:8px;justify-content:center;min-width:170px}
-.m-crate-look .cl-btn{display:flex;align-items:center;gap:10px;min-height:48px;padding:0 18px;cursor:pointer;font:800 13px Inter,sans-serif;letter-spacing:.1em;text-transform:uppercase;text-align:left;color:var(--tx);
-  background:linear-gradient(#1d3446,#122434);border:1px solid var(--cy);border-radius:6px;filter:drop-shadow(0 0 6px #81e6df44);touch-action:manipulation}
+.m-crate-look .cl-btn{display:flex;align-items:center;gap:8px;min-height:48px;padding:0 6px;cursor:pointer;font:800 13px Inter,sans-serif;letter-spacing:.08em;text-transform:uppercase;text-align:left;color:var(--tx);white-space:nowrap;
+  background:none;border:solid transparent;border-width:12px 19px;border-image:url(art/ui/button.webp) 24 38 fill / 12px 19px stretch;filter:drop-shadow(0 0 6px #81e6df44);touch-action:manipulation;transition:filter .12s}
 .m-crate-look .cl-btn:hover{filter:drop-shadow(0 0 11px #81e6dfcc)}
 .m-crate-look .cl-btn:focus-visible{outline:3px solid var(--am)}
 .m-crate-look .cl-btn-ic{color:var(--am);font-size:16px}
-.m-crate-look .cl-chalk-state{margin-left:auto;color:var(--gold);font-weight:700}
+.m-crate-look .cl-chalk-state{margin-left:auto;color:#2a1f10;background:#f4f1e6;font:800 10px/1 Inter,sans-serif;letter-spacing:.1em;padding:3px 6px;border-radius:2px;transform:rotate(-3deg)}
+.m-crate-look .cl-chalk-state:empty{display:none}
 
 /* phone: the crate is one unit with its slip, the action row pins to the bottom */
 @media (max-width:600px){
+  .m-crate-look .cl-hint{font-size:10px;padding:0 10px}
   .m-crate-look .cl-caret{position:absolute;left:50%;bottom:2px;transform:translateX(-50%);font-style:normal;color:#6b5a38;font-size:14px;line-height:1}
   .m-crate-look .cl-slip.is-open .cl-caret{display:none}
   .m-crate-look .cl-head{padding:8px 60px 0 12px;min-height:50px;gap:4px 12px}
@@ -169,8 +171,8 @@
   .m-crate-look .cl-slip.is-open ul{max-height:none;-webkit-mask:none;mask:none}
   .m-crate-look .cl-bottom{flex-direction:column;gap:8px;padding:4px 10px 16px}
   .m-crate-look .cl-actions{flex-direction:row;min-width:0}
-  .m-crate-look .cl-actions .cl-btn{flex:1;justify-content:center;padding:0 10px;min-width:0}
-  .m-crate-look .cl-chalk-state{margin-left:6px}
+  .m-crate-look .cl-actions .cl-btn{flex:1;justify-content:center;padding:0 2px;min-width:0;font-size:12px;letter-spacing:.04em;gap:5px}
+  .m-crate-look .cl-chalk-state{margin-left:2px}
   .m-crate-look .cl-tray-items{min-height:56px}
   .m-crate-look .cl-say{font-size:14px;padding:2px 12px;min-height:26px}
 }
@@ -193,8 +195,8 @@
 @keyframes cl-dentin{from{opacity:0;transform:translate(-50%,-50%) scale(.4)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
 @keyframes cl-fog{0%,100%{transform:translate(0,0) scale(1);opacity:.5}50%{transform:translate(calc(var(--i) * 8px - 14px),-34%) scale(1.3);opacity:.95}}
 @keyframes cl-puff{0%{opacity:.9;transform:translate(-50%,0) scale(.3)}100%{opacity:0;transform:translate(-50%,-160%) scale(1.8)}}
-@keyframes cl-lift{0%{transform:translateY(var(--drag,0px))}34%{transform:translateY(-9%) rotate(-1.2deg) scale(1.03)}100%{transform:translate(0,-2%) rotate(-3deg) scale(.34)}}
-@keyframes cl-land{0%{transform:translate(0,-2%) rotate(-3deg) scale(.34)}60%{transform:translateY(-6%) scale(1.02)}100%{transform:translateY(0) scale(1)}}
+@keyframes cl-lift{0%{transform:translateY(var(--drag,0px))}34%{transform:translateY(-9%) rotate(-1.2deg) scale(1.03)}100%{transform:translate(0,0%) perspective(calc(var(--u)*1100)) rotateX(-26deg) rotate(-2deg) scale(.36)}}
+@keyframes cl-land{0%{transform:translate(0,0%) perspective(calc(var(--u)*1100)) rotateX(-26deg) rotate(-2deg) scale(.36)}60%{transform:translateY(-6%) scale(1.02)}100%{transform:translateY(0) scale(1)}}
 @media (prefers-reduced-motion:reduce){.m-crate-look *{animation-duration:.01s!important;transition-duration:.01s!important}}
 
 .m-crate-look.is-sealed .cl-lid-text{display:none}
@@ -203,3 +205,12 @@
 /* a shut crate invites you: the latches pulse softly until you touch it */
 .m-crate-look[data-lid=shut]:not(.is-sealed) .cl-latch{animation:cl-nudge 2.4s ease-in-out infinite;filter:drop-shadow(0 0 6px #81e6dfaa)}
 @keyframes cl-nudge{0%,100%{filter:drop-shadow(0 0 2px #81e6df55)}50%{filter:drop-shadow(0 0 9px #81e6dfee)}}
+
+.m-crate-look .cl-lid.is-off .cl-lid-art-host{filter:drop-shadow(0 calc(var(--u)*26) calc(var(--u)*14) #000d)}
+.m-crate-look .cl-lid.is-off::before{content:"";position:absolute;left:30%;right:30%;top:calc(var(--u)*150);height:calc(var(--u)*22);border-radius:50%;background:radial-gradient(ellipse,#000d,transparent 70%);transform:scale(1.4)}
+/* a packed crate crowds its walls: each pile sits on a mound of straw that grows with how full it is */
+.m-crate-look .cl-mound{position:absolute;left:-14%;right:-14%;bottom:-4%;height:calc(18% + 34% * var(--fill,0));pointer-events:none;opacity:calc(.25 + .75 * var(--fill,0));
+  background:repeating-linear-gradient(100deg,#c99a3e 0 3px,#e0b95a 3px 6px,#a87a2a 6px 8px,#d8a948 8px 11px);clip-path:polygon(0 100%,3% 58%,12% 38%,22% 52%,34% 18%,46% 44%,58% 10%,70% 40%,82% 22%,92% 50%,100% 100%);filter:drop-shadow(0 -2px 2px #0006)}
+.m-crate-look.is-packed .cl-straw{filter:brightness(1.12) saturate(1.1)}
+.m-crate-look .cl-hint{position:relative;z-index:2;text-align:center;font:600 11px/1.2 Inter,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--mu);padding:0 20px 2px}
+.m-crate-look .cl-ridge{position:absolute;pointer-events:none;transition:opacity .5s;background:repeating-linear-gradient(100deg,#c99a3e 0 3px,#e0b95a 3px 6px,#a87a2a 6px 8px,#d8a948 8px 11px);clip-path:polygon(0 100%,4% 40%,14% 62%,24% 20%,36% 58%,48% 12%,60% 56%,72% 18%,84% 52%,94% 30%,100% 100%);filter:drop-shadow(0 -3px 3px #0007)}
