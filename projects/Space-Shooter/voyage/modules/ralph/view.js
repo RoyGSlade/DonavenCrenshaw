@@ -49,6 +49,10 @@ export async function mount(stage, state, o) {
   // ----- pictures -----
   const A = (n) => new URL(`art/${n}`, base).href;
   const [imgDog, imgBall, imgBed, imgKennel] = await Promise.all([loadImg(A('ralph-top.webp')), loadImg(A('prop-ralph-ball.webp')), loadImg(A('dog-bed.png')), loadImg(A('prop-kennel.webp'))]);
+  // the painted ears are erased from a copy of the picture; ears are drawn in code so they can move
+  let tex = imgDog;
+  if (imgDog) { const c = document.createElement('canvas'); c.width = 128; c.height = 128; const g = c.getContext('2d'); g.drawImage(imgDog, 0, 0); g.globalCompositeOperation = 'destination-out'; g.fillStyle = '#000';
+    g.beginPath(); g.ellipse(46, 48.5, 7.5, 9.5, 0, 0, TAU); g.fill(); g.beginPath(); g.ellipse(85.5, 45, 8, 9.5, 0, 0, TAU); g.fill(); tex = c; }
   const faces = { happy: A('ralph-happy.webp'), mid: A('ralph-neutral.webp'), low: A('ralph-annoyed.webp') };
 
   // ----- geometry -----
@@ -104,7 +108,7 @@ export async function mount(stage, state, o) {
 
   // ----- Ralph's body: a bar of slices, so the head can turn and the rear can lag -----
   const SH = 4, PIV = 60, NUP = Math.floor(PIV / SH), NDOWN = Math.floor((102 - PIV) / SH);
-  const V = { sy: 1, sx: 1, hb: 0, rb: 0, lean: 0, tailAmp: 0.2, tailF: 3, tailLen: 1, front: 1, rear: 1, curl: 0, tilt: 0, shake: 0, prevHeading: 0, angVel: 0, skid: 0, phase: 0, rollA: 0, breathe: 0, lastPant: -9, lastChew: -9, lastClaw: 0, faceKey: '', say: '', sayAt: 0, tailPhase: 0 };
+  const V = { sy: 1, sx: 1, hb: 0, rb: 0, lean: 0, tailAmp: 0.2, tailF: 3, tailLen: 1, front: 1, rear: 1, curl: 0, tilt: 0, shake: 0, prevHeading: 0, angVel: 0, skid: 0, phase: 0, rollA: 0, breathe: 0, earL: -1.9, earR: 1.9, earLen: 15, earW: 11, cockAt: -9, cockSide: 1, lastPant: -9, lastChew: -9, lastClaw: 0, faceKey: '', say: '', sayAt: 0, tailPhase: 0 };
   const FUR = '#55616f', FURHI = '#aaa597', CREAM = '#ddd4bd';
 
   function drawTail(g, amp, ph, len, curl) {
@@ -116,6 +120,14 @@ export async function mount(stage, state, o) {
       g.strokeStyle = i > segs - 3 ? CREAM : (i > segs - 4 ? '#8d8b82' : FUR); g.lineWidth = 8.5 - i * 0.95;
       g.beginPath(); g.moveTo(x, y); g.lineTo(nx, ny); g.stroke(); x = nx; y = ny;
     }
+  }
+  function drawEar(g, side, a, len, w, brown) {
+    g.save(); g.translate(side * 13, 3); g.rotate(a);
+    g.beginPath(); g.moveTo(-w / 2, 0); g.bezierCurveTo(-w * 0.85, -len * 0.55, -w * 0.5, -len, 0, -len); g.bezierCurveTo(w * 0.5, -len, w * 0.85, -len * 0.55, w / 2, 0); g.closePath();
+    const gr = g.createLinearGradient(0, 0, 0, -len); gr.addColorStop(0, brown ? '#5a3f27' : '#464b5d'); gr.addColorStop(1, brown ? '#946339' : '#6a708a'); g.fillStyle = gr; g.fill();
+    g.strokeStyle = 'rgba(20,14,10,.7)'; g.lineWidth = 0.9; g.stroke();
+    g.fillStyle = brown ? 'rgba(214,150,96,.55)' : 'rgba(150,155,180,.5)'; g.beginPath(); g.moveTo(-w * 0.22, -len * 0.15); g.quadraticCurveTo(0, -len * 0.7, 0, -len * 0.8); g.quadraticCurveTo(w * 0.2, -len * 0.6, w * 0.22, -len * 0.15); g.fill();
+    g.restore();
   }
   function drawBone(g, size = 1) {
     g.fillStyle = '#efe6cc'; g.strokeStyle = '#a99a78'; g.lineWidth = 0.8; g.beginPath(); g.roundRect(-15 * size, -2.2 * size, 30 * size, 4.4 * size, 2); g.fill(); g.stroke();
@@ -158,6 +170,17 @@ export async function mount(stage, state, o) {
     if (r.leap > 0) { tsy = 1.12; }
     V.skid = Math.max(0, V.skid - dt * 2.2);
     if (V.skid > 0) { tsy *= 1 - 0.1 * V.skid; tsx *= 1 + 0.07 * V.skid; trb += 0.18 * V.skid; }
+    // ears: perked when the ball is in your hand or an item is coming, flat when rubbed or at a sprint, one cocked when called
+    let eL = -1.9, eR = 1.9, eLen = 15, eW = 13;
+    if (r.mood < 30) { eL = -2.25; eR = 2.25; }
+    const aim = state.touch?.kind === 'ball' || !!state.drag || r.pose === 'bow' || state.ball.state === 'air';
+    if (aim && mode !== 'sleep') { eL = -0.5; eR = 0.5; eLen = 18; eW = 11; }
+    else if (r.rubbing) { eL = -2.55; eR = 2.55; eLen = 14; eW = 13; }
+    else if (gait === 3) { eL = -2.5; eR = 2.5; eLen = 15; eW = 11; }
+    else if (state.t - V.cockAt < 1.6) { if (V.cockSide > 0) { eR = 0.35; eLen = 19; eW = 10.5; eL = -1.75; } else { eL = -0.35; eLen = 19; eW = 10.5; eR = 1.75; } }
+    else if (mode === 'sleep') { eL = -2.4; eR = 2.4; eLen = 13; }
+    else if (gait === 0) { const tw = Math.sin(state.t * 0.9) > 0.97 ? 0.35 : 0; eL += tw; }
+    V.earL = lerp(V.earL, eL, k(14)); V.earR = lerp(V.earR, eR, k(14)); V.earLen = lerp(V.earLen, eLen, k(12)); V.earW = lerp(V.earW, eW, k(12));
     V.sy = lerp(V.sy, tsy, k(11)); V.sx = lerp(V.sx, tsx, k(11)); V.hb = lerp(V.hb, thb, k(r.rubbing ? 9 : 7)); V.rb = lerp(V.rb, trb, k(10));
     V.lean = lerp(V.lean, tlean, k(6)); V.front = lerp(V.front, tfront, k(10)); V.rear = lerp(V.rear, trear, k(10)); V.curl = lerp(V.curl, tcurl, k(7)); V.tilt = lerp(V.tilt, ttilt, k(8));
     V.tailAmp = lerp(V.tailAmp, tAmp, k(6)); V.tailF = lerp(V.tailF, tF, k(6)); V.tailLen = lerp(V.tailLen, tLen, k(7));
@@ -178,7 +201,8 @@ export async function mount(stage, state, o) {
     if (r.pose === 'kick') { g.fillStyle = CREAM; g.beginPath(); g.ellipse(-30 + Math.sin(t * 34) * 3, 36 + Math.abs(Math.sin(t * 34)) * 6, 8, 11, 0.4, 0, TAU); g.fill(); }
     g.save();
     // upward chain (back to the head)
-    for (let i = 0; i < NUP; i++) { g.drawImage(imgDog, 0, PIV - (i + 1) * SH, 128, SH, -64, -SH * V.front, 128, SH * V.front + 0.7); g.translate(0, -SH * V.front); g.rotate(up + (i === NUP - 1 ? V.tilt * 0.3 : 0)); }
+    for (let i = 0; i < NUP; i++) { g.drawImage(tex, 0, PIV - (i + 1) * SH, 128, SH, -64, -SH * V.front, 128, SH * V.front + 0.7); g.translate(0, -SH * V.front); g.rotate(up + (i === NUP - 1 ? V.tilt * 0.3 : 0));
+      if (i === 2) { drawEar(g, -1, V.earL, V.earLen, V.earW, true); drawEar(g, 1, V.earR, V.earLen, V.earW, false); } }
     // the head's end: what is in his mouth
     g.save(); g.translate(0, -2);
     if (r.carry === 'ball') { g.rotate(Math.sin(t * 9) * 0.05 * Math.min(1, sp)); if (imgBall) g.drawImage(imgBall, -11, -17, 22, 22); }
@@ -188,7 +212,7 @@ export async function mount(stage, state, o) {
     g.restore();
     // downward chain (to the rump)
     g.save();
-    for (let i = 0; i < NDOWN; i++) { g.drawImage(imgDog, 0, PIV + i * SH, 128, SH, -64, 0, 128, SH * V.rear + 0.7); g.translate(0, SH * V.rear); g.rotate(down); }
+    for (let i = 0; i < NDOWN; i++) { g.drawImage(tex, 0, PIV + i * SH, 128, SH, -64, 0, 128, SH * V.rear + 0.7); g.translate(0, SH * V.rear); g.rotate(down); }
     drawTail(g, V.tailAmp * (mode === 'sleep' ? 0 : 1), V.tailPhase, V.tailLen, V.curl * (V.rb < 0 ? -1 : 1) + V.rb * 0.8);
     g.restore();
     g.restore();
@@ -225,12 +249,17 @@ export async function mount(stage, state, o) {
   }
   function drawBedBowl(g) {
     const b = L.bed; if (imgBed) { g.save(); g.globalAlpha = 0.98; g.drawImage(imgBed, sx(b.x) - ppu * 1.05, sy(b.y) - ppu * 1.12, ppu * 2.1, ppu * 2.24); g.restore(); }
-    const bw = L.bowl, bx = sx(bw.x), by = sy(bw.y), R = ppu * 0.56; g.fillStyle = 'rgba(0,0,0,.3)'; g.beginPath(); g.ellipse(bx + 3, by + 5, R, R * 0.9, 0, 0, TAU); g.fill();
-    let gr = g.createRadialGradient(bx - R * 0.3, by - R * 0.3, R * 0.2, bx, by, R); gr.addColorStop(0, '#d9e3ea'); gr.addColorStop(1, '#6c7d8b'); g.fillStyle = gr; g.beginPath(); g.arc(bx, by, R, 0, TAU); g.fill();
-    g.strokeStyle = '#27323b'; g.lineWidth = 2; g.stroke();
-    gr = g.createRadialGradient(bx, by, R * 0.1, bx, by, R * 0.78); gr.addColorStop(0, '#7c2f2b'); gr.addColorStop(1, '#b4463a'); g.fillStyle = gr; g.beginPath(); g.arc(bx, by, R * 0.6, 0, TAU); g.fill();
-    g.strokeStyle = 'rgba(255,255,255,.25)'; g.lineWidth = 2; g.beginPath(); g.arc(bx, by, R * 0.6, 3.6, 4.7); g.stroke();
-    if (state.bowlFull) { g.fillStyle = '#b3743c'; for (let i = 0; i < 12; i++) { g.beginPath(); g.arc(sx(bw.x) + (hash(i) - 0.5) * ppu * 0.6, sy(bw.y) + (hash(i + 20) - 0.5) * ppu * 0.6, Math.max(2.4, ppu * 0.075), 0, TAU); g.fill(); } }
+    const bw = L.bowl, bx = sx(bw.x), by = sy(bw.y), R = ppu * 0.6;
+    g.fillStyle = 'rgba(0,0,0,.32)'; g.beginPath(); g.ellipse(bx + 3, by + 5, R, R * 0.92, 0, 0, TAU); g.fill();
+    // a shallow steel dish from above: lit rim, a sloped inside that darkens towards the floor, a flat floor
+    let gr = g.createLinearGradient(bx - R, by - R, bx + R, by + R); gr.addColorStop(0, '#e4ecf1'); gr.addColorStop(0.5, '#9fb0bc'); gr.addColorStop(1, '#55646f');
+    g.fillStyle = gr; g.beginPath(); g.arc(bx, by, R, 0, TAU); g.fill(); g.strokeStyle = '#222c34'; g.lineWidth = 2; g.stroke();
+    gr = g.createLinearGradient(bx - R * 0.8, by - R * 0.8, bx + R * 0.8, by + R * 0.8); gr.addColorStop(0, '#2b363f'); gr.addColorStop(0.55, '#53626e'); gr.addColorStop(1, '#8d9ead');
+    g.fillStyle = gr; g.beginPath(); g.arc(bx, by, R * 0.8, 0, TAU); g.fill();
+    g.fillStyle = '#3a4650'; g.beginPath(); g.arc(bx + R * 0.04, by + R * 0.05, R * 0.5, 0, TAU); g.fill();
+    g.strokeStyle = 'rgba(255,255,255,.6)'; g.lineWidth = 2; g.lineCap = 'round'; g.beginPath(); g.arc(bx, by, R * 0.9, 3.5, 4.6); g.stroke();
+    const kib = (n, spread, sz) => { for (let i = 0; i < n; i++) { const a = hash(i + 3) * TAU, d = Math.sqrt(hash(i + 17)) * spread; const kx = bx + Math.cos(a) * d, ky = by + Math.sin(a) * d; g.fillStyle = i % 3 ? '#b87a3e' : '#9a6232'; g.beginPath(); g.arc(kx, ky, sz, 0, TAU); g.fill(); g.fillStyle = 'rgba(255,225,170,.45)'; g.beginPath(); g.arc(kx - sz * 0.3, ky - sz * 0.3, sz * 0.35, 0, TAU); g.fill(); } };
+    if (state.bowlFull) { kib(22, R * 0.55, Math.max(2.6, ppu * 0.085)); } else kib(4, R * 0.32, Math.max(2, ppu * 0.06));
   }
   function drawBall(g) {
     const b = state.ball; if (b.state === 'carried') return;
@@ -314,6 +343,7 @@ export async function mount(stage, state, o) {
       case 'dig': snd('dig'); flecks(L.scrapMouth.x, L.scrapMouth.y - 0.4, '#6f4a38', 10); break;
       case 'unearth': snd('dig'); break;
       case 'pet': snd('pet'); break;
+      case 'call': V.cockAt = state.t; V.cockSide = -V.cockSide; break;
       case 'thump': snd('thump'); break;
       case 'wake': snd('wake'); break;
       case 'opinion': if (e.kind === 'loves') for (let i = 0; i < 6; i++) parts.push({ k: 'spark', x: r.x + (hash(i) - 0.5), y: r.y - 0.5, vx: (hash(i + 2) - 0.5) * 2, vy: -1, life: 0.7, max: 0.7, s: 0.18 }); break;

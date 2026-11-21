@@ -23,6 +23,8 @@ const SCENES = {
   async 'wrong-thing'(d, shot) { await d.load('fixture=friend&seed=5&force=find'); await d.page.waitForTimeout(2200); const l = await L(d); await d.throwAt(l.w * 0.5, l.h * 0.4, 2.2); await d.waitFor(() => window.__ralph.state.ralph.mode === 'showoff', 25000); await d.page.waitForTimeout(500); await shot(); },
   async 'asleep'(d, shot) { await d.load('fixture=asleep&seed=3'); await d.page.waitForTimeout(2600); await shot(); },
   async 'quick'(d, shot) { await d.load('fixture=friend&seed=3&quick=1'); await d.page.waitForTimeout(1400); await shot(); },
+  async 'called'(d, shot) { await d.load('fixture=friend&seed=5&mood=95'); await d.page.waitForTimeout(5200); await d.waitFor(() => ['idle', 'wander'].includes(window.__ralph.state.ralph.mode)); const l = await L(d); await d.tap(await d.scr(l.w * 0.5, l.h * 0.55)); await d.page.waitForTimeout(260); await shot(); },
+  async 'rub-warm'(d, shot) { await d.load('fixture=friend&seed=5&spot=behind-ear'); await d.page.waitForTimeout(5200); await d.waitFor(() => ['idle', 'come', 'wander'].includes(window.__ralph.state.ralph.mode)); const dn = d.rubSpot(9); await d.waitFor(() => window.__ralph.state.ralph.warm > 0.6, 8000); await d.page.waitForTimeout(100); await shot(); await dn; },
   async 'sprint-skid'(d, shot) { await d.load('fixture=friend&seed=5'); await d.page.waitForTimeout(2500); const l = await L(d); await d.throwAt(l.w * 0.7, l.h * 0.2, 3.4); await d.waitFor(() => Math.hypot(window.__ralph.state.ralph.vx, window.__ralph.state.ralph.vy) > 5.5); await d.page.waitForTimeout(150); await shot(); },
 };
 const { chromium } = await loadPlaywright(); const srv = await startServer(); const browser = await chromium.launch({ headless: true });
@@ -33,7 +35,7 @@ for (const size of sizes) {
     const ctx = await browser.newContext(SIZES[size]); const page = await ctx.newPage();
     page.on('pageerror', (e) => errors.push(`${size}/${name}: ${e}`)); page.on('console', (m) => { if (m.type() === 'error') errors.push(`${size}/${name}: ${m.text()}`); });
     const d = await new Driver(page, size === 'phone').init(); d.origin = srv.origin;
-    try { await fn(d, () => page.screenshot({ path: `${out}/${name}-${size}.png` })); console.log('ok  ', size, name); } catch (e) { console.log('FAIL', size, name, String(e).split('\n')[0]); await page.screenshot({ path: `${out}/${name}-${size}-FAIL.png` }).catch(() => {}); }
+    try { await fn(d, async () => { await page.screenshot({ path: `${out}/${name}-${size}.png` }); const p = await page.evaluate(() => { const r = window.__ralph.state.ralph; return window.__ralph.toScreen(r.x, r.y); }); const x = Math.max(0, Math.min(p.x - 90, SIZES[size].viewport.width - 180)), y = Math.max(0, Math.min(p.y - 90, SIZES[size].viewport.height - 180)); await page.screenshot({ path: `${out}/${name}-${size}-dog.png`, clip: { x, y, width: 180, height: 180 } }); }); console.log('ok  ', size, name); } catch (e) { console.log('FAIL', size, name, String(e).split('\n')[0]); await page.screenshot({ path: `${out}/${name}-${size}-FAIL.png` }).catch(() => {}); }
     await ctx.close();
   }
 }
