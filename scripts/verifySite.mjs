@@ -202,7 +202,7 @@ if (!/home-betterfingers-spotlight/i.test(home) || !/assets\/projects\/betterfin
 if (!home.includes(`href="${SITE_BASE}projects/betterfingers/"`)) failures.push('homepage spotlight does not link to BetterFingers');
 if (!/<section\b[^>]*class="[^"]*game-spotlight[^"]*"[\s\S]*href="[^\"]*kingdoms-caravans\//i.test(home)) failures.push('homepage is missing the Kingdoms & Caravans game spotlight/link');
 // Pin the reviewed current-state snapshot; the visible date must match its metadata.
-if (!/<time\b[^>]*datetime="2026-10-01"[^>]*>2026-10-01<\/time>/i.test(home)) failures.push('homepage current-state snapshot must be dated 2026-10-01');
+if (!/<time\b[^>]*datetime="2026-11-30"[^>]*>2026-11-30<\/time>/i.test(home)) failures.push('homepage current-state snapshot must be dated 2026-11-30');
 if (/BRING ME A BUSINESS PROBLEM|Crenshaw Systems/i.test(home)) failures.push('homepage still promotes the hidden business branch');
 
 // The weekly page must read right with JavaScript off: dates, rules and the layout written at build time.

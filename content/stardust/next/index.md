@@ -27,7 +27,7 @@ ogImageAlt: "The bridge of the Tin Duchess seen from above, lit red by a hull br
     <a class="pf-button" href="games/stardust/">Play today's Stardust <span aria-hidden="true">→</span></a>
     <a class="pf-text-link" href="stardust/weekly/">This week's time trial</a>
   </div>
-  <p class="pf-caveat">The new game is not public yet and has no release date. Everything on this page comes from a working build, not a finished release.</p>
+  <p class="pf-caveat">The new game is out as the v3.1 beta. Everything on this page comes from a working build, not a finished release.</p>
 </div>
 
 <section class="sn-quote" aria-label="A line from the game">
@@ -75,12 +75,12 @@ ogImageAlt: "The bridge of the Tin Duchess seen from above, lit red by a hull br
 </section>
 
 <section class="sn-status" aria-labelledby="sn-status-title">
-  <div><p class="pf-eyebrow">Where it stands</p><h2 id="sn-status-title">Playable start to finish. Not public yet.</h2></div>
+  <div><p class="pf-eyebrow">Where it stands</p><h2 id="sn-status-title">Out now as the v3.1 beta.</h2></div>
   <ul>
     <li class="is-done"><strong>Done:</strong> the six-scene opening plays from the first line to the last in the current build.</li>
     <li class="is-done"><strong>Staying:</strong> today's racing, the weekly board and Dogfight carry over unchanged.</li>
-    <li><strong>Next:</strong> a polish pass, then a full play-through by hand.</li>
-    <li><strong>Date:</strong> none yet. It goes up when it is good.</li>
+    <li><strong>Next:</strong> fix what beta players hit, then more quests and playing together aboard one ship.</li>
+    <li class="is-done"><strong>Date:</strong> the beta opened on 30 November 2026.</li>
   </ul>
 </section>
 
