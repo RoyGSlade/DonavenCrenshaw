@@ -35,7 +35,7 @@ sponsor_wall: true
     <article class="noir-card noir-card--lit support-channel-card">
       <span class="icon-ring" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><rect x="4" y="6" width="16" height="13" rx="1" /><path d="M8 10h8M8 14h5" /></svg></span>
       <h3>One-time support and future merch</h3>
-      <p><a href="https://ko-fi.com/democratizegm">Ko-fi</a> is available for one-time support. It may also be used for future merch if and when real products exist; no merch inventory, reward, shipping schedule, or eligibility is promised here.</p>
+      <p><a href="https://ko-fi.com/donavencrenshaw">Ko-fi</a> is available for one-time support. It may also be used for future merch if and when real products exist; no merch inventory, reward, shipping schedule, or eligibility is promised here.</p>
       <p>The Discord is the community home for players, playtesters and followers. Read the <a href="#discord-rules">Discord rules</a> before you join. Support buys no perks there either: no supporter roles, no private channels.</p>
     </article>
   </div>
