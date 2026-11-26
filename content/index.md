@@ -11,8 +11,8 @@ hero_title: "Get out of the cockpit in Stardust."
 hero_sub: "Start as the janitor aboard the Tin Duchess, take jobs, earn credits and upgrade your ship. Then race your ghost on five circuits and climb the leaderboard."
 mission_title: "Build freedom."
 mission_sub: "Accessible tools, creative games, and useful automation. Built to give you more control over your time, creativity, and everyday life."
-ogImage: "assets/images/stardust/alpha-relay-flight.webp"
-ogImageAlt: "Stardust gameplay: the courier ship flying the Alpha Relay circuit."
+ogImage: "assets/images/social/dc-raven-card.jpg"
+ogImageAlt: "Donaven Crenshaw's DC raven logo: an ink raven with spread wings under the letters DC."
 ---
 
 <div class="container stack-gap-lg home-page-content">

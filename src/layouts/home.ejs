@@ -23,6 +23,9 @@
               };
             %>
             <section class="container home-mission" aria-labelledby="home-mission-title">
+                <%# Donaven's raven signs DC once on load; reduced-motion visitors get the finished mark. %>
+                <video class="home-mission-mark" src="<%= siteRoot %>assets/brand/raven-signing.mp4" poster="<%= siteRoot %>assets/brand/raven-signing-poster.webp" width="340" height="340" muted playsinline preload="auto" aria-hidden="true" data-raven-signing></video>
+                <script>(function(){var v=document.querySelector('[data-raven-signing]');if(!v||matchMedia('(prefers-reduced-motion: reduce)').matches)return;v.play().catch(function(){});})();</script>
                 <div class="home-mission-copy">
                     <p class="section-label">DONAVEN CRENSHAW · GAMES &amp; FREE SOFTWARE</p>
                     <h1 id="home-mission-title"><%= frontmatter.mission_title %></h1>

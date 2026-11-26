@@ -3,7 +3,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <% const pageTitle = page.title === site.name ? site.name : `${page.title} | ${site.name}`; %>
     <% const description = page.description || site.description; %>
-    <% const image = assetUrl(frontmatter.ogImage || 'assets/images/social/stardust-card.png'); %>
+    <% const image = assetUrl(frontmatter.ogImage || 'assets/images/social/dc-raven-card.jpg'); %>
     <title><%= pageTitle %></title>
     <% if (description) { %><meta name="description" content="<%= description %>"><% } %>
     <% if (frontmatter.noindex) { %><meta name="robots" content="noindex, follow"><% } %>
@@ -19,6 +19,7 @@
     <meta name="twitter:title" content="<%= pageTitle %>">
     <meta name="twitter:description" content="<%= description %>">
     <meta name="theme-color" content="#04070d">
+    <link rel="icon" href="<%= siteRoot %>assets/favicon/favicon.ico" sizes="48x48">
     <link rel="icon" type="image/png" sizes="32x32" href="<%= siteRoot %>assets/favicon/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="<%= siteRoot %>assets/favicon/favicon-16x16.png">
     <link rel="apple-touch-icon" sizes="180x180" href="<%= siteRoot %>assets/favicon/apple-touch-icon.png">
