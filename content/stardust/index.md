@@ -1,7 +1,7 @@
 ---
-title: "Stardust: free browser space game (v3.1 beta)"
+title: "Stardust: the introduction, free in your browser"
 layout: "stardust"
-description: "Stardust v3.1 beta, free in your browser: start as the janitor aboard the freighter Tin Duchess, take jobs, earn credits and upgrade your ship. The racing, ghosts and leaderboards are still here."
+description: "Stardust: the introduction, free in your browser. Start as the janitor aboard the freighter Tin Duchess and play the opening until you earn your own ship. A bigger build follows in January."
 branch: "stardust"
 skin: "stardust"
 page_kind: "game-browser"
@@ -9,31 +9,31 @@ ogImage: "assets/images/social/stardust-card.png"
 ---
 
 <header class="sd-hero">
-  <p class="sd-eyebrow">Play in your browser · Free · v3.1 beta</p>
+  <p class="sd-eyebrow">Play in your browser · Free · The introduction</p>
   <h1 class="sd-title">Stardust</h1>
   <p class="sd-tagline">Get out of the cockpit.</p>
-  <p class="sd-lede">You start as the janitor aboard the Tin Duchess, a freighter one bad day from scrap. Play the opening, take jobs from the ship's quest givers, earn credits and rep, and put them into your ship. The racing is still here too: five circuits, your ghost and the leaderboards.</p>
+  <p class="sd-lede">You start as the janitor aboard the Tin Duchess, a freighter one bad day from scrap. Fix what's broken with your own hands, live through the raid, and play the opening until you earn a ship of your own and land in the hangar. That's the introduction. A bigger build follows in January.</p>
   <div class="sd-actions">
-    <a class="sd-cta" href="games/stardust/" data-sd-play>Play the beta <span aria-hidden="true">→</span></a>
-    <a class="sd-text-link" href="#in-the-beta">What's in the beta ↓</a>
+    <a class="sd-cta" href="games/stardust/" data-sd-play>Play the introduction <span aria-hidden="true">→</span></a>
+    <a class="sd-text-link" href="#whats-in-it">What's in it ↓</a>
     <a class="sd-text-link" href="#fastest-runs">Leaderboard ↓</a>
   </div>
-  <p class="sd-small">Keyboard, gamepad, or touch · Nothing to install<br>Beta build. Your save stays on this device; <a href="account/">sign in</a> to keep it on your account and put your race times on the board.</p>
+  <p class="sd-small">Keyboard, gamepad, or touch · Nothing to install<br>Early build. Your save stays on this device; <a href="account/">sign in</a> to keep it on your account and put your race times on the board.</p>
 </header>
 
 <div class="sd-facts" aria-label="Stardust at a glance">
-  <div><strong>A short quest line</strong><span>The Tin Duchess opening, first shift to wheels up</span></div>
-  <div><strong>Jobs and credits</strong><span>Quest givers, rep and ship upgrades</span></div>
+  <div><strong>The opening</strong><span>The Tin Duchess, first shift to your own ship</span></div>
+  <div><strong>Hands-on jobs</strong><span>Valves, hoses, a mop, a forklift and a raid</span></div>
   <div><strong>Race your ghost</strong><span>Five circuits and their leaderboards</span></div>
   <div><strong>Saved for you</strong><span>On this device, and on your account</span></div>
 </div>
 
-<section class="sd-next-preview" id="in-the-beta" aria-labelledby="sd-next-preview-title">
+<section class="sd-next-preview" id="whats-in-it" aria-labelledby="sd-next-preview-title">
   <a class="sd-next-preview-image" href="stardust/next/"><img src="assets/video/stardust-next/poster.jpg" width="1280" height="800" loading="lazy" decoding="async" alt="The bridge of the Tin Duchess lit red by a hull breach alarm, with two boarders coming through the airlock."><span aria-hidden="true">▶ Watch · 1 min</span></a>
   <div>
-    <p class="sd-next-preview-kicker">v3.1 beta · what's in it</p>
+    <p class="sd-next-preview-kicker">The introduction · what's in it</p>
     <h2 id="sd-next-preview-title">A mop, a rifle and a very long week.</h2>
-    <p>The beta is the first loop of the new Stardust: a short quest line aboard the Tin Duchess, jobs that pay credits and rep, and upgrades for your ship. Multiplayer is light for now: race ghosts and climb the leaderboards. Playing together aboard one ship comes later. It is a beta, so expect rough edges and tell me where it broke.</p>
+    <p>The introduction is the start of the new Stardust: your shifts aboard the Tin Duchess, the raid, and the day you get your own ship. It ends in the hangar, with more to come in a bigger build in January. Playing together aboard one ship comes later. It's an early build, so expect rough edges, and tell me where it broke on the comment card at the end. If you liked it, the Ko-fi link below keeps it going.</p>
     <a href="stardust/next/">Watch one minute of it →</a>
   </div>
 </section>
