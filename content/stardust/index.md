@@ -1,7 +1,7 @@
 ---
-title: "Stardust: free browser space racer"
+title: "Stardust: the introduction, free in your browser"
 layout: "stardust"
-description: "A free browser space racing game: build your ship, fly the weekly time trial, race ghosts and climb the leaderboards. Best with a keyboard or controller."
+description: "Stardust: the introduction, free in your browser. Start as the janitor aboard the freighter Tin Duchess and play the opening until you earn your own ship. A bigger build follows in January."
 branch: "stardust"
 skin: "stardust"
 page_kind: "game-browser"
@@ -9,32 +9,32 @@ ogImage: "assets/images/social/stardust-card.png"
 ---
 
 <header class="sd-hero">
-  <p class="sd-eyebrow">Play in your browser · Free · Early build</p>
+  <p class="sd-eyebrow">Play in your browser · Free · The introduction</p>
   <h1 class="sd-title">Stardust</h1>
-  <p class="sd-tagline">Your ship. Your line. Your time to beat.</p>
-  <p class="sd-lede">Build a ship in the garage, master five drift circuits, then chase the weekly leaderboard. Race your best ghost, take on the leader, and send a friend a time to beat. Momentum still carries you further than you mean it to.</p>
+  <p class="sd-tagline">Get out of the cockpit.</p>
+  <p class="sd-lede">You start as the janitor aboard the Tin Duchess, a freighter one bad day from scrap. Fix what's broken with your own hands, live through the raid, and play the opening until you earn a ship of your own and land in the hangar. That's the introduction. A bigger build follows in January.</p>
   <div class="sd-actions">
-    <a class="sd-cta" href="games/stardust/" data-sd-play>Play now <span aria-hidden="true">→</span></a>
+    <a class="sd-cta" href="games/stardust/" data-sd-play>Play the introduction <span aria-hidden="true">→</span></a>
+    <a class="sd-text-link" href="#whats-in-it">What's in it ↓</a>
     <a class="sd-text-link" href="#fastest-runs">Leaderboard ↓</a>
-    <a class="sd-text-link" href="#garage">Explore the garage ↓</a>
   </div>
-  <p class="sd-small">Keyboard, gamepad, or touch · Nothing to install<br>Early build. Guests fly free; <a href="account/">signed-in pilots</a> go on the live leaderboard.</p>
+  <p class="sd-small">Keyboard, gamepad, or touch · Nothing to install<br>Early build. Your save stays on this device; <a href="account/">sign in</a> to keep it on your account and put your race times on the board.</p>
 </header>
 
 <div class="sd-facts" aria-label="Stardust at a glance">
-  <div><strong>Five circuits</strong><span>From Alpha Relay to Iron Veil</span></div>
-  <div><strong>Four ship families</strong><span>Parts, paint and editable designs</span></div>
-  <div><strong>Weekly time trial</strong><span>One lap, every shard, your best time</span></div>
-  <div><strong>Play with friends</strong><span>Challenge links and Dogfight rooms</span></div>
+  <div><strong>The opening</strong><span>The Tin Duchess, first shift to your own ship</span></div>
+  <div><strong>Hands-on jobs</strong><span>Valves, hoses, a mop, a forklift and a raid</span></div>
+  <div><strong>Race your ghost</strong><span>Five circuits and their leaderboards</span></div>
+  <div><strong>Saved for you</strong><span>On this device, and on your account</span></div>
 </div>
 
-<section class="sd-next-preview" aria-labelledby="sd-next-preview-title">
+<section class="sd-next-preview" id="whats-in-it" aria-labelledby="sd-next-preview-title">
   <a class="sd-next-preview-image" href="stardust/next/"><img src="assets/video/stardust-next/poster.jpg" width="1280" height="800" loading="lazy" decoding="async" alt="The bridge of the Tin Duchess lit red by a hull breach alarm, with two boarders coming through the airlock."><span aria-hidden="true">▶ Watch · 1 min</span></a>
   <div>
-    <p class="sd-next-preview-kicker">The next Stardust · In development</p>
-    <h2 id="sd-next-preview-title">Get out of the cockpit.</h2>
-    <p>The next version puts you on your feet aboard the freighter Tin Duchess: a mop, a rifle and a very long week. Watch one minute recorded from the current build. It is not public yet and has no date.</p>
-    <a href="stardust/next/">Watch the film →</a>
+    <p class="sd-next-preview-kicker">The introduction · what's in it</p>
+    <h2 id="sd-next-preview-title">A mop, a rifle and a very long week.</h2>
+    <p>The introduction is the start of the new Stardust: your shifts aboard the Tin Duchess, the raid, and the day you get your own ship. It ends in the hangar, with more to come in a bigger build in January. Playing together aboard one ship comes later. It's an early build, so expect rough edges, and tell me where it broke on the comment card at the end. If you liked it, the Ko-fi link below keeps it going.</p>
+    <a href="stardust/next/">Watch one minute of it →</a>
   </div>
 </section>
 

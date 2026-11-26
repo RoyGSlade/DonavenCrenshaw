@@ -34,7 +34,7 @@ const HUB = (/data-hub="([^"]+)"/.exec(fs.readFileSync(path.join(PUBLIC, 'index.
 
 // --- A tiny static server for public/ -----------------------------------------------
 
-const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.webp': 'image/webp', '.jpg': 'image/jpeg', '.woff2': 'font/woff2', '.webmanifest': 'application/manifest+json', '.mp3': 'audio/mpeg', '.ogg': 'audio/ogg' };
+const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.webp': 'image/webp', '.jpg': 'image/jpeg', '.woff2': 'font/woff2', '.webmanifest': 'application/manifest+json', '.mp3': 'audio/mpeg', '.ogg': 'audio/ogg', '.mp4': 'video/mp4', '.ico': 'image/x-icon' };
 const server = http.createServer((req, res) => {
     let pathname = decodeURIComponent(new URL(req.url, ORIGIN).pathname);
     let file = path.join(PUBLIC, pathname);

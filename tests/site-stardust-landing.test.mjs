@@ -8,7 +8,7 @@ const landing = read('content/stardust/index.md');
 const home = read('content/index.md');
 
 test('Stardust landing keeps the launch route and all garage family names', () => {
-  assert.match(landing, /href="games\/stardust\/" data-sd-play>Play now/);
+  assert.match(landing, /href="games\/stardust\/" data-sd-play>Play the introduction/);
   for (const { name } of SHIP_STYLES) assert.ok(landing.includes(name), name);
   assert.match(landing, /own stats and hitbox/);
   assert.match(landing, /ranked weekly attempts/);
@@ -32,8 +32,9 @@ test('landing preserves the leaderboard insertion point and labels older screens
   assert.match(landing, /id="race-friends"/);
 });
 
-test('homepage presents challenges as playable rather than a future milestone', () => {
-  assert.match(home, /custom builds in ranked runs/);
-  assert.match(home, /href="stardust\/weekly\/"/);
+test('homepage presents the Stardust introduction as playable rather than a future milestone', () => {
+  assert.match(home, /Stardust: the introduction is out/);
+  assert.match(home, /href="games\/stardust\/">Play the Stardust introduction/);
+  assert.match(home, /full-network challenge/);
   assert.doesNotMatch(home, />Next<|Friend challenges: find/);
 });
