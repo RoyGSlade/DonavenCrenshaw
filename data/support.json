@@ -5,7 +5,7 @@
   "publicationStatus": "published",
   "channels": [
     {"id":"github-sponsors","name":"GitHub Sponsors","kind":"recurring","owner":"donaven-crenshaw","reviewedAt":"2026-10-04","publicationStatus":"published","url":"https://github.com/sponsors/RoyGSlade","description":"Primary recurring support channel for underplain."},
-    {"id":"ko-fi","name":"Ko-fi","kind":"one-time","owner":"donaven-crenshaw","reviewedAt":"2026-10-04","publicationStatus":"published","url":"https://ko-fi.com/democratizegm","description":"One-time donations and future merch support."}
+    {"id":"ko-fi","name":"Ko-fi","kind":"one-time","owner":"donaven-crenshaw","reviewedAt":"2026-10-04","publicationStatus":"published","url":"https://ko-fi.com/donavencrenshaw","description":"One-time donations and future merch support."}
   ],
   "tiers": [
     {"id":"monthly-5","name":"$5 a month","amountUSD":5,"cadence":"monthly","owner":"donaven-crenshaw","reviewedAt":"2026-10-04","publicationStatus":"published"},
