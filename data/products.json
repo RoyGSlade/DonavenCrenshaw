@@ -41,11 +41,11 @@
     "status": "prototype",
     "statusLabel": "Prototype",
     "statusAsOf": "2026-11-27",
-    "statusNote": "A browser workbench tested in Chromium. Source is available on GitHub.",
+    "statusNote": "A public browser workbench tested in Chromium. Source is available on GitHub.",
     "reviewedAt": "2026-11-27",
     "lastUpdateId": null,
     "nextProof": {
-      "summary": "Verify the hosted workbench and its security headers on donavencrenshaw.com.",
+      "summary": "Verify a broader range of PDFs and browsers.",
       "owner": "donaven-crenshaw",
       "dueAt": null,
       "publicationStatus": "draft"
@@ -67,7 +67,7 @@
     "links": {
       "source": "https://github.com/RoyGSlade/pdfmanager-blackline",
       "download": null,
-      "demo": null,
+      "demo": "https://donavencrenshaw.com/pdfmanager/",
       "docs": "https://github.com/RoyGSlade/pdfmanager-blackline/blob/main/README.md",
       "issues": "https://github.com/RoyGSlade/pdfmanager-blackline/issues",
       "support": "/support/"
