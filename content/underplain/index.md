@@ -33,7 +33,7 @@ hero_scene: "desk"
 <tbody>
 <tr><td><a href="../projects/betterfingers/">BetterFingers</a></td><td><strong>Repository source</strong></td><td colspan="2">Current status, capabilities, updates, and roadmap are imported from the BetterFingers repository.</td></tr>
 <tr><td><a href="../projects/getfast/">GetFast</a></td><td><strong>Repository source</strong></td><td colspan="2">The Linux prototype, current evidence, limitations, updates, and remaining qualification work are imported from the private GetFast repository.</td></tr>
-<tr><td><a href="./pdfmanager/">PDFManager</a></td><td><strong>Prototype</strong></td><td>Local PDF editing, verified copies, and spreadsheet export.</td><td>Hosted workbench.</td></tr>
+<tr><td><a href="./pdfmanager/">PDFManager</a></td><td><strong>Prototype</strong></td><td>Local PDF editing, verified copies, and spreadsheet export.</td><td>Broader PDF and browser compatibility.</td></tr>
 </tbody>
 </table>
 </div>

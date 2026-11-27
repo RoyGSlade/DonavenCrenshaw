@@ -29,6 +29,18 @@ Read-only inspection on 2026-07-31 reported:
 
 The live homepage still served the old Source Arcanum experience at inspection time. The rebuilt local artifact in this checkout has **not** been pushed or deployed by this work.
 
+## PDFManager
+
+The Pages workflow builds a pinned revision of the PDFManager repository and
+publishes its static output at `/pdfmanager/`. Update the pinned revision in
+`.github/workflows/pages.yml` when releasing a new workbench version.
+
+The Cloudflare apex records proxy the existing GitHub Pages origin. The
+**GitHub Pages apex TLS** rule validates the GitHub origin certificate for the
+apex. **PDFManager security headers** applies the launcher policy to
+`/pdfmanager` and paths under `/pdfmanager/`. Verify the response headers on
+the HTML and an asset after deployment. Keep GitHub Pages HTTPS enforcement on.
+
 ## Release check
 
 Run `npm run verify`, follow [docs/rebuild/DEPLOYMENT_AND_ROLLBACK.md](docs/rebuild/DEPLOYMENT_AND_ROLLBACK.md), then verify both apex and `www`, HTTPS, the 404 page, canonical tags, and several legacy redirects against production.

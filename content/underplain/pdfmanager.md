@@ -15,7 +15,7 @@ hero_scene: "desk"
 
 Open a PDF or try a generated sample. Fill supported forms, add signatures and marks, and rearrange pages. PDFManager checks the new copy before you download it. It can also pull tables from supported text PDFs and English scans for review and export to CSV or Excel.
 
-[View source and local setup on GitHub](https://github.com/RoyGSlade/pdfmanager-blackline)
+**[Open PDFManager](https://donavencrenshaw.com/pdfmanager/)** · [Source and local setup](https://github.com/RoyGSlade/pdfmanager-blackline)
 
 </section>
 

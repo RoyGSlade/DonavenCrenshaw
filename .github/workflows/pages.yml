@@ -87,6 +87,35 @@ jobs:
       - name: Require the GetFast page in the built artifact
         run: test -f public/projects/getfast/index.html
 
+      - name: Checkout PDFManager
+        uses: actions/checkout@v4
+        with:
+          repository: RoyGSlade/pdfmanager-blackline
+          ref: 932803023d8950f94a597bb5554c0149a5290fcc
+          path: project-sources/PDFManager
+          persist-credentials: false
+
+      - name: Setup Node for PDFManager
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: project-sources/PDFManager/package-lock.json
+
+      - name: Build PDFManager for /pdfmanager/
+        working-directory: project-sources/PDFManager
+        run: |
+          npm ci
+          npm run build:domain
+
+      - name: Include PDFManager in the Pages artifact
+        run: |
+          test -f project-sources/PDFManager/dist-domain/index.html
+          test -d project-sources/PDFManager/dist-domain/assets
+          test ! -e public/pdfmanager
+          cp -a project-sources/PDFManager/dist-domain public/pdfmanager
+          grep -qF '/pdfmanager/assets/' public/pdfmanager/index.html
+
       - name: Setup Pages
         if: github.event_name != 'pull_request'
         uses: actions/configure-pages@v4
