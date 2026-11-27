@@ -37,32 +37,56 @@
     "name": "PDFManager",
     "branchId": "underplain",
     "owner": "donaven-crenshaw",
-    "publicationStatus": "draft",
-    "status": "concept",
-    "statusLabel": "Concept",
-    "statusAsOf": "2026-07-31",
-    "statusNote": "The intended scope is documented; the implemented scope and release status are not established.",
-    "reviewedAt": "2026-07-31",
+    "publicationStatus": "published",
+    "status": "prototype",
+    "statusLabel": "Prototype",
+    "statusAsOf": "2026-11-27",
+    "statusNote": "A browser workbench tested in Chromium. Source is available on GitHub.",
+    "reviewedAt": "2026-11-27",
     "lastUpdateId": null,
     "nextProof": {
-      "summary": "Document the implemented PDF workflow, supported platforms, privacy behavior, limitations, and release status.",
+      "summary": "Verify the hosted workbench and its security headers on donavencrenshaw.com.",
       "owner": "donaven-crenshaw",
       "dueAt": null,
       "publicationStatus": "draft"
     },
-    "version": null,
-    "platforms": {"supported": null, "tested": [], "planned": null, "notes": null},
+    "version": "0.1.0",
+    "platforms": {
+      "supported": [
+        "Chromium browsers"
+      ],
+      "tested": [
+        "Desktop Chromium",
+        "Phone-width Chromium"
+      ],
+      "planned": null,
+      "notes": "Use the local copy where workplace policy permits."
+    },
     "license": "MIT",
     "freeOfCharge": true,
-    "links": {"source": null, "download": null, "demo": null, "docs": null, "issues": null, "support": "/support/"},
+    "links": {
+      "source": "https://github.com/RoyGSlade/pdfmanager-blackline",
+      "download": null,
+      "demo": null,
+      "docs": "https://github.com/RoyGSlade/pdfmanager-blackline/blob/main/README.md",
+      "issues": "https://github.com/RoyGSlade/pdfmanager-blackline/issues",
+      "support": "/support/"
+    },
     "limitations": [
-      "The current implemented feature set is unknown.",
-      "Supported platforms, privacy behavior, cloud behavior, test documents, and release status are not established.",
-      "Intended features must not be presented as available functionality."
+      "PDF copies are flattened.",
+      "Review scanned table results before exporting.",
+      "Encrypted PDFs, secure redaction, and certificate signing are outside the tested scope."
     ],
-    "supportChannelIds": ["github-sponsors", "ko-fi"],
-    "implementedScope": null,
-    "intendedScope": ["Combine, split, reorder, rotate, and delete pages", "Compression and format conversion", "Forms, signatures, and redaction", "OCR and text-to-speech"],
+    "supportChannelIds": [
+      "github-sponsors",
+      "ko-fi"
+    ],
+    "implementedScope": [
+      "Fill, sign, mark up, and organize local PDFs.",
+      "Check PDF copies before saving them.",
+      "Review and export tables from supported text PDFs and English scans."
+    ],
+    "intendedScope": null,
     "hashes": []
   },
   {

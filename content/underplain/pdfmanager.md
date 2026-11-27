@@ -1,41 +1,32 @@
 ---
 title: "PDFManager"
 layout: "default"
-description: "PDFManager is a concept for private PDF work with its implemented scope still to be proven."
-status: "Concept"
-date: "2026-07-31"
+description: "A local PDF workbench from underplain for editing PDFs, checking saved copies, and exporting tables."
+status: "Prototype"
+date: "2026-11-27"
 hero_title: "PDFManager"
-hero_kicker: "CONCEPT · INTENDED SCOPE DOCUMENTED · IMPLEMENTED SCOPE UNPROVEN"
-hero_sub: "A planned local PDF workbench, described without pretending the feature list is shipped."
+hero_sub: "Fill, sign, and organize PDFs in your browser. Keep your original and save a checked copy."
 hero_scene: "desk"
 ---
 
 <section class="noir-card lit-edge shadow-caster underplain-section">
-<h2>Intended scope</h2>
 
-The intended product may eventually cover:
+## The workbench
 
-- combine and split documents;
-- reorder, rotate, and delete pages;
-- compression and conversion;
-- forms and signatures;
-- redaction;
-- OCR; and
-- text-to-speech.
+Open a PDF or try a generated sample. Fill supported forms, add signatures and marks, and rearrange pages. PDFManager checks the new copy before you download it. It can also pull tables from supported text PDFs and English scans for review and export to CSV or Excel.
 
-That list is a product direction, not a list of available features.
+[View source and local setup on GitHub](https://github.com/RoyGSlade/pdfmanager-blackline)
+
 </section>
 
 <section class="noir-card lit-edge shadow-caster underplain-section">
-<h2>Implemented scope</h2>
 
-The current public material does not establish which of those functions are implemented in a usable build. No current release, source repository, supported-platform statement, test-document set, or end-to-end demonstration is linked from this page. The implemented subset is therefore **not proven**.
-</section>
+## Use it locally
 
-<section class="noir-card lit-edge shadow-caster underplain-section">
-<h2>Limitations and next proof</h2>
+The browser processes your PDF on your device. Some workplaces and hospitals restrict opening work documents on public sites. Follow your organization's policy and use an approved local copy where permitted.
 
-Do not use PDFManager as a replacement for a subscription PDF product yet. Before a public alpha, the project needs a product dossier, a real build, documented document-handling and privacy behavior, supported platforms, recovery behavior, screenshots, test documents, a complete demonstration, source, and its MIT license file.
+PDF exports are flattened. Review scanned tables before relying on the results. Encrypted PDFs, secure redaction, and certificate signing are outside the tested scope.
 
-PDFManager belongs to underplain's free-of-charge, source-available, MIT-licensed model when published. It will not use a crippled paid edition or hide document ownership behind a subscription tier.
+PDFManager is free and MIT licensed. [Support underplain on Ko-fi](https://ko-fi.com/donavencrenshaw).
+
 </section>
