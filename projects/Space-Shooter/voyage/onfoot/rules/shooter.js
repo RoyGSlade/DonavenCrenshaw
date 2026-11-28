@@ -50,11 +50,14 @@ export function createFight({ map, spawn = 'default', enemies = [], player = {},
 }
 
 function spawnEnemy(e, i, map) {
-  const kind = ENEMY_TYPES[e.type];
-  if (!kind) throw new Error(`Unknown enemy type ${e.type}`);
-  const x = e.at ? (e.at[0] + 0.5) * map.tile : e.x, y = e.at ? (e.at[1] + 0.5) * map.tile : e.y;
+  const base = ENEMY_TYPES[e.type];
+  if (!base) throw new Error(`Unknown enemy type ${e.type}`);
+  const kind = e.radius ? { ...base, radius: e.radius } : base; // a setup may make one fighter bigger (the workbench ring)
+  // launch doors hook: a quest arena's `at` is in room tiles (e.room); a room with vestibule stubs has its room box origin
+  const ox = e.room ? map.def?.roomBox?.[0] || 0 : 0, oy = e.room ? map.def?.roomBox?.[1] || 0 : 0;
+  const x = e.at ? (e.at[0] + ox + 0.5) * map.tile : e.x, y = e.at ? (e.at[1] + oy + 0.5) * map.tile : e.y;
   const hp = e.hp ?? kind.hp;
-  return { id: i, type: e.type, kind, x, y, vx: 0, vy: 0, angle: e.angle ?? Math.PI / 2, hp, maxHp: hp, cool: 0.6 + i * 0.35, burst: 0, burstT: 0,
+  return { id: i, type: e.type, kind, size: e.size || null, lift: e.lift || null, x, y, vx: 0, vy: 0, angle: e.angle ?? Math.PI / 2, hp, maxHp: hp, cool: 0.6 + i * 0.35, burst: 0, burstT: 0,
     state: 'engage', stateT: 0, hit: 0, touchCd: 0, strafe: i % 2 ? 1 : -1, alive: true, awake: kind.brain === 'still' || Boolean(e.awake) };
 }
 
@@ -289,7 +292,7 @@ export function footStats(character, { effect } = {}) {
  */
 export function questFightSetup(enemy = {}, seed = 1, arena = null) {
   // A fight node that names its own arena (a room, its enemies and where they stand) plays in that room, not on the moon.
-  if (arena?.map && Array.isArray(arena.enemies)) return { map: arena.map, ...(arena.spawn ? { spawn: arena.spawn } : {}), exit: arena.exit || null, seed, enemies: arena.enemies.map(e => ({ ...e })) };
+  if (arena?.map && Array.isArray(arena.enemies)) return { map: arena.map, ...(arena.spawn ? { spawn: arena.spawn } : {}), exit: arena.exit || null, seed, enemies: arena.enemies.map(e => ({ ...e, room: true })) }; // room: tiles are in the room (launch doors hook)
   const hp = Math.max(10, enemy.hp || 20);
   const name = String(enemy.name || '').toLowerCase();
   const pick = /drone|bot|machine/.test(name) ? ['drone', 'gundrone', 'drone', 'turret'] : /bug|crawler|swarm|creature/.test(name) ? ['bug', 'bug', 'bug', 'bug', 'bug'] : ['grunt', 'grunt', 'heavy', 'grunt'];

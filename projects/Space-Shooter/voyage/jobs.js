@@ -70,16 +70,20 @@ export function createJobs({ pane, store, say, toast, dev = false, onCaptain = (
     rolled: (rolls) => { if (player.quest?.id) economy.jobRolled(player.quest.id, rolls); rolled(rolls); },
   });
 
-  function take(quest) {
+  /** Start a job. opts.toast replaces the "Job taken" toast (the opening's scenes are handed to you, not taken). */
+  function take(quest, opts = {}) {
     if (player.active && player.run?.ended) player.exit(); // a finished job left on its result card
     if (player.active) { toast(OFFERS_DATA.words.noJobs); return false; }
     const typed = Number.parseInt(seedBox?.value || '', 10);
     const seed = typed > 0 ? typed : 1 + Math.floor(Math.random() * 1e9);
-    toast(OFFERS_DATA.words.taken.replace('{title}', quest.title));
+    toast(opts.toast ?? OFFERS_DATA.words.taken.replace('{title}', quest.title));
     economy.jobStarted(quest.id, crew.hubSeats?.());
     player.start(quest, seed);
     return true;
   }
+
+  /** Opening B (retry): the scene starts again from its first beat on the save the caller just restored. */
+  function restart(quest, opts) { player.reset(); return take(quest, opts); }
 
   // The job board: postings from givers who are not on this station, pinned up
   // like notes. Pick one and take it here; the job then runs in the world.
@@ -173,6 +177,7 @@ export function createJobs({ pane, store, say, toast, dev = false, onCaptain = (
     render,
     renderPostings,
     take,
+    restart,
     resume: resumeJob,
     openLinked,
     keydown: (e) => player.keydown(e),

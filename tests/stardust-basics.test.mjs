@@ -1,17 +1,17 @@
 // Round 3 basics (no browser): the tracker's steps for the tutorial and for jobs, the
-// objective's way through doors, the nap's price, the skill tree's layout and the data shapes.
+// objective's way through doors, the data shapes (the nap and the skills page are in stardust-skills-menu.test.mjs).
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { ready as modulesReady } from '../projects/Space-Shooter/voyage/modules/registry.js';
+await modulesReady(); // scene-hook validation reads each game's manifest from the module registry
 
 const V = '../projects/Space-Shooter/voyage';
 const { tutorialTrack, jobTrack, questSteps, deriveSteps, stepStates, trackerLines, currentTrack } = await import(`${V}/datapad/steps.js`);
 const { mapsHolding, doorToward } = await import(`${V}/datapad/route.js`);
 const { BASICS_DATA } = await import(`${V}/datapad/data.js`);
-const { napQuote } = await import(`${V}/datapad/nap.js`);
 const { QUESTS } = await import(`${V}/quests/data/quests/index.js`);
 const { validateQuest } = await import(`${V}/quests/validate.js`);
 const { MAP_DEFS } = await import(`${V}/maps/index.js`);
-const { treeLayout } = await import(`${V}/hangarSkills.js`);
 const { HANGAR_DATA } = await import(`${V}/hangarData.js`);
 const { startQuest, act } = await import(`${V}/quests/engine.js`);
 const { emptySave } = await import(`${V}/save.js`);
@@ -82,30 +82,6 @@ test('the objective marker finds its way through doors', () => {
   assert.equal(doorToward('cantina', mapsHolding({ npc: 'edna' }, MAP_DEFS), MAP_DEFS), 'staff');
 });
 
-test('the nap: you pick which ranks to take back; the tree holds; the respec rule prices it', async () => {
-  const { canPick, canUnpick, applyPlan, planPoints } = await import(`${V}/datapad/nap.js`);
-  const c = { ...createCharacter({ name: 'N', look: { portrait: 'p1', color: '#fff' } }, () => 0.5, () => 1), skills: { pilot: 2, navigator: 1, gunner: 1 } };
-  const fee = HANGAR_DATA.respec.feePerPoint;
-  const save = (money) => ({ ...emptySave(), character: c, money });
-  assert.equal(napQuote(save(500), false, {}).ok, false, 'nothing picked: no nap');
-  assert.equal(napQuote(save(500), false, {}).reason, BASICS_DATA.nap.pickFirst);
-  const q = napQuote(save(500), false, { gunner: 1, pilot: 1 });
-  assert.equal(q.ok, true);
-  assert.equal(q.cost, 2 * fee, 'priced per point picked');
-  assert.equal(napQuote(save(0), true, { gunner: 1 }).cost, 0, 'free in the tutorial');
-  assert.equal(napQuote(save(0), false, { gunner: 1 }).ok, false, 'not enough credits says so');
-  // The tree holds: Navigator stands on Helm points, so Pilot can't all go while Navigator stays.
-  const all = { pilot: 2 };
-  assert.equal(canPick(c, { pilot: 1 }, 'pilot').ok, false);
-  assert.match(canPick(c, { pilot: 1 }, 'pilot').reason, /Navigator/);
-  assert.equal(canPick(c, { pilot: 1, navigator: 1 }, 'pilot').ok, true, 'with Navigator picked too, Pilot can go');
-  assert.equal(canUnpick(c, { pilot: 2, navigator: 1 }, 'navigator').ok, false, 'Navigator can\'t be kept on no Helm points');
-  assert.deepEqual(applyPlan(c, { gunner: 1, pilot: 1 }).skills, { pilot: 1, navigator: 1 });
-  assert.equal(planPoints({ gunner: 1, pilot: 1 }), 2);
-  assert.equal(napQuote({ ...emptySave(), character: { ...c, skills: {} }, money: 500 }, false, {}).reason, BASICS_DATA.nap.nothing);
-  void all;
-});
-
 test('jobs you have not taken are in the world: givers in person, the hangar board for off-station givers', async () => {
   const { offersAt, payText, whereText, giverOffers } = await import(`${V}/quests/offers.js`);
   const c = createCharacter({ name: 'J', look: { portrait: 'p1', color: '#fff' } }, () => 0.5, () => 1);
@@ -122,19 +98,9 @@ test('jobs you have not taken are in the world: givers in person, the hangar boa
   assert.ok(giverOffers('vey', busy).every((o) => !o.ok && /Finish the job/.test(o.reasons[0])));
 });
 
-test('the skill tree lays out with room: no two nodes on top of each other, branch names past the ends', () => {
-  const L = treeLayout();
-  for (const a of L.nodes) for (const b of L.nodes) if (a !== b) assert.ok(Math.hypot(a.x - b.x, a.y - b.y) > 0.24, `${a.id} vs ${b.id}`);
-  for (const br of L.branches) {
-    const own = L.nodes.filter((n) => n.trees.length === 1 && n.trees[0] === br.tree);
-    const far = Math.max(...own.map((n) => Math.hypot(n.x, n.y)));
-    assert.ok(Math.hypot(br.x, br.y) > far, `${br.tree} name sits past its last node`);
-  }
-});
-
 test('basics data is strict and complete', () => {
   assert.equal(BASICS_DATA.version, 1);
-  assert.deepEqual(BASICS_DATA.pages.map((p) => p.id), ['captain', 'pack', 'jobs', 'map']);
+  assert.deepEqual(BASICS_DATA.pages.map((p) => p.id), ['captain', 'skills', 'pack', 'jobs', 'map']);
   for (const k of Object.keys(BASICS_DATA.marks.kinds)) assert.ok(BASICS_DATA.marks.kinds[k].icon && BASICS_DATA.marks.kinds[k].accent);
   for (const s of HANGAR_DATA.stations) assert.ok(BASICS_DATA.marks.stations[s.id], `marks for station ${s.id}`);
   for (const s of HANGAR_DATA.stations) assert.ok(s.prompt, `prompt words for ${s.id}`);

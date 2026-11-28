@@ -52,7 +52,7 @@ async function flyHome(page, shot) {
 
 /** From the hangar: the launch hatch, then the hop to a giver, then their place. */
 async function flyTo(page, target, mapId, shot) {
-  await walkToInteract(page, 'station', 'hatch', [[13.5 * 48, 8.5 * 48], [2.5 * 48, 8.5 * 48]]);
+  await walkToInteract(page, 'station', 'hatch', [[17.5 * 48, 12.5 * 48], [6.5 * 48, 12.5 * 48]]);
   await page.keyboard.press('KeyE');
   await page.locator('#hg-sheet[data-open-station="hatch"]').waitFor();
   await page.locator(`[data-launch="hop-${target}"] button.primary`).click();

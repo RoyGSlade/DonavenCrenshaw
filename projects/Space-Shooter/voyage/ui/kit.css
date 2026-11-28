@@ -224,7 +224,7 @@
 .hg-dev[open] summary{margin-bottom:8px}
 @media (max-width:520px){
   .hg-top{gap:8px;padding:10px 12px}
-  .hg-top .vy-wordmark{font-size:9px;white-space:nowrap}
+  .hg-top .vy-wordmark{font-size:9px;white-space:nowrap;min-width:0;overflow:hidden;text-overflow:ellipsis}
   .hg-top .vy-wordmark b{margin:0 4px}
   .hg-top #vy-back{font-size:9px;white-space:nowrap}
   .hg-top .vy-chip{max-width:96px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:5px 8px;font-size:9px}
@@ -240,7 +240,7 @@
 
 /* The attempt roller: a small die in the corner for each check in play. */
 .ui-attempt{position:fixed;z-index:13;right:16px;top:108px;display:grid;grid-template-columns:120px minmax(0,1fr);gap:10px;align-items:center;width:min(340px,92vw);cursor:pointer}
-.hg-sheet-open .ui-attempt{right:auto;left:16px}
+.hg-sheet-open .ui-attempt{right:auto;left:16px;top:50%;transform:translateY(-50%)} /* mid-left: below the job tracker (top left), above the dialogue box (bottom) */
 .hg-sheet-open[data-sheet-side=left] .ui-attempt{left:auto;right:16px}
 .ui-attempt-die{width:120px;height:96px;display:block;border-radius:4px;background:#060c14}
 .ui-attempt p{margin:0}
@@ -248,9 +248,10 @@
 .ui-attempt-sum{font:700 15px Consolas,monospace;color:var(--ui-text);margin:4px 0!important}
 .ui-attempt-verdict{font:700 13px Inter,sans-serif;opacity:0;transition:opacity .2s}
 .ui-attempt.is-done .ui-attempt-verdict{opacity:1}
+.ui-attempt-preview{margin:4px 0 0;max-width:26ch;font:500 12px/1.35 Inter,sans-serif;color:var(--ui-text);opacity:.92}
 .ui-attempt[data-pass=true] .ui-attempt-verdict{color:var(--ui-cyan)}
 .ui-attempt[data-pass=false] .ui-attempt-verdict{color:var(--ui-amber)}
-@media (max-width:700px){.ui-attempt{left:50%;right:auto;transform:translateX(-50%);top:64px;bottom:auto}}
+@media (max-width:700px){.ui-attempt,.hg-sheet-open .ui-attempt,.hg-sheet-open[data-sheet-side=left] .ui-attempt{left:50%;right:auto;transform:translateX(-50%);top:64px;bottom:auto}}
 .ui-node[data-label=up] .ui-node-name{top:auto;bottom:100%;transform:translate(-50%,-4px)}
 .ui-node[data-label=right] .ui-node-name{left:100%;top:50%;transform:translate(6px,-50%)}
 .ui-node[data-label=left] .ui-node-name{left:auto;right:100%;top:50%;transform:translate(-6px,-50%)}
@@ -341,3 +342,20 @@
 .hg-sheet[data-open-station=quarters] .hg-sheet-body{flex:0 1 auto}
 @media (max-width:700px){.hg-sheet[data-open-station=quarters]{height:auto;max-height:78vh;bottom:0}}
 .hg-sheet .vy-pane p.vy-why{color:var(--ui-amber)}
+/* Opening B: a paused talk (the player walked off): answers wait, a hint says why. */
+.ui-dialogue.is-paused .ui-dlg-portrait{filter:saturate(.4) brightness(.8)}
+.ui-dialogue.is-paused .ui-dlg-choice[data-wait]{opacity:.5;cursor:default}
+.ui-dlg-hint{margin:8px 0 0;font:700 11px Consolas,monospace;letter-spacing:.08em;color:var(--ui-amber)}
+.ui-dlg-hint[hidden]{display:none}
+/* Opening B: narration as a subtitle strip, and dialogue as subtitles while in danger. */
+.op-caption{position:fixed;z-index:7;left:50%;bottom:250px;transform:translateX(-50%);max-width:min(640px,92vw);margin:0;padding:6px 14px;border-radius:8px;background:#06101acc;color:#d5e0e7;font:italic 500 14px/1.45 Inter,"Segoe UI",sans-serif;text-align:center;pointer-events:none;text-shadow:0 1px 2px #000}
+.op-caption[hidden]{display:none}
+@media (max-width:700px){.op-caption{bottom:150px;font-size:13px}}
+.ui-dialogue.is-danger{grid-template-columns:minmax(0,1fr);gap:4px;width:min(600px,94vw);padding:6px 12px;bottom:10px;border-image:none;border:1px solid #6d2a26;border-radius:10px;background:#0a1017e6}
+.ui-dialogue.is-danger .ui-dlg-portrait,.ui-dialogue.is-danger .ui-dlg-next{display:none}
+.ui-dialogue.is-danger .ui-dlg-text{font-size:14px;min-height:0}
+.ui-dialogue.is-danger .ui-dlg-name{margin:0 0 2px}
+.ui-dialogue.is-danger .ui-dlg-choices{margin-top:4px;gap:4px}
+.ui-dialogue.is-danger .ui-dlg-choice{min-height:38px;padding:2px 10px}
+@media (max-width:700px){body:not(.hg-sheet-open) .ui-dialogue.is-danger{top:auto;bottom:150px}}
+.ui-dialogue.is-danger .ui-dlg-choice.is-later{display:none}

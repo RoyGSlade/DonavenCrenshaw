@@ -17,9 +17,13 @@ import { buildStaticLayer, buildVignette, drawBody, drawContained, castSprite, c
 import { sprite, playerFrames, preload, onArtLoaded, captainSprite, playerArt } from './assets.js';
 import { fitCanvas, viewZoom, cameraFor } from './viewport.js';
 import { createInput } from './input.js';
+import { nearestEnemy } from './aim.js';
 import { createEl } from './dom.js';
+import { gapBodies } from '../slice/presence.js';
+import { createStealthLayer } from './stealthLayer.js'; // live stealth: only for a map with a `stealth` block (the workbench yard)
 import { TUTORIAL_EVENTS } from './events.js';
 import { createSfx } from './sfx.js';
+import { createStage } from './stage.js'; // opening B: bubbles over heads, staged scenes
 // r3 basics: the one interact system (marks, prompt, objective marker) lives in datapad/.
 import { createMarks, lookFor } from '../datapad/marks.js';
 import { icon, keyCap, promptIcon } from '../datapad/icons.js';
@@ -28,7 +32,10 @@ import { BASICS_DATA } from '../datapad/data.js';
 import { hudArt } from '../ui/assets.js';
 // launch maps: things that switch in play (doors, the goo, the reactor) are map data (rules/states.js).
 import { hasStates, resolveStates, applyStates, stateSignature } from './rules/states.js';
-import { compileMap } from './rules/mapdata.js';
+import { compileMap, walkable } from './rules/mapdata.js';
+import { createDoorSystem } from './doors/system.js'; // launch doors: doors built into the walls and two-door entries
+import { drawWallDoors } from './doors/paint.js';
+const expandEntries = def => def.entries || [];
 import { markerPoint } from '../slice/places.js';
 import { placeName as roomName } from '../slice/places.js';
 
@@ -51,7 +58,8 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
   prompt.append(promptKey, promptIconBox, promptText);
   const placeName = createEl('div', { class: 'of-place', 'aria-live': 'polite' });
   const hud = createEl('div', { class: 'of-hud' });
-  const fade = createEl('div', { class: 'of-fade' });
+  const fadeCaption = createEl('p', { class: 'of-fade-caption' });
+  const fade = createEl('div', { class: 'of-fade' }, fadeCaption);
   const objectiveLine = createEl('p', { class: 'of-objective', role: 'status', 'aria-live': 'polite', hidden: true });
   const fightHelp = createEl('p', { class: 'of-hud-help' });
   el.append(canvas, hud, fightHelp, objectiveLine, placeName, fade);
@@ -63,6 +71,7 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
   let promptIconId = null;
   prompt.addEventListener('click', () => { if (target && mode === 'walk' && !busy && !paused) use(target); });
   const ctx = canvas.getContext('2d');
+  const stage = createStage({ reducedMotion });
 
   let map = null, walker = null, npcs = [], layer = null, layerScale = 0, layerDirty = true;
   let vignette = null, view = { w: 1, h: 1, dpr: 1 };
@@ -71,7 +80,9 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
   promptKey.hidden = input.touch;
   let target = null, arrivedAt = 0, walkedSent = false;
   let camera = null, shake = 0, hitstop = 0, stepDist = 0, objective = null;
-  let inRings = new Set();
+  let inRings = new Set(), lastDoorSound = -1;
+  let zoomK = 1;
+  let stealth = null, caughtT = 0; // live stealth layer for maps that have a `stealth` block
   const dust = [];
   let fight = null, fightDone = null, fx = [];
   const hidden = new Set();
@@ -82,7 +93,14 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
   const stateOverrides = new Map(); // map id -> { tag: state } forced by a script (world.setState)
   const flagsNow = () => hooks.flags?.() || {};
   const overridesFor = id => stateOverrides.get(id) || {};
-  function withStates(m) {
+  function withStates(m) { return withEntries(withStatesOnly(m)); }
+  /** launch doors hook: a link door that has become a two-door entry is not an old door any more (no walk-in, no old painting, no "Go" mark). */
+  function withEntries(m) {
+    const ids = new Set(expandEntries(m.def).filter(e => e.door).map(e => e.door));
+    if (!ids.size) return m;
+    return Object.freeze({ ...m, doors: m.doors.filter(d => !ids.has(d.id)), interacts: m.interacts.filter(i => !(i.kind === 'door' && ids.has(i.id))) });
+  }
+  function withStatesOnly(m) {
     if (!hasStates(m.def)) { stateSig = ''; return m; }
     const states = resolveStates(m.def, flagsNow(), overridesFor(m.id));
     stateSig = stateSignature(states);
@@ -95,12 +113,15 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     if (!force && sig === stateSig) return false;
     map = withStates(baseMap);
     const keep = new Map(npcs.map(n => [n.id, n]));
-    npcs = map.npcs.map(n => keep.get(n.id) || { ...n, home: { ...n.home }, vx: 0, vy: 0, moving: false });
-    for (const n of keep.values()) if (n.follow && !npcs.includes(n)) npcs.push(n);
+    npcs = crewDrop(map.npcs).map(n => keep.get(n.id) || { ...n, home: { ...n.home }, vx: 0, vy: 0, moving: false });
+    for (const n of keep.values()) if ((n.follow || crewIds()?.has(n.id)) && !npcs.includes(n)) npcs.push(n);
+    syncCrew();
     layerDirty = true;
+    doorsys.load(map, { keep: true }); // launch doors hook
     emit('map:state', { map: map.id, states: { ...(map.def.stateOf || {}) } });
     return true;
   }
+  const doorsys = createDoorSystem(); // launch doors hook: wall doors (map.def.wallDoors) and vestibule entries (map.def.entries); nothing happens in a map without them
   const doorBodies = () => [walker, ...npcs.filter(n => !hidden.has(n.id))];
   const doorShown = d => {
     if (doorLocked(d)) return 'locked';
@@ -110,17 +131,56 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
 
   const offArt = onArtLoaded(() => { layerDirty = true; });
 
+  // Opening track A: the crew are run by one ledger (slice/presence.js), not by a copy in every room's map data. hooks.presence =
+  // { managed: Set of ids, entries(mapId), tick(dt) }. A person in transit is a puppet placed from the ledger; a settled one stands
+  // at their spot and idles as before. Without hooks.presence nothing here does anything.
+  const crewIds = () => hooks.presence?.managed || null;
+  const crewDrop = (list) => { const m = crewIds(); return m ? list.filter(n => !m.has(n.id)) : list; };
+  function syncCrew() {
+    const p = hooks.presence;
+    if (!p || !map) return;
+    const want = p.entries(map.id);
+    const shown = (w) => w.puppet || w.spot?.custom || map.npcs.some(x => x.id === w.id); /* a map state can hide a person (Pip under the panel) */
+    npcs = npcs.filter(n => !p.managed.has(n.id) || want.some(w => w.id === n.id && shown(w)));
+    for (const w of want) {
+      if (!shown(w)) continue;
+      let n = npcs.find(x => x.id === w.id);
+      if (!n) {
+        const base = map.npcs.find(x => x.id === w.id) || { id: w.id, face: 'down', wander: w.spot?.wander ?? 0 };
+        n = { ...base, x: w.x, y: w.y, home: { x: w.x, y: w.y }, angle: w.angle, vx: 0, vy: 0, moving: false };
+        npcs.push(n);
+      }
+      if (w.puppet) {
+        n.puppet = true; n.x = w.x; n.y = w.y; n.angle = w.angle; n.moving = w.moving; n.vx = n.vy = 0;
+        // A walker steps aside for the player in their way (drawn off the path; the ledger's walk is untouched, so nobody is ever held up).
+        if (walker) {
+          const dx = n.x - walker.x, dy = n.y - walker.y, d = Math.hypot(dx, dy), gap = 44;
+          if (d < gap && d > 0.01) {
+            const push = Math.min(24, gap - d), ox = n.x + (dx / d) * push, oy = n.y + (dy / d) * push;
+            if (walkable(map, ox, oy, 10)) { n.x = ox; n.y = oy; }
+          }
+        }
+      }
+      else if (n.puppet || (w.spot?.custom && !n.placed)) {
+        n.puppet = false; n.placed = true; n.x = w.x; n.y = w.y; n.angle = w.angle; n.moving = false;
+        n.home = { x: w.x, y: w.y }; n.wander = w.spot?.wander ?? n.wander ?? 0;
+      }
+    }
+  }
+
   function setMap(id, spawnName = 'default') {
     baseMap = enterMap(id); // a generic place (the cantina) is dressed fresh on every visit
     map = withStates(baseMap); // launch maps: in the states the save's flags (and scripts) say
     preload(map);
+    doorsys.load(map, { arrive: spawnName }); // launch doors hook: arriving in a vestibule starts with both doors shut
     const s = map.spawns[spawnName] || map.spawns.default;
     const keep = walker;
     walker = createWalker(s);
     if (keep) walker.walked = keep.walked;
-    npcs = map.npcs.map(n => ({ ...n, home: { ...n.home }, vx: 0, vy: 0, moving: false }));
+    npcs = crewDrop(map.npcs).map(n => ({ ...n, home: { ...n.home }, vx: 0, vy: 0, moving: false }));
     // Followers (Ralph) come along through doors.
     for (const id2 of following) if (!npcs.some(n => n.id === id2)) npcs.push({ id: id2, x: s.x + 30, y: s.y + 20, home: { x: s.x, y: s.y }, angle: s.angle, follow: true, wander: 0, moving: false });
+    syncCrew();
     layerDirty = true;
     arrivedAt = t;
     camera = null;
@@ -128,8 +188,52 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     placeName.textContent = map.name;
     placeName.classList.remove('show'); void placeName.offsetWidth; placeName.classList.add('show');
     el.dataset.map = map.id;
+    stage.reset(); // opening B: staged things belong to the room they were staged in
+    stealth?.destroy();
+    stealth = map.def?.stealth ? createStealthLayer({ map, root: el, setup: hooks.stealthSetup?.() || null, reducedMotion, touch: input.touch, onEvent: stealthEvent }) : null;
+    caughtT = 0;
     hooks.entered?.(map, api);
     emit(TUTORIAL_EVENTS.entered, { map: map.id });
+  }
+
+  /** launch doors hook: the map change inside a vestibule (both doors are shut): a quick dim under the cycle lights. */
+  function transit(id, spawnName) {
+    if (reducedMotion()) { setMap(id, spawnName); return; }
+    fade.classList.add('on');
+    setTimeout(() => { setMap(id, spawnName); fade.classList.remove('on'); }, 160);
+  }
+
+  /** Live stealth: what the guards just did (an inspect, an alarm, a takedown, a catch). The page hears it too. */
+  const stealthListeners = new Set();
+  function stealthEvent(e) {
+    hooks.stealthEvent?.(e, api);
+    for (const f of stealthListeners) f(e);
+    if (e.type === 'alarm') sound('jam');
+    else if (e.type === 'takedown') sound('kill');
+    else if (e.type === 'inspect' || e.type === 'body-found') sound('turn');
+    else if (e.type === 'caught') { caughtT = 1.2; sound('hurt'); }
+  }
+  /** Opening B: run live stealth in this room for a scene (a room with no stealth block of its own). def: { guards: [...] } as in rules/stealth.js. */
+  function beginStealth(def, { setup = null } = {}) {
+    stealth?.destroy();
+    stealth = createStealthLayer({ map, def, root: el, setup: setup || hooks.stealthSetup?.() || null, reducedMotion, touch: input.touch, onEvent: stealthEvent });
+    caughtT = 0;
+    return stealth;
+  }
+  /** Stop the scene's stealth. Returns where the guards stood: [{ id, x, y, angle, down }]. */
+  function endStealth() {
+    const guards = stealth ? stealth.sim.guards.map((g) => ({ id: g.id, x: g.x, y: g.y, angle: g.angle, down: g.state === 'down' })) : [];
+    stealth?.destroy();
+    stealth = null; caughtT = 0;
+    return guards;
+  }
+  /** Back to the start of the yard: the guards and the counts reset, you go back to the way in. */
+  function stealthRestart() {
+    if (!stealth) return;
+    stealth.reset();
+    const s = map.spawns[map.def.stealth.restart || 'default'] || map.spawns.default;
+    walker.x = s.x; walker.y = s.y; walker.angle = s.angle; walker.vx = walker.vy = 0;
+    caughtT = 0;
   }
 
   function go(id, spawnName) {
@@ -137,6 +241,22 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     if (reducedMotion()) { setMap(id, spawnName); return; }
     fade.classList.add('on');
     setTimeout(() => { setMap(id, spawnName); fade.classList.remove('on'); }, 180);
+  }
+
+  /**
+   * A time skip (opening B): the only fade the opening keeps. Fades through black with one line, puts the player in `room`
+   * (when it is another room), then fades back. Resolves when the screen is clear again.
+   */
+  function skip({ room = null, spawn = 'default', caption = '', holdMs = 1100 } = {}) {
+    return new Promise((resolve) => {
+      const fast = reducedMotion();
+      fadeCaption.textContent = caption;
+      fade.classList.add('on', 'is-skip');
+      setTimeout(() => {
+        if (room && map.id !== room) setMap(room, spawn);
+        setTimeout(() => { fade.classList.remove('on'); setTimeout(() => { fade.classList.remove('is-skip'); fadeCaption.textContent = ''; resolve(); }, fast ? 0 : 650); }, fast ? 0 : holdMs);
+      }, fast ? 0 : 650);
+    });
   }
 
   // The ship on the hangar pad is the player's own ship picture (core's tier art).
@@ -156,7 +276,7 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     layerScale = want;
     layerDirty = false;
   }
-  const findDoorDef = d => map.def.doors?.find(x => x.id === d.id);
+  const findDoorDef = d => map.def.doors?.find(x => x.id === d.id) || map.def.wallDoors?.find(x => x.id === d.id); // launch doors hook: wall doors gate the same way
   // A door's gate: null when open, else { reason, hack?: level, key } (puzzle locks here; skill and hack gates from the page).
   const doorGate = d => {
     const def = findDoorDef(d) || {};
@@ -178,25 +298,41 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
 
   // ---- walking ----
   function stepWalk(dt) {
-    const mv = (busy || paused) ? { x: 0, y: 0 } : input.move();
-    stepWalker(walker, mv, map, dt);
+    let mv = (busy || paused || caughtT > 0) ? { x: 0, y: 0 } : input.move();
+    let walkOpts = {};
+    if (stealth) { const m = stealth.moveOf(mv, input.gait?.(mv)); mv = m.mv; walkOpts = m.opts; } // your gait sets the speed
+    const wmap = doorsys.walkMap(map); // launch doors hook: a shut wall door is a wall
+    stepWalker(walker, mv, wmap, dt, { ...walkOpts, speed: (walkOpts.speed ?? WALK.speed) * (hooks.speedMult?.() || 1) }); // a status (Wired) scales the pace
     if (!walkedSent && walker.walked > map.tile * 3) { walkedSent = true; emit(TUTORIAL_EVENTS.moved, {}); }
     // Footsteps: a soft tick and a puff of dust on exteriors.
     if (walker.moving) {
       stepDist += Math.hypot(walker.vx, walker.vy) * dt;
-      if (stepDist > 38) { stepDist = 0; sound('step'); if (map.kind === 'exterior' && !reducedMotion()) dust.push({ x: walker.x - Math.cos(walker.angle) * 10, y: walker.y - Math.sin(walker.angle) * 10, life: 0.5 }); }
+      if (stepDist > 38) { stepDist = 0; if (stealth?.gait !== 'sneak') sound('step'); if (!reducedMotion()) dust.push({ x: walker.x - Math.cos(walker.angle) * 10, y: walker.y - Math.sin(walker.angle) * 10, life: map.kind === 'exterior' ? 0.5 : 0.3, floor: map.kind !== 'exterior' }); /* playtest 1: a scuff of dust on the deck too */ }
     }
+    if (hooks.presence) { if (!busy && !paused) hooks.presence.tick(dt); syncCrew(); }
     checkRings();
+    if (stealth && !busy && !paused) {
+      if (caughtT > 0) { caughtT -= dt; if (caughtT <= 0) stealthRestart(); } else stealth.step(dt, walker);
+    }
     for (const n of npcs) {
-      if (hidden.has(n.id)) continue;
-      stepNpc(n, t, dt, map, following.has(n.id) ? walker : null);
+      if (hidden.has(n.id) || n.puppet) continue;
+      stepNpc(n, t, dt, wmap, following.has(n.id) ? walker : null);
     }
     // Npc interact points follow the npc.
     const extra = npcs.filter(n => !hidden.has(n.id)).map(n => ({ kind: 'npc', id: n.id, label: castLook(n.id).name, x: n.x, y: n.y, reach: map.tile * 1.9 })); // reach: across a desk or a counter
+    extra.push(...doorsys.gated(walker, doorLocked)); // launch doors hook: a locked wall door can be tried with E
+    if (stealth && !busy && !paused && caughtT <= 0) extra.push(...stealth.interacts(walker)); // a guard you can take from behind
     const base = { ...map, interacts: map.interacts.filter(i => i.kind !== 'npc') };
     target = busy || paused ? null : pickTarget(walker, base, extra); // nothing to use while the floor is held
     showPrompt(target);
     if (busy || paused) return;
+    // launch doors hook: panels, the vestibule sequence (the swap happens with both doors shut)
+    if (!busy && !paused) {
+      const r = doorsys.step(dt, { walker, bodies: doorBodies(), gapBodies: gapBodies(walker, npcs.filter(n => !hidden.has(n.id)), crewIds()), locked: doorLocked, still: reducedMotion() }); /* the crew open doors as they come, but never hold one: the player is never kept waiting on a person */
+      if (r.sounds.includes('open') && t - lastDoorSound > 0.25) { lastDoorSound = t; sound('door'); }
+      const swap = r.events.find(e => e.type === 'swap');
+      if (swap) { transit(swap.to, swap.arrive); return; }
+    }
     // Doors: walk into one (after a moment in a new room) or press Use.
     const useIt = input.take('interact');
     for (const d of map.doors) {
@@ -237,17 +373,24 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     inRings = now;
   }
 
+  // Input is live only when nothing holds the floor: an interaction running AND a page pause are both holds,
+  // and ending one must not switch the other off (a closed talk used to re-enable input under a dialogue).
+  function syncInput() { input.enabled = !(busy || paused); }
+
   function use(it) {
-    if (it.kind === 'door') {
-      const d = map.doors.find(x => x.id === it.id);
+    if (stage.captured) return; // opening B: an approach is running, the use key works the job
+    if (it.kind === 'takedown') { stealth?.takedown(it.id, walker); return; }
+    if (it.kind === 'door' || it.kind === 'wdoor') {
+      const d = it.kind === 'wdoor' ? doorsys.get(it.id) : map.doors.find(x => x.id === it.id);
       const gate = doorGate(d);
       if (gate?.hack) {
         const key = `hack:${map.id}:${d.id}`;
         const r = hooks.interact?.({ kind: 'hack', id: key, level: gate.hack, label: d.label, door: true, pick: gate.pick }, api);
-        if (r?.then) { busy = true; input.enabled = false; r.then(res => { if (res?.success) { opened.add(key); layerDirty = true; } }).finally(() => { busy = false; input.enabled = true; }); }
+        if (r?.then) { busy = true; input.enabled = false; r.then(res => { if (res?.success) { opened.add(key); layerDirty = true; } }).finally(() => { busy = false; syncInput(); }); }
         return;
       }
       if (gate) { hooks.locked?.({ ...d, gate }, api); return; }
+      if (it.kind === 'wdoor') return; // launch doors hook: unlocked, it opens on approach
       const redirect = hooks.doorTo?.(d, map);
       go(redirect?.to || it.to, redirect?.arrive || it.arrive);
       return;
@@ -257,15 +400,16 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
       busy = true;
       walker.vx = walker.vy = 0;
       input.enabled = false;
-      result.catch(error => console.warn('Stardust: an interaction failed', error)).finally(() => { busy = false; input.enabled = true; });
+      result.catch(error => console.warn('Stardust: an interaction failed', error)).finally(() => { busy = false; syncInput(); });
     }
   }
 
   function promptLabel(it) {
-    const d = it.kind === 'door' ? map.doors.find(x => x.id === it.id) : null;
+    const d = it.kind === 'door' ? map.doors.find(x => x.id === it.id) : it.kind === 'wdoor' ? doorsys.get(it.id) : null;
     const gate = d ? doorGate(d) : hooks.gate?.(it, map) || null;
     const station = stationOf(it);
     const info = station ? hooks.stationInfo?.(station) : null;
+    if (it.kind === 'takedown') return { text: 'Silent takedown', gate: null, locked: false };
     if (it.kind === 'npc') return { text: `${VERBS.npc} ${it.label || castLook(it.id).name}`, gate, locked: false };
     if (gate) return { text: `${short(it.label)}: ${gate.hack ? `locked (${gate.pick ? 'pick' : 'hack'}, level ${gate.hack})` : gate.reason}`, gate, locked: !gate.hack };
     if (info?.locked) return { text: `${info.name}: not open yet`, gate: null, locked: true };
@@ -285,7 +429,7 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     prompt.hidden = false;
     prompt.dataset.kind = it.kind;
     prompt.setAttribute('aria-label', `${input.touch ? 'Tap' : 'Press E'}: ${text}`);
-    input.prompt(it.kind === 'npc' ? 'Talk' : gate?.hack ? 'Hack' : gate || locked ? 'Locked' : it.kind === 'door' ? 'Go' : 'Use', iconId);
+    input.prompt(it.kind === 'takedown' ? 'Takedown' : it.kind === 'npc' ? 'Talk' : gate?.hack ? 'Hack' : gate || locked ? 'Locked' : it.kind === 'door' ? 'Go' : 'Use', iconId);
   }
 
   // ---- marks: everything usable, from across the room (datapad/marks.js) ----
@@ -297,12 +441,12 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     if (objective.map && !objective.station) {
       if (map.id === objective.map) {
         const live = objective.npc ? npcs.find(x => !hidden.has(x.id) && x.id === objective.npc) : null;
-        const pt = live ? { x: live.x, y: live.y } : markerPoint(map, objective);
+        const pt = live ? { x: live.x, y: live.y } : objective.npc && crewIds()?.has(objective.npc) ? null : markerPoint(map, objective); /* a person who has not walked in yet has no marker */
         if (pt) return { x: pt.x, y: pt.y, ...(live ? { npc: live.id } : {}), label: objective.label || (live ? castLook(live.id).name : null) };
         return null;
       }
       const doorTo = doorToward(map.id, [objective.map], MAP_DEFS);
-      const dd = doorTo && map.doors.find(x => x.id === doorTo);
+      const dd = doorTo && (map.doors.find(x => x.id === doorTo) || doorsys.get(doorTo)); // launch doors hook: a link door that became a wall door
       return dd ? { x: dd.x + dd.w / 2, y: dd.y + dd.h / 2, door: dd.id, through: true, label: roomName(objective.map) ? `To ${roomName(objective.map)}` : dd.label } : null;
     }
     const n = npcs.find(x => !hidden.has(x.id) && (objective.npc ? x.id === objective.npc : x.station === objective.station));
@@ -316,7 +460,7 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     }
     // Not in this room: the door that leads toward it.
     const doorId = doorToward(map.id, mapsHolding(objective, MAP_DEFS), MAP_DEFS);
-    const d = doorId && map.doors.find(x => x.id === doorId);
+    const d = doorId && (map.doors.find(x => x.id === doorId) || doorsys.get(doorId)); // launch doors hook
     return d ? { x: d.x + d.w / 2, y: d.y + d.h / 2, door: d.id, through: true, label: d.label } : null;
   }
 
@@ -404,7 +548,7 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
   function stepFightMode(dt, cam) {
     if (input.take('dash')) dashWanted = true;
     const px = (fight.player.x - cam.x) * cam.zoom, py = (fight.player.y - cam.y) * cam.zoom;
-    const aim = input.aim(px, py);
+    const aim = input.aim(px, py, nearestEnemy(fight.player, fight.enemies)); // opening B: a fire key aims for the nearest enemy when the pointer is quiet
     stepFight(fight, { move: input.move(), aim, fire: input.firing(), dash: dashWanted }, dt);
     dashWanted = false;
     for (const e of fight.events) {
@@ -432,7 +576,7 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
       ? (fight.ended.outcome === 'win' ? 'Area clear.' : fight.ended.outcome === 'lose' ? 'You go down.' : 'You got out.')
       : `${left} hostile${left === 1 ? '' : 's'} left`;
     hud.replaceChildren(createEl('div', { class: 'of-hud-row' }, createEl('b', { text: `HP ${Math.ceil(p.hp)}` }), bar, createEl('span', { class: 'of-hud-note', text })));
-    fightHelp.textContent = fight.ended ? '' : input.touch ? 'Left stick: move. Right stick: aim and fire. Dash dodges.' : 'WASD move · mouse or arrows aim and fire · Space dashes';
+    fightHelp.textContent = fight.ended ? '' : input.touch ? 'Left stick moves. Right stick, or a tap on the playfield, aims and fires. (Keyboard: WASD, hold F to fire.) Dash dodges.' : 'WASD move · mouse aims, click fires · or hold F to fire at the nearest, arrow keys aim and fire · Space dashes';
   }
 
   // ---- drawing ----
@@ -453,14 +597,19 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     const sw = Math.min(layer.canvas.width - sx, cam.vw * s), sh = Math.min(layer.canvas.height - sy, cam.vh * s);
     if (sw > 0 && sh > 0) ctx.drawImage(layer.canvas, sx, sy, sw, sh, dx, dy, (sw / s) * cam.zoom * dpr, (sh / s) * cam.zoom * dpr);
     } // r3-look hook end
+    drawWallDoors(ctx, doorsys, cam, view, layer.look || null, doorLocked); // launch doors hook: the panels, frames and cycle lights
     ctx.setTransform(cam.zoom * dpr, 0, 0, cam.zoom * dpr, -cam.x * cam.zoom * dpr, -cam.y * cam.zoom * dpr);
     // Everything usable, marked on the floor; the objective in gold with a bobbing chevron.
     const marked = mode === 'walk' && !paused ? markItems(cam) : null;
     if (marked) { marks.drawGround(ctx, marked.items, t); if (marked.aim) drawObjective(marked.aim); }
+    if (stealth && mode === 'walk') stealth.drawFloor(ctx, t); // cones on the floor, your noise ring
+    stage.drawFloor(ctx, t); // opening B: hint ring, scorch, the torch seam, the blown hatch
     const bodies = [];
     if (mode === 'walk') {
       for (const n of npcs) if (!hidden.has(n.id)) bodies.push({ y: n.y, draw: () => drawNpc(n) });
       bodies.push({ y: walker.y, draw: () => drawPlayer(walker.x, walker.y, walker.angle, walker.moving, walker.stride, 0) });
+      bodies.push(...stage.bodies(ctx, t)); // opening B: the Reavers on the stage
+      if (stealth) bodies.push(...stealth.guardBodies(ctx, t));
     } else {
       for (const e of fight.enemies) if (e.alive) bodies.push({ y: e.y, draw: () => drawEnemy(e) });
       const p = fight.player;
@@ -468,11 +617,15 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     }
     bodies.sort((a, b) => a.y - b.y);
     for (const b of bodies) b.draw();
+    stage.drawOver(ctx); // opening B: sparks, flashes, bullet traces, smoke
+    if (stealth && mode === 'walk') stealth.drawOver(ctx, t); // meters, ?, !
     if (fight) drawFightFx();
-    for (const d of dust) { ctx.fillStyle = `rgba(160,170,180,${d.life * 0.5})`; ctx.beginPath(); ctx.arc(d.x, d.y, 4 + (0.5 - d.life) * 14, 0, Math.PI * 2); ctx.fill(); }
+    for (const d of dust) { ctx.fillStyle = `rgba(160,170,180,${d.life * (d.floor ? 0.4 : 0.5)})`; ctx.beginPath(); ctx.arc(d.x, d.y, d.floor ? 2 + (0.3 - d.life) * 9 : 4 + (0.5 - d.life) * 14, 0, Math.PI * 2); ctx.fill(); }
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     if (layer.overlay) layer.overlay(ctx, cam, view, t, mode === 'walk' ? walker : fight?.player); // r3-look hook: a look map's own lights, the captain's light and vignette
     else if (vignette) ctx.drawImage(vignette, 0, 0, canvas.width, canvas.height);
+    if (stealth && mode === 'walk') stealth.drawFog(ctx, cam, view); // fog of war on top of the lights
+    stage.drawScreen(ctx, cam, view, stageWhere); // opening B: talk ring and bubbles
     if (marked) {
       // The prompt in reach is a box the chips step around too.
       const avoid = prompt.hidden ? safe.avoid : [...(safe.avoid || []), prompt.getBoundingClientRect()];
@@ -541,8 +694,8 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
 
   function drawEnemy(e) {
     const img = sprite(e.kind.art);
-    const size = e.kind.radius * 3.1;
-    drawBody(ctx, e.x, e.y, e.angle, img, { size, t: t + e.id, moving: e.kind.speed > 0, stride: (t * 2.5 + e.id) % 4, hit: e.hit, tint: '#ffad72' });
+    const size = e.size === 'player' ? 46 * playerArt().scale : e.kind.radius * 3.1;
+    drawBody(ctx, e.x, e.y, e.angle, img, { size, lift: e.lift || null, t: t + e.id, moving: e.kind.speed > 0, stride: (t * 2.5 + e.id) % 4, hit: e.hit, tint: '#ffad72' });
     if (e.hp < e.maxHp) {
       ctx.fillStyle = '#070d17cc'; ctx.fillRect(e.x - 16, e.y - size * 0.6 - 6, 32, 4);
       ctx.fillStyle = '#ffad72'; ctx.fillRect(e.x - 16, e.y - size * 0.6 - 6, 32 * (e.hp / e.maxHp), 4);
@@ -569,6 +722,12 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     ctx.globalAlpha = 1;
   }
 
+  /** Where a body is for the stage: an npc by id (with the head height its size needs), or null. */
+  const stageWhere = (id) => { const n = npcs.find(x => x.id === id && !hidden.has(x.id)); return n ? { x: n.x, y: n.y, scale: castLook(n.id).scale || 1 } : stage.actorAt(id); };
+
+  /** The camera the player wants: on them, or on what a staged scene points at. */
+  const camWant = (zoom) => { const at = stage.camTarget || walker; return cameraFor(map, at.x, at.y, view.w, view.h, zoom); };
+
   // ---- loop ----
   function frame(now) {
     raf = requestAnimationFrame(frame);
@@ -576,16 +735,20 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     last = now;
     if (document.hidden) return;
     t += dt;
+    stage.step(dt);
     stateClock += dt;
     if (stateClock > 0.2) { stateClock = 0; refreshStates(); } // launch maps: a flag the story just set switches things
-    const zoom = viewZoom(view.w, view.h, map.kind) * (mode === 'walk' ? 1 : 0.9);
+    // Opening B: the fight's pull-back eases in and out over about half a second, never a snap.
+    zoomK += ((mode === 'walk' ? 1 : 0.9) - zoomK) * (reducedMotion() ? 1 : 1 - Math.exp(-dt * 5));
+    const zoom = viewZoom(view.w, view.h, map.kind) * zoomK;
     let cam;
     for (const d of dust) d.life -= dt;
     while (dust.length && dust[0].life <= 0) dust.shift();
     if (mode === 'walk') {
       stepWalk(dt);
-      cam = smoothCamera(cameraFor(map, walker.x, walker.y, view.w, view.h, zoom), dt);
+      cam = smoothCamera(camWant(zoom), dt);
       cam = speakerClear(cam, dt);
+      shake = Math.max(shake, stage.takeShake());
     } else {
       const p = fight.player;
       cam = smoothCamera(cameraFor(map, p.x + Math.cos(p.angle) * 50, p.y + Math.sin(p.angle) * 50, view.w, view.h, zoom), dt);
@@ -608,6 +771,7 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
   // normal when the box closes). Desktop and narration lines never shift.
   let speakerShift = 0; // CSS px the view is slid down
   function speakerClear(cam, dt) {
+    if (stage.camTarget) return cam;
     let want = 0;
     const box = document.querySelector('.ui-dialogue:not([hidden])');
     const speaker = box?.querySelector('.ui-dlg-portrait')?.dataset.speaker;
@@ -643,13 +807,25 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
 
   const api = {
     get map() { return map; },
+    /** Opening B: the stage (bubbles, the talk ring, staged scenes). */
+    stage,
+    /** A bubble over an npc's head. */
+    bark: (id, text, ms) => stage.bark(id, text, ms),
+    /** Is the use key (E) down right now? An approach works the job while it is held. */
+    holding: () => input.held('KeyE'),
+    /** The people in this room now: [{ id, x, y }] (hidden ones left out). */
+    npcsHere: () => npcs.filter(n => !hidden.has(n.id)).map(n => ({ id: n.id, x: n.x, y: n.y })),
+    /** How far the player is from a person here, in tiles, or null when they are not in this room. */
+    tilesTo(id) { const n = npcs.find(x => x.id === id && !hidden.has(x.id)) || stage.actorAt(id); return n ? Math.hypot(n.x - walker.x, n.y - walker.y) / map.tile : null; },
     /** Where an npc is now ({ x, y } in world px), or null: tests and the page's pointers. */
-    npcAt(id) { const n = npcs.find(x => x.id === id && !hidden.has(x.id)); return n ? { x: n.x, y: n.y } : null; },
+    npcAt(id) { const n = npcs.find(x => x.id === id && !hidden.has(x.id)); return n ? { x: n.x, y: n.y, moving: Boolean(n.puppet && n.moving) } : null; },
     get player() { return walker; },
     get mode() { return mode; },
     get fightState() { return fight; },
     get target() { return target; },
     go,
+    skip,
+    doors: doorsys, // launch doors: panel amounts and entry phases (tests and the proof)
     fight: startFight,
     unlock(id) { opened.add(id); layerDirty = true; sound('unlock'); },
     /** The story's objective ({ text, station, npc? } or null): a marker in the world and a line on screen. */
@@ -683,11 +859,15 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     /** launch maps: a tag's state on this map now (or every tag's: no argument). */
     stateOf(tag) { const st = map.def.stateOf || {}; return tag ? st[tag] ?? null : { ...st }; },
     pause() { paused = true; input.enabled = false; },
-    resume() { paused = false; input.enabled = true; },
+    resume() { paused = false; syncInput(); },
     /** For tests and the director: use whatever is in reach. */
     useTarget() { if (target) use(target); return target; },
     /** Screen point (CSS px in the canvas) of a world point, for tests and pointer hints. */
     screenOf(x, y) { const c = lastCam || { x: 0, y: 0, zoom: 1 }; return { x: (x - c.x) * c.zoom, y: (y - c.y) * c.zoom }; },
+    /** Where the player stands (tests, the director). */
+    position: () => ({ x: walker.x, y: walker.y, moving: Boolean(walker.moving) }),
+    /** True while something holds the floor (tests): an interaction is running or the page paused the world. */
+    get held() { return busy || paused; },
     /** Teleport (tests, director cuts). */
     place(x, y, angle) { walker.x = x; walker.y = y; if (angle != null) walker.angle = angle; walker.vx = walker.vy = 0; },
     /** The HUD's safe area (px kept clear at the top and bottom): marks and the prompt stay inside it. */
@@ -695,7 +875,13 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
     /** The objective's aim this frame (tests): { x, y, label, through?, door?, station?, npc? } or null. */
     objectiveAim: () => objectiveAim(),
     get marks() { return marks; },
-    destroy() { cancelAnimationFrame(raf); ro.disconnect(); input.destroy(); offArt(); marks.destroy(); el.remove(); },
+    /** Live stealth on this map ({ sim, stats(), reset() ...}) or null: the page and tests reach the guards here. */
+    get stealth() { return stealth; },
+    beginStealth, endStealth,
+    /** Opening B: hear what the guards did ({ type: 'alarm' | 'caught' | 'takedown' | 'inspect' ... }). Returns off(). */
+    onStealth(fn) { stealthListeners.add(fn); return () => stealthListeners.delete(fn); },
+    restartStealth: () => stealthRestart(),
+    destroy() { stealth?.destroy(); cancelAnimationFrame(raf); ro.disconnect(); input.destroy(); offArt(); marks.destroy(); el.remove(); },
     el, canvas,
   };
 

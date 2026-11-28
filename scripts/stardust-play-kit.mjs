@@ -58,9 +58,18 @@ export async function walkToInteract(page, kind, id, via = []) {
   // little under its reach, until the thing is in reach.
   const r = Math.max(40, Math.min(spot.reach * 0.75, 140));
   const sides = [[0, 1], [1, 0], [-1, 0], [0, -1], [0.7, 0.7], [-0.7, 0.7], [0.7, -0.7], [-0.7, -0.7]];
-  for (const [sx, sy] of sides) {
+  // Two passes: first only the sides whose standing point is clear of a wall, a window or the map's edge by a body's width, then every side. Walking at
+  // a point inside the wall only slides along it, and in a small room the slide runs past the return door and through it (Vey's
+  // lounge: "below Vey" is the south wall, the doorway is in that wall, and the player ended back aboard the ship). Props do not
+  // count: standing at a counter's edge is how Edna's counter is reached.
+  const inWall = (px, py) => page.evaluate(([x, y]) => {
+    const m = document.querySelector('.of-world').__world.map, T = m.tile, R = 30; // a body's width plus slack: a point hard against the wall face is just as bad as one inside it
+    return [[-R, -R], [R, -R], [-R, R], [R, R]].some(([ox, oy]) => { const row = m.cells[Math.floor((y + oy) / T)]; const c = row?.[Math.floor((x + ox) / T)]; return !c || c === 'wall' || c === 'window' || c === 'void'; });
+  }, [px, py]);
+  for (const openOnly of [true, false]) for (const [sx, sy] of sides) {
     const now = kind === 'npc' ? await page.evaluate((id) => document.querySelector('.of-world').__world.npcAt?.(id), id) : null;
     const cx = now?.x ?? spot.x, cy = now?.y ?? spot.y;
+    if (openOnly && await inWall(cx + sx * r, cy + sy * r)) continue;
     let w = await walkTo(page, cx + sx * r, cy + sy * r, { near: 18, tries: 90 });
     if (w.target?.kind === kind && w.target?.id === id) return w;
     for (let i = 0; i < 4; i++) {
@@ -74,6 +83,16 @@ export async function walkToInteract(page, kind, id, via = []) {
 
 /** Walks through a door (by id) on the current map. */
 export async function walkThroughDoor(page, doorId, toMap) {
+  // launch doors: a link between rooms may be a two-door entry (a door in the wall, a short vestibule). Walk up to it, in through it
+  // and let it cycle: the outer door closes, the map changes with both doors shut, the next door opens.
+  const entry = await page.evaluate((id) => { const w = document.querySelector('.of-world').__world; const e = w.doors?.entries.find((x) => x.room === id); if (!e) return null; const d = w.doors.get(id), T = w.map.tile; const o = { n: [0, -1], s: [0, 1], w: [-1, 0], e: [1, 0] }[e.side]; return { ax: d.x + d.w / 2 - (o[0] ? o[0] * 1.5 * T : 0), ay: d.y + d.h / 2 - (o[1] ? o[1] * 1.5 * T : 0), zx: e.zone.x + e.zone.w / 2, zy: e.zone.y + e.zone.h / 2, side: e.side, dx: d.x + d.w / 2, dy: d.y + d.h / 2 }; }, doorId);
+  if (entry) {
+    await walkTo(page, entry.ax, entry.ay, { near: 20, tries: 90 });
+    await walkTo(page, entry.zx, entry.zy, { near: 10, tries: 60 });
+    if (toMap) await onMap(page, toMap);
+    await sleep(1200); // the next door opens after a beat
+    return;
+  }
   const d = await page.evaluate((id) => { const d = document.querySelector('.of-world').__world.map.doors.find((x) => x.id === id); return d ? { x: d.x + d.w / 2, y: d.y + d.h / 2, w: d.w, h: d.h } : null; }, doorId);
   assert.ok(d, `door ${doorId}`);
   const side = await world(page);

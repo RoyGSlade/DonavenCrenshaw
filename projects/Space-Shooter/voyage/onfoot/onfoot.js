@@ -17,6 +17,7 @@
 //     stationInfo(id)       { name, locked } for a hangar station id (the interact marks and prompt)
 //     offerTalk(who, map)   a promise when a quest giver talks jobs here (offers in the world), else null
 //     offers({ map, npc?, station? }) open job offers here (the "job here" mark)
+//     task(target)          a prop with `interact.task` (scene 1's valve, hose, cart, mop, goo, lever): the slice's hands-on beats play it
 //     repair(job)           a crew repair point was used: { id: 'guns'|'engine'|'hull', label, timeScale } (timeScale
 //                           = 1 minus Mechanic's repair.time); without it a stand-in line plays
 // Skill levels come only from data.js through character.js (ROUND2-CONTRACT section 9): no table here.
@@ -39,6 +40,11 @@ import { visualTier } from '../upgrades.js';
 import { effect } from '../character.js';
 import { createEl } from './dom.js';
 import { economy } from '../account.js';
+import { COFFEE_WORDS, TEA_WORDS } from '../status.js';
+import { playBoard } from './boardView.js';
+import { noteFlag } from '../slice/board.js';
+import { createObjectScreens } from './objects/index.js';
+import { openModule } from '../modules/bind.js';
 
 // The tutorial's hop targets, in the order the legs open them.
 export const TARGETS_IN_ORDER = Object.freeze(SECTOR_MAP.places.map(p => p.id));
@@ -77,7 +83,11 @@ export function createOnFoot({ root, store = null, bus = null, hooks = {}, mapId
   //   lock: { hack: n }          a lock you can bypass with the hack minigame (open to anyone)
   //   lock: { pick: n }          a lock you can pick (needs the Lockpick skill: access door.locked)
   // Reasons are whole sentences ending in a full stop.
-  const gate = (def) => gateFor(def, { character: captain(), save: store ? save() : null });
+  // Opening track A: while the opening runs, hooks.sealed({ kind, id, to, map }) says why a door or the helm is shut (slice/seal.js).
+  const gate = (def, map) => {
+    const why = hooks.sealed?.({ kind: def.to ? 'door' : def.kind, id: def.id, to: def.to || null, map: (map || world?.map)?.id || null });
+    return why ? { reason: why } : gateFor(def, { character: captain(), save: store ? save() : null });
+  };
 
   async function hack(target) {
     const r = await playHack(root, { title: target.label || 'Lock', difficulty: target.level || 1, seed: Date.now() % 100000, mods: { ...mods('hack'), ...mods('lock') }, pick: Boolean(target.pick), sound, reducedMotion });
@@ -217,11 +227,51 @@ export function createOnFoot({ root, store = null, bus = null, hooks = {}, mapId
     }).then(id => (id ? flyTo(id) : null));
   }
 
+  /** Playtest 1: a cup of coffee now (Wired) or in the pack. */
+  function drinkCoffee(fromPack = false) {
+    if (fromPack) {
+      if (!(save()?.items?.coffee > 0)) return false;
+      store.update((s) => ({ ...s, items: { ...s.items, coffee: Math.max(0, (s.items.coffee || 0) - 1) } }));
+    }
+    hooks.statuses?.add('wired');
+    toast(COFFEE_WORDS.drink);
+    return true;
+  }
+  /** Opening track A: a cup of tea from the pack (Steady, colour only). */
+  function drinkTea(fromPack = false) {
+    if (fromPack) {
+      if (!(save()?.items?.tea > 0)) return false;
+      store.update((s) => ({ ...s, items: { ...s.items, tea: Math.max(0, (s.items.tea || 0) - 1) } }));
+    }
+    hooks.statuses?.add('steady');
+    toast(TEA_WORDS.drink);
+    return true;
+  }
+  function coffee() {
+    return new Promise((resolve) => {
+      const panel = createEl('section', { class: 'of-panel of-helm of-coffee', role: 'dialog', 'aria-label': COFFEE_WORDS.menuTitle },
+        createEl('p', { class: 'of-eyebrow', text: COFFEE_WORDS.menuTitle.toUpperCase() }));
+      const close = (fn) => { panel.remove(); fn?.(); resolve(); };
+      const opt = (label, id, fn) => { const b = createEl('button', { type: 'button', class: 'of-course', dataset: { coffee: id } }, createEl('b', { text: label })); b.addEventListener('click', () => close(fn)); panel.append(b); };
+      opt(COFFEE_WORDS.drinkLabel, 'drink', () => drinkCoffee(false));
+      if (store) opt(COFFEE_WORDS.takeLabel, 'take', () => { store.grant({ items: { coffee: 1 } }); toast(COFFEE_WORDS.take); });
+      opt(COFFEE_WORDS.leaveLabel, 'leave', null);
+      root.append(panel);
+      panel.querySelector('button')?.focus({ preventScroll: true });
+    });
+  }
+
+  // Opening track A: the object screens (the drinks machine, the engine core, the gun feed, the nav console).
+  const objects = createObjectScreens({ store, statuses: hooks.statuses, sound, helm: () => helm() });
+
   async function interact(target) {
     if (hooks.allow && hooks.allow(target) === false) return null;
     const shut = target.kind === 'hack' && target.door ? null : gate(target);
     if (shut && !shut.hack) { toast(`${target.label}: ${shut.reason}`); sound('jam'); return null; }
+    const screen = hooks.statuses || target.id !== 'coffee' ? objects.screenFor(target) : null;
+    if (screen) return screen();
     if (shut?.hack) return hack({ ...target, level: shut.hack, pick: shut.pick });
+    if (target.task && hooks.task) return hooks.task(target); // a scene's hands-on thing (slice/handsOnPlay.js)
     switch (target.kind) {
       case 'hack': return hack(target);
       case 'npc': return talk(target.id, { map: world.map.id });
@@ -230,12 +280,14 @@ export function createOnFoot({ root, store = null, bus = null, hooks = {}, mapId
         toast(`${target.label}: the hangar's ${target.id} screen opens here.`);
         return null;
       }
+      // Modularity: a console or object bound to a module with one map data line, { kind: 'module', id }. The module plays full screen and its effects are applied (modules/bind.js).
+      case 'module': return (hooks.openModule || openModule)(target, { store, save, sound, reducedMotion, toast, applyWorld: hooks.applyWorld, openStage: hooks.openStage });
       case 'mine': return mine({ title: target.label?.split(':')[0] });
       case 'puzzle': return puzzle(target.id, { title: target.label });
       case 'range': return practice();
       case 'ship': return target.id === 'helm' ? helm() : null;
       case 'repair': return hooks.repair ? hooks.repair({ id: target.id, label: target.label, timeScale: Math.max(0.2, 1 - mods('repair').time) }) : talkBox.show(STAND_IN.repair);
-      case 'console': return talkBox.show(STAND_IN[target.id] || STAND_IN.console.map(l => ({ ...l, name: target.label })));
+      case 'console': if (target.id === 'crew-board') return playBoard(root, { flags: () => save()?.flags || {}, onFound: (n) => store?.grant({ flags: { [noteFlag(n.id)]: 1 } }) }); if (target.id === 'coffee' && hooks.statuses) return coffee(); return talkBox.show(STAND_IN[target.id] || STAND_IN.console.map(l => ({ ...l, name: target.label })));
       default: return null;
     }
   }
@@ -243,7 +295,9 @@ export function createOnFoot({ root, store = null, bus = null, hooks = {}, mapId
   world = createWorld({
     root, mapId, spawn, emit, shipArt, reducedMotion, unlocked, sound,
     hooks: {
+      presence: hooks.presence || null, // opening track A: the crew ledger (slice/presenceRun.js)
       interact,
+      speedMult: () => hooks.statuses?.speedMult() || 1,
       locked: (door) => { toast(`${door.label}: ${door.gate?.reason || 'Locked.'}`); sound('jam'); },
       gate,
       // r3 basics: a station's name and whether it is open, for the marks and the prompt.
@@ -251,6 +305,9 @@ export function createOnFoot({ root, store = null, bus = null, hooks = {}, mapId
       // r3 basics: open job offers here (a giver in person, a board's postings), for the "job here" mark.
       offers: (here) => hooks.offers?.(here) || 0,
       entered: (map) => hooks.entered?.(map),
+      // live stealth (a map with a `stealth` block): the character's stealth points, and what the guards did.
+      stealthSetup: () => hooks.stealthSetup?.() || null,
+      stealthEvent: (e, w) => hooks.stealthEvent?.(e, w),
       // launch maps: the save's flags switch things in the map (rules/states.js).
       flags: () => save()?.flags || {},
       // Away from home, the ship's ramp opens onto the place it is docked at.
@@ -271,7 +328,7 @@ export function createOnFoot({ root, store = null, bus = null, hooks = {}, mapId
   }
 
   return {
-    world, emit, talk, mine, puzzle, hack, practice, fight, flyTo, helm, toast, sound, gate, mods,
+    world, emit, talk, say: (lines) => talkBox.show(lines), drinkCoffee, drinkTea, mine, puzzle, hack, practice, fight, flyTo, helm, toast, sound, gate, mods,
     get docked() { return docked; },
     /** Put the ship somewhere without flying (a reload, a Studio link, a test). */
     dockAt(id) { if (PLACES[id]) docked = id; },

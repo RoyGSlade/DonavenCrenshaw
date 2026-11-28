@@ -1,0 +1,82 @@
+{
+  "id": "hack",
+  "version": "1.0.0",
+  "kind": "minigame",
+  "title": "Mirrors and firewalls",
+  "verb": "Break the lock",
+  "skill": "hacking",
+  "where": [
+    "hacking bench",
+    "scene hook",
+    "trainer"
+  ],
+  "length_s": [
+    30,
+    180
+  ],
+  "inputs": [
+    "seed",
+    "tier",
+    "points",
+    "level",
+    "context"
+  ],
+  "outputs": [
+    "success",
+    "xp"
+  ],
+  "paths": [
+    {
+      "id": "time",
+      "division": "Time"
+    },
+    {
+      "id": "size",
+      "division": "Puzzle size"
+    },
+    {
+      "id": "retries",
+      "division": "Retries"
+    }
+  ],
+  "art": [],
+  "status": "in-game",
+  "adapter": true,
+  "contract": 1,
+  "gym": {
+    "name": "Mirrors and firewalls"
+  },
+  "hook": {
+    "skill": "hacking",
+    "outcomes": [
+      "win",
+      "lose"
+    ],
+    "inputs": {
+      "lock": {
+        "type": "int",
+        "min": 1,
+        "max": 4,
+        "say": "hack lock is a whole number 1 to 4 (the number of firewalls)"
+      },
+      "context": {
+        "type": "enum",
+        "values": [
+          "foot",
+          "ship",
+          "combat"
+        ]
+      }
+    },
+    "defaults": {
+      "title": "Terminal",
+      "context": "foot"
+    },
+    "worldFields": [
+      "security",
+      "terminal",
+      "port",
+      "section"
+    ]
+  }
+}

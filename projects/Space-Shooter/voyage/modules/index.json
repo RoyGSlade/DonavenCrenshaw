@@ -1,0 +1,784 @@
+{
+  "contract": 1,
+  "modules": [
+    {
+      "id": "repair",
+      "version": "1.0.0",
+      "kind": "minigame",
+      "title": "Coolant pipes",
+      "verb": "Patch the line",
+      "skill": "repair",
+      "where": [
+        "repair bench",
+        "scene hook",
+        "trainer"
+      ],
+      "length_s": [
+        30,
+        180
+      ],
+      "inputs": [
+        "seed",
+        "tier",
+        "points",
+        "level",
+        "context"
+      ],
+      "outputs": [
+        "success",
+        "xp"
+      ],
+      "paths": [
+        {
+          "id": "time",
+          "division": "Time"
+        },
+        {
+          "id": "size",
+          "division": "Puzzle size"
+        },
+        {
+          "id": "quality",
+          "division": "Quality"
+        }
+      ],
+      "art": [],
+      "status": "in-game",
+      "adapter": true,
+      "contract": 1,
+      "gym": {
+        "name": "Coolant pipes"
+      },
+      "hook": {
+        "skill": "repair",
+        "outcomes": [
+          "win",
+          "lose"
+        ],
+        "inputs": {
+          "system": {
+            "type": "enum",
+            "values": [
+              "engine-cooling",
+              "weapon-cooling",
+              "reactor-loop",
+              "life-support",
+              "wellness-foam"
+            ],
+            "say": "repair system is one of engine-cooling, weapon-cooling, reactor-loop, life-support"
+          }
+        },
+        "defaults": {
+          "title": "Repair"
+        }
+      }
+    },
+    {
+      "id": "hack",
+      "version": "1.0.0",
+      "kind": "minigame",
+      "title": "Mirrors and firewalls",
+      "verb": "Break the lock",
+      "skill": "hacking",
+      "where": [
+        "hacking bench",
+        "scene hook",
+        "trainer"
+      ],
+      "length_s": [
+        30,
+        180
+      ],
+      "inputs": [
+        "seed",
+        "tier",
+        "points",
+        "level",
+        "context"
+      ],
+      "outputs": [
+        "success",
+        "xp"
+      ],
+      "paths": [
+        {
+          "id": "time",
+          "division": "Time"
+        },
+        {
+          "id": "size",
+          "division": "Puzzle size"
+        },
+        {
+          "id": "retries",
+          "division": "Retries"
+        }
+      ],
+      "art": [],
+      "status": "in-game",
+      "adapter": true,
+      "contract": 1,
+      "gym": {
+        "name": "Mirrors and firewalls"
+      },
+      "hook": {
+        "skill": "hacking",
+        "outcomes": [
+          "win",
+          "lose"
+        ],
+        "inputs": {
+          "lock": {
+            "type": "int",
+            "min": 1,
+            "max": 4,
+            "say": "hack lock is a whole number 1 to 4 (the number of firewalls)"
+          },
+          "context": {
+            "type": "enum",
+            "values": [
+              "foot",
+              "ship",
+              "combat"
+            ]
+          }
+        },
+        "defaults": {
+          "title": "Terminal",
+          "context": "foot"
+        },
+        "worldFields": [
+          "security",
+          "terminal",
+          "port",
+          "section"
+        ]
+      }
+    },
+    {
+      "id": "haggle",
+      "version": "1.0.0",
+      "kind": "minigame",
+      "title": "Haggle",
+      "verb": "Name your price",
+      "skill": "social",
+      "where": [
+        "trade counter",
+        "scene hook",
+        "trainer"
+      ],
+      "length_s": [
+        30,
+        180
+      ],
+      "inputs": [
+        "seed",
+        "tier",
+        "points",
+        "level",
+        "context"
+      ],
+      "outputs": [
+        "success",
+        "xp"
+      ],
+      "paths": [
+        {
+          "id": "persuade",
+          "division": "Persuade"
+        },
+        {
+          "id": "intimidate",
+          "division": "Intimidate"
+        },
+        {
+          "id": "haggle",
+          "division": "Haggle"
+        }
+      ],
+      "art": [],
+      "status": "in-game",
+      "adapter": true,
+      "contract": 1,
+      "gym": {
+        "name": "Haggle"
+      },
+      "hook": {
+        "skill": "social",
+        "outcomes": [
+          "win",
+          "mid",
+          "lose"
+        ],
+        "inputs": {
+          "open": {
+            "type": "int",
+            "required": true,
+            "say": "haggle needs whole open and best prices, best above open"
+          },
+          "best": {
+            "type": "int",
+            "required": true,
+            "greaterThan": "open",
+            "say": "haggle needs whole open and best prices, best above open"
+          }
+        },
+        "defaults": {
+          "who": "Them",
+          "what": "the deal"
+        },
+        "branch": {
+          "by": "outcome",
+          "win": [
+            "well"
+          ],
+          "mid": [
+            "fair"
+          ]
+        }
+      }
+    },
+    {
+      "id": "persuade",
+      "version": "1.0.0",
+      "kind": "minigame",
+      "title": "Persuade",
+      "verb": "Win them over",
+      "skill": "social",
+      "where": [
+        "parley desk",
+        "trainer"
+      ],
+      "length_s": [
+        30,
+        180
+      ],
+      "inputs": [
+        "seed",
+        "tier",
+        "points",
+        "level",
+        "context"
+      ],
+      "outputs": [
+        "success",
+        "xp"
+      ],
+      "paths": [
+        {
+          "id": "persuade",
+          "division": "Persuade"
+        },
+        {
+          "id": "intimidate",
+          "division": "Intimidate"
+        },
+        {
+          "id": "haggle",
+          "division": "Haggle"
+        }
+      ],
+      "art": [],
+      "status": "in-game",
+      "adapter": true,
+      "contract": 1,
+      "gym": {
+        "name": "Persuade"
+      }
+    },
+    {
+      "id": "intimidate",
+      "version": "1.0.0",
+      "kind": "minigame",
+      "title": "Intimidate",
+      "verb": "Make them back down",
+      "skill": "social",
+      "where": [
+        "standoff door",
+        "trainer"
+      ],
+      "length_s": [
+        30,
+        180
+      ],
+      "inputs": [
+        "seed",
+        "tier",
+        "points",
+        "level",
+        "context"
+      ],
+      "outputs": [
+        "success",
+        "xp"
+      ],
+      "paths": [
+        {
+          "id": "persuade",
+          "division": "Persuade"
+        },
+        {
+          "id": "intimidate",
+          "division": "Intimidate"
+        },
+        {
+          "id": "haggle",
+          "division": "Haggle"
+        }
+      ],
+      "art": [],
+      "status": "in-game",
+      "adapter": true,
+      "contract": 1,
+      "gym": {
+        "name": "Intimidate"
+      }
+    },
+    {
+      "id": "craft",
+      "version": "1.0.0",
+      "kind": "minigame",
+      "title": "Heat and shape",
+      "verb": "Forge a part",
+      "skill": "crafting",
+      "where": [
+        "crafting bench",
+        "trainer"
+      ],
+      "length_s": [
+        30,
+        180
+      ],
+      "inputs": [
+        "seed",
+        "tier",
+        "points",
+        "level",
+        "context"
+      ],
+      "outputs": [
+        "success",
+        "xp"
+      ],
+      "paths": [
+        {
+          "id": "quality",
+          "division": "Quality"
+        },
+        {
+          "id": "speed",
+          "division": "Speed"
+        },
+        {
+          "id": "material",
+          "division": "Material use"
+        }
+      ],
+      "art": [],
+      "status": "in-game",
+      "adapter": true,
+      "contract": 1,
+      "gym": {
+        "name": "Heat and shape"
+      }
+    },
+    {
+      "id": "nav",
+      "version": "1.0.0",
+      "kind": "minigame",
+      "title": "Lane run",
+      "verb": "Run the lanes",
+      "skill": "navigation",
+      "where": [
+        "trainer"
+      ],
+      "length_s": [
+        30,
+        180
+      ],
+      "inputs": [
+        "seed",
+        "tier",
+        "points",
+        "level",
+        "context"
+      ],
+      "outputs": [
+        "success",
+        "xp"
+      ],
+      "paths": [
+        {
+          "id": "time",
+          "division": "Time"
+        },
+        {
+          "id": "fuel",
+          "division": "Fuel use"
+        },
+        {
+          "id": "warning",
+          "division": "Hazard warning"
+        }
+      ],
+      "art": [],
+      "status": "in-game",
+      "adapter": true,
+      "contract": 1,
+      "gym": {
+        "name": "Perihelion trainer sectors"
+      }
+    },
+    {
+      "id": "stealth",
+      "version": "1.0.0",
+      "kind": "minigame",
+      "title": "Shadow slip",
+      "verb": "Slip past the guards",
+      "skill": "stealth",
+      "where": [
+        "shadow lane",
+        "trainer"
+      ],
+      "length_s": [
+        30,
+        180
+      ],
+      "inputs": [
+        "seed",
+        "tier",
+        "points",
+        "level",
+        "context"
+      ],
+      "outputs": [
+        "success",
+        "xp"
+      ],
+      "paths": [
+        {
+          "id": "quiet",
+          "division": "Quiet movement"
+        },
+        {
+          "id": "range",
+          "division": "Detection range"
+        },
+        {
+          "id": "decay",
+          "division": "Heat decay"
+        }
+      ],
+      "art": [],
+      "status": "in-game",
+      "adapter": true,
+      "contract": 1,
+      "gym": {
+        "name": "Shadow slip"
+      }
+    },
+    {
+      "id": "pilot",
+      "version": "1.0.0",
+      "kind": "minigame",
+      "title": "Touchdown",
+      "verb": "Land on the pad",
+      "skill": "piloting",
+      "where": [
+        "flight console",
+        "trainer"
+      ],
+      "length_s": [
+        30,
+        180
+      ],
+      "inputs": [
+        "seed",
+        "tier",
+        "points",
+        "level",
+        "context"
+      ],
+      "outputs": [
+        "success",
+        "xp"
+      ],
+      "paths": [
+        {
+          "id": "handling",
+          "division": "Handling"
+        },
+        {
+          "id": "boost",
+          "division": "Boost"
+        },
+        {
+          "id": "landing",
+          "division": "Landing"
+        }
+      ],
+      "art": [],
+      "status": "in-game",
+      "adapter": true,
+      "contract": 1,
+      "gym": {
+        "name": "Touchdown"
+      }
+    },
+    {
+      "id": "perihelion",
+      "version": "1.0.0",
+      "kind": "minigame",
+      "title": "Perihelion",
+      "verb": "Plot a burn",
+      "skill": "navigation",
+      "where": [
+        "navigation table",
+        "trainer"
+      ],
+      "length_s": [
+        30,
+        180
+      ],
+      "inputs": [
+        "seed",
+        "tier",
+        "points",
+        "level",
+        "context"
+      ],
+      "outputs": [
+        "success",
+        "xp"
+      ],
+      "paths": [
+        {
+          "id": "time",
+          "division": "Time"
+        },
+        {
+          "id": "fuel",
+          "division": "Fuel use"
+        },
+        {
+          "id": "warning",
+          "division": "Hazard warning"
+        }
+      ],
+      "art": [],
+      "status": "in-game",
+      "adapter": true,
+      "contract": 1,
+      "bare": true
+    },
+    {
+      "id": "cut",
+      "version": "1.0.0",
+      "kind": "minigame",
+      "title": "Cut a plate",
+      "verb": "Cut the line",
+      "skill": "crafting",
+      "where": [
+        "crafting bench",
+        "trainer"
+      ],
+      "length_s": [
+        30,
+        180
+      ],
+      "inputs": [
+        "seed",
+        "tier",
+        "points",
+        "level",
+        "context"
+      ],
+      "outputs": [
+        "success",
+        "xp"
+      ],
+      "paths": [
+        {
+          "id": "quality",
+          "division": "Quality"
+        },
+        {
+          "id": "speed",
+          "division": "Speed"
+        },
+        {
+          "id": "material",
+          "division": "Material use"
+        }
+      ],
+      "art": [],
+      "status": "in-game",
+      "adapter": true,
+      "contract": 1
+    },
+    {
+      "id": "screw",
+      "version": "1.0.0",
+      "kind": "minigame",
+      "title": "Drive a bolt",
+      "verb": "Turn it snug",
+      "skill": "crafting",
+      "where": [
+        "crafting bench",
+        "trainer"
+      ],
+      "length_s": [
+        30,
+        180
+      ],
+      "inputs": [
+        "seed",
+        "tier",
+        "points",
+        "level",
+        "context"
+      ],
+      "outputs": [
+        "success",
+        "xp"
+      ],
+      "paths": [
+        {
+          "id": "quality",
+          "division": "Quality"
+        },
+        {
+          "id": "speed",
+          "division": "Speed"
+        },
+        {
+          "id": "material",
+          "division": "Material use"
+        }
+      ],
+      "art": [],
+      "status": "in-game",
+      "adapter": true,
+      "contract": 1
+    },
+    {
+      "id": "bolt-plate",
+      "version": "1.0.0",
+      "kind": "minigame",
+      "title": "Bolt plate",
+      "verb": "Cut, then bolt",
+      "skill": "crafting",
+      "where": [
+        "crafting bench",
+        "trainer"
+      ],
+      "length_s": [
+        30,
+        180
+      ],
+      "inputs": [
+        "seed",
+        "tier",
+        "points",
+        "level",
+        "context"
+      ],
+      "outputs": [
+        "success",
+        "xp"
+      ],
+      "paths": [
+        {
+          "id": "quality",
+          "division": "Quality"
+        },
+        {
+          "id": "speed",
+          "division": "Speed"
+        },
+        {
+          "id": "material",
+          "division": "Material use"
+        }
+      ],
+      "art": [],
+      "status": "in-game",
+      "adapter": true,
+      "contract": 1
+    },
+    {
+      "id": "practice",
+      "version": "1.0.0",
+      "kind": "minigame",
+      "title": "Practice lock",
+      "verb": "Try a lock with no risk",
+      "skill": "hacking",
+      "where": [
+        "practice lock"
+      ],
+      "length_s": [
+        30,
+        180
+      ],
+      "inputs": [
+        "seed",
+        "tier",
+        "points",
+        "level",
+        "context"
+      ],
+      "outputs": [
+        "success",
+        "xp"
+      ],
+      "art": [],
+      "status": "in-game",
+      "adapter": true,
+      "contract": 1
+    },
+    {
+      "id": "bribe",
+      "version": "1.0.0",
+      "kind": "minigame",
+      "title": "Bribe",
+      "verb": "Find the price they take",
+      "skill": "social",
+      "where": [
+        "conversation"
+      ],
+      "length_s": [
+        30,
+        180
+      ],
+      "inputs": [
+        "seed",
+        "tier",
+        "points",
+        "level",
+        "context"
+      ],
+      "outputs": [
+        "success",
+        "xp"
+      ],
+      "paths": [
+        {
+          "id": "persuade",
+          "division": "Persuade"
+        },
+        {
+          "id": "intimidate",
+          "division": "Intimidate"
+        },
+        {
+          "id": "haggle",
+          "division": "Haggle"
+        }
+      ],
+      "art": [],
+      "status": "in-game",
+      "adapter": true,
+      "contract": 1
+    }
+  ]
+}

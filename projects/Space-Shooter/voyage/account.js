@@ -29,7 +29,9 @@ export function applyAccount(save, account) {
   if (base.character && plain(account.levels)) {
     const levels = { ...base.character.levels };
     for (const id of ROLL_SKILL_IDS) if (Number.isFinite(account.levels[id])) levels[id] = Math.min(LEVEL_MAX, Math.max(LEVEL_MIN, whole(account.levels[id])));
-    out.character = { ...base.character, levels };
+    // The hub also owns the skills' category points, total XP and the last scan (a missing field reads as zero / none).
+    out.character = { ...base.character, levels, points: account.points, xp: account.xp, scan: plain(account.scan) ? account.scan : null };
+    delete out.character.xpTrack;
   }
   return cleanSave(out);
 }
@@ -131,8 +133,35 @@ export function createEconomy() {
     async died() {
       if (!api) return null;
       const out = await call('/death', {});
+      await call('/scan/restore', {}); // a reprint: levels, XP and points go back to the last scan
       await self.pull();
       return out.data;
+    },
+    /** Skill category points: the hub validates the spread. Resolves to the hub's answer ({ ok: false, reason } when refused). */
+    async spendPoints(skill, points) {
+      if (!api) return null;
+      const out = await call('/skill-points', { skill, points });
+      if (out.ok) await self.pull();
+      return out.data || { ok: false, reason: 'off' };
+    },
+    /** A mini-game win's XP claim. The hub knows the skill from the game, and caps it. */
+    async claimXp(game, runId, xp) {
+      if (!api) return null;
+      const out = await call('/xp', { game, runId, xp });
+      if (out.ok) await self.pull();
+      return out.data || { ok: false, reason: 'off' };
+    },
+    async scan() {
+      if (!api) return null;
+      const out = await call('/scan', {});
+      if (out.ok) await self.pull();
+      return out.data || { ok: false, reason: 'off' };
+    },
+    async restore() {
+      if (!api) return null;
+      const out = await call('/scan/restore', {});
+      await self.pull();
+      return out.data || { ok: false, reason: 'off' };
     },
   };
   return self;

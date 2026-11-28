@@ -13,6 +13,7 @@
 // All names, lines and characters are our own (BRIEF.md S60).
 
 import { LINES_DATA } from './data/lines.js';
+import { roleSay } from '../slice/roleSay.js';
 
 export const EMOTIONS = Object.freeze([...LINES_DATA.emotions]);
 export const LINE_ID = /^[a-z0-9][a-z0-9.-]{0,47}$/;
@@ -53,9 +54,10 @@ export const allLines = () => [...LINES, ...ADDED];
 /** A line by id, or null. */
 export const lineById = (id) => BY_ID.get(id) || null;
 
-/** Fills {name} and other {keys} from vars; an unknown key becomes "Captain". */
+/** Fills {name} and other {keys} from vars; an unknown key becomes "Captain". vars.role (janitor | gunner): a line written for a captain says that word instead. */
 export function fillLine(text, vars = {}) {
-  return String(text).replace(/\{([a-z]+)\}/g, (_, key) => {
+  const said = vars.role ? roleSay(String(text), vars.role) : String(text); // before the name goes in: "Captain {name}" is the player's own title
+  return said.replace(/\{([a-z]+)\}/g, (_, key) => {
     const v = vars[key];
     return typeof v === 'string' && v.trim() ? v.trim() : 'Captain';
   });

@@ -1,0 +1,4 @@
+.m-_sample-game{display:flex;flex-direction:column;align-items:center;gap:14px;padding:16px;color:#eaf4f5}
+.m-_sample-game .sg-pads{display:grid;grid-template-columns:repeat(3,minmax(64px,120px));gap:12px}
+.m-_sample-game .sg-pad{aspect-ratio:1;min-height:64px;border:2px solid #2fe0c0;border-radius:10px;background:#0b141f;-webkit-tap-highlight-color:transparent}
+.m-_sample-game .sg-pad.is-lit{filter:drop-shadow(0 0 8px #ffb867);background:#1d2f40}

@@ -1,0 +1,48 @@
+{
+  "id": "intimidate",
+  "version": "1.0.0",
+  "kind": "minigame",
+  "title": "Intimidate",
+  "verb": "Make them back down",
+  "skill": "social",
+  "where": [
+    "standoff door",
+    "trainer"
+  ],
+  "length_s": [
+    30,
+    180
+  ],
+  "inputs": [
+    "seed",
+    "tier",
+    "points",
+    "level",
+    "context"
+  ],
+  "outputs": [
+    "success",
+    "xp"
+  ],
+  "paths": [
+    {
+      "id": "persuade",
+      "division": "Persuade"
+    },
+    {
+      "id": "intimidate",
+      "division": "Intimidate"
+    },
+    {
+      "id": "haggle",
+      "division": "Haggle"
+    }
+  ],
+  "art": [],
+  "status": "in-game",
+  "adapter": true,
+  "contract": 1,
+  "gym": {
+    "name": "Intimidate"
+  }
+}

@@ -36,7 +36,7 @@
     {"id":"out","to":"ship","arrive":"from-dock","label":"Back aboard your ship","at":[5,7],"size":[2,1]}
   ],
   "spawns": {
-    "default": [5.5,6,"up"],
-    "from-dock": [5.5,6,"up"]
+    "default": [1.5,5,"up"],
+    "from-dock": [1.5,5,"up"]
   }
 }

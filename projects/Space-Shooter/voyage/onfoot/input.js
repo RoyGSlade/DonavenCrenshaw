@@ -6,6 +6,7 @@
 //   input.move() -> {x, y}   input.aim(px, py) -> angle | null (from the player's screen point)
 //   input.firing()  input.take('interact' | 'dash' | 'boost')  input.destroy()
 import { createEl } from './dom.js';
+import { decideAim, decideFire, FIRE_KEYS } from './aim.js';
 
 const MOVE_KEYS = { KeyW: [0, -1], KeyS: [0, 1], KeyA: [-1, 0], KeyD: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] };
 const AIM_KEYS = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] };
@@ -15,14 +16,14 @@ export const isTouchDevice = () => (globalThis.matchMedia?.('(pointer: coarse)')
 export function createInput(root, { mode = 'walk', canvas = null, touch = isTouchDevice(), labels = {} } = {}) {
   const keys = new Set();
   const pressed = new Set();
-  const mouse = { x: 0, y: 0, down: false, seen: false };
+  const mouse = { x: 0, y: 0, down: false, seen: false, t: 0 };
   const sticks = { left: null, right: null };
   let enabled = true;
 
   const onKeyDown = (e) => {
     if (!enabled || e.target.closest?.('input, textarea, select')) return;
     const code = e.code;
-    const used = MOVE_KEYS[code] || ['KeyE', 'Enter', 'Space', 'ShiftLeft', 'ShiftRight', 'KeyF'].includes(code);
+    const used = MOVE_KEYS[code] || ['KeyE', 'Enter', 'Space', 'ShiftLeft', 'ShiftRight', 'KeyF', 'KeyJ', 'ControlLeft', 'ControlRight'].includes(code);
     if (!used) return;
     e.preventDefault();
     if (!keys.has(code)) {
@@ -39,13 +40,26 @@ export function createInput(root, { mode = 'walk', canvas = null, touch = isTouc
   addEventListener('keyup', onKeyUp);
   addEventListener('blur', onBlur);
 
-  const onMouseMove = (e) => { if (e.pointerType === 'touch') return; const r = canvas.getBoundingClientRect(); mouse.x = e.clientX - r.left; mouse.y = e.clientY - r.top; mouse.seen = true; };
-  const onMouseDown = (e) => { if (e.pointerType === 'touch' || e.button !== 0) return; onMouseMove(e); mouse.down = true; };
+  // Opening B: the pointer is read on the whole window, not only on the canvas, so a HUD box or a mark layer over the playfield never
+  // eats the aim; clicks on a button or a box (the dialogue, the approach bar) are not shots.
+  const now = () => (globalThis.performance?.now?.() ?? Date.now());
+  const onUi = (e) => Boolean(e.target?.closest?.('button, a, input, select, textarea, .ui-dialogue, .op-approach, .dp-tracker, .dp-bag, .of-stick, .of-tbtn'));
+  const onMouseMove = (e) => { if (e.pointerType === 'touch') return; const r = canvas.getBoundingClientRect(); mouse.x = e.clientX - r.left; mouse.y = e.clientY - r.top; mouse.seen = true; mouse.t = now(); };
+  const onMouseDown = (e) => { if (e.pointerType === 'touch' || e.button !== 0 || onUi(e)) return; onMouseMove(e); mouse.down = true; };
   const onMouseUp = (e) => { if (e.pointerType === 'touch') return; mouse.down = false; };
+  // A finger on the playfield (not on a stick or a button) aims there and fires while it stays down.
+  const finger = { id: null, x: 0, y: 0 };
+  const onTouchDown = (e) => { if (e.pointerType !== 'touch' || onUi(e) || finger.id != null) return; const r = canvas.getBoundingClientRect(); finger.id = e.pointerId; finger.x = e.clientX - r.left; finger.y = e.clientY - r.top; };
+  const onTouchMove = (e) => { if (e.pointerId !== finger.id) return; const r = canvas.getBoundingClientRect(); finger.x = e.clientX - r.left; finger.y = e.clientY - r.top; };
+  const onTouchUp = (e) => { if (e.pointerId === finger.id) finger.id = null; };
   if (canvas && mode === 'fight') {
-    canvas.addEventListener('pointermove', onMouseMove);
-    canvas.addEventListener('pointerdown', onMouseDown);
+    addEventListener('pointermove', onMouseMove);
+    addEventListener('pointerdown', onMouseDown);
     addEventListener('pointerup', onMouseUp);
+    canvas.addEventListener('pointerdown', onTouchDown);
+    addEventListener('pointermove', onTouchMove);
+    addEventListener('pointerup', onTouchUp);
+    addEventListener('pointercancel', onTouchUp);
   }
 
   // ---- touch controls ----
@@ -102,19 +116,33 @@ export function createInput(root, { mode = 'walk', canvas = null, touch = isTouc
     },
     /** Analog stick, raw (fly mode steers toward it). */
     stick: () => (sticks.left?.active ? { x: sticks.left.x, y: sticks.left.y } : null),
-    /** Aim angle from the player's screen point (fights), or null when not aiming. */
-    aim(px, py) {
-      if (sticks.right?.active && Math.hypot(sticks.right.x, sticks.right.y) > 0.25) return Math.atan2(sticks.right.y, sticks.right.x);
-      let ax = 0, ay = 0;
-      for (const code of keys) { const v = AIM_KEYS[code]; if (v) { ax += v[0]; ay += v[1]; } }
-      if (ax || ay) return Math.atan2(ay, ax);
-      if (mouse.seen) return Math.atan2(mouse.y - py, mouse.x - px);
-      return null;
+    /**
+     * Aim angle from the player's screen point (fights), or null when not aiming. assist: { angle } of the nearest enemy, used by a fire key
+     * when the pointer has gone quiet (see aim.js).
+     */
+    aim(px, py, assist = null) {
+      let ax = 0, ay = 0, any = false;
+      for (const code of keys) { const v = AIM_KEYS[code]; if (v) { ax += v[0]; ay += v[1]; any = true; } }
+      return decideAim({
+        stick: sticks.right?.active ? { x: sticks.right.x, y: sticks.right.y } : null,
+        arrows: any ? { x: ax, y: ay } : null,
+        touchAim: finger.id != null ? Math.atan2(finger.y - py, finger.x - px) : null,
+        mouse: mouse.seen ? { seen: true, ageMs: mouse.down ? 0 : now() - mouse.t, angle: Math.atan2(mouse.y - py, mouse.x - px) } : null,
+        fireKey: FIRE_KEYS.some((k) => keys.has(k)),
+        assist,
+      });
     },
     firing() {
-      if (sticks.right?.active) return Math.hypot(sticks.right.x, sticks.right.y) > 0.55;
-      for (const code of keys) if (AIM_KEYS[code]) return true;
-      return mouse.down || keys.has('KeyF');
+      let arrows = false;
+      for (const code of keys) if (AIM_KEYS[code]) arrows = true;
+      return decideFire({ stick: sticks.right?.active ? { x: sticks.right.x, y: sticks.right.y } : null, arrows, touchHeld: finger.id != null, fireKey: FIRE_KEYS.some((k) => keys.has(k)), mouseDown: mouse.down });
+    },
+    /** Live stealth: how you move. Ctrl sneaks, Shift runs, otherwise walk; on a phone the stick's strength picks it (gentle sneaks, full runs). */
+    gait(mv = null) {
+      if (sticks.left?.active) { const m = Math.hypot(sticks.left.x, sticks.left.y); return m < 0.5 ? 'sneak' : m > 0.92 ? 'run' : 'walk'; }
+      if (keys.has('ControlLeft') || keys.has('ControlRight')) return 'sneak';
+      if (keys.has('ShiftLeft') || keys.has('ShiftRight')) return 'run';
+      return 'walk';
     },
     held: (code) => keys.has(code),
     /** True once per press of an action button. */
@@ -130,8 +158,9 @@ export function createInput(root, { mode = 'walk', canvas = null, touch = isTouc
     set enabled(v) { enabled = v; if (!v) { keys.clear(); pressed.clear(); mouse.down = false; } },
     destroy() {
       removeEventListener('keydown', onKeyDown); removeEventListener('keyup', onKeyUp); removeEventListener('blur', onBlur);
-      if (canvas) { canvas.removeEventListener('pointermove', onMouseMove); canvas.removeEventListener('pointerdown', onMouseDown); }
-      removeEventListener('pointerup', onMouseUp);
+      removeEventListener('pointermove', onMouseMove); removeEventListener('pointerdown', onMouseDown); removeEventListener('pointerup', onMouseUp);
+      removeEventListener('pointermove', onTouchMove); removeEventListener('pointerup', onTouchUp); removeEventListener('pointercancel', onTouchUp);
+      canvas?.removeEventListener('pointerdown', onTouchDown);
       pad.remove();
     },
   };

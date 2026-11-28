@@ -24,6 +24,7 @@ import { createVoyageStore } from './store.js';
 import { startVoyageSync } from './live.js';
 import { serverMode, probeSession, showMaintenance } from './session.js';
 import { economy } from './account.js';
+import { createSkillSave } from './skillSave.js';
 import { createHangar } from './hangar.js';
 import { createHangarPlace } from './hangarPlace.js';
 import { provideHangar, hangarApi, addLaunch } from './hangarApi.js';
@@ -31,14 +32,18 @@ import { bus, tutorialOn, isUnlocked } from './hangarLinks.js';
 import { createCrew } from './crew.js';
 import { createJobs } from './jobs.js';
 import { shipTierArt } from './art.js';
-import { ambienceFor } from './ui/assets.js';
+import { ambienceFor, bedIdFor } from './ui/assets.js';
+import { createSfx } from './onfoot/sfx.js';
+import { createMood } from './ui/mood.js';
+import { createSubtitles } from './ui/subtitle.js';
 import { createHangarAudio } from './ui/audio.js';
 import { createDialogueBox } from './ui/dialogue.js';
 import { createLicence } from './ui/licence.js';
 import { createSettings } from './ui/settings.js';
 import { createAttemptRoller } from './ui/attemptRoll.js';
+import { createMinigameSheet } from './minigames/sheet.js';
 import { mountStory } from './story/mount.js';
-import { storyOf, currentStep } from './story/progress.js';
+import { storyOf, currentStep, idleLine } from './story/progress.js';
 import { STEP_IDS, STEPS } from './story/tutorial.js';
 import { addLines, lineById } from './story/lines.js';
 import { contentLines } from './quests/lines.js';
@@ -62,6 +67,22 @@ import { offersAt, openCount } from './quests/offers.js';
 import { OFFERS_DATA } from './quests/data/offers.js';
 // Launch slice: the opening on the Tin Duchess (slice/director.js).
 import { wantsSlice, startSlice, startRoom, createSliceDirector } from './slice/director.js';
+import { createTalkRange } from './slice/talkRange.js';
+import { SWITCHES } from './slice/switches.js';
+import { createApproachRunner } from './slice/approachRun.js';
+import { createStager } from './slice/stager.js';
+import { waitingOn } from './slice/rules.js';
+// Opening track A: the crew's ledger, the seal, roles and the fallback talk (slice/presenceRun.js, seal.js, role.js, fallbackLines.js).
+import { createPresenceRun } from './slice/presenceRun.js';
+import { sealReason, sealed, WHY } from './slice/seal.js';
+import { roleOf } from './slice/role.js';
+import { fallbackLine } from './slice/fallbackLines.js';
+import { createStatuses, clock } from './status.js';
+import { createHandsOn } from './slice/handsOnPlay.js';
+// The workbench room: a dev-only test room (?newgame=1&start=workbench), its own files in ./workbench/.
+import { wantsWorkbench } from './workbench/entry.js';
+import { mountWorkbench } from './workbench/mount.js';
+import { registerWorkbench, WORKBENCH_ID } from './workbench/map.js';
 
 const flag = newGameFlag({ config: runtimeConfig, search: location.search });
 // The tutorial step each on-foot lesson belongs to (contract section 4).
@@ -80,7 +101,7 @@ if (!flag.enabled) {
 // run starts while the hub is down; a maintenance screen waits for it instead.
 // Studio play links (throwaway saves) and server mode off play as they always have.
 async function gate() {
-  const linked = params.get('studio') === '1' || ['step', 'quest', 'map', 'explore'].some((k) => params.get(k));
+  const linked = params.get('studio') === '1' || ['step', 'quest', 'map', 'explore'].some((k) => params.get(k)) || wantsWorkbench({ flagEnabled: true, params });
   if (linked || !serverMode({ config: runtimeConfig, search: location.search })) return { mode: 'local' };
   const recorder = createRunRecorder();
   const probe = async () => { await recorder.connect(); return probeSession({ api: recorder.api, gamePath: recorder.gamePath, signedIn: Boolean(recorder.player) }); };
@@ -111,6 +132,10 @@ function boot(session = { mode: 'local' }) {
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => toastNode.classList.remove('show'), 3400);
   };
+  // A toast belongs to what just happened: it goes (text, class and timer) when the player changes room or a full-screen game opens.
+  const clearToast = () => { clearTimeout(toastTimer); toastNode.classList.remove('show'); toastNode.textContent = ''; };
+  bus.on('hangar:toast-clear', clearToast);
+  document.addEventListener('wb-fullscreen', clearToast);
   bus.on('hangar:toast', (d) => d?.text && toast(String(d.text)));
 
   // --- The save: the real one, or a throwaway one for Studio play links ---
@@ -123,16 +148,19 @@ function boot(session = { mode: 'local' }) {
     spawn: params.get('spawn') || 'default',
     explore: PLACES[params.get('explore')] && params.get('explore') !== 'home' ? params.get('explore') : null,
   };
-  const throwaway = params.get('studio') === '1' || Boolean(link.step || link.quest || link.map || link.explore);
-  const store = createVoyageStore(throwaway ? { key: 'studio.stardust.voyage.v1' } : {});
+  // The workbench room plays on its own throwaway save too, never a real captain's.
+  const workbench = wantsWorkbench({ flagEnabled: flag.enabled, params });
+  if (workbench) registerWorkbench();
+  const throwaway = params.get('studio') === '1' || Boolean(link.step || link.quest || link.map || link.explore) || workbench;
+  const store = createVoyageStore(throwaway ? { key: workbench ? 'workbench.stardust.voyage.v1' : 'studio.stardust.voyage.v1' } : {});
   if (link.step || link.quest) store.reset();
   // A linked step after the licence, a quest, a map or a hop needs a captain to play with.
   const afterCreate = link.step && STEP_IDS.indexOf(link.step) > STEP_IDS.indexOf('create');
-  if (throwaway && !store.get().character && (afterCreate || link.quest || link.map || link.explore)) {
-    store.createCharacter({ name: 'Studio Captain', look: { portrait: 'p1', color: '#81e6df' } });
+  if (throwaway && !store.get().character && (afterCreate || link.quest || link.map || link.explore || workbench)) {
+    store.createCharacter({ name: workbench ? 'Workbench Tester' : 'Studio Captain', look: { portrait: 'p1', color: '#81e6df' } });
   }
   // A quest, map or hop link plays with the tutorial out of the way.
-  if (throwaway && !link.step && (link.quest || link.map || link.explore) && !storyOf(store.get()).finished) {
+  if (throwaway && !link.step && (link.quest || link.map || link.explore || workbench) && !storyOf(store.get()).finished) {
     store.update((s) => ({ ...s, story: { ...storyOf(s), step: null, finished: true, skipped: true } }));
   }
 
@@ -172,9 +200,17 @@ function boot(session = { mode: 'local' }) {
 
   // --- Sound: nothing plays until the player touches the page ---
   const audio = createHangarAudio();
-  const BED_FOR = { workshop: 'workshop', den: 'den', cantina: 'den' };
-  const setBed = (ambient) => {
-    const amb = ambienceFor(BED_FOR[ambient] || 'hangar');
+  // Opening B sound: effects at a level a person hears, the music reacting to danger, voices left as a hook (bus 'voice:line').
+  const sfx = createSfx({ muted: () => audio.settings().muted || !audio.unlocked, volume: () => audio.settings().voice });
+  const mood = createMood({ audio });
+  createSubtitles({ bus });
+  // The rifle off the deck is a pickup you hear.
+  let hadRifle = Boolean(store.get().flags?.['reck-rifle-taken']);
+  store.subscribe((save) => { const has = Boolean(save.flags?.['reck-rifle-taken']); if (has && !hadRifle) sfx('pickup'); hadRifle = has; });
+  bus.on('audio:mood', (d) => { if (SWITCHES.moodMusic) mood.set(d?.mode); });
+  bus.on('audio:loop', (d) => sfx.loop(d?.id, Boolean(d?.on)));
+  const setBed = (ambient, mapId = '') => {
+    const amb = ambienceFor(bedIdFor(ambient, mapId));
     if (amb) audio.setAmbience(amb.url, amb.gain);
   };
   setBed('hangar');
@@ -198,6 +234,7 @@ function boot(session = { mode: 'local' }) {
   const floor = $('hg-floor');
   let place = null;
   let onfoot = null;
+  let workbenchRoom = null; // the workbench room's controller (workbench/index.js), only on ?start=workbench
   let sheetOpen = false;
   const overlays = new Set(); // 'intro', 'licence', 'pad', 'pause', 'nap': the floor holds still under them
   const holdFloor = () => {
@@ -374,8 +411,10 @@ function boot(session = { mode: 'local' }) {
   const jobTalk = createJobTalk({
     bus, store,
     take: (quest) => jobs.take(quest),
-    onBusy: (on) => { if (on) overlays.add('jobtalk'); else overlays.delete('jobtalk'); holdFloor(); tracker?.render(); },
+    // Opening B: a talk no longer holds the floor; walking off pauses it (slice/talkRange.js).
+    onBusy: (on) => { if (!SWITCHES.talkRange) { if (on) overlays.add('jobtalk'); else overlays.delete('jobtalk'); holdFloor(); } tracker?.render(); },
     name: () => store.get().character?.name || '',
+    role: () => (slicing ? roleOf(store.get()) : null),
   });
   const jobCard = createJobCard({
     root: $('dp-jobcard'), later: $('dp-jobcard-later'), eyebrow: $('dp-jobcard-eyebrow'),
@@ -386,24 +425,36 @@ function boot(session = { mode: 'local' }) {
   let lastRoll = 0;
   const presenter = {
     // A beat waits for the dice of the step before it to land, then plays in the dialogue box.
-    dialogue: (v, pick) => {
+    dialogue: (v, pick, opts) => {
       const wait = Math.max(0, lastRoll + 1400 - Date.now());
-      setTimeout(() => jobTalk.beat(v).then((i) => { if (i >= 0) pick(i); else if (i === -1) toast(OFFERS_WORDS.paused); }), wait);
+      setTimeout(() => jobTalk.beat(v, opts).then((i) => { if (i >= 0) pick(i); else if (i === -1) { toast(OFFERS_WORDS.paused); slice?.snooze(); } }), wait);
     },
     card: (kind, v) => (slice && kind === 'end' && v ? slice.endCard(v, () => jobCard.show(kind)) : jobCard.show(kind)),
     // launch slice: a beat plays in its room, an on-foot fight runs on the Duchess's floor, a closed result card starts the next scene.
   };
   const playBeat = presenter.dialogue;
-  presenter.dialogue = (v, pick) => (slice ? slice.beat(v, () => playBeat(v, pick)) : playBeat(v, pick));
+  presenter.dialogue = (v, pick) => (slice ? slice.beat(v, (opts) => playBeat(v, pick, opts), pick) : playBeat(v, pick));
+  // Opening B: a rolled choice becomes something you do (the roll sets help and time); the plain panel and the sandbox keep the old roll.
+  presenter.approachSpecs = (v) => slice?.approachSpecs(v) || {};
+  presenter.wantsApproach = (v, index) => Boolean(slice?.wantsApproach(v, index));
+  presenter.approach = (v, done) => slice.approach(v, done);
+  presenter.assistVerdict = (questId, node, assist) => slice?.assistVerdict(questId, node, assist) || '';
   presenter.foot = (part, done) => (slice ? slice.fight(part, done) : done(null));
   presenter.exit = () => slice?.afterCard();
+  // The opening's hooked choices (scenes 3, 4, 5): the d20 set the tier, the minigame sheet plays it, the result goes back to the engine.
+  const minigameSheet = createMinigameSheet({
+    root: $('hg-minigame'), eyebrow: $('hg-minigame-eyebrow'), title: $('hg-minigame-title'), stage: $('hg-minigame-stage'),
+    character: () => store.get().character, reducedMotion: still,
+    onChange: (on) => { if (on) { overlays.add('minigame'); dialogueBox.hide(); } else overlays.delete('minigame'); holdFloor(); tracker?.render(); },
+  });
+  presenter.minigame = (spec, done) => minigameSheet.play(spec, done);
   const jobs = createJobs({
     pane: panes.jobs, store, toast, dev: flag.dev, presenter,
-    say: (events) => hangar.say(events),
+    say: (events) => { hangar.say(events); if ((events || []).some((e) => (e.type === 'money' || e.type === 'item') && e.amount > 0)) sfx('pickup'); },
     onCaptain: openLicence,
     crew: crew.hooks,
     // A spoken node plays its voice file (the quest player shows the filled text itself).
-    voice: ({ line }) => { const url = voiceUrl(line); if (url) audio.playLine(url); },
+    voice: ({ line, speaker, text }) => { const url = voiceUrl(line); bus.emit('voice:line', { line, speaker, text, url }); if (url) audio.playLine(url); },
     // Every attempt the engine rolled shows on the corner dice.
     rolled: (rolls) => { lastRoll = Date.now(); for (const r of rolls) bus.emit('roll:attempt', { ...r, who: r.who || store.get().character?.name || null }); },
   });
@@ -438,23 +489,50 @@ function boot(session = { mode: 'local' }) {
 
 
   // The walkable floor. Walking up to a station and pressing E opens it in place.
+  const statuses = createStatuses();
+  // Opening track A: one ledger for the crew (who is where, who is walking), the seal on every way off the ship, and the fallback talk.
+  const presence = slicing ? createPresenceRun({ flags: () => store.get().flags || {} }) : null;
+  presence?.restore(store.get());
+  const crewTalks = new Map();
   onfoot = createOnFoot({
-    root: floor, store, bus, mapId: link.map || (slicing ? startRoom(store.get()) : 'hangar'), spawn: link.map ? link.spawn : 'default',
+    root: floor, store, bus, mapId: link.map || (workbench ? WORKBENCH_ID : slicing ? startRoom(store.get()) : 'hangar'), spawn: link.map ? link.spawn : 'default',
     reducedMotion: still,
     hooks: {
-      openStation: (id) => new Promise((resolve) => {
+      statuses,
+      presence: presence?.hooks || null,
+      sealed: (d) => (slicing ? sealReason(store.get(), d) : null),
+      // Nothing scripted: they answer anyway, in a few words (slice/fallbackLines.js). A person the story already has idle lines for keeps them.
+      talk: (who) => {
+        if (!slicing || idleLine(who, store.get(), 0)) return null;
+        const n = crewTalks.get(who) || 0;
+        crewTalks.set(who, n + 1);
+        const line = fallbackLine(who, { role: roleOf(store.get()), moving: Boolean(onfoot.world.npcAt(who)?.moving), n });
+        return line ? onfoot.say([line]) : null;
+      },
+      sound: (id) => sfx(id),
+      openStation: (id) => (workbenchRoom && String(id).startsWith('wb-') ? workbenchRoom.openStation(id) : new Promise((resolve) => {
         if (!place.openStation(id, { via: 'walk' })) { resolve(); return; }
         const off = place.subscribe((e) => { if (e.type === 'close') { off(); resolve(); } });
-      }),
+      })),
       isUnlocked: (id) => isUnlocked(store.get(), id),
       tutorial: () => tutorialOn(store.get()),
       // During the tutorial, a lesson waits for its turn (the director pays for each one once).
-      allow: (target) => allowLesson(target),
-      entered: (map) => { slice?.entered(map); setBed(map.ambient); place?.closeStation({ restoreFocus: false }); place?.place(); setPlaceName(placeNameFor(map)); },
+      allow: (target) => {
+        // Opening B: while a talk is up, the world stays live but objects wait: answer them or walk off.
+        if (jobTalk.busy && target.kind !== 'door') { toast('Finish the conversation, or walk away from it.'); return false; }
+        return allowLesson(target);
+      },
+      entered: (map) => { clearToast(); slice?.entered(map); setBed(map.ambient, map.id); place?.closeStation({ restoreFocus: false }); place?.place(); setPlaceName(placeNameFor(map)); },
+      // Scene 1's hands-on things (valve, hose, cart, mop, goo, lever) in the holodeck gym: slice/handsOnPlay.js.
+      task: (target) => slice?.handsOn?.use(target) || null,
       flying: (on) => { flying = on; holdFloor(); place?.place(); if (on) setPlaceName('The Drift'); else if (onfoot?.world?.map) setPlaceName(placeNameFor(onfoot.world.map)); },
-      stationInfo,
-      // Jobs you haven't taken: a giver offers theirs in person (after the tutorial).
-      offerTalk: (who, map) => (jobsOpen() && offersAt({ map: map.id, npc: who }, store.get()).length ? jobTalk.offerAt({ map: map.id, npc: who }) : null),
+      stationInfo: (id) => (workbenchRoom && String(id).startsWith('wb-') ? workbenchRoom.stationInfo(id) : stationInfo(id)),
+      // Live stealth (the workbench's patrol yard): the test character's stealth points, and the guards' events as toasts.
+      stealthSetup: () => workbenchRoom?.stealthSetup?.() || null,
+      stealthEvent: (e, world) => workbenchRoom?.stealthEvent?.(e, world),
+      // Jobs you haven't taken: a giver offers theirs in person (after the tutorial). In the workbench room the three crew talk their test conversations.
+      // A scene waiting on this person (the captain after a "Later") picks up again when you talk to them.
+      offerTalk: (who, map) => (workbenchRoom && map.id === WORKBENCH_ID ? workbenchRoom.talk(who) : slice && waitingOn(store.get(), who, map.id) ? (jobTalk.busy || jobs.resume(), Promise.resolve()) : jobsOpen() && offersAt({ map: map.id, npc: who }, store.get()).length ? jobTalk.offerAt({ map: map.id, npc: who }) : null),
       // The "job here" mark: open offers at a giver or a board.
       offers: ({ map, npc, station }) => {
         if (!jobsOpen()) return 0;
@@ -463,6 +541,15 @@ function boot(session = { mode: 'local' }) {
       },
     },
   });
+  if (workbench) {
+    chip.textContent = 'Workbench test room: nothing here touches a real captain';
+    workbenchRoom = mountWorkbench({
+      store, bus, onfoot, dialogueBox, toast, audio, reducedMotion: still, sound: (id) => onfoot.sound(id),
+      sheet: { root: $('hg-minigame'), eyebrow: $('hg-minigame-eyebrow'), title: $('hg-minigame-title'), stage: $('hg-minigame-stage') },
+      onBusy: (on) => { if (on) overlays.add('workbench'); else overlays.delete('workbench'); holdFloor(); tracker?.render(); },
+      seed: Number.parseInt(params.get('seed'), 10) || null,
+    });
+  }
   setCaptainLook(store.get().character?.look?.portrait);
   store.subscribe((save) => setCaptainLook(save.character?.look?.portrait));
   setPlaceName(placeNameFor(onfoot.world.map));
@@ -474,9 +561,40 @@ function boot(session = { mode: 'local' }) {
   addEventListener('resize', fitSafe);
   // Something else owns the screen: a station panel, the licence or intro, a minigame or talk, a flight, a fight.
   const screenBusy = () => sheetOpen || Boolean(place.current) || overlays.has('intro') || overlays.has('licence') || overlays.has('nap') || overlays.has('pause') || flying
-    || onfoot.world.mode !== 'walk' || Boolean(floor.querySelector('.of-panel, .of-overlay, .of-talk')) || !$('hg-licence').hidden;
+    || onfoot.world.mode !== 'walk' || Boolean(floor.querySelector('.of-panel, .of-overlay, .of-talk')) || !$('hg-licence').hidden || Boolean(document.querySelector('.ok-screen')); /* an object screen owns the display */
+  // Playtest 1: a status (Wired) shows as a small chip on the floor while it lasts.
+  const statusChip = document.createElement('p');
+  statusChip.className = 'hg-status';
+  statusChip.setAttribute('role', 'status');
+  statusChip.hidden = true;
+  floor.append(statusChip);
+  // The HUD rule: a status is a word and a bar that drains, not digits.
+  setInterval(() => {
+    const on = statuses.active();
+    statusChip.hidden = !on.length;
+    if (!on.length) return;
+    statusChip.replaceChildren(...on.map((x) => {
+      const item = document.createElement('span');
+      item.className = 'hg-st';
+      item.dataset.status = x.id;
+      item.title = x.text;
+      item.setAttribute('aria-label', `${x.name}, ${clock(x.left)} left`);
+      const word = document.createElement('b');
+      word.textContent = x.name;
+      const bar = document.createElement('span');
+      bar.className = 'hg-st-bar';
+      bar.setAttribute('role', 'meter');
+      const fill = document.createElement('i');
+      fill.style.width = `${Math.max(0, Math.min(100, (x.left / x.total) * 100))}%`;
+      bar.append(fill);
+      item.append(word, bar);
+      return item;
+    }));
+  }, 500);
   pad = createDatapad({
-    root: document.body, store, bus, toast, touch,
+    pageName: (id) => (slicing && id === 'captain' && roleOf(store.get()) !== 'captain' ? 'You' : null),
+    useItem: (id) => (id === 'coffee' ? onfoot.drinkCoffee(true) : id === 'tea' ? onfoot.drinkTea(true) : false),
+    root: document.body, store, bus, toast, touch, skillSave: createSkillSave({ store, economy }),
     world: () => onfoot?.world || null,
     tutorialOn, reducedMotion: still, stationInfo,
     canOpen: () => !screenBusy(),
@@ -491,7 +609,10 @@ function boot(session = { mode: 'local' }) {
     boardOpen: () => place.current === 'board',
     jobBusy: () => jobTalk.busy || jobCard.open,
     onContinue: () => jobs.resume(),
+    canContinue: () => !slicing, /* the opening starts its own beats (slice/director.js watch) */
   });
+  // Opening B: how far you walk from whoever is talking pauses or ends the talk; people bark as you pass.
+  const talkRange = createTalkRange({ bus, world: () => onfoot?.world || null, leave: () => jobTalk.leave(), resume: () => { if (!jobTalk.busy) { if (slice) slice.resumeOnce(); else jobs.resume(); } }, canBark: () => !jobTalk.busy && !jobCard.open && !screenBusy() });
   const controls = createControlsCard({ root: document.body, touch });
   const pause = createPause({
     root: document.body, touch, settings, controls,
@@ -576,6 +697,21 @@ function boot(session = { mode: 'local' }) {
   crew.render();
   ready.then(() => crew.refresh());
 
+  // Opening track A, outcome 2: the links back to the classic game are shut while the opening runs; a click says why.
+  function sealClassicLinks() {
+    const back = $('vy-back');
+    const mark = () => { const on = sealed(store.get()); back.toggleAttribute('data-sealed', on); if (on) back.setAttribute('aria-disabled', 'true'); else back.removeAttribute('aria-disabled'); };
+    mark();
+    store.subscribe(mark);
+    addEventListener('click', (e) => {
+      const a = e.target instanceof Element ? e.target.closest('a[href*="activity=classic"]') : null;
+      if (!a || !sealed(store.get())) return;
+      e.preventDefault();
+      e.stopPropagation();
+      toast(WHY.classic);
+    }, true);
+  }
+
   // --- Where to start ---
   const step = currentStep(store.get())?.id || null;
   if (link.quest) {
@@ -587,7 +723,13 @@ function boot(session = { mode: 'local' }) {
   // A job in progress waits on the tracker and the datapad (Continue); nothing pops up.
   // Launch slice: the opening picks its scene up (a reload lands back in the beat) or starts the next one.
   if (slicing) {
-    slice = createSliceDirector({ store, jobs, toast, world: () => onfoot?.world || null, fightIn: (setup) => onfoot.fight(setup) });
+    const handsOn = createHandsOn({
+      root: floor, store, toast, world: () => onfoot?.world || null, sound: (id) => onfoot.sound(id), reducedMotion: still, character: () => store.get().character,
+      onBusy: (on) => { if (on) overlays.add('handson'); else overlays.delete('handson'); holdFloor(); tracker?.render(); },
+    });
+    slice = createSliceDirector({ store, jobs, toast, world: () => onfoot?.world || null, fightIn: (setup) => onfoot.fight(setup), presence, busy: () => jobTalk.busy || jobCard.open || screenBusy(), handsOn, runner: createApproachRunner({ world: () => onfoot?.world || null, toast, bus }), stager: createStager({ world: () => onfoot?.world || null, bus, toast }) });
+    setInterval(() => slice.watch(), 250);
+    sealClassicLinks();
     ready.then(() => {
       // A signed-in account whose own save is an older hangar game replaces the fresh one: leave the Duchess for the hangar.
       if (!store.get().flags?.['slice-started']) { onfoot.world.go('hangar', 'default'); return; }
@@ -595,7 +737,17 @@ function boot(session = { mode: 'local' }) {
     });
   }
 
+  // Playtest chunks: ?newgame=1&chapter=4 starts at scene 4 with scenes 1-3 played (slice/chapterStart.js). Once, then the address drops it.
+  if (slice && params.get('chapter')) {
+    import('./slice/chapterStart.js').then(({ chapterOf, playedTo }) => {
+      const n = chapterOf(params.get('chapter'));
+      const url = new URL(location.href); url.searchParams.delete('chapter');
+      if (n) { try { store.update((s) => playedTo(s, n)); } catch (error) { console.warn('Stardust:', error.message); } }
+      location.replace(url);
+    });
+  }
+
   // For tests and poking around in the console (no secrets: the save is the player's own).
   setTimeout(maybeControls, 600);
-  window.__stardust = { store, story, onfoot, place, jobs, licence, bus, pad, tracker, controls, pause, jobTalk, jobCard, crew, slice };
+  window.__stardust = { sfx, mood, audio, talkRange, presence, statuses, store, story, onfoot, place, jobs, licence, bus, pad, tracker, controls, pause, jobTalk, jobCard, crew, slice, workbench: workbenchRoom };
 }

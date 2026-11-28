@@ -1,0 +1,46 @@
+{
+  "id": "perihelion",
+  "version": "1.0.0",
+  "kind": "minigame",
+  "title": "Perihelion",
+  "verb": "Plot a burn",
+  "skill": "navigation",
+  "where": [
+    "navigation table",
+    "trainer"
+  ],
+  "length_s": [
+    30,
+    180
+  ],
+  "inputs": [
+    "seed",
+    "tier",
+    "points",
+    "level",
+    "context"
+  ],
+  "outputs": [
+    "success",
+    "xp"
+  ],
+  "paths": [
+    {
+      "id": "time",
+      "division": "Time"
+    },
+    {
+      "id": "fuel",
+      "division": "Fuel use"
+    },
+    {
+      "id": "warning",
+      "division": "Hazard warning"
+    }
+  ],
+  "art": [],
+  "status": "in-game",
+  "adapter": true,
+  "contract": 1,
+  "bare": true
+}

@@ -69,8 +69,13 @@ export const AMBIENCE = Object.freeze({
   // Chibby's workshop (slide guitar, warm synth) and Edna's den (electric piano, sub bass): about 80 kbps,
   // re-encoded by scripts/stardust-assets.mjs ambience. The hangar page wires which map plays which bed.
   workshop: { ogg: '../audio/ambience/tinker-bench.ogg', mp3: '../audio/ambience/tinker-bench.mp3', gain: 0.8 },
+  // The Tin Duchess's rooms (playtest 1: the hangar bed was "too loud, too simple, repetitive"): the same calm hum, 12 dB down (x0.25), so it is a room tone.
+  ship: { ogg: '../audio/ambience/hangar-hum.ogg', mp3: '../audio/ambience/hangar-hum.mp3', gain: 0.2 },
   den: { ogg: '../audio/ambience/night-shift.ogg', mp3: '../audio/ambience/night-shift.mp3', gain: 0.8 },
 });
+
+/** Which bed a map plays: its `ambient` tag, except every Tin Duchess room plays the quiet ship bed. */
+export const bedIdFor = (ambient, mapId = '') => (String(mapId).startsWith('duchess-') ? 'ship' : ({ workshop: 'workshop', den: 'den', cantina: 'den' })[ambient] || 'hangar');
 
 /** The ambience file this browser can loop: { url, gain } or null. */
 export function ambienceFor(id, canPlay = (type) => (typeof Audio === 'function' ? new Audio().canPlayType(type) : '')) {
