@@ -37,6 +37,7 @@ import { createDialogueBox } from './ui/dialogue.js';
 import { createLicence } from './ui/licence.js';
 import { createSettings } from './ui/settings.js';
 import { createAttemptRoller } from './ui/attemptRoll.js';
+import { createMinigameSheet } from './minigames/sheet.js';
 import { mountStory } from './story/mount.js';
 import { storyOf, currentStep } from './story/progress.js';
 import { STEP_IDS, STEPS } from './story/tutorial.js';
@@ -62,6 +63,10 @@ import { offersAt, openCount } from './quests/offers.js';
 import { OFFERS_DATA } from './quests/data/offers.js';
 // Launch slice: the opening on the Tin Duchess (slice/director.js).
 import { wantsSlice, startSlice, startRoom, createSliceDirector } from './slice/director.js';
+// The workbench room: a dev-only test room (?newgame=1&start=workbench), its own files in ./workbench/.
+import { wantsWorkbench } from './workbench/entry.js';
+import { mountWorkbench } from './workbench/mount.js';
+import { registerWorkbench, WORKBENCH_ID } from './workbench/map.js';
 
 const flag = newGameFlag({ config: runtimeConfig, search: location.search });
 // The tutorial step each on-foot lesson belongs to (contract section 4).
@@ -80,7 +85,7 @@ if (!flag.enabled) {
 // run starts while the hub is down; a maintenance screen waits for it instead.
 // Studio play links (throwaway saves) and server mode off play as they always have.
 async function gate() {
-  const linked = params.get('studio') === '1' || ['step', 'quest', 'map', 'explore'].some((k) => params.get(k));
+  const linked = params.get('studio') === '1' || ['step', 'quest', 'map', 'explore'].some((k) => params.get(k)) || wantsWorkbench({ flagEnabled: true, params });
   if (linked || !serverMode({ config: runtimeConfig, search: location.search })) return { mode: 'local' };
   const recorder = createRunRecorder();
   const probe = async () => { await recorder.connect(); return probeSession({ api: recorder.api, gamePath: recorder.gamePath, signedIn: Boolean(recorder.player) }); };
@@ -123,16 +128,19 @@ function boot(session = { mode: 'local' }) {
     spawn: params.get('spawn') || 'default',
     explore: PLACES[params.get('explore')] && params.get('explore') !== 'home' ? params.get('explore') : null,
   };
-  const throwaway = params.get('studio') === '1' || Boolean(link.step || link.quest || link.map || link.explore);
-  const store = createVoyageStore(throwaway ? { key: 'studio.stardust.voyage.v1' } : {});
+  // The workbench room plays on its own throwaway save too, never a real captain's.
+  const workbench = wantsWorkbench({ flagEnabled: flag.enabled, params });
+  if (workbench) registerWorkbench();
+  const throwaway = params.get('studio') === '1' || Boolean(link.step || link.quest || link.map || link.explore) || workbench;
+  const store = createVoyageStore(throwaway ? { key: workbench ? 'workbench.stardust.voyage.v1' : 'studio.stardust.voyage.v1' } : {});
   if (link.step || link.quest) store.reset();
   // A linked step after the licence, a quest, a map or a hop needs a captain to play with.
   const afterCreate = link.step && STEP_IDS.indexOf(link.step) > STEP_IDS.indexOf('create');
-  if (throwaway && !store.get().character && (afterCreate || link.quest || link.map || link.explore)) {
-    store.createCharacter({ name: 'Studio Captain', look: { portrait: 'p1', color: '#81e6df' } });
+  if (throwaway && !store.get().character && (afterCreate || link.quest || link.map || link.explore || workbench)) {
+    store.createCharacter({ name: workbench ? 'Workbench Tester' : 'Studio Captain', look: { portrait: 'p1', color: '#81e6df' } });
   }
   // A quest, map or hop link plays with the tutorial out of the way.
-  if (throwaway && !link.step && (link.quest || link.map || link.explore) && !storyOf(store.get()).finished) {
+  if (throwaway && !link.step && (link.quest || link.map || link.explore || workbench) && !storyOf(store.get()).finished) {
     store.update((s) => ({ ...s, story: { ...storyOf(s), step: null, finished: true, skipped: true } }));
   }
 
@@ -198,6 +206,7 @@ function boot(session = { mode: 'local' }) {
   const floor = $('hg-floor');
   let place = null;
   let onfoot = null;
+  let workbenchRoom = null; // the workbench room's controller (workbench/index.js), only on ?start=workbench
   let sheetOpen = false;
   const overlays = new Set(); // 'intro', 'licence', 'pad', 'pause', 'nap': the floor holds still under them
   const holdFloor = () => {
@@ -397,6 +406,13 @@ function boot(session = { mode: 'local' }) {
   presenter.dialogue = (v, pick) => (slice ? slice.beat(v, () => playBeat(v, pick)) : playBeat(v, pick));
   presenter.foot = (part, done) => (slice ? slice.fight(part, done) : done(null));
   presenter.exit = () => slice?.afterCard();
+  // The opening's hooked choices (scenes 3, 4, 5): the d20 set the tier, the minigame sheet plays it, the result goes back to the engine.
+  const minigameSheet = createMinigameSheet({
+    root: $('hg-minigame'), eyebrow: $('hg-minigame-eyebrow'), title: $('hg-minigame-title'), stage: $('hg-minigame-stage'),
+    character: () => store.get().character, reducedMotion: still,
+    onChange: (on) => { if (on) { overlays.add('minigame'); dialogueBox.hide(); } else overlays.delete('minigame'); holdFloor(); tracker?.render(); },
+  });
+  presenter.minigame = (spec, done) => minigameSheet.play(spec, done);
   const jobs = createJobs({
     pane: panes.jobs, store, toast, dev: flag.dev, presenter,
     say: (events) => hangar.say(events),
@@ -439,22 +455,22 @@ function boot(session = { mode: 'local' }) {
 
   // The walkable floor. Walking up to a station and pressing E opens it in place.
   onfoot = createOnFoot({
-    root: floor, store, bus, mapId: link.map || (slicing ? startRoom(store.get()) : 'hangar'), spawn: link.map ? link.spawn : 'default',
+    root: floor, store, bus, mapId: link.map || (workbench ? WORKBENCH_ID : slicing ? startRoom(store.get()) : 'hangar'), spawn: link.map ? link.spawn : 'default',
     reducedMotion: still,
     hooks: {
-      openStation: (id) => new Promise((resolve) => {
+      openStation: (id) => (workbenchRoom && String(id).startsWith('wb-') ? workbenchRoom.openStation(id) : new Promise((resolve) => {
         if (!place.openStation(id, { via: 'walk' })) { resolve(); return; }
         const off = place.subscribe((e) => { if (e.type === 'close') { off(); resolve(); } });
-      }),
+      })),
       isUnlocked: (id) => isUnlocked(store.get(), id),
       tutorial: () => tutorialOn(store.get()),
       // During the tutorial, a lesson waits for its turn (the director pays for each one once).
       allow: (target) => allowLesson(target),
       entered: (map) => { slice?.entered(map); setBed(map.ambient); place?.closeStation({ restoreFocus: false }); place?.place(); setPlaceName(placeNameFor(map)); },
       flying: (on) => { flying = on; holdFloor(); place?.place(); if (on) setPlaceName('The Drift'); else if (onfoot?.world?.map) setPlaceName(placeNameFor(onfoot.world.map)); },
-      stationInfo,
-      // Jobs you haven't taken: a giver offers theirs in person (after the tutorial).
-      offerTalk: (who, map) => (jobsOpen() && offersAt({ map: map.id, npc: who }, store.get()).length ? jobTalk.offerAt({ map: map.id, npc: who }) : null),
+      stationInfo: (id) => (workbenchRoom && String(id).startsWith('wb-') ? workbenchRoom.stationInfo(id) : stationInfo(id)),
+      // Jobs you haven't taken: a giver offers theirs in person (after the tutorial). In the workbench room the three crew talk their test conversations.
+      offerTalk: (who, map) => (workbenchRoom && map.id === WORKBENCH_ID ? workbenchRoom.talk(who) : jobsOpen() && offersAt({ map: map.id, npc: who }, store.get()).length ? jobTalk.offerAt({ map: map.id, npc: who }) : null),
       // The "job here" mark: open offers at a giver or a board.
       offers: ({ map, npc, station }) => {
         if (!jobsOpen()) return 0;
@@ -463,6 +479,15 @@ function boot(session = { mode: 'local' }) {
       },
     },
   });
+  if (workbench) {
+    chip.textContent = 'Workbench test room: nothing here touches a real captain';
+    workbenchRoom = mountWorkbench({
+      store, bus, onfoot, dialogueBox, toast, audio, reducedMotion: still, sound: (id) => onfoot.sound(id),
+      sheet: { root: $('hg-minigame'), eyebrow: $('hg-minigame-eyebrow'), title: $('hg-minigame-title'), stage: $('hg-minigame-stage') },
+      onBusy: (on) => { if (on) overlays.add('workbench'); else overlays.delete('workbench'); holdFloor(); tracker?.render(); },
+      seed: Number.parseInt(params.get('seed'), 10) || null,
+    });
+  }
   setCaptainLook(store.get().character?.look?.portrait);
   store.subscribe((save) => setCaptainLook(save.character?.look?.portrait));
   setPlaceName(placeNameFor(onfoot.world.map));
@@ -597,5 +622,5 @@ function boot(session = { mode: 'local' }) {
 
   // For tests and poking around in the console (no secrets: the save is the player's own).
   setTimeout(maybeControls, 600);
-  window.__stardust = { store, story, onfoot, place, jobs, licence, bus, pad, tracker, controls, pause, jobTalk, jobCard, crew, slice };
+  window.__stardust = { store, story, onfoot, place, jobs, licence, bus, pad, tracker, controls, pause, jobTalk, jobCard, crew, slice, workbench: workbenchRoom };
 }

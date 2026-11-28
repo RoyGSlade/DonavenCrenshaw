@@ -541,8 +541,8 @@ export function createWorld({ root, mapId = 'hangar', spawn = 'default', hooks =
 
   function drawEnemy(e) {
     const img = sprite(e.kind.art);
-    const size = e.kind.radius * 3.1;
-    drawBody(ctx, e.x, e.y, e.angle, img, { size, t: t + e.id, moving: e.kind.speed > 0, stride: (t * 2.5 + e.id) % 4, hit: e.hit, tint: '#ffad72' });
+    const size = e.size === 'player' ? 46 * playerArt().scale : e.kind.radius * 3.1;
+    drawBody(ctx, e.x, e.y, e.angle, img, { size, lift: e.lift || null, t: t + e.id, moving: e.kind.speed > 0, stride: (t * 2.5 + e.id) % 4, hit: e.hit, tint: '#ffad72' });
     if (e.hp < e.maxHp) {
       ctx.fillStyle = '#070d17cc'; ctx.fillRect(e.x - 16, e.y - size * 0.6 - 6, 32, 4);
       ctx.fillStyle = '#ffad72'; ctx.fillRect(e.x - 16, e.y - size * 0.6 - 6, 32 * (e.hp / e.maxHp), 4);

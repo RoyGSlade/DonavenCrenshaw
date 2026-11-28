@@ -112,7 +112,13 @@ function playScene(quest, save, picks, end, maxSeed = 400) {
     for (let guard = 0; guard < 80 && !run.ended; guard++) {
       const v = view(quest, run, s);
       let action;
-      if (v.part?.kind === 'foot') {
+      if (v.minigame) {
+        // A hooked choice (scenes 3, 4, 5): the d20 set the tier; the minigame is stubbed to the outcome the plan names.
+        const want = queue[0];
+        if (!want?.mini) { ok = false; break; }
+        queue.shift();
+        action = { type: 'minigame', branch: want.mini, xp: 2, skill: v.choices[v.minigame.index].check.skill };
+      } else if (v.part?.kind === 'foot') {
         const want = queue[0];
         if (!want?.fight) { ok = false; break; }
         queue.shift();
@@ -165,16 +171,16 @@ test('slice walk (good path): scenes 1 to 6 on a fresh save, every flag, payout 
   assert.deepEqual(rooms(save, [['duchess-airlock', 'airlock-outer'], ['duchess-airlock', 'boarding-clamp'], ['duchess-bridge', 'gunner-seat'], ['duchess-bridge', 'reck']]), { 'duchess-airlock:airlock-outer': 'breached', 'duchess-airlock:boarding-clamp': 'torn', 'duchess-bridge:gunner-seat': 'broken', 'duchess-bridge:reck': 'down' });
 
   // Scene 3: hack the inner airlock door shut. Pays 20 and 3 rep; the door shows sealed, no bodies in the corridor.
-  ({ r, before } = play('hold-the-corridor', ['Hack the inner airlock door'], 'end-sealed-end'));
+  ({ r, before } = play('hold-the-corridor', ['Hack the inner airlock door', { mini: 'win' }], 'end-sealed-end'));
   expectScene('scene 3', r, { before, money: 20, rep: 3, outcome: 'sealed', flags: ['reck-rifle-taken', 'airlock-sealed', 'reavers-repelled'] });
   assert.deepEqual(rooms(save, [['duchess-corridor', 'airlock-inner'], ['duchess-corridor', 'reavers'], ['duchess-bridge', 'reck']]), { 'duchess-corridor:airlock-inner': 'sealed', 'duchess-corridor:reavers': 'aboard', 'duchess-bridge:reck': 'looted' });
 
   // Scene 4: the haggle works. Pays 30 and 3 rep.
-  ({ r, before } = play('the-eighth-gunner', ['Haggle for a bigger share.'], 'end-hired-well-end'));
+  ({ r, before } = play('the-eighth-gunner', ['Haggle for a bigger share.', { mini: 'win' }], 'end-hired-well-end'));
   expectScene('scene 4', r, { before, money: 30, rep: 3, outcome: 'hired-well', flags: ['gunner-hired', 'pay-raised'] });
 
   // Scene 5: turret, scan, Nessa quits, the coolant is fixed. Pays 6 + 5 + 25 and 2 rep, a hull patch; Pip leaves too.
-  ({ r, before } = play('gunners-week', ['Patch the line'], 'end-steady-end'));
+  ({ r, before } = play('gunners-week', ['Patch the line', { mini: 'win' }], 'end-steady-end'));
   expectScene('scene 5', r, { before, money: 6 + 5 + 25, rep: 2, outcome: 'steady', items: { 'hull-patch': 1 }, flags: ['coolant-leaking', 'turret-repaired', 'nessa-quit', 'pip-quit', 'coolant-fixed'] });
   assert.deepEqual(rooms(save, [['duchess-engine', 'coolant'], ['duchess-engine', 'pip'], ['duchess-bridge', 'nessa'], ['duchess-bridge', 'gunner-seat']]), { 'duchess-engine:coolant': 'intact', 'duchess-engine:pip': 'gone', 'duchess-bridge:nessa': 'gone', 'duchess-bridge:gunner-seat': 'intact' });
   assert.equal(stateOf(save, 'duchess-pad')['berth-door'], 'shut', 'the pad door to the hangar is shut before day five');
@@ -188,6 +194,30 @@ test('slice walk (good path): scenes 1 to 6 on a fresh save, every flag, payout 
     { 'duchess-engine:reactor': 'fixed', 'duchess-engine:engine-console': 'fixed', 'duchess-engine:hull-patch': 'patched', 'duchess-pad:duchess-hull': 'repaired', 'duchess-pad:tull-pad': 'here', 'duchess-pad:berth-door': 'open' });
   assert.equal(nextScene(save), null, 'all six scenes are on record');
   assert.equal(save.money, 24 + 8 + 20 + 30 + 36 + 30, 'the whole good run is 148 credits');
+});
+
+test('slice walk (mini-games stubbed to the other outcomes): lost hack then fight, a fair haggle, a flooded coolant line', () => {
+  let save = janitor();
+  const play = (id, picks, end) => { const r = playScene(Q[id], save, picks, end); const before = save; save = r.save; return { r, before }; };
+  play('third-shift', ['Where is this gym?', 'Start cleaning.', 'Fix the leaking valve.'], 'end-source-fixed-end');
+  play('visitors', ["Check the cutter's readout.", 'Keep your eyes on the cutter.', 'Grab the helm rail'], 'end-warned');
+  const start = save.money;
+  // Scene 3: the hack is lost (trace tripped), the corridor fight is won: the door stays open, the Reavers are held. +15, +3 rep.
+  let { r, before } = play('hold-the-corridor', ['Hack the inner airlock door', { mini: 'lose' }, { fight: 'win' }], 'end-held');
+  expectScene('scene 3', r, { before, money: 15, rep: 3, outcome: 'held', flags: ['reavers-repelled'], notFlags: ['airlock-sealed'] });
+  assert.equal(stateOf(save, 'duchess-corridor')['airlock-inner'], 'open');
+  // Scene 4: a fair haggle is the standard share. +20, +2 rep.
+  ({ r, before } = play('the-eighth-gunner', ['Haggle for a bigger share.', { mini: 'mid' }], 'end-hired-fair-end'));
+  expectScene('scene 4 fair', r, { before, money: 20, rep: 2, outcome: 'hired-fair', flags: ['gunner-hired'], notFlags: ['pay-raised'] });
+  // Scene 5: the coolant floods the engine room: 6 + 5 on the way, -15 at the end, a hull patch, no coolant-fixed.
+  ({ r, before } = play('gunners-week', ['Patch the line', { mini: 'lose' }], 'end-spray-end'));
+  expectScene('scene 5', r, { before, money: 6 + 5 - 15, rep: 0, outcome: 'spray', items: { 'hull-patch': 1 }, flags: ['nessa-quit', 'pip-quit'], notFlags: ['coolant-fixed'] });
+  assert.equal(save.money, start + 15 + 20 + 6 + 5 - 15);
+  // A walked haggle is the lowball, on every one of the three haggle choices.
+  for (const via of [['Haggle for a bigger share.'], ['What happened to the other seven gunners?', 'Haggle for a bigger share.'], ['Read the ledger on the desk.', 'Haggle, now that you know he is broke.']]) {
+    const walked = playScene(Q['the-eighth-gunner'], janitor(), [...via, { mini: 'lose' }], 'end-lowballed-end');
+    assert.equal(walked.run.ended.outcome, 'lowballed');
+  }
 });
 
 test('slice walk (failure path): every failure still moves the story on, with its own flags, payouts and room states', () => {
