@@ -5,6 +5,7 @@ import { cleanSave, decodeSave, encodeSave, emptySave, emptyUpgrades, LOCAL_KEY 
 import { grant, spend, canAfford, meets, missing } from './economy.js';
 import { createCharacter, learn, die, rollMissingStats } from './character.js';
 import { upgrade } from './upgrades.js';
+import { restore } from './skillSave.js';
 import { START_KIT, DEATH } from './data.js';
 
 export const BACKUP_KEY = 'stardust.voyage.backup.v1';
@@ -77,7 +78,9 @@ export function createVoyageStore({ storage = globalThis.localStorage, now = Dat
     die(rng = Math.random) {
       if (!save.character) return null;
       const out = die(save.character, rng);
-      commit({ ...save, character: out.character, ...(DEATH.loseUpgrades ? { upgrades: emptyUpgrades() } : {}) });
+      // A reprint: levels, XP and category points go back to the last scan (with the home server on, the hub does this and the next pull agrees).
+      const back = restore(out.character);
+      commit({ ...save, character: back.ok ? back.character : out.character, ...(DEATH.loseUpgrades ? { upgrades: emptyUpgrades() } : {}) });
       return out.lost;
     },
     /** Rolls any stat the captain is missing (an old save meeting Strength). { statId: value }, {} when none. */
