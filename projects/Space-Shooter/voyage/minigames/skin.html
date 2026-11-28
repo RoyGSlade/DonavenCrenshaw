@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#05080d">
+  <meta name="robots" content="noindex">
+  <title>Minigame skin · Stardust</title>
+  <meta name="description" content="Developer preview: a scene's minigame in the game's own UI, beside the dialogue box and the tracker. Not open yet.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath fill='%2381e6df' d='M16 1 30 30 16 23 2 30Z'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="../voyage.css">
+  <link rel="stylesheet" href="../ui/kit.css">
+  <link rel="stylesheet" href="../datapad/datapad.css">
+  <link rel="stylesheet" href="./minigames.css">
+  <link rel="stylesheet" href="./minigames-skin.css">
+  <style>
+    body.sk-body{min-height:100vh;background:linear-gradient(#05080dcc,#05080dcc),url(../ui/kit/backdrop-deck.jpg) center/cover fixed}
+    .sk-body .hg-sheet{animation:none}
+    .sk-body .hg-sheet-head,.sk-body .hg-sheet-body{padding:0 10px}
+    .sk-body .hg-sheet-head{margin-top:4px}
+  </style>
+</head>
+<body class="sk-body">
+  <section id="mg-closed" class="vy-closed mg-closed" hidden aria-labelledby="mg-closed-title">
+    <p class="vy-eyebrow">COMING LATER</p>
+    <h2 id="mg-closed-title">The new Stardust is not open yet.</h2>
+    <a class="vy-link" href="../../">Back to the hangar</a>
+  </section>
+  <div id="sk-page" hidden>
+    <div id="sk-tracker"></div>
+    <aside id="sk-sheet" class="hg-sheet ui-panel" data-side="right" aria-label="Minigame">
+      <div class="hg-sheet-head"><div><p class="ui-eyebrow" id="sk-eyebrow"></p><h2 id="sk-title"></h2></div></div>
+      <div class="hg-sheet-body" id="sk-stage"></div>
+    </aside>
+    <div id="sk-dialogue" class="ui-dialogue" hidden></div>
+  </div>
+  <script type="module" src="./skinPreview.js"></script>
+</body>
+</html>

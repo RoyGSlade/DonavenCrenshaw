@@ -301,6 +301,7 @@ test('minigames (S55): the crew can try the cipher seal; only guesses, never giv
 
 function soloPolicy(v, n) {
   const p = v.part;
+  if (v.minigame) return { type: 'minigame', branch: 'win', xp: 0 }; // a hooked choice (opening scenes): the page plays it, a solo run takes the win
   if (!p) {
     const open = v.choices.filter((c) => !c.locked);
     return { type: 'choose', index: open[n % open.length].index };
