@@ -49,8 +49,8 @@ export function attemptWords(r) {
   const what = `${r.label || named}${dropped.length ? ' · advantage' : ''}`;
   const adv = dropped.length ? ` (${dropped.join(', ')} dropped)` : '';
   const sum = `${kept}${adv} ${bonusWords(r)} = ${r.total}`;
-  const verdict = r.natural ? 'Natural 20! It works, whatever the odds' : r.pass ? 'Made it' : 'Not this time';
-  return { what: r.who ? `${r.who}: ${what}` : what, sum, target: `needs ${r.dc}`, verdict };
+  const verdict = r.verdict || (r.natural ? 'Natural 20! It works, whatever the odds' : r.pass ? 'Made it' : 'Not this time');
+  return { what: r.who ? `${r.who}: ${what}` : what, sum, target: `needs ${r.dc}`, verdict, preview: r.preview || '' };
 }
 
 /** root: an empty element (fixed in a corner by kit.css). bus: the story bus. */
@@ -70,8 +70,11 @@ export function createAttemptRoller({ root, bus, reducedMotion = () => false, rn
   sum.className = 'ui-attempt-sum';
   const verdict = document.createElement('p');
   verdict.className = 'ui-attempt-verdict';
+  const preview = document.createElement('p');
+  preview.className = 'ui-attempt-preview';
+  preview.hidden = true;
   const text = document.createElement('div');
-  text.append(what, sum, verdict);
+  text.append(what, sum, verdict, preview);
   root.replaceChildren(dice, text);
   root.className = 'ui-attempt ui-card';
   root.hidden = true;
@@ -97,6 +100,7 @@ export function createAttemptRoller({ root, bus, reducedMotion = () => false, rn
       what.textContent = words.what;
       sum.textContent = `Rolling… ${words.target}`;
       verdict.textContent = '';
+      preview.textContent = ''; preview.hidden = true;
       canvas2.hidden = faces.length < 2;
       if (!die) die = createD20(canvas, { rng, reducedMotion });
       if (faces.length > 1 && !die2) die2 = createD20(canvas2, { rng, reducedMotion });
@@ -105,9 +109,10 @@ export function createAttemptRoller({ root, bus, reducedMotion = () => false, rn
       if (faces.length > 1) (at === 0 ? die2 : die).dim(true);
       sum.textContent = `${words.sum}, ${words.target}`;
       verdict.textContent = words.verdict;
+      preview.textContent = words.preview; preview.hidden = !words.preview; // a hooked minigame's roll preview line
       root.classList.add('is-done');
       bus?.emit('hangar:attempt-shown', { pass: Boolean(result.pass), natural: Boolean(result.natural), advantage: faces.length > 1 });
-      hideTimer = setTimeout(() => { root.hidden = true; }, reducedMotion() ? holdMs * 1.5 : holdMs);
+      hideTimer = setTimeout(() => { root.hidden = true; }, (reducedMotion() ? holdMs * 1.5 : holdMs) + (words.preview ? 1400 : 0));
     }).catch((error) => console.warn('Stardust: the attempt roller failed', error));
     return queue;
   }
